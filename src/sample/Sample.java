@@ -20,10 +20,7 @@ public class Sample
 
 			try (Database db = Database.open(new File("d:/log.db"), OpenOption.OPEN))
 			{
-				for (Fruit f : db.list(Fruit.class))
-				{
-					Log.out.println(f);
-				}
+				db.list(Fruit.class).stream().forEach(Log.out::println);
 			}
 		}
 		catch (Throwable e)
