@@ -11,13 +11,13 @@ import org.terifan.v1.security.InvalidKeyException;
 import org.terifan.v1.security.SHA512;
 import org.terifan.v1.security.Skein512;
 import org.terifan.v1.security.Whirlpool;
-import org.terifan.v1.security.cryptography.AES;
-import org.terifan.v1.security.cryptography.Cipher;
-import org.terifan.v1.security.cryptography.Elephant;
-import org.terifan.v1.security.cryptography.PBKDF2;
-import org.terifan.v1.security.cryptography.SecretKey;
-import org.terifan.v1.security.cryptography.Serpent;
-import org.terifan.v1.security.cryptography.Twofish;
+import org.terifan.v1.security.AES;
+import org.terifan.v1.security.Cipher;
+import org.terifan.v1.security.Elephant;
+import org.terifan.v1.security.PBKDF2;
+import org.terifan.v1.security.SecretKey;
+import org.terifan.v1.security.Serpent;
+import org.terifan.v1.security.Twofish;
 
 
 // Boot block layout:

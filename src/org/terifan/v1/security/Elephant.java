@@ -1,4 +1,4 @@
-package org.terifan.v1.security.cryptography;
+package org.terifan.v1.security;
 
 import java.util.Arrays;
 
