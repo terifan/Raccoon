@@ -21,7 +21,7 @@ import org.terifan.v1.raccoon.io.MemoryBlockDevice;
 import org.terifan.v1.raccoon.io.AccessCredentials;
 import org.terifan.v1.raccoon.hashtable.BlockPointer;
 import org.terifan.v1.raccoon.io.Streams;
-import org.terifan.v1.util.Logger;
+import org.terifan.v1.raccoon.util.Logger;
 
 
 public class Database implements AutoCloseable

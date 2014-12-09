@@ -12,7 +12,7 @@ import org.terifan.v1.raccoon.io.IBlockDevice;
 import org.terifan.v1.raccoon.DatabaseException;
 import org.terifan.v1.raccoon.Node;
 import org.terifan.v1.raccoon.Stats;
-import org.terifan.v1.security.MurmurHash3;
+import org.terifan.v1.raccoon.security.MurmurHash3;
 
 
 class BlockAccessor

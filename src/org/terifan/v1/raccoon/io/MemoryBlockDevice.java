@@ -3,7 +3,7 @@ package org.terifan.v1.raccoon.io;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.TreeMap;
-import org.terifan.v1.util.Logger;
+import org.terifan.v1.raccoon.util.Logger;
 
 
 public class MemoryBlockDevice implements IPhysicalBlockDevice

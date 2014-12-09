@@ -8,9 +8,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashSet;
-import org.terifan.v1.util.ByteArray;
-import org.terifan.v1.security.ISAAC;
-import org.terifan.v1.util.Logger;
+import org.terifan.v1.raccoon.util.ByteArray;
+import org.terifan.v1.raccoon.security.ISAAC;
+import org.terifan.v1.raccoon.util.Logger;
 
 
 /**

@@ -1,8 +1,8 @@
-package org.terifan.v1.security;
+package org.terifan.v1.raccoon.security;
 
 import java.util.Arrays;
 import java.util.concurrent.Callable;
-import org.terifan.v1.security.HMAC;
+import org.terifan.v1.raccoon.security.HMAC;
 
 
 /**

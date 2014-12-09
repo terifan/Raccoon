@@ -1,6 +1,6 @@
 package org.terifan.v1.raccoon;
 
-import org.terifan.v1.security.MurmurHash3;
+import org.terifan.v1.raccoon.security.MurmurHash3;
 
 
 public class TableType

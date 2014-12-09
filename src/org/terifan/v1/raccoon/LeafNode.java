@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import org.terifan.v1.raccoon.hashtable.IndexNode;
-import org.terifan.v1.util.Result;
+import org.terifan.v1.raccoon.util.Result;
 
 
 /**

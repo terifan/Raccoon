@@ -4,8 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import org.terifan.v1.raccoon.io.IBlockDevice;
-import org.terifan.v1.util.ByteArray;
-import org.terifan.v1.security.ISAAC;
+import org.terifan.v1.raccoon.util.ByteArray;
+import org.terifan.v1.raccoon.security.ISAAC;
 
 
 class BlobOutputStream extends OutputStream

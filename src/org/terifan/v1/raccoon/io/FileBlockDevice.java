@@ -3,7 +3,7 @@ package org.terifan.v1.raccoon.io;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import org.terifan.v1.util.Logger;
+import org.terifan.v1.raccoon.util.Logger;
 
 
 public class FileBlockDevice implements IPhysicalBlockDevice

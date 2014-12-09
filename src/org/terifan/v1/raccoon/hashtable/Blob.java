@@ -3,7 +3,7 @@ package org.terifan.v1.raccoon.hashtable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import org.terifan.v1.util.ByteArray;
+import org.terifan.v1.raccoon.util.ByteArray;
 import org.terifan.v1.raccoon.io.IBlockDevice;
 import org.terifan.v1.raccoon.DatabaseException;
 import org.terifan.v1.raccoon.io.Streams;

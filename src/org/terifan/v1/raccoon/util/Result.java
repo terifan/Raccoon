@@ -1,4 +1,4 @@
-package org.terifan.v1.util;
+package org.terifan.v1.raccoon.util;
 
 
 /**

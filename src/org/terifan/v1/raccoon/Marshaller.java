@@ -1,6 +1,6 @@
 package org.terifan.v1.raccoon;
 
-import org.terifan.v1.util.Logger;
+import org.terifan.v1.raccoon.util.Logger;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
-import org.terifan.v1.util.ByteArray;
-import org.terifan.v1.util.Convert;
+import org.terifan.v1.raccoon.util.ByteArray;
+import org.terifan.v1.raccoon.util.Convert;
 
 
 public class Marshaller

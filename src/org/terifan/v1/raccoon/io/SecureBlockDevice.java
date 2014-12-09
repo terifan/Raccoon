@@ -6,18 +6,18 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.zip.CRC32;
-import org.terifan.v1.security.HMAC;
-import org.terifan.v1.security.InvalidKeyException;
-import org.terifan.v1.security.SHA512;
-import org.terifan.v1.security.Skein512;
-import org.terifan.v1.security.Whirlpool;
-import org.terifan.v1.security.AES;
-import org.terifan.v1.security.Cipher;
-import org.terifan.v1.security.Elephant;
-import org.terifan.v1.security.PBKDF2;
-import org.terifan.v1.security.SecretKey;
-import org.terifan.v1.security.Serpent;
-import org.terifan.v1.security.Twofish;
+import org.terifan.v1.raccoon.security.HMAC;
+import org.terifan.v1.raccoon.security.InvalidKeyException;
+import org.terifan.v1.raccoon.security.SHA512;
+import org.terifan.v1.raccoon.security.Skein512;
+import org.terifan.v1.raccoon.security.Whirlpool;
+import org.terifan.v1.raccoon.security.AES;
+import org.terifan.v1.raccoon.security.Cipher;
+import org.terifan.v1.raccoon.security.Elephant;
+import org.terifan.v1.raccoon.security.PBKDF2;
+import org.terifan.v1.raccoon.security.SecretKey;
+import org.terifan.v1.raccoon.security.Serpent;
+import org.terifan.v1.raccoon.security.Twofish;
 
 
 // Boot block layout:

@@ -1,6 +1,6 @@
-package org.terifan.v1.security;
+package org.terifan.v1.raccoon.security;
 
-import org.terifan.v1.util.ByteArray;
+import org.terifan.v1.raccoon.util.ByteArray;
 
 
 /**
