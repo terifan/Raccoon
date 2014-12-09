@@ -57,7 +57,7 @@ public final class HMAC extends MessageDigest implements Cloneable
 		mMessageDigest.reset();
 
 		int blockLength;
-		if (mMessageDigest instanceof SHA384 || mMessageDigest instanceof SHA512)
+		if (mMessageDigest instanceof SHA512)
 		{
 			blockLength = 128;
 		}
