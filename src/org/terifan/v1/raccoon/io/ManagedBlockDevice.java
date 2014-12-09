@@ -289,8 +289,8 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 		readCheckedBlock(0L, bufferOne, 0L);
 		readCheckedBlock(1L, bufferTwo, 0L);
 
-		long versionOne = ByteArray.BE.getLong(bufferOne, SUPERBLOCK_OFFSET_VERSION);
-		long versionTwo = ByteArray.BE.getLong(bufferTwo, SUPERBLOCK_OFFSET_VERSION);
+		long versionOne = ByteArray.getLong(bufferOne, SUPERBLOCK_OFFSET_VERSION);
+		long versionTwo = ByteArray.getLong(bufferTwo, SUPERBLOCK_OFFSET_VERSION);
 
 		if (versionOne == versionTwo + 1)
 		{
@@ -307,10 +307,10 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 			throw new IOException("SuperBlock versions are illegal: " + versionOne + " / " + versionTwo);
 		}
 
-		mSpaceMapBlockIndex = ByteArray.BE.getInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_INDEX);
-		mSpaceMapBlockCount = ByteArray.BE.getInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_COUNT);
-		mSpaceMapLength = ByteArray.BE.getInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_LENGTH);
-		mSpaceMapBlockKey = ByteArray.BE.getLong(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_KEY);
+		mSpaceMapBlockIndex = ByteArray.getInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_INDEX);
+		mSpaceMapBlockCount = ByteArray.getInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_COUNT);
+		mSpaceMapLength = ByteArray.getInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_LENGTH);
+		mSpaceMapBlockKey = ByteArray.getLong(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_KEY);
 	}
 
 
@@ -320,12 +320,12 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 		mSuperBlockVersion++;
 
-		ByteArray.BE.putLong(mSuperBlock, SUPERBLOCK_OFFSET_VERSION, mSuperBlockVersion);
-		ByteArray.BE.putLong(mSuperBlock, SUPERBLOCK_OFFSET_DATETIME, System.currentTimeMillis());
-		ByteArray.BE.putInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_INDEX, mSpaceMapBlockIndex);
-		ByteArray.BE.putInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_COUNT, mSpaceMapBlockCount);
-		ByteArray.BE.putInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_LENGTH, mSpaceMapLength);
-		ByteArray.BE.putLong(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_KEY, mSpaceMapBlockKey);
+		ByteArray.putLong(mSuperBlock, SUPERBLOCK_OFFSET_VERSION, mSuperBlockVersion);
+		ByteArray.putLong(mSuperBlock, SUPERBLOCK_OFFSET_DATETIME, System.currentTimeMillis());
+		ByteArray.putInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_INDEX, mSpaceMapBlockIndex);
+		ByteArray.putInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_COUNT, mSpaceMapBlockCount);
+		ByteArray.putInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_LENGTH, mSpaceMapLength);
+		ByteArray.putLong(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_KEY, mSpaceMapBlockKey);
 
 		writeCheckedBlock(mSuperBlockVersion & 1L, mSuperBlock, 0L);
 	}
@@ -458,7 +458,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 			throw new IllegalArgumentException("Length of extra data exceeds maximum length: extra length: " + aExtraData.length + ", limit: " + (mBlockSize - SUPERBLOCK_HEADER_SIZE));
 		}
 
-		ByteArray.BE.putInt(mSuperBlock, SUPERBLOCK_OFFSET_EXTRA_DATA_LENGTH, aExtraData.length);
+		ByteArray.putInt(mSuperBlock, SUPERBLOCK_OFFSET_EXTRA_DATA_LENGTH, aExtraData.length);
 		System.arraycopy(aExtraData, 0, mSuperBlock, SUPERBLOCK_HEADER_SIZE, aExtraData.length);
 
 		// padd remainder of block
@@ -472,7 +472,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 	public byte[] getExtraData()
 	{
-		int length = ByteArray.BE.getInt(mSuperBlock, SUPERBLOCK_OFFSET_EXTRA_DATA_LENGTH);
+		int length = ByteArray.getInt(mSuperBlock, SUPERBLOCK_OFFSET_EXTRA_DATA_LENGTH);
 		return Arrays.copyOfRange(mSuperBlock, SUPERBLOCK_HEADER_SIZE, SUPERBLOCK_HEADER_SIZE + length);
 	}
 

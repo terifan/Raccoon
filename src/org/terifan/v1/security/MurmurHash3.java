@@ -264,8 +264,8 @@ public class MurmurHash3
 
 		for (int i = 0; i < nblocks; i++)
 		{
-			long k1 = ByteArray.LE.getLong(aData, aOffset + 16 * i);
-			long k2 = ByteArray.LE.getLong(aData, aOffset + 16 * i + 8);
+			long k1 = getLong(aData, aOffset + 16 * i);
+			long k2 = getLong(aData, aOffset + 16 * i + 8);
 
 			k1 *= c1;
 			k1 = Long.rotateLeft(k1, 31);
@@ -353,8 +353,8 @@ public class MurmurHash3
 
 		for (int i = 0; i < nblocks; i++)
 		{
-			long k1 = ByteArray.LE.getLong(aData, aOffset + 16 * i);
-			long k2 = ByteArray.LE.getLong(aData, aOffset + 16 * i + 8);
+			long k1 = getLong(aData, aOffset + 16 * i);
+			long k2 = getLong(aData, aOffset + 16 * i + 8);
 
 			k1 *= c1;
 			k1 = Long.rotateLeft(k1, 31);
@@ -430,5 +430,18 @@ public class MurmurHash3
 		k ^= k >>> 33;
 
 		return k;
+	}
+
+
+	private static long getLong(byte [] aBuffer, int aPosition)
+	{
+		return (((long)(aBuffer[aPosition + 7]      ) << 56)
+			  + ((long)(aBuffer[aPosition + 6] & 255) << 48)
+			  + ((long)(aBuffer[aPosition + 5] & 255) << 40)
+			  + ((long)(aBuffer[aPosition + 4] & 255) << 32)
+			  + ((long)(aBuffer[aPosition + 3] & 255) << 24)
+			  + ((      aBuffer[aPosition + 2] & 255) << 16)
+			  + ((      aBuffer[aPosition + 1] & 255) <<  8)
+			  + ((      aBuffer[aPosition    ] & 255       )));
 	}
 }

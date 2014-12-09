@@ -99,11 +99,11 @@ class BlobOutputStream extends OutputStream
 			}
 
 			mOutput = new byte[Blob.HEADER_SIZE + mFragmentBuffer.size()];
-			ByteArray.BE.putInt(mOutput, Blob.HEADER_FIELD_LENGTH, totalLength);
-			ByteArray.BE.putInt(mOutput, Blob.HEADER_FIELD_COUNT, mFragmentCount);
-			ByteArray.BE.putInt(mOutput, Blob.HEADER_FIELD_TRANSACTION, (int)mTransactionId);
-			ByteArray.BE.putInt(mOutput, Blob.HEADER_FIELD_BLOCK_KEY, (int)mBlockKey);
-			ByteArray.BE.put(mOutput, Blob.HEADER_SIZE, mFragmentBuffer.toByteArray());
+			ByteArray.putInt(mOutput, Blob.HEADER_FIELD_LENGTH, totalLength);
+			ByteArray.putInt(mOutput, Blob.HEADER_FIELD_COUNT, mFragmentCount);
+			ByteArray.putInt(mOutput, Blob.HEADER_FIELD_TRANSACTION, (int)mTransactionId);
+			ByteArray.putInt(mOutput, Blob.HEADER_FIELD_BLOCK_KEY, (int)mBlockKey);
+			ByteArray.put(mOutput, Blob.HEADER_SIZE, mFragmentBuffer.toByteArray());
 		}
 	}
 

@@ -33,10 +33,10 @@ class BlobInputStream extends InputStream
 			mPageSize = mHashTable.getBlockDevice().getBlockSize();
 			mBuffer = new byte[0];
 
-			mRemaining = ByteArray.BE.getInt(aBlobInfo, Blob.HEADER_FIELD_LENGTH);
-			mFragmentCount = ByteArray.BE.getInt(aBlobInfo, Blob.HEADER_FIELD_COUNT);
-			mTransactionId = ByteArray.BE.getUnsignedInt(aBlobInfo, Blob.HEADER_FIELD_TRANSACTION);
-			mBlockKey = ByteArray.BE.getUnsignedInt(aBlobInfo, HEADER_FIELD_BLOCK_KEY);
+			mRemaining = ByteArray.getInt(aBlobInfo, Blob.HEADER_FIELD_LENGTH);
+			mFragmentCount = ByteArray.getInt(aBlobInfo, Blob.HEADER_FIELD_COUNT);
+			mTransactionId = ByteArray.getUnsignedInt(aBlobInfo, Blob.HEADER_FIELD_TRANSACTION);
+			mBlockKey = ByteArray.getUnsignedInt(aBlobInfo, HEADER_FIELD_BLOCK_KEY);
 
 			mFragmentPointers = new ByteArrayInputStream(aBlobInfo);
 			mFragmentPointers.skip(Blob.HEADER_SIZE);

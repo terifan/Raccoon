@@ -49,9 +49,9 @@ class Blob
 		{
 			IBlockDevice blockDevice = aHashTable.getBlockDevice();
 
-			int fragmentCount = ByteArray.BE.getInt(aBuffer, HEADER_FIELD_COUNT);
-			long transactionId = ByteArray.BE.getUnsignedInt(aBuffer, HEADER_FIELD_TRANSACTION);
-			long blockKey = (transactionId << 32) | ByteArray.BE.getUnsignedInt(aBuffer, HEADER_FIELD_BLOCK_KEY);
+			int fragmentCount = ByteArray.getInt(aBuffer, HEADER_FIELD_COUNT);
+			long transactionId = ByteArray.getUnsignedInt(aBuffer, HEADER_FIELD_TRANSACTION);
+			long blockKey = (transactionId << 32) | ByteArray.getUnsignedInt(aBuffer, HEADER_FIELD_BLOCK_KEY);
 
 			InputStream fragmentPointers = new ByteArrayInputStream(aBuffer);
 			fragmentPointers.skip(HEADER_SIZE);
@@ -70,7 +70,7 @@ class Blob
 
 				blockDevice.freeBlock(blockIndex, blockCount);
 
-				fragmentCount = ByteArray.BE.getInt(indirectBuffer, HEADER_FIELD_COUNT);
+				fragmentCount = ByteArray.getInt(indirectBuffer, HEADER_FIELD_COUNT);
 
 				fragmentPointers = new ByteArrayInputStream(indirectBuffer);
 				fragmentPointers.skip(HEADER_SIZE);
