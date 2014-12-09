@@ -3,7 +3,7 @@ package org.terifan.v1.raccoon.io;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.TreeMap;
-import org.terifan.v1.util.log.Log;
+import org.terifan.v1.util.Log;
 
 
 public class MemoryBlockDevice implements IPhysicalBlockDevice
@@ -33,7 +33,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 		{
 			if (VERBOSE)
 			{
-				Log.out.println("\twriteBlock " + aBlockIndex);
+				Log.d("\twriteBlock " + aBlockIndex);
 			}
 
 			mStorage.put(aBlockIndex, Arrays.copyOfRange(aBuffer, aBufferOffset, aBufferOffset + mBlockSize));
@@ -52,9 +52,9 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 		{
 			if (VERBOSE)
 			{
-				Log.out.println("\treadBlock  " + aBlockIndex);
+				Log.d("\treadBlock  " + aBlockIndex);
 			}
-			
+
 			byte[] block = mStorage.get(aBlockIndex);
 
 			if (block != null)

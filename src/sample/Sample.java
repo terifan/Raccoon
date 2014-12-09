@@ -4,7 +4,6 @@ import java.io.File;
 import org.terifan.v1.raccoon.Database;
 import org.terifan.v1.raccoon.Key;
 import org.terifan.v1.raccoon.OpenOption;
-import org.terifan.v1.util.log.Log;
 
 public class Sample
 {
@@ -20,7 +19,7 @@ public class Sample
 
 			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.OPEN))
 			{
-				db.list(Fruit.class).stream().forEach(Log.out::println);
+				db.list(Fruit.class).stream().forEach(System.out::println);
 			}
 		}
 		catch (Throwable e)

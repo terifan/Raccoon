@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-import org.terifan.v1.data.Varint;
+import org.terifan.v1.util.Varint;
 
 
 class RangeMap

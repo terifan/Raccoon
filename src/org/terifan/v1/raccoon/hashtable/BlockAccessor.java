@@ -13,7 +13,7 @@ import org.terifan.v1.raccoon.DatabaseException;
 import org.terifan.v1.raccoon.Node;
 import org.terifan.v1.raccoon.Stats;
 import org.terifan.v1.security.MurmurHash3;
-import org.terifan.v1.util.log.Log;
+import org.terifan.v1.util.Log;
 
 
 class BlockAccessor

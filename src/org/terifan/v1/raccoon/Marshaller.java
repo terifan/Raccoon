@@ -20,8 +20,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
-import org.terifan.v1.data.Convert;
-import org.terifan.v1.data.Varint;
+import org.terifan.v1.util.Convert;
+import org.terifan.v1.util.Varint;
 
 
 public class Marshaller

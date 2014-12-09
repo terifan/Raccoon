@@ -3,9 +3,9 @@ package org.terifan.v1.raccoon.hashtable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import org.terifan.v1.data.Varint;
+import org.terifan.v1.util.Varint;
 import org.terifan.v1.raccoon.io.IBlockDevice;
-import org.terifan.v1.io.ByteArray;
+import org.terifan.v1.util.ByteArray;
 import org.terifan.v1.security.ISAAC;
 
 

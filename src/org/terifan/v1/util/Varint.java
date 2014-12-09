@@ -1,4 +1,4 @@
-package org.terifan.v1.data;
+package org.terifan.v1.util;
 
 import java.io.IOException;
 import java.io.InputStream;

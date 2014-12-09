@@ -1,6 +1,6 @@
 package org.terifan.v1.security;
 
-import org.terifan.v1.io.ByteArray;
+import org.terifan.v1.util.ByteArray;
 
 
 /**

@@ -3,12 +3,12 @@ package org.terifan.v1.raccoon.io;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import org.terifan.v1.util.log.Log;
+import org.terifan.v1.util.Log;
 
 
 public class FileBlockDevice implements IPhysicalBlockDevice
 {
-	private final static boolean VERBOSE = false;
+	private final static boolean VERBOSE = !false;
 
 	protected RandomAccessFile mFile;
 	protected int mBlockSize;
@@ -31,7 +31,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		if (VERBOSE) Log.out.println("FileBlockDevice     readBlock " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		if (VERBOSE) Log.d("FileBlockDevice     readBlock " + aBlockIndex + " +" + aBufferLength/mBlockSize);
 
 		mFile.seek(aBlockIndex * mBlockSize);
 		mFile.readFully(aBuffer, aBufferOffset, aBufferLength);
@@ -41,7 +41,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		if (VERBOSE) Log.out.println("FileBlockDevice     writeBlock " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		if (VERBOSE) Log.d("FileBlockDevice     writeBlock " + aBlockIndex + " +" + aBufferLength/mBlockSize);
 
 		while (aBlockIndex > length())
 		{
@@ -57,7 +57,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void close() throws IOException
 	{
-		if (VERBOSE) Log.out.println("FileBlockDevice     close");
+		if (VERBOSE) Log.d("FileBlockDevice     close");
 
 		if (mFile != null)
 		{
@@ -77,7 +77,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void commit(boolean aMetadata) throws IOException
 	{
-		if (VERBOSE) Log.out.println("FileBlockDevice     commit");
+		if (VERBOSE) Log.d("FileBlockDevice     commit");
 
 		mFile.getChannel().force(aMetadata);
 	}

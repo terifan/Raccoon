@@ -1,6 +1,6 @@
 package org.terifan.v1.raccoon;
 
-import org.terifan.v1.util.log.Log;
+import org.terifan.v1.util.Log;
 
 
 public class Logger
@@ -31,7 +31,7 @@ public class Logger
 		if (mIndent < 0)
 		{
 			mIndent = 0;
-//			Log.out.println("### Negative indent in Logger");
+//			Log.i("### Negative indent in Logger");
 		}
 		logImpl(2, aMessage);
 		return this;
@@ -90,7 +90,7 @@ public class Logger
 				String methodName = trace[3].getMethodName();
 				String loggerName = mName == null ? "" : mName;
 
-				Log.out.printf("%-40s%-20s%s\n", className+"."+methodName, loggerName, message.toString());
+				System.out.printf("%-40s%-20s%s\n", className+"."+methodName, loggerName, message.toString());
 			}
 		}
 	}

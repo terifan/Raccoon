@@ -3,7 +3,7 @@ package org.terifan.v1.raccoon.hashtable;
 import org.terifan.v1.raccoon.Node;
 import java.util.Arrays;
 import org.terifan.v1.raccoon.Stats;
-import org.terifan.v1.util.log.Log;
+import org.terifan.v1.util.Log;
 
 
 public class IndexNode implements Node
@@ -183,7 +183,7 @@ public class IndexNode implements Node
 			i += bp.getRange();
 		}
 
-		Log.out.print(sb.toString());
+		Log.d(sb.toString());
 	}
 
 
