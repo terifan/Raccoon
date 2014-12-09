@@ -22,7 +22,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import org.terifan.v1.raccoon.util.ByteArray;
-import org.terifan.v1.raccoon.util.Convert;
 
 
 public class Marshaller
@@ -417,7 +416,7 @@ public class Marshaller
 		{
 			String s = (String)aValue;
 			ByteArray.putVarLong(aOutputStream, s.length());
-			aOutputStream.write(Convert.encodeUTF8(s));
+			aOutputStream.write(ByteArray.encodeUTF8(s));
 		}
 		else if (Date.class.isAssignableFrom(type))
 		{
@@ -669,7 +668,7 @@ public class Marshaller
 		}
 		if (type == String.class)
 		{
-			return Convert.decodeUTF8(aInputStream, (int)ByteArray.getVarLong(aInputStream));
+			return ByteArray.decodeUTF8(aInputStream, (int)ByteArray.getVarLong(aInputStream));
 		}
 		if (type == Date.class)
 		{
