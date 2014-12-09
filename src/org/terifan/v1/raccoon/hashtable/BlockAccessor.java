@@ -13,7 +13,6 @@ import org.terifan.v1.raccoon.DatabaseException;
 import org.terifan.v1.raccoon.Node;
 import org.terifan.v1.raccoon.Stats;
 import org.terifan.v1.security.MurmurHash3;
-import org.terifan.v1.util.Log;
 
 
 class BlockAccessor
@@ -55,7 +54,7 @@ class BlockAccessor
 		{
 			try
 			{
-				mHashTable.L.i("free block ", aBlockPointer);
+				mHashTable.Log.i("free block ", aBlockPointer);
 
 				mBlockDevice.freeBlock(aBlockPointer.getPageIndex(), aBlockPointer.getPageCount());
 				Stats.blockFree++;
@@ -74,7 +73,7 @@ class BlockAccessor
 		{
 		try
 		{
-			mHashTable.L.i("read block ", aBlockPointer);
+			mHashTable.Log.i("read block ", aBlockPointer);
 
 			byte[] buffer = new byte[mPageSize * aBlockPointer.getPageCount()];
 
@@ -164,7 +163,7 @@ class BlockAccessor
 			blockPointer.setRange(aRange);
 			blockPointer.setTransactionId((int)tx);
 
-			mHashTable.L.i("write block ", blockPointer);
+			mHashTable.Log.i("write block ", blockPointer);
 
 			return blockPointer;
 		}

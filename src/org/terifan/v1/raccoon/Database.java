@@ -21,6 +21,7 @@ import org.terifan.v1.raccoon.io.MemoryBlockDevice;
 import org.terifan.v1.raccoon.io.AccessCredentials;
 import org.terifan.v1.raccoon.hashtable.BlockPointer;
 import org.terifan.v1.raccoon.io.Streams;
+import org.terifan.v1.util.Logger;
 
 
 public class Database implements AutoCloseable
@@ -38,7 +39,7 @@ public class Database implements AutoCloseable
     private final Lock mReadLock = mReadWriteLock.readLock();
     private final Lock mWriteLock = mReadWriteLock.writeLock();
 
-	Logger L = new Logger("");
+	private Logger Log = new Logger("");
 
 
 	private Database()
@@ -130,7 +131,7 @@ public class Database implements AutoCloseable
 	{
 		Database db = new Database();
 
-		db.L.inc("create database");
+		db.Log.inc("create database");
 
 		TableType systemTableType = new TableType(Table.class);
 
@@ -141,7 +142,7 @@ public class Database implements AutoCloseable
 
 		db.commit();
 
-		db.L.dec();
+		db.Log.dec();
 
 		return db;
 	}
@@ -151,7 +152,7 @@ public class Database implements AutoCloseable
 	{
 		Database db = new Database();
 
-		db.L.inc("open database");
+		db.Log.inc("open database");
 
 		if (aBlockDevice instanceof ManagedBlockDevice)
 		{
@@ -186,7 +187,7 @@ public class Database implements AutoCloseable
 
 		db.mSystemRootBlockPointer = db.mSystemTable.getRootBlockPointer();
 
-		db.L.dec();
+		db.Log.dec();
 
 		return db;
 	}
@@ -233,7 +234,7 @@ public class Database implements AutoCloseable
 			{
 				table = new Table(this, aTableType, aDiscriminator);
 
-				L.inc("open table '" + table + "' with option " + aOptions);
+				Log.inc("open table '" + table + "' with option " + aOptions);
 
 				boolean tableExists = mSystemTable.get(table);
 
@@ -251,7 +252,7 @@ public class Database implements AutoCloseable
 
 				mOpenTables.put(aTableType, table);
 
-				L.dec();
+				Log.dec();
 			}
 
 			if (aOptions == OpenOption.CREATE_NEW)
@@ -272,13 +273,13 @@ public class Database implements AutoCloseable
 		mWriteLock.lock();
 		try
 		{
-			L.inc("commit database");
+			Log.inc("commit database");
 
 			for (Table table : mOpenTables.values())
 			{
 				if (table.commit())
 				{
-					L.i("table updated '" + table + "'");
+					Log.i("table updated '" + table + "'");
 
 					mSystemTable.save(table);
 				}
@@ -292,7 +293,7 @@ public class Database implements AutoCloseable
 
 			mSystemRootBlockPointer = mSystemTable.getRootBlockPointer();
 
-			L.dec();
+			Log.dec();
 		}
 		finally
 		{
@@ -309,7 +310,7 @@ public class Database implements AutoCloseable
 		mWriteLock.lock();
 		try
 		{
-			L.inc("rollback");
+			Log.inc("rollback");
 
 			for (Table table : mOpenTables.values())
 			{
@@ -322,7 +323,7 @@ public class Database implements AutoCloseable
 
 			mBlockDevice.rollback();
 
-			L.dec();
+			Log.dec();
 		}
 		finally
 		{
@@ -333,7 +334,7 @@ public class Database implements AutoCloseable
 
 	private void updateSuperBlock()
 	{
-		L.i("update SuperBlock");
+		Log.i("update SuperBlock");
 
 		mTransactionId++;
 
@@ -363,7 +364,7 @@ public class Database implements AutoCloseable
 		{
 			if (mSystemTable != null)
 			{
-				L.i("close database");
+				Log.i("close database");
 
 				for (Table table : mOpenTables.values())
 				{

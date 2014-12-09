@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import org.terifan.v1.util.ByteArray;
 import org.terifan.v1.security.ISAAC;
-import org.terifan.v1.util.Log;
+import org.terifan.v1.util.Logger;
 
 
 /**
@@ -51,6 +51,8 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	private int mSpaceMapLength;
 	private HashSet<Integer> mUncommitedAllocations;
 	private long mSpaceMapBlockKey;
+
+	private Logger Log = new Logger(getClass().getSimpleName());
 
 //	private HashMap<Long,LazyBlock> mLazyBlocks = new HashMap<>();
 

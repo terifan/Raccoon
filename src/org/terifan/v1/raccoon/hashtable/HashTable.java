@@ -14,7 +14,7 @@ import org.terifan.v1.raccoon.DatabaseException;
 import org.terifan.v1.security.MurmurHash3;
 import org.terifan.v1.util.Result;
 import org.terifan.v1.raccoon.LeafNode;
-import org.terifan.v1.raccoon.Logger;
+import org.terifan.v1.util.Logger;
 import static org.terifan.v1.raccoon.Node.*;
 import org.terifan.v1.raccoon.Stats;
 import org.terifan.v1.raccoon.io.Streams;
@@ -39,14 +39,14 @@ public class HashTable implements Closeable, Iterable<Entry>
 	private boolean mClosed;
 	private boolean mModified;
 
-	Logger L;
+	Logger Log;
 
 //	private HashMap<BlockPointer,LeafNode> mLeafs = new HashMap<>();
 
 
 	public HashTable(Database aDatabasea, BlockPointer aRootBlockPointer, long aHashSeed, String aName)
 	{
-		L = new Logger(aName);
+		Log = new Logger(aName);
 
 		mDatabase = aDatabasea;
 		mBlockAccessor = new BlockAccessor(this, mDatabase.getBlockDevice());
@@ -60,7 +60,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 
 		if (aRootBlockPointer == null)
 		{
-			L.inc("create table");
+			Log.inc("create table");
 
 			mCreateInstance = true;
 			mRootMap = LeafNode.alloc(mLeafSize);
@@ -68,14 +68,14 @@ public class HashTable implements Closeable, Iterable<Entry>
 		}
 		else
 		{
-			L.inc("open table");
+			Log.inc("open table");
 
 			mRootBlockPointer = new BlockPointer().decode(aRootBlockPointer.encode(new byte[BlockPointer.SIZE], 0), 0);
 
 			loadRoot();
 		}
 
-		L.dec();
+		Log.dec();
 	}
 
 
@@ -93,7 +93,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 
 	private void loadRoot()
 	{
-		L.i("load root ", mRootBlockPointer);
+		Log.i("load root ", mRootBlockPointer);
 
 		if (mRootBlockPointer.getType() == LEAF)
 		{
@@ -166,7 +166,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 		}
 
 		int modCount = ++mModCount;
-		L.d("put").inc();
+		Log.d("put").inc();
 
 		mModified = true;
 
@@ -239,7 +239,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 			Blob.removeBlob(this, result.value);
 		}
 
-		L.dec();
+		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
 		return result.inserted;
@@ -360,7 +360,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 		if (mModified)
 		{
 			int modCount = mModCount; // no increment
-			L.inc("commit table");
+			Log.inc("commit table");
 
 			mBlockAccessor.freeBlock(mRootBlockPointer);
 
@@ -373,7 +373,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 				mRootBlockPointer = mBlockAccessor.writeBlock(mRootNode, mPointersPerNode);
 			}
 
-			L.dec();
+			Log.dec();
 			assert mModCount == modCount : "concurrent modification";
 		}
 
@@ -388,7 +388,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 			throw new IllegalStateException("HashTable is closed");
 		}
 
-		L.i("rollback");
+		Log.i("rollback");
 
 		mRootNode = null;
 		mRootMap = null;
@@ -411,7 +411,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 			throw new IllegalStateException("HashTable is closed");
 		}
 
-		L.i("clear");
+		Log.i("clear");
 
 		int modCount = ++mModCount;
 		mModified = true;
@@ -465,7 +465,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 	private byte[] getValue(long aHash, int aLevel, byte[] aKey, Result<Integer> aType, IndexNode aNode)
 	{
 		Stats.getValue++;
-		L.i("get value");
+		Log.i("get value");
 
 		BlockPointer blockPointer = aNode.getPointer(aNode.findPointer(computeIndex(aHash, aLevel)));
 
@@ -485,7 +485,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 	private void putValue(byte[] aKey, int aType, byte[] aValue, long aHash, int aLevel, IndexNode aNode, PutResult aResult)
 	{
 		Stats.putValue++;
-		L.inc("put value");
+		Log.inc("put value");
 
 		int index = aNode.findPointer(computeIndex(aHash, aLevel));
 		BlockPointer blockPointer = aNode.getPointer(index);
@@ -506,7 +506,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 				break;
 		}
 
-		L.dec();
+		Log.dec();
 	}
 
 
@@ -557,7 +557,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 	private void upgradeHoleToLeaf(byte[] aKey, int aType, byte[] aValue, IndexNode aNode, BlockPointer aBlockPointer, int aIndex, PutResult aResult)
 	{
 		Stats.upgradeHoleToLeaf++;
-		L.inc("upgrade hole to leaf");
+		Log.inc("upgrade hole to leaf");
 
 		LeafNode map = LeafNode.alloc(mLeafSize);
 
@@ -565,14 +565,14 @@ public class HashTable implements Closeable, Iterable<Entry>
 
 		aNode.setPointer(aIndex, mBlockAccessor.writeBlock(map, aBlockPointer.getRange()));
 
-		L.dec();
+		Log.dec();
 	}
 
 
 	private IndexNode splitLeaf(LeafNode aMap, int aLevel)
 	{
 		Stats.splitLeaf++;
-		L.inc("split leaf");
+		Log.inc("split leaf");
 
 		LeafNode low = LeafNode.alloc(mLeafSize);
 		LeafNode high = LeafNode.alloc(mLeafSize);
@@ -600,7 +600,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 		node.setPointer(0, lowIndex);
 		node.setPointer(halfRange, highIndex);
 
-		L.dec();
+		Log.dec();
 		assert node.integrityCheck() == null : node.integrityCheck();
 
 		return node;
@@ -615,7 +615,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 		}
 
 		Stats.splitLeaf++;
-		L.inc("split leaf");
+		Log.inc("split leaf");
 
 		LeafNode low = LeafNode.alloc(mLeafSize);
 		LeafNode high = LeafNode.alloc(mLeafSize);
@@ -645,7 +645,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 
 		aNode.split(aIndex, lowIndex, highIndex);
 
-		L.dec();
+		Log.dec();
 		assert aNode.integrityCheck() == null : aNode.integrityCheck();
 
 		return true;
@@ -728,7 +728,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 
 	public String integrityCheck()
 	{
-		L.i("integrity check");
+		Log.i("integrity check");
 
 		if (mRootMap != null)
 		{

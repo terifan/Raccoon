@@ -3,7 +3,7 @@ package org.terifan.v1.raccoon.io;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.TreeMap;
-import org.terifan.v1.util.Log;
+import org.terifan.v1.util.Logger;
 
 
 public class MemoryBlockDevice implements IPhysicalBlockDevice
@@ -12,6 +12,8 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 
 	private TreeMap<Long, byte[]> mStorage = new TreeMap<>();
 	private int mBlockSize;
+
+	private Logger Log = new Logger(getClass().getSimpleName());
 
 
 	public MemoryBlockDevice(int aBlockSize)
