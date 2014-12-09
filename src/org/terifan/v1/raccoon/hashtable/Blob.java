@@ -3,7 +3,6 @@ package org.terifan.v1.raccoon.hashtable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import org.terifan.v1.util.Varint;
 import org.terifan.v1.util.ByteArray;
 import org.terifan.v1.raccoon.io.IBlockDevice;
 import org.terifan.v1.raccoon.DatabaseException;
@@ -59,8 +58,8 @@ class Blob
 			// read indirect block
 			if (fragmentCount == Blob.HEADER_INDIRECT_ESCAPE)
 			{
-				int blockIndex = (int)Varint.get(fragmentPointers);
-				int blockCount = (int)Varint.get(fragmentPointers) + 1;
+				int blockIndex = (int)ByteArray.getVarLong(fragmentPointers);
+				int blockCount = (int)ByteArray.getVarLong(fragmentPointers) + 1;
 
 				byte[] indirectBuffer = new byte[blockDevice.getBlockSize() * blockCount];
 
@@ -78,8 +77,8 @@ class Blob
 
 			for (int i = 0; i < fragmentCount; i++)
 			{
-				int blockIndex = (int)Varint.get(fragmentPointers);
-				int blockCount = (int)Varint.get(fragmentPointers) + 1;
+				int blockIndex = (int)ByteArray.getVarLong(fragmentPointers);
+				int blockCount = (int)ByteArray.getVarLong(fragmentPointers) + 1;
 
 	//			aHashTable.d("Free fragment " + (1+i) + " at " + blockIndex + " +" + blockCount);
 

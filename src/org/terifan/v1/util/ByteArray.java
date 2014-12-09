@@ -1,8 +1,146 @@
 package org.terifan.v1.util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+
+
 
 public class ByteArray
 {
+
+
+	/**
+	 * Puts a value into the buffer. The buffers position is advanced.
+	 *
+	 * @param aBuffer
+	 *   the buffer
+	 * @param aValue
+	 *   the value to store in the buffer
+	 * @return
+	 *   the buffer
+	 */
+	public static ByteBuffer putVarLong(ByteBuffer aBuffer, long aValue)
+	{
+		while (true)
+		{
+			if ((aValue & ~127L) == 0)
+			{
+				aBuffer.put((byte)aValue);
+				return aBuffer;
+			}
+			else
+			{
+				aBuffer.put((byte)(128 | (aValue & 127L)));
+				aValue >>>= 7;
+			}
+		}
+	}
+
+
+	/**
+	 * Puts a value into the buffer. The buffers position is advanced.
+	 *
+	 * @param aBuffer
+	 *   the buffer
+	 * @param aValue
+	 *   the value to store in the buffer
+	 * @return
+	 *   the buffer
+	 */
+	public static OutputStream putVarLong(OutputStream aBuffer, long aValue) throws IOException
+	{
+		while (true)
+		{
+			if ((aValue & ~127L) == 0)
+			{
+				aBuffer.write((int)aValue);
+				return aBuffer;
+			}
+			else
+			{
+				aBuffer.write((int)(128 | ((int)aValue & 127L)));
+				aValue >>>= 7;
+			}
+		}
+	}
+
+
+	/**
+	 * Gets a value from the buffer. The buffers position is advanced.
+	 *
+	 * @param aBuffer
+	 *   the buffer
+	 * @return
+	 *   the value stored
+	 */
+	public static long getVarLong(ByteBuffer aBuffer) throws IOException
+	{
+		long value = 0L;
+		for (int n = 0; n < 64; n += 7)
+		{
+			int b = aBuffer.get();
+			value |= (long)(b & 127) << n;
+			if ((b & 128) == 0)
+			{
+				return value;
+			}
+		}
+		throw new IOException();
+	}
+
+
+	/**
+	 * Gets a value from the buffer. The buffers position is advanced.
+	 *
+	 * @param aBuffer
+	 *   the buffer
+	 * @return
+	 *   the value stored
+	 */
+	public static long getVarLong(InputStream aBuffer) throws IOException
+	{
+		long value = 0L;
+		for (int n = 0; n < 64; n += 7)
+		{
+			int b = aBuffer.read();
+			if (b == -1)
+			{
+				return value;
+			}
+			value |= (long)(b & 127) << n;
+			if ((b & 128) == 0)
+			{
+				return value;
+			}
+		}
+		throw new IOException();
+	}
+
+
+	public static int encodeZigZag32(final int n)
+	{
+		return (n << 1) ^ (n >> 31);
+	}
+
+
+	public static long decodeZigZag64(final long n)
+	{
+		return (n >>> 1) ^ -(n & 1);
+	}
+
+
+	public static long encodeZigZag64(final long n)
+	{
+		return (n << 1) ^ (n >> 63);
+	}
+
+
+	public static int decodeZigZag32(final int n)
+	{
+		return (n >>> 1) ^ -(n & 1);
+	}
 	private ByteArray()
 	{
 	}

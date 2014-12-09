@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-import org.terifan.v1.util.Varint;
+import org.terifan.v1.util.ByteArray;
 
 
 class RangeMap
@@ -32,7 +32,7 @@ class RangeMap
 		int end = aOffset + aSize;
 
 		assert end > start : end+" > "+start;
-		
+
 		Integer before = mMap.floorKey(start);
 		Integer after = mMap.ceilingKey(start);
 
@@ -155,8 +155,8 @@ class RangeMap
 	{
 		return mSpace;
 	}
-	
-	
+
+
 	public synchronized int getUsedSpace()
 	{
 		return mMap.lastEntry().getValue() - mSpace;
@@ -224,27 +224,27 @@ class RangeMap
 		return sb.toString();
 	}
 
-	
+
 	public synchronized void read(InputStream aInputStream) throws IOException
 	{
 		long prev = 0;
-		
+
 		for (;;)
 		{
-			long count = Varint.get(aInputStream);
+			long count = ByteArray.getVarLong(aInputStream);
 
 			if (count == 0)
 			{
 				break;
 			}
 
-			prev += Varint.get(aInputStream);
-			
+			prev += ByteArray.getVarLong(aInputStream);
+
 			add((int)prev, (int)count);
 		}
 	}
-	
-	
+
+
 	public synchronized void write(OutputStream aOutputStream) throws IOException
 	{
 		long prev = 0;
@@ -253,8 +253,8 @@ class RangeMap
 		{
 			int index = entry.getKey();
 
-			Varint.put(aOutputStream, entry.getValue() - index);
-			Varint.put(aOutputStream, index - prev);
+			ByteArray.putVarLong(aOutputStream, entry.getValue() - index);
+			ByteArray.putVarLong(aOutputStream, index - prev);
 
 			prev = index;
 		}

@@ -3,7 +3,6 @@ package org.terifan.v1.raccoon.hashtable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import org.terifan.v1.util.Varint;
 import org.terifan.v1.util.ByteArray;
 import org.terifan.v1.raccoon.DatabaseException;
 import static org.terifan.v1.raccoon.hashtable.Blob.HEADER_FIELD_BLOCK_KEY;
@@ -46,8 +45,8 @@ class BlobInputStream extends InputStream
 			// read indirect block
 			if (mFragmentCount < 0)
 			{
-				int blockIndex = (int)Varint.get(mFragmentPointers);
-				int blockCount = (int)Varint.get(mFragmentPointers) + 1;
+				int blockIndex = (int)ByteArray.getVarLong(mFragmentPointers);
+				int blockCount = (int)ByteArray.getVarLong(mFragmentPointers) + 1;
 
 	//			mHashTable.d("Read indirect block at " + blockIndex + " +" + blockCount);
 
@@ -114,8 +113,8 @@ class BlobInputStream extends InputStream
 			throw new IOException();
 		}
 
-		int blockIndex = (int)Varint.get(mFragmentPointers);
-		int blockCount = (int)Varint.get(mFragmentPointers) + 1;
+		int blockIndex = (int)ByteArray.getVarLong(mFragmentPointers);
+		int blockCount = (int)ByteArray.getVarLong(mFragmentPointers) + 1;
 		int len = mPageSize * blockCount;
 
 		if (mBuffer.length != len)

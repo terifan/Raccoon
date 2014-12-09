@@ -3,7 +3,6 @@ package org.terifan.v1.raccoon.hashtable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import org.terifan.v1.util.Varint;
 import org.terifan.v1.raccoon.io.IBlockDevice;
 import org.terifan.v1.util.ByteArray;
 import org.terifan.v1.security.ISAAC;
@@ -92,8 +91,8 @@ class BlobOutputStream extends OutputStream
 
 				mFragmentBuffer.reset();
 
-				Varint.put(mFragmentBuffer, blockIndex);
-				Varint.put(mFragmentBuffer, blockCount - 1);
+				ByteArray.putVarLong(mFragmentBuffer, blockIndex);
+				ByteArray.putVarLong(mFragmentBuffer, blockCount - 1);
 
 				mFragmentCount = -mFragmentCount; // signal that there is a indirect block
 			}
@@ -126,8 +125,8 @@ class BlobOutputStream extends OutputStream
 
 		blockDevice.writeBlock(blockIndex, mBuffer, 0, blockCount * mBlockSize, (mTransactionId << 32) | mBlockKey);
 
-		Varint.put(mFragmentBuffer, blockIndex);
-		Varint.put(mFragmentBuffer, blockCount - 1);
+		ByteArray.putVarLong(mFragmentBuffer, blockIndex);
+		ByteArray.putVarLong(mFragmentBuffer, blockCount - 1);
 
 		mBytesWritten += len;
 		mFragmentCount++;

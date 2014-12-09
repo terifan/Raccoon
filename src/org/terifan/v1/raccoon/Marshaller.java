@@ -20,8 +20,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import org.terifan.v1.util.ByteArray;
 import org.terifan.v1.util.Convert;
-import org.terifan.v1.util.Varint;
 
 
 public class Marshaller
@@ -199,7 +199,7 @@ public class Marshaller
 
 					mLogger.i("encode "+index+" "+typeInfo);
 
-					Varint.put(out, index);
+					ByteArray.putVarLong(out, index);
 
 					if (typeInfo.array)
 					{
@@ -323,7 +323,7 @@ public class Marshaller
 	{
 		if (aTypeInfo.primitive)
 		{
-			Varint.put(aOutputStream, aLength);
+			ByteArray.putVarLong(aOutputStream, aLength);
 
 			if (aTypeInfo.type == Byte.TYPE)
 			{
@@ -367,7 +367,7 @@ public class Marshaller
 			}
 		}
 
-		Varint.put(aOutputStream, (aLength << 1) | nulls);
+		ByteArray.putVarLong(aOutputStream, (aLength << 1) | nulls);
 
 		if (nulls == 1)
 		{
@@ -390,19 +390,19 @@ public class Marshaller
 		}
 		else if (type == Short.class)
 		{
-			Varint.put(aOutputStream, Varint.encodeZigZag32((Short)aValue));
+			ByteArray.putVarLong(aOutputStream, ByteArray.encodeZigZag32((Short)aValue));
 		}
 		else if (type == Character.class)
 		{
-			Varint.put(aOutputStream, (Character)aValue);
+			ByteArray.putVarLong(aOutputStream, (Character)aValue);
 		}
 		else if (type == Integer.class)
 		{
-			Varint.put(aOutputStream, Varint.encodeZigZag32((Integer)aValue));
+			ByteArray.putVarLong(aOutputStream, ByteArray.encodeZigZag32((Integer)aValue));
 		}
 		else if (type == Long.class)
 		{
-			Varint.put(aOutputStream, Varint.encodeZigZag64((Long)aValue));
+			ByteArray.putVarLong(aOutputStream, ByteArray.encodeZigZag64((Long)aValue));
 		}
 		else if (type == Float.class)
 		{
@@ -415,12 +415,12 @@ public class Marshaller
 		else if (type == String.class)
 		{
 			String s = (String)aValue;
-			Varint.put(aOutputStream, s.length());
+			ByteArray.putVarLong(aOutputStream, s.length());
 			aOutputStream.write(Convert.encodeUTF8(s));
 		}
 		else if (Date.class.isAssignableFrom(type))
 		{
-			Varint.put(aOutputStream, ((Date)aValue).getTime());
+			ByteArray.putVarLong(aOutputStream, ((Date)aValue).getTime());
 		}
 //		else if (Bundle.class.isAssignableFrom(type))
 //		{
@@ -500,7 +500,7 @@ public class Marshaller
 			{
 				for (int counter = 0, fieldCount = mTypeDeclarations.size(), prevIndex = 0; counter < fieldCount; counter++)
 				{
-					int index = (int)Varint.get(in);
+					int index = (int)ByteArray.getVarLong(in);
 
 					if (index == 0)
 					{
@@ -644,19 +644,19 @@ public class Marshaller
 		}
 		if (type == Short.class || type == Short.TYPE)
 		{
-			return (short)Varint.decodeZigZag32((int)Varint.get(aInputStream));
+			return (short)ByteArray.decodeZigZag32((int)ByteArray.getVarLong(aInputStream));
 		}
 		if (type == Character.class || type == Character.TYPE)
 		{
-			return (char)Varint.get(aInputStream);
+			return (char)ByteArray.getVarLong(aInputStream);
 		}
 		if (type == Integer.class || type == Integer.TYPE)
 		{
-			return Varint.decodeZigZag32((int)Varint.get(aInputStream));
+			return ByteArray.decodeZigZag32((int)ByteArray.getVarLong(aInputStream));
 		}
 		if (type == Long.class || type == Long.TYPE)
 		{
-			return Varint.decodeZigZag64(Varint.get(aInputStream));
+			return ByteArray.decodeZigZag64(ByteArray.getVarLong(aInputStream));
 		}
 		if (type == Float.class || type == Float.TYPE)
 		{
@@ -668,11 +668,11 @@ public class Marshaller
 		}
 		if (type == String.class)
 		{
-			return Convert.decodeUTF8(aInputStream, (int)Varint.get(aInputStream));
+			return Convert.decodeUTF8(aInputStream, (int)ByteArray.getVarLong(aInputStream));
 		}
 		if (type == Date.class)
 		{
-			return new Date(Varint.get(aInputStream));
+			return new Date(ByteArray.getVarLong(aInputStream));
 		}
 //		if (type == Bundle.class)
 //		{
@@ -685,7 +685,7 @@ public class Marshaller
 
 	private Object readArray(FieldType aTypeInfo, int aLevel, int aDepth, DataInputStream aInputStream) throws IOException, IllegalAccessException
 	{
-		int length = (int)Varint.get(aInputStream);
+		int length = (int)ByteArray.getVarLong(aInputStream);
 
 		boolean hasNulls = false;
 		byte[] bitmap = null;
