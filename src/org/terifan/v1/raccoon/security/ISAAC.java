@@ -27,7 +27,7 @@ public final class ISAAC
 		setSeed(seedUniquifier() ^ System.nanoTime());
 	}
 
-	
+
 	/**
 	 * Constructs a new ISAAC object with a predefined seed.
 	 */
@@ -36,7 +36,7 @@ public final class ISAAC
 		setSeed(aSeed);
 	}
 
-	
+
 	public void setSeed(long aSeed)
 	{
 		int[] seed = new int[256];
@@ -52,7 +52,7 @@ public final class ISAAC
 
 		initializeState(seed);
 	}
-	
+
 
 	// code from java.util.Random
     private static long seedUniquifier()
@@ -67,7 +67,7 @@ public final class ISAAC
 			}
 		}
 	}
-    
+
 
 	private void initializeState(int[] seed)
 	{
@@ -76,7 +76,7 @@ public final class ISAAC
 		ma = mb = mc = count = 0;
 		nextNextGaussian = 0;
 		haveNextNextGaussian = false;
-	
+
 		int a, b, c, d, e, f, g, h, i;
 		a = b = c = d = e = f = g = h = 0x9e3779b9;
 
@@ -217,7 +217,7 @@ public final class ISAAC
 	/**
 	 * Returns a random integer.
 	 *
-	 * @param aMaxValue 
+	 * @param aMaxValue
 	 *   the bound on the random number to be returned. Must be positive.
 	 */
 	public int nextInt(int aMaxValue)
@@ -250,23 +250,23 @@ public final class ISAAC
 		return (((long)nextInt()) << 32) + nextInt();
 	}
 
-	
+
 	// copy from java.util.Random
-	public double nextDouble() 
+	public double nextDouble()
 	{
 		return (((long)nextInt(1 << 26) << 27) + nextInt(1 << 27)) / (double)(1L << 53);
     }
 
 
 	// copy from java.util.Random
-	public float nextFloat() 
+	public float nextFloat()
 	{
         return nextInt(1 << 24) / ((float)(1 << 24));
     }
 
 
 	// copy from java.util.Random
-    public double nextGaussian() 
+    public double nextGaussian()
 	{
 		if (haveNextNextGaussian)
 		{
@@ -289,8 +289,8 @@ public final class ISAAC
 			return v1 * multiplier;
 		}
     }
-	
-	
+
+
 	/**
 	 * Fills the buffer supplied with random bytes.
 	 */
@@ -330,18 +330,18 @@ public final class ISAAC
 		return aBuffer;
 	}
 
-	
+
 	/**
 	 * Get an integer value based on the probability of it.<p>
-	 * 
+	 *
 	 * E.g. if the probabilities {25,25,50} are provided the integer value
-	 *      0 and 1 will be returned 25% of the time each and value 2 returned  
+	 *      0 and 1 will be returned 25% of the time each and value 2 returned
 	 *      50% of the time.
-	 * 
+	 *
 	 * @param aProbabilties
-	 *    an array of probabilities, any positive values can be provided as 
+	 *    an array of probabilities, any positive values can be provided as
 	 *    these are normalized by the implementation.
-	 * @return 
+	 * @return
 	 *    an integer value ranging from 0 to the length of the provided probabilities array.
 	 */
 	public int nextProb(double ... aProbabilties)
@@ -377,7 +377,7 @@ public final class ISAAC
 
 
 		/**
-		 * @see org.terifan.v1.security.ISAAC#nextBoolean
+		 * @see org.terifan.v1.raccoon.security.ISAAC#nextBoolean
 		 */
 		public static boolean nextBoolean()
 		{
@@ -386,7 +386,7 @@ public final class ISAAC
 
 
 		/**
-		 * @see org.terifan.v1.security.ISAAC#nextByte
+		 * @see org.terifan.v1.raccoon.security.ISAAC#nextByte
 		 */
 		public static byte nextByte()
 		{
@@ -395,7 +395,7 @@ public final class ISAAC
 
 
 		/**
-		 * @see org.terifan.v1.security.ISAAC#nextInt
+		 * @see org.terifan.v1.raccoon.security.ISAAC#nextInt
 		 */
 		public static int nextInt()
 		{
@@ -405,7 +405,7 @@ public final class ISAAC
 
 		/**
 		 * @param aMaxValue the bound on the random number to be returned. Must be positive.
-		 * @see org.terifan.v1.security.ISAAC#nextInt
+		 * @see org.terifan.v1.raccoon.security.ISAAC#nextInt
 		 */
 		public static int nextInt(int aMaxValue)
 		{
@@ -414,7 +414,7 @@ public final class ISAAC
 
 
 		/**
-		 * @see org.terifan.v1.security.ISAAC#nextLong
+		 * @see org.terifan.v1.raccoon.security.ISAAC#nextLong
 		 */
 		public static long nextLong()
 		{
@@ -423,7 +423,7 @@ public final class ISAAC
 
 
 		/**
-		 * @see org.terifan.v1.security.ISAAC#nextFloat
+		 * @see org.terifan.v1.raccoon.security.ISAAC#nextFloat
 		 */
 		public static float nextFloat()
 		{
@@ -432,7 +432,7 @@ public final class ISAAC
 
 
 		/**
-		 * @see org.terifan.v1.security.ISAAC#nextDouble
+		 * @see org.terifan.v1.raccoon.security.ISAAC#nextDouble
 		 */
 		public static double nextDouble()
 		{
@@ -441,7 +441,7 @@ public final class ISAAC
 
 
 		/**
-		 * @see org.terifan.v1.security.ISAAC#nextBytes
+		 * @see org.terifan.v1.raccoon.security.ISAAC#nextBytes
 		 */
 		public static byte[] nextBytes(byte[] aBuffer)
 		{
@@ -451,7 +451,7 @@ public final class ISAAC
 
 
 		/**
-		 * @see org.terifan.v1.security.ISAAC#nextBytes
+		 * @see org.terifan.v1.raccoon.security.ISAAC#nextBytes
 		 */
 		public static byte[] nextBytes(byte[] aBuffer, int aOffset, int aLength)
 		{
@@ -461,7 +461,7 @@ public final class ISAAC
 
 
 		/**
-		 * @see org.terifan.v1.security.ISAAC#nextProb
+		 * @see org.terifan.v1.raccoon.security.ISAAC#nextProb
 		 */
 		public static int nextProb(double ... aProbabilities)
 		{

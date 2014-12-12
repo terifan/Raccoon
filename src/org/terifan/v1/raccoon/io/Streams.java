@@ -24,7 +24,7 @@ import org.w3c.dom.Node;
 
 /**
  * Utility class that simplifies stream handling. The transfer methods accept:
- * <p>
+ *
  * Input:
  * <ol>
  *  <li>java.io.InputStream</li>
@@ -49,7 +49,6 @@ import org.w3c.dom.Node;
  * <pre>
  * Streams.transfer("myfile.txt", "copy of myfile.txt"));
  * </pre>
- * </p>
  */
 public final class Streams
 {
@@ -294,8 +293,6 @@ public final class Streams
 	 *
 	 * @param aInput
 	 *   an input to read from
-	 * @param aOutput
-	 *   one or more outputs to write to
 	 * @return
 	 *   number of bytes actually transfered.
 	 */

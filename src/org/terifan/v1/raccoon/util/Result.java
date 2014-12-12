@@ -6,11 +6,11 @@ package org.terifan.v1.raccoon.util;
  *
  * E.g.
  * <pre>
- * Result<String> s = new Result<>();
+ * Result&lt;String&gt; s = new Result&lt;&gt;();
  * method(s);
  * System.out.println(s.get());
  *
- * void method(Result<String> s)
+ * void method(Result&lt;String&gt; s)
  * {
  *  s.set("Hello world");
  * }
