@@ -1,9 +1,9 @@
 package sample;
 
 import java.io.File;
-import org.terifan.v1.raccoon.Database;
-import org.terifan.v1.raccoon.Key;
-import org.terifan.v1.raccoon.OpenOption;
+import org.terifan.raccoon.Database;
+import org.terifan.raccoon.Key;
+import org.terifan.raccoon.OpenOption;
 
 public class Sample
 {
