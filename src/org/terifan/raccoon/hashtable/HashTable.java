@@ -153,6 +153,14 @@ public class HashTable implements Closeable, Iterable<Entry>
 	}
 
 
+	public synchronized boolean contains(byte[] aKey)
+	{
+		Result<Integer> type = new Result<>();
+		byte[] value = getRaw(aKey, type);
+		return value != null;
+	}
+
+
 	public synchronized boolean put(byte[] aKey, Object aValue)
 	{
 		if (mClosed)

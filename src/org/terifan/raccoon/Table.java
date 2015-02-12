@@ -109,6 +109,13 @@ class Table<T> implements Iterable<T>
 	}
 
 
+	public boolean contains(T aEntity)
+	{
+		byte[] key = getKeys(aEntity);
+		return mTableImplementation.contains(key);
+	}
+
+
 	public <T> List<T> list(Class<T> aType)
 	{
 		ArrayList<T> list = new ArrayList<>();

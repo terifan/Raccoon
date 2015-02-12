@@ -431,6 +431,31 @@ public class Database implements AutoCloseable
 
 
 	/**
+	 * Retrieves an entity.
+	 *
+	 * @return
+	 *   true if the entity was found.
+	 */
+	public boolean contains(Object aEntity) throws IOException
+	{
+		mReadLock.lock();
+		try
+		{
+			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.OPEN);
+			if (table == null)
+			{
+				return false;
+			}
+			return table.contains(aEntity);
+		}
+		finally
+		{
+			mReadLock.unlock();
+		}
+	}
+
+
+	/**
 	 * Removes the entity.
 	 *
 	 * @return
@@ -535,6 +560,11 @@ public class Database implements AutoCloseable
 			byte[] buffer;
 			try (InputStream in = table.read(aEntity))
 			{
+				if (in == null)
+				{
+					return null;
+				}
+
 				buffer = Streams.fetch(in);
 			}
 
