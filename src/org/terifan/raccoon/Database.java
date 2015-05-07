@@ -526,15 +526,15 @@ public class Database implements AutoCloseable
 
 
 	/**
-	 * Save the contents of the stream with the key is defined by the entity provided.
+	 * Save the contents of the stream with the key defined by the entity provided.
 	 */
-	public boolean save(Object aEntity, InputStream aInputStream) throws IOException
+	public boolean save(Object aKeyEntity, InputStream aInputStream) throws IOException
 	{
 		mWriteLock.lock();
 		try
 		{
-			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.CREATE);
-			return table.save(aEntity, aInputStream);
+			Table table = openTable(aKeyEntity.getClass(), aKeyEntity, OpenOption.CREATE);
+			return table.save(aKeyEntity, aInputStream);
 		}
 		finally
 		{
