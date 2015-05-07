@@ -271,6 +271,9 @@ public class Database implements AutoCloseable
 	public void commit() throws IOException
 	{
 		mWriteLock.lock();
+
+		boolean changed = false;
+
 		try
 		{
 			Log.inc("commit database");
@@ -281,17 +284,22 @@ public class Database implements AutoCloseable
 				{
 					Log.i("table updated '" + table + "'");
 
+					changed = true;
+
 					mSystemTable.save(table);
 				}
 			}
 
-			mSystemTable.commit();
+			if (changed)
+			{
+				mSystemTable.commit();
 
-			updateSuperBlock();
+				updateSuperBlock();
 
-			mBlockDevice.commit();
+				mBlockDevice.commit();
 
-			mSystemRootBlockPointer = mSystemTable.getRootBlockPointer();
+				mSystemRootBlockPointer = mSystemTable.getRootBlockPointer();
+			}
 
 			Log.dec();
 		}

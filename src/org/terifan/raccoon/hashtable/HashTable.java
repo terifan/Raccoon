@@ -358,34 +358,43 @@ public class HashTable implements Closeable, Iterable<Entry>
 	}
 
 
-	public synchronized void commit()
+	public synchronized boolean commit()
 	{
 		if (mClosed)
 		{
 			throw new IllegalStateException("HashTable is closed");
 		}
 
-		if (mModified)
+		try
 		{
-			int modCount = mModCount; // no increment
-			Log.inc("commit table");
-
-			mBlockAccessor.freeBlock(mRootBlockPointer);
-
-			if (mRootMap != null)
+			if (mModified)
 			{
-				mRootBlockPointer = mBlockAccessor.writeBlock(mRootMap, mPointersPerNode);
-			}
-			else
-			{
-				mRootBlockPointer = mBlockAccessor.writeBlock(mRootNode, mPointersPerNode);
+				int modCount = mModCount; // no increment
+				Log.inc("commit table");
+
+				mBlockAccessor.freeBlock(mRootBlockPointer);
+
+				if (mRootMap != null)
+				{
+					mRootBlockPointer = mBlockAccessor.writeBlock(mRootMap, mPointersPerNode);
+				}
+				else
+				{
+					mRootBlockPointer = mBlockAccessor.writeBlock(mRootNode, mPointersPerNode);
+				}
+
+				Log.dec();
+				assert mModCount == modCount : "concurrent modification";
+
+				return true;
 			}
 
-			Log.dec();
-			assert mModCount == modCount : "concurrent modification";
+			return false;
 		}
-
-		mCreateInstance = false;
+		finally
+		{
+			mCreateInstance = false;
+		}
 	}
 
 

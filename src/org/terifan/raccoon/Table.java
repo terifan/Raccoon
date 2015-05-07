@@ -181,7 +181,10 @@ class Table<T> implements Iterable<T>
 
 	boolean commit() throws IOException
 	{
-		mTableImplementation.commit();
+		if (!mTableImplementation.commit())
+		{
+			return false;
+		}
 
 		byte[] pointer = mTableImplementation.getRootBlockPointer().encode(new byte[BlockPointer.SIZE], 0);
 
