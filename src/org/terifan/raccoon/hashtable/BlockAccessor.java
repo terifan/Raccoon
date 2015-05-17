@@ -18,7 +18,7 @@ import org.terifan.raccoon.security.MurmurHash3;
 class BlockAccessor
 {
 	private final static int CHECKSUM_HASH_SEED = 0x26e54d19;
-	private final static int[] DEFLATER_LEVELS = {1,5,9};
+	private final static int[] DEFLATER_LEVELS = {0,1,5,9};
 
 	private IBlockDevice mBlockDevice;
 	private HashTable mHashTable;
@@ -32,7 +32,7 @@ class BlockAccessor
 		mBlockDevice = aBlockDevice;
 		mPageSize = mBlockDevice.getBlockSize();
 
-		mCompression = 0;
+		mCompression = 1;
 	}
 
 
@@ -128,7 +128,7 @@ class BlockAccessor
 			if (mCompression > 0)
 			{
 				ByteArrayOutputStream baos = new ByteArrayOutputStream(buffer.length);
-				try (DeflaterOutputStream dis = new DeflaterOutputStream(baos, new Deflater(DEFLATER_LEVELS[mCompression - 1])))
+				try (DeflaterOutputStream dis = new DeflaterOutputStream(baos, new Deflater(DEFLATER_LEVELS[mCompression])))
 				{
 					dis.write(buffer);
 				}
