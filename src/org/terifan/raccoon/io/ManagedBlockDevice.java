@@ -68,7 +68,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 	private void init() throws IOException
 	{
-		if (VERBOSE) Log.d("ManagedBlockDevice  init " + mWasCreated);
+		if (VERBOSE) Log.v("ManagedBlockDevice  init " + mWasCreated);
 
 		if (mWasCreated)
 		{
@@ -145,7 +145,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 			return -1;
 		}
 
-		if (VERBOSE) Log.d("ManagedBlockDevice  allocBlock " + blockIndex + " +" + aBlockCount);
+		if (VERBOSE) Log.v("ManagedBlockDevice  allocBlock " + blockIndex + " +" + aBlockCount);
 
 		mModified = true;
 
@@ -188,7 +188,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	@Override
 	public synchronized void freeBlock(long aBlockIndex, int aBlockCount) throws IOException
 	{
-		if (VERBOSE) Log.d("ManagedBlockDevice  freeBlock " + aBlockIndex + " +" + aBlockCount);
+		if (VERBOSE) Log.v("ManagedBlockDevice  freeBlock " + aBlockIndex + " +" + aBlockCount);
 
 		mModified = true;
 
@@ -216,7 +216,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
 		}
 
-		if (VERBOSE) Log.d("ManagedBlockDevice  writeBlock " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		if (VERBOSE) Log.v("ManagedBlockDevice  writeBlock " + aBlockIndex + " +" + aBufferLength/mBlockSize);
 
 		mModified = true;
 
@@ -232,7 +232,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
 		}
 
-		if (VERBOSE) Log.d("ManagedBlockDevice  readBlock " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		if (VERBOSE) Log.v("ManagedBlockDevice  readBlock " + aBlockIndex + " +" + aBufferLength/mBlockSize);
 
 		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 	}
@@ -243,7 +243,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	{
 		if (mModified)
 		{
-			if (VERBOSE) Log.d("ManagedBlockDevice  commit");
+			if (VERBOSE) Log.v("ManagedBlockDevice  commit");
 
 			writeSpaceMap();
 
@@ -266,7 +266,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	{
 		if (mModified)
 		{
-			if (VERBOSE) Log.d("ManagedBlockDevice  rollback");
+			if (VERBOSE) Log.v("ManagedBlockDevice  rollback");
 
 			mUncommitedAllocations.clear();
 
@@ -281,7 +281,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 	private void readSuperBlock() throws IOException
 	{
-		if (VERBOSE) Log.d("ManagedBlockDevice  readSuperBlock");
+		if (VERBOSE) Log.v("ManagedBlockDevice  readSuperBlock");
 
 		byte[] bufferOne = new byte[mBlockSize];
 		byte[] bufferTwo = new byte[mBlockSize];
@@ -316,7 +316,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 	private synchronized void writeSuperBlock() throws IOException
 	{
-		if (VERBOSE) Log.d("ManagedBlockDevice  writeSuperBlock");
+		if (VERBOSE) Log.v("ManagedBlockDevice  writeSuperBlock");
 
 		mSuperBlockVersion++;
 
@@ -333,7 +333,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 	private void readSpaceMap() throws IOException
 	{
-		if (VERBOSE) Log.d("ManagedBlockDevice  readSpaceMap " + mSpaceMapBlockIndex + " +" + mSpaceMapBlockCount + " (" + mSpaceMapLength + ")");
+		if (VERBOSE) Log.v("ManagedBlockDevice  readSpaceMap " + mSpaceMapBlockIndex + " +" + mSpaceMapBlockCount + " (" + mSpaceMapLength + ")");
 
 		mRangeMap = new RangeMap();
 
@@ -362,7 +362,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 	private void writeSpaceMap() throws IOException
 	{
-		if (VERBOSE) Log.d("ManagedBlockDevice  writeSpaceMap");
+		if (VERBOSE) Log.v("ManagedBlockDevice  writeSpaceMap");
 
 		if (mSpaceMapBlockCount > 0)
 		{
@@ -445,7 +445,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 	public void setExtraData(byte[] aExtraData)
 	{
-		if (VERBOSE) Log.d("ManagedBlockDevice  setExtraData");
+		if (VERBOSE) Log.v("ManagedBlockDevice  setExtraData");
 
 		mModified = true;
 

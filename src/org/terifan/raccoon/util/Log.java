@@ -24,6 +24,12 @@ public class Log
 	}
 
 
+	public static void s(Object... aMessage)
+	{
+		logImpl(0, aMessage);
+	}
+
+
 	public static void e(Object... aMessage)
 	{
 		logImpl(1, aMessage);
@@ -42,15 +48,21 @@ public class Log
 	}
 
 
-	public static void d(Object... aMessage)
+	public static void v(Object... aMessage)
 	{
 		logImpl(4, aMessage);
 	}
 
 
+	public static void d(Object... aMessage)
+	{
+		logImpl(5, aMessage);
+	}
+
+
 	private static void logImpl(int aLevel, Object... aMessage)
 	{
-		if (aLevel < LEVEL)
+		if (aLevel <= LEVEL)
 		{
 			if (aMessage != null && aMessage.length > 0)
 			{
@@ -72,7 +84,19 @@ public class Log
 				String methodName = trace[3].getMethodName();
 				String loggerName = trace[3].getFileName() + ":" + trace[3].getLineNumber();
 
-				System.out.printf("%-30s%-30s%-30s%s\n", loggerName, className, methodName, message.toString());
+				String type;
+				switch (aLevel)
+				{
+					case 0: type = "SEVERE"; break;
+					case 1: type = "ERROR"; break;
+					case 2: type = "WARN"; break;
+					case 3: type = "INFO"; break;
+					case 4: type = "VERBOS"; break;
+					case 5: type = "DEBUG"; break;
+					default: type = ""; break;
+				}
+
+				System.out.printf("%-30s%-30s%-30s%-6s %s\n", loggerName, className, methodName, type, message.toString());
 			}
 		}
 	}

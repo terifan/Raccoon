@@ -33,7 +33,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 		{
 			if (VERBOSE)
 			{
-				Log.d("\twriteBlock " + aBlockIndex);
+				Log.v("\twriteBlock " + aBlockIndex);
 			}
 
 			mStorage.put(aBlockIndex, Arrays.copyOfRange(aBuffer, aBufferOffset, aBufferOffset + mBlockSize));
@@ -52,7 +52,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 		{
 			if (VERBOSE)
 			{
-				Log.d("\treadBlock  " + aBlockIndex);
+				Log.v("\treadBlock  " + aBlockIndex);
 			}
 
 			byte[] block = mStorage.get(aBlockIndex);

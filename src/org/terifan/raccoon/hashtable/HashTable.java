@@ -211,7 +211,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 
 		if (mRootMap != null)
 		{
-			Log.i("put root value");
+			Log.v("put root value");
 
 			mRootMap.put(type, aKey, value, result);
 
@@ -276,7 +276,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 
 	private void upgradeRootLeafToNode()
 	{
-		Log.d("upgrade root leaf to node");
+		Log.v("upgrade root leaf to node");
 
 		mRootNode = splitLeaf(mRootMap, 0);
 
@@ -521,7 +521,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 	private void putValue(byte[] aKey, int aType, byte[] aValue, long aHash, int aLevel, IndexNode aNode, PutResult aResult)
 	{
 		Stats.putValue++;
-		Log.i("put value");
+		Log.v("put value");
 		Log.inc();
 
 		int index = aNode.findPointer(computeIndex(aHash, aLevel));
@@ -594,7 +594,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 	private void upgradeHoleToLeaf(byte[] aKey, int aType, byte[] aValue, IndexNode aNode, BlockPointer aBlockPointer, int aIndex, PutResult aResult)
 	{
 		Stats.upgradeHoleToLeaf++;
-		Log.i("upgrade hole to leaf");
+		Log.v("upgrade hole to leaf");
 		Log.inc();
 
 		LeafNode map = LeafNode.alloc(mLeafSize);
@@ -611,7 +611,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 	{
 		Stats.splitLeaf++;
 		Log.inc();
-		Log.i("split leaf");
+		Log.v("split leaf");
 
 		LeafNode low = LeafNode.alloc(mLeafSize);
 		LeafNode high = LeafNode.alloc(mLeafSize);
@@ -655,7 +655,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 
 		Stats.splitLeaf++;
 		Log.inc();
-		Log.i("split leaf");
+		Log.v("split leaf");
 
 		LeafNode low = LeafNode.alloc(mLeafSize);
 		LeafNode high = LeafNode.alloc(mLeafSize);

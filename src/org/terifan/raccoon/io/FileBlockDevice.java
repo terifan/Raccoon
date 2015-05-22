@@ -29,7 +29,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		Log.d("read block " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		Log.v("read block " + aBlockIndex + " +" + aBufferLength/mBlockSize);
 
 		mFile.seek(aBlockIndex * mBlockSize);
 		mFile.readFully(aBuffer, aBufferOffset, aBufferLength);
@@ -39,7 +39,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		Log.d("write block " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		Log.v("write block " + aBlockIndex + " +" + aBufferLength/mBlockSize);
 
 		while (aBlockIndex > length())
 		{
@@ -55,7 +55,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void close() throws IOException
 	{
-		Log.d("close");
+		Log.v("close");
 
 		if (mFile != null)
 		{
@@ -75,7 +75,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void commit(boolean aMetadata) throws IOException
 	{
-		Log.d("commit");
+		Log.v("commit");
 
 		mFile.getChannel().force(aMetadata);
 	}

@@ -78,7 +78,7 @@ class Marshaller
 
 	private Object createTypeDeclarations()
 	{
-		Log.d("create type declarations");
+		Log.v("create type declarations");
 		Log.inc();
 
 		mTypeDeclarations = new TreeMap<>();
@@ -130,7 +130,7 @@ class Marshaller
 				mHasDiscriminiators = true;
 			}
 
-			Log.i("type found: "+index+" "+typeInfo);
+			Log.v("type found: "+index+" "+typeInfo);
 
 			index++;
 		}
@@ -156,7 +156,7 @@ class Marshaller
 
 		try
 		{
-			Log.d("marshal entity fields " + aFieldCategory);
+			Log.v("marshal entity fields " + aFieldCategory);
 			Log.inc();
 
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -180,7 +180,7 @@ class Marshaller
 						continue;
 					}
 
-					Log.d("encode "+index+" "+typeInfo);
+					Log.v("encode "+index+" "+typeInfo);
 
 					ByteArray.putVarLong(out, index);
 
@@ -477,7 +477,7 @@ class Marshaller
 	{
 		try
 		{
-			Log.d("unmarshal entity");
+			Log.v("unmarshal entity");
 			Log.inc();
 
 			try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(aBuffer)))
@@ -502,7 +502,7 @@ class Marshaller
 					Field field = mFields.get(typeInfo.name);
 					Object value;
 
-					Log.d("decode "+index+" "+typeInfo);
+					Log.v("decode "+index+" "+typeInfo);
 
 					switch (typeInfo.code)
 					{
@@ -512,7 +512,7 @@ class Marshaller
 						case 2:
 							value = readArray(typeInfo, 1, typeInfo.depth, in);
 							Log.inc();
-							Log.d("decoded array: " + typeInfo.type+"["+Array.getLength(value)+"]");
+							Log.v("decoded array: " + typeInfo.type+"["+Array.getLength(value)+"]");
 							Log.dec();
 							break;
 						case 3:

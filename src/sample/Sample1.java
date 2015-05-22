@@ -13,11 +13,14 @@ public class Sample1
 	{
 		try
 		{
-			Log.LEVEL = 10;
+			Log.LEVEL = 4;
 
 			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.CREATE_NEW))
 			{
-				db.save(new Item("test", "test"));
+				db.save(new Item("test1", new String(new byte[7000])));
+				db.save(new Item("test2", new String(new byte[7000])));
+				db.save(new Item("test3", new String(new byte[7000])));
+				db.save(new Item("test4", new String(new byte[7000])));
 				db.commit();
 			}
 		}

@@ -55,7 +55,7 @@ class BlockAccessor
 		{
 			try
 			{
-				Log.i("free block ", aBlockPointer);
+				Log.v("free block ", aBlockPointer);
 
 				mBlockDevice.freeBlock(aBlockPointer.getPageIndex(), aBlockPointer.getPageCount());
 				Stats.blockFree++;
@@ -74,7 +74,7 @@ class BlockAccessor
 		{
 		try
 		{
-			Log.i("read block ", aBlockPointer);
+			Log.v("read block ", aBlockPointer);
 
 			byte[] buffer = new byte[mPageSize * aBlockPointer.getPageCount()];
 
@@ -164,7 +164,7 @@ class BlockAccessor
 			blockPointer.setRange(aRange);
 			blockPointer.setTransactionId((int)tx);
 
-			Log.i("write block ", blockPointer);
+			Log.v("write block ", blockPointer);
 
 			return blockPointer;
 		}

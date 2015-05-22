@@ -37,7 +37,7 @@ class Table<T> implements Iterable<T>
 
 		if (aDiscriminator != null)
 		{
-			Log.i("find discriminator");
+			Log.v("find discriminator");
 			Log.inc();
 
 			mDiscriminator = mTableType.getMarshaller().marshal(aDiscriminator, MarshallerFieldCategory.DISCRIMINATOR);
