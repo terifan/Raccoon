@@ -57,7 +57,8 @@ public class HashTable implements Closeable, Iterable<Entry>
 
 		if (aRootBlockPointer == null)
 		{
-			Log.inc("create table");
+			Log.i("create table");
+			Log.inc();
 
 			mCreateInstance = true;
 			mRootMap = LeafNode.alloc(mLeafSize);
@@ -65,7 +66,8 @@ public class HashTable implements Closeable, Iterable<Entry>
 		}
 		else
 		{
-			Log.inc("open table");
+			Log.i("open table");
+			Log.inc();
 
 			mRootBlockPointer = new BlockPointer().decode(aRootBlockPointer.encode(new byte[BlockPointer.SIZE], 0), 0);
 
@@ -171,7 +173,8 @@ public class HashTable implements Closeable, Iterable<Entry>
 		}
 
 		int modCount = ++mModCount;
-		Log.inc("put");
+		Log.i("put");
+		Log.inc();
 
 		mModified = true;
 
@@ -371,7 +374,8 @@ public class HashTable implements Closeable, Iterable<Entry>
 			if (mModified)
 			{
 				int modCount = mModCount; // no increment
-				Log.inc("commit table");
+				Log.i("commit table");
+				Log.inc();
 
 				mBlockAccessor.freeBlock(mRootBlockPointer);
 
@@ -517,7 +521,8 @@ public class HashTable implements Closeable, Iterable<Entry>
 	private void putValue(byte[] aKey, int aType, byte[] aValue, long aHash, int aLevel, IndexNode aNode, PutResult aResult)
 	{
 		Stats.putValue++;
-		Log.inc("put value");
+		Log.i("put value");
+		Log.inc();
 
 		int index = aNode.findPointer(computeIndex(aHash, aLevel));
 		BlockPointer blockPointer = aNode.getPointer(index);
@@ -589,7 +594,8 @@ public class HashTable implements Closeable, Iterable<Entry>
 	private void upgradeHoleToLeaf(byte[] aKey, int aType, byte[] aValue, IndexNode aNode, BlockPointer aBlockPointer, int aIndex, PutResult aResult)
 	{
 		Stats.upgradeHoleToLeaf++;
-		Log.inc("upgrade hole to leaf");
+		Log.i("upgrade hole to leaf");
+		Log.inc();
 
 		LeafNode map = LeafNode.alloc(mLeafSize);
 
@@ -604,7 +610,8 @@ public class HashTable implements Closeable, Iterable<Entry>
 	private IndexNode splitLeaf(LeafNode aMap, int aLevel)
 	{
 		Stats.splitLeaf++;
-		Log.inc("split leaf");
+		Log.inc();
+		Log.i("split leaf");
 
 		LeafNode low = LeafNode.alloc(mLeafSize);
 		LeafNode high = LeafNode.alloc(mLeafSize);
@@ -647,7 +654,8 @@ public class HashTable implements Closeable, Iterable<Entry>
 		}
 
 		Stats.splitLeaf++;
-		Log.inc("split leaf");
+		Log.inc();
+		Log.i("split leaf");
 
 		LeafNode low = LeafNode.alloc(mLeafSize);
 		LeafNode high = LeafNode.alloc(mLeafSize);

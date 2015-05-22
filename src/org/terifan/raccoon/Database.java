@@ -129,7 +129,8 @@ public class Database implements AutoCloseable
 	{
 		Database db = new Database();
 
-		Log.inc("create database");
+		Log.i("create database");
+		Log.inc();
 
 		TableType systemTableType = new TableType(Table.class);
 
@@ -150,7 +151,8 @@ public class Database implements AutoCloseable
 	{
 		Database db = new Database();
 
-		Log.inc("open database");
+		Log.i("open database");
+		Log.inc();
 
 		if (aBlockDevice instanceof ManagedBlockDevice)
 		{
@@ -232,7 +234,8 @@ public class Database implements AutoCloseable
 			{
 				table = new Table(this, aTableType, aDiscriminator);
 
-				Log.inc("open table '" + table + "' with option " + aOptions);
+				Log.i("open table '" + table + "' with option " + aOptions);
+				Log.inc();
 
 				boolean tableExists = mSystemTable.get(table);
 
@@ -274,7 +277,8 @@ public class Database implements AutoCloseable
 
 		try
 		{
-			Log.inc("commit database");
+			Log.i("commit database");
+			Log.inc();
 
 			for (Table table : mOpenTables.values())
 			{
@@ -316,7 +320,8 @@ public class Database implements AutoCloseable
 		mWriteLock.lock();
 		try
 		{
-			Log.inc("rollback");
+			Log.i("rollback");
+			Log.inc();
 
 			for (Table table : mOpenTables.values())
 			{

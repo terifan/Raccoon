@@ -37,7 +37,8 @@ class Table<T> implements Iterable<T>
 
 		if (aDiscriminator != null)
 		{
-			Log.inc("find discriminator");
+			Log.i("find discriminator");
+			Log.inc();
 
 			mDiscriminator = mTableType.getMarshaller().marshal(aDiscriminator, MarshallerFieldCategory.DISCRIMINATOR);
 
@@ -53,7 +54,8 @@ class Table<T> implements Iterable<T>
 
 	Table open(BlockPointer aBlockPointer) throws IOException
 	{
-		Log.inc("open table");
+		Log.i("open table");
+		Log.inc();
 
 		if (aBlockPointer == null && mPointer != null)
 		{
@@ -93,7 +95,8 @@ class Table<T> implements Iterable<T>
 
 	public boolean save(T aEntity)
 	{
-		Log.inc("save entity");
+		Log.i("save entity");
+		Log.inc();
 
 		byte[] key = getKeys(aEntity);
 		byte[] value = getValues(aEntity);
@@ -107,7 +110,8 @@ class Table<T> implements Iterable<T>
 
 	public boolean get(T aEntity)
 	{
-		Log.inc("get entity");
+		Log.i("get entity");
+		Log.inc();
 
 		byte[] key = getKeys(aEntity);
 		byte[] value = mTableImplementation.get(key);
@@ -137,7 +141,7 @@ class Table<T> implements Iterable<T>
 	public <T> List<T> list(Class<T> aType)
 	{
 		ArrayList<T> list = new ArrayList<>();
-		iterator().forEachRemaining(e->list.add((T)e));
+		iterator().forEachRemaining(e -> list.add((T)e));
 		return list;
 	}
 

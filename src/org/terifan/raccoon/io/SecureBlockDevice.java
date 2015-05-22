@@ -1,20 +1,14 @@
 package org.terifan.raccoon.io;
 
 import java.io.IOException;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.zip.CRC32;
-import org.terifan.raccoon.security.HMAC;
 import org.terifan.raccoon.security.InvalidKeyException;
-import org.terifan.raccoon.security.SHA512;
-import org.terifan.raccoon.security.Skein512;
-import org.terifan.raccoon.security.Whirlpool;
 import org.terifan.raccoon.security.AES;
 import org.terifan.raccoon.security.Cipher;
 import org.terifan.raccoon.security.Elephant;
-import org.terifan.raccoon.security.PBKDF2;
 import org.terifan.raccoon.security.SecretKey;
 import org.terifan.raccoon.security.Serpent;
 import org.terifan.raccoon.security.Twofish;

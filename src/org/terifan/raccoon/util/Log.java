@@ -7,57 +7,50 @@ public class Log
 {
 	public final static PrintStream out = System.out;
 
-	public static int LEVEL = 10;
+	public static int LEVEL = 0;
 
 	private static int mIndent;
 
 
-	public static void inc(Object... aMessage)
+	public static void inc()
 	{
-		logImpl(2, aMessage);
 		mIndent++;
 	}
 
 
-	public static void dec(Object... aMessage)
+	public static void dec()
 	{
 		mIndent--;
-		if (mIndent < 0)
-		{
-			Log.out.println("too many dec");
-			mIndent = 0;
-		}
-		logImpl(2, aMessage);
-	}
-
-
-	public static void w(Object... aMessage)
-	{
-		logImpl(3, aMessage);
 	}
 
 
 	public static void e(Object... aMessage)
 	{
-		logImpl(4, aMessage);
+		logImpl(1, aMessage);
 	}
 
 
-	public static void i(Object... aMessage)
+	public static void w(Object... aMessage)
 	{
 		logImpl(2, aMessage);
 	}
 
 
+	public static void i(Object... aMessage)
+	{
+		logImpl(3, aMessage);
+	}
+
+
 	public static void d(Object... aMessage)
 	{
-		logImpl(1, aMessage);
+		logImpl(4, aMessage);
 	}
 
 
 	private static void logImpl(int aLevel, Object... aMessage)
 	{
-		if (aLevel > LEVEL)
+		if (aLevel < LEVEL)
 		{
 			if (aMessage != null && aMessage.length > 0)
 			{

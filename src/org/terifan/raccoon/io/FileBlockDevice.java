@@ -8,8 +8,6 @@ import org.terifan.raccoon.util.Log;
 
 public class FileBlockDevice implements IPhysicalBlockDevice
 {
-	private final static boolean VERBOSE = !false;
-
 	protected RandomAccessFile mFile;
 	protected int mBlockSize;
 
@@ -31,7 +29,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		if (VERBOSE) Log.d("FileBlockDevice     readBlock " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		Log.d("read block " + aBlockIndex + " +" + aBufferLength/mBlockSize);
 
 		mFile.seek(aBlockIndex * mBlockSize);
 		mFile.readFully(aBuffer, aBufferOffset, aBufferLength);
@@ -41,7 +39,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		if (VERBOSE) Log.d("FileBlockDevice     writeBlock " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		Log.d("write block " + aBlockIndex + " +" + aBufferLength/mBlockSize);
 
 		while (aBlockIndex > length())
 		{
@@ -57,7 +55,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void close() throws IOException
 	{
-		if (VERBOSE) Log.d("FileBlockDevice     close");
+		Log.d("close");
 
 		if (mFile != null)
 		{
@@ -77,7 +75,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void commit(boolean aMetadata) throws IOException
 	{
-		if (VERBOSE) Log.d("FileBlockDevice     commit");
+		Log.d("commit");
 
 		mFile.getChannel().force(aMetadata);
 	}

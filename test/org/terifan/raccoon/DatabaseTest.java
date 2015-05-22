@@ -16,7 +16,7 @@ public class DatabaseTest
 {
 	public DatabaseTest()
 	{
-		Log.LEVEL = 10;
+		Log.LEVEL = 0;
 	}
 
 

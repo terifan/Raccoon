@@ -78,7 +78,8 @@ class Marshaller
 
 	private Object createTypeDeclarations()
 	{
-		Log.inc("create type declarations");
+		Log.d("create type declarations");
+		Log.inc();
 
 		mTypeDeclarations = new TreeMap<>();
 
@@ -155,7 +156,8 @@ class Marshaller
 
 		try
 		{
-			Log.inc("marshal entity fields " + aFieldCategory);
+			Log.d("marshal entity fields " + aFieldCategory);
+			Log.inc();
 
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			try (DataOutputStream out = new DataOutputStream(baos))
@@ -178,7 +180,7 @@ class Marshaller
 						continue;
 					}
 
-					Log.i("encode "+index+" "+typeInfo);
+					Log.d("encode "+index+" "+typeInfo);
 
 					ByteArray.putVarLong(out, index);
 
@@ -475,7 +477,8 @@ class Marshaller
 	{
 		try
 		{
-			Log.inc("unmarshal entity");
+			Log.d("unmarshal entity");
+			Log.inc();
 
 			try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(aBuffer)))
 			{
@@ -499,7 +502,7 @@ class Marshaller
 					Field field = mFields.get(typeInfo.name);
 					Object value;
 
-					Log.i("decode "+index+" "+typeInfo);
+					Log.d("decode "+index+" "+typeInfo);
 
 					switch (typeInfo.code)
 					{

@@ -11,7 +11,7 @@ public class DatabaseLowLevelTest
 {
 	public DatabaseLowLevelTest()
 	{
-		Log.LEVEL = 0;
+		Log.LEVEL = 10;
 	}
 
 
