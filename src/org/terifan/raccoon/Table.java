@@ -1,9 +1,7 @@
 package org.terifan.raccoon;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.security.SecureRandom;
@@ -13,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.terifan.raccoon.hashtable.BlockPointer;
 import org.terifan.raccoon.hashtable.HashTable;
+import org.terifan.raccoon.util.Log;
 
 
 class Table<T> implements Iterable<T>
@@ -38,18 +37,24 @@ class Table<T> implements Iterable<T>
 
 		if (aDiscriminator != null)
 		{
-			mDiscriminator = mTableType.getMarshaller().marshal(aDiscriminator, Marshaller.Category.DISCRIMINATOR);
+			Log.inc("find discriminator");
+
+			mDiscriminator = mTableType.getMarshaller().marshal(aDiscriminator, MarshallerFieldCategory.DISCRIMINATOR);
 
 			if (mDiscriminator.length == 0)
 			{
 				mDiscriminator = null;
 			}
+
+			Log.dec();
 		}
 	}
 
 
 	Table open(BlockPointer aBlockPointer) throws IOException
 	{
+		Log.inc("open table");
+
 		if (aBlockPointer == null && mPointer != null)
 		{
 			aBlockPointer = new BlockPointer().decode(mPointer, 0);
@@ -80,30 +85,43 @@ class Table<T> implements Iterable<T>
 
 		mTableImplementation = new HashTable(mDatabase, aBlockPointer, mHashSeed, mName);
 
+		Log.dec();
+
 		return this;
 	}
 
 
 	public boolean save(T aEntity)
 	{
+		Log.inc("save entity");
+
 		byte[] key = getKeys(aEntity);
 		byte[] value = getValues(aEntity);
+		boolean b = mTableImplementation.put(key, value);
 
-		return mTableImplementation.put(key, value);
+		Log.dec();
+
+		return b;
 	}
 
 
 	public boolean get(T aEntity)
 	{
+		Log.inc("get entity");
+
 		byte[] key = getKeys(aEntity);
 		byte[] value = mTableImplementation.get(key);
 
 		if (value == null)
 		{
+			Log.dec();
+
 			return false;
 		}
 
 		update(aEntity, value);
+
+		Log.dec();
 
 		return true;
 	}
@@ -222,19 +240,19 @@ class Table<T> implements Iterable<T>
 
 	byte[] getDiscriminators(Object aInput)
 	{
-		return mTableType.getMarshaller().marshal(aInput, Marshaller.Category.DISCRIMINATOR);
+		return mTableType.getMarshaller().marshal(aInput, MarshallerFieldCategory.DISCRIMINATOR);
 	}
 
 
 	byte[] getKeys(Object aInput)
 	{
-		return mTableType.getMarshaller().marshal(aInput, Marshaller.Category.KEY);
+		return mTableType.getMarshaller().marshal(aInput, MarshallerFieldCategory.KEY);
 	}
 
 
 	byte[] getValues(Object aInput)
 	{
-		return mTableType.getMarshaller().marshal(aInput, Marshaller.Category.VALUE);
+		return mTableType.getMarshaller().marshal(aInput, MarshallerFieldCategory.VALUE);
 	}
 
 

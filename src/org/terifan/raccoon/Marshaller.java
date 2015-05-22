@@ -1,6 +1,5 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.util.Logger;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -22,38 +21,17 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import org.terifan.raccoon.util.ByteArray;
+import org.terifan.raccoon.util.Log;
 
 
-public class Marshaller
+class Marshaller
 {
 	private final static Class[] PRIMITIVE_TYPES = new Class[]{Boolean.TYPE, Byte.TYPE, Short.TYPE, Character.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE};
 
 	private HashMap<String, Field> mFields;
 	private TreeMap<Integer,FieldType> mTypeDeclarations;
 	private MarshallerListener mListener;
-	private Logger mLogger;
 	private boolean mHasDiscriminiators;
-
-	public enum Category
-	{
-		KEY,
-		DISCRIMINATOR,
-		VALUE;
-
-
-		private static Category classify(Field aField)
-		{
-			if (aField.getAnnotation(Key.class) != null)
-			{
-				return Category.KEY;
-			}
-			if (aField.getAnnotation(Discriminator.class) != null)
-			{
-				return Category.DISCRIMINATOR;
-			}
-			return Category.VALUE;
-		}
-	}
 
 
 	public Marshaller(Class aType)
@@ -68,7 +46,6 @@ public class Marshaller
 	{
 		mFields = new HashMap<>();
 		mTypeDeclarations = (TreeMap<Integer,FieldType>)aTypeDeclarations;
-		mLogger = new Logger(aType == null ? "" : aType.getSimpleName());
 
 		if (aType != null)
 		{
@@ -101,6 +78,8 @@ public class Marshaller
 
 	private Object createTypeDeclarations()
 	{
+		Log.inc("create type declarations");
+
 		mTypeDeclarations = new TreeMap<>();
 
 		int index = 1;
@@ -117,7 +96,7 @@ public class Marshaller
 				typeInfo.depth++;
 			}
 			typeInfo.primitive = typeInfo.type.isPrimitive();
-			typeInfo.category = Category.classify(field);
+			typeInfo.category = MarshallerFieldCategory.classify(field);
 
 			mTypeDeclarations.put(index, typeInfo);
 
@@ -145,15 +124,17 @@ public class Marshaller
 				throw new IllegalArgumentException("Unsupported type: " + field);
 			}
 
-			if (typeInfo.category == Category.DISCRIMINATOR)
+			if (typeInfo.category == MarshallerFieldCategory.DISCRIMINATOR)
 			{
 				mHasDiscriminiators = true;
 			}
 
-			mLogger.i("type found: "+index+" "+typeInfo);
+			Log.i("type found: "+index+" "+typeInfo);
 
 			index++;
 		}
+
+		Log.dec();
 
 		return mTypeDeclarations;
 	}
@@ -165,7 +146,7 @@ public class Marshaller
 	}
 
 
-	public byte[] marshal(Object aObject, Category aFieldCategory)
+	public byte[] marshal(Object aObject, MarshallerFieldCategory aFieldCategory)
 	{
 		if (mTypeDeclarations == null)
 		{
@@ -174,7 +155,7 @@ public class Marshaller
 
 		try
 		{
-			mLogger.inc("marshal entity");
+			Log.inc("marshal entity fields " + aFieldCategory);
 
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			try (DataOutputStream out = new DataOutputStream(baos))
@@ -197,7 +178,7 @@ public class Marshaller
 						continue;
 					}
 
-					mLogger.i("encode "+index+" "+typeInfo);
+					Log.i("encode "+index+" "+typeInfo);
 
 					ByteArray.putVarLong(out, index);
 
@@ -221,7 +202,7 @@ public class Marshaller
 				}
 			}
 
-			mLogger.dec();
+			Log.dec();
 
 			return baos.toByteArray();
 		}
@@ -437,7 +418,7 @@ public class Marshaller
 	{
 		private final static long serialVersionUID = 1L;
 
-		Category category;
+		MarshallerFieldCategory category;
 		String name;
 		Class type;
 		boolean array;
@@ -494,7 +475,7 @@ public class Marshaller
 	{
 		try
 		{
-			mLogger.inc("unmarshal entity");
+			Log.inc("unmarshal entity");
 
 			try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(aBuffer)))
 			{
@@ -509,7 +490,7 @@ public class Marshaller
 
 					if (index <= prevIndex || index > fieldCount)
 					{
-						mLogger.e("decoding field index " + index + ", previous " + prevIndex + ", limit " + fieldCount);
+						Log.e("decoding field index " + index + ", previous " + prevIndex + ", limit " + fieldCount);
 
 						throw new IOException("Stream corrupted");
 					}
@@ -518,7 +499,7 @@ public class Marshaller
 					Field field = mFields.get(typeInfo.name);
 					Object value;
 
-					mLogger.i("decode "+index+" "+typeInfo);
+					Log.i("decode "+index+" "+typeInfo);
 
 					switch (typeInfo.code)
 					{
@@ -527,7 +508,9 @@ public class Marshaller
 							break;
 						case 2:
 							value = readArray(typeInfo, 1, typeInfo.depth, in);
-							mLogger.inc().d("decoded array: " + typeInfo.type+"["+Array.getLength(value)+"]").dec();
+							Log.inc();
+							Log.d("decoded array: " + typeInfo.type+"["+Array.getLength(value)+"]");
+							Log.dec();
 							break;
 						case 3:
 							value = readCollection(field, aObject, typeInfo, in);
@@ -552,7 +535,7 @@ public class Marshaller
 				}
 			}
 
-			mLogger.dec();
+			Log.dec();
 		}
 		catch (IOException | IllegalAccessException e)
 		{
@@ -732,11 +715,5 @@ public class Marshaller
 		}
 
 		return array;
-	}
-
-
-	interface MarshallerListener
-	{
-		void valueDecoded(Object aObject, Field aField, String aFieldName, Object aValue);
 	}
 }

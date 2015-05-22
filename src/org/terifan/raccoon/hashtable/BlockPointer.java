@@ -3,6 +3,7 @@ package org.terifan.raccoon.hashtable;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import org.terifan.raccoon.Node;
+import static org.terifan.raccoon.Node.*;
 import org.terifan.raccoon.Stats;
 
 
@@ -156,7 +157,7 @@ public class BlockPointer implements Serializable
 		bb.putInt(mChecksum);
 
 		Stats.pointerEncode++;
-		
+
 		return aBuffer;
 	}
 
@@ -179,7 +180,7 @@ public class BlockPointer implements Serializable
 		{
 			mPageCount++;
 		}
-		if (mType != Node.UNALLOCATED)
+		if (mType != Node.FREE)
 		{
 			mRange++;
 		}
@@ -210,19 +211,29 @@ public class BlockPointer implements Serializable
 
 	public boolean identical(BlockPointer aBlockPointer)
 	{
-		return aBlockPointer.mPageIndex == mPageIndex 
-			&& aBlockPointer.mPageCount == mPageCount 
-			&& aBlockPointer.mChecksum == mChecksum 
-			&& aBlockPointer.mTransactionId == mTransactionId 
-			&& aBlockPointer.mCompression == mCompression 
+		return aBlockPointer.mPageIndex == mPageIndex
+			&& aBlockPointer.mPageCount == mPageCount
+			&& aBlockPointer.mChecksum == mChecksum
+			&& aBlockPointer.mTransactionId == mTransactionId
+			&& aBlockPointer.mCompression == mCompression
 			&& aBlockPointer.mRange == mRange
 			&& aBlockPointer.mType == mType;
 	}
 
 
-//	@Override
-//	public String toString()
-//	{
-//		return ObjectSerializer.toString(this);
-//	}
+	@Override
+	public String toString()
+	{
+		String t = "";
+
+		switch (mType)
+		{
+			case LEAF: t = "LEAF"; break;
+			case NODE: t = "NODE"; break;
+			case HOLE: t = "HOLE"; break;
+			case FREE: t = "FREE"; break;
+		}
+
+		return "{type=" + t + ", page=" + mPageIndex + ", count=" + mPageCount + ", range=" + mRange + ", tx=" + mTransactionId + ")";
+	}
 }

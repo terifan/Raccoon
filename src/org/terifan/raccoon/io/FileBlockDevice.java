@@ -3,7 +3,7 @@ package org.terifan.raccoon.io;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import org.terifan.raccoon.util.Logger;
+import org.terifan.raccoon.util.Log;
 
 
 public class FileBlockDevice implements IPhysicalBlockDevice
@@ -12,8 +12,6 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 	protected RandomAccessFile mFile;
 	protected int mBlockSize;
-
-	private Logger Log = new Logger(getClass().getSimpleName());
 
 
 	public FileBlockDevice(File aFile, int aBlockSize) throws IOException

@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Logger;
 import org.terifan.raccoon.LeafNode.PutResult;
 import org.terifan.raccoon.io.IBlockDevice;
 import org.terifan.raccoon.Database;
@@ -14,10 +15,10 @@ import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.security.MurmurHash3;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.LeafNode;
-import org.terifan.raccoon.util.Logger;
 import static org.terifan.raccoon.Node.*;
 import org.terifan.raccoon.Stats;
 import org.terifan.raccoon.io.Streams;
+import org.terifan.raccoon.util.Log;
 
 
 public class HashTable implements Closeable, Iterable<Entry>
@@ -39,15 +40,11 @@ public class HashTable implements Closeable, Iterable<Entry>
 	private boolean mClosed;
 	private boolean mModified;
 
-	Logger Log;
-
 //	private HashMap<BlockPointer,LeafNode> mLeafs = new HashMap<>();
 
 
 	public HashTable(Database aDatabasea, BlockPointer aRootBlockPointer, long aHashSeed, String aName)
 	{
-		Log = new Logger(aName);
-
 		mDatabase = aDatabasea;
 		mBlockAccessor = new BlockAccessor(this, mDatabase.getBlockDevice());
 		mPageSize = mDatabase.getBlockDevice().getBlockSize();
@@ -174,7 +171,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 		}
 
 		int modCount = ++mModCount;
-		Log.d("put").inc();
+		Log.inc("put");
 
 		mModified = true;
 
@@ -211,6 +208,8 @@ public class HashTable implements Closeable, Iterable<Entry>
 
 		if (mRootMap != null)
 		{
+			Log.i("put root value");
+
 			mRootMap.put(type, aKey, value, result);
 
 			if (result.overflow)
@@ -274,6 +273,8 @@ public class HashTable implements Closeable, Iterable<Entry>
 
 	private void upgradeRootLeafToNode()
 	{
+		Log.d("upgrade root leaf to node");
+
 		mRootNode = splitLeaf(mRootMap, 0);
 
 		mBlockAccessor.freeBlock(mRootBlockPointer);
@@ -439,7 +440,13 @@ public class HashTable implements Closeable, Iterable<Entry>
 		}
 		else
 		{
-			visit(new ClearTableVisitor());
+			visit((aPointerIndex, aBlockPointer) ->
+			{
+				if (aPointerIndex != Visitor.ROOT_POINTER && aBlockPointer != null && (aBlockPointer.getType() == NODE || aBlockPointer.getType() == LEAF))
+				{
+					mBlockAccessor.freeBlock(aBlockPointer);
+				}
+			});
 
 			modCount++;
 
@@ -473,9 +480,17 @@ public class HashTable implements Closeable, Iterable<Entry>
 			throw new IllegalStateException("HashTable is closed");
 		}
 
-		CountEntriesVisitor v = new CountEntriesVisitor();
-		visit(v);
-		return v.total;
+		Result<Integer> result = new Result<>();
+
+		visit((aPointerIndex, aBlockPointer)->
+		{
+			if (aBlockPointer != null && aBlockPointer.getType() == LEAF)
+			{
+				result.set(result.get() + readLeaf(aBlockPointer).size());
+			}
+		});
+
+		return result.get();
 	}
 
 
@@ -762,14 +777,6 @@ public class HashTable implements Closeable, Iterable<Entry>
 	}
 
 
-	private interface Visitor
-	{
-		int ROOT_POINTER = -1;
-
-		void visit(int aPointerIndex, BlockPointer aBlockPointer);
-	}
-
-
 	private void visit(Visitor aVisitor)
 	{
 		if (mRootNode != null)
@@ -795,43 +802,6 @@ public class HashTable implements Closeable, Iterable<Entry>
 			}
 
 			aVisitor.visit(i, next);
-		}
-	}
-
-
-	private class ClearTableVisitor implements Visitor
-	{
-		@Override
-		public void visit(int aPointerIndex, BlockPointer aBlockPointer)
-		{
-			if (aPointerIndex == Visitor.ROOT_POINTER)
-			{
-				return;
-			}
-
-			if (aBlockPointer != null && (aBlockPointer.getType() == NODE || aBlockPointer.getType() == LEAF))
-			{
-				mBlockAccessor.freeBlock(aBlockPointer);
-			}
-		}
-	}
-
-
-	private class CountEntriesVisitor implements Visitor
-	{
-		private long modCount = mModCount;
-		public int total;
-
-
-		@Override
-		public void visit(int aPointerIndex, BlockPointer aBlockPointer)
-		{
-			assert mModCount == modCount;
-
-			if (aBlockPointer != null && aBlockPointer.getType() == LEAF)
-			{
-				total += readLeaf(aBlockPointer).size();
-			}
 		}
 	}
 

@@ -58,8 +58,7 @@ public class LeafNode implements Iterable<byte[]>, Node
 	public boolean mDirty;
 	public IndexNode mParent;
 	public int mIndex;
-	
-	
+
 
 	public static class PutResult
 	{
@@ -221,7 +220,7 @@ public class LeafNode implements Iterable<byte[]>, Node
 				System.arraycopy(aValue, 0, mBuffer, mStartOffset + valueOffset, aValue.length);
 
 				writeShort(entryOffset, aEntryType);
-				
+
 				assert integrityCheck() == null : integrityCheck();
 
 				return;
@@ -277,7 +276,7 @@ public class LeafNode implements Iterable<byte[]>, Node
 		writeEntryHeader(index, aEntryType, aKey.length, aValue.length);
 		System.arraycopy(aKey, 0, mBuffer, mStartOffset + readKeyOffset(index), aKey.length);
 		System.arraycopy(aValue, 0, mBuffer, mStartOffset + readValueOffset(index), aValue.length);
-	
+
 		mFreeSpaceOffset += ENTRY_HEADER_SIZE + aKey.length + aValue.length;
 
 		writeBufferHeader();
@@ -355,12 +354,12 @@ public class LeafNode implements Iterable<byte[]>, Node
 		int modCount = mModCount;
 
 		int entryOffset = readEntryOffset(aIndex);
-		
+
 		if (aEntryType != null)
 		{
 			aEntryType.set(readShort(entryOffset));
 		}
-		
+
 		int keyLength = readShort(entryOffset + 2);
 		int offset = mStartOffset + entryOffset + HEADER_SIZE;
 

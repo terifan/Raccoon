@@ -21,7 +21,7 @@ import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.hashtable.BlockPointer;
 import org.terifan.raccoon.io.Streams;
-import org.terifan.raccoon.util.Logger;
+import org.terifan.raccoon.util.Log;
 
 
 public class Database implements AutoCloseable
@@ -38,8 +38,6 @@ public class Database implements AutoCloseable
     private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
     private final Lock mReadLock = mReadWriteLock.readLock();
     private final Lock mWriteLock = mReadWriteLock.writeLock();
-
-	private Logger Log = new Logger("");
 
 
 	private Database()
@@ -131,7 +129,7 @@ public class Database implements AutoCloseable
 	{
 		Database db = new Database();
 
-		db.Log.inc("create database");
+		Log.inc("create database");
 
 		TableType systemTableType = new TableType(Table.class);
 
@@ -142,7 +140,7 @@ public class Database implements AutoCloseable
 
 		db.commit();
 
-		db.Log.dec();
+		Log.dec();
 
 		return db;
 	}
@@ -152,7 +150,7 @@ public class Database implements AutoCloseable
 	{
 		Database db = new Database();
 
-		db.Log.inc("open database");
+		Log.inc("open database");
 
 		if (aBlockDevice instanceof ManagedBlockDevice)
 		{
@@ -187,7 +185,7 @@ public class Database implements AutoCloseable
 
 		db.mSystemRootBlockPointer = db.mSystemTable.getRootBlockPointer();
 
-		db.Log.dec();
+		Log.dec();
 
 		return db;
 	}
