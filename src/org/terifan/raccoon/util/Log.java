@@ -70,7 +70,7 @@ public class Log
 
 				for (int i = 0; i < mIndent; i++)
 				{
-					message.append(".. ");
+					message.append("... ");
 				}
 
 				for (Object o : aMessage)
@@ -91,12 +91,12 @@ public class Log
 					case 1: type = "ERROR"; break;
 					case 2: type = "WARN"; break;
 					case 3: type = "INFO"; break;
-					case 4: type = "VERBOS"; break;
+					case 4: type = "VERBOSE"; break;
 					case 5: type = "DEBUG"; break;
 					default: type = ""; break;
 				}
 
-				System.out.printf("%-30s%-30s%-30s%-6s %s\n", loggerName, className, methodName, type, message.toString());
+				System.out.printf("%-30s%-30s%-30s%-7s %s\n", loggerName, className, methodName, type, message.toString());
 			}
 		}
 	}

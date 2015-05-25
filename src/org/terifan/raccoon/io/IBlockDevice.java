@@ -5,7 +5,29 @@ import java.io.IOException;
 
 public interface IBlockDevice extends AutoCloseable
 {
+	/**
+	 * @return 
+	 *   true if the block device has pending changes requiring a commit.
+	 */
 	boolean isModified();
+
+
+	/**
+	 * @return 
+	 *   the "extra data" block.
+	 */
+	byte[] getExtraData();
+
+
+	/**
+	 * Sets the "extra data" block of this block device.
+	 * 
+	 * The block device must be able to store an "extra data" block with minimum 384 bytes. The block I/O must be transactional safe and the block is written as the block device changes are committed.
+	 * 
+	 * @param aExtra 
+	 *   the extra data.
+	 */
+	void setExtraData(byte[] aExtra);
 	
 	
 	/**
@@ -22,18 +44,6 @@ public interface IBlockDevice extends AutoCloseable
 
 
 	/**
-	 * Allocate a sequence of blocks on the device. The sequence allocated may be shorter
-	 * than what is requested and number of blocks allocated is returned in the Result object.
-	 * 
-	 * @param aBlockCount 
-	 *   number of blocks requested to be allocated. Is updated to contain actual number of blocks allocated.
-	 * @return
-	 *   position of sequence or -1 if no allocation was possible
-	 */
-//	long allocBlock(Result<Integer> aBlockCount) throws IOException;
-
-
-	/**
 	 * Free a block from the device.
 	 *
 	 * @param aBlockIndex
@@ -43,7 +53,7 @@ public interface IBlockDevice extends AutoCloseable
 
 
 	/**
-	 * Return the size of this device.
+	 * Return number of blocks in this device.
 	 */
 	long length() throws IOException;
 
@@ -59,6 +69,8 @@ public interface IBlockDevice extends AutoCloseable
 	 *   offset in the block array where block data is stored
 	 * @param aBufferLength
 	 *   length of buffer to write, must be dividable by block size
+	 * @param aBlockKey 
+	 *   64 bit seed value that may be used by block device implementations performing cryptography
 	 */
 	void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException;
 
@@ -74,6 +86,8 @@ public interface IBlockDevice extends AutoCloseable
 	 *   offset in the block array where block data is stored
 	 * @param aBufferLength
 	 *   length of buffer to write, must be dividable by block size
+	 * @param aBlockKey 
+	 *   64 bit seed value that may be used by block device implementations performing cryptography
 	 */
 	void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException;
 

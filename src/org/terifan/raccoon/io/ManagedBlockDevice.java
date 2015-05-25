@@ -26,8 +26,7 @@ import org.terifan.raccoon.util.Log;
  */
 public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 {
-	private final static boolean VERBOSE = false;
-
+	private final static int HEADER_BLOCKS = 2;
 	private final static int CHECKSUM_SIZE = 16;
 	private final static int SUPERBLOCK_OFFSET_VERSION              = 16;
 	private final static int SUPERBLOCK_OFFSET_DATETIME             = 16+8;
@@ -36,20 +35,20 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	private final static int SUPERBLOCK_OFFSET_SPACEMAP_LENGTH      = 16+8+8+4+4;
 	private final static int SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_KEY   = 16+8+8+4+4+4;
 	private final static int SUPERBLOCK_OFFSET_EXTRA_DATA_LENGTH    = 16+8+8+4+4+4+8;
-	private final static int SUPERBLOCK_HEADER_SIZE                 = 16+8+8+4+4+4+8+4;
+	private final static int SUPERBLOCK_HEADER_SIZE                 = 16+8+8+4+4+4+8+4; // 56
 
 	private IPhysicalBlockDevice mBlockDevice;
 	private RangeMap mRangeMap;
 	private RangeMap mPendingRangeMap;
-	private int mBlockSize;
-	private long mSuperBlockVersion;
 	private boolean mModified;
 	private boolean mWasCreated;
+	private long mSuperBlockVersion;
 	private byte[] mSuperBlock;
+	private int mBlockSize;
+	private HashSet<Integer> mUncommitedAllocations;
 	private int mSpaceMapBlockIndex;
 	private int mSpaceMapBlockCount;
 	private int mSpaceMapLength;
-	private HashSet<Integer> mUncommitedAllocations;
 	private long mSpaceMapBlockKey;
 
 //	private HashMap<Long,LazyBlock> mLazyBlocks = new HashMap<>();
@@ -57,6 +56,11 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice) throws IOException
 	{
+		if (aBlockDevice.getBlockSize() < 512)
+		{
+			throw new IllegalArgumentException("Block device must have 512 byte block size or larger.");
+		}
+		
 		mBlockDevice = aBlockDevice;
 		mBlockSize = aBlockDevice.getBlockSize();
 		mWasCreated = mBlockDevice.length() == 0;
@@ -68,42 +72,57 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 	private void init() throws IOException
 	{
-		if (VERBOSE) Log.v("ManagedBlockDevice  init " + mWasCreated);
-
 		if (mWasCreated)
 		{
-			mRangeMap = new RangeMap();
-			mRangeMap.add(0, Integer.MAX_VALUE);
-
-			mPendingRangeMap = new RangeMap();
-			mPendingRangeMap.add(0, Integer.MAX_VALUE);
-
-			mSuperBlockVersion = -1;
-			mSuperBlock = new byte[mBlockSize];
-
-			setExtraData(null);
-
-			long index = allocBlock(1);
-			if (index != 0)
-			{
-				throw new IllegalStateException("Expected block 0 but was " + index);
-			}
-
-			index = allocBlock(1);
-			if (index != 1)
-			{
-				throw new IllegalStateException("Expected block 1 but was " + index);
-			}
-
-			// write both copies of super block
-			writeSuperBlock();
-			writeSuperBlock();
+			createBlockDevice();
 		}
 		else
 		{
-			readSuperBlock();
-			readSpaceMap();
+			loadBlockDevice();
 		}
+	}
+
+
+	private void createBlockDevice() throws IOException, IllegalStateException
+	{
+		Log.i("create block device");
+		Log.inc();
+		
+		mRangeMap = new RangeMap();
+		mRangeMap.add(0, Integer.MAX_VALUE);
+		
+		mPendingRangeMap = new RangeMap();
+		mPendingRangeMap.add(0, Integer.MAX_VALUE);
+		
+		mSuperBlockVersion = -1;
+		mSuperBlock = new byte[mBlockSize];
+		
+		setExtraData(null);
+		
+		long index = allocBlockInternal(2);
+		
+		if (index != 0)
+		{
+			throw new IllegalStateException("The super block must be located at block index 0, was: " + index);
+		}
+		
+		// write two copies of super block
+		writeSuperBlock();
+		writeSuperBlock();
+		
+		Log.dec();
+	}
+
+
+	private void loadBlockDevice() throws IOException
+	{
+		Log.i("load block device");
+		Log.inc();
+		
+		readSuperBlock();
+		readSpaceMap();
+		
+		Log.dec();
 	}
 
 
@@ -138,6 +157,12 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	@Override
 	public synchronized long allocBlock(int aBlockCount) throws IOException
 	{
+		return allocBlockInternal(aBlockCount) - HEADER_BLOCKS;
+	}
+	
+
+	private long allocBlockInternal(int aBlockCount) throws IOException
+	{
 		int blockIndex = mRangeMap.next(aBlockCount);
 
 		if (blockIndex == -1)
@@ -145,7 +170,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 			return -1;
 		}
 
-		if (VERBOSE) Log.v("ManagedBlockDevice  allocBlock " + blockIndex + " +" + aBlockCount);
+		Log.v("alloc block " + blockIndex + " +" + aBlockCount);
 
 		mModified = true;
 
@@ -160,35 +185,16 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	}
 
 
-//	@Override
-//	public long allocBlock(Result<Integer> aBlockCount) throws IOException
-//	{
-//		int blockIndex = mRangeMap.next(aBlockCount);
-//
-//		if (blockIndex == -1)
-//		{
-//			return -1;
-//		}
-//
-//		if (VERBOSE) Log.i("ManagedBlockDevice  allocBlock " + blockIndex + " +" + aBlockCount);
-//
-//		mModified = true;
-//
-//		for (int i = 0; i < aBlockCount.get(); i++)
-//		{
-//			mUncommitedAllocations.add(blockIndex + i);
-//		}
-//
-//		mPendingRangeMap.remove(blockIndex, aBlockCount.get());
-//
-//		return blockIndex;
-//	}
-
-
 	@Override
 	public synchronized void freeBlock(long aBlockIndex, int aBlockCount) throws IOException
 	{
-		if (VERBOSE) Log.v("ManagedBlockDevice  freeBlock " + aBlockIndex + " +" + aBlockCount);
+		freeBlockInternal(HEADER_BLOCKS + aBlockIndex, aBlockCount);
+	}
+
+
+	private void freeBlockInternal(long aBlockIndex, int aBlockCount) throws IOException
+	{
+		Log.v("free block " + aBlockIndex + " +" + aBlockCount);
 
 		mModified = true;
 
@@ -211,30 +217,48 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	@Override
 	public synchronized void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		if (!mRangeMap.isFree((int)aBlockIndex, aBufferLength / mBlockSize))
-		{
-			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
-		}
-
-		if (VERBOSE) Log.v("ManagedBlockDevice  writeBlock " + aBlockIndex + " +" + aBufferLength/mBlockSize);
-
-		mModified = true;
-
-		mBlockDevice.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		writeBlockInternal(HEADER_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 	}
 
 
-	@Override
-	public synchronized void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	private void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
 		if (!mRangeMap.isFree((int)aBlockIndex, aBufferLength / mBlockSize))
 		{
 			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
 		}
 
-		if (VERBOSE) Log.v("ManagedBlockDevice  readBlock " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		Log.v("write block " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		Log.inc();
+
+		mModified = true;
+
+		mBlockDevice.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		
+		Log.dec();
+	}
+
+
+	@Override
+	public synchronized void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	{
+		readBlockInternal(aBlockIndex + HEADER_BLOCKS, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+	}
+	
+	
+	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	{
+		if (!mRangeMap.isFree((int)aBlockIndex, aBufferLength / mBlockSize))
+		{
+			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
+		}
+
+		Log.v("read block " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		Log.inc();
 
 		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		
+		Log.dec();
 	}
 
 
@@ -243,7 +267,8 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	{
 		if (mModified)
 		{
-			if (VERBOSE) Log.v("ManagedBlockDevice  commit");
+			Log.i("committing managed block device");
+			Log.inc();
 
 			writeSpaceMap();
 
@@ -257,6 +282,8 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 			mRangeMap = mPendingRangeMap.clone();
 			mWasCreated = false;
 			mModified = false;
+			
+			Log.dec();
 		}
 	}
 
@@ -266,7 +293,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	{
 		if (mModified)
 		{
-			if (VERBOSE) Log.v("ManagedBlockDevice  rollback");
+			Log.v("rollback");
 
 			mUncommitedAllocations.clear();
 
@@ -281,7 +308,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 	private void readSuperBlock() throws IOException
 	{
-		if (VERBOSE) Log.v("ManagedBlockDevice  readSuperBlock");
+		Log.v("read super block");
 
 		byte[] bufferOne = new byte[mBlockSize];
 		byte[] bufferTwo = new byte[mBlockSize];
@@ -316,7 +343,8 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 	private synchronized void writeSuperBlock() throws IOException
 	{
-		if (VERBOSE) Log.v("ManagedBlockDevice  writeSuperBlock");
+		Log.v("write super block");
+		Log.inc();
 
 		mSuperBlockVersion++;
 
@@ -328,32 +356,30 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 		ByteArray.putLong(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_KEY, mSpaceMapBlockKey);
 
 		writeCheckedBlock(mSuperBlockVersion & 1L, mSuperBlock, 0L);
+
+		Log.dec();
 	}
 
 
 	private void readSpaceMap() throws IOException
 	{
-		if (VERBOSE) Log.v("ManagedBlockDevice  readSpaceMap " + mSpaceMapBlockIndex + " +" + mSpaceMapBlockCount + " (" + mSpaceMapLength + ")");
+		Log.v("read space map " + mSpaceMapBlockIndex + " +" + mSpaceMapBlockCount + " (" + mSpaceMapLength + ")");
 
 		mRangeMap = new RangeMap();
 
-		if (mSpaceMapBlockCount > 0)
+		if (mSpaceMapBlockCount == 0) // all blocks are free in this device
+		{
+			mRangeMap.add(0, Integer.MAX_VALUE);
+		}
+		else
 		{
 			byte[] buffer = new byte[mSpaceMapBlockCount * mBlockSize];
 
 			readCheckedBlock(mSpaceMapBlockIndex, buffer, mSpaceMapBlockKey);
 
-//			ByteBuffer bb = ByteBuffer.wrap(buffer);
-//			bb.position(16);
-//			bb.limit(mSpaceMapLength);
-
 			mRangeMap.read(new ByteArrayInputStream(buffer, 16, mSpaceMapLength - 16));
 
 			mRangeMap.remove(mSpaceMapBlockIndex, mSpaceMapBlockCount);
-		}
-		else
-		{
-			mRangeMap.add(0, Integer.MAX_VALUE);
 		}
 
 		mPendingRangeMap = mRangeMap.clone();
@@ -362,11 +388,12 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 	private void writeSpaceMap() throws IOException
 	{
-		if (VERBOSE) Log.v("ManagedBlockDevice  writeSpaceMap");
+		Log.v("write space map");
+		Log.inc();
 
 		if (mSpaceMapBlockCount > 0)
 		{
-			freeBlock(mSpaceMapBlockIndex, mSpaceMapBlockCount);
+			freeBlockInternal(mSpaceMapBlockIndex, mSpaceMapBlockCount);
 		}
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -376,7 +403,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 		// Allocate space for the new space map block
 		mSpaceMapBlockCount = (baos.size() + mBlockSize - 1) / mBlockSize;
-		mSpaceMapBlockIndex = (int)allocBlock(mSpaceMapBlockCount);
+		mSpaceMapBlockIndex = (int)allocBlockInternal(mSpaceMapBlockCount);
 		mSpaceMapLength = baos.size();
 		mSpaceMapBlockKey = ISAAC.PRNG.nextLong();
 
@@ -384,6 +411,8 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 		baos.write(new byte[mBlockSize * mSpaceMapBlockCount - mSpaceMapLength]);
 
 		writeCheckedBlock(mSpaceMapBlockIndex, baos.toByteArray(), mSpaceMapBlockKey);
+		
+		Log.dec();
 	}
 
 
@@ -443,9 +472,10 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	}
 
 
+	@Override
 	public void setExtraData(byte[] aExtraData)
 	{
-		if (VERBOSE) Log.v("ManagedBlockDevice  setExtraData");
+		Log.v("set extra data");
 
 		mModified = true;
 
@@ -464,12 +494,12 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 		// padd remainder of block
 		for (int i = SUPERBLOCK_HEADER_SIZE + aExtraData.length, j = 0; i < mBlockSize; i++, j++)
 		{
-			mSuperBlock[i] = 0;
-//			mSuperBlock[i] = (byte)j;
+			mSuperBlock[i] = (byte)j;
 		}
 	}
 
 
+	@Override
 	public byte[] getExtraData()
 	{
 		int length = ByteArray.getInt(mSuperBlock, SUPERBLOCK_OFFSET_EXTRA_DATA_LENGTH);

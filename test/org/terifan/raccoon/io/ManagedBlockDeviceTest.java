@@ -18,15 +18,15 @@ public class ManagedBlockDeviceTest
 		{
 			long pos1 = dev.allocBlock(1);
 			long pos2 = dev.allocBlock(1);
-			dev.commit(); // allocs 4
+			dev.commit(); // allocs 2
 			long pos3 = dev.allocBlock(1);
 			long pos4 = dev.allocBlock(1);
-			dev.commit(); // allocs 7, frees 4
+			dev.commit(); // allocs 5, frees 2
 
-			assertEquals(2, pos1);
-			assertEquals(3, pos2);
-			assertEquals(5, pos3);
-			assertEquals(6, pos4);
+			assertEquals(0, pos1);
+			assertEquals(1, pos2);
+			assertEquals(3, pos3);
+			assertEquals(4, pos4);
 		}
 	}
 
@@ -38,26 +38,26 @@ public class ManagedBlockDeviceTest
 
 		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s)))
 		{
-			long pos1 = dev.allocBlock(1); // alloc 2
-			long pos2 = dev.allocBlock(1); // alloc 3
-			dev.commit(); // alloc 4
-			long pos3 = dev.allocBlock(1); // alloc 5
-			long pos4 = dev.allocBlock(1); // alloc 6
-			dev.commit(); // alloc 7, free 4
+			long pos1 = dev.allocBlock(1); // alloc 0
+			long pos2 = dev.allocBlock(1); // alloc 1
+			dev.commit(); // alloc 2
+			long pos3 = dev.allocBlock(1); // alloc 3
+			long pos4 = dev.allocBlock(1); // alloc 4
+			dev.commit(); // alloc 5, free 2
 
-			assertEquals(2, pos1);
-			assertEquals(3, pos2);
-			assertEquals(5, pos3);
-			assertEquals(6, pos4);
+			assertEquals(0, pos1);
+			assertEquals(1, pos2);
+			assertEquals(3, pos3);
+			assertEquals(4, pos4);
 
-			dev.freeBlock(2, 1); // free 2
-			dev.freeBlock(3, 1); // free 3
-			dev.commit(); // alloc 4, free 7
+			dev.freeBlock(0, 1); // free 0
+			dev.freeBlock(1, 1); // free 1
+			dev.commit(); // alloc 2, free 5
 
-			long pos5 = dev.allocBlock(1); // alloc 2
-			dev.commit(); // alloc 3, free 4
+			long pos5 = dev.allocBlock(1); // alloc 0
+			dev.commit(); // alloc 1, free 2
 
-			assertEquals(2, pos5);
+			assertEquals(0, pos5);
 		}
 	}
 

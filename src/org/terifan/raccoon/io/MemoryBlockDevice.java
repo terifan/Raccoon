@@ -8,8 +8,6 @@ import org.terifan.raccoon.util.Log;
 
 public class MemoryBlockDevice implements IPhysicalBlockDevice
 {
-	private final boolean VERBOSE = false;
-
 	private TreeMap<Long, byte[]> mStorage = new TreeMap<>();
 	private int mBlockSize;
 
@@ -31,10 +29,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	{
 		while (aBufferLength > 0)
 		{
-			if (VERBOSE)
-			{
-				Log.v("\twriteBlock " + aBlockIndex);
-			}
+			Log.v("write block " + aBlockIndex + " +" + (aBufferLength/mBlockSize));
 
 			mStorage.put(aBlockIndex, Arrays.copyOfRange(aBuffer, aBufferOffset, aBufferOffset + mBlockSize));
 
@@ -50,10 +45,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	{
 		while (aBufferLength > 0)
 		{
-			if (VERBOSE)
-			{
-				Log.v("\treadBlock  " + aBlockIndex);
-			}
+			Log.v("readBlock  " + aBlockIndex);
 
 			byte[] block = mStorage.get(aBlockIndex);
 

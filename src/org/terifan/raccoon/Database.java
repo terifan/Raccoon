@@ -154,37 +154,26 @@ public class Database implements AutoCloseable
 		Log.i("open database");
 		Log.inc();
 
-		if (aBlockDevice instanceof ManagedBlockDevice)
+		ByteBuffer bb = ByteBuffer.wrap(aBlockDevice.getExtraData());
+
+		int version = bb.getInt();
+
+		if (version != VERSION)
 		{
-			ManagedBlockDevice device = (ManagedBlockDevice)aBlockDevice;
-
-			byte[] ptr = new byte[BlockPointer.SIZE];
-			ByteBuffer bb = ByteBuffer.wrap(device.getExtraData());
-
-			int version = bb.getInt();
-
-			if (version != VERSION)
-			{
-				throw new UnsupportedVersionException("Unsupported database version: " + version);
-			}
-
-			db.mTransactionId = bb.getLong();
-			bb.get(ptr);
-
-			BlockPointer rootPointer = new BlockPointer().decode(ptr, 0);
-
-			TableType systemTableType = new TableType(Table.class);
-
-			db.mBlockDevice = aBlockDevice;
-			db.mSystemTable = new Table(db, systemTableType, null).open(rootPointer);
-		}
-		else
-		{
-			throw new UnsupportedOperationException();
-//			db.mBlockDevice = aBlockDevice;
-//			db.mSystemTable = new HashTable(aBlockDevice, 2L);
+			throw new UnsupportedVersionException("Unsupported database version: " + version);
 		}
 
+		db.mTransactionId = bb.getLong();
+
+		byte[] ptr = new byte[BlockPointer.SIZE];
+		bb.get(ptr);
+
+		BlockPointer rootPointer = new BlockPointer().decode(ptr, 0);
+
+		TableType systemTableType = new TableType(Table.class);
+
+		db.mBlockDevice = aBlockDevice;
+		db.mSystemTable = new Table(db, systemTableType, null).open(rootPointer);
 		db.mSystemRootBlockPointer = db.mSystemTable.getRootBlockPointer();
 
 		Log.dec();
@@ -349,20 +338,16 @@ public class Database implements AutoCloseable
 
 		mTransactionId++;
 
-		if (mBlockDevice instanceof ManagedBlockDevice)
+		if (mSystemTable.getRootBlockPointer() != mSystemRootBlockPointer)
 		{
-			if (mSystemTable.getRootBlockPointer() != mSystemRootBlockPointer)
-			{
-				byte[] extra = new byte[4 + 8 + BlockPointer.SIZE];
+			byte[] extra = new byte[4 + 8 + BlockPointer.SIZE];
 
-				ByteBuffer bb = ByteBuffer.wrap(extra);
-				bb.putInt(VERSION);
-				bb.putLong(mTransactionId);
-				bb.put(mSystemTable.getRootBlockPointer().encode(new byte[BlockPointer.SIZE], 0));
+			ByteBuffer bb = ByteBuffer.wrap(extra);
+			bb.putInt(VERSION);
+			bb.putLong(mTransactionId);
+			bb.put(mSystemTable.getRootBlockPointer().encode(new byte[BlockPointer.SIZE], 0));
 
-				ManagedBlockDevice device = (ManagedBlockDevice)mBlockDevice;
-				device.setExtraData(extra);
-			}
+			mBlockDevice.setExtraData(extra);
 		}
 	}
 
