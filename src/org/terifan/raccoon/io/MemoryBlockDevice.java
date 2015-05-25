@@ -45,7 +45,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	{
 		while (aBufferLength > 0)
 		{
-			Log.v("readBlock  " + aBlockIndex);
+			Log.v("read block  " + aBlockIndex + " +" + aBufferLength/mBlockSize);
 
 			byte[] block = mStorage.get(aBlockIndex);
 

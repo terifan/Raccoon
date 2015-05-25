@@ -293,7 +293,8 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	{
 		if (mModified)
 		{
-			Log.v("rollback");
+			Log.i("rollbacking block device");
+			Log.inc();
 
 			mUncommitedAllocations.clear();
 
@@ -302,6 +303,8 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 			init();
 
 			mModified = false;
+
+			Log.dec();
 		}
 	}
 
@@ -309,6 +312,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	private void readSuperBlock() throws IOException
 	{
 		Log.v("read super block");
+		Log.inc();
 
 		byte[] bufferOne = new byte[mBlockSize];
 		byte[] bufferTwo = new byte[mBlockSize];
@@ -338,6 +342,8 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 		mSpaceMapBlockCount = ByteArray.getInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_COUNT);
 		mSpaceMapLength = ByteArray.getInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_LENGTH);
 		mSpaceMapBlockKey = ByteArray.getLong(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_KEY);
+
+		Log.dec();
 	}
 
 
@@ -363,7 +369,8 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 	private void readSpaceMap() throws IOException
 	{
-		Log.v("read space map " + mSpaceMapBlockIndex + " +" + mSpaceMapBlockCount + " (" + mSpaceMapLength + ")");
+		Log.v("read space map " + mSpaceMapBlockIndex + " +" + mSpaceMapBlockCount + " (bytes used " + mSpaceMapLength + ")");
+		Log.inc();
 
 		mRangeMap = new RangeMap();
 
@@ -383,6 +390,8 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 		}
 
 		mPendingRangeMap = mRangeMap.clone();
+		
+		Log.dec();
 	}
 
 
