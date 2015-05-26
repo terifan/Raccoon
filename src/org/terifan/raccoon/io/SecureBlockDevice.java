@@ -130,7 +130,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 
 	@Override
-	public int getBlockSize()
+	public int getBlockSize() throws IOException
 	{
 		return mBlockDevice.getBlockSize();
 	}

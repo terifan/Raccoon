@@ -3,6 +3,7 @@ package org.terifan.raccoon.hashtable;
 import org.terifan.raccoon.Entry;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -42,7 +43,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 //	private HashMap<BlockPointer,LeafNode> mLeafs = new HashMap<>();
 
 
-	public HashTable(Database aDatabasea, BlockPointer aRootBlockPointer, long aHashSeed, String aName, int aNodeSize, int aLeafSize)
+	public HashTable(Database aDatabasea, BlockPointer aRootBlockPointer, long aHashSeed, String aName, int aNodeSize, int aLeafSize) throws IOException
 	{
 		mDatabase = aDatabasea;
 		mNodeSize = aNodeSize;
