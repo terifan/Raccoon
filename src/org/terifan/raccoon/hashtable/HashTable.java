@@ -28,7 +28,6 @@ public class HashTable implements Closeable, Iterable<Entry>
 	private Database mDatabase;
 	private BlockAccessor mBlockAccessor;
 	private LeafNode mRootMap;
-	private int mPageSize;
 	private int mNodeSize;
 	private int mLeafSize;
 	private int mPointersPerNode;
@@ -43,16 +42,13 @@ public class HashTable implements Closeable, Iterable<Entry>
 //	private HashMap<BlockPointer,LeafNode> mLeafs = new HashMap<>();
 
 
-	public HashTable(Database aDatabasea, BlockPointer aRootBlockPointer, long aHashSeed, String aName)
+	public HashTable(Database aDatabasea, BlockPointer aRootBlockPointer, long aHashSeed, String aName, int aNodeSize, int aLeafSize)
 	{
 		mDatabase = aDatabasea;
-		mBlockAccessor = new BlockAccessor(this, mDatabase.getBlockDevice());
-		mPageSize = mDatabase.getBlockDevice().getBlockSize();
-		mNodeSize = 4 * mPageSize;
-		mLeafSize = 8 * mPageSize;
-//		mNodeSize = mPageSize;
-//		mLeafSize = mPageSize;
+		mNodeSize = aNodeSize;
+		mLeafSize = aLeafSize;
 		mHashSeed = aHashSeed;
+		mBlockAccessor = new BlockAccessor(this, mDatabase.getBlockDevice());
 		mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 
 		if (aRootBlockPointer == null)

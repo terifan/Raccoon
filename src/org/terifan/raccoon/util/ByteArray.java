@@ -8,11 +8,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 
-
 public class ByteArray
 {
-
-
 	/**
 	 * Puts a value into the buffer. The buffers position is advanced.
 	 *

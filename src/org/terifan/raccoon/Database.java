@@ -26,6 +26,7 @@ import org.terifan.raccoon.util.Log;
 
 public class Database implements AutoCloseable
 {
+	private final static long IDENTITY = 0xc227b6d9e24fb8d4L;
 	private final static int VERSION = 1;
 
 	private IBlockDevice mBlockDevice;
@@ -127,10 +128,10 @@ public class Database implements AutoCloseable
 
 	private static Database create(IBlockDevice aBlockDevice) throws IOException
 	{
-		Database db = new Database();
-
 		Log.i("create database");
 		Log.inc();
+
+		Database db = new Database();
 
 		TableType systemTableType = new TableType(Table.class);
 
@@ -156,8 +157,13 @@ public class Database implements AutoCloseable
 
 		ByteBuffer bb = ByteBuffer.wrap(aBlockDevice.getExtraData());
 
+		long identity = bb.getLong();
 		int version = bb.getInt();
 
+		if (identity != IDENTITY)
+		{
+			throw new UnsupportedVersionException("This block device does not contain a Raccoon database");
+		}
 		if (version != VERSION)
 		{
 			throw new UnsupportedVersionException("Unsupported database version: " + version);
@@ -340,9 +346,10 @@ public class Database implements AutoCloseable
 
 		if (mSystemTable.getRootBlockPointer() != mSystemRootBlockPointer)
 		{
-			byte[] extra = new byte[4 + 8 + BlockPointer.SIZE];
+			byte[] extra = new byte[4 + 8 + 8 + BlockPointer.SIZE];
 
 			ByteBuffer bb = ByteBuffer.wrap(extra);
+			bb.putLong(IDENTITY);
 			bb.putInt(VERSION);
 			bb.putLong(mTransactionId);
 			bb.put(mSystemTable.getRootBlockPointer().encode(new byte[BlockPointer.SIZE], 0));

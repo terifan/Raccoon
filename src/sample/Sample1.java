@@ -49,11 +49,11 @@ public class Sample1
 			Log.out.println(Arrays.equals(in, out));
 			Log.out.println(Arrays.equals(inExtra, outExtra));
 
-//			for (byte[] buf : blockDevice.getStorage().values())
-//			{
-//				Log.hexDump(buf);
-//				Log.out.println();
-//			}
+			for (byte[] buf : blockDevice.getStorage().values())
+			{
+				Log.hexDump(buf);
+				Log.out.println();
+			}
 		}
 		catch (Throwable e)
 		{
