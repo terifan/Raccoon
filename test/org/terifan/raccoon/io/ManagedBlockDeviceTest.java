@@ -3,8 +3,9 @@ package org.terifan.raccoon.io;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.testng.annotations.Test;
+import org.testng.annotations.DataProvider;
+import static org.testng.Assert.*;
 
 
 public class ManagedBlockDeviceTest
@@ -66,7 +67,7 @@ public class ManagedBlockDeviceTest
 	public void testMultiAllocationSimple() throws IOException
 	{
 		int s = 512;
-		
+
 		int rows = 250;
 		long[] positions = new long[10 * rows];
 
@@ -95,8 +96,8 @@ public class ManagedBlockDeviceTest
 			}
 		}
 	}
-	
-	
+
+
 	private static byte[] create(long aBlockIndex, int aSize)
 	{
 		Random rnd = new Random(aBlockIndex);
@@ -104,8 +105,8 @@ public class ManagedBlockDeviceTest
 		rnd.nextBytes(buf);
 		return buf;
 	}
-	
-	
+
+
 	private static void verify(long aBlockIndex, byte[] aBuffer)
 	{
 		Random rnd = new Random(aBlockIndex);

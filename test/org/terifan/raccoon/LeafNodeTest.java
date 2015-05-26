@@ -1,8 +1,9 @@
 package org.terifan.raccoon;
 
-import org.junit.Test;
-import static org.junit.Assert.*;
 import org.terifan.raccoon.LeafNode.PutResult;
+import org.testng.annotations.Test;
+import org.testng.annotations.DataProvider;
+import static org.testng.Assert.*;
 
 
 public class LeafNodeTest

@@ -5,8 +5,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
-import static org.junit.Assert.assertArrayEquals;
-import org.junit.Test;
+import org.testng.annotations.Test;
+import org.testng.annotations.DataProvider;
+import static org.testng.Assert.*;
 
 
 public class MemoryBlockDeviceTest
@@ -42,7 +43,7 @@ public class MemoryBlockDeviceTest
 						long pos = offsets.remove(rnd.nextInt(offsets.size()));
 						byte[] buf = new byte[s];
 						dev.readBlock(pos, buf, 0, s, 0L);
-						assertArrayEquals(blocks.remove(pos), buf);
+						assertEquals(blocks.remove(pos), buf);
 						dev.freeBlock(pos, 1);
 					}
 

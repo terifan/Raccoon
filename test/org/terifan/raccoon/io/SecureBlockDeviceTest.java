@@ -2,11 +2,12 @@ package org.terifan.raccoon.io;
 
 import java.io.IOException;
 import java.util.Random;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.testng.annotations.Test;
+import org.testng.annotations.DataProvider;
+import static org.testng.Assert.*;
 
 
-public class SecureBlockDeviceTest 
+public class SecureBlockDeviceTest
 {
 	@Test
 	public void testSomeMethod() throws IOException
@@ -44,6 +45,6 @@ public class SecureBlockDeviceTest
 			}
 		}
 
-		assertArrayEquals(input, output);
+		assertEquals(input, output);
 	}
 }

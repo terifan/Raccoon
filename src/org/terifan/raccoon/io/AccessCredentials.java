@@ -14,7 +14,7 @@ public final class AccessCredentials
 	private final static KeyGenerationFunction DEFAULT_KEY_GENERATOR = KeyGenerationFunction.SHA512;
 
 	private final static int PASSWORD_EXTENSION_LENGTH = 16;
-	private final static int PASSWORD_EXTENSION_ITERATION_COUNT = 1000_000;
+	private final static int PASSWORD_EXTENSION_ITERATION_COUNT = 100_000;
 	private final static byte[] EXTENSION_PASS_PREFIX = {113, -55, 23, -51, -55, -113, 113, 20, 40, 26, 39, -52, -70, -41, -109, -105}; // MD5("Assume a virtue, if you have it not")
 	private final static byte[] EXTENSION_SALT_PREFIX = {-79, -2, 91, 65, 54, 30, 77, -65, 107, 39, 20, 56, -26, -71, -41, 70}; // MD5("Be great in act, as you have been in thought")
 

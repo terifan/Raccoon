@@ -1,10 +1,11 @@
 package org.terifan.raccoon;
 
 import java.util.Random;
-import org.junit.Test;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.util.Log;
-import static org.junit.Assert.*;
+import org.testng.annotations.Test;
+import org.testng.annotations.DataProvider;
+import static org.testng.Assert.*;
 
 
 public class DatabaseLowLevelTest

@@ -90,17 +90,19 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 	{
 		if (aBlockIndex < 0)
 		{
-			throw new IOException("Illegal offset " + aBlockIndex);
+			throw new IOException("Illegal offset: " + aBlockIndex);
 		}
+
+		aBlockIndex += RESERVED_BLOCKS;
 
 		Log.v("write block " + aBlockIndex + " +" + aBufferLength/mBlockDevice.getBlockSize());
 		Log.inc();
 
-		aBuffer = aBuffer.clone();
+		byte[] workBuffer = aBuffer.clone();
 
-		mCipher.encrypt(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mCipher.encrypt(aBlockIndex, workBuffer, aBufferOffset, aBufferLength, aBlockKey);
 
-		mBlockDevice.writeBlock(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L);
+		mBlockDevice.writeBlock(aBlockIndex, workBuffer, aBufferOffset, aBufferLength, 0L);
 
 		Log.dec();
 	}
@@ -111,15 +113,17 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 	{
 		if (aBlockIndex < 0)
 		{
-			throw new IOException("Illegal offset " + aBlockIndex);
+			throw new IOException("Illegal offset: " + aBlockIndex);
 		}
 
-		Log.v("read block " + aBlockIndex + " +" + aBufferLength/mBlockDevice.getBlockSize());
+		aBlockIndex += RESERVED_BLOCKS;
+
+		Log.v("read block " + aBlockIndex + " +" + aBufferLength / mBlockDevice.getBlockSize());
 		Log.inc();
 
-		mBlockDevice.readBlock(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L);
+		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L);
 
-		mCipher.decrypt(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mCipher.decrypt(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 
 		Log.dec();
 	}

@@ -51,8 +51,6 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	private int mSpaceMapLength;
 	private long mSpaceMapBlockKey;
 
-//	private HashMap<Long,LazyBlock> mLazyBlocks = new HashMap<>();
-
 
 	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice) throws IOException
 	{
@@ -157,7 +155,14 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	@Override
 	public synchronized long allocBlock(int aBlockCount) throws IOException
 	{
-		return allocBlockInternal(aBlockCount) - RESERVED_BLOCKS;
+		long blockIndex = allocBlockInternal(aBlockCount) - RESERVED_BLOCKS;
+
+		if (blockIndex < 0)
+		{
+			throw new IOException("Illegal block index allocated.");
+		}
+
+		return blockIndex;
 	}
 
 
@@ -188,6 +193,11 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	@Override
 	public synchronized void freeBlock(long aBlockIndex, int aBlockCount) throws IOException
 	{
+		if (aBlockIndex < 0)
+		{
+			throw new IOException("Illegal offset: " + aBlockIndex);
+		}
+
 		freeBlockInternal(RESERVED_BLOCKS + aBlockIndex, aBlockCount);
 	}
 
@@ -217,6 +227,15 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	@Override
 	public synchronized void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
+		if (aBlockIndex < 0)
+		{
+			throw new IOException("Illegal offset: " + aBlockIndex);
+		}
+		if ((aBufferLength % mBlockSize) != 0)
+		{
+			throw new IOException("Illegal buffer length: " + aBlockIndex);
+		}
+
 		writeBlockInternal(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 	}
 
@@ -242,6 +261,15 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	@Override
 	public synchronized void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
+		if (aBlockIndex < 0)
+		{
+			throw new IOException("Illegal offset: " + aBlockIndex);
+		}
+		if ((aBufferLength % mBlockSize) != 0)
+		{
+			throw new IOException("Illegal buffer length: " + aBlockIndex);
+		}
+
 		readBlockInternal(aBlockIndex + RESERVED_BLOCKS, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 	}
 
@@ -557,20 +585,4 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	{
 		return mBlockDevice.length() - mRangeMap.getUsedSpace();
 	}
-
-
-//	private static class LazyBlock
-//	{
-//		long blockKey;
-//		long blockIndex;
-//		byte[] content;
-//
-//
-//		public LazyBlock(long aBlockKey, long aBlockIndex, byte[] aContent)
-//		{
-//			this.blockKey = aBlockKey;
-//			this.blockIndex = aBlockIndex;
-//			this.content = aContent;
-//		}
-//	}
 }

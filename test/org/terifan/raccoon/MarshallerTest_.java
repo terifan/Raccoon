@@ -7,8 +7,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.testng.annotations.Test;
+import org.testng.annotations.DataProvider;
+import static org.testng.Assert.*;
 
 
 public class MarshallerTest_
@@ -45,7 +46,7 @@ public class MarshallerTest_
 //		assertEquals(8, output.value2);
 //		assertEquals(9, output.value3);
 //	}
-	
+
 
 	static class FilterTest
 	{

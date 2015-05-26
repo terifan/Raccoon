@@ -5,11 +5,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.Test;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.Log;
-import static org.junit.Assert.*;
+import org.testng.annotations.Test;
+import org.testng.annotations.DataProvider;
+import static org.testng.Assert.*;
 
 
 public class DatabaseTest
@@ -162,7 +163,7 @@ public class DatabaseTest
 			_Blob1 blob = new _Blob1("my blob");
 			assertTrue(database.get(blob));
 			assertEquals("my blob", blob.name);
-			assertArrayEquals(content, blob.content);
+			assertEquals(content, blob.content);
 		}
 	}
 
@@ -272,7 +273,7 @@ public class DatabaseTest
 			try (InputStream in = database.read(new _Blob2("my blob")))
 			{
 				assertNotNull(in);
-				assertArrayEquals(content, Streams.fetch(in));
+				assertEquals(content, Streams.fetch(in));
 			}
 		}
 	}
