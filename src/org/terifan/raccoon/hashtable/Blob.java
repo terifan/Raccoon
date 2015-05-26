@@ -4,7 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import org.terifan.raccoon.util.ByteArray;
-import org.terifan.raccoon.io.IBlockDevice;
+import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.io.Streams;
 
@@ -46,7 +46,7 @@ class Blob
 	{
 		try
 		{
-			IBlockDevice blockDevice = aHashTable.getBlockDevice();
+			IManagedBlockDevice blockDevice = aHashTable.getBlockDevice();
 
 			int fragmentCount = ByteArray.getInt(aBuffer, HEADER_FIELD_COUNT);
 			long transactionId = ByteArray.getUnsignedInt(aBuffer, HEADER_FIELD_TRANSACTION);

@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.terifan.raccoon.io.FileBlockDevice;
-import org.terifan.raccoon.io.IBlockDevice;
+import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.SecureBlockDevice;
@@ -29,7 +29,7 @@ public class Database implements AutoCloseable
 	private final static long IDENTITY = 0xc227b6d9e24fb8d4L;
 	private final static int VERSION = 1;
 
-	private IBlockDevice mBlockDevice;
+	private IManagedBlockDevice mBlockDevice;
 	private BlockPointer mSystemRootBlockPointer;
 	private HashMap<Class,Initializer> mInitializers;
 	private HashMap<TableType,Table> mOpenTables;
@@ -126,7 +126,7 @@ public class Database implements AutoCloseable
 	}
 
 
-	private static Database create(IBlockDevice aBlockDevice) throws IOException
+	private static Database create(IManagedBlockDevice aBlockDevice) throws IOException
 	{
 		Log.i("create database");
 		Log.inc();
@@ -148,7 +148,7 @@ public class Database implements AutoCloseable
 	}
 
 
-	private static Database open(IBlockDevice aBlockDevice) throws IOException, UnsupportedVersionException
+	private static Database open(IManagedBlockDevice aBlockDevice) throws IOException, UnsupportedVersionException
 	{
 		Database db = new Database();
 
@@ -747,7 +747,7 @@ public class Database implements AutoCloseable
 	}
 
 
-	public IBlockDevice getBlockDevice()
+	public IManagedBlockDevice getBlockDevice()
 	{
 		return mBlockDevice;
 	}

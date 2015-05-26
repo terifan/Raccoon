@@ -3,7 +3,7 @@ package org.terifan.raccoon.hashtable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import org.terifan.raccoon.io.IBlockDevice;
+import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArray;
 import org.terifan.raccoon.security.ISAAC;
 
@@ -22,7 +22,7 @@ class BlobOutputStream extends OutputStream
 	private long mTransactionId;
 
 
-	public BlobOutputStream(HashTable aHashTable)
+	public BlobOutputStream(HashTable aHashTable) throws IOException
 	{
 		mHashTable = aHashTable;
 		mTransactionId = mHashTable.getTransactionId();
@@ -75,7 +75,7 @@ class BlobOutputStream extends OutputStream
 				// pad buffer
 				mFragmentBuffer.write(new byte[(mBlockSize - (mFragmentBuffer.size() % mBlockSize)) % mBlockSize]);
 
-				IBlockDevice blockDevice = mHashTable.getBlockDevice();
+				IManagedBlockDevice blockDevice = mHashTable.getBlockDevice();
 				byte[] output = mFragmentBuffer.toByteArray();
 				int blockCount = (output.length + mBlockSize - 1) / mBlockSize;
 				int blockIndex = (int)blockDevice.allocBlock(blockCount);
@@ -109,7 +109,7 @@ class BlobOutputStream extends OutputStream
 
 	private void flushBuffer() throws IOException
 	{
-		IBlockDevice blockDevice = mHashTable.getBlockDevice();
+		IManagedBlockDevice blockDevice = mHashTable.getBlockDevice();
 
 //		Result<Integer> blockAlloc = new Result<>((mBufferOffset + mBlockSize - 1) / mBlockSize);
 //		int blockIndex = (int)blockDevice.allocBlock(blockAlloc);

@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Random;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.io.AccessCredentials;
-import org.terifan.raccoon.io.IBlockDevice;
+import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.SecureBlockDevice;
@@ -28,7 +28,7 @@ public class Sample1
 
 			AccessCredentials accessCredentials = new AccessCredentials("password");
 
-			try (IBlockDevice managedBlockDevice = new ManagedBlockDevice(new SecureBlockDevice(blockDevice, accessCredentials)))
+			try (IManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(new SecureBlockDevice(blockDevice, accessCredentials)))
 			{
 				long i = managedBlockDevice.allocBlock(1);
 				managedBlockDevice.setExtraData(inExtra);
@@ -40,7 +40,7 @@ public class Sample1
 			byte[] out = new byte[512];
 			byte[] outExtra;
 
-			try (IBlockDevice managedBlockDevice = new ManagedBlockDevice(new SecureBlockDevice(blockDevice, accessCredentials)))
+			try (IManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(new SecureBlockDevice(blockDevice, accessCredentials)))
 			{
 				outExtra = managedBlockDevice.getExtraData();
 				managedBlockDevice.readBlock(0, out, 0, 512, 64);

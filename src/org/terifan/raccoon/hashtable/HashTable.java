@@ -9,7 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 import org.terifan.raccoon.ByteBufferMap.PutResult;
-import org.terifan.raccoon.io.IBlockDevice;
+import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.security.MurmurHash3;
@@ -74,7 +74,7 @@ public class HashTable implements Closeable, Iterable<Entry>
 	}
 
 
-	public IBlockDevice getBlockDevice()
+	public IManagedBlockDevice getBlockDevice()
 	{
 		return mBlockAccessor.getBlockDevice();
 	}

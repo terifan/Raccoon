@@ -24,7 +24,7 @@ import org.terifan.raccoon.util.Log;
  *    4 space map length
  *    - extra data
  */
-public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
+public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 {
 	private final static int RESERVED_BLOCKS = 2;
 	private final static int CHECKSUM_SIZE = 16;
@@ -50,6 +50,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	private int mSpaceMapBlockCount;
 	private int mSpaceMapLength;
 	private long mSpaceMapBlockKey;
+	private boolean mDoubleCommit;
 
 
 	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice) throws IOException
@@ -63,6 +64,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 		mBlockSize = aBlockDevice.getBlockSize();
 		mWasCreated = mBlockDevice.length() == 0;
 		mUncommitedAllocations = new HashSet<>();
+		mDoubleCommit = true;
 
 		init();
 	}
@@ -121,6 +123,18 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 		readSpaceMap();
 
 		Log.dec();
+	}
+
+
+	public void setDoubleCommit(boolean aDoubleCommit)
+	{
+		mDoubleCommit = aDoubleCommit;
+	}
+
+
+	public boolean isDoubleCommit()
+	{
+		return mDoubleCommit;
 	}
 
 
@@ -291,6 +305,13 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 
 	@Override
+	public synchronized void commit(boolean aMetadata) throws IOException
+	{
+		commit();
+	}
+
+
+	@Override
 	public synchronized void commit() throws IOException
 	{
 		if (mModified)
@@ -300,7 +321,10 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 
 			writeSpaceMap();
 
-			mBlockDevice.commit(false);
+			if (mDoubleCommit)
+			{
+				mBlockDevice.commit(false);
+			}
 
 			writeSuperBlock();
 

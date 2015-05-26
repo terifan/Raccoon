@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
-import org.terifan.raccoon.io.IBlockDevice;
+import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Node;
 import org.terifan.raccoon.Stats;
@@ -21,13 +21,13 @@ class BlockAccessor
 	private final static int CHECKSUM_HASH_SEED = 0x26e54d19;
 	private final static int[] DEFLATER_LEVELS = {0,1,5,9};
 
-	private IBlockDevice mBlockDevice;
+	private IManagedBlockDevice mBlockDevice;
 	private HashTable mHashTable;
 	private int mPageSize;
 	private int mCompression;
 
 
-	public BlockAccessor(HashTable aHashTable, IBlockDevice aBlockDevice)
+	public BlockAccessor(HashTable aHashTable, IManagedBlockDevice aBlockDevice) throws IOException
 	{
 		mHashTable = aHashTable;
 		mBlockDevice = aBlockDevice;
@@ -37,7 +37,7 @@ class BlockAccessor
 	}
 
 
-	public IBlockDevice getBlockDevice()
+	public IManagedBlockDevice getBlockDevice()
 	{
 		return mBlockDevice;
 	}
