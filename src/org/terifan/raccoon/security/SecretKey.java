@@ -10,13 +10,7 @@ public final class SecretKey
 
 	public SecretKey(byte[] aKeyBytes)
 	{
-		this(aKeyBytes, 0, aKeyBytes.length);
-	}
-
-
-	public SecretKey(byte[] aKeyBytes, int aOffset, int aLength)
-	{
-		mKeyBytes = Arrays.copyOfRange(aKeyBytes, aOffset, aOffset + aLength);
+		mKeyBytes = aKeyBytes.clone();
 	}
 
 

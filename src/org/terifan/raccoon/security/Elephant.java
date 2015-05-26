@@ -49,7 +49,7 @@ public final class Elephant
 	}
 
 
-	public synchronized void encrypt(byte [] aBuffer, int aOffset, int aLength, long aStartDataUnitNo, Cipher aCipher, Cipher aTweakCipher, int [] aIV, int [] aTweakKey, long aExtraTweak)
+	public synchronized void encrypt(byte[] aBuffer, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
 	{
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / mUnitSize; unitIndex < numDataUnits; unitIndex++, offset += mUnitSize)
 		{
@@ -95,7 +95,7 @@ public final class Elephant
 	}
 
 
-	public synchronized void decrypt(byte [] aBuffer, int aOffset, int aLength, long aStartDataUnitNo, Cipher aCipher, Cipher aTweakCipher, int [] aIV, int [] aTweakKey, long aExtraTweak)
+	public synchronized void decrypt(byte[] aBuffer, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
 	{
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / mUnitSize; unitIndex < numDataUnits; unitIndex++, offset += mUnitSize)
 		{

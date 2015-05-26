@@ -26,7 +26,7 @@ import org.terifan.raccoon.util.Log;
  */
 public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 {
-	private final static int HEADER_BLOCKS = 2;
+	private final static int RESERVED_BLOCKS = 2;
 	private final static int CHECKSUM_SIZE = 16;
 	private final static int SUPERBLOCK_OFFSET_VERSION              = 16;
 	private final static int SUPERBLOCK_OFFSET_DATETIME             = 16+8;
@@ -60,7 +60,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 		{
 			throw new IllegalArgumentException("Block device must have 512 byte block size or larger.");
 		}
-		
+
 		mBlockDevice = aBlockDevice;
 		mBlockSize = aBlockDevice.getBlockSize();
 		mWasCreated = mBlockDevice.length() == 0;
@@ -87,29 +87,29 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	{
 		Log.i("create block device");
 		Log.inc();
-		
+
 		mRangeMap = new RangeMap();
 		mRangeMap.add(0, Integer.MAX_VALUE);
-		
+
 		mPendingRangeMap = new RangeMap();
 		mPendingRangeMap.add(0, Integer.MAX_VALUE);
-		
+
 		mSuperBlockVersion = -1;
 		mSuperBlock = new byte[mBlockSize];
-		
+
 		setExtraData(null);
-		
+
 		long index = allocBlockInternal(2);
-		
+
 		if (index != 0)
 		{
 			throw new IllegalStateException("The super block must be located at block index 0, was: " + index);
 		}
-		
+
 		// write two copies of super block
 		writeSuperBlock();
 		writeSuperBlock();
-		
+
 		Log.dec();
 	}
 
@@ -118,10 +118,10 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	{
 		Log.i("load block device");
 		Log.inc();
-		
+
 		readSuperBlock();
 		readSpaceMap();
-		
+
 		Log.dec();
 	}
 
@@ -157,9 +157,9 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	@Override
 	public synchronized long allocBlock(int aBlockCount) throws IOException
 	{
-		return allocBlockInternal(aBlockCount) - HEADER_BLOCKS;
+		return allocBlockInternal(aBlockCount) - RESERVED_BLOCKS;
 	}
-	
+
 
 	private long allocBlockInternal(int aBlockCount) throws IOException
 	{
@@ -188,7 +188,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	@Override
 	public synchronized void freeBlock(long aBlockIndex, int aBlockCount) throws IOException
 	{
-		freeBlockInternal(HEADER_BLOCKS + aBlockIndex, aBlockCount);
+		freeBlockInternal(RESERVED_BLOCKS + aBlockIndex, aBlockCount);
 	}
 
 
@@ -217,7 +217,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	@Override
 	public synchronized void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		writeBlockInternal(HEADER_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		writeBlockInternal(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 	}
 
 
@@ -234,7 +234,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 		mModified = true;
 
 		mBlockDevice.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
-		
+
 		Log.dec();
 	}
 
@@ -242,10 +242,10 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 	@Override
 	public synchronized void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		readBlockInternal(aBlockIndex + HEADER_BLOCKS, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		readBlockInternal(aBlockIndex + RESERVED_BLOCKS, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 	}
-	
-	
+
+
 	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
 		if (!mRangeMap.isFree((int)aBlockIndex, aBufferLength / mBlockSize))
@@ -257,7 +257,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 		Log.inc();
 
 		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
-		
+
 		Log.dec();
 	}
 
@@ -282,7 +282,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 			mRangeMap = mPendingRangeMap.clone();
 			mWasCreated = false;
 			mModified = false;
-			
+
 			Log.dec();
 		}
 	}
@@ -390,7 +390,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 		}
 
 		mPendingRangeMap = mRangeMap.clone();
-		
+
 		Log.dec();
 	}
 
@@ -420,7 +420,7 @@ public class ManagedBlockDevice implements IBlockDevice, AutoCloseable
 		baos.write(new byte[mBlockSize * mSpaceMapBlockCount - mSpaceMapLength]);
 
 		writeCheckedBlock(mSpaceMapBlockIndex, baos.toByteArray(), mSpaceMapBlockKey);
-		
+
 		Log.dec();
 	}
 
