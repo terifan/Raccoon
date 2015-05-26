@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
-import org.terifan.raccoon.LeafNode.PutResult;
+import org.terifan.raccoon.ByteBufferMap.PutResult;
 import org.terifan.raccoon.io.IBlockDevice;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseException;

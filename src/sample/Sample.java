@@ -42,8 +42,8 @@ public class Sample
 
 		public Fruit(String aName, double aCalories)
 		{
-			this.name = aName;
-			this.calories = aCalories;
+			name = aName;
+			calories = aCalories;
 		}
 
 
