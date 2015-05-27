@@ -1,5 +1,6 @@
 package org.terifan.raccoon.serialization;
 
+import java.awt.Color;
 import org.terifan.raccoon.util.Log;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
@@ -17,26 +18,31 @@ public class MarshallerNGTest
 	{
 		try
 		{
-			MsgBasicTypes in = new MsgBasicTypes();
+			Log.LEVEL = 10;
+
+			_BigObject in = new _BigObject();
 			in.random();
 
-			byte[] buffer = new Marshaller(MsgBasicTypes.class).marshal(in, FieldCategory.VALUE);
+			byte[] buffer = new Marshaller(_BigObject.class).marshal(in, FieldCategory.VALUE);
 
+			Log.out.println("---------");
 			Log.hexDump(buffer);
+			Log.out.println("---------");
 
-			MsgBasicTypes out = new MsgBasicTypes();
+			_BigObject out = new _BigObject();
 
-			new Marshaller(MsgBasicTypes.class).unmarshal(out, buffer);
+			new Marshaller(_BigObject.class).unmarshal(out, buffer);
 
-			assertEquals(out.mDate, in.mDate);
-			assertEquals(out.mDateList, in.mDateList);
-			assertEquals(out.mDateMap, in.mDateMap);
 			assertEquals(out.mString, in.mString);
-			assertEquals(out.mStringList, in.mStringList);
-			assertEquals(out.mStringMap, in.mStringMap);
-			assertEquals(out.mDouble, in.mDouble);
-			assertEquals(out.mDoubleList, in.mDoubleList);
-			assertEquals(out.mDoubleMap, in.mDoubleMap);
+			assertEquals(out.mDate, in.mDate);
+//			assertEquals(out.mDateList, in.mDateList);
+//			assertEquals(out.mDateMap, in.mDateMap);
+//			assertEquals(out.mString, in.mString);
+//			assertEquals(out.mStringList, in.mStringList);
+//			assertEquals(out.mStringMap, in.mStringMap);
+//			assertEquals(out.mDouble, in.mDouble);
+//			assertEquals(out.mDoubleList, in.mDoubleList);
+//			assertEquals(out.mDoubleMap, in.mDoubleMap);
 		}
 		catch (Exception e)
 		{

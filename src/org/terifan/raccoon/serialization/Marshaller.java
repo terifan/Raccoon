@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import org.terifan.raccoon.DatabaseException;
-import org.terifan.raccoon.util.ByteArray;
 import org.terifan.raccoon.util.Log;
 
 
@@ -80,7 +79,7 @@ public class Marshaller
 
 						Log.v("encode "+index+" "+typeInfo);
 
-						ByteArray.putVarLong(out, index);
+						out.writeInt(index);
 
 						if (typeInfo.array)
 						{
@@ -131,6 +130,7 @@ public class Marshaller
 			for (int i = 0; i < length; i++)
 			{
 				Object value = Array.get(aArray, i);
+
 				if (value != null)
 				{
 					writeArray(aTypeInfo, value, aLevel + 1, aDepth, aOutputStream);
@@ -144,7 +144,7 @@ public class Marshaller
 	{
 		if (aTypeInfo.primitive)
 		{
-			ByteArray.putVarLong(aOutputStream, aLength);
+			aOutputStream.writeInt(aLength);
 
 			if (aTypeInfo.type == Byte.TYPE)
 			{
@@ -176,21 +176,24 @@ public class Marshaller
 
 	private void writeArrayHeader(Object aArray, int aLength, DataOutputStream aOutputStream) throws IOException
 	{
-		byte[] bitmap = new byte[(aLength + 7) / 8];
+		byte[] bitmap = null;
 
-		int nulls = 0;
 		for (int i = 0; i < aLength; i++)
 		{
 			if (Array.get(aArray, i) == null)
 			{
+				if (bitmap == null)
+				{
+					bitmap = new byte[(aLength + 7) / 8];
+				}
 				bitmap[i >> 3] |= 128 >> (i & 7);
-				nulls = 1;
 			}
 		}
 
-		ByteArray.putVarLong(aOutputStream, (aLength << 1) | nulls);
+		aOutputStream.writeInt(aLength);
+		aOutputStream.writeBoolean(bitmap != null);
 
-		if (nulls == 1)
+		if (bitmap != null)
 		{
 			aOutputStream.write(bitmap);
 		}
@@ -211,19 +214,19 @@ public class Marshaller
 		}
 		else if (type == Short.class)
 		{
-			ByteArray.putVarLong(aOutputStream, ByteArray.encodeZigZag32((Short)aValue));
+			aOutputStream.writeShort((Short)aValue);
 		}
 		else if (type == Character.class)
 		{
-			ByteArray.putVarLong(aOutputStream, (Character)aValue);
+			aOutputStream.writeChar((Character)aValue);
 		}
 		else if (type == Integer.class)
 		{
-			ByteArray.putVarLong(aOutputStream, ByteArray.encodeZigZag32((Integer)aValue));
+			aOutputStream.writeInt((Integer)aValue);
 		}
 		else if (type == Long.class)
 		{
-			ByteArray.putVarLong(aOutputStream, ByteArray.encodeZigZag64((Long)aValue));
+			aOutputStream.writeLong((Long)aValue);
 		}
 		else if (type == Float.class)
 		{
@@ -235,18 +238,12 @@ public class Marshaller
 		}
 		else if (type == String.class)
 		{
-			String s = (String)aValue;
-			ByteArray.putVarLong(aOutputStream, s.length());
-			aOutputStream.write(ByteArray.encodeUTF8(s));
+			aOutputStream.writeUTF((String)aValue);
 		}
 		else if (Date.class.isAssignableFrom(type))
 		{
-			ByteArray.putVarLong(aOutputStream, ((Date)aValue).getTime());
+			aOutputStream.writeLong(((Date)aValue).getTime());
 		}
-//		else if (Bundle.class.isAssignableFrom(type))
-//		{
-//			new BinaryEncoder().marshal((Bundle)aValue, aOutputStream);
-//		}
 		else
 		{
 			throw new IllegalArgumentException("Unsupported: " + type);
@@ -256,6 +253,11 @@ public class Marshaller
 
 	public void unmarshal(Object aObject, byte[] aBuffer)
 	{
+		if (aBuffer.length == 0)
+		{
+			return;
+		}
+
 		try
 		{
 			Log.v("unmarshal entity");
@@ -265,7 +267,7 @@ public class Marshaller
 			{
 				for (int counter = 0, fieldCount = mTypeDeclarations.size(), prevIndex = 0; counter < fieldCount; counter++)
 				{
-					int index = (int)ByteArray.getVarLong(in);
+					int index = in.readInt();
 
 					if (index == 0)
 					{
@@ -413,19 +415,19 @@ public class Marshaller
 		}
 		if (type == Short.class || type == Short.TYPE)
 		{
-			return (short)ByteArray.decodeZigZag32((int)ByteArray.getVarLong(aInputStream));
+			return aInputStream.readShort();
 		}
 		if (type == Character.class || type == Character.TYPE)
 		{
-			return (char)ByteArray.getVarLong(aInputStream);
+			return aInputStream.readChar();
 		}
 		if (type == Integer.class || type == Integer.TYPE)
 		{
-			return ByteArray.decodeZigZag32((int)ByteArray.getVarLong(aInputStream));
+			return aInputStream.readInt();
 		}
 		if (type == Long.class || type == Long.TYPE)
 		{
-			return ByteArray.decodeZigZag64(ByteArray.getVarLong(aInputStream));
+			return aInputStream.readLong();
 		}
 		if (type == Float.class || type == Float.TYPE)
 		{
@@ -437,16 +439,12 @@ public class Marshaller
 		}
 		if (type == String.class)
 		{
-			return ByteArray.decodeUTF8(aInputStream, (int)ByteArray.getVarLong(aInputStream));
+			return aInputStream.readUTF();
 		}
 		if (type == Date.class)
 		{
-			return new Date(ByteArray.getVarLong(aInputStream));
+			return new Date(aInputStream.readLong());
 		}
-//		if (type == Bundle.class)
-//		{
-//			return new BinaryDecoder().unmarshal(aInputStream);
-//		}
 
 		throw new IllegalArgumentException("Unsupported type: " + type);
 	}
@@ -454,21 +452,14 @@ public class Marshaller
 
 	private Object readArray(FieldType aTypeInfo, int aLevel, int aDepth, DataInputStream aInputStream) throws IOException, IllegalAccessException
 	{
-		int length = (int)ByteArray.getVarLong(aInputStream);
-
-		boolean hasNulls = false;
+		int length = aInputStream.readInt();
+		boolean hasNulls = aInputStream.readBoolean();
 		byte[] bitmap = null;
 
-		if (aLevel < aDepth || !aTypeInfo.primitive)
+		if (hasNulls)
 		{
-			hasNulls = (length & 1) == 1;
-			length >>= 1;
-
-			if (hasNulls)
-			{
-				bitmap = new byte[(length + 7) / 8];
-				aInputStream.readFully(bitmap);
-			}
+			bitmap = new byte[(length + 7) / 8];
+			aInputStream.readFully(bitmap);
 		}
 
 		int[] dims = new int[aDepth - aLevel + 1];

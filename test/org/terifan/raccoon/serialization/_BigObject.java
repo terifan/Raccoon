@@ -9,7 +9,7 @@ import java.util.Map;
 import static org.terifan.raccoon.serialization.Utils.*;
 
 
-public class MsgBasicTypes implements Serializable
+public class _BigObject implements Serializable
 {
 	private static final long serialVersionUID = 1L;
 
@@ -58,7 +58,7 @@ public class MsgBasicTypes implements Serializable
 	HashMap<String,Date> mDateMap;
 
 
-	MsgBasicTypes random()
+	_BigObject random()
 	{
 		mBoolean = x();
 		mByte = b();
