@@ -6,19 +6,22 @@ import org.terifan.raccoon.Key;
 import org.terifan.raccoon.OpenOption;
 import org.terifan.raccoon.io.AccessCredentials;
 
+
 public class Sample
 {
 	public static void main(String... args)
 	{
 		try
 		{
-			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.CREATE_NEW, new AccessCredentials("password")))
+			AccessCredentials accessCredentials = new AccessCredentials("password");
+
+			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.CREATE_NEW, accessCredentials))
 			{
 				db.save(new Fruit("apple", 52.1));
 				db.commit();
 			}
 
-			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.OPEN, new AccessCredentials("password")))
+			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.OPEN, accessCredentials))
 			{
 				db.list(Fruit.class).stream().forEach(System.out::println);
 			}

@@ -59,6 +59,7 @@ public class Marshaller
 			Log.inc();
 
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
 			try (DataOutputStream out = new DataOutputStream(baos))
 			{
 				for (Entry<Integer, FieldType> entry : mTypeDeclarations.entrySet())
@@ -70,35 +71,34 @@ public class Marshaller
 						continue;
 					}
 
-					Integer index = entry.getKey();
 					Field field = findField(typeInfo);
 					Object value = field.get(aObject);
 
-					if (value == null)
+					if (value != null)
 					{
-						continue;
-					}
+						Integer index = entry.getKey();
 
-					Log.v("encode "+index+" "+typeInfo);
+						Log.v("encode "+index+" "+typeInfo);
 
-					ByteArray.putVarLong(out, index);
+						ByteArray.putVarLong(out, index);
 
-					if (typeInfo.array)
-					{
-						writeArray(typeInfo, value, 1, typeInfo.depth, out);
-					}
-					else if (List.class.isAssignableFrom(typeInfo.type) || Set.class.isAssignableFrom(typeInfo.type))
-					{
-						writeArray(typeInfo.componentType[0], ((Collection)value).toArray(), 1, typeInfo.componentType[0].depth + 1, out);
-					}
-					else if (Map.class.isAssignableFrom(typeInfo.type))
-					{
-						writeArray(typeInfo.componentType[0], ((Map)value).keySet().toArray(), 1, typeInfo.componentType[0].depth + 1, out);
-						writeArray(typeInfo.componentType[1], ((Map)value).values().toArray(), 1, typeInfo.componentType[1].depth + 1, out);
-					}
-					else
-					{
-						writeValue(value, out);
+						if (typeInfo.array)
+						{
+							writeArray(typeInfo, value, 1, typeInfo.depth, out);
+						}
+						else if (List.class.isAssignableFrom(typeInfo.type) || Set.class.isAssignableFrom(typeInfo.type))
+						{
+							writeArray(typeInfo.componentType[0], ((Collection)value).toArray(), 1, typeInfo.componentType[0].depth + 1, out);
+						}
+						else if (Map.class.isAssignableFrom(typeInfo.type))
+						{
+							writeArray(typeInfo.componentType[0], ((Map)value).keySet().toArray(), 1, typeInfo.componentType[0].depth + 1, out);
+							writeArray(typeInfo.componentType[1], ((Map)value).values().toArray(), 1, typeInfo.componentType[1].depth + 1, out);
+						}
+						else
+						{
+							writeValue(value, out);
+						}
 					}
 				}
 			}

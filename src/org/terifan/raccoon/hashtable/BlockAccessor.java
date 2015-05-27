@@ -34,9 +34,9 @@ class BlockAccessor
 		mBlockDevice = aBlockDevice;
 		mPageSize = mBlockDevice.getBlockSize();
 
-		mCompression = 0;
-		this.mNodeSize = aNodeSize;
-		this.mLeafSize = aLeafSize;
+		mCompression = 1;
+		mNodeSize = aNodeSize;
+		mLeafSize = aLeafSize;
 	}
 
 

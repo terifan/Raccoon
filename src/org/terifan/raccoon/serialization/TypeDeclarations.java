@@ -16,14 +16,27 @@ import org.terifan.raccoon.util.Log;
 
 class TypeDeclarations
 {
-	private final static Class[] PRIMITIVE_TYPES = new Class[]{Boolean.TYPE, Byte.TYPE, Short.TYPE, Character.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE};
+	private final static HashMap<String,Class> PRIMITIVE_TYPES;
+
+	static
+	{
+		PRIMITIVE_TYPES = new HashMap<>();
+		PRIMITIVE_TYPES.put(Boolean.TYPE.getSimpleName(), Boolean.TYPE);
+		PRIMITIVE_TYPES.put(Byte.TYPE.getSimpleName(), Byte.TYPE);
+		PRIMITIVE_TYPES.put(Short.TYPE.getSimpleName(), Short.TYPE);
+		PRIMITIVE_TYPES.put(Character.TYPE.getSimpleName(), Character.TYPE);
+		PRIMITIVE_TYPES.put(Integer.TYPE.getSimpleName(), Integer.TYPE);
+		PRIMITIVE_TYPES.put(Long.TYPE.getSimpleName(), Long.TYPE);
+		PRIMITIVE_TYPES.put(Float.TYPE.getSimpleName(), Float.TYPE);
+		PRIMITIVE_TYPES.put(Double.TYPE.getSimpleName(), Double.TYPE);
+	}
 
 	private TreeMap<Integer,FieldType> mTypes;
 
 
-	public TypeDeclarations(Object aEntity, HashMap<String, Field> mFields)
+	public TypeDeclarations(Class aType, HashMap<String, Field> mFields)
 	{
-		Log.v("create type declarations for " + aEntity.getClass());
+		Log.v("create type declarations for " + aType);
 		Log.inc();
 
 		mTypes = new TreeMap<>();
@@ -109,34 +122,29 @@ class TypeDeclarations
 			componentType.array = true;
 		}
 
-		for (Class basicType : PRIMITIVE_TYPES)
+		Class primitiveType = PRIMITIVE_TYPES.get(typeName);
+		if (primitiveType != null)
 		{
-			if (typeName.equals(basicType.getSimpleName()))
-			{
-				componentType.primitive = true;
-				componentType.type = basicType;
-
-				return;
-			}
+			componentType.primitive = true;
+			componentType.type = primitiveType;
+			return;
 		}
-
-		Class<?> type;
 
 		try
 		{
-			type = Class.forName(typeName);
+			Class<?> type = Class.forName(typeName);
+
+			if (!isValidType(type))
+			{
+				throw new IllegalArgumentException("Unsupported type: " + type);
+			}
+
+			componentType.type = type;
 		}
 		catch (ClassNotFoundException e)
 		{
 			throw new DatabaseException(e);
 		}
-
-		if (!isValidType(type))
-		{
-			throw new IllegalArgumentException("Unsupported type: " + type);
-		}
-
-		componentType.type = type;
 	}
 
 
