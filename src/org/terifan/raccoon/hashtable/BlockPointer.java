@@ -211,7 +211,7 @@ public class BlockPointer implements Serializable
 	@Override
 	public int hashCode()
 	{
-		return Long.hashCode(mPageIndex);
+		return (int)(mPageIndex ^ (mPageIndex >>> 32));
 	}
 
 
@@ -223,19 +223,6 @@ public class BlockPointer implements Serializable
 			return ((BlockPointer)aBlockPointer).getPageIndex() == mPageIndex;
 		}
 		return false;
-	}
-
-
-	public boolean identical(BlockPointer aBlockPointer)
-	{
-		return aBlockPointer.mPageIndex == mPageIndex
-			&& aBlockPointer.mBlockKey == mBlockKey
-			&& aBlockPointer.mPageCount == mPageCount
-			&& aBlockPointer.mChecksum == mChecksum
-			&& aBlockPointer.mTransactionId == mTransactionId
-			&& aBlockPointer.mCompression == mCompression
-			&& aBlockPointer.mRange == mRange
-			&& aBlockPointer.mType == mType;
 	}
 
 
