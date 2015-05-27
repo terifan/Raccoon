@@ -1,15 +1,13 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.serialization;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -19,33 +17,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
+import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.util.ByteArray;
 import org.terifan.raccoon.util.Log;
 
 
-class Marshaller
+public class Marshaller
 {
-	private final static Class[] PRIMITIVE_TYPES = new Class[]{Boolean.TYPE, Byte.TYPE, Short.TYPE, Character.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE};
-
 	private HashMap<String, Field> mFields;
-	private TreeMap<Integer,FieldType> mTypeDeclarations;
-	private MarshallerListener mListener;
-	private boolean mHasDiscriminiators;
+	private TypeDeclarations mTypeDeclarations;
 
 
 	public Marshaller(Class aType)
 	{
-		this(aType, null);
-
-		createTypeDeclarations();
-	}
-
-
-	public Marshaller(Class aType, Object aTypeDeclarations)
-	{
 		mFields = new HashMap<>();
-		mTypeDeclarations = (TreeMap<Integer,FieldType>)aTypeDeclarations;
 
 		if (aType != null)
 		{
@@ -61,99 +46,13 @@ class Marshaller
 				mFields.put(field.getName(), field);
 			}
 		}
+
+		mTypeDeclarations = new TypeDeclarations(aType, mFields);
 	}
 
 
-	public boolean hasDiscriminators()
+	public byte[] marshal(Object aObject, FieldCategory aFieldCategory)
 	{
-		return mHasDiscriminiators;
-	}
-
-
-	public void setListener(MarshallerListener aListener)
-	{
-		mListener = aListener;
-	}
-
-
-	private Object createTypeDeclarations()
-	{
-		Log.v("create type declarations");
-		Log.inc();
-
-		mTypeDeclarations = new TreeMap<>();
-
-		int index = 1;
-
-		for (Field field : mFields.values())
-		{
-			FieldType typeInfo = new FieldType();
-			typeInfo.name = field.getName();
-			typeInfo.type = field.getType();
-			typeInfo.array = typeInfo.type.isArray();
-			while (typeInfo.type.isArray())
-			{
-				typeInfo.type = typeInfo.type.getComponentType();
-				typeInfo.depth++;
-			}
-			typeInfo.primitive = typeInfo.type.isPrimitive();
-			typeInfo.category = MarshallerFieldCategory.classify(field);
-
-			mTypeDeclarations.put(index, typeInfo);
-
-			if (typeInfo.array)
-			{
-				typeInfo.code = 2;
-			}
-			else if (List.class.isAssignableFrom(typeInfo.type) || Set.class.isAssignableFrom(typeInfo.type))
-			{
-				getGenericType(field, typeInfo, 0);
-				typeInfo.code = 3;
-			}
-			else if (Map.class.isAssignableFrom(typeInfo.type))
-			{
-				getGenericType(field, typeInfo, 0);
-				getGenericType(field, typeInfo, 1);
-				typeInfo.code = 4;
-			}
-			else if (typeInfo.type.isPrimitive() || isValidType(typeInfo.type))
-			{
-				typeInfo.code = 1;
-			}
-			else
-			{
-				throw new IllegalArgumentException("Unsupported type: " + field);
-			}
-
-			if (typeInfo.category == MarshallerFieldCategory.DISCRIMINATOR)
-			{
-				mHasDiscriminiators = true;
-			}
-
-			Log.v("type found: "+index+" "+typeInfo);
-
-			index++;
-		}
-
-		Log.dec();
-
-		return mTypeDeclarations;
-	}
-
-
-	TreeMap<Integer, FieldType> getTypeDeclarations()
-	{
-		return mTypeDeclarations;
-	}
-
-
-	public byte[] marshal(Object aObject, MarshallerFieldCategory aFieldCategory)
-	{
-		if (mTypeDeclarations == null)
-		{
-			throw new IllegalArgumentException("A TypeDeclarations must be created or loaded");
-		}
-
 		try
 		{
 			Log.v("marshal entity fields " + aFieldCategory);
@@ -172,7 +71,7 @@ class Marshaller
 					}
 
 					Integer index = entry.getKey();
-					Field field = mFields.get(typeInfo.name);
+					Field field = findField(typeInfo);
 					Object value = field.get(aObject);
 
 					if (value == null)
@@ -212,67 +111,6 @@ class Marshaller
 		{
 			throw new DatabaseException(e);
 		}
-	}
-
-
-	private void getGenericType(Field aField, FieldType aTypeInfo, int aIndex)
-	{
-		if (!(aField.getGenericType() instanceof ParameterizedType))
-		{
-			throw new IllegalArgumentException("Generic type must be parameterized: " + aField);
-		}
-
-		if (aTypeInfo.componentType == null)
-		{
-			aTypeInfo.componentType = new FieldType[2];
-		}
-
-		FieldType componentType = new FieldType();
-		aTypeInfo.componentType[aIndex] = componentType;
-
-		String typeName = ((ParameterizedType)aField.getGenericType()).getActualTypeArguments()[aIndex].getTypeName();
-
-		while (typeName.endsWith("[]"))
-		{
-			typeName = typeName.substring(0, typeName.length() - 2);
-			componentType.depth++;
-			componentType.array = true;
-		}
-
-		for (Class basicType : PRIMITIVE_TYPES)
-		{
-			if (typeName.equals(basicType.getSimpleName()))
-			{
-				componentType.primitive = true;
-				componentType.type = basicType;
-
-				return;
-			}
-		}
-
-		Class<?> type;
-
-		try
-		{
-			type = Class.forName(typeName);
-		}
-		catch (ClassNotFoundException e)
-		{
-			throw new DatabaseException(e);
-		}
-
-		if (!isValidType(type))
-		{
-			throw new IllegalArgumentException("Unsupported type: " + type);
-		}
-
-		componentType.type = type;
-	}
-
-
-	private boolean isValidType(Class aType)
-	{
-		return Number.class.isAssignableFrom(aType) || aType == String.class || aType == Character.class || aType == Boolean.class || aType == Date.class;
 	}
 
 
@@ -416,63 +254,6 @@ class Marshaller
 	}
 
 
-	static class FieldType implements Serializable
-	{
-		private final static long serialVersionUID = 1L;
-
-		MarshallerFieldCategory category;
-		String name;
-		Class type;
-		boolean array;
-		boolean primitive;
-		int depth;
-		int code;
-		FieldType[] componentType;
-
-
-		@Override
-		public String toString()
-		{
-			StringBuilder s = new StringBuilder();
-			s.append(category);
-			s.append(" ");
-			s.append("("+code+")");
-			s.append(" ");
-			s.append(type.getSimpleName());
-			for (int i = 0; i < depth; i++)
-			{
-				s.append("[]");
-			}
-			if (componentType != null)
-			{
-				s.append("<");
-				s.append(componentType[0].type.getSimpleName());
-				if (componentType[0].array)
-				{
-					for (int i = 0; i < componentType[0].depth; i++)
-					{
-						s.append("[]");
-					}
-				}
-				if (componentType[1] != null)
-				{
-					s.append("," + componentType[1].type.getSimpleName());
-					if (componentType[1].array)
-					{
-						for (int i = 0; i < componentType[1].depth; i++)
-						{
-							s.append("[]");
-						}
-					}
-				}
-				s.append(">");
-			}
-			s.append(" " + name);
-			return s.toString();
-		}
-	}
-
-
 	public void unmarshal(Object aObject, byte[] aBuffer)
 	{
 		try
@@ -499,7 +280,7 @@ class Marshaller
 					}
 
 					FieldType typeInfo = mTypeDeclarations.get(index);
-					Field field = mFields.get(typeInfo.name);
+					Field field = findField(typeInfo);
 					Object value;
 
 					Log.v("decode "+index+" "+typeInfo);
@@ -529,10 +310,6 @@ class Marshaller
 					{
 						field.set(aObject, value);
 					}
-					if (mListener != null)
-					{
-						mListener.valueDecoded(aObject, field, typeInfo.name, value);
-					}
 
 					prevIndex = index;
 				}
@@ -544,6 +321,12 @@ class Marshaller
 		{
 			throw new DatabaseException("Failed to reconstruct entity: " + aObject.getClass(), e);
 		}
+	}
+
+
+	private Field findField(FieldType aTypeInfo)
+	{
+		return mFields.get(aTypeInfo.name);
 	}
 
 

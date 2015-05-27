@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.security.MurmurHash3;
 
 

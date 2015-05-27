@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.serialization.FieldCategory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -40,7 +41,7 @@ class Table<T> implements Iterable<T>
 			Log.v("find discriminator");
 			Log.inc();
 
-			mDiscriminator = mTableType.getMarshaller().marshal(aDiscriminator, MarshallerFieldCategory.DISCRIMINATOR);
+			mDiscriminator = mTableType.getMarshaller().marshal(aDiscriminator, FieldCategory.DISCRIMINATOR);
 
 			if (mDiscriminator.length == 0)
 			{
@@ -244,19 +245,19 @@ class Table<T> implements Iterable<T>
 
 	byte[] getDiscriminators(Object aInput)
 	{
-		return mTableType.getMarshaller().marshal(aInput, MarshallerFieldCategory.DISCRIMINATOR);
+		return mTableType.getMarshaller().marshal(aInput, FieldCategory.DISCRIMINATOR);
 	}
 
 
 	byte[] getKeys(Object aInput)
 	{
-		return mTableType.getMarshaller().marshal(aInput, MarshallerFieldCategory.KEY);
+		return mTableType.getMarshaller().marshal(aInput, FieldCategory.KEY);
 	}
 
 
 	byte[] getValues(Object aInput)
 	{
-		return mTableType.getMarshaller().marshal(aInput, MarshallerFieldCategory.VALUE);
+		return mTableType.getMarshaller().marshal(aInput, FieldCategory.VALUE);
 	}
 
 
