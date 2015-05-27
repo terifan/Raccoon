@@ -6,13 +6,14 @@ import java.io.InputStream;
 import org.terifan.raccoon.util.ByteArray;
 import org.terifan.raccoon.DatabaseException;
 import static org.terifan.raccoon.hashtable.Blob.HEADER_FIELD_BLOCK_KEY;
+import org.terifan.raccoon.io.IManagedBlockDevice;
 
 
 class BlobInputStream extends InputStream
 {
 	private final static String TAG = BlobInputStream.class.getName();
 
-	private HashTable mHashTable;
+	private IManagedBlockDevice mBlockDevice;
 	private InputStream mFragmentPointers;
 	private byte[] mBuffer;
 	private int mPageSize;
@@ -24,12 +25,12 @@ class BlobInputStream extends InputStream
 	private long mTransactionId;
 
 
-	public BlobInputStream(HashTable aHashTable, byte[] aBlobInfo)
+	public BlobInputStream(IManagedBlockDevice aBlockDevice, byte[] aBlobInfo)
 	{
 		try
 		{
-			mHashTable = aHashTable;
-			mPageSize = mHashTable.getBlockDevice().getBlockSize();
+			mBlockDevice = aBlockDevice;
+			mPageSize = mBlockDevice.getBlockSize();
 			mBuffer = new byte[0];
 
 			mRemaining = ByteArray.getInt(aBlobInfo, Blob.HEADER_FIELD_LENGTH);
@@ -51,7 +52,7 @@ class BlobInputStream extends InputStream
 	//			mHashTable.d("Read indirect block at " + blockIndex + " +" + blockCount);
 
 				byte[] indirectBuffer = new byte[mPageSize * blockCount];
-				aHashTable.getBlockDevice().readBlock(blockIndex, indirectBuffer, 0, indirectBuffer.length, (mTransactionId << 32) | mBlockKey);
+				mBlockDevice.readBlock(blockIndex, indirectBuffer, 0, indirectBuffer.length, (mTransactionId << 32) | mBlockKey);
 
 				mFragmentPointers = new ByteArrayInputStream(indirectBuffer);
 				mFragmentCount = Math.abs(mFragmentCount);
@@ -124,7 +125,7 @@ class BlobInputStream extends InputStream
 
 //		mHashTable.d("Read fragment " + mFragmentIndex + " at " + blockIndex + " +" + blockCount);
 
-		mHashTable.getBlockDevice().readBlock(blockIndex, mBuffer, 0, len, (mTransactionId << 32) | mBlockKey);
+		mBlockDevice.readBlock(blockIndex, mBuffer, 0, len, (mTransactionId << 32) | mBlockKey);
 
 		mOffset = 0;
 	}

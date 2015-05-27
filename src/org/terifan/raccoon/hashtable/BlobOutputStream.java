@@ -10,7 +10,7 @@ import org.terifan.raccoon.security.ISAAC;
 
 class BlobOutputStream extends OutputStream
 {
-	private HashTable mHashTable;
+	private IManagedBlockDevice mBlockDevice;
 	private ByteArrayOutputStream mFragmentBuffer;
 	private byte[] mOutput;
 	private int mFragmentCount;
@@ -22,11 +22,11 @@ class BlobOutputStream extends OutputStream
 	private long mTransactionId;
 
 
-	public BlobOutputStream(HashTable aHashTable) throws IOException
+	public BlobOutputStream(IManagedBlockDevice aBlockDevice, long aTransactionId) throws IOException
 	{
-		mHashTable = aHashTable;
-		mTransactionId = mHashTable.getTransactionId();
-		mBlockSize = mHashTable.getBlockDevice().getBlockSize();
+		mBlockDevice = aBlockDevice;
+		mTransactionId = aTransactionId;
+		mBlockSize = aBlockDevice.getBlockSize();
 		mBuffer = new byte[Blob.MAX_ADJACENT_BLOCKS * mBlockSize];
 		mBlockKey = 0xffffffffL & ISAAC.PRNG.nextInt();
 
@@ -75,19 +75,18 @@ class BlobOutputStream extends OutputStream
 				// pad buffer
 				mFragmentBuffer.write(new byte[(mBlockSize - (mFragmentBuffer.size() % mBlockSize)) % mBlockSize]);
 
-				IManagedBlockDevice blockDevice = mHashTable.getBlockDevice();
 				byte[] output = mFragmentBuffer.toByteArray();
 				int blockCount = (output.length + mBlockSize - 1) / mBlockSize;
-				int blockIndex = (int)blockDevice.allocBlock(blockCount);
+				int blockIndex = (int)mBlockDevice.allocBlock(blockCount);
 
 				if (blockIndex < 0)
 				{
 					throw new IOException("Unsufficient space in block device.");
 				}
 
-//				mHashTable.d("Write indirect block at " + blockIndex + " +" + blockCount);
+//				Log.d("Write indirect block at " + blockIndex + " +" + blockCount);
 
-				blockDevice.writeBlock(blockIndex, output, 0, mBlockSize * blockCount, (mTransactionId << 32) | mBlockKey);
+				mBlockDevice.writeBlock(blockIndex, output, 0, mBlockSize * blockCount, (mTransactionId << 32) | mBlockKey);
 
 				mFragmentBuffer.reset();
 
@@ -109,13 +108,11 @@ class BlobOutputStream extends OutputStream
 
 	private void flushBuffer() throws IOException
 	{
-		IManagedBlockDevice blockDevice = mHashTable.getBlockDevice();
-
 //		Result<Integer> blockAlloc = new Result<>((mBufferOffset + mBlockSize - 1) / mBlockSize);
 //		int blockIndex = (int)blockDevice.allocBlock(blockAlloc);
 //		int blockCount = blockAlloc.get();
 		int blockCount = (mBufferOffset + mBlockSize - 1) / mBlockSize;
-		int blockIndex = (int)blockDevice.allocBlock(blockCount);
+		int blockIndex = (int)mBlockDevice.allocBlock(blockCount);
 		int len = blockCount * mBlockSize;
 
 		if (blockIndex < 0)
@@ -123,7 +120,7 @@ class BlobOutputStream extends OutputStream
 			throw new IOException("Unsufficient space in block device.");
 		}
 
-		blockDevice.writeBlock(blockIndex, mBuffer, 0, blockCount * mBlockSize, (mTransactionId << 32) | mBlockKey);
+		mBlockDevice.writeBlock(blockIndex, mBuffer, 0, blockCount * mBlockSize, (mTransactionId << 32) | mBlockKey);
 
 		ByteArray.putVarLong(mFragmentBuffer, blockIndex);
 		ByteArray.putVarLong(mFragmentBuffer, blockCount - 1);
@@ -131,7 +128,7 @@ class BlobOutputStream extends OutputStream
 		mBytesWritten += len;
 		mFragmentCount++;
 
-//		mHashTable.d("Write fragment " + mFragmentCount + " at " + blockIndex + " +" + blockCount);
+//		Log.d("Write fragment " + mFragmentCount + " at " + blockIndex + " +" + blockCount);
 
 		if (len < mBufferOffset)
 		{

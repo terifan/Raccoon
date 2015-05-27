@@ -3,10 +3,10 @@ package org.terifan.raccoon.hashtable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import org.terifan.raccoon.util.ByteArray;
-import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.DatabaseException;
+import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.Streams;
+import org.terifan.raccoon.util.ByteArray;
 
 
 class Blob
@@ -27,11 +27,11 @@ class Blob
 	}
 
 
-	static byte[] writeBlob(HashTable aHashTable, Object aValue)
+	static byte[] writeBlob(IManagedBlockDevice aBlockDevice, Object aValue, long aTransactionId)
 	{
 		try
 		{
-			BlobOutputStream bos = new BlobOutputStream(aHashTable);
+			BlobOutputStream bos = new BlobOutputStream(aBlockDevice, aTransactionId);
 			Streams.transfer(aValue, bos);
 			return bos.getOutput();
 		}
@@ -42,12 +42,10 @@ class Blob
 	}
 
 
-	static void removeBlob(HashTable aHashTable, byte[] aBuffer)
+	static void removeBlob(IManagedBlockDevice aBlockDevice, byte[] aBuffer)
 	{
 		try
 		{
-			IManagedBlockDevice blockDevice = aHashTable.getBlockDevice();
-
 			int fragmentCount = ByteArray.getInt(aBuffer, HEADER_FIELD_COUNT);
 			long transactionId = ByteArray.getUnsignedInt(aBuffer, HEADER_FIELD_TRANSACTION);
 			long blockKey = (transactionId << 32) | ByteArray.getUnsignedInt(aBuffer, HEADER_FIELD_BLOCK_KEY);
@@ -61,13 +59,13 @@ class Blob
 				int blockIndex = (int)ByteArray.getVarLong(fragmentPointers);
 				int blockCount = (int)ByteArray.getVarLong(fragmentPointers) + 1;
 
-				byte[] indirectBuffer = new byte[blockDevice.getBlockSize() * blockCount];
+				byte[] indirectBuffer = new byte[aBlockDevice.getBlockSize() * blockCount];
 
-				blockDevice.readBlock(blockIndex, indirectBuffer, 0, indirectBuffer.length, blockKey);
+				aBlockDevice.readBlock(blockIndex, indirectBuffer, 0, indirectBuffer.length, blockKey);
 
-	//			aHashTable.d("Free indirect block at " + blockIndex + " +" + blockCount);
+//				Log.d("Free indirect block at " + blockIndex + " +" + blockCount);
 
-				blockDevice.freeBlock(blockIndex, blockCount);
+				aBlockDevice.freeBlock(blockIndex, blockCount);
 
 				fragmentCount = ByteArray.getInt(indirectBuffer, HEADER_FIELD_COUNT);
 
@@ -80,9 +78,9 @@ class Blob
 				int blockIndex = (int)ByteArray.getVarLong(fragmentPointers);
 				int blockCount = (int)ByteArray.getVarLong(fragmentPointers) + 1;
 
-	//			aHashTable.d("Free fragment " + (1+i) + " at " + blockIndex + " +" + blockCount);
+//				Log.d("Free fragment " + (1+i) + " at " + blockIndex + " +" + blockCount);
 
-				blockDevice.freeBlock(blockIndex, blockCount);
+				aBlockDevice.freeBlock(blockIndex, blockCount);
 			}
 		}
 		catch (Exception e)

@@ -8,38 +8,40 @@ import org.terifan.raccoon.Stats;
 
 
 /*
- * +---------+---------+---------+---------+
- * |type|comp|xxxx|    range     |pagecount|
- * +---------+---------+---------+---------+
- * |                 offset                |
- * +---------+---------+---------+---------+
- * |              transaction              |
- * +---------+---------+---------+---------+
- * |                checksum               |
- * +---------+---------+---------+---------+
+ * +---------+---------+---------+---------+---------+---------+---------+---------+
+ * |   type  |   comp  |              x              |       range       |pagecount|
+ * +---------+---------+---------+---------+---------+---------+---------+---------+
+ * |                                     offset                                    |
+ * +---------+---------+---------+---------+---------+---------+---------+---------+
+ * |                                   transaction                                 |
+ * +---------+---------+---------+---------+---------+---------+---------+---------+
+ * |                checksum               |               block key               |
+ * +---------+---------+---------+---------+---------+---------+---------+---------+
  *
- *   4 type (unallocated, hole, index, leaf)
- *   4 compression
- *   4 unused
- *  12 range
+ *   8 type (unallocated, hole, index, leaf)
+ *   8 compression
+ *  24 unused
+ *  16 range
  *   8 page count
- *  32 offset
- *  32 transaction id
+ *  64 offset
+ *  64 transaction id
  *  32 checksum
+ *  32 block key
  *
  */
 public class BlockPointer implements Serializable
 {
 	private final static long serialVersionUID = 1;
-	public final static int SIZE = 16;
+	public final static int SIZE = 32;
 
 	private int mType;
-	private int mPageIndex;
-	private int mPageCount;
-	private int mRange;
 	private int mCompression;
+	private int mRange;
+	private int mPageCount;
+	private long mPageIndex;
+	private long mTransactionId;
 	private int mChecksum;
-	private int mTransactionId;
+	private int mBlockKey;
 
 
 	public int getCompression()
@@ -86,13 +88,13 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public int getPageIndex()
+	public long getPageIndex()
 	{
 		return mPageIndex;
 	}
 
 
-	public BlockPointer setPageIndex(int aPageIndex)
+	public BlockPointer setPageIndex(long aPageIndex)
 	{
 		mPageIndex = aPageIndex;
 		return this;
@@ -125,13 +127,26 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public int getTransactionId()
+	public int getBlockKey()
+	{
+		return mBlockKey;
+	}
+
+
+	public BlockPointer setBlockKey(int aBlockKey)
+	{
+		mBlockKey = aBlockKey;
+		return this;
+	}
+
+
+	public long getTransactionId()
 	{
 		return mTransactionId;
 	}
 
 
-	public BlockPointer setTransactionId(int aTransactionId)
+	public BlockPointer setTransactionId(long aTransactionId)
 	{
 		mTransactionId = aTransactionId;
 		return this;
@@ -140,21 +155,24 @@ public class BlockPointer implements Serializable
 
 	public byte[] encode(byte[] aBuffer, int aOffset)
 	{
-		boolean hole = mType == Node.HOLE;
-
-		assert mType >= 1 && mType <= 15 : mType;
-		assert mCompression >= 0 && mCompression <= 15 : mCompression;
-		assert hole || mPageCount >= 1 && mPageCount <= 256 : mPageCount;
+		assert mType >= 1 && mType <= 255 : mType;
+		assert mCompression >= 0 && mCompression <= 255 : mCompression;
+		assert mType == Node.HOLE || mPageCount >= 1 && mPageCount <= 256 : mPageCount;
 		assert mRange >= 1 && mRange <= 4096 : mRange;
-
-		int flags = (mType << 28) | (mCompression << 24) | ((mRange - 1) << 8) | (hole ? 0 : (mPageCount - 1));
 
 		ByteBuffer bb = ByteBuffer.wrap(aBuffer);
 		bb.position(aOffset);
-		bb.putInt(flags);
-		bb.putInt(mPageIndex);
-		bb.putInt(mTransactionId);
+		bb.put((byte)mType);
+		bb.put((byte)mCompression);
+		bb.put((byte)0);
+		bb.put((byte)0);
+		bb.put((byte)0);
+		bb.putShort((short)mRange);
+		bb.put((byte)(mType == Node.HOLE ? 0 : (mPageCount - 1)));
+		bb.putLong(mPageIndex);
+		bb.putLong(mTransactionId);
 		bb.putInt(mChecksum);
+		bb.putInt(mBlockKey);
 
 		Stats.pointerEncode++;
 
@@ -166,23 +184,22 @@ public class BlockPointer implements Serializable
 	{
 		ByteBuffer bb = ByteBuffer.wrap(aBuffer);
 		bb.position(aOffset);
-		int flags = bb.getInt();
-		mPageIndex = bb.getInt();
-		mTransactionId = bb.getInt();
+
+		mType = 0xFF & bb.get();
+		mCompression = 0xFF & bb.get();
+		bb.get();
+		bb.get();
+		bb.get();
+		mRange = 0xFFFF & bb.getShort();
+		mPageCount = 0xFF & bb.get();
+		mPageIndex = bb.getLong();
+		mTransactionId = bb.getLong();
 		mChecksum = bb.getInt();
+		mBlockKey = bb.getInt();
 
-		mType = 0xF & (flags >>> 28);
-		mCompression = 0xF & (flags >>> 24);
-		mRange = 0xFFF & (flags >>> 8);
-		mPageCount = 0xFF & flags;
-
-		if (mType == Node.LEAF || mType == Node.NODE)
+		if (mType != Node.HOLE)
 		{
 			mPageCount++;
-		}
-		if (mType != Node.FREE)
-		{
-			mRange++;
 		}
 
 		Stats.pointerDecode++;
@@ -194,7 +211,7 @@ public class BlockPointer implements Serializable
 	@Override
 	public int hashCode()
 	{
-		return mPageIndex;
+		return Long.hashCode(mPageIndex);
 	}
 
 
@@ -212,6 +229,7 @@ public class BlockPointer implements Serializable
 	public boolean identical(BlockPointer aBlockPointer)
 	{
 		return aBlockPointer.mPageIndex == mPageIndex
+			&& aBlockPointer.mBlockKey == mBlockKey
 			&& aBlockPointer.mPageCount == mPageCount
 			&& aBlockPointer.mChecksum == mChecksum
 			&& aBlockPointer.mTransactionId == mTransactionId
@@ -234,6 +252,6 @@ public class BlockPointer implements Serializable
 			case FREE: t = "FREE"; break;
 		}
 
-		return "{type=" + t + ", page=" + mPageIndex + ", count=" + mPageCount + ", range=" + mRange + ", tx=" + mTransactionId + ")";
+		return "{type=" + t + ", page=" + mPageIndex + ", count=" + mPageCount + ", range=" + mRange + ", tx=" + mTransactionId + ", blockKey=" + mBlockKey + ")";
 	}
 }

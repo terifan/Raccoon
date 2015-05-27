@@ -85,7 +85,7 @@ class Table<T> implements Iterable<T>
 //			return baos.toByteArray();
 		}
 
-		mTableImplementation = new HashTable(mDatabase, aBlockPointer, mHashSeed, mName, 4*mDatabase.getBlockDevice().getBlockSize(), 8*mDatabase.getBlockDevice().getBlockSize());
+		mTableImplementation = new HashTable(mDatabase.getBlockDevice(), aBlockPointer, mHashSeed, 4*mDatabase.getBlockDevice().getBlockSize(), 8*mDatabase.getBlockDevice().getBlockSize(), mDatabase.getTransactionId());
 
 		Log.dec();
 
@@ -100,7 +100,7 @@ class Table<T> implements Iterable<T>
 
 		byte[] key = getKeys(aEntity);
 		byte[] value = getValues(aEntity);
-		boolean b = mTableImplementation.put(key, value);
+		boolean b = mTableImplementation.put(key, value, mDatabase.getTransactionId());
 
 		Log.dec();
 
@@ -160,13 +160,13 @@ class Table<T> implements Iterable<T>
 
 	public boolean save(T aEntity, InputStream aInputStream)
 	{
-		return mTableImplementation.put(getKeys(aEntity), aInputStream);
+		return mTableImplementation.put(getKeys(aEntity), aInputStream, mDatabase.getTransactionId());
 	}
 
 
 	public boolean remove(T aEntity)
 	{
-		return mTableImplementation.remove(getKeys(aEntity));
+		return mTableImplementation.remove(getKeys(aEntity), mDatabase.getTransactionId());
 	}
 
 
@@ -185,7 +185,7 @@ class Table<T> implements Iterable<T>
 
 	public void clear() throws IOException
 	{
-		mTableImplementation.clear();
+		mTableImplementation.clear(mDatabase.getTransactionId());
 	}
 
 
@@ -203,7 +203,7 @@ class Table<T> implements Iterable<T>
 
 	boolean commit() throws IOException
 	{
-		if (!mTableImplementation.commit())
+		if (!mTableImplementation.commit(mDatabase.getTransactionId()))
 		{
 			return false;
 		}

@@ -12,6 +12,7 @@ import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Node;
 import org.terifan.raccoon.Stats;
+import org.terifan.raccoon.security.ISAAC;
 import org.terifan.raccoon.security.MurmurHash3;
 import org.terifan.raccoon.util.Log;
 
@@ -22,18 +23,20 @@ class BlockAccessor
 	private final static int[] DEFLATER_LEVELS = {0,1,5,9};
 
 	private IManagedBlockDevice mBlockDevice;
-	private HashTable mHashTable;
 	private int mPageSize;
 	private int mCompression;
+	private int mNodeSize;
+	private int mLeafSize;
 
 
-	public BlockAccessor(HashTable aHashTable, IManagedBlockDevice aBlockDevice) throws IOException
+	public BlockAccessor(IManagedBlockDevice aBlockDevice, int aNodeSize, int aLeafSize) throws IOException
 	{
-		mHashTable = aHashTable;
 		mBlockDevice = aBlockDevice;
 		mPageSize = mBlockDevice.getBlockSize();
 
 		mCompression = 0;
+		this.mNodeSize = aNodeSize;
+		this.mLeafSize = aLeafSize;
 	}
 
 
@@ -78,9 +81,7 @@ class BlockAccessor
 
 			byte[] buffer = new byte[mPageSize * aBlockPointer.getPageCount()];
 
-			long blockKey = ((long)aBlockPointer.getTransactionId() << 32) | (0xffffffffL & aBlockPointer.getChecksum());
-
-			mBlockDevice.readBlock(aBlockPointer.getPageIndex(), buffer, 0, buffer.length, blockKey);
+			mBlockDevice.readBlock(aBlockPointer.getPageIndex(), buffer, 0, buffer.length, ((0xffffffffL & aBlockPointer.getBlockKey()) << 32) | (0xffffffffL & aBlockPointer.getChecksum()));
 			Stats.blockRead++;
 
 			if (MurmurHash3.hash_x86_32(buffer, CHECKSUM_HASH_SEED) != aBlockPointer.getChecksum())
@@ -94,11 +95,11 @@ class BlockAccessor
 				{
 					if (aBlockPointer.getType() == Node.LEAF)
 					{
-						buffer = new byte[mHashTable.getLeafSize()];
+						buffer = new byte[mLeafSize];
 					}
 					else
 					{
-						buffer = new byte[mHashTable.getNodeSize()];
+						buffer = new byte[mNodeSize];
 					}
 					readAll(iis, buffer);
 				}
@@ -114,64 +115,63 @@ class BlockAccessor
 	}
 
 
-	public BlockPointer writeBlock(Node aNode, int aRange)
+	public BlockPointer writeBlock(Node aNode, int aRange, long aTransactionId)
 	{
 		synchronized (BlockAccessor.class)
 		{
-		try
-		{
-			byte[] buffer = aNode.array();
-
-			assert (buffer.length % mPageSize) == 0;
-
-			int physicalSize;
-
-			if (mCompression > 0)
+			try
 			{
-				ByteArrayOutputStream baos = new ByteArrayOutputStream(buffer.length);
-				try (DeflaterOutputStream dis = new DeflaterOutputStream(baos, new Deflater(DEFLATER_LEVELS[mCompression])))
+				byte[] buffer = aNode.array();
+
+				assert (buffer.length % mPageSize) == 0;
+
+				int physicalSize;
+
+				if (mCompression > 0)
 				{
-					dis.write(buffer);
+					ByteArrayOutputStream baos = new ByteArrayOutputStream(buffer.length);
+					try (DeflaterOutputStream dis = new DeflaterOutputStream(baos, new Deflater(DEFLATER_LEVELS[mCompression])))
+					{
+						dis.write(buffer);
+					}
+					physicalSize = baos.size();
+					baos.write(new byte[padding(physicalSize)]);
+					buffer = baos.toByteArray();
 				}
-				physicalSize = baos.size();
-				baos.write(new byte[padding(physicalSize)]);
-				buffer = baos.toByteArray();
+				else
+				{
+					physicalSize = buffer.length;
+					buffer = Arrays.copyOfRange(buffer, 0, physicalSize + padding(physicalSize));
+				}
+
+				int pageCount = buffer.length / mPageSize;
+				long pageIndex = mBlockDevice.allocBlock(pageCount);
+				Stats.blockAlloc++;
+
+				int checksum = MurmurHash3.hash_x86_32(buffer, CHECKSUM_HASH_SEED);
+				int blockKey = ISAAC.PRNG.nextInt();
+
+				mBlockDevice.writeBlock(pageIndex, buffer, 0, buffer.length, ((0xffffffffL & blockKey) << 32) | (0xffffffffL & checksum));
+				Stats.blockWrite++;
+
+				BlockPointer blockPointer = new BlockPointer();
+				blockPointer.setType(aNode.getType());
+				blockPointer.setCompression(mCompression);
+				blockPointer.setChecksum(checksum);
+				blockPointer.setBlockKey(blockKey);
+				blockPointer.setPageIndex(pageIndex);
+				blockPointer.setPageCount(pageCount);
+				blockPointer.setRange(aRange);
+				blockPointer.setTransactionId(aTransactionId);
+
+				Log.v("write block ", blockPointer);
+
+				return blockPointer;
 			}
-			else
+			catch (Exception e)
 			{
-				physicalSize = buffer.length;
-				buffer = Arrays.copyOfRange(buffer, 0, physicalSize + padding(physicalSize));
+				throw new DatabaseException("Error writing block", e);
 			}
-
-			int pageCount = buffer.length / mPageSize;
-			long pageIndex = mBlockDevice.allocBlock(pageCount);
-			Stats.blockAlloc++;
-
-			int checksum = MurmurHash3.hash_x86_32(buffer, CHECKSUM_HASH_SEED);
-
-			long tx = mHashTable.getTransactionId();
-			long blockKey = (tx << 32) | (0xffffffffL & checksum);
-
-			mBlockDevice.writeBlock(pageIndex, buffer, 0, buffer.length, blockKey);
-			Stats.blockWrite++;
-
-			BlockPointer blockPointer = new BlockPointer();
-			blockPointer.setType(aNode.getType());
-			blockPointer.setCompression(mCompression);
-			blockPointer.setChecksum(checksum);
-			blockPointer.setPageIndex((int)pageIndex);
-			blockPointer.setPageCount(pageCount);
-			blockPointer.setRange(aRange);
-			blockPointer.setTransactionId((int)tx);
-
-			Log.v("write block ", blockPointer);
-
-			return blockPointer;
-		}
-		catch (Exception e)
-		{
-			throw new DatabaseException("Error writing block", e);
-		}
 		}
 	}
 

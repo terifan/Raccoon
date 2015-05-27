@@ -1,16 +1,19 @@
 package org.terifan.raccoon;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import org.testng.annotations.DataProvider;
 import static org.testng.Assert.*;
+import sample.Sample;
 
 
 public class DatabaseTest
@@ -307,6 +310,27 @@ public class DatabaseTest
 				assertEquals(i, entity.number);
 				assertEquals((i&1)==1, entity.odd);
 			}
+		}
+	}
+
+
+	@Test
+	public void testEncryptedAccess() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+		AccessCredentials accessCredentials = new AccessCredentials("password");
+
+		try (Database db = Database.open(device, OpenOption.CREATE_NEW, accessCredentials))
+		{
+			db.save(new _Fruit("red", "apple", 3467));
+			db.commit();
+		}
+
+		try (Database db = Database.open(device, OpenOption.OPEN, accessCredentials))
+		{
+			_Fruit fruit = new _Fruit("red", "apple");
+			assertTrue(db.get(fruit));
+			assertEquals(fruit.value, 3467);
 		}
 	}
 
