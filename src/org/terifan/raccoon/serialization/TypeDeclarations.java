@@ -1,13 +1,18 @@
 package org.terifan.raccoon.serialization;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
@@ -31,7 +36,20 @@ class TypeDeclarations
 		PRIMITIVE_TYPES.put(Double.TYPE.getSimpleName(), Double.TYPE);
 	}
 
-	private TreeMap<Integer,FieldType> mTypes;
+	private ArrayList<FieldType> mTypes;
+
+
+	public TypeDeclarations(byte[] aTypeBlob) throws IOException
+	{
+		try (ObjectInputStream oos = new ObjectInputStream(new ByteArrayInputStream(aTypeBlob)))
+		{
+			mTypes = (ArrayList<FieldType>)oos.readObject();
+		}
+		catch (ClassNotFoundException e)
+		{
+			throw new IOException(e);
+		}
+	}
 
 
 	public TypeDeclarations(Class aType, HashMap<String, Field> mFields)
@@ -39,9 +57,7 @@ class TypeDeclarations
 		Log.v("create type declarations for " + aType);
 		Log.inc();
 
-		mTypes = new TreeMap<>();
-
-		int index = 1;
+		mTypes = new ArrayList<>();
 
 		for (Field field : mFields.values())
 		{
@@ -57,7 +73,7 @@ class TypeDeclarations
 			typeInfo.primitive = typeInfo.type.isPrimitive();
 			typeInfo.category = classify(field);
 
-			mTypes.put(index, typeInfo);
+			mTypes.add(typeInfo);
 
 			if (typeInfo.array)
 			{
@@ -83,18 +99,22 @@ class TypeDeclarations
 				throw new IllegalArgumentException("Unsupported type: " + field);
 			}
 
-			Log.v("type found: "+index+" "+typeInfo);
-
-			index++;
+			Log.v("type found: " + typeInfo);
 		}
 
 		Log.dec();
 	}
 
 
-	TreeMap<Integer, FieldType> getTypeDeclarations()
+	public FieldType get(int aIndex)
 	{
-		return mTypes;
+		return mTypes.get(aIndex);
+	}
+
+
+	public int size()
+	{
+		return mTypes.size();
 	}
 
 
@@ -168,20 +188,13 @@ class TypeDeclarations
 	}
 
 
-	FieldType get(int aIndex)
+	byte[] marshal() throws IOException
 	{
-		return mTypes.get(aIndex);
-	}
-
-
-	int size()
-	{
-		return mTypes.size();
-	}
-
-
-	Iterable<Map.Entry<Integer, FieldType>> entrySet()
-	{
-		return mTypes.entrySet();
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (ObjectOutputStream oos = new ObjectOutputStream(baos))
+		{
+			oos.writeObject(mTypes);
+		}
+		return baos.toByteArray();
 	}
 }

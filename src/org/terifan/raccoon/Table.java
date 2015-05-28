@@ -263,7 +263,7 @@ class Table<T> implements Iterable<T>
 
 	void update(Object aOutput, byte[] aMarshalledData)
 	{
-		mTableType.getMarshaller().unmarshal(aOutput, aMarshalledData);
+		mTableType.getMarshaller().unmarshal(aMarshalledData, aOutput);
 	}
 
 
@@ -278,7 +278,7 @@ class Table<T> implements Iterable<T>
 
 			if (mDiscriminator != null)
 			{
-				mTableType.getMarshaller().unmarshal(object, mDiscriminator);
+				mTableType.getMarshaller().unmarshal(mDiscriminator, object);
 			}
 
 			return object;
