@@ -1,55 +1,66 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Date;
 
 
 class ValueWriter
 {
-	static void writeValue(Object aValue, DataOutputStream aOutputStream) throws IOException
+	static void writeValue(FieldType aFieldType, Object aValue, DataOutput aDataOutput) throws IOException
 	{
+		if (!aFieldType.primitive)
+		{
+			if (aValue == null)
+			{
+				aDataOutput.writeBoolean(true);
+				return;
+			}
+
+			aDataOutput.writeBoolean(false);
+		}
+
 		Class<?> type = aValue.getClass();
 
 		if (type == Boolean.class)
 		{
-			aOutputStream.writeBoolean((Boolean)aValue);
+			aDataOutput.writeBoolean((Boolean)aValue);
 		}
 		else if (type == Byte.class)
 		{
-			aOutputStream.writeByte((Byte)aValue);
+			aDataOutput.writeByte((Byte)aValue);
 		}
 		else if (type == Short.class)
 		{
-			aOutputStream.writeShort((Short)aValue);
+			aDataOutput.writeShort((Short)aValue);
 		}
 		else if (type == Character.class)
 		{
-			aOutputStream.writeChar((Character)aValue);
+			aDataOutput.writeChar((Character)aValue);
 		}
 		else if (type == Integer.class)
 		{
-			aOutputStream.writeInt((Integer)aValue);
+			aDataOutput.writeInt((Integer)aValue);
 		}
 		else if (type == Long.class)
 		{
-			aOutputStream.writeLong((Long)aValue);
+			aDataOutput.writeLong((Long)aValue);
 		}
 		else if (type == Float.class)
 		{
-			aOutputStream.writeFloat((Float)aValue);
+			aDataOutput.writeFloat((Float)aValue);
 		}
 		else if (type == Double.class)
 		{
-			aOutputStream.writeDouble((Double)aValue);
+			aDataOutput.writeDouble((Double)aValue);
 		}
 		else if (type == String.class)
 		{
-			aOutputStream.writeUTF((String)aValue);
+			aDataOutput.writeUTF((String)aValue);
 		}
 		else if (Date.class.isAssignableFrom(type))
 		{
-			aOutputStream.writeLong(((Date)aValue).getTime());
+			aDataOutput.writeLong(((Date)aValue).getTime());
 		}
 		else
 		{

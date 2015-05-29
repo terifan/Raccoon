@@ -1,6 +1,6 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -12,8 +12,13 @@ import java.util.List;
 
 class CollectionReader
 {
-	static Object readCollection(Field aField, Object aObject, FieldType aTypeInfo, DataInputStream aInputStream) throws IOException, IllegalAccessException
+	static Object readCollection(Field aField, Object aObject, FieldType aTypeInfo, DataInput aDataInput) throws IOException, IllegalAccessException
 	{
+		if (aDataInput.readBoolean())
+		{
+			return null;
+		}
+
 		Collection value = aField == null ? null : (Collection)aField.get(aObject);
 
 		if (value == null && !aTypeInfo.type.isInterface())
@@ -39,7 +44,7 @@ class CollectionReader
 		}
 
 		FieldType componentType = aTypeInfo.componentType[0];
-		Object values = ArrayReader.readArray(componentType, 1, componentType.depth + 1, aInputStream);
+		Object values = ArrayReader.readArray(componentType, 1, componentType.depth + 1, aDataInput);
 
 		for (int i = 0, sz = Array.getLength(values); i < sz; i++)
 		{

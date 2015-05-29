@@ -1,10 +1,9 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.Externalizable;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
@@ -19,7 +18,7 @@ import org.terifan.raccoon.Key;
 import org.terifan.raccoon.util.Log;
 
 
-class TypeDeclarations
+public class TypeDeclarations implements Externalizable
 {
 	private final static HashMap<String,Class> PRIMITIVE_TYPES;
 
@@ -39,19 +38,6 @@ class TypeDeclarations
 	private ArrayList<FieldType> mTypes;
 
 
-	public TypeDeclarations(byte[] aTypeBlob) throws IOException
-	{
-		try (ObjectInputStream oos = new ObjectInputStream(new ByteArrayInputStream(aTypeBlob)))
-		{
-			mTypes = (ArrayList<FieldType>)oos.readObject();
-		}
-		catch (ClassNotFoundException e)
-		{
-			throw new IOException(e);
-		}
-	}
-
-
 	public TypeDeclarations(Class aType, HashMap<String, Field> mFields)
 	{
 		Log.v("create type declarations for " + aType);
@@ -64,7 +50,7 @@ class TypeDeclarations
 			FieldType typeInfo = new FieldType();
 			typeInfo.name = field.getName();
 			typeInfo.type = field.getType();
-			typeInfo.array = typeInfo.type.isArray();
+			boolean array = typeInfo.type.isArray();
 			while (typeInfo.type.isArray())
 			{
 				typeInfo.type = typeInfo.type.getComponentType();
@@ -75,24 +61,29 @@ class TypeDeclarations
 
 			mTypes.add(typeInfo);
 
-			if (typeInfo.array)
+			if (array)
 			{
-				typeInfo.code = 2;
+				typeInfo.format = FieldFormat.ARRAY;
 			}
-			else if (List.class.isAssignableFrom(typeInfo.type) || Set.class.isAssignableFrom(typeInfo.type))
+			else if (List.class.isAssignableFrom(typeInfo.type))
 			{
 				getGenericType(field, typeInfo, 0);
-				typeInfo.code = 3;
+				typeInfo.format = FieldFormat.LIST;
+			}
+			else if (Set.class.isAssignableFrom(typeInfo.type))
+			{
+				getGenericType(field, typeInfo, 0);
+				typeInfo.format = FieldFormat.SET;
 			}
 			else if (Map.class.isAssignableFrom(typeInfo.type))
 			{
 				getGenericType(field, typeInfo, 0);
 				getGenericType(field, typeInfo, 1);
-				typeInfo.code = 4;
+				typeInfo.format = FieldFormat.MAP;
 			}
 			else if (typeInfo.type.isPrimitive() || isValidType(typeInfo.type))
 			{
-				typeInfo.code = 1;
+				typeInfo.format = FieldFormat.VALUE;
 			}
 			else
 			{
@@ -139,7 +130,7 @@ class TypeDeclarations
 		{
 			typeName = typeName.substring(0, typeName.length() - 2);
 			componentType.depth++;
-			componentType.array = true;
+			componentType.format = FieldFormat.ARRAY;
 		}
 
 		Class primitiveType = PRIMITIVE_TYPES.get(typeName);
@@ -188,13 +179,32 @@ class TypeDeclarations
 	}
 
 
-	byte[] marshal() throws IOException
+	@Override
+	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
 	{
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try (ObjectOutputStream oos = new ObjectOutputStream(baos))
+		mTypes = (ArrayList<FieldType>)aIn.readObject();
+	}
+
+
+	@Override
+	public void writeExternal(ObjectOutput aOut) throws IOException
+	{
+		aOut.writeObject(mTypes);
+	}
+
+
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		for (FieldType fieldType : mTypes)
 		{
-			oos.writeObject(mTypes);
+			if (sb.length() > 0)
+			{
+				sb.append("\n");
+			}
+			sb.append(fieldType);
 		}
-		return baos.toByteArray();
+		return sb.toString();
 	}
 }

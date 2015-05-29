@@ -1,6 +1,6 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import org.terifan.raccoon.util.Log;
@@ -8,25 +8,28 @@ import org.terifan.raccoon.util.Log;
 
 class FieldReader
 {
-	static void readField(FieldType aTypeInfo, DataInputStream aIn, Field aField, Object aObject) throws IOException, IllegalAccessException
+	static void readField(FieldType aTypeInfo, DataInput aDataInput, Field aField, Object aObject) throws IOException, IllegalAccessException
 	{
 		Object value;
 
 		Log.v("decode " + aTypeInfo);
 
-		switch (aTypeInfo.code)
+		switch (aTypeInfo.format)
 		{
-			case 1:
-				value = ValueReader.readValue(aTypeInfo.type, aIn);
+			case VALUE:
+				value = ValueReader.readValue(aTypeInfo, aDataInput);
 				break;
-			case 2:
-				value = ArrayReader.readArray(aTypeInfo, 1, aTypeInfo.depth, aIn);
+			case ARRAY:
+				value = ArrayReader.readArray(aTypeInfo, 1, aTypeInfo.depth, aDataInput);
 				break;
-			case 3:
-				value = CollectionReader.readCollection(aField, aObject, aTypeInfo, aIn);
+			case LIST:
+				value = CollectionReader.readCollection(aField, aObject, aTypeInfo, aDataInput);
 				break;
-			case 4:
-				value = MapReader.readMap(aField, aObject, aTypeInfo, aIn);
+			case SET:
+				value = CollectionReader.readCollection(aField, aObject, aTypeInfo, aDataInput);
+				break;
+			case MAP:
+				value = MapReader.readMap(aField, aObject, aTypeInfo, aDataInput);
 				break;
 			default:
 				throw new Error();

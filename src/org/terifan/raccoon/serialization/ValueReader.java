@@ -1,53 +1,60 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 import java.io.IOException;
 import java.util.Date;
 
 
 class ValueReader
 {
-	static Object readValue(Class type, DataInputStream aInputStream) throws IOException
+	static Object readValue(FieldType aFieldType, DataInput aDataInput) throws IOException
 	{
+		if (!aFieldType.primitive && aDataInput.readBoolean())
+		{
+			return null;
+		}
+
+		Class type = aFieldType.type;
+
 		if (type == Boolean.class || type == Boolean.TYPE)
 		{
-			return aInputStream.readBoolean();
+			return aDataInput.readBoolean();
 		}
 		if (type == Byte.class || type == Byte.TYPE)
 		{
-			return aInputStream.readByte();
+			return aDataInput.readByte();
 		}
 		if (type == Short.class || type == Short.TYPE)
 		{
-			return aInputStream.readShort();
+			return aDataInput.readShort();
 		}
 		if (type == Character.class || type == Character.TYPE)
 		{
-			return aInputStream.readChar();
+			return aDataInput.readChar();
 		}
 		if (type == Integer.class || type == Integer.TYPE)
 		{
-			return aInputStream.readInt();
+			return aDataInput.readInt();
 		}
 		if (type == Long.class || type == Long.TYPE)
 		{
-			return aInputStream.readLong();
+			return aDataInput.readLong();
 		}
 		if (type == Float.class || type == Float.TYPE)
 		{
-			return aInputStream.readFloat();
+			return aDataInput.readFloat();
 		}
 		if (type == Double.class || type == Double.TYPE)
 		{
-			return aInputStream.readDouble();
+			return aDataInput.readDouble();
 		}
 		if (type == String.class)
 		{
-			return aInputStream.readUTF();
+			return aDataInput.readUTF();
 		}
 		if (type == Date.class)
 		{
-			return new Date(aInputStream.readLong());
+			return new Date(aDataInput.readLong());
 		}
 
 		throw new IllegalArgumentException("Unsupported type: " + type);

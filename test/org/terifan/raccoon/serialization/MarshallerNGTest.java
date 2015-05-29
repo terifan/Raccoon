@@ -17,24 +17,24 @@ public class MarshallerNGTest
 	{
 		try
 		{
-			Log.LEVEL = 10;
-
-			_BigObject in = new _BigObject();
-			in.random();
-
-			Marshaller marshaller = new Marshaller(_BigObject.class);
-			byte[] types = marshaller.getTypeDeclarations();
-			byte[] buffer = marshaller.marshal(in, FieldCategory.VALUE);
-
-			Log.out.println("---------");
-			Log.hexDump(types);
-			Log.out.println("---------");
-			Log.hexDump(buffer);
-			Log.out.println("---------");
-
-			_BigObject out = new _BigObject();
-
-			new Marshaller(types).unmarshal(buffer, out);
+//			Log.LEVEL = 10;
+//
+//			_BigObject in = new _BigObject();
+//			in.random();
+//
+//			Marshaller marshaller = new Marshaller(_BigObject.class);
+//			byte[] types = marshaller.getTypeDeclarations();
+//			byte[] buffer = marshaller.marshal(in, FieldCategory.VALUE);
+//
+//			Log.out.println("---------");
+//			Log.hexDump(types);
+//			Log.out.println("---------");
+//			Log.hexDump(buffer);
+//			Log.out.println("---------");
+//
+//			_BigObject out = new _BigObject();
+//
+//			new Marshaller(types).unmarshal(buffer, out);
 
 //			assertEquals(out.mString, in.mString);
 //			assertEquals(out.mDate, in.mDate);

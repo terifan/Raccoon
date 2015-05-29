@@ -10,10 +10,9 @@ class FieldType implements Serializable
 	FieldCategory category;
 	String name;
 	Class type;
-	boolean array;
 	boolean primitive;
 	int depth;
-	int code;
+	FieldFormat format;
 	FieldType[] componentType;
 
 
@@ -23,7 +22,7 @@ class FieldType implements Serializable
 		StringBuilder s = new StringBuilder();
 		s.append(category);
 		s.append(" ");
-		s.append("("+code+")");
+		s.append(format);
 		s.append(" ");
 		s.append(type.getSimpleName());
 		for (int i = 0; i < depth; i++)
@@ -34,7 +33,7 @@ class FieldType implements Serializable
 		{
 			s.append("<");
 			s.append(componentType[0].type.getSimpleName());
-			if (componentType[0].array)
+			if (componentType[0].format == FieldFormat.ARRAY)
 			{
 				for (int i = 0; i < componentType[0].depth; i++)
 				{
@@ -44,7 +43,7 @@ class FieldType implements Serializable
 			if (componentType[1] != null)
 			{
 				s.append("," + componentType[1].type.getSimpleName());
-				if (componentType[1].array)
+				if (componentType[1].format == FieldFormat.ARRAY)
 				{
 					for (int i = 0; i < componentType[1].depth; i++)
 					{

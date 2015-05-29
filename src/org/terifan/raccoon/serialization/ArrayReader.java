@@ -1,15 +1,21 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import org.terifan.raccoon.util.Log;
 
 
 class ArrayReader
 {
-	static Object readArray(FieldType aTypeInfo, int aLevel, int aDepth, DataInputStream aInputStream) throws IOException
+	static Object readArray(FieldType aTypeInfo, int aLevel, int aDepth, DataInput aDataInput) throws IOException
 	{
-		int length = aInputStream.readInt();
+		if (aDataInput.readBoolean())
+		{
+			return null;
+		}
+
+		int length = aDataInput.readInt();
 
 		int[] dims = new int[aDepth - aLevel + 1];
 		dims[0] = length;
@@ -18,33 +24,23 @@ class ArrayReader
 
 		if (aLevel == aDepth && aTypeInfo.type == Byte.TYPE)
 		{
-			aInputStream.readFully((byte[])array);
+			aDataInput.readFully((byte[])array);
 		}
 		else if (length > 0)
 		{
-			boolean hasNulls = aInputStream.readBoolean();
-			byte[] bitmap = null;
-
-			if (hasNulls)
-			{
-				bitmap = new byte[(length + 7) / 8];
-				aInputStream.readFully(bitmap);
-			}
-
 			for (int i = 0; i < length; i++)
 			{
 				Object value = null;
-				if (!hasNulls || ((bitmap[i >> 3] & (128 >> (i & 7))) == 0))
+
+				if (aLevel == aDepth)
 				{
-					if (aLevel == aDepth)
-					{
-						value = ValueReader.readValue(aTypeInfo.type, aInputStream);
-					}
-					else
-					{
-						value = readArray(aTypeInfo, aLevel + 1, aDepth, aInputStream);
-					}
+					value = ValueReader.readValue(aTypeInfo, aDataInput);
 				}
+				else
+				{
+					value = readArray(aTypeInfo, aLevel + 1, aDepth, aDataInput);
+				}
+
 				Array.set(array, i, value);
 			}
 		}

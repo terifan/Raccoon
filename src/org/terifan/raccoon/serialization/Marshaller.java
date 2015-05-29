@@ -18,9 +18,9 @@ public class Marshaller
 	private TypeDeclarations mTypeDeclarations;
 
 
-	public Marshaller(byte[] aTypeDeclarations) throws IOException
+	public Marshaller(TypeDeclarations aTypeDeclarations) throws IOException
 	{
-		mTypeDeclarations = new TypeDeclarations(aTypeDeclarations);
+		mTypeDeclarations = aTypeDeclarations;
 	}
 
 
@@ -59,13 +59,7 @@ public class Marshaller
 					{
 						Field field = findField(typeInfo);
 						Object value = field.get(aObject);
-
-						if (value != null)
-						{
-							out.writeInt(index);
-
-							FieldWriter.writeField(typeInfo, out, value);
-						}
+						FieldWriter.writeField(typeInfo, out, value);
 					}
 				}
 
@@ -102,14 +96,9 @@ public class Marshaller
 
 			try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(aBuffer)))
 			{
-				for (;;)
+				for (int i = 0; i < mTypeDeclarations.size(); i++)
 				{
-					int index = in.readInt();
-					if (index < 0)
-					{
-						break;
-					}
-					FieldType typeInfo = mTypeDeclarations.get(index);
+					FieldType typeInfo = mTypeDeclarations.get(i);
 					FieldReader.readField(typeInfo, in, findField(typeInfo), aObject);
 				}
 			}
@@ -123,9 +112,9 @@ public class Marshaller
 	}
 
 
-	public byte[] getTypeDeclarations() throws IOException
+	public TypeDeclarations getTypeDeclarations() throws IOException
 	{
-		return mTypeDeclarations.marshal();
+		return mTypeDeclarations;
 	}
 
 
