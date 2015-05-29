@@ -104,7 +104,7 @@ public class Log
 
 	public static void hexDump(byte[] aBuffer)
 	{
-		int LW = 32;
+		int LW = 40;
 		int MR = 100;
 
 		StringBuilder binText = new StringBuilder("");
