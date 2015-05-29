@@ -20,10 +20,6 @@ class FieldType implements Serializable
 	public String toString()
 	{
 		StringBuilder s = new StringBuilder();
-		s.append(category);
-		s.append(" ");
-		s.append(format);
-		s.append(" ");
 		s.append(type.getSimpleName());
 		for (int i = 0; i < depth; i++)
 		{

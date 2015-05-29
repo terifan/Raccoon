@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import static sample.Utils.*;
 
 
@@ -44,6 +45,17 @@ public class _BigObject implements Serializable
 	ArrayList<Double> mDoubleList;
 	ArrayList<String> mStringList;
 	ArrayList<Date> mDateList;
+
+	HashSet<Boolean> mBooleanSet;
+	HashSet<Byte> mByteSet;
+	HashSet<Short> mShortSet;
+	HashSet<Character> mCharSet;
+	HashSet<Integer> mIntSet;
+	HashSet<Long> mLongSet;
+	HashSet<Float> mFloatSet;
+	HashSet<Double> mDoubleSet;
+	HashSet<String> mStringSet;
+	HashSet<Date> mDateSet;
 
 	HashMap<String,Boolean> mBooleanMap;
 	HashMap<String,Byte> mByteMap;
@@ -93,6 +105,17 @@ public class _BigObject implements Serializable
 		mDoubleList = new ArrayList<>(Arrays.asList(d(),d(),d()));
 		mStringList = new ArrayList<>(Arrays.asList(t(),t(),t()));
 		mDateList = new ArrayList<>(Arrays.asList(new Date(),new Date(),new Date()));
+
+		mBooleanSet = new HashSet<>(Arrays.asList(x(), x(), x()));
+		mByteSet = new HashSet<>(Arrays.asList(b(),b(),b()));
+		mShortSet = new HashSet<>(Arrays.asList(s(),s(),s()));
+		mCharSet = new HashSet<>(Arrays.asList(c(),c(),c()));
+		mIntSet = new HashSet<>(Arrays.asList(i(),i(),i()));
+		mLongSet = new HashSet<>(Arrays.asList(l(),l(),l()));
+		mFloatSet = new HashSet<>(Arrays.asList(f(),f(),f()));
+		mDoubleSet = new HashSet<>(Arrays.asList(d(),d(),d()));
+		mStringSet = new HashSet<>(Arrays.asList(t(),t(),t()));
+		mDateSet = new HashSet<>(Arrays.asList(new Date(),new Date(),new Date()));
 
 		mBooleanMap = asMap(Boolean.class, x(), x(), x());
 		mByteMap = asMap(Byte.class, b(),b(),b());
