@@ -10,26 +10,26 @@ import org.terifan.raccoon.util.Log;
 
 class FieldWriter
 {
-	static void writeField(FieldType aTypeInfo, DataOutput aDataOutput, Object aValue) throws IOException, IllegalAccessException
+	static void writeField(FieldType aFieldType, DataOutput aDataOutput, Object aValue) throws IOException, IllegalAccessException
 	{
-		Log.v("encode " + aTypeInfo);
+		Log.v("encode " + aFieldType);
 
-		switch (aTypeInfo.format)
+		switch (aFieldType.format)
 		{
 			case ARRAY:
-				ArrayWriter.writeArray(aTypeInfo, aValue, 1, aTypeInfo.depth, aDataOutput);
+				ArrayWriter.writeArray(aFieldType, aValue, 1, aFieldType.depth, aDataOutput);
 				break;
 			case LIST:
-				CollectionWriter.writeCollection(aTypeInfo, (List)aValue, aDataOutput);
+				CollectionWriter.writeCollection(aFieldType, (List)aValue, aDataOutput);
 				break;
 			case SET:
-				CollectionWriter.writeCollection(aTypeInfo, (Set)aValue, aDataOutput);
+				CollectionWriter.writeCollection(aFieldType, (Set)aValue, aDataOutput);
 				break;
 			case MAP:
-				MapWriter.writeMap(aTypeInfo, (Map)aValue, aDataOutput);
+				MapWriter.writeMap(aFieldType, (Map)aValue, aDataOutput);
 				break;
 			case VALUE:
-				ValueWriter.writeValue(aTypeInfo.primitive, aValue, aDataOutput);
+				ValueWriter.writeValue(aFieldType.nullable, aValue, aDataOutput);
 				break;
 			default:
 				throw new IllegalStateException();

@@ -7,7 +7,7 @@ import java.util.Collection;
 
 class CollectionWriter
 {
-	static void writeCollection(FieldType typeInfo, Collection aCollection, DataOutput aDataOutput) throws IOException, IllegalAccessException
+	static void writeCollection(FieldType aFieldType, Collection aCollection, DataOutput aDataOutput) throws IOException, IllegalAccessException
 	{
 		if (aCollection == null)
 		{
@@ -17,7 +17,7 @@ class CollectionWriter
 
 		aDataOutput.writeBoolean(false);
 
-		FieldType componentType = typeInfo.componentType[0];
+		FieldType componentType = aFieldType.componentType[0];
 		ArrayWriter.writeArray(componentType, aCollection.toArray(), 1, componentType.depth + 1, aDataOutput);
 	}
 }

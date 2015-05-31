@@ -1,19 +1,66 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 
-class FieldType implements Serializable, Comparable<FieldType>
+class FieldType implements Externalizable, Comparable<FieldType>
 {
 	private final static long serialVersionUID = 1L;
 
 	FieldCategory category;
 	String name;
 	Class type;
-	boolean primitive;
+	boolean nullable;
 	int depth;
 	FieldFormat format;
 	FieldType[] componentType;
+
+
+	@Override
+	public void writeExternal(ObjectOutput aOut) throws IOException
+	{
+		aOut.writeUTF(category.name());
+		aOut.writeUTF(name);
+		aOut.writeUTF(type.getName());
+		aOut.writeBoolean(nullable);
+		aOut.write(depth);
+		aOut.writeUTF(format.name());
+		aOut.writeBoolean(componentType == null);
+		if (componentType != null)
+		{
+			aOut.write(componentType.length);
+			for (FieldType fieldType : componentType)
+			{
+				fieldType.writeExternal(aOut);
+			}
+		}
+	}
+
+
+	@Override
+	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
+	{
+		category = FieldCategory.valueOf(aIn.readUTF());
+		name = aIn.readUTF();
+		nullable = aIn.readBoolean();
+		depth = aIn.read();
+		format = FieldFormat.valueOf(aIn.readUTF());
+		if (aIn.readBoolean())
+		{
+			componentType = null;
+		}
+		else
+		{
+			componentType = new FieldType[aIn.read()];
+			for (int i = 0; i < componentType.length; i++)
+			{
+				componentType[i].readExternal(aIn);
+			}
+		}
+	}
 
 
 	@Override
@@ -57,6 +104,10 @@ class FieldType implements Serializable, Comparable<FieldType>
 			s.append(">");
 		}
 		s.append(" " + name);
+		if (nullable)
+		{
+			s.append(" (nullable)");
+		}
 		return s.toString();
 	}
 }

@@ -10,7 +10,7 @@ class ValueReader
 {
 	static Object readValue(FieldType aFieldType, DataInput aDataInput) throws IOException
 	{
-		if (!aFieldType.primitive && aDataInput.readBoolean())
+		if (aFieldType.nullable && aDataInput.readBoolean())
 		{
 			return null;
 		}

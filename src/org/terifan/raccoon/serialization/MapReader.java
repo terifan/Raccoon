@@ -8,15 +8,15 @@ import java.util.Map;
 
 class MapReader
 {
-	static Map readMap(FieldType aTypeInfo, DataInput aDataInput, Map aOutput) throws IOException, IllegalAccessException
+	static Map readMap(FieldType aFieldType, DataInput aDataInput, Map aOutput) throws IOException, IllegalAccessException
 	{
 		if (aDataInput.readBoolean())
 		{
 			return null;
 		}
 
-		FieldType keyComponentType = aTypeInfo.componentType[0];
-		FieldType valueComponentType = aTypeInfo.componentType[1];
+		FieldType keyComponentType = aFieldType.componentType[0];
+		FieldType valueComponentType = aFieldType.componentType[1];
 
 		Object keys = ArrayReader.readArray(keyComponentType, 1, keyComponentType.depth + 1, aDataInput);
 		Object values = ArrayReader.readArray(valueComponentType, 1, valueComponentType.depth + 1, aDataInput);

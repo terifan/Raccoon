@@ -9,9 +9,9 @@ import org.terifan.raccoon.util.ByteArray;
 
 class ValueWriter
 {
-	static void writeValue(boolean aPrimitive, Object aValue, DataOutput aDataOutput) throws IOException
+	static void writeValue(boolean aNullable, Object aValue, DataOutput aDataOutput) throws IOException
 	{
-		if (!aPrimitive)
+		if (aNullable)
 		{
 			if (aValue == null)
 			{

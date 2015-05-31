@@ -11,22 +11,22 @@ import org.terifan.raccoon.util.Log;
 
 class FieldReader
 {
-	static Object readField(FieldType aTypeInfo, DataInput aDataInput) throws IOException, IllegalAccessException
+	static Object readField(FieldType aFieldType, DataInput aDataInput) throws IOException, IllegalAccessException
 	{
-		Log.v("decode " + aTypeInfo);
+		Log.v("decode " + aFieldType);
 
-		switch (aTypeInfo.format)
+		switch (aFieldType.format)
 		{
 			case VALUE:
-				return ValueReader.readValue(aTypeInfo, aDataInput);
+				return ValueReader.readValue(aFieldType, aDataInput);
 			case ARRAY:
-				return ArrayReader.readArray(aTypeInfo, 1, aTypeInfo.depth, aDataInput);
+				return ArrayReader.readArray(aFieldType, 1, aFieldType.depth, aDataInput);
 			case LIST:
-				return CollectionReader.readCollection(aTypeInfo, aDataInput, new ArrayList<>());
+				return CollectionReader.readCollection(aFieldType, aDataInput, new ArrayList<>());
 			case SET:
-				return CollectionReader.readCollection(aTypeInfo, aDataInput, new HashSet<>());
+				return CollectionReader.readCollection(aFieldType, aDataInput, new HashSet<>());
 			case MAP:
-				return MapReader.readMap(aTypeInfo, aDataInput, new HashMap<>());
+				return MapReader.readMap(aFieldType, aDataInput, new HashMap<>());
 			default:
 				throw new Error();
 		}

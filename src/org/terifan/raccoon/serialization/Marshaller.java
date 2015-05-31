@@ -51,13 +51,13 @@ public class Marshaller
 
 			try (DataOutputStream out = new DataOutputStream(baos))
 			{
-				for (FieldType typeInfo : mTypeDeclarations)
+				for (FieldType fieldType : mTypeDeclarations)
 				{
-					if (typeInfo.category == aFieldCategory)
+					if (fieldType.category == aFieldCategory)
 					{
-						Field field = findField(typeInfo);
+						Field field = findField(fieldType);
 						Object value = field.get(aObject);
-						FieldWriter.writeField(typeInfo, out, value);
+						FieldWriter.writeField(fieldType, out, value);
 					}
 				}
 			}
@@ -92,12 +92,12 @@ public class Marshaller
 
 			try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(aBuffer)))
 			{
-				for (FieldType typeInfo : mTypeDeclarations)
+				for (FieldType fieldType : mTypeDeclarations)
 				{
-					if (typeInfo.category == aFieldCategory)
+					if (fieldType.category == aFieldCategory)
 					{
-						Field field = findField(typeInfo);
-						Object value = FieldReader.readField(typeInfo, in);
+						Field field = findField(fieldType);
+						Object value = FieldReader.readField(fieldType, in);
 						if (field != null)
 						{
 							field.set(aObject, value);
@@ -121,9 +121,9 @@ public class Marshaller
 	}
 
 
-	private Field findField(FieldType aTypeInfo)
+	private Field findField(FieldType aFieldType)
 	{
-		return mFields.get(aTypeInfo.name);
+		return mFields.get(aFieldType.name);
 	}
 
 

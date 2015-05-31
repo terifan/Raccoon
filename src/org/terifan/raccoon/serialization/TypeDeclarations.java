@@ -49,50 +49,50 @@ public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 
 		for (Field field : mFields.values())
 		{
-			FieldType typeInfo = new FieldType();
-			typeInfo.name = field.getName();
-			typeInfo.type = field.getType();
-			boolean array = typeInfo.type.isArray();
-			while (typeInfo.type.isArray())
+			FieldType fieldType = new FieldType();
+			fieldType.name = field.getName();
+			fieldType.type = field.getType();
+			boolean array = fieldType.type.isArray();
+			while (fieldType.type.isArray())
 			{
-				typeInfo.type = typeInfo.type.getComponentType();
-				typeInfo.depth++;
+				fieldType.type = fieldType.type.getComponentType();
+				fieldType.depth++;
 			}
-			typeInfo.primitive = typeInfo.type.isPrimitive();
-			typeInfo.category = classify(field);
+			fieldType.nullable = !fieldType.type.isPrimitive();
+			fieldType.category = classify(field);
 
-			mTypes.add(typeInfo);
+			mTypes.add(fieldType);
 
 			if (array)
 			{
-				typeInfo.format = FieldFormat.ARRAY;
+				fieldType.format = FieldFormat.ARRAY;
 			}
-			else if (List.class.isAssignableFrom(typeInfo.type))
+			else if (List.class.isAssignableFrom(fieldType.type))
 			{
-				getGenericType(field, typeInfo, 0);
-				typeInfo.format = FieldFormat.LIST;
+				getGenericType(field, fieldType, 0);
+				fieldType.format = FieldFormat.LIST;
 			}
-			else if (Set.class.isAssignableFrom(typeInfo.type))
+			else if (Set.class.isAssignableFrom(fieldType.type))
 			{
-				getGenericType(field, typeInfo, 0);
-				typeInfo.format = FieldFormat.SET;
+				getGenericType(field, fieldType, 0);
+				fieldType.format = FieldFormat.SET;
 			}
-			else if (Map.class.isAssignableFrom(typeInfo.type))
+			else if (Map.class.isAssignableFrom(fieldType.type))
 			{
-				getGenericType(field, typeInfo, 0);
-				getGenericType(field, typeInfo, 1);
-				typeInfo.format = FieldFormat.MAP;
+				getGenericType(field, fieldType, 0);
+				getGenericType(field, fieldType, 1);
+				fieldType.format = FieldFormat.MAP;
 			}
-			else if (typeInfo.type.isPrimitive() || isValidType(typeInfo.type))
+			else if (fieldType.type.isPrimitive() || isValidType(fieldType.type))
 			{
-				typeInfo.format = FieldFormat.VALUE;
+				fieldType.format = FieldFormat.VALUE;
 			}
 			else
 			{
 				throw new IllegalArgumentException("Unsupported type: " + field);
 			}
 
-			Log.v("type found: " + typeInfo);
+			Log.v("type found: " + fieldType);
 		}
 
 		Log.dec();
@@ -106,20 +106,20 @@ public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 	}
 
 
-	private void getGenericType(Field aField, FieldType aTypeInfo, int aIndex)
+	private void getGenericType(Field aField, FieldType aFieldType, int aIndex)
 	{
 		if (!(aField.getGenericType() instanceof ParameterizedType))
 		{
 			throw new IllegalArgumentException("Generic type must be parameterized: " + aField);
 		}
 
-		if (aTypeInfo.componentType == null)
+		if (aFieldType.componentType == null)
 		{
-			aTypeInfo.componentType = new FieldType[2];
+			aFieldType.componentType = new FieldType[2];
 		}
 
 		FieldType componentType = new FieldType();
-		aTypeInfo.componentType[aIndex] = componentType;
+		aFieldType.componentType[aIndex] = componentType;
 
 		String typeName = ((ParameterizedType)aField.getGenericType()).getActualTypeArguments()[aIndex].getTypeName();
 
@@ -131,9 +131,10 @@ public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 		}
 
 		Class primitiveType = PRIMITIVE_TYPES.get(typeName);
+		componentType.nullable = primitiveType == null;
+
 		if (primitiveType != null)
 		{
-			componentType.primitive = true;
 			componentType.type = primitiveType;
 			return;
 		}

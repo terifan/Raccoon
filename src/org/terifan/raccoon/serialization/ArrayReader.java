@@ -9,7 +9,7 @@ import org.terifan.raccoon.util.Log;
 
 class ArrayReader
 {
-	static Object readArray(FieldType aTypeInfo, int aLevel, int aDepth, DataInput aDataInput) throws IOException
+	static Object readArray(FieldType aFieldType, int aLevel, int aDepth, DataInput aDataInput) throws IOException
 	{
 		if (aDataInput.readBoolean())
 		{
@@ -21,9 +21,9 @@ class ArrayReader
 		int[] dims = new int[aDepth - aLevel + 1];
 		dims[0] = length;
 
-		Object array = Array.newInstance(aTypeInfo.type, dims);
+		Object array = Array.newInstance(aFieldType.type, dims);
 
-		if (aLevel == aDepth && aTypeInfo.type == Byte.TYPE)
+		if (aLevel == aDepth && aFieldType.type == Byte.TYPE)
 		{
 			aDataInput.readFully((byte[])array);
 		}
@@ -31,15 +31,15 @@ class ArrayReader
 		{
 			for (int i = 0; i < length; i++)
 			{
-				Object value = null;
+				Object value;
 
 				if (aLevel == aDepth)
 				{
-					value = ValueReader.readValue(aTypeInfo, aDataInput);
+					value = ValueReader.readValue(aFieldType, aDataInput);
 				}
 				else
 				{
-					value = readArray(aTypeInfo, aLevel + 1, aDepth, aDataInput);
+					value = readArray(aFieldType, aLevel + 1, aDepth, aDataInput);
 				}
 
 				Array.set(array, i, value);

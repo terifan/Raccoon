@@ -23,7 +23,7 @@ public class RangeMapTest
 		inMap.remove(0, 10);
 		inMap.write(new DataOutputStream(baos));
 
-		Log.hexDump(baos.toByteArray());
+//		Log.hexDump(baos.toByteArray());
 		
 		RangeMap outMap = new RangeMap();
 		outMap.read(new DataInputStream(new ByteArrayInputStream(baos.toByteArray())));
