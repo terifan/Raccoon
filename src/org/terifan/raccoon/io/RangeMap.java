@@ -1,8 +1,8 @@
 package org.terifan.raccoon.io;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import org.terifan.raccoon.util.ByteArray;
@@ -225,36 +225,33 @@ class RangeMap
 	}
 
 
-	public synchronized void read(InputStream aInputStream) throws IOException
+	public synchronized void read(DataInput aDataInput) throws IOException
 	{
-		long prev = 0;
+		int size = ByteArray.readVarInt(aDataInput);
 
-		for (;;)
+		for (int i = 0, prev = 0; i < size; i++)
 		{
-			long count = ByteArray.getVarLong(aInputStream);
+			int count = ByteArray.readVarInt(aDataInput);
 
-			if (count == 0)
-			{
-				break;
-			}
+			prev += ByteArray.readVarInt(aDataInput);
 
-			prev += ByteArray.getVarLong(aInputStream);
-
-			add((int)prev, (int)count);
+			add(prev, count);
 		}
 	}
 
 
-	public synchronized void write(OutputStream aOutputStream) throws IOException
+	public synchronized void write(DataOutput aDataOutput) throws IOException
 	{
-		long prev = 0;
+		int prev = 0;
+
+		ByteArray.writeVarInt(aDataOutput, mMap.size());
 
 		for (Entry<Integer,Integer> entry : mMap.entrySet())
 		{
 			int index = entry.getKey();
 
-			ByteArray.putVarLong(aOutputStream, entry.getValue() - index);
-			ByteArray.putVarLong(aOutputStream, index - prev);
+			ByteArray.writeVarInt(aDataOutput, entry.getValue() - index);
+			ByteArray.writeVarInt(aDataOutput, index - prev);
 
 			prev = index;
 		}

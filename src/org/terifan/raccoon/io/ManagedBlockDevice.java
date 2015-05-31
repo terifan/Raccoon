@@ -2,6 +2,9 @@ package org.terifan.raccoon.io;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.security.DigestException;
 import java.security.MessageDigest;
@@ -436,7 +439,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			readCheckedBlock(mSpaceMapBlockIndex, buffer, mSpaceMapBlockKey);
 
-			mRangeMap.read(new ByteArrayInputStream(buffer, 16, mSpaceMapLength - 16));
+			mRangeMap.read(new DataInputStream(new ByteArrayInputStream(buffer, 16, mSpaceMapLength - 16)));
 
 			mRangeMap.remove(mSpaceMapBlockIndex, mSpaceMapBlockCount);
 		}
@@ -460,7 +463,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		baos.write(new byte[CHECKSUM_SIZE]); // allocate space for checksum
 
-		mPendingRangeMap.write(baos);
+		mPendingRangeMap.write(new DataOutputStream(baos));
 
 		// Allocate space for the new space map block
 		mSpaceMapBlockCount = (baos.size() + mBlockSize - 1) / mBlockSize;

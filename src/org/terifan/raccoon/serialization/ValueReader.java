@@ -3,6 +3,7 @@ package org.terifan.raccoon.serialization;
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.Date;
+import org.terifan.raccoon.util.ByteArray;
 
 
 class ValueReader
@@ -26,19 +27,19 @@ class ValueReader
 		}
 		if (type == Short.class || type == Short.TYPE)
 		{
-			return aDataInput.readShort();
+			return (short)ByteArray.readVarInt(aDataInput);
 		}
 		if (type == Character.class || type == Character.TYPE)
 		{
-			return aDataInput.readChar();
+			return (char)ByteArray.readVarInt(aDataInput);
 		}
 		if (type == Integer.class || type == Integer.TYPE)
 		{
-			return aDataInput.readInt();
+			return ByteArray.readVarInt(aDataInput);
 		}
 		if (type == Long.class || type == Long.TYPE)
 		{
-			return aDataInput.readLong();
+			return ByteArray.readVarLong(aDataInput);
 		}
 		if (type == Float.class || type == Float.TYPE)
 		{
@@ -50,11 +51,11 @@ class ValueReader
 		}
 		if (type == String.class)
 		{
-			return aDataInput.readUTF();
+			return ByteArray.decodeUTF8(aDataInput, ByteArray.readVarInt(aDataInput));
 		}
 		if (type == Date.class)
 		{
-			return new Date(aDataInput.readLong());
+			return new Date(ByteArray.readVarLong(aDataInput));
 		}
 
 		throw new IllegalArgumentException("Unsupported type: " + type);

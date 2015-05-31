@@ -3,6 +3,7 @@ package org.terifan.raccoon.serialization;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import org.terifan.raccoon.util.ByteArray;
 import org.terifan.raccoon.util.Log;
 
 
@@ -21,11 +22,14 @@ class ArrayWriter
 		int length = Array.getLength(aArray);
 
 		aDataOutput.writeBoolean(false);
-		aDataOutput.writeInt(length);
+		ByteArray.writeVarInt(aDataOutput, length);
 
 		if (aLevel == aDepth)
 		{
-			writeArrayContents(aTypeInfo, aArray, aDataOutput);
+			for (int i = 0; i < length; i++)
+			{
+				ValueWriter.writeValue(aTypeInfo.primitive, Array.get(aArray, i), aDataOutput);
+			}
 		}
 		else
 		{
@@ -38,17 +42,6 @@ class ArrayWriter
 					writeArray(aTypeInfo, value, aLevel + 1, aDepth, aDataOutput);
 				}
 			}
-		}
-	}
-
-
-	private static void writeArrayContents(FieldType aTypeInfo, Object aArray, DataOutput aOutputStream) throws IOException, IllegalAccessException
-	{
-		int length = Array.getLength(aArray);
-
-		for (int i = 0; i < length; i++)
-		{
-			ValueWriter.writeValue(aTypeInfo, Array.get(aArray, i), aOutputStream);
 		}
 	}
 }

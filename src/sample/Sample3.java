@@ -29,7 +29,7 @@ public class Sample3
 
 			_BigObject out = new _BigObject();
 
-			new Marshaller(types).unmarshal(buffer, out);
+			new Marshaller(types).unmarshal(buffer, out, FieldCategory.VALUE);
 		}
 		catch (Throwable e)
 		{

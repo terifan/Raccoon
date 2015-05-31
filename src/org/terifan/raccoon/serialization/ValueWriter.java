@@ -1,15 +1,17 @@
 package org.terifan.raccoon.serialization;
 
+import com.oracle.jrockit.jfr.DataType;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Date;
+import org.terifan.raccoon.util.ByteArray;
 
 
 class ValueWriter
 {
-	static void writeValue(FieldType aFieldType, Object aValue, DataOutput aDataOutput) throws IOException
+	static void writeValue(boolean aPrimitive, Object aValue, DataOutput aDataOutput) throws IOException
 	{
-		if (!aFieldType.primitive)
+		if (!aPrimitive)
 		{
 			if (aValue == null)
 			{
@@ -32,19 +34,19 @@ class ValueWriter
 		}
 		else if (type == Short.class)
 		{
-			aDataOutput.writeShort((Short)aValue);
+			ByteArray.writeVarInt(aDataOutput, (Short)aValue);
 		}
 		else if (type == Character.class)
 		{
-			aDataOutput.writeChar((Character)aValue);
+			ByteArray.writeVarInt(aDataOutput, (Character)aValue);
 		}
 		else if (type == Integer.class)
 		{
-			aDataOutput.writeInt((Integer)aValue);
+			ByteArray.writeVarInt(aDataOutput, (Integer)aValue);
 		}
 		else if (type == Long.class)
 		{
-			aDataOutput.writeLong((Long)aValue);
+			ByteArray.writeVarLong(aDataOutput, (Long)aValue);
 		}
 		else if (type == Float.class)
 		{
@@ -56,11 +58,14 @@ class ValueWriter
 		}
 		else if (type == String.class)
 		{
-			aDataOutput.writeUTF((String)aValue);
+			String s = (String)aValue;
+			byte[] buf = ByteArray.encodeUTF8(s);
+			ByteArray.writeVarInt(aDataOutput, s.length());
+			aDataOutput.write(buf);
 		}
 		else if (Date.class.isAssignableFrom(type))
 		{
-			aDataOutput.writeLong(((Date)aValue).getTime());
+			ByteArray.writeVarLong(aDataOutput, ((Date)aValue).getTime());
 		}
 		else
 		{

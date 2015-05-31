@@ -104,6 +104,17 @@ public class Log
 
 	public static void hexDump(byte[] aBuffer)
 	{
+		if (aBuffer == null)
+		{
+			Log.out.println("hexdump: null");
+			return;
+		}
+		if (aBuffer.length == 0)
+		{
+			Log.out.println("hexdump: empty");
+			return;
+		}
+		
 		int LW = 40;
 		int MR = 100;
 

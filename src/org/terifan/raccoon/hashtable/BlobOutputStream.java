@@ -1,6 +1,7 @@
 package org.terifan.raccoon.hashtable;
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import org.terifan.raccoon.io.IManagedBlockDevice;
@@ -11,6 +12,7 @@ import org.terifan.raccoon.security.ISAAC;
 class BlobOutputStream extends OutputStream
 {
 	private IManagedBlockDevice mBlockDevice;
+	private DataOutputStream mFragmentStream;
 	private ByteArrayOutputStream mFragmentBuffer;
 	private byte[] mOutput;
 	private int mFragmentCount;
@@ -31,6 +33,7 @@ class BlobOutputStream extends OutputStream
 		mBlockKey = 0xffffffffL & ISAAC.PRNG.nextInt();
 
 		mFragmentBuffer = new ByteArrayOutputStream();
+		mFragmentStream = new DataOutputStream(mFragmentBuffer);
 	}
 
 
@@ -73,7 +76,7 @@ class BlobOutputStream extends OutputStream
 			if (mFragmentBuffer.size() > Blob.POINTER_MAX_LENGTH)
 			{
 				// pad buffer
-				mFragmentBuffer.write(new byte[(mBlockSize - (mFragmentBuffer.size() % mBlockSize)) % mBlockSize]);
+				mFragmentStream.write(new byte[(mBlockSize - (mFragmentBuffer.size() % mBlockSize)) % mBlockSize]);
 
 				byte[] output = mFragmentBuffer.toByteArray();
 				int blockCount = (output.length + mBlockSize - 1) / mBlockSize;
@@ -90,8 +93,8 @@ class BlobOutputStream extends OutputStream
 
 				mFragmentBuffer.reset();
 
-				ByteArray.putVarLong(mFragmentBuffer, blockIndex);
-				ByteArray.putVarLong(mFragmentBuffer, blockCount - 1);
+				ByteArray.writeVarLong(mFragmentStream, blockIndex);
+				ByteArray.writeVarLong(mFragmentStream, blockCount - 1);
 
 				mFragmentCount = -mFragmentCount; // signal that there is a indirect block
 			}
@@ -122,8 +125,8 @@ class BlobOutputStream extends OutputStream
 
 		mBlockDevice.writeBlock(blockIndex, mBuffer, 0, blockCount * mBlockSize, (mTransactionId << 32) | mBlockKey);
 
-		ByteArray.putVarLong(mFragmentBuffer, blockIndex);
-		ByteArray.putVarLong(mFragmentBuffer, blockCount - 1);
+		ByteArray.writeVarLong(mFragmentStream, blockIndex);
+		ByteArray.writeVarLong(mFragmentStream, blockCount - 1);
 
 		mBytesWritten += len;
 		mFragmentCount++;

@@ -9,16 +9,18 @@ import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.util.Log;
 
 
-public class TypeDeclarations implements Externalizable
+public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 {
 	private final static HashMap<String,Class> PRIMITIVE_TYPES;
 
@@ -35,7 +37,7 @@ public class TypeDeclarations implements Externalizable
 		PRIMITIVE_TYPES.put(Double.TYPE.getSimpleName(), Double.TYPE);
 	}
 
-	private ArrayList<FieldType> mTypes;
+	private TreeSet<FieldType> mTypes;
 
 
 	public TypeDeclarations(Class aType, HashMap<String, Field> mFields)
@@ -43,7 +45,7 @@ public class TypeDeclarations implements Externalizable
 		Log.v("create type declarations for " + aType);
 		Log.inc();
 
-		mTypes = new ArrayList<>();
+		mTypes = new TreeSet<>();
 
 		for (Field field : mFields.values())
 		{
@@ -97,15 +99,10 @@ public class TypeDeclarations implements Externalizable
 	}
 
 
-	public FieldType get(int aIndex)
+	@Override
+	public Iterator<FieldType> iterator()
 	{
-		return mTypes.get(aIndex);
-	}
-
-
-	public int size()
-	{
-		return mTypes.size();
+		return mTypes.iterator();
 	}
 
 
@@ -182,7 +179,7 @@ public class TypeDeclarations implements Externalizable
 	@Override
 	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
 	{
-		mTypes = (ArrayList<FieldType>)aIn.readObject();
+		mTypes = (TreeSet<FieldType>)aIn.readObject();
 	}
 
 

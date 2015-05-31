@@ -44,7 +44,7 @@ public class DatabaseTest
 
 //		for (byte[] b : device.getStorage().values())
 //		{
-//			Debug.hexDump(b);
+//			Log.hexDump(b);
 //		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))

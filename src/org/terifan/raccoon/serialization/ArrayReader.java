@@ -3,6 +3,7 @@ package org.terifan.raccoon.serialization;
 import java.io.DataInput;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import org.terifan.raccoon.util.ByteArray;
 import org.terifan.raccoon.util.Log;
 
 
@@ -15,7 +16,7 @@ class ArrayReader
 			return null;
 		}
 
-		int length = aDataInput.readInt();
+		int length = ByteArray.readVarInt(aDataInput);
 
 		int[] dims = new int[aDepth - aLevel + 1];
 		dims[0] = length;

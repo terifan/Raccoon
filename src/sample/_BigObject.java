@@ -68,7 +68,7 @@ public class _BigObject implements Serializable
 	HashMap<String,String> mStringMap;
 	HashMap<String,Date> mDateMap;
 
-	ArrayList<String[]> mStringListArray;
+	ArrayList<String[]> mZStringListArray;
 
 
 	_BigObject random()
@@ -128,7 +128,7 @@ public class _BigObject implements Serializable
 		mStringMap = asMap(String.class, t(),t(),t());
 		mDateMap = asMap(Date.class, new Date(),new Date(),new Date());
 
-		mStringListArray = new ArrayList<>(Arrays.asList(new String[]{t(),t(),t()}, new String[]{t(),null,t()}));
+		mZStringListArray = new ArrayList<>(Arrays.asList(new String[]{t(),t(),t()}, new String[]{t(),null,"abcdefghijklmnop"}));
 
 		return this;
 	}

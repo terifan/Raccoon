@@ -1,120 +1,118 @@
 package org.terifan.raccoon.util;
 
 import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 
 public class ByteArray
 {
-	/**
-	 * Puts a value into the buffer. The buffers position is advanced.
-	 *
-	 * @param aBuffer
-	 *   the buffer
-	 * @param aValue
-	 *   the value to store in the buffer
-	 * @return
-	 *   the buffer
-	 */
-	public static ByteBuffer putVarLong(ByteBuffer aBuffer, long aValue)
+	private final static boolean FIXED = false;
+
+	
+	private ByteArray()
 	{
-		while (true)
+	}
+
+	
+	public static void writeVarInt(DataOutput aDataOutput, int aValue) throws IOException
+	{
+		if (FIXED)
 		{
-			if ((aValue & ~127L) == 0)
+			aDataOutput.writeInt(aValue);
+		}
+		else
+		{
+			aValue = encodeZigZag32(aValue);
+
+			while (true)
 			{
-				aBuffer.put((byte)aValue);
-				return aBuffer;
-			}
-			else
-			{
-				aBuffer.put((byte)(128 | (aValue & 127L)));
-				aValue >>>= 7;
+				if ((aValue & ~127) == 0)
+				{
+					aDataOutput.write(aValue);
+					return;
+				}
+				else
+				{
+					aDataOutput.write(128 | (aValue & 127));
+					aValue >>>= 7;
+				}
 			}
 		}
 	}
 
 
-	/**
-	 * Puts a value into the buffer. The buffers position is advanced.
-	 *
-	 * @param aBuffer
-	 *   the buffer
-	 * @param aValue
-	 *   the value to store in the buffer
-	 * @return
-	 *   the buffer
-	 */
-	public static OutputStream putVarLong(OutputStream aBuffer, long aValue) throws IOException
+	public static void writeVarLong(DataOutput aDataOutput, long aValue) throws IOException
 	{
-		while (true)
+		if (FIXED)
 		{
-			if ((aValue & ~127L) == 0)
+			aDataOutput.writeLong(aValue);
+		}
+		else
+		{
+			aValue = encodeZigZag64(aValue);
+
+			while (true)
 			{
-				aBuffer.write((int)aValue);
-				return aBuffer;
-			}
-			else
-			{
-				aBuffer.write((int)(128 | ((int)aValue & 127L)));
-				aValue >>>= 7;
+				if ((aValue & ~127L) == 0)
+				{
+					aDataOutput.write((int)aValue);
+					return;
+				}
+				else
+				{
+					aDataOutput.write((int)(128 | ((int)aValue & 127L)));
+					aValue >>>= 7;
+				}
 			}
 		}
 	}
 
 
-	/**
-	 * Gets a value from the buffer. The buffers position is advanced.
-	 *
-	 * @param aBuffer
-	 *   the buffer
-	 * @return
-	 *   the value stored
-	 */
-	public static long getVarLong(ByteBuffer aBuffer) throws IOException
+	public static int readVarInt(DataInput aDataInput) throws IOException
 	{
-		long value = 0L;
-		for (int n = 0; n < 64; n += 7)
+		if (FIXED)
 		{
-			int b = aBuffer.get();
-			value |= (long)(b & 127) << n;
-			if ((b & 128) == 0)
-			{
-				return value;
-			}
+			return aDataInput.readInt();
 		}
-		throw new IOException();
+		else
+		{
+			int value = 0;
+			for (int n = 0; n < 32; n += 7)
+			{
+				byte b = aDataInput.readByte();
+				value |= (b & 127) << n;
+				if ((b & 128) == 0)
+				{
+					return decodeZigZag32(value);
+				}
+			}
+			throw new IOException();
+		}
 	}
 
 
-	/**
-	 * Gets a value from the buffer. The buffers position is advanced.
-	 *
-	 * @param aBuffer
-	 *   the buffer
-	 * @return
-	 *   the value stored
-	 */
-	public static long getVarLong(InputStream aBuffer) throws IOException
+	public static long readVarLong(DataInput aDataInput) throws IOException
 	{
-		long value = 0L;
-		for (int n = 0; n < 64; n += 7)
+		if (FIXED)
 		{
-			int b = aBuffer.read();
-			if (b == -1)
-			{
-				return value;
-			}
-			value |= (long)(b & 127) << n;
-			if ((b & 128) == 0)
-			{
-				return value;
-			}
+			return aDataInput.readLong();
 		}
-		throw new IOException();
+		else
+		{
+			long value = 0L;
+			for (int n = 0; n < 64; n += 7)
+			{
+				byte b = aDataInput.readByte();
+				value |= (long)(b & 127) << n;
+				if ((b & 128) == 0)
+				{
+					return decodeZigZag64(value);
+				}
+			}
+			throw new IOException();
+		}
 	}
 
 
@@ -139,9 +137,6 @@ public class ByteArray
 	public static int decodeZigZag32(final int n)
 	{
 		return (n >>> 1) ^ -(n & 1);
-	}
-	private ByteArray()
-	{
 	}
 
 
@@ -229,9 +224,9 @@ public class ByteArray
 
 		for (int i = 0, len = aInput.length(); i < len; i++)
 		{
-			if (ptr+3 > array.length)
+			if (ptr + 3 > array.length)
 			{
-				array = Arrays.copyOf(array, (ptr+1)*3/2);
+				array = Arrays.copyOf(array, (ptr + 3) * 3 / 2);
 			}
 
 			char c = aInput.charAt(i);

@@ -51,10 +51,8 @@ public class Marshaller
 
 			try (DataOutputStream out = new DataOutputStream(baos))
 			{
-				for (int index = 0; index < mTypeDeclarations.size(); index++)
+				for (FieldType typeInfo : mTypeDeclarations)
 				{
-					FieldType typeInfo = mTypeDeclarations.get(index);
-
 					if (typeInfo.category == aFieldCategory)
 					{
 						Field field = findField(typeInfo);
@@ -62,8 +60,6 @@ public class Marshaller
 						FieldWriter.writeField(typeInfo, out, value);
 					}
 				}
-
-				out.writeInt(-1);
 			}
 
 			Log.dec();
@@ -77,7 +73,7 @@ public class Marshaller
 	}
 
 
-	public void unmarshal(byte[] aBuffer, Object aObject)
+	public void unmarshal(byte[] aBuffer, Object aObject, FieldCategory aFieldCategory)
 	{
 		if (aBuffer.length == 0)
 		{
@@ -96,10 +92,17 @@ public class Marshaller
 
 			try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(aBuffer)))
 			{
-				for (int i = 0; i < mTypeDeclarations.size(); i++)
+				for (FieldType typeInfo : mTypeDeclarations)
 				{
-					FieldType typeInfo = mTypeDeclarations.get(i);
-					FieldReader.readField(typeInfo, in, findField(typeInfo), aObject);
+					if (typeInfo.category == aFieldCategory)
+					{
+						Field field = findField(typeInfo);
+						Object value = FieldReader.readField(typeInfo, in);
+						if (field != null)
+						{
+							field.set(aObject, value);
+						}
+					}
 				}
 			}
 
@@ -130,12 +133,12 @@ public class Marshaller
 
 		for (Field field : aType.getDeclaredFields())
 		{
-			field.setAccessible(true);
-
 			if ((field.getModifiers() & (Modifier.TRANSIENT | Modifier.STATIC | Modifier.FINAL)) != 0)
 			{
 				continue;
 			}
+
+			field.setAccessible(true);
 
 			mFields.put(field.getName(), field);
 		}

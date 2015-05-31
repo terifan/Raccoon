@@ -29,7 +29,7 @@ class FieldWriter
 				MapWriter.writeMap(aTypeInfo, (Map)aValue, aDataOutput);
 				break;
 			case VALUE:
-				ValueWriter.writeValue(aTypeInfo, aValue, aDataOutput);
+				ValueWriter.writeValue(aTypeInfo.primitive, aValue, aDataOutput);
 				break;
 			default:
 				throw new IllegalStateException();

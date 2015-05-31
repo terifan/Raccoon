@@ -111,20 +111,23 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			value = getValue(computeHash(aKey), 0, aKey, aType, mRootNode);
 		}
 
+//		Log.hexDump(aKey);
+//		Log.hexDump(value);
+
 		return value;
 	}
 
 
 	public synchronized byte[] get(byte[] aKey)
 	{
-		Result<Integer> type = new Result<>();
-		byte[] value = getRaw(aKey, type);
+		Result<Integer> entryType = new Result<>();
+		byte[] value = getRaw(aKey, entryType);
 
 		if (value == null)
 		{
 			return null;
 		}
-		if (type.get() == 0)
+		if (entryType.get() == 0)
 		{
 			return value;
 		}
@@ -201,6 +204,9 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			Log.v("put root value");
 
+//			Log.hexDump(aKey);
+//			Log.hexDump(value);
+			
 			mRootMap.put(type, aKey, value, result);
 
 			if (result.overflow)

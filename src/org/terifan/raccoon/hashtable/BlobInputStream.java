@@ -1,6 +1,7 @@
 package org.terifan.raccoon.hashtable;
 
 import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import org.terifan.raccoon.util.ByteArray;
@@ -14,7 +15,7 @@ class BlobInputStream extends InputStream
 	private final static String TAG = BlobInputStream.class.getName();
 
 	private IManagedBlockDevice mBlockDevice;
-	private InputStream mFragmentPointers;
+	private DataInputStream mFragmentPointers;
 	private byte[] mBuffer;
 	private int mPageSize;
 	private int mOffset;
@@ -38,7 +39,7 @@ class BlobInputStream extends InputStream
 			mTransactionId = ByteArray.getUnsignedInt(aBlobInfo, Blob.HEADER_FIELD_TRANSACTION);
 			mBlockKey = ByteArray.getUnsignedInt(aBlobInfo, HEADER_FIELD_BLOCK_KEY);
 
-			mFragmentPointers = new ByteArrayInputStream(aBlobInfo);
+			mFragmentPointers = new DataInputStream(new ByteArrayInputStream(aBlobInfo));
 			mFragmentPointers.skip(Blob.HEADER_SIZE);
 
 	//		mHashTable.d("Read blob, fragments: " + mFragmentCount + ", bytes: " + mRemaining);
@@ -46,15 +47,15 @@ class BlobInputStream extends InputStream
 			// read indirect block
 			if (mFragmentCount < 0)
 			{
-				int blockIndex = (int)ByteArray.getVarLong(mFragmentPointers);
-				int blockCount = (int)ByteArray.getVarLong(mFragmentPointers) + 1;
+				int blockIndex = (int)ByteArray.readVarLong(mFragmentPointers);
+				int blockCount = (int)ByteArray.readVarLong(mFragmentPointers) + 1;
 
 	//			mHashTable.d("Read indirect block at " + blockIndex + " +" + blockCount);
 
 				byte[] indirectBuffer = new byte[mPageSize * blockCount];
 				mBlockDevice.readBlock(blockIndex, indirectBuffer, 0, indirectBuffer.length, (mTransactionId << 32) | mBlockKey);
 
-				mFragmentPointers = new ByteArrayInputStream(indirectBuffer);
+				mFragmentPointers = new DataInputStream(new ByteArrayInputStream(indirectBuffer));
 				mFragmentCount = Math.abs(mFragmentCount);
 			}
 		}
@@ -114,8 +115,8 @@ class BlobInputStream extends InputStream
 			throw new IOException();
 		}
 
-		int blockIndex = (int)ByteArray.getVarLong(mFragmentPointers);
-		int blockCount = (int)ByteArray.getVarLong(mFragmentPointers) + 1;
+		int blockIndex = (int)ByteArray.readVarLong(mFragmentPointers);
+		int blockCount = (int)ByteArray.readVarLong(mFragmentPointers) + 1;
 		int len = mPageSize * blockCount;
 
 		if (mBuffer.length != len)

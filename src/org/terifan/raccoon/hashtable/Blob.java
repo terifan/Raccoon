@@ -1,8 +1,8 @@
 package org.terifan.raccoon.hashtable;
 
 import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.Streams;
@@ -50,14 +50,14 @@ class Blob
 			long transactionId = ByteArray.getUnsignedInt(aBuffer, HEADER_FIELD_TRANSACTION);
 			long blockKey = (transactionId << 32) | ByteArray.getUnsignedInt(aBuffer, HEADER_FIELD_BLOCK_KEY);
 
-			InputStream fragmentPointers = new ByteArrayInputStream(aBuffer);
+			DataInputStream fragmentPointers = new DataInputStream(new ByteArrayInputStream(aBuffer));
 			fragmentPointers.skip(HEADER_SIZE);
 
 			// read indirect block
 			if (fragmentCount == Blob.HEADER_INDIRECT_ESCAPE)
 			{
-				int blockIndex = (int)ByteArray.getVarLong(fragmentPointers);
-				int blockCount = (int)ByteArray.getVarLong(fragmentPointers) + 1;
+				int blockIndex = (int)ByteArray.readVarLong(fragmentPointers);
+				int blockCount = (int)ByteArray.readVarLong(fragmentPointers) + 1;
 
 				byte[] indirectBuffer = new byte[aBlockDevice.getBlockSize() * blockCount];
 
@@ -69,14 +69,14 @@ class Blob
 
 				fragmentCount = ByteArray.getInt(indirectBuffer, HEADER_FIELD_COUNT);
 
-				fragmentPointers = new ByteArrayInputStream(indirectBuffer);
+				fragmentPointers = new DataInputStream(new ByteArrayInputStream(indirectBuffer));
 				fragmentPointers.skip(HEADER_SIZE);
 			}
 
 			for (int i = 0; i < fragmentCount; i++)
 			{
-				int blockIndex = (int)ByteArray.getVarLong(fragmentPointers);
-				int blockCount = (int)ByteArray.getVarLong(fragmentPointers) + 1;
+				int blockIndex = (int)ByteArray.readVarLong(fragmentPointers);
+				int blockCount = (int)ByteArray.readVarLong(fragmentPointers) + 1;
 
 //				Log.d("Free fragment " + (1+i) + " at " + blockIndex + " +" + blockCount);
 

@@ -2,8 +2,11 @@ package org.terifan.raccoon.io;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Random;
+import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 
@@ -18,10 +21,12 @@ public class RangeMapTest
 		RangeMap inMap = new RangeMap();
 		inMap.add(0, Integer.MAX_VALUE);
 		inMap.remove(0, 10);
-		inMap.write(baos);
+		inMap.write(new DataOutputStream(baos));
 
+		Log.hexDump(baos.toByteArray());
+		
 		RangeMap outMap = new RangeMap();
-		outMap.read(new ByteArrayInputStream(baos.toByteArray()));
+		outMap.read(new DataInputStream(new ByteArrayInputStream(baos.toByteArray())));
 
 		assertEquals(inMap.toString(), outMap.toString());
 	}
@@ -45,10 +50,10 @@ public class RangeMapTest
 			i += j * 2;
 		}
 
-		inMap.write(baos);
+		inMap.write(new DataOutputStream(baos));
 
 		RangeMap outMap = new RangeMap();
-		outMap.read(new ByteArrayInputStream(baos.toByteArray()));
+		outMap.read(new DataInputStream(new ByteArrayInputStream(baos.toByteArray())));
 
 		assertEquals(inMap.toString(), outMap.toString());
 	}

@@ -3,7 +3,7 @@ package org.terifan.raccoon.serialization;
 import java.io.Serializable;
 
 
-class FieldType implements Serializable
+class FieldType implements Serializable, Comparable<FieldType>
 {
 	private final static long serialVersionUID = 1L;
 
@@ -14,6 +14,13 @@ class FieldType implements Serializable
 	int depth;
 	FieldFormat format;
 	FieldType[] componentType;
+
+
+	@Override
+	public int compareTo(FieldType aOther)
+	{
+		return name.compareTo(aOther.name);
+	}
 
 
 	@Override
