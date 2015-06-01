@@ -1,52 +1,50 @@
 package org.terifan.raccoon.serialization;
 
-import com.oracle.jrockit.jfr.DataType;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Date;
-import org.terifan.raccoon.util.ByteArray;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
 class ValueWriter
 {
-	static void writeValue(boolean aNullable, Object aValue, DataOutput aDataOutput) throws IOException
+	static void writeValue(boolean aNullable, Object aValue, ByteArrayBuffer aDataOutput) throws IOException
 	{
 		if (aNullable)
 		{
 			if (aValue == null)
 			{
-				aDataOutput.writeBoolean(true);
+				aDataOutput.writeBit(1);
 				return;
 			}
 
-			aDataOutput.writeBoolean(false);
+			aDataOutput.writeBit(0);
 		}
 
 		Class<?> type = aValue.getClass();
 
 		if (type == Boolean.class)
 		{
-			aDataOutput.writeBoolean((Boolean)aValue);
+			aDataOutput.writeBit(((Boolean)aValue) ? 1 : 0);
 		}
 		else if (type == Byte.class)
 		{
-			aDataOutput.writeByte((Byte)aValue);
+			aDataOutput.write((Byte)aValue);
 		}
 		else if (type == Short.class)
 		{
-			ByteArray.writeVarInt(aDataOutput, (Short)aValue);
+			aDataOutput.writeVar32((Short)aValue);
 		}
 		else if (type == Character.class)
 		{
-			ByteArray.writeVarInt(aDataOutput, (Character)aValue);
+			aDataOutput.writeVar32((Character)aValue);
 		}
 		else if (type == Integer.class)
 		{
-			ByteArray.writeVarInt(aDataOutput, (Integer)aValue);
+			aDataOutput.writeVar32((Integer)aValue);
 		}
 		else if (type == Long.class)
 		{
-			ByteArray.writeVarLong(aDataOutput, (Long)aValue);
+			aDataOutput.writeVar64((Long)aValue);
 		}
 		else if (type == Float.class)
 		{
@@ -59,13 +57,12 @@ class ValueWriter
 		else if (type == String.class)
 		{
 			String s = (String)aValue;
-			byte[] buf = ByteArray.encodeUTF8(s);
-			ByteArray.writeVarInt(aDataOutput, s.length());
-			aDataOutput.write(buf);
+			aDataOutput.writeVar32(s.length());
+			aDataOutput.writeString(s);
 		}
 		else if (Date.class.isAssignableFrom(type))
 		{
-			ByteArray.writeVarLong(aDataOutput, ((Date)aValue).getTime());
+			aDataOutput.writeVar64(((Date)aValue).getTime());
 		}
 		else
 		{

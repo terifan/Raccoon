@@ -1,21 +1,21 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Map;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
 class MapWriter
 {
-	static void writeMap(FieldType aFieldType, Map aValue, DataOutput aDataOutput) throws IOException, IllegalAccessException
+	static void writeMap(FieldType aFieldType, Map aValue, ByteArrayBuffer aDataOutput) throws IOException, IllegalAccessException
 	{
 		if (aValue == null)
 		{
-			aDataOutput.writeBoolean(true);
+			aDataOutput.writeBit(1);
 			return;
 		}
 
-		aDataOutput.writeBoolean(false);
+		aDataOutput.writeBit(0);
 
 		FieldType keyComponentType = aFieldType.componentType[0];
 		FieldType valueComponentType = aFieldType.componentType[1];

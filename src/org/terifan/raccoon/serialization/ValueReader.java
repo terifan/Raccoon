@@ -1,16 +1,15 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.DataInput;
 import java.io.IOException;
 import java.util.Date;
-import org.terifan.raccoon.util.ByteArray;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
 class ValueReader
 {
-	static Object readValue(FieldType aFieldType, DataInput aDataInput) throws IOException
+	static Object readValue(FieldType aFieldType, ByteArrayBuffer aDataInput) throws IOException
 	{
-		if (aFieldType.nullable && aDataInput.readBoolean())
+		if (aFieldType.nullable && aDataInput.readBit() == 1)
 		{
 			return null;
 		}
@@ -19,27 +18,27 @@ class ValueReader
 
 		if (type == Boolean.class || type == Boolean.TYPE)
 		{
-			return aDataInput.readBoolean();
+			return aDataInput.readBit() == 1;
 		}
 		if (type == Byte.class || type == Byte.TYPE)
 		{
-			return aDataInput.readByte();
+			return (byte)aDataInput.read();
 		}
 		if (type == Short.class || type == Short.TYPE)
 		{
-			return (short)ByteArray.readVarInt(aDataInput);
+			return (short)aDataInput.readVar32();
 		}
 		if (type == Character.class || type == Character.TYPE)
 		{
-			return (char)ByteArray.readVarInt(aDataInput);
+			return (char)aDataInput.readVar32();
 		}
 		if (type == Integer.class || type == Integer.TYPE)
 		{
-			return ByteArray.readVarInt(aDataInput);
+			return aDataInput.readVar32();
 		}
 		if (type == Long.class || type == Long.TYPE)
 		{
-			return ByteArray.readVarLong(aDataInput);
+			return aDataInput.readVar64();
 		}
 		if (type == Float.class || type == Float.TYPE)
 		{
@@ -51,11 +50,11 @@ class ValueReader
 		}
 		if (type == String.class)
 		{
-			return ByteArray.decodeUTF8(aDataInput, ByteArray.readVarInt(aDataInput));
+			return aDataInput.readString(aDataInput.readVar32());
 		}
 		if (type == Date.class)
 		{
-			return new Date(ByteArray.readVarLong(aDataInput));
+			return new Date(aDataInput.readVar64());
 		}
 
 		throw new IllegalArgumentException("Unsupported type: " + type);

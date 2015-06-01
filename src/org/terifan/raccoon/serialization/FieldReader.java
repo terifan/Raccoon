@@ -1,17 +1,16 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.DataInput;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
 class FieldReader
 {
-	static Object readField(FieldType aFieldType, DataInput aDataInput) throws IOException, IllegalAccessException
+	static Object readField(FieldType aFieldType, ByteArrayBuffer aDataInput) throws IOException, IllegalAccessException
 	{
 		Log.v("decode " + aFieldType);
 

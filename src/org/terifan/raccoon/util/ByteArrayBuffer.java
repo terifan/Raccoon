@@ -71,7 +71,7 @@ public class ByteArrayBuffer
 	}
 
 
-	public ByteArrayBuffer skip(int aLength)
+	public ByteArrayBuffer skip(int aLength) throws IOException
 	{
 		flushBits();
 		mOffset += aLength;
@@ -110,7 +110,7 @@ public class ByteArrayBuffer
 	}
 
 
-	public byte[] array()
+	public byte[] array() throws IOException
 	{
 		flushBits();
 
@@ -133,13 +133,13 @@ public class ByteArrayBuffer
 
 	public ByteArrayBuffer write(int aByte) throws IOException
 	{
-		if (mOffset >= mBuffer.length)
-		{
-			ensureCapacity(mOffset);
-		}
-
 		align();
 		
+		if (mOffset >= mBuffer.length)
+		{
+			ensureCapacity(1);
+		}
+
 		mBuffer[mOffset++] = (byte)aByte;
 		return this;
 	}
@@ -485,6 +485,7 @@ public class ByteArrayBuffer
 	{
 		if (mWriteBitsToGo < 8)
 		{
+			ensureCapacity(1);
 			mBuffer[mOffset] = (byte)mBitBuffer;
 			mOffset++;
 		}
@@ -495,10 +496,11 @@ public class ByteArrayBuffer
 	}
 
 
-	private void flushBits()
+	private void flushBits() throws IOException
 	{
 		if (mWriteBitsToGo != 8)
 		{
+			ensureCapacity(1);
 			mBuffer[mOffset] = (byte)mBitBuffer;
 		}
 	}

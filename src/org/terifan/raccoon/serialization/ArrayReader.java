@@ -1,22 +1,20 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.DataInput;
 import java.io.IOException;
 import java.lang.reflect.Array;
-import org.terifan.raccoon.util.ByteArray;
-import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
 class ArrayReader
 {
-	static Object readArray(FieldType aFieldType, int aLevel, int aDepth, DataInput aDataInput) throws IOException
+	static Object readArray(FieldType aFieldType, int aLevel, int aDepth, ByteArrayBuffer aDataInput) throws IOException
 	{
-		if (aDataInput.readBoolean())
+		if (aDataInput.readBit() == 1)
 		{
 			return null;
 		}
 
-		int length = ByteArray.readVarInt(aDataInput);
+		int length = aDataInput.readVar32();
 
 		int[] dims = new int[aDepth - aLevel + 1];
 		dims[0] = length;
@@ -25,7 +23,7 @@ class ArrayReader
 
 		if (aLevel == aDepth && aFieldType.type == Byte.TYPE)
 		{
-			aDataInput.readFully((byte[])array);
+			aDataInput.read((byte[])array);
 		}
 		else if (length > 0)
 		{

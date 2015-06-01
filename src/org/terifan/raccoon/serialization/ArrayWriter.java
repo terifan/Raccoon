@@ -1,29 +1,27 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.reflect.Array;
-import org.terifan.raccoon.util.ByteArray;
-import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
 class ArrayWriter
 {
-	static void writeArray(FieldType aFieldType, Object aArray, int aLevel, int aDepth, DataOutput aDataOutput) throws IOException, IllegalAccessException
+	static void writeArray(FieldType aFieldType, Object aArray, int aLevel, int aDepth, ByteArrayBuffer aDataOutput) throws IOException, IllegalAccessException
 	{
 		assert aLevel <= aDepth : aLevel+" <= "+aDepth;
 
 		if (aArray == null)
 		{
-			aDataOutput.writeBoolean(true);
+			aDataOutput.writeBit(1);
 			return;
 		}
 
-		aDataOutput.writeBoolean(false);
+		aDataOutput.writeBit(0);
 
 		int length = Array.getLength(aArray);
 
-		ByteArray.writeVarInt(aDataOutput, length);
+		aDataOutput.writeVar32(length);
 
 		if (aLevel == aDepth)
 		{

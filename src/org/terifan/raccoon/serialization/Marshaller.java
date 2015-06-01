@@ -1,14 +1,11 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import org.terifan.raccoon.DatabaseException;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
@@ -47,24 +44,21 @@ public class Marshaller
 			Log.v("marshal entity fields " + aFieldCategory);
 			Log.inc();
 
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ByteArrayBuffer out = new ByteArrayBuffer(64);
 
-			try (DataOutputStream out = new DataOutputStream(baos))
+			for (FieldType fieldType : mTypeDeclarations)
 			{
-				for (FieldType fieldType : mTypeDeclarations)
+				if (fieldType.category == aFieldCategory)
 				{
-					if (fieldType.category == aFieldCategory)
-					{
-						Field field = findField(fieldType);
-						Object value = field.get(aObject);
-						FieldWriter.writeField(fieldType, out, value);
-					}
+					Field field = findField(fieldType);
+					Object value = field.get(aObject);
+					FieldWriter.writeField(fieldType, out, value);
 				}
 			}
 
 			Log.dec();
 
-			return baos.toByteArray();
+			return out.trim().array();
 		}
 		catch (IOException | IllegalAccessException e)
 		{
@@ -90,18 +84,17 @@ public class Marshaller
 			Log.v("unmarshal entity");
 			Log.inc();
 
-			try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(aBuffer)))
+			ByteArrayBuffer in = new ByteArrayBuffer(aBuffer);
+
+			for (FieldType fieldType : mTypeDeclarations)
 			{
-				for (FieldType fieldType : mTypeDeclarations)
+				if (fieldType.category == aFieldCategory)
 				{
-					if (fieldType.category == aFieldCategory)
+					Field field = findField(fieldType);
+					Object value = FieldReader.readField(fieldType, in);
+					if (field != null)
 					{
-						Field field = findField(fieldType);
-						Object value = FieldReader.readField(fieldType, in);
-						if (field != null)
-						{
-							field.set(aObject, value);
-						}
+						field.set(aObject, value);
 					}
 				}
 			}

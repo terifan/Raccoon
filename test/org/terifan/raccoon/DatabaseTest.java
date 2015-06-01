@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
@@ -11,9 +10,7 @@ import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
-import org.testng.annotations.DataProvider;
 import static org.testng.Assert.*;
-import sample.Sample;
 
 
 public class DatabaseTest
