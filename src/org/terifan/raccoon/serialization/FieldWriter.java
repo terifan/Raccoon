@@ -29,7 +29,16 @@ class FieldWriter
 				MapWriter.writeMap(aFieldType, (Map)aValue, aDataOutput);
 				break;
 			case VALUE:
-				ValueWriter.writeValue(aFieldType.nullable, aValue, aDataOutput);
+				if (aFieldType.nullable)
+				{
+					if (aValue == null)
+					{
+						aDataOutput.writeBit(1);
+						break;
+					}
+					aDataOutput.writeBit(0);
+				}
+				ValueWriter.writeValue(aValue, aDataOutput);
 				break;
 			default:
 				throw new IllegalStateException();

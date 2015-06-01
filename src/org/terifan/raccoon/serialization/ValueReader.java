@@ -7,56 +7,49 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 class ValueReader
 {
-	static Object readValue(FieldType aFieldType, ByteArrayBuffer aDataInput) throws IOException
+	static Object readValue(Class aType, ByteArrayBuffer aDataInput) throws IOException
 	{
-		if (aFieldType.nullable && aDataInput.readBit() == 1)
-		{
-			return null;
-		}
-
-		Class type = aFieldType.type;
-
-		if (type == Boolean.class || type == Boolean.TYPE)
+		if (aType == Boolean.class || aType == Boolean.TYPE)
 		{
 			return aDataInput.readBit() == 1;
 		}
-		if (type == Byte.class || type == Byte.TYPE)
+		if (aType == Byte.class || aType == Byte.TYPE)
 		{
 			return (byte)aDataInput.read();
 		}
-		if (type == Short.class || type == Short.TYPE)
+		if (aType == Short.class || aType == Short.TYPE)
 		{
 			return (short)aDataInput.readVar32();
 		}
-		if (type == Character.class || type == Character.TYPE)
+		if (aType == Character.class || aType == Character.TYPE)
 		{
 			return (char)aDataInput.readVar32();
 		}
-		if (type == Integer.class || type == Integer.TYPE)
+		if (aType == Integer.class || aType == Integer.TYPE)
 		{
 			return aDataInput.readVar32();
 		}
-		if (type == Long.class || type == Long.TYPE)
+		if (aType == Long.class || aType == Long.TYPE)
 		{
 			return aDataInput.readVar64();
 		}
-		if (type == Float.class || type == Float.TYPE)
+		if (aType == Float.class || aType == Float.TYPE)
 		{
 			return aDataInput.readFloat();
 		}
-		if (type == Double.class || type == Double.TYPE)
+		if (aType == Double.class || aType == Double.TYPE)
 		{
 			return aDataInput.readDouble();
 		}
-		if (type == String.class)
+		if (aType == String.class)
 		{
 			return aDataInput.readString(aDataInput.readVar32());
 		}
-		if (type == Date.class)
+		if (aType == Date.class)
 		{
 			return new Date(aDataInput.readVar64());
 		}
 
-		throw new IllegalArgumentException("Unsupported type: " + type);
+		throw new IllegalArgumentException("Unsupported type: " + aType);
 	}
 }

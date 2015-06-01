@@ -7,19 +7,8 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 class ValueWriter
 {
-	static void writeValue(boolean aNullable, Object aValue, ByteArrayBuffer aDataOutput) throws IOException
+	static void writeValue(Object aValue, ByteArrayBuffer aDataOutput) throws IOException
 	{
-		if (aNullable)
-		{
-			if (aValue == null)
-			{
-				aDataOutput.writeBit(1);
-				return;
-			}
-
-			aDataOutput.writeBit(0);
-		}
-
 		Class<?> type = aValue.getClass();
 
 		if (type == Boolean.class)

@@ -27,20 +27,37 @@ class ArrayReader
 		}
 		else if (length > 0)
 		{
-			for (int i = 0; i < length; i++)
+			if (aLevel == aDepth)
 			{
-				Object value;
-
-				if (aLevel == aDepth)
+				boolean[] nulls = new boolean[length];
+				if (aFieldType.nullable)
 				{
-					value = ValueReader.readValue(aFieldType, aDataInput);
+					for (int i = 0; i < length; i++)
+					{
+						nulls[i] = aDataInput.readBit() == 1;
+					}
 				}
-				else
+				for (int i = 0; i < length; i++)
 				{
-					value = readArray(aFieldType, aLevel + 1, aDepth, aDataInput);
+					Object value;
+					if (nulls[i])
+					{
+						value = null;
+					}
+					else
+					{
+						value = ValueReader.readValue(aFieldType.type, aDataInput);
+					}
+					Array.set(array, i, value);
 				}
-
-				Array.set(array, i, value);
+			}
+			else
+			{
+				for (int i = 0; i < length; i++)
+				{
+					Object value = readArray(aFieldType, aLevel + 1, aDepth, aDataInput);
+					Array.set(array, i, value);
+				}
 			}
 		}
 

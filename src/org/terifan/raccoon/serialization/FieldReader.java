@@ -17,7 +17,12 @@ class FieldReader
 		switch (aFieldType.format)
 		{
 			case VALUE:
-				return ValueReader.readValue(aFieldType, aDataInput);
+				if (aFieldType.nullable && aDataInput.readBit() == 1)
+				{
+					return null;
+				}
+
+				return ValueReader.readValue(aFieldType.type, aDataInput);
 			case ARRAY:
 				return ArrayReader.readArray(aFieldType, 1, aFieldType.depth, aDataInput);
 			case LIST:

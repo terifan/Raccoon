@@ -25,9 +25,19 @@ class ArrayWriter
 
 		if (aLevel == aDepth)
 		{
+			if (aFieldType.nullable)
+			{
+				for (int i = 0; i < length; i++)
+				{
+					aDataOutput.writeBit(Array.get(aArray, i) == null ? 1 : 0);
+				}
+			}
 			for (int i = 0; i < length; i++)
 			{
-				ValueWriter.writeValue(aFieldType.nullable, Array.get(aArray, i), aDataOutput);
+				if (Array.get(aArray, i) != null)
+				{
+					ValueWriter.writeValue(Array.get(aArray, i), aDataOutput);
+				}
 			}
 		}
 		else
