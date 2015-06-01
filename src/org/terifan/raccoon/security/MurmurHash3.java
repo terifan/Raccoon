@@ -1,7 +1,5 @@
 package org.terifan.raccoon.security;
 
-import org.terifan.raccoon.util.ByteArray;
-
 
 /**
  * The MurmurHash3 algorithm was created by Austin Appleby. This java port was authored by Yonik Seeley

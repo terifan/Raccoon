@@ -42,11 +42,13 @@ public class ByteArrayBufferNGTest
 			out.writeVar64(rnd.nextLong());
 			out.writeVar64(Long.MIN_VALUE);
 			out.writeVar64(Long.MAX_VALUE);
+			out.writeFloat(rnd.nextFloat());
+			out.writeDouble(rnd.nextDouble());
 			out.write(buf);
 			out.writeString("hello world");
 		}
 
-		ByteArrayBuffer in = new ByteArrayBuffer(out.trim().buffer());
+		ByteArrayBuffer in = new ByteArrayBuffer(out.trim().array());
 		rnd = new Random(1);
 
 		for (int j = 0; j < 10; j++)
@@ -67,6 +69,8 @@ public class ByteArrayBufferNGTest
 			assertEquals(in.readVar64(), rnd.nextLong());
 			assertEquals(in.readVar64(), Long.MIN_VALUE);
 			assertEquals(in.readVar64(), Long.MAX_VALUE);
+			assertEquals(in.readFloat(), rnd.nextFloat());
+			assertEquals(in.readDouble(), rnd.nextDouble());
 			assertEquals(in.read(new byte[100]), buf);
 			assertEquals(in.readString(11), "hello world");
 		}

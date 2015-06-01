@@ -9,9 +9,10 @@ public class ByteArrayBuffer
 {
 	private final static boolean FORCE_FIXED = false;
 
-    private byte readBuffer[] = new byte[8];
+	private byte readBuffer[] = new byte[8];
 	private byte[] mBuffer;
 	private int mOffset;
+	private int mLimit;
 	private boolean mLocked;
 
 
@@ -21,6 +22,7 @@ public class ByteArrayBuffer
 	public ByteArrayBuffer(int aInitialSize)
 	{
 		mBuffer = new byte[aInitialSize];
+		mLimit = Integer.MAX_VALUE;
 	}
 
 
@@ -31,6 +33,20 @@ public class ByteArrayBuffer
 	{
 		mBuffer = aBuffer;
 		mLocked = true;
+		mLimit = Integer.MAX_VALUE;
+	}
+
+
+	public ByteArrayBuffer limit(int aLimit)
+	{
+		mLimit = aLimit;
+		return this;
+	}
+
+
+	public int limit()
+	{
+		return mLimit;
 	}
 
 
@@ -54,11 +70,48 @@ public class ByteArrayBuffer
 	}
 
 
+	private ByteArrayBuffer ensureCapacity(int aIncrement) throws IOException
+	{
+		if (mBuffer.length < mOffset + aIncrement)
+		{
+			if (mLocked)
+			{
+				throw new EOFException("Buffer capacity cannot be increased, capacity " + mBuffer.length + ", offset " + mOffset + ", increment " + aIncrement);
+			}
+
+			mBuffer = Arrays.copyOfRange(mBuffer, 0, (mOffset + aIncrement) * 3 / 2);
+		}
+
+		return this;
+	}
+
+
+	public ByteArrayBuffer trim()
+	{
+		mBuffer = Arrays.copyOfRange(mBuffer, 0, mOffset);
+		return this;
+	}
+
+
+	public ByteArrayBuffer trim(int aNewLength)
+	{
+		mBuffer = Arrays.copyOfRange(mBuffer, 0, aNewLength);
+		mOffset = Math.min(mOffset, aNewLength);
+		return this;
+	}
+
+
+	public byte[] array()
+	{
+		return mBuffer;
+	}
+
+
 	public int read() throws IOException
 	{
-		if (mOffset >= mBuffer.length)
+		if (mOffset >= mBuffer.length || mOffset >= mLimit)
 		{
-			throw new EOFException("Reading beyond end of buffer, capacity " + mBuffer.length + ", offset " + mOffset);
+			throw new EOFException("Reading beyond end of buffer, capacity " + mBuffer.length + ", offset " + mOffset + ", limit " + mLimit);
 		}
 		return 0xff & mBuffer[mOffset++];
 	}
@@ -73,6 +126,28 @@ public class ByteArrayBuffer
 
 		mBuffer[mOffset++] = (byte)aByte;
 		return this;
+	}
+
+
+	public int readVar32() throws IOException
+	{
+		if (FORCE_FIXED)
+		{
+			return readInt32();
+		}
+
+		int value = 0;
+		for (int n = 0; n < 32; n += 7)
+		{
+			int b = read();
+			value |= (b & 127) << n;
+			if ((b & 128) == 0)
+			{
+				return decodeZigZag32(value);
+			}
+		}
+
+		throw new IOException("Variable int exceeds maximum length");
 	}
 
 
@@ -102,6 +177,28 @@ public class ByteArrayBuffer
 	}
 
 
+	public long readVar64() throws IOException
+	{
+		if (FORCE_FIXED)
+		{
+			return readInt64();
+		}
+
+		long value = 0L;
+		for (int n = 0; n < 64; n += 7)
+		{
+			int b = read();
+			value |= (long)(b & 127) << n;
+			if ((b & 128) == 0)
+			{
+				return decodeZigZag64(value);
+			}
+		}
+
+		throw new IOException("Variable long exceeds maximum length");
+	}
+
+
 	public ByteArrayBuffer writeVar64(long aValue) throws IOException
 	{
 		if (FORCE_FIXED)
@@ -128,47 +225,22 @@ public class ByteArrayBuffer
 	}
 
 
-	public int readVar32() throws IOException
+	public byte[] read(byte[] aBuffer) throws IOException
 	{
-		if (FORCE_FIXED)
-		{
-			return readInt32();
-		}
-
-		int value = 0;
-		for (int n = 0; n < 32; n += 7)
-		{
-			int b = read();
-			value |= (b & 127) << n;
-			if ((b & 128) == 0)
-			{
-				return decodeZigZag32(value);
-			}
-		}
-
-		throw new IOException("Variable int exceeds maximum length");
+		return read(aBuffer, 0, aBuffer.length);
 	}
 
 
-	public long readVar64() throws IOException
+	public byte[] read(byte[] aBuffer, int aOffset, int aLength) throws IOException
 	{
-		if (FORCE_FIXED)
+		if (mOffset + aLength > mBuffer.length || mOffset + aLength >= mLimit)
 		{
-			return readInt64();
+			throw new EOFException("Reading beyond end of buffer, capacity " + mBuffer.length + ", offset " + mOffset + ", limit " + mLimit);
 		}
 
-		long value = 0L;
-		for (int n = 0; n < 64; n += 7)
-		{
-			int b = read();
-			value |= (long)(b & 127) << n;
-			if ((b & 128) == 0)
-			{
-				return decodeZigZag64(value);
-			}
-		}
-
-		throw new IOException("Variable long exceeds maximum length");
+		System.arraycopy(mBuffer, mOffset, aBuffer, aOffset, aLength);
+		mOffset += aLength;
+		return aBuffer;
 	}
 
 
@@ -178,7 +250,7 @@ public class ByteArrayBuffer
 	}
 
 
-	public ByteArrayBuffer write(byte [] aBuffer, int aOffset, int aLength) throws IOException
+	public ByteArrayBuffer write(byte[] aBuffer, int aOffset, int aLength) throws IOException
 	{
 		ensureCapacity(aLength);
 
@@ -188,62 +260,13 @@ public class ByteArrayBuffer
 	}
 
 
-	public byte[] read(byte[] aBuffer) throws IOException
-	{
-		return read(aBuffer, 0, aBuffer.length);
-	}
-
-
-	public byte[] read(byte [] aBuffer, int aOffset, int aLength) throws IOException
-	{
-		if (mOffset + aLength > mBuffer.length)
-		{
-			throw new EOFException("Reading beyond end of buffer, capacity " + mBuffer.length + ", offset " + mOffset);
-		}
-
-		System.arraycopy(mBuffer, mOffset, aBuffer, aOffset, aLength);
-		mOffset += aLength;
-		return aBuffer;
-	}
-
-
-	public ByteArrayBuffer ensureCapacity(int aIncrement) throws IOException
-	{
-		if (mBuffer.length < mOffset + aIncrement)
-		{
-			if (mLocked)
-			{
-				throw new EOFException("Buffer capacity cannot be increased, capacity " + mBuffer.length + ", offset " + mOffset + ", increment " + aIncrement);
-			}
-
-			mBuffer = Arrays.copyOfRange(mBuffer, 0, (mOffset + aIncrement) * 3 / 2);
-		}
-
-		return this;
-	}
-
-
 	public int readInt32() throws IOException
 	{
-        int ch1 = read();
-        int ch2 = read();
-        int ch3 = read();
-        int ch4 = read();
-        return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + ch4);
-	}
-
-
-	public long readInt64() throws IOException
-	{
-        read(readBuffer, 0, 8);
-        return (((long)readBuffer[0] << 56) +
-                ((long)(readBuffer[1] & 255) << 48) +
-                ((long)(readBuffer[2] & 255) << 40) +
-                ((long)(readBuffer[3] & 255) << 32) +
-                ((long)(readBuffer[4] & 255) << 24) +
-                ((readBuffer[5] & 255) << 16) +
-                ((readBuffer[6] & 255) <<  8) +
-                (readBuffer[7] & 255));
+		int ch1 = read();
+		int ch2 = read();
+		int ch3 = read();
+		int ch4 = read();
+		return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + ch4);
 	}
 
 
@@ -251,10 +274,24 @@ public class ByteArrayBuffer
 	{
 		ensureCapacity(4);
 		mBuffer[mOffset++] = (byte)(aValue >>> 24);
-		mBuffer[mOffset++] = (byte)(aValue >>  16);
-		mBuffer[mOffset++] = (byte)(aValue >>   8);
-		mBuffer[mOffset++] = (byte)(aValue       );
+		mBuffer[mOffset++] = (byte)(aValue >> 16);
+		mBuffer[mOffset++] = (byte)(aValue >> 8);
+		mBuffer[mOffset++] = (byte)(aValue);
 		return this;
+	}
+
+
+	public long readInt64() throws IOException
+	{
+		read(readBuffer, 0, 8);
+		return (((long)readBuffer[0] << 56)
+			+ ((long)(readBuffer[1] & 255) << 48)
+			+ ((long)(readBuffer[2] & 255) << 40)
+			+ ((long)(readBuffer[3] & 255) << 32)
+			+ ((long)(readBuffer[4] & 255) << 24)
+			+ ((readBuffer[5] & 255) << 16)
+			+ ((readBuffer[6] & 255) << 8)
+			+ (readBuffer[7] & 255));
 	}
 
 
@@ -262,41 +299,38 @@ public class ByteArrayBuffer
 	{
 		ensureCapacity(8);
 		mBuffer[mOffset++] = (byte)(aValue >>> 56);
-		mBuffer[mOffset++] = (byte)(aValue >>  48);
-		mBuffer[mOffset++] = (byte)(aValue >>  40);
-		mBuffer[mOffset++] = (byte)(aValue >>  32);
-		mBuffer[mOffset++] = (byte)(aValue >>  24);
-		mBuffer[mOffset++] = (byte)(aValue >>  16);
-		mBuffer[mOffset++] = (byte)(aValue >>   8);
-		mBuffer[mOffset++] = (byte)(aValue       );
+		mBuffer[mOffset++] = (byte)(aValue >> 48);
+		mBuffer[mOffset++] = (byte)(aValue >> 40);
+		mBuffer[mOffset++] = (byte)(aValue >> 32);
+		mBuffer[mOffset++] = (byte)(aValue >> 24);
+		mBuffer[mOffset++] = (byte)(aValue >> 16);
+		mBuffer[mOffset++] = (byte)(aValue >> 8);
+		mBuffer[mOffset++] = (byte)(aValue);
 		return this;
 	}
 
 
-	public ByteArrayBuffer writeString(String aInput) throws IOException
+	public float readFloat() throws IOException
 	{
-		ensureCapacity(aInput.length());
+		return Float.intBitsToFloat(readInt32());
+	}
 
-		for (int i = 0; i < aInput.length(); i++)
-		{
-			char c = aInput.charAt(i);
-		    if ((c >= 0x0000) && (c <= 0x007F))
-		    {
-				write(c);
-		    }
-		    else if (c > 0x07FF)
-		    {
-				write(0xE0 | ((c >> 12) & 0x0F));
-				write(0x80 | ((c >>  6) & 0x3F));
-				write(0x80 | ((c      ) & 0x3F));
-		    }
-		    else
-		    {
-				write(0xC0 | ((c >>  6) & 0x1F));
-				write(0x80 | ((c      ) & 0x3F));
-		    }
-		}
-		return this;
+
+	public ByteArrayBuffer writeFloat(float aFloat) throws IOException
+	{
+		return writeInt32(Float.floatToIntBits(aFloat));
+	}
+
+
+	public double readDouble() throws IOException
+	{
+		return Double.longBitsToDouble(readInt64());
+	}
+
+
+	public ByteArrayBuffer writeDouble(double aDouble) throws IOException
+	{
+		return writeInt64(Double.doubleToLongBits(aDouble));
 	}
 
 
@@ -330,16 +364,31 @@ public class ByteArrayBuffer
 	}
 
 
-	public ByteArrayBuffer trim()
+	public ByteArrayBuffer writeString(String aInput) throws IOException
 	{
-		mBuffer = Arrays.copyOfRange(mBuffer, 0, mOffset);
+		ensureCapacity(aInput.length());
+
+		for (int i = 0; i < aInput.length(); i++)
+		{
+			int c = aInput.charAt(i);
+
+			if ((c >= 0x0000) && (c <= 0x007F))
+			{
+				write(c);
+			}
+			else if (c > 0x07FF)
+			{
+				write(0xE0 | ((c >> 12) & 0x0F));
+				write(0x80 | ((c >> 6) & 0x3F));
+				write(0x80 | ((c) & 0x3F));
+			}
+			else
+			{
+				write(0xC0 | ((c >> 6) & 0x1F));
+				write(0x80 | ((c) & 0x3F));
+			}
+		}
 		return this;
-	}
-
-
-	public byte[] buffer()
-	{
-		return mBuffer;
 	}
 
 

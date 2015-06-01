@@ -1,10 +1,7 @@
 package org.terifan.raccoon.io;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.security.DigestException;
 import java.security.MessageDigest;
@@ -13,6 +10,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import org.terifan.raccoon.util.ByteArray;
 import org.terifan.raccoon.security.ISAAC;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
@@ -435,11 +433,14 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		}
 		else
 		{
-			byte[] buffer = new byte[mSpaceMapBlockCount * mBlockSize];
+			ByteArrayBuffer buffer = new ByteArrayBuffer(mSpaceMapBlockCount * mBlockSize);
 
-			readCheckedBlock(mSpaceMapBlockIndex, buffer, mSpaceMapBlockKey);
+			readCheckedBlock(mSpaceMapBlockIndex, buffer.array(), mSpaceMapBlockKey);
 
-			mRangeMap.read(new DataInputStream(new ByteArrayInputStream(buffer, 16, mSpaceMapLength - 16)));
+			buffer.position(16);
+			buffer.limit(mSpaceMapLength);
+
+			mRangeMap.read(buffer);
 
 			mRangeMap.remove(mSpaceMapBlockIndex, mSpaceMapBlockCount);
 		}
@@ -460,21 +461,21 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			freeBlockInternal(mSpaceMapBlockIndex, mSpaceMapBlockCount);
 		}
 
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		baos.write(new byte[CHECKSUM_SIZE]); // allocate space for checksum
+		ByteArrayBuffer buffer = new ByteArrayBuffer(mBlockSize);
+		buffer.position(CHECKSUM_SIZE); // leave space for checksum
 
-		mPendingRangeMap.write(new DataOutputStream(baos));
+		mPendingRangeMap.write(buffer);
 
 		// Allocate space for the new space map block
-		mSpaceMapBlockCount = (baos.size() + mBlockSize - 1) / mBlockSize;
+		mSpaceMapBlockCount = (buffer.position() + mBlockSize - 1) / mBlockSize;
 		mSpaceMapBlockIndex = (int)allocBlockInternal(mSpaceMapBlockCount);
-		mSpaceMapLength = baos.size();
+		mSpaceMapLength = buffer.position();
 		mSpaceMapBlockKey = ISAAC.PRNG.nextLong();
 
 		// Pad buffer to block size
-		baos.write(new byte[mBlockSize * mSpaceMapBlockCount - mSpaceMapLength]);
+		buffer.trim(mBlockSize * mSpaceMapBlockCount);
 
-		writeCheckedBlock(mSpaceMapBlockIndex, baos.toByteArray(), mSpaceMapBlockKey);
+		writeCheckedBlock(mSpaceMapBlockIndex, buffer.array(), mSpaceMapBlockKey);
 
 		Log.dec();
 	}

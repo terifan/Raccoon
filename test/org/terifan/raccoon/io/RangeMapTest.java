@@ -6,6 +6,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Random;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
@@ -16,17 +17,17 @@ public class RangeMapTest
 	@Test
 	public void testSerialization1() throws IOException
 	{
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 
 		RangeMap inMap = new RangeMap();
 		inMap.add(0, Integer.MAX_VALUE);
 		inMap.remove(0, 10);
-		inMap.write(new DataOutputStream(baos));
+		inMap.write(buffer);
 
 //		Log.hexDump(baos.toByteArray());
-		
+
 		RangeMap outMap = new RangeMap();
-		outMap.read(new DataInputStream(new ByteArrayInputStream(baos.toByteArray())));
+		outMap.read(new ByteArrayBuffer(buffer.array()));
 
 		assertEquals(inMap.toString(), outMap.toString());
 	}
@@ -35,7 +36,7 @@ public class RangeMapTest
 	@Test
 	public void testSerialization2() throws IOException
 	{
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 
 		int limit = Integer.MAX_VALUE;
 
@@ -50,10 +51,10 @@ public class RangeMapTest
 			i += j * 2;
 		}
 
-		inMap.write(new DataOutputStream(baos));
+		inMap.write(buffer);
 
 		RangeMap outMap = new RangeMap();
-		outMap.read(new DataInputStream(new ByteArrayInputStream(baos.toByteArray())));
+		outMap.read(new ByteArrayBuffer(buffer.array()));
 
 		assertEquals(inMap.toString(), outMap.toString());
 	}
