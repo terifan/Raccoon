@@ -14,6 +14,9 @@ public class ByteArrayBuffer
 	private int mOffset;
 	private int mLimit;
 	private boolean mLocked;
+	private int mWriteBitsToGo;
+	private int mBitBuffer;
+	private int mReadBitCount;
 
 
 	/**
@@ -23,6 +26,8 @@ public class ByteArrayBuffer
 	{
 		mBuffer = new byte[aInitialSize];
 		mLimit = Integer.MAX_VALUE;
+		mBitBuffer = 0;
+		mWriteBitsToGo = 8;
 	}
 
 
@@ -34,6 +39,8 @@ public class ByteArrayBuffer
 		mBuffer = aBuffer;
 		mLocked = true;
 		mLimit = Integer.MAX_VALUE;
+		mBitBuffer = 0;
+		mWriteBitsToGo = 8;
 	}
 
 
@@ -50,8 +57,9 @@ public class ByteArrayBuffer
 	}
 
 
-	public ByteArrayBuffer position(int aOffset)
+	public ByteArrayBuffer position(int aOffset) throws IOException
 	{
+		align();
 		mOffset = aOffset;
 		return this;
 	}
@@ -65,6 +73,7 @@ public class ByteArrayBuffer
 
 	public ByteArrayBuffer skip(int aLength)
 	{
+		flushBits();
 		mOffset += aLength;
 		return this;
 	}
@@ -103,6 +112,8 @@ public class ByteArrayBuffer
 
 	public byte[] array()
 	{
+		flushBits();
+
 		return mBuffer;
 	}
 
@@ -113,6 +124,9 @@ public class ByteArrayBuffer
 		{
 			throw new EOFException("Reading beyond end of buffer, capacity " + mBuffer.length + ", offset " + mOffset + ", limit " + mLimit);
 		}
+
+		align();
+		
 		return 0xff & mBuffer[mOffset++];
 	}
 
@@ -124,6 +138,8 @@ public class ByteArrayBuffer
 			ensureCapacity(mOffset);
 		}
 
+		align();
+		
 		mBuffer[mOffset++] = (byte)aByte;
 		return this;
 	}
@@ -136,8 +152,7 @@ public class ByteArrayBuffer
 			return readInt32();
 		}
 
-		int value = 0;
-		for (int n = 0; n < 32; n += 7)
+		for (int n = 0, value = 0; n < 32; n += 7)
 		{
 			int b = read();
 			value |= (b & 127) << n;
@@ -238,6 +253,7 @@ public class ByteArrayBuffer
 			throw new EOFException("Reading beyond end of buffer, capacity " + mBuffer.length + ", offset " + mOffset + ", limit " + mLimit);
 		}
 
+		align();
 		System.arraycopy(mBuffer, mOffset, aBuffer, aOffset, aLength);
 		mOffset += aLength;
 		return aBuffer;
@@ -252,6 +268,7 @@ public class ByteArrayBuffer
 
 	public ByteArrayBuffer write(byte[] aBuffer, int aOffset, int aLength) throws IOException
 	{
+		align();
 		ensureCapacity(aLength);
 
 		System.arraycopy(aBuffer, aOffset, mBuffer, mOffset, aLength);
@@ -262,6 +279,7 @@ public class ByteArrayBuffer
 
 	public int readInt32() throws IOException
 	{
+		align();
 		int ch1 = read();
 		int ch2 = read();
 		int ch3 = read();
@@ -272,6 +290,7 @@ public class ByteArrayBuffer
 
 	public ByteArrayBuffer writeInt32(int aValue) throws IOException
 	{
+		align();
 		ensureCapacity(4);
 		mBuffer[mOffset++] = (byte)(aValue >>> 24);
 		mBuffer[mOffset++] = (byte)(aValue >> 16);
@@ -283,6 +302,7 @@ public class ByteArrayBuffer
 
 	public long readInt64() throws IOException
 	{
+		align();
 		read(readBuffer, 0, 8);
 		return (((long)readBuffer[0] << 56)
 			+ ((long)(readBuffer[1] & 255) << 48)
@@ -297,6 +317,7 @@ public class ByteArrayBuffer
 
 	public ByteArrayBuffer writeInt64(long aValue) throws IOException
 	{
+		align();
 		ensureCapacity(8);
 		mBuffer[mOffset++] = (byte)(aValue >>> 56);
 		mBuffer[mOffset++] = (byte)(aValue >> 48);
@@ -336,6 +357,7 @@ public class ByteArrayBuffer
 
 	public String readString(int aLength) throws IOException
 	{
+		align();
 		char[] array = new char[aLength];
 
 		for (int i = 0, j = 0; i < aLength; i++)
@@ -366,6 +388,7 @@ public class ByteArrayBuffer
 
 	public ByteArrayBuffer writeString(String aInput) throws IOException
 	{
+		align();
 		ensureCapacity(aInput.length());
 
 		for (int i = 0; i < aInput.length(); i++)
@@ -389,6 +412,95 @@ public class ByteArrayBuffer
 			}
 		}
 		return this;
+	}
+
+
+	public int readBit() throws IOException
+	{
+		if (mReadBitCount == 0)
+		{
+			mBitBuffer = read();
+
+			mReadBitCount = 8;
+		}
+
+		mReadBitCount--;
+		int output = 1 & (mBitBuffer >> mReadBitCount);
+		mBitBuffer &= (1L << mReadBitCount) - 1;
+
+		return output;
+	}
+
+
+	public ByteArrayBuffer writeBit(int aBit) throws IOException
+	{
+		mBitBuffer |= aBit << --mWriteBitsToGo;
+
+		if (mWriteBitsToGo == 0)
+		{
+			mBuffer[mOffset++] = (byte)mBitBuffer;
+			mBitBuffer = 0;
+			mWriteBitsToGo = 8;
+		}
+		
+		return this;
+	}
+
+
+	public int readBits(int aCount) throws IOException
+	{
+		int output = 0;
+
+		while (aCount > mReadBitCount)
+		{
+			aCount -= mReadBitCount;
+			output |= mBitBuffer << aCount;
+			mBitBuffer = read();
+			mReadBitCount = 8;
+		}
+
+		if (aCount > 0)
+		{
+			mReadBitCount -= aCount;
+			output |= mBitBuffer >> mReadBitCount;
+			mBitBuffer &= (1L << mReadBitCount) - 1;
+		}
+
+		return output;
+	}
+
+	
+	public ByteArrayBuffer writeBits(int aValue, int aLength) throws IOException
+	{
+		while (aLength-- > 0)
+		{
+			writeBit((aValue >>> aLength) & 1);
+		}
+		
+		return this;
+	}
+
+	
+	private void align() throws IOException
+	{
+		if (mWriteBitsToGo < 8)
+		{
+			mBuffer[mOffset] = (byte)mBitBuffer;
+			mOffset++;
+		}
+
+		mBitBuffer = 0;
+		mWriteBitsToGo = 8;
+		mReadBitCount = 0;
+	}
+
+
+	private void flushBits()
+	{
+		if (mWriteBitsToGo != 8)
+		{
+			mBuffer[mOffset] = (byte)mBitBuffer;
+		}
 	}
 
 

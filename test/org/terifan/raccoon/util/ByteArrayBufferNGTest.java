@@ -96,4 +96,65 @@ public class ByteArrayBufferNGTest
 		out.write(5);
 		out.write(6);
 	}
+
+
+	@Test
+	public void testBitBuffering1() throws IOException
+	{
+		ByteArrayBuffer out = new ByteArrayBuffer(10);
+		out.writeBit(1);
+		out.writeBits(0b1010101, 7);
+		out.writeBits(0b1001, 4);
+		out.writeBits(0b111101, 6);
+
+		byte[] buf = out.array();
+		
+		assertEquals(0xff & buf[0], 0b11010101);
+		assertEquals(0xff & buf[1], 0b10011111);
+		assertEquals(0xff & buf[2], 0b01000000);
+
+		ByteArrayBuffer in = new ByteArrayBuffer(buf);
+		assertEquals(in.readBit(), 1);
+		assertEquals(in.readBits(7), 0b1010101);
+		assertEquals(in.readBits(4), 0b1001);
+		assertEquals(in.readBits(6), 0b111101);
+	}
+
+
+	@Test
+	public void testBitBuffering2() throws IOException
+	{
+		ByteArrayBuffer out = new ByteArrayBuffer(4);
+		out.writeBit(1);
+		out.writeBit(0);
+		out.writeBit(1);
+		out.writeBit(1);
+		out.write(0b10101010);
+
+		byte[] buf = out.array();
+
+		assertEquals(buf, new byte[]{(byte)0b10110000, (byte)0b10101010, 0,0});
+
+		ByteArrayBuffer in = new ByteArrayBuffer(buf);
+		assertEquals(in.readBits(4), 0b1011);
+		assertEquals(in.read(), 0b10101010);
+	}
+
+
+	@Test
+	public void testBitBuffering3() throws IOException
+	{
+		ByteArrayBuffer out = new ByteArrayBuffer(4);
+		out.writeBit(1);
+		out.write(0b10101010);
+		out.position(1);
+		out.writeBit(1);
+		out.write(0b10101010);
+
+		out.position(0);
+		assertEquals(out.readBit(), 1);
+		out.position(1);
+		assertEquals(out.readBit(), 1);
+		assertEquals(out.read(), 0b10101010);
+	}
 }
