@@ -40,6 +40,11 @@ public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 	private TreeSet<FieldType> mTypes;
 
 
+	public TypeDeclarations()
+	{
+	}
+
+
 	public TypeDeclarations(Class aType, HashMap<String, Field> mFields)
 	{
 		Log.v("create type declarations for " + aType);

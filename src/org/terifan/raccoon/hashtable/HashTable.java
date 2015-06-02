@@ -180,7 +180,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 //		else
 		if (aValue instanceof InputStream)
 		{
-			value = Blob.writeBlob(mBlockDevice, aValue, aTransactionId);
+			value = Blob.writeBlob(mBlockDevice, (InputStream)aValue, aTransactionId);
 			type = 1;
 		}
 		else
@@ -189,7 +189,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 			if (value.length > mLeafSize / 2)
 			{
-				value = Blob.writeBlob(mBlockDevice, value, aTransactionId);
+				value = Blob.writeBlob(mBlockDevice, new ByteArrayInputStream(value), aTransactionId);
 				type = 1;
 			}
 			else

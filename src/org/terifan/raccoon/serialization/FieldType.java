@@ -19,47 +19,34 @@ class FieldType implements Externalizable, Comparable<FieldType>
 	FieldType[] componentType;
 
 
+	public FieldType()
+	{
+	}
+
+
 	@Override
 	public void writeExternal(ObjectOutput aOut) throws IOException
 	{
-		aOut.writeUTF(category.name());
-		aOut.writeUTF(name);
-		aOut.writeUTF(type.getName());
-		aOut.writeBoolean(nullable);
-		aOut.write(depth);
-		aOut.writeUTF(format.name());
-		aOut.writeBoolean(componentType == null);
-		if (componentType != null)
-		{
-			aOut.write(componentType.length);
-			for (FieldType fieldType : componentType)
-			{
-				fieldType.writeExternal(aOut);
-			}
-		}
+		aOut.writeObject(category);
+		aOut.writeObject(componentType);
+		aOut.writeObject(depth);
+		aOut.writeObject(format);
+		aOut.writeObject(name);
+		aOut.writeObject(nullable);
+		aOut.writeObject(type);
 	}
 
 
 	@Override
 	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
 	{
-		category = FieldCategory.valueOf(aIn.readUTF());
-		name = aIn.readUTF();
-		nullable = aIn.readBoolean();
-		depth = aIn.read();
-		format = FieldFormat.valueOf(aIn.readUTF());
-		if (aIn.readBoolean())
-		{
-			componentType = null;
-		}
-		else
-		{
-			componentType = new FieldType[aIn.read()];
-			for (int i = 0; i < componentType.length; i++)
-			{
-				componentType[i].readExternal(aIn);
-			}
-		}
+		category = (FieldCategory)aIn.readObject();
+		componentType = (FieldType[])aIn.readObject();
+		depth = (Integer)aIn.readObject();
+		format = (FieldFormat)aIn.readObject();
+		name = (String)aIn.readObject();
+		nullable = (Boolean)aIn.readObject();
+		type = (Class)aIn.readObject();
 	}
 
 

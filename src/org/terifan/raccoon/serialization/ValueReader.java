@@ -1,6 +1,5 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.IOException;
 import java.util.Date;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 

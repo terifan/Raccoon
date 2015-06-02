@@ -8,7 +8,7 @@ import java.util.Random;
 import org.terifan.raccoon.util.Log;
 
 
-public class Utils
+public class TestUtils
 {
 	public static Random rnd = new Random(0);
 

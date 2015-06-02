@@ -27,10 +27,10 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
+		Log.v("write block " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
+
 		while (aBufferLength > 0)
 		{
-			Log.v("write block " + aBlockIndex + " +" + (aBufferLength/mBlockSize));
-
 			mStorage.put(aBlockIndex, Arrays.copyOfRange(aBuffer, aBufferOffset, aBufferOffset + mBlockSize));
 
 			aBlockIndex++;

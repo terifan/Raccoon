@@ -34,11 +34,7 @@ public class ByteArrayBuffer
 	 */
 	public ByteArrayBuffer(byte[] aBuffer)
 	{
-		mBuffer = aBuffer;
-		mLocked = true;
-		mLimit = Integer.MAX_VALUE;
-		mBitBuffer = 0;
-		mWriteBitsToGo = 8;
+		array(aBuffer);
 	}
 
 
@@ -119,6 +115,17 @@ public class ByteArrayBuffer
 		flushBits();
 
 		return mBuffer;
+	}
+
+
+	public ByteArrayBuffer array(byte[] aBuffer)
+	{
+		mBuffer = aBuffer;
+		mLocked = true;
+		mLimit = Integer.MAX_VALUE;
+		mBitBuffer = 0;
+		mWriteBitsToGo = 8;
+		return this;
 	}
 
 
@@ -436,6 +443,12 @@ public class ByteArrayBuffer
 	}
 
 
+	public ByteArrayBuffer writeBit(boolean aBit)
+	{
+		return writeBit(aBit ? 1 : 0);
+	}
+	
+	
 	public ByteArrayBuffer writeBit(int aBit)
 	{
 		mBitBuffer |= aBit << --mWriteBitsToGo;
