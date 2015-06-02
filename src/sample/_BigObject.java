@@ -68,7 +68,10 @@ public class _BigObject implements Serializable
 	HashMap<String,String> mStringMap;
 	HashMap<String,Date> mDateMap;
 
-	ArrayList<String[]> mZStringListArray;
+	ArrayList<String[]> mStringListArray;
+	HashMap<String[],String[]> mStringMapArray;
+
+//	HashMap<String,ArrayList<String>> mStringMapList;
 
 
 	_BigObject random()
@@ -128,7 +131,11 @@ public class _BigObject implements Serializable
 		mStringMap = asMap(String.class, t(),t(),t());
 		mDateMap = asMap(Date.class, new Date(),new Date(),new Date());
 
-		mZStringListArray = new ArrayList<>(Arrays.asList(new String[]{t(),t(),t()}, new String[]{t(),null,"abcdefghijklmnop"}));
+		mStringListArray = new ArrayList<>(Arrays.asList(new String[]{t(),t(),t()}, new String[]{t(),null,"abcdefghijklmnop"}));
+		mStringMapArray = asMap2(String.class, String.class, new String[][]{{t(), t(), t()}}, new String[][]{{t(), t(), t()}});
+
+//		mStringMapList = new HashMap<>();
+//		mStringMapList.put(t(), new ArrayList<>(Arrays.asList(t(),t(),t())));
 
 		return this;
 	}
@@ -137,9 +144,22 @@ public class _BigObject implements Serializable
 	private static <T> HashMap<String,T> asMap(Class<T> aType, T... aValues)
 	{
 		HashMap<String,T> map = new HashMap<>();
-		map.put("a", (T)aValues[0]);
-		map.put("b", (T)aValues[1]);
-		map.put("c", (T)aValues[2]);
+		int i = 'a';
+		for (T v : aValues)
+		{
+			map.put(""+i++, v);
+		}
+		return map;
+	}
+
+
+	private static <K,V> HashMap<K[],V[]> asMap2(Class<K> aKeyType, Class<V> aValueType, K[][] aKeys, V[][] aValues)
+	{
+		HashMap<K[],V[]> map = new HashMap<>();
+		for (int i = 0; i < aKeys.length; i++)
+		{
+			map.put(aKeys[i], aValues[i]);
+		}
 		return map;
 	}
 }

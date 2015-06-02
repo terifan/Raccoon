@@ -30,6 +30,11 @@ public class Sample3
 			_BigObject out = new _BigObject();
 
 			new Marshaller(types).unmarshal(buffer, out, FieldCategory.VALUE);
+
+			Log.out.println(in.mStringMapArray.keySet().iterator().next()[0]);
+			Log.out.println(out.mStringMapArray.keySet().iterator().next()[0]);
+			Log.out.println(in.mStringMapArray.values().iterator().next()[0]);
+			Log.out.println(out.mStringMapArray.values().iterator().next()[0]);
 		}
 		catch (Throwable e)
 		{
