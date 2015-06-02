@@ -13,30 +13,10 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-/**
- * SuperBlock layout:
- *   16 checksum
- *    8 version counter
- *    8 date/time
- *    4 extra data length
- *    4 space map block index
- *    4 space map block count
- *    4 space map length
- *    - extra data
- */
 public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 {
 	private final static int RESERVED_BLOCKS = 2;
 	private final static int CHECKSUM_SIZE = 16;
-
-//	private final static int SUPERBLOCK_OFFSET_VERSION              = 16;
-//	private final static int SUPERBLOCK_OFFSET_DATETIME             = 16+8;
-//	private final static int SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_INDEX = 16+8+8;
-//	private final static int SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_COUNT = 16+8+8+4;
-//	private final static int SUPERBLOCK_OFFSET_SPACEMAP_LENGTH      = 16+8+8+4+4;
-//	private final static int SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_KEY   = 16+8+8+4+4+4;
-//	private final static int SUPERBLOCK_OFFSET_EXTRA_DATA_LENGTH    = 16+8+8+4+4+4+8;
-//	private final static int SUPERBLOCK_HEADER_SIZE                 = 16+8+8+4+4+4+8+4; // 56
 
 	private IPhysicalBlockDevice mBlockDevice;
 	private RangeMap mRangeMap;
@@ -46,10 +26,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private SuperBlock mSuperBlock;
 	private int mBlockSize;
 	private HashSet<Integer> mUncommitedAllocations;
-//	private int mSpaceMapBlockIndex;
-//	private int mSpaceMapBlockCount;
-//	private int mSpaceMapLength;
-//	private long mSpaceMapBlockKey;
 	private boolean mDoubleCommit;
 
 
@@ -94,7 +70,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mPendingRangeMap = new RangeMap();
 		mPendingRangeMap.add(0, Integer.MAX_VALUE);
 
-//		mSuperBlockVersion = -1;
 		mSuperBlock = new SuperBlock();
 		mSuperBlock.mCreated = new Date();
 
@@ -373,25 +348,18 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		superBlockOne.unmarshal(0L);
 		superBlockTwo.unmarshal(1L);
 
-		if (superBlockOne.mIndex == superBlockTwo.mIndex + 1)
+		if (superBlockOne.mWriteCounter == superBlockTwo.mWriteCounter + 1)
 		{
-//			mSuperBlockVersion = versionOne;
 			mSuperBlock = superBlockOne;
 		}
-		else if (superBlockTwo.mIndex == superBlockOne.mIndex + 1)
+		else if (superBlockTwo.mWriteCounter == superBlockOne.mWriteCounter + 1)
 		{
-//			mSuperBlockVersion = versionTwo;
 			mSuperBlock = superBlockTwo;
 		}
 		else
 		{
-			throw new IOException("SuperBlock versions are illegal: " + superBlockOne.mIndex + " / " + superBlockTwo.mIndex);
+			throw new IOException("SuperBlock versions are illegal: " + superBlockOne.mWriteCounter + " / " + superBlockTwo.mWriteCounter);
 		}
-
-//		mSpaceMapBlockIndex = ByteArray.getInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_INDEX);
-//		mSpaceMapBlockCount = ByteArray.getInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_COUNT);
-//		mSpaceMapLength = ByteArray.getInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_LENGTH);
-//		mSpaceMapBlockKey = ByteArray.getLong(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_KEY);
 
 		Log.dec();
 	}
@@ -402,15 +370,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.v("write super block");
 		Log.inc();
 
-		mSuperBlock.mIndex++;
+		mSuperBlock.mWriteCounter++;
 		mSuperBlock.mUpdated = new Date();
-
-//		ByteArray.putLong(mSuperBlock, SUPERBLOCK_OFFSET_VERSION, mSuperBlockVersion);
-//		ByteArray.putLong(mSuperBlock, SUPERBLOCK_OFFSET_DATETIME, System.currentTimeMillis());
-//		ByteArray.putInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_INDEX, mSpaceMapBlockIndex);
-//		ByteArray.putInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_COUNT, mSpaceMapBlockCount);
-//		ByteArray.putInt(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_LENGTH, mSpaceMapLength);
-//		ByteArray.putLong(mSuperBlock, SUPERBLOCK_OFFSET_SPACEMAP_BLOCK_KEY, mSpaceMapBlockKey);
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[mBlockSize]);
 		buffer.position(CHECKSUM_SIZE); // leave space for checksum
@@ -418,7 +379,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Marshaller m = new Marshaller(SuperBlock.class);
 		ByteArrayBuffer buf = m.marshal(buffer, mSuperBlock, FieldCategory.VALUE);
 
-		long pageIndex = mSuperBlock.mIndex & 1L;
+		long pageIndex = mSuperBlock.mWriteCounter & 1L;
 
 		writeCheckedBlock(pageIndex, buf, -pageIndex);
 
@@ -451,7 +412,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			mRangeMap.read(buffer);
 
-			mRangeMap.remove(mSuperBlock.mSpaceMapBlockIndex, mSuperBlock.mSpaceMapBlockCount);
+			mRangeMap.remove((int)mSuperBlock.mSpaceMapBlockIndex, mSuperBlock.mSpaceMapBlockCount);
 		}
 
 		mPendingRangeMap = mRangeMap.clone();
@@ -477,7 +438,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		// Allocate space for the new space map block
 		mSuperBlock.mSpaceMapBlockCount = (buffer.position() + mBlockSize - 1) / mBlockSize;
-		mSuperBlock.mSpaceMapBlockIndex = (int)allocBlockInternal(mSuperBlock.mSpaceMapBlockCount);
+		mSuperBlock.mSpaceMapBlockIndex = allocBlockInternal(mSuperBlock.mSpaceMapBlockCount);
 		mSuperBlock.mSpaceMapLength = buffer.position();
 		mSuperBlock.mSpaceMapBlockKey = ISAAC.PRNG.nextLong();
 
@@ -564,32 +525,12 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mModified = true;
 
 		mSuperBlock.mExtraData = aExtraData == null ? null : aExtraData.clone();
-
-//		if (aExtraData == null)
-//		{
-//			aExtraData = new byte[0];
-//		}
-//		if (aExtraData.length > mBlockSize - SUPERBLOCK_HEADER_SIZE)
-//		{
-//			throw new IllegalArgumentException("Length of extra data exceeds maximum length: extra length: " + aExtraData.length + ", limit: " + (mBlockSize - SUPERBLOCK_HEADER_SIZE));
-//		}
-//
-//		ByteArray.putInt(mSuperBlock, SUPERBLOCK_OFFSET_EXTRA_DATA_LENGTH, aExtraData.length);
-//		System.arraycopy(aExtraData, 0, mSuperBlock, SUPERBLOCK_HEADER_SIZE, aExtraData.length);
-
-		// padd remainder of block
-//		for (int i = SUPERBLOCK_HEADER_SIZE + aExtraData.length, j = 0; i < mBlockSize; i++, j++)
-//		{
-//			mSuperBlock[i] = (byte)j;
-//		}
 	}
 
 
 	@Override
 	public byte[] getExtraData()
 	{
-//		int length = ByteArray.getInt(mSuperBlock, SUPERBLOCK_OFFSET_EXTRA_DATA_LENGTH);
-//		return Arrays.copyOfRange(mSuperBlock, SUPERBLOCK_HEADER_SIZE, SUPERBLOCK_HEADER_SIZE + length);
 		return mSuperBlock.mExtraData == null ? null : mSuperBlock.mExtraData.clone();
 	}
 
@@ -639,10 +580,10 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	class SuperBlock
 	{
-		long mIndex;
 		Date mCreated;
 		Date mUpdated;
-		int mSpaceMapBlockIndex;
+		long mWriteCounter;
+		long mSpaceMapBlockIndex;
 		int mSpaceMapBlockCount;
 		int mSpaceMapLength;
 		long mSpaceMapBlockKey;
