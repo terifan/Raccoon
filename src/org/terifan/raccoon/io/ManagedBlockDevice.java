@@ -379,6 +379,13 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Marshaller m = new Marshaller(SuperBlock.class);
 		ByteArrayBuffer buf = m.marshal(buffer, mSuperBlock, FieldCategory.VALUE);
 
+		if (mBlockDevice instanceof SecureBlockDevice)
+		{
+			byte[] padding = new byte[buf.capacity() - buf.position()];
+			ISAAC.PRNG.nextBytes(padding);
+			buf.write(padding);
+		}
+
 		long pageIndex = mSuperBlock.mWriteCounter & 1L;
 
 		writeCheckedBlock(pageIndex, buf, -pageIndex);

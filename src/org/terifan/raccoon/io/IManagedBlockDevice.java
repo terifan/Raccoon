@@ -5,7 +5,7 @@ import java.io.IOException;
 
 public interface IManagedBlockDevice extends IPhysicalBlockDevice
 {
-	final static int EXTRA_DATA_LIMIT = 384;
+	final static int EXTRA_DATA_LIMIT = 256;
 
 
 	/**
