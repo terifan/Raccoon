@@ -7,7 +7,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 class ValueReader
 {
-	static Object readValue(Class aType, ByteArrayBuffer aDataInput) throws IOException
+	static Object readValue(Class aType, ByteArrayBuffer aDataInput)
 	{
 		if (aType == Boolean.class || aType == Boolean.TYPE)
 		{

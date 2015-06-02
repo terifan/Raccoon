@@ -1,6 +1,5 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -8,7 +7,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 class CollectionReader
 {
-	static Collection readCollection(FieldType aFieldType, ByteArrayBuffer aDataInput, Collection aOutput) throws IOException, IllegalAccessException
+	static Collection readCollection(FieldType aFieldType, ByteArrayBuffer aDataInput, Collection aOutput) throws IllegalAccessException
 	{
 		if (aDataInput.readBit() == 1)
 		{

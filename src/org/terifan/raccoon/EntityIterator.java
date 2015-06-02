@@ -1,6 +1,7 @@
 package org.terifan.raccoon;
 
 import java.util.Iterator;
+import org.terifan.raccoon.serialization.FieldCategory;
 
 
 public class EntityIterator<T> implements Iterator<T>
@@ -36,8 +37,8 @@ public class EntityIterator<T> implements Iterator<T>
 
 		Entry entry = mIterator.next();
 
-		mTable.update(outputEntity, entry.getKey());
-		mTable.update(outputEntity, entry.getValue());
+		mTable.update(outputEntity, entry.getKey(), FieldCategory.KEY);
+		mTable.update(outputEntity, entry.getValue(), FieldCategory.VALUE);
 
 		return outputEntity;
 	}

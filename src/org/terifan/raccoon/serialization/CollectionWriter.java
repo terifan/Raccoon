@@ -1,13 +1,12 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.IOException;
 import java.util.Collection;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
 class CollectionWriter
 {
-	static void writeCollection(FieldType aFieldType, Collection aCollection, ByteArrayBuffer aDataOutput) throws IOException, IllegalAccessException
+	static void writeCollection(FieldType aFieldType, Collection aCollection, ByteArrayBuffer aDataOutput) throws IllegalAccessException
 	{
 		if (aCollection == null)
 		{

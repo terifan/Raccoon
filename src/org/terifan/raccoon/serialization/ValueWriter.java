@@ -1,13 +1,12 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.IOException;
 import java.util.Date;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
 class ValueWriter
 {
-	static void writeValue(Object aValue, ByteArrayBuffer aDataOutput) throws IOException
+	static void writeValue(Object aValue, ByteArrayBuffer aDataOutput)
 	{
 		Class<?> type = aValue.getClass();
 

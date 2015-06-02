@@ -1,6 +1,5 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -10,7 +9,7 @@ import org.terifan.raccoon.util.Log;
 
 class FieldWriter
 {
-	static void writeField(FieldType aFieldType, ByteArrayBuffer aDataOutput, Object aValue) throws IOException, IllegalAccessException
+	static void writeField(FieldType aFieldType, ByteArrayBuffer aDataOutput, Object aValue) throws IllegalAccessException
 	{
 		Log.v("encode " + aFieldType);
 

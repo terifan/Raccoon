@@ -1,6 +1,5 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Map;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -8,7 +7,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 class MapReader
 {
-	static Map readMap(FieldType aFieldType, ByteArrayBuffer aDataInput, Map aOutput) throws IOException, IllegalAccessException
+	static Map readMap(FieldType aFieldType, ByteArrayBuffer aDataInput, Map aOutput) throws IllegalAccessException
 	{
 		if (aDataInput.readBit() == 1)
 		{

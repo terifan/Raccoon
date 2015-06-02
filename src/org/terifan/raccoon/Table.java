@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.terifan.raccoon.hashtable.BlockPointer;
 import org.terifan.raccoon.hashtable.HashTable;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
@@ -41,7 +42,7 @@ class Table<T> implements Iterable<T>
 			Log.v("find discriminator");
 			Log.inc();
 
-			mDiscriminator = mTableType.getMarshaller().marshal(aDiscriminator, FieldCategory.DISCRIMINATOR);
+			mDiscriminator = mTableType.getMarshaller().marshal(new ByteArrayBuffer(16), aDiscriminator, FieldCategory.DISCRIMINATOR).trim().array();
 
 			if (mDiscriminator.length == 0)
 			{
@@ -124,7 +125,7 @@ class Table<T> implements Iterable<T>
 			return false;
 		}
 
-		update(aEntity, value);
+		update(aEntity, value, FieldCategory.VALUE);
 
 		Log.dec();
 
@@ -245,25 +246,25 @@ class Table<T> implements Iterable<T>
 
 	byte[] getDiscriminators(Object aInput)
 	{
-		return mTableType.getMarshaller().marshal(aInput, FieldCategory.DISCRIMINATOR);
+		return mTableType.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.DISCRIMINATOR).trim().array();
 	}
 
 
 	byte[] getKeys(Object aInput)
 	{
-		return mTableType.getMarshaller().marshal(aInput, FieldCategory.KEY);
+		return mTableType.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.KEY).trim().array();
 	}
 
 
 	byte[] getValues(Object aInput)
 	{
-		return mTableType.getMarshaller().marshal(aInput, FieldCategory.VALUE);
+		return mTableType.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.VALUE).trim().array();
 	}
 
 
-	void update(Object aOutput, byte[] aMarshalledData)
+	void update(Object aOutput, byte[] aMarshalledData, FieldCategory aCategory)
 	{
-		mTableType.getMarshaller().unmarshal(aMarshalledData, aOutput, FieldCategory.VALUE);
+		mTableType.getMarshaller().unmarshal(new ByteArrayBuffer(aMarshalledData), aOutput, aCategory);
 	}
 
 
@@ -278,7 +279,7 @@ class Table<T> implements Iterable<T>
 
 			if (mDiscriminator != null)
 			{
-				mTableType.getMarshaller().unmarshal(mDiscriminator, object, FieldCategory.DISCRIMINATOR);
+				mTableType.getMarshaller().unmarshal(new ByteArrayBuffer(mDiscriminator), object, FieldCategory.DISCRIMINATOR);
 			}
 
 			return object;

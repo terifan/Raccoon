@@ -5,6 +5,9 @@ import java.io.IOException;
 
 public interface IManagedBlockDevice extends IPhysicalBlockDevice
 {
+	final static int EXTRA_DATA_LIMIT = 384;
+
+
 	/**
 	 * @return
 	 *   true if the block device has pending changes requiring a commit.

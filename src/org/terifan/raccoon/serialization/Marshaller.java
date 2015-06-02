@@ -1,6 +1,5 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -15,7 +14,7 @@ public class Marshaller
 	private TypeDeclarations mTypeDeclarations;
 
 
-	public Marshaller(TypeDeclarations aTypeDeclarations) throws IOException
+	public Marshaller(TypeDeclarations aTypeDeclarations)
 	{
 		mTypeDeclarations = aTypeDeclarations;
 	}
@@ -32,7 +31,14 @@ public class Marshaller
 	}
 
 
+	@Deprecated
 	public byte[] marshal(Object aObject, FieldCategory aFieldCategory)
+	{
+		return marshal(new ByteArrayBuffer(16), aObject, aFieldCategory).trim().array();
+	}
+
+
+	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer, Object aObject, FieldCategory aFieldCategory)
 	{
 		if (aObject != null && mFields == null)
 		{
@@ -44,39 +50,39 @@ public class Marshaller
 			Log.v("marshal entity fields " + aFieldCategory);
 			Log.inc();
 
-			ByteArrayBuffer out = new ByteArrayBuffer(64);
-
 			for (FieldType fieldType : mTypeDeclarations)
 			{
 				if (fieldType.category == aFieldCategory)
 				{
 					Field field = findField(fieldType);
 					Object value = field.get(aObject);
-					FieldWriter.writeField(fieldType, out, value);
+					FieldWriter.writeField(fieldType, aBuffer, value);
 				}
 			}
 
 			Log.dec();
 
-			return out.trim().array();
+			return aBuffer;
 		}
-		catch (IOException | IllegalAccessException e)
+		catch (IllegalAccessException e)
 		{
 			throw new DatabaseException(e);
 		}
 	}
 
 
-	public void unmarshal(byte[] aBuffer, Object aObject, FieldCategory aFieldCategory)
+	@Deprecated
+	public void unmarshal(byte[] aBuffer, Object aOutputObject, FieldCategory aFieldCategory)
 	{
-		if (aBuffer.length == 0)
-		{
-			return;
-		}
+		unmarshal(new ByteArrayBuffer(aBuffer), aOutputObject, aFieldCategory);
+	}
 
-		if (aObject != null && mFields == null)
+
+	public void unmarshal(ByteArrayBuffer aBuffer, Object aOutputObject, FieldCategory aFieldCategory)
+	{
+		if (aOutputObject != null && mFields == null)
 		{
-			loadFields(aObject.getClass());
+			loadFields(aOutputObject.getClass());
 		}
 
 		try
@@ -84,31 +90,29 @@ public class Marshaller
 			Log.v("unmarshal entity");
 			Log.inc();
 
-			ByteArrayBuffer in = new ByteArrayBuffer(aBuffer);
-
 			for (FieldType fieldType : mTypeDeclarations)
 			{
 				if (fieldType.category == aFieldCategory)
 				{
 					Field field = findField(fieldType);
-					Object value = FieldReader.readField(fieldType, in);
+					Object value = FieldReader.readField(fieldType, aBuffer);
 					if (field != null)
 					{
-						field.set(aObject, value);
+						field.set(aOutputObject, value);
 					}
 				}
 			}
 
 			Log.dec();
 		}
-		catch (IOException | IllegalAccessException e)
+		catch (IllegalAccessException e)
 		{
-			throw new DatabaseException("Failed to reconstruct entity: " + (aObject == null ? null : aObject.getClass()), e);
+			throw new DatabaseException("Failed to reconstruct entity: " + (aOutputObject == null ? null : aOutputObject.getClass()), e);
 		}
 	}
 
 
-	public TypeDeclarations getTypeDeclarations() throws IOException
+	public TypeDeclarations getTypeDeclarations()
 	{
 		return mTypeDeclarations;
 	}

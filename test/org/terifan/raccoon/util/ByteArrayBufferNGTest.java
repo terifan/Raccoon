@@ -1,6 +1,5 @@
 package org.terifan.raccoon.util;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.util.Random;
 import static org.testng.Assert.*;
@@ -108,7 +107,7 @@ public class ByteArrayBufferNGTest
 		out.writeBits(0b111101, 6);
 
 		byte[] buf = out.array();
-		
+
 		assertEquals(0xff & buf[0], 0b11010101);
 		assertEquals(0xff & buf[1], 0b10011111);
 		assertEquals(0xff & buf[2], 0b01000000);
