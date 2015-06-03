@@ -1,6 +1,6 @@
 package org.terifan.raccoon.hashtable;
 
-import org.terifan.raccoon.io.BlobWriter;
+import org.terifan.raccoon.io.BlobOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -29,9 +29,20 @@ class Blob
 	}
 
 
-	static byte[] writeBlob(IManagedBlockDevice aBlockDevice, InputStream aInputStream, long aTransactionId) throws IOException
+	static byte[] writeBlob(IManagedBlockDevice aBlockDevice, InputStream aInputStream, long aTransactionId)
 	{
-		return BlobWriter.transfer(aBlockDevice, aTransactionId, aInputStream);
+		try
+		{
+			BlobOutputStream bos = new BlobOutputStream(aBlockDevice, aTransactionId);
+			bos.write(Streams.fetch(aInputStream));
+			bos.close();
+
+			return bos.getHeader();
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
