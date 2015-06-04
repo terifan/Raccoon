@@ -7,7 +7,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public class BlobOutputStream extends OutputStream
+public class BlobOutputStream extends OutputStream implements AutoCloseable
 {
 	final static int MAX_ADJACENT_BLOCKS = 64;
 	final static int POINTER_MAX_LENGTH = 64;
@@ -45,7 +45,7 @@ public class BlobOutputStream extends OutputStream
 		mBuffer.write(b);
 		mTotalLength++;
 
-		if (mBuffer.position() == mBuffer.capacity())
+		if (mBuffer.remaining() == 0)
 		{
 			flushBlock();
 		}
@@ -96,7 +96,7 @@ public class BlobOutputStream extends OutputStream
 		mBlockDevice.writeBlock(blockIndex, mBuffer.array(), 0, blockCount * mBlockSize, blockKey);
 
 		mPointerBuffer.writeVar64(blockIndex);
-		mPointerBuffer.writeVar64(blockCount);
+		mPointerBuffer.writeVar32(blockCount - 1);
 		mPointerBuffer.writeInt64(blockKey);
 
 		Log.d("Write fragment " + ++mFragmentCounter + " at " + blockIndex + " +" + blockCount);
@@ -126,8 +126,8 @@ public class BlobOutputStream extends OutputStream
 		ByteArrayBuffer output = new ByteArrayBuffer(pointerBufferLength);
 		output.writeBit(indirectBlock);
 		output.writeVar64(mTotalLength);
-		output.writeVar64(pointerBufferLength);
 		output.writeVar64(mTransactionId);
+		output.writeVar32(pointerBufferLength);
 		output.write(mPointerBuffer.array(), 0, pointerBufferLength);
 
 		Log.out.println(mTotalLength);

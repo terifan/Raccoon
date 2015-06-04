@@ -44,6 +44,14 @@ public class ByteArrayBuffer
 	}
 
 
+	public ByteArrayBuffer capacity(int aNewLength)
+	{
+		mBuffer = Arrays.copyOfRange(mBuffer, 0, aNewLength);
+		mOffset = Math.min(mOffset, aNewLength);
+		return this;
+	}
+
+
 	public ByteArrayBuffer limit(int aLimit)
 	{
 		mLimit = aLimit;
@@ -79,6 +87,12 @@ public class ByteArrayBuffer
 	}
 
 
+	public int remaining()
+	{
+		return ByteArrayBuffer.this.capacity() - position();
+	}
+
+
 	private ByteArrayBuffer ensureCapacity(int aIncrement)
 	{
 		if (mBuffer.length < mOffset + aIncrement)
@@ -98,14 +112,6 @@ public class ByteArrayBuffer
 	public ByteArrayBuffer trim()
 	{
 		mBuffer = Arrays.copyOfRange(mBuffer, 0, mOffset);
-		return this;
-	}
-
-
-	public ByteArrayBuffer trim(int aNewLength)
-	{
-		mBuffer = Arrays.copyOfRange(mBuffer, 0, aNewLength);
-		mOffset = Math.min(mOffset, aNewLength);
 		return this;
 	}
 
@@ -251,23 +257,22 @@ public class ByteArrayBuffer
 	}
 
 
-	public byte[] read(byte[] aBuffer)
+	public int read(byte[] aBuffer)
 	{
 		return read(aBuffer, 0, aBuffer.length);
 	}
 
 
-	public byte[] read(byte[] aBuffer, int aOffset, int aLength)
+	public int read(byte[] aBuffer, int aOffset, int aLength)
 	{
-		if (mOffset + aLength > mBuffer.length || mOffset + aLength > mLimit)
-		{
-			throw new EOFException("Reading beyond end of buffer, capacity " + mBuffer.length + ", offset " + mOffset + ", read " + aLength + ", limit " + mLimit);
-		}
-
 		align();
-		System.arraycopy(mBuffer, mOffset, aBuffer, aOffset, aLength);
-		mOffset += aLength;
-		return aBuffer;
+
+		int len = Math.min(aLength, remaining());
+
+		System.arraycopy(mBuffer, mOffset, aBuffer, aOffset, len);
+		mOffset += len;
+
+		return len;
 	}
 
 
@@ -447,8 +452,8 @@ public class ByteArrayBuffer
 	{
 		return writeBit(aBit ? 1 : 0);
 	}
-	
-	
+
+
 	public ByteArrayBuffer writeBit(int aBit)
 	{
 		mBitBuffer |= aBit << --mWriteBitsToGo;

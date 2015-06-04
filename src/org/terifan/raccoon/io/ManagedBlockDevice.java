@@ -450,7 +450,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mSuperBlock.mSpaceMapBlockKey = ISAAC.PRNG.nextLong();
 
 		// Pad buffer to block size
-		buffer.trim(mBlockSize * mSuperBlock.mSpaceMapBlockCount);
+		buffer.capacity(mBlockSize * mSuperBlock.mSpaceMapBlockCount);
 
 		writeCheckedBlock(mSuperBlock.mSpaceMapBlockIndex, buffer, mSuperBlock.mSpaceMapBlockKey);
 
@@ -492,7 +492,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		messageDigest.update(aBuffer.array(), CHECKSUM_SIZE, aBuffer.capacity() - CHECKSUM_SIZE);
 
 		byte[] actualDigest = messageDigest.digest();
-		byte[] expectedDigest = aBuffer.position(0).read(new byte[CHECKSUM_SIZE]);
+		byte[] expectedDigest = new byte[CHECKSUM_SIZE];
+		aBuffer.position(0).read(expectedDigest);
 
 		if (!Arrays.equals(expectedDigest, actualDigest))
 		{

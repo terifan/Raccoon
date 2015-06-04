@@ -1,5 +1,6 @@
 package org.terifan.raccoon.hashtable;
 
+import org.terifan.raccoon.io.BlobInputStream;
 import org.terifan.raccoon.Entry;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -206,7 +207,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 //			Log.hexDump(aKey);
 //			Log.hexDump(value);
-			
+
 			mRootMap.put(type, aKey, value, result);
 
 			if (result.overflow)
@@ -264,7 +265,14 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			return new ByteArrayInputStream(value);
 		}
 
-		return new BlobInputStream(mBlockDevice, value);
+		try
+		{
+			return new BlobInputStream(mBlockDevice, value);
+		}
+		catch (Exception e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
