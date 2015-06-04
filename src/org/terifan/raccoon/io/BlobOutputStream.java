@@ -9,8 +9,8 @@ import org.terifan.raccoon.util.Log;
 
 public class BlobOutputStream extends OutputStream implements AutoCloseable
 {
-	final static int MAX_ADJACENT_BLOCKS = 64;
-	final static int POINTER_MAX_LENGTH = 64;
+	final static int MAX_ADJACENT_BLOCKS = 2; //64
+	final static int POINTER_MAX_LENGTH = 10; //64
 
 	private int mBlockSize;
 	private ByteArrayBuffer mBuffer;
@@ -93,13 +93,16 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 			throw new IOException("Insufficient space in block device.");
 		}
 
+		Log.d("write fragment " + ++mFragmentCounter + " at " + blockIndex + " +" + blockCount);
+		Log.inc();
+
 		mBlockDevice.writeBlock(blockIndex, mBuffer.array(), 0, blockCount * mBlockSize, blockKey);
+
+		Log.dec();
 
 		mPointerBuffer.writeVar64(blockIndex);
 		mPointerBuffer.writeVar32(blockCount - 1);
 		mPointerBuffer.writeInt64(blockKey);
-
-		Log.d("Write fragment " + ++mFragmentCounter + " at " + blockIndex + " +" + blockCount);
 
 		mBuffer.position(0);
 	}
@@ -130,7 +133,7 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 		output.writeVar32(pointerBufferLength);
 		output.write(mPointerBuffer.array(), 0, pointerBufferLength);
 
-		Log.out.println(mTotalLength);
+		Log.v("blob closed, total length %d, indirect %s", mTotalLength, indirectBlock);
 
 		mHeader = output.trim().array();
 		mClosed = true;
