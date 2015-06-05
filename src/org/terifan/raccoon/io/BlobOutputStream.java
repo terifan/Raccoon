@@ -93,7 +93,7 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 			throw new IOException("Insufficient space in block device.");
 		}
 
-		Log.d("write fragment " + ++mFragmentCounter + " at " + blockIndex + " +" + blockCount);
+		Log.v("write fragment " + ++mFragmentCounter + " at " + blockIndex + " +" + blockCount);
 		Log.inc();
 
 		mBlockDevice.writeBlock(blockIndex, mBuffer.array(), 0, blockCount * mBlockSize, blockKey);

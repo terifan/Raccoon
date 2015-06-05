@@ -43,10 +43,10 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
+		Log.v("read block  " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+
 		while (aBufferLength > 0)
 		{
-			Log.v("read block  " + aBlockIndex + " +" + aBufferLength/mBlockSize);
-
 			byte[] block = mStorage.get(aBlockIndex);
 
 			if (block != null)

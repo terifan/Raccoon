@@ -109,11 +109,14 @@ public class BlobInputStream extends InputStream implements AutoCloseable
 		long blockKey = mPointerBuffer.readInt64();
 		int len = mPageSize * blockCount;
 
-		Log.d("Read fragment " + ++mFragmentIndex + " at " + blockIndex + " +" + blockCount);
+		Log.v("read fragment " + ++mFragmentIndex + " at " + blockIndex + " +" + blockCount);
+		Log.inc();
 
 		mBuffer.capacity(len);
 		mBuffer.position(0);
 
 		mBlockDevice.readBlock(blockIndex, mBuffer.array(), 0, len, blockKey);
+
+		Log.dec();
 	}
 }

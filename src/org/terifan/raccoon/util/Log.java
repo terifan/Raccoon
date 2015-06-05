@@ -9,6 +9,8 @@ public class Log
 
 	public static int LEVEL = 0;
 
+	private final static String INDENT = "... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ";
+
 	private static int mIndent;
 
 
@@ -24,80 +26,67 @@ public class Log
 	}
 
 
-	public static void s(Object... aMessage)
+	public static void s(String aMessage, Object... aParams)
 	{
-		logImpl(0, aMessage);
+		logImpl(0, aMessage, aParams);
 	}
 
 
-	public static void e(Object... aMessage)
+	public static void e(String aMessage, Object... aParams)
 	{
-		logImpl(1, aMessage);
+		logImpl(1, aMessage, aParams);
 	}
 
 
-	public static void w(Object... aMessage)
+	public static void w(String aMessage, Object... aParams)
 	{
-		logImpl(2, aMessage);
+		logImpl(2, aMessage, aParams);
 	}
 
 
-	public static void i(Object... aMessage)
+	public static void i(String aMessage, Object... aParams)
 	{
-		logImpl(3, aMessage);
+		logImpl(3, aMessage, aParams);
 	}
 
 
-	public static void v(Object... aMessage)
+	public static void v(String aMessage, Object... aParams)
 	{
-		logImpl(4, aMessage);
+		logImpl(4, aMessage, aParams);
 	}
 
 
-	public static void d(Object... aMessage)
+	public static void d(String aMessage, Object... aParams)
 	{
-		logImpl(5, aMessage);
+		logImpl(5, aMessage, aParams);
 	}
 
 
-	private static void logImpl(int aLevel, Object... aMessage)
+	private static void logImpl(int aLevel, String aMessage, Object... aParams)
 	{
-		if (aLevel <= LEVEL)
+		if (aLevel <= LEVEL && aMessage != null)
 		{
-			if (aMessage != null && aMessage.length > 0)
+			String message = INDENT.substring(0, 4 * Math.min(mIndent, 20)) + String.format(aMessage, aParams);
+
+			StackTraceElement[] trace = Thread.currentThread().getStackTrace();
+			String className = trace[3].getClassName();
+			className = className.substring(className.lastIndexOf(".") + 1);
+			String methodName = trace[3].getMethodName();
+			String loggerName = trace[3].getFileName() + ":" + trace[3].getLineNumber();
+
+			String type;
+			switch (aLevel)
 			{
-				StringBuilder message = new StringBuilder();
-
-				for (int i = 0; i < mIndent; i++)
-				{
-					message.append("... ");
-				}
-
-				for (Object o : aMessage)
-				{
-					message.append(o);
-				}
-
-				StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-				String className = trace[3].getClassName();
-				className = className.substring(className.lastIndexOf(".") + 1);
-				String methodName = trace[3].getMethodName();
-				String loggerName = trace[3].getFileName() + ":" + trace[3].getLineNumber();
-
-				String type;
-				switch (aLevel)
-				{
-					case 0: type = "SEVERE"; break;
-					case 1: type = "ERROR"; break;
-					case 2: type = "WARN"; break;
-					case 3: type = "INFO"; break;
-					case 4: type = "VERBOSE"; break;
-					case 5: type = "DEBUG"; break;
-					default: type = ""; break;
-				}
-
-				System.out.printf("%-30s%-30s%-30s%-7s %s\n", loggerName, className, methodName, type, message.toString());
+				case 0: type = "SEVERE"; break;
+				case 1: type = "ERROR"; break;
+				case 2: type = "WARN"; break;
+				case 3: type = "INFO"; break;
+				case 4: type = "VERBOSE"; break;
+				case 5: type = "DEBUG"; break;
+				default: type = ""; break;
 			}
+
+			System.out.printf("%-30s%-30s%-30s%-7s %s\n", loggerName, className, methodName, type, message);
 		}
 	}
 
@@ -114,7 +103,7 @@ public class Log
 			Log.out.println("hexdump: empty");
 			return;
 		}
-		
+
 		int LW = 40;
 		int MR = 100;
 
