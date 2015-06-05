@@ -21,7 +21,7 @@ public class BlobInputStreamNGTest
 
 		Random rnd = new Random(1);
 
-		byte[] out = new byte[1000];
+		byte[] out = new byte[1500];
 		rnd.nextBytes(out);
 
 		IPhysicalBlockDevice memoryDevice = new MemoryBlockDevice(512);
