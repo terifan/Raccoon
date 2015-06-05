@@ -32,7 +32,7 @@ public class BlobInputStreamNGTest
 		bos.close();
 		byte[] header = bos.getHeader();
 
-		byte[] in = new byte[100];
+		byte[] in = new byte[out.length];
 
 		try (BlobInputStream bis = new BlobInputStream(blockDevice, header))
 		{
