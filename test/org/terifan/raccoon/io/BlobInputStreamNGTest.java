@@ -19,7 +19,7 @@ public class BlobInputStreamNGTest
 	@Test(dataProvider = "unitSizes")
 	public void testSomeMethod(int aUnitSize, int aPointers, boolean aIndirect) throws IOException
 	{
-		Log.LEVEL = 10;
+//		Log.LEVEL = 10;
 
 		Random rnd = new Random(1);
 
