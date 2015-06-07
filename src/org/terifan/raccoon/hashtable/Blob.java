@@ -31,12 +31,9 @@ class Blob
 
 	static byte[] writeBlob(IManagedBlockDevice aBlockDevice, InputStream aInputStream, long aTransactionId)
 	{
-		try
+		try (BlobOutputStream bos = new BlobOutputStream(aBlockDevice, aTransactionId))
 		{
-			BlobOutputStream bos = new BlobOutputStream(aBlockDevice, aTransactionId);
 			bos.write(Streams.fetch(aInputStream));
-			bos.close();
-
 			return bos.finish();
 		}
 		catch (IOException e)
