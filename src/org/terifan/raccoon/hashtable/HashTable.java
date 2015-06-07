@@ -1,5 +1,7 @@
 package org.terifan.raccoon.hashtable;
 
+import org.terifan.raccoon.io.BlockPointer;
+import org.terifan.raccoon.io.BlockAccessor;
 import org.terifan.raccoon.io.BlobInputStream;
 import org.terifan.raccoon.Entry;
 import java.io.ByteArrayInputStream;
@@ -14,6 +16,7 @@ import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.security.MurmurHash3;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.LeafNode;
+import org.terifan.raccoon.Node;
 import static org.terifan.raccoon.Node.*;
 import org.terifan.raccoon.Stats;
 import org.terifan.raccoon.io.Streams;
@@ -48,7 +51,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		mLeafSize = aLeafSize;
 		mHashSeed = aHashSeed;
 		mPointersPerNode = mNodeSize / BlockPointer.SIZE;
-		mBlockAccessor = new BlockAccessor(mBlockDevice, mNodeSize, mLeafSize);
+		mBlockAccessor = new BlockAccessor(mBlockDevice);
 
 		if (aRootBlockPointer == null)
 		{
@@ -57,14 +60,14 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 			mCreateInstance = true;
 			mRootMap = LeafNode.alloc(mLeafSize);
-			mRootBlockPointer = mBlockAccessor.writeBlock(mRootMap, mPointersPerNode, aTransactionId);
+			mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode, aTransactionId);
 		}
 		else
 		{
 			Log.i("open hash table");
 			Log.inc();
 
-			mRootBlockPointer = new BlockPointer().decode(aRootBlockPointer.encode(new byte[BlockPointer.SIZE], 0), 0);
+			mRootBlockPointer = new BlockPointer().unmarshal(aRootBlockPointer.marshal(new byte[BlockPointer.SIZE], 0), 0);
 
 			loadRoot();
 		}
@@ -230,7 +233,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 //
 //					mBlockDevice.freeBlock(blockPointer);
 //
-//					leaf.mParent.setPointer(leaf.mIndex, mBlockDevice.writeBlock(leaf, blockPointer.getRange()));
+//					leaf.mParent.setPointer(leaf.mIndex, writeBlock(leaf, blockPointer.getRange()));
 //
 //					leaf.mDirty = false;
 //				}
@@ -284,7 +287,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		mBlockAccessor.freeBlock(mRootBlockPointer);
 
-		mRootBlockPointer = mBlockAccessor.writeBlock(mRootNode, mPointersPerNode, aTransactionId);
+		mRootBlockPointer = writeBlock(mRootNode, mPointersPerNode, aTransactionId);
 
 		mRootMap = null;
 	}
@@ -383,11 +386,11 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 				if (mRootMap != null)
 				{
-					mRootBlockPointer = mBlockAccessor.writeBlock(mRootMap, mPointersPerNode, aTransactionId);
+					mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode, aTransactionId);
 				}
 				else
 				{
-					mRootBlockPointer = mBlockAccessor.writeBlock(mRootNode, mPointersPerNode, aTransactionId);
+					mRootBlockPointer = writeBlock(mRootNode, mPointersPerNode, aTransactionId);
 				}
 
 				Log.dec();
@@ -462,7 +465,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		mBlockAccessor.freeBlock(mRootBlockPointer);
 
-		mRootBlockPointer = mBlockAccessor.writeBlock(mRootMap, mPointersPerNode, aTransactionId);
+		mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode, aTransactionId);
 
 		assert mModCount == modCount : "concurrent modification";
 	}
@@ -535,7 +538,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 				IndexNode node = readNode(blockPointer);
 				putValue(aKey, aType, aValue, aHash, aLevel + 1, node, aResult, aTransactionId);
 				mBlockAccessor.freeBlock(blockPointer);
-				aNode.setPointer(index, mBlockAccessor.writeBlock(node, blockPointer.getRange(), aTransactionId));
+				aNode.setPointer(index, writeBlock(node, blockPointer.getRange(), aTransactionId));
 				break;
 			case LEAF:
 				putValueLeaf(blockPointer, index, aKey, aType, aValue, aLevel, aNode, aHash, aResult, aTransactionId);
@@ -574,7 +577,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 			mBlockAccessor.freeBlock(aBlockPointer);
 
-			aNode.setPointer(aIndex, mBlockAccessor.writeBlock(map, aBlockPointer.getRange(), aTransactionId));
+			aNode.setPointer(aIndex, writeBlock(map, aBlockPointer.getRange(), aTransactionId));
 		}
 		else if (splitLeaf(map, aBlockPointer, aIndex, aLevel, aNode, aTransactionId))
 		{
@@ -588,7 +591,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 			mBlockAccessor.freeBlock(aBlockPointer);
 
-			aNode.setPointer(aIndex, mBlockAccessor.writeBlock(node, aBlockPointer.getRange(), aTransactionId));
+			aNode.setPointer(aIndex, writeBlock(node, aBlockPointer.getRange(), aTransactionId));
 		}
 	}
 
@@ -603,7 +606,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		map.put(aType, aKey, aValue, aResult);
 
-		aNode.setPointer(aIndex, mBlockAccessor.writeBlock(map, aBlockPointer.getRange(), aTransactionId));
+		aNode.setPointer(aIndex, writeBlock(map, aBlockPointer.getRange(), aTransactionId));
 
 		Log.dec();
 	}
@@ -635,8 +638,8 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		}
 
 		// create nodes pointing to leafs
-		BlockPointer lowIndex = low.isEmpty() ? new BlockPointer().setType(HOLE).setRange(halfRange) : mBlockAccessor.writeBlock(low, halfRange, aTransactionId);
-		BlockPointer highIndex = high.isEmpty() ? new BlockPointer().setType(HOLE).setRange(halfRange) : mBlockAccessor.writeBlock(high, halfRange, aTransactionId);
+		BlockPointer lowIndex = low.isEmpty() ? new BlockPointer().setType(HOLE).setRange(halfRange) : writeBlock(low, halfRange, aTransactionId);
+		BlockPointer highIndex = high.isEmpty() ? new BlockPointer().setType(HOLE).setRange(halfRange) : writeBlock(high, halfRange, aTransactionId);
 
 		IndexNode node = IndexNode.wrap(new byte[mNodeSize]);
 		node.setPointer(0, lowIndex);
@@ -655,6 +658,8 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			return false;
 		}
+		
+		assert aBlockPointer.getRange() >= 2;
 
 		Stats.splitLeaf++;
 		Log.inc();
@@ -683,8 +688,8 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		mBlockAccessor.freeBlock(aBlockPointer);
 
 		// create nodes pointing to leafs
-		BlockPointer lowIndex = low.isEmpty() ? new BlockPointer().setType(HOLE).setRange(halfRange) : mBlockAccessor.writeBlock(low, halfRange, aTransactionId);
-		BlockPointer highIndex = high.isEmpty() ? new BlockPointer().setType(HOLE).setRange(halfRange) : mBlockAccessor.writeBlock(high, halfRange, aTransactionId);
+		BlockPointer lowIndex = low.isEmpty() ? new BlockPointer().setType(HOLE).setRange(halfRange) : writeBlock(low, halfRange, aTransactionId);
+		BlockPointer highIndex = high.isEmpty() ? new BlockPointer().setType(HOLE).setRange(halfRange) : writeBlock(high, halfRange, aTransactionId);
 
 		aNode.split(aIndex, lowIndex, highIndex);
 
@@ -712,7 +717,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 				if (oldValue != null)
 				{
 					mBlockAccessor.freeBlock(blockPointer);
-					aNode.setPointer(index, mBlockAccessor.writeBlock(node, blockPointer.getRange(), aTransactionId));
+					aNode.setPointer(index, writeBlock(node, blockPointer.getRange(), aTransactionId));
 				}
 				return oldValue;
 			case LEAF:
@@ -721,7 +726,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 				if (oldValue != null)
 				{
 					mBlockAccessor.freeBlock(blockPointer);
-					aNode.setPointer(index, mBlockAccessor.writeBlock(map, blockPointer.getRange(), aTransactionId));
+					aNode.setPointer(index, writeBlock(map, blockPointer.getRange(), aTransactionId));
 				}
 				return oldValue;
 			case HOLE:
@@ -735,7 +740,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	{
 		assert aBlockPointer.getType() == LEAF;
 
-		if (aBlockPointer.getPageIndex() == mRootBlockPointer.getPageIndex() && mRootMap != null)
+		if (aBlockPointer.getOffset() == mRootBlockPointer.getOffset() && mRootMap != null)
 		{
 			return mRootMap;
 		}
@@ -748,7 +753,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	{
 		assert aBlockPointer.getType() == NODE;
 
-		if (aBlockPointer.getPageIndex() == mRootBlockPointer.getPageIndex() && mRootNode != null)
+		if (aBlockPointer.getOffset() == mRootBlockPointer.getOffset() && mRootNode != null)
 		{
 			return mRootNode;
 		}
@@ -814,5 +819,11 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 			aVisitor.visit(i, next);
 		}
+	}
+
+
+	private BlockPointer writeBlock(Node aNode, int aRange, long aaTransactionId)
+	{
+		return mBlockAccessor.writeBlock(aNode.array(), aNode.array().length, aNode.getType(), aRange, aaTransactionId);
 	}
 }

@@ -37,7 +37,7 @@ class Blob
 			bos.write(Streams.fetch(aInputStream));
 			bos.close();
 
-			return bos.getHeader();
+			return bos.finish();
 		}
 		catch (IOException e)
 		{

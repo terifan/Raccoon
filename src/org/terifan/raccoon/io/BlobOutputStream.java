@@ -2,35 +2,33 @@ package org.terifan.raccoon.io;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import org.terifan.raccoon.security.ISAAC;
+import java.util.Arrays;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
 public class BlobOutputStream extends OutputStream implements AutoCloseable
 {
-	final static int MAX_ADJACENT_BLOCKS = 2; //64
-	final static int POINTER_MAX_LENGTH = 10; //64
+	final static int TYPE_DATA = 0;
+	final static int TYPE_INDIRECT = 1;
+	final static int FRAGMENT_SIZE = 1024 * 1024;
+	private final static int POINTER_MAX_LENGTH = 4 * BlockPointer.SIZE;
 
-	private int mBlockSize;
 	private ByteArrayBuffer mBuffer;
 	private ByteArrayBuffer mPointerBuffer;
-	private IManagedBlockDevice mBlockDevice;
 	private long mTransactionId;
 	private long mTotalLength;
-	private long mFragmentCounter;
 	private byte[] mHeader;
 	private boolean mClosed;
+	private BlockAccessor mBlockAccessor;
 
 
 	public BlobOutputStream(IManagedBlockDevice aBlockDevice, long aTransactionId) throws IOException
 	{
-		mBlockDevice = aBlockDevice;
 		mTransactionId = aTransactionId;
-
-		mBlockSize = mBlockDevice.getBlockSize();
-		mBuffer = new ByteArrayBuffer(MAX_ADJACENT_BLOCKS * mBlockSize);
-		mPointerBuffer = new ByteArrayBuffer(mBlockSize);
+		mBlockAccessor = new BlockAccessor(aBlockDevice);
+		mPointerBuffer = new ByteArrayBuffer(aBlockDevice.getBlockSize());
+		mBuffer = new ByteArrayBuffer(FRAGMENT_SIZE);
 	}
 
 
@@ -55,27 +53,40 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 	@Override
 	public void close() throws IOException
 	{
-		if (!mClosed)
+		if (mClosed)
 		{
-			int padLength = mBlockSize - (mBuffer.position() % mBlockSize);
-			if (padLength > 0 && padLength < mBlockSize)
-			{
-				mBuffer.write(new byte[padLength]);
-			}
-
-			flushBlock();
-
-			closeStream();
+			return;
 		}
+
+		if (mBuffer.position() > 0)
+		{
+			flushBlock();
+		}
+
+		int pointerBufferLength = mPointerBuffer.position();
+
+		// create indirect block if pointers exceed max length
+		if (pointerBufferLength > POINTER_MAX_LENGTH)
+		{
+			BlockPointer bp = mBlockAccessor.writeBlock(mPointerBuffer.array(), mPointerBuffer.position(), TYPE_INDIRECT, 0, mTransactionId);
+			bp.marshal(mPointerBuffer.position(0));
+			pointerBufferLength = BlockPointer.SIZE;
+		}
+
+		ByteArrayBuffer output = new ByteArrayBuffer(pointerBufferLength);
+		output.writeVar64(mTotalLength);
+		output.write(mPointerBuffer.array(), 0, pointerBufferLength);
+
+		Log.d("blob closed, total length %d", mTotalLength);
+
+		mHeader = output.trim().array();
+		mClosed = true;
 	}
 
 
-	public byte[] getHeader() throws IOException
+	public byte[] finish() throws IOException
 	{
-		if (!mClosed)
-		{
-			throw new IOException("Stream not closed");
-		}
+		close();
 
 		return mHeader;
 	}
@@ -83,59 +94,10 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 
 	private void flushBlock() throws IOException
 	{
-		assert mBuffer.position() % mBlockSize == 0 : mBuffer.position();
-
-		int blockCount = mBuffer.position() / mBlockSize;
-		long blockIndex = mBlockDevice.allocBlock(blockCount);
-		long blockKey = ISAAC.PRNG.nextLong();
-		if (blockIndex < 0)
-		{
-			throw new IOException("Insufficient space in block device.");
-		}
-
-		Log.v("write fragment " + ++mFragmentCounter + " at " + blockIndex + " +" + blockCount);
-		Log.inc();
-
-		mBlockDevice.writeBlock(blockIndex, mBuffer.array(), 0, blockCount * mBlockSize, blockKey);
-
-		Log.dec();
-
-		mPointerBuffer.writeVar64(blockIndex);
-		mPointerBuffer.writeVar32(blockCount - 1);
-		mPointerBuffer.writeInt64(blockKey);
-
+		BlockPointer bp = mBlockAccessor.writeBlock(mBuffer.array(), mBuffer.position(), TYPE_DATA, 0, mTransactionId);
+		bp.marshal(mPointerBuffer);
 		mBuffer.position(0);
-	}
 
-
-	private void closeStream() throws IOException
-	{
-		boolean indirectBlock = false;
-		int pointerBufferLength = mPointerBuffer.position();
-
-		// create indirect block if pointers exceed max length
-		if (pointerBufferLength > POINTER_MAX_LENGTH)
-		{
-			BlobOutputStream bos = new BlobOutputStream(mBlockDevice, mTransactionId);
-			bos.write(mPointerBuffer.array(), 0, pointerBufferLength);
-			bos.close();
-
-			byte[] header = bos.getHeader();
-			indirectBlock = true;
-			pointerBufferLength = header.length;
-			mPointerBuffer.array(header).position(header.length);
-		}
-
-		ByteArrayBuffer output = new ByteArrayBuffer(pointerBufferLength);
-		output.writeBit(indirectBlock);
-		output.writeVar64(mTotalLength);
-		output.writeVar64(mTransactionId);
-		output.writeVar32(pointerBufferLength);
-		output.write(mPointerBuffer.array(), 0, pointerBufferLength);
-
-		Log.v("blob closed, total length %d, indirect %s", mTotalLength, indirectBlock);
-
-		mHeader = output.trim().array();
-		mClosed = true;
+		Arrays.fill(mBuffer.array(), (byte)0);
 	}
 }

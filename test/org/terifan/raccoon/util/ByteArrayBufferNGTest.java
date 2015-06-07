@@ -1,6 +1,7 @@
 package org.terifan.raccoon.util;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Random;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
@@ -43,8 +44,8 @@ public class ByteArrayBufferNGTest
 			out.writeVar64(Long.MAX_VALUE);
 			out.writeFloat(rnd.nextFloat());
 			out.writeDouble(rnd.nextDouble());
-			out.write(buf);
 			out.writeString("hello world");
+			out.write(buf);
 		}
 
 		ByteArrayBuffer in = new ByteArrayBuffer(out.trim().array());
@@ -70,8 +71,10 @@ public class ByteArrayBufferNGTest
 			assertEquals(in.readVar64(), Long.MAX_VALUE);
 			assertEquals(in.readFloat(), rnd.nextFloat());
 			assertEquals(in.readDouble(), rnd.nextDouble());
-			assertEquals(in.read(new byte[100]), buf);
 			assertEquals(in.readString(11), "hello world");
+			byte[] readBuf = new byte[100];
+			in.read(readBuf);
+			assertEquals(readBuf, buf);
 		}
 	}
 

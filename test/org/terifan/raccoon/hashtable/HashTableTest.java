@@ -1,5 +1,6 @@
 package org.terifan.raccoon.hashtable;
 
+import org.terifan.raccoon.io.BlockPointer;
 import java.util.Random;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
@@ -27,7 +28,7 @@ public class HashTableTest
 		int nodeSize = 512;
 		int leafSize = 1024;
 
-		long tx = -1;
+		long tx = 0;
 
 		try (IManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice); HashTable hashTable = new HashTable(managedBlockDevice, root, seed, nodeSize, leafSize, tx))
 		{

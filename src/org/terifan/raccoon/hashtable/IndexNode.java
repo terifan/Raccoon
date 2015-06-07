@@ -1,5 +1,6 @@
 package org.terifan.raccoon.hashtable;
 
+import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.Node;
 import java.util.Arrays;
 import org.terifan.raccoon.Stats;
@@ -35,7 +36,7 @@ public class IndexNode implements Node
 	{
 		assert decodePointer(aIndex).getType() == 0 || decodePointer(aIndex).getRange() == aBlockPointer.getRange();
 
-		aBlockPointer.encode(mBuffer, BlockPointer.SIZE * aIndex);
+		aBlockPointer.marshal(mBuffer, BlockPointer.SIZE * aIndex);
 	}
 
 
@@ -63,7 +64,7 @@ public class IndexNode implements Node
 
 	private BlockPointer decodePointer(int aIndex)
 	{
-		return new BlockPointer().decode(mBuffer, BlockPointer.SIZE * aIndex);
+		return new BlockPointer().unmarshal(mBuffer, BlockPointer.SIZE * aIndex);
 	}
 
 
@@ -83,8 +84,8 @@ public class IndexNode implements Node
 
 		ensureEmpty(aIndex + 1, aLowPointer.getRange() + aHighPointer.getRange() - 1);
 
-		aLowPointer.encode(mBuffer, BlockPointer.SIZE * aIndex);
-		aHighPointer.encode(mBuffer, BlockPointer.SIZE * (aIndex + aLowPointer.getRange()));
+		aLowPointer.marshal(mBuffer, BlockPointer.SIZE * aIndex);
+		aHighPointer.marshal(mBuffer, BlockPointer.SIZE * (aIndex + aLowPointer.getRange()));
 	}
 
 
@@ -98,7 +99,7 @@ public class IndexNode implements Node
 		ensureEmpty(aIndex + 1, bp1.getRange() - 1);
 		ensureEmpty(aIndex + bp1.getRange() + 1, bp2.getRange() - 1);
 
-		aBlockPointer.encode(mBuffer, BlockPointer.SIZE * aIndex);
+		aBlockPointer.marshal(mBuffer, BlockPointer.SIZE * aIndex);
 
 		int offset = BlockPointer.SIZE * (aIndex + bp1.getRange());
 		Arrays.fill(mBuffer, offset, offset + BlockPointer.SIZE, (byte)0);
@@ -130,7 +131,7 @@ public class IndexNode implements Node
 
 		for (int i = 0; i < getPointerCount(); i++)
 		{
-			bp.decode(mBuffer, BlockPointer.SIZE * i);
+			bp.unmarshal(mBuffer, BlockPointer.SIZE * i);
 
 			if (rangeRemain > 0)
 			{
@@ -162,7 +163,7 @@ public class IndexNode implements Node
 
 		for (int i = 0; i < mBuffer.length / BlockPointer.SIZE;)
 		{
-			bp.decode(mBuffer, BlockPointer.SIZE * i);
+			bp.unmarshal(mBuffer, BlockPointer.SIZE * i);
 
 			if (bp.getRange() == 0)
 			{

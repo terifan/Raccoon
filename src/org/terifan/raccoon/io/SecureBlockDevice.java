@@ -102,7 +102,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 		mCipher.encrypt(aBlockIndex, workBuffer, aBufferOffset, aBufferLength, aBlockKey);
 
-		mBlockDevice.writeBlock(aBlockIndex, workBuffer, aBufferOffset, aBufferLength, 0L);
+		mBlockDevice.writeBlock(aBlockIndex, workBuffer, aBufferOffset, aBufferLength, 0L); // block key is used by this blockdevice and not passed to lower levels
 
 		Log.dec();
 	}
@@ -121,7 +121,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		Log.v("read block " + aBlockIndex + " +" + aBufferLength / mBlockDevice.getBlockSize());
 		Log.inc();
 
-		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L);
+		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L); // block key is used by this blockdevice and not passed to lower levels
 
 		mCipher.decrypt(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 

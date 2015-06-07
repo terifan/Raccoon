@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.serialization.FieldCategory;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import org.terifan.raccoon.hashtable.BlockPointer;
 import org.terifan.raccoon.hashtable.HashTable;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -61,7 +61,7 @@ class Table<T> implements Iterable<T>
 
 		if (aBlockPointer == null && mPointer != null)
 		{
-			aBlockPointer = new BlockPointer().decode(mPointer, 0);
+			aBlockPointer = new BlockPointer().unmarshal(mPointer, 0);
 		}
 
 		if (mPointer == null)
@@ -210,7 +210,7 @@ class Table<T> implements Iterable<T>
 			return false;
 		}
 
-		byte[] pointer = mTableImplementation.getRootBlockPointer().encode(new byte[BlockPointer.SIZE], 0);
+		byte[] pointer = mTableImplementation.getRootBlockPointer().marshal(new byte[BlockPointer.SIZE], 0);
 
 		boolean wasUpdated = !Arrays.equals(pointer, mPointer);
 

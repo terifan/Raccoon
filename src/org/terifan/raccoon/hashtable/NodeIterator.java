@@ -1,5 +1,6 @@
 package org.terifan.raccoon.hashtable;
 
+import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.Entry;
 import org.terifan.raccoon.LeafNode;
 import java.util.ArrayDeque;

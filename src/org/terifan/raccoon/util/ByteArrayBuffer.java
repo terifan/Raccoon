@@ -293,6 +293,25 @@ public class ByteArrayBuffer
 	}
 
 
+	public short readInt16()
+	{
+		align();
+		int ch1 = read();
+		int ch2 = read();
+		return (short)((ch1 << 8) + ch2);
+	}
+
+
+	public ByteArrayBuffer writeInt16(short aValue)
+	{
+		align();
+		ensureCapacity(2);
+		mBuffer[mOffset++] = (byte)(aValue >> 8);
+		mBuffer[mOffset++] = (byte)(aValue);
+		return this;
+	}
+
+
 	public int readInt32()
 	{
 		align();

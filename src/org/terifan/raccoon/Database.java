@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.BlockPointer;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +20,6 @@ import org.terifan.raccoon.io.SecureBlockDevice;
 import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.AccessCredentials;
-import org.terifan.raccoon.hashtable.BlockPointer;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.Log;
 
@@ -174,7 +174,7 @@ public class Database implements AutoCloseable
 		byte[] ptr = new byte[BlockPointer.SIZE];
 		bb.get(ptr);
 
-		BlockPointer rootPointer = new BlockPointer().decode(ptr, 0);
+		BlockPointer rootPointer = new BlockPointer().unmarshal(ptr, 0);
 
 		TableType systemTableType = new TableType(Table.class);
 
@@ -352,7 +352,7 @@ public class Database implements AutoCloseable
 			bb.putLong(IDENTITY);
 			bb.putInt(VERSION);
 			bb.putLong(mTransactionId);
-			bb.put(mSystemTable.getRootBlockPointer().encode(new byte[BlockPointer.SIZE], 0));
+			bb.put(mSystemTable.getRootBlockPointer().marshal(new byte[BlockPointer.SIZE], 0));
 
 			mBlockDevice.setExtraData(extra);
 		}

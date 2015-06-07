@@ -2,52 +2,45 @@ package org.terifan.raccoon.io;
 
 import java.io.IOException;
 import java.io.InputStream;
-import org.terifan.raccoon.util.ByteArray;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+import static org.terifan.raccoon.io.BlobOutputStream.TYPE_INDIRECT;
 
-// #
-// xxxx
-// ....... ....... ........ ........
 
 public class BlobInputStream extends InputStream implements AutoCloseable
 {
 	private final static String TAG = BlobInputStream.class.getName();
 
-	private IManagedBlockDevice mBlockDevice;
+	private BlockAccessor mBlockAccessor;
 	private ByteArrayBuffer mPointerBuffer;
 	private ByteArrayBuffer mBuffer;
-	private int mPageSize;
 	private long mRemaining;
-	private long mFragmentIndex;
-	private long mTransactionId;
-	private boolean mIndirect;
-
-	private BlobInputStream mSubStream;
 
 
 	public BlobInputStream(IManagedBlockDevice aBlockDevice, byte[] aHeader) throws IOException
 	{
-		mBlockDevice = aBlockDevice;
-		mPageSize = mBlockDevice.getBlockSize();
-		mBuffer = new ByteArrayBuffer(0);
-
+		mBlockAccessor = new BlockAccessor(aBlockDevice);
 		mPointerBuffer = new ByteArrayBuffer(aHeader);
-		mIndirect = mPointerBuffer.readBit() == 1;
 		mRemaining = mPointerBuffer.readVar64();
-		mTransactionId = mPointerBuffer.readVar64();
-		int pointerBufferLength = mPointerBuffer.readVar32();
 
-		if (mIndirect)
+		if (mRemaining > 0)
 		{
-			long blockIndex = mPointerBuffer.readVar64();
-			int blockCount = mPointerBuffer.readVar32() + 1;
-			long blockKey = mPointerBuffer.readInt64();
+			BlockPointer bp = loadBlock();
 
-			mPointerBuffer = new ByteArrayBuffer(mPageSize * blockCount);
+			if (bp.getType() == TYPE_INDIRECT)
+			{
+				mPointerBuffer = mBuffer;
 
-			mBlockDevice.readBlock(blockIndex, mPointerBuffer.array(), 0, mPointerBuffer.capacity(), blockKey);
+				loadBlock();
+			}
 		}
+	}
+
+
+	@Override
+	public int available() throws IOException
+	{
+		return (int)Math.min(Integer.MAX_VALUE, mRemaining);
 	}
 
 
@@ -72,22 +65,26 @@ public class BlobInputStream extends InputStream implements AutoCloseable
 	@Override
 	public int read(byte[] aBuffer, int aOffset, int aLength) throws IOException
 	{
-		int readCount = 0;
+		if (mRemaining <= 0)
+		{
+			return -1;
+		}
 
-		while (readCount < aLength && mRemaining > 0)
+		for (int remaining = (int)Math.min(aLength, mRemaining); remaining > 0;)
 		{
 			if (mBuffer.remaining() == 0)
 			{
 				loadBlock();
 			}
 
-			int len = mBuffer.read(aBuffer, aOffset, (int)Math.min(aLength - readCount, mRemaining));
-
-			mRemaining -= len;
-			readCount += len;
+			int len = mBuffer.read(aBuffer, aOffset, remaining);
+			remaining -= len;
+			aOffset += len;
 		}
 
-		return readCount == 0 ? mRemaining <= 0 ? -1 : 0 : readCount;
+		mRemaining -= aLength;
+
+		return aLength;
 	}
 
 
@@ -97,26 +94,17 @@ public class BlobInputStream extends InputStream implements AutoCloseable
 	}
 
 
-	private void loadBlock() throws IOException
+	private BlockPointer loadBlock() throws IOException
 	{
 		if (mPointerBuffer.remaining() == 0)
 		{
 			throw new IOException();
 		}
 
-		long blockIndex = mPointerBuffer.readVar64();
-		int blockCount = mPointerBuffer.readVar32() + 1;
-		long blockKey = mPointerBuffer.readInt64();
-		int len = mPageSize * blockCount;
+		BlockPointer bp = new BlockPointer();
+		bp.unmarshal(mPointerBuffer);
+		mBuffer = new ByteArrayBuffer(mBlockAccessor.readBlock(bp));
 
-		Log.v("read fragment " + ++mFragmentIndex + " at " + blockIndex + " +" + blockCount);
-		Log.inc();
-
-		mBuffer.capacity(len);
-		mBuffer.position(0);
-
-		mBlockDevice.readBlock(blockIndex, mBuffer.array(), 0, len, blockKey);
-
-		Log.dec();
+		return bp;
 	}
 }
