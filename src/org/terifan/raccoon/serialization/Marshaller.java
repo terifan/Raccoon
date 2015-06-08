@@ -95,7 +95,9 @@ public class Marshaller
 				if (fieldType.category == aFieldCategory)
 				{
 					Field field = findField(fieldType);
-					Object value = FieldReader.readField(fieldType, aBuffer);
+
+					Object value = FieldReader.readField(fieldType, aBuffer, field);
+
 					if (field != null)
 					{
 						field.set(aOutputObject, value);

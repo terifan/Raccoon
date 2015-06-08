@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.security.ISAAC;
 import org.terifan.raccoon.serialization.FieldCategory;
 import org.terifan.raccoon.serialization.Marshaller;
@@ -358,7 +359,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		}
 		else
 		{
-			throw new IOException("SuperBlock versions are illegal: " + superBlockOne.mWriteCounter + " / " + superBlockTwo.mWriteCounter);
+			throw new DatabaseException("Database appears to be corrupt. SuperBlock versions are illegal: " + superBlockOne.mWriteCounter + " / " + superBlockTwo.mWriteCounter);
 		}
 
 		Log.dec();

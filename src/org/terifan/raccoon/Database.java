@@ -54,32 +54,52 @@ public class Database implements AutoCloseable
 
 	public synchronized static Database open(File aFile, OpenOption aOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
-		if (aFile.exists())
+		FileBlockDevice fileBlockDevice = null;
+
+		try
 		{
-			if (aOptions == OpenOption.CREATE_NEW)
+			if (aFile.exists())
 			{
-				if (!aFile.delete())
+				if (aOptions == OpenOption.CREATE_NEW)
 				{
-					throw new IOException("Failed to delete existing file: " + aFile);
+					if (!aFile.delete())
+					{
+						throw new IOException("Failed to delete existing file: " + aFile);
+					}
+				}
+				else if ((aOptions == OpenOption.READ_ONLY || aOptions == OpenOption.OPEN) && aFile.length() == 0)
+				{
+					throw new IOException("File is empty.");
 				}
 			}
-			else if ((aOptions == OpenOption.READ_ONLY || aOptions == OpenOption.OPEN) && aFile.length() == 0)
+			else if (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY)
 			{
-				throw new IOException("File is empty.");
+				throw new IOException("File not found: " + aFile);
 			}
+
+			boolean newFile = !aFile.exists();
+			String mode = aOptions == OpenOption.READ_ONLY ? "r" : "rw";
+
+			RandomAccessFile file = new RandomAccessFile(aFile, mode);
+			fileBlockDevice = new FileBlockDevice(file, 4096);
+
+			return init(fileBlockDevice, newFile, aParameters);
 		}
-		else if (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY)
+		catch (Throwable e)
 		{
-			throw new IOException("File not found: " + aFile);
+			if (fileBlockDevice != null)
+			{
+				try
+				{
+					fileBlockDevice.close();
+				}
+				catch (Exception ee)
+				{
+				}
+			}
+
+			throw e;
 		}
-
-		boolean newFile = !aFile.exists();
-		String mode = aOptions == OpenOption.READ_ONLY ? "r" : "rw";
-
-		RandomAccessFile file = new RandomAccessFile(aFile, mode);
-		FileBlockDevice fileBlockDevice = new FileBlockDevice(file, 4096);
-
-		return init(fileBlockDevice, newFile, aParameters);
 	}
 
 
