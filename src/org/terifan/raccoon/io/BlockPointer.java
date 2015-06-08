@@ -158,6 +158,7 @@ public class BlockPointer implements Serializable
 	}
 
 
+	@Deprecated
 	public byte[] marshal(byte[] aBuffer, int aOffset)
 	{
 		return marshal(new ByteArrayBuffer(aBuffer).position(aOffset)).array();
@@ -190,6 +191,7 @@ public class BlockPointer implements Serializable
 	}
 
 
+	@Deprecated
 	public BlockPointer unmarshal(byte[] aBuffer, int aOffset)
 	{
 		return unmarshal(new ByteArrayBuffer(aBuffer).position(aOffset));
@@ -211,6 +213,22 @@ public class BlockPointer implements Serializable
 		Stats.pointerDecode++;
 
 		return this;
+	}
+
+
+	/**
+	 * Return the 'type' field from a BlockPointer stored in the buffer provided.
+	 *
+	 * @param aBuffer
+	 *   a buffer containing a BlockPointer
+	 * @param aOffset
+	 *   start offset of the BlockPointer in the buffer
+	 * @return
+	 *   the 'type' field
+	 */
+	public static int getType(byte[] aBuffer, int aOffset)
+	{
+		return 0xFF & aBuffer[aOffset];
 	}
 
 

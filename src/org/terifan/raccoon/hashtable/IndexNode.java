@@ -70,7 +70,7 @@ public class IndexNode implements Node
 
 	public int findPointer(int aIndex)
 	{
-		for (; mBuffer[aIndex * BlockPointer.SIZE] == 0; aIndex--)
+		for (; BlockPointer.getType(mBuffer, aIndex * BlockPointer.SIZE) == Node.FREE; aIndex--)
 		{
 		}
 

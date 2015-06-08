@@ -6,8 +6,12 @@ import java.io.InputStream;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.terifan.raccoon.io.AccessCredentials;
+import org.terifan.raccoon.io.IManagedBlockDevice;
+import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
+import org.terifan.raccoon.io.SecureBlockDevice;
 import org.terifan.raccoon.io.Streams;
+import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
@@ -145,30 +149,6 @@ public class DatabaseTest
 
 
 	@Test
-	public void testSingleBlobEntry() throws Exception
-	{
-		MemoryBlockDevice device = new MemoryBlockDevice(512);
-		byte[] content = new byte[10*1024*1024];
-		new Random().nextBytes(content);
-
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
-		{
-			database.save(new _Blob1("my blob", content));
-			database.commit();
-			assertNull(database.integrityCheck());
-		}
-
-		try (Database database = Database.open(device, OpenOption.OPEN))
-		{
-			_Blob1 blob = new _Blob1("my blob");
-			assertTrue(database.get(blob));
-			assertEquals("my blob", blob.name);
-			assertEquals(content, blob.content);
-		}
-	}
-
-
-	@Test
 	public void testSingleTableMultiConcurrentInsert() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
@@ -226,59 +206,6 @@ public class DatabaseTest
 	}
 
 
-//	@Test
-//	public void testSingleBlobPushStream() throws Exception
-//	{
-//		MemoryBlockDevice device = new MemoryBlockDevice(512);
-//		byte[] content = new byte[10*1024*1024];
-//		new Random().nextBytes(content);
-//
-//		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
-//		{
-//			try (OutputStream out = database.write(new _Blob2("my blob")))
-//			{
-//				out.write(content);
-//			}
-//			database.commit();
-//			assertNull(database.integrityCheck());
-//		}
-//
-//		try (Database database = Database.open(device, OpenOption.OPEN))
-//		{
-//			try (InputStream in = database.read(new _Blob2("my blob")))
-//			{
-//				assertNotNull(in);
-//				assertArrayEquals(content, Streams.fetch(in));
-//			}
-//		}
-//	}
-
-
-	@Test
-	public void testSingleBlobWriteFromStream() throws Exception
-	{
-		MemoryBlockDevice device = new MemoryBlockDevice(512);
-		byte[] content = new byte[10*1024*1024];
-		new Random().nextBytes(content);
-
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
-		{
-			database.save(new _Blob2("my blob"), new ByteArrayInputStream(content));
-			database.commit();
-			assertNull(database.integrityCheck());
-		}
-
-		try (Database database = Database.open(device, OpenOption.OPEN))
-		{
-			try (InputStream in = database.read(new _Blob2("my blob")))
-			{
-				assertNotNull(in);
-				assertEquals(content, Streams.fetch(in));
-			}
-		}
-	}
-
-
 	@Test
 	public void testDiscriminator() throws Exception
 	{
@@ -321,6 +248,77 @@ public class DatabaseTest
 		{
 			db.save(new _Fruit("red", "apple", 3467));
 			db.commit();
+		}
+
+		try (Database db = Database.open(device, OpenOption.OPEN, accessCredentials))
+		{
+			_Fruit fruit = new _Fruit("red", "apple");
+			assertTrue(db.get(fruit));
+			assertEquals(fruit.value, 3467);
+		}
+	}
+
+
+	@Test
+	public void testSaveEntryAsBlob() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+		byte[] content = new byte[10*1024*1024];
+		new Random().nextBytes(content);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _Blob1("my blob", content));
+			database.commit();
+			assertNull(database.integrityCheck());
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			_Blob1 blob = new _Blob1("my blob");
+			assertTrue(database.get(blob));
+			assertEquals("my blob", blob.name);
+			assertEquals(content, blob.content);
+		}
+	}
+
+
+	@Test
+	public void testSaveBlobFromStream() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+		byte[] content = new byte[10*1024*1024];
+		new Random().nextBytes(content);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _Blob2("my blob"), new ByteArrayInputStream(content));
+			database.commit();
+			assertNull(database.integrityCheck());
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			try (InputStream in = database.read(new _Blob2("my blob")))
+			{
+				assertNotNull(in);
+				assertEquals(content, Streams.fetch(in));
+			}
+		}
+	}
+
+
+	@Test(expectedExceptions = UnsupportedVersionException.class)
+	public void testDatabaseVersionConflict() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+		AccessCredentials accessCredentials = new AccessCredentials("password");
+
+		try (IManagedBlockDevice blockDevice = new ManagedBlockDevice(new SecureBlockDevice(device, accessCredentials)))
+		{
+			blockDevice.setExtraData(new byte[100]);
+			blockDevice.allocBlock(100);
+			blockDevice.commit();
 		}
 
 		try (Database db = Database.open(device, OpenOption.OPEN, accessCredentials))

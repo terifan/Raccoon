@@ -1,5 +1,6 @@
 package org.terifan.raccoon.hashtable;
 
+import org.terifan.raccoon.io.Blob;
 import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.io.BlockAccessor;
 import org.terifan.raccoon.io.BlobInputStream;
@@ -19,6 +20,7 @@ import org.terifan.raccoon.LeafNode;
 import org.terifan.raccoon.Node;
 import static org.terifan.raccoon.Node.*;
 import org.terifan.raccoon.Stats;
+import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.Log;
 
@@ -184,7 +186,17 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 //		else
 		if (aValue instanceof InputStream)
 		{
-			value = Blob.writeBlob(mBlockDevice, (InputStream)aValue, aTransactionId);
+			try (BlobOutputStream bos = new BlobOutputStream(mBlockDevice, aTransactionId))
+			{
+				bos.write(Streams.fetch((InputStream)aValue));
+				value = bos.finish();
+			}
+			catch (IOException e)
+			{
+				throw new DatabaseException(e);
+			}
+
+//			value = Blob.writeBlob(mBlockDevice, (InputStream)aValue, aTransactionId);
 			type = 1;
 		}
 		else
@@ -193,7 +205,17 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 			if (value.length > mLeafSize / 2)
 			{
-				value = Blob.writeBlob(mBlockDevice, new ByteArrayInputStream(value), aTransactionId);
+				try (BlobOutputStream bos = new BlobOutputStream(mBlockDevice, aTransactionId))
+				{
+					bos.write(value);
+					value = bos.finish();
+				}
+				catch (IOException e)
+				{
+					throw new DatabaseException(e);
+				}
+
+//				value = Blob.writeBlob(mBlockDevice, new ByteArrayInputStream(value), aTransactionId);
 				type = 1;
 			}
 			else
@@ -244,7 +266,14 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		if (result.value != null && result.entryType == 1) // if old value was a blob
 		{
-			Blob.removeBlob(mBlockDevice, result.value);
+			try
+			{
+				Blob.deleteBlob(mBlockDevice, result.value);
+			}
+			catch (IOException e)
+			{
+				throw new DatabaseException(e);
+			}
 		}
 
 		Log.dec();
@@ -317,7 +346,14 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		if (value != null && type.get() == 1) // if old value was a blob
 		{
-			Blob.removeBlob(mBlockDevice, value);
+			try
+			{
+				Blob.deleteBlob(mBlockDevice, value);
+			}
+			catch (IOException e)
+			{
+				throw new DatabaseException(e);
+			}
 		}
 
 		assert mModCount == modCount : "concurrent modification";
@@ -658,7 +694,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			return false;
 		}
-		
+
 		assert aBlockPointer.getRange() >= 2;
 
 		Stats.splitLeaf++;

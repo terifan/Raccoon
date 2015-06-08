@@ -17,7 +17,9 @@ public class Sample
 
 			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.CREATE_NEW, accessCredentials))
 			{
-				db.save(new Fruit("apple", 52.1));
+				db.save(new Fruit("apple", 52.12));
+				db.save(new Fruit("orange", 47.78));
+				db.save(new Fruit("banana", 89.45));
 				db.commit();
 			}
 

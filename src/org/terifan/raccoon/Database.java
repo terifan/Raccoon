@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -21,12 +20,16 @@ import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.Streams;
+import org.terifan.raccoon.security.MurmurHash3;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
 public class Database implements AutoCloseable
 {
-	private final static long IDENTITY = 0xc227b6d9e24fb8d4L;
+	private final static int EXTRA_LENGTH = 8 + 4 + 8 + BlockPointer.SIZE + 4;
+	private final static int EXTRA_DATA_CHECKSUM_SEED = 0xf49209b1;
+	private final static long IDENTITY = 0x726163636f6f6e00L; // 'raccoon\0'
 	private final static int VERSION = 1;
 
 	private IManagedBlockDevice mBlockDevice;
@@ -80,6 +83,14 @@ public class Database implements AutoCloseable
 	}
 
 
+	/**
+	 *
+	 * @param aBlockDevice
+	 * @param aOptions
+	 * @param aParameters
+	 *   AccessCredentials
+	 * @return
+	 */
 	public synchronized static Database open(IPhysicalBlockDevice aBlockDevice, OpenOption aOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
 		if ((aOptions == OpenOption.READ_ONLY || aOptions == OpenOption.OPEN) && aBlockDevice.length() == 0)
@@ -155,26 +166,34 @@ public class Database implements AutoCloseable
 		Log.i("open database");
 		Log.inc();
 
-		ByteBuffer bb = ByteBuffer.wrap(aBlockDevice.getExtraData());
+		byte[] extraData = aBlockDevice.getExtraData();
 
-		long identity = bb.getLong();
-		int version = bb.getInt();
+		if (extraData == null || extraData.length != EXTRA_LENGTH)
+		{
+			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra data length)");
+		}
+
+		ByteArrayBuffer buffer = new ByteArrayBuffer(extraData);
+
+		if (MurmurHash3.hash_x86_32(buffer.array(), 4, EXTRA_LENGTH-4, EXTRA_DATA_CHECKSUM_SEED) != buffer.readInt32())
+		{
+			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra checksum)");
+		}
+
+		long identity = buffer.readInt64();
+		int version = buffer.readInt32();
 
 		if (identity != IDENTITY)
 		{
-			throw new UnsupportedVersionException("This block device does not contain a Raccoon database");
+			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra identity)");
 		}
 		if (version != VERSION)
 		{
-			throw new UnsupportedVersionException("Unsupported database version: " + version);
+			throw new UnsupportedVersionException("Unsupported database version: provided: " + version + ", expected: " + VERSION);
 		}
 
-		db.mTransactionId = bb.getLong();
-
-		byte[] ptr = new byte[BlockPointer.SIZE];
-		bb.get(ptr);
-
-		BlockPointer rootPointer = new BlockPointer().unmarshal(ptr, 0);
+		db.mTransactionId = buffer.readInt64();
+		BlockPointer rootPointer = new BlockPointer().unmarshal(buffer);
 
 		TableType systemTableType = new TableType(Table.class);
 
@@ -346,15 +365,16 @@ public class Database implements AutoCloseable
 
 		if (mSystemTable.getRootBlockPointer() != mSystemRootBlockPointer)
 		{
-			byte[] extra = new byte[4 + 8 + 8 + BlockPointer.SIZE];
+			ByteArrayBuffer buffer = new ByteArrayBuffer(EXTRA_LENGTH);
+			buffer.writeInt32(0); // leave space for checksum
+			buffer.writeInt64(IDENTITY);
+			buffer.writeInt32(VERSION);
+			buffer.writeInt64(mTransactionId);
+			mSystemTable.getRootBlockPointer().marshal(buffer);
 
-			ByteBuffer bb = ByteBuffer.wrap(extra);
-			bb.putLong(IDENTITY);
-			bb.putInt(VERSION);
-			bb.putLong(mTransactionId);
-			bb.put(mSystemTable.getRootBlockPointer().marshal(new byte[BlockPointer.SIZE], 0));
+			buffer.position(0).writeInt32(MurmurHash3.hash_x86_32(buffer.array(), 4, EXTRA_LENGTH-4, EXTRA_DATA_CHECKSUM_SEED));
 
-			mBlockDevice.setExtraData(extra);
+			mBlockDevice.setExtraData(buffer.array());
 		}
 	}
 

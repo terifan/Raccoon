@@ -111,7 +111,10 @@ public class ByteArrayBuffer
 
 	public ByteArrayBuffer trim()
 	{
-		mBuffer = Arrays.copyOfRange(mBuffer, 0, mOffset);
+		if (mBuffer.length != mOffset)
+		{
+			mBuffer = Arrays.copyOfRange(mBuffer, 0, mOffset);
+		}
 		return this;
 	}
 
