@@ -14,29 +14,36 @@ import org.terifan.raccoon.util.Log;
 
 class FieldReader
 {
-	static Object readField(FieldType aFieldType, ByteArrayBuffer aDataInput, Field aField) throws IllegalAccessException, InstantiationException
+	static Object readField(FieldType aFieldType, ByteArrayBuffer aDataInput, Field aField)
 	{
 		Log.v("decode " + aFieldType);
 
-		switch (aFieldType.format)
+		try
 		{
-			case VALUE:
-				if (aFieldType.nullable && aDataInput.readBit() == 1)
-				{
-					return null;
-				}
+			switch (aFieldType.format)
+			{
+				case VALUE:
+					if (aFieldType.nullable && aDataInput.readBit() == 1)
+					{
+						return null;
+					}
 
-				return ValueReader.readValue(aFieldType.type, aDataInput);
-			case ARRAY:
-				return ArrayReader.readArray(aFieldType, 1, aFieldType.depth, aDataInput);
-			case LIST:
-				return CollectionReader.readCollection(aFieldType, aDataInput, newInstance(ArrayList.class, List.class, aField));
-			case SET:
-				return CollectionReader.readCollection(aFieldType, aDataInput, newInstance(HashSet.class, Set.class, aField));
-			case MAP:
-				return MapReader.readMap(aFieldType, aDataInput, newInstance(HashMap.class, Map.class, aField));
-			default:
-				throw new Error();
+					return ValueReader.readValue(aFieldType.type, aDataInput);
+				case ARRAY:
+					return ArrayReader.readArray(aFieldType, 1, aFieldType.depth, aDataInput);
+				case LIST:
+					return CollectionReader.readCollection(aFieldType, aDataInput, newInstance(ArrayList.class, List.class, aField));
+				case SET:
+					return CollectionReader.readCollection(aFieldType, aDataInput, newInstance(HashSet.class, Set.class, aField));
+				case MAP:
+					return MapReader.readMap(aFieldType, aDataInput, newInstance(HashMap.class, Map.class, aField));
+				default:
+					throw new Error();
+			}
+		}
+		catch (Exception e)
+		{
+			throw new IllegalStateException(e);
 		}
 	}
 

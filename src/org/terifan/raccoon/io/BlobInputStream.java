@@ -91,6 +91,10 @@ public class BlobInputStream extends InputStream implements AutoCloseable
 	@Override
 	public void close() throws IOException
 	{
+		mRemaining = 0;
+		mBlockAccessor = null;
+		mPointerBuffer = null;
+		mBuffer = null;
 	}
 
 

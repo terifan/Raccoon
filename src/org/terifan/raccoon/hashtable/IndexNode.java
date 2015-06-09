@@ -36,7 +36,7 @@ public class IndexNode implements Node
 	{
 		assert decodePointer(aIndex).getType() == 0 || decodePointer(aIndex).getRange() == aBlockPointer.getRange();
 
-		aBlockPointer.marshal(mBuffer, BlockPointer.SIZE * aIndex);
+		put(aIndex, aBlockPointer);
 	}
 
 
@@ -64,7 +64,7 @@ public class IndexNode implements Node
 
 	private BlockPointer decodePointer(int aIndex)
 	{
-		return new BlockPointer().unmarshal(mBuffer, BlockPointer.SIZE * aIndex);
+		return get(aIndex);
 	}
 
 
@@ -84,8 +84,8 @@ public class IndexNode implements Node
 
 		ensureEmpty(aIndex + 1, aLowPointer.getRange() + aHighPointer.getRange() - 1);
 
-		aLowPointer.marshal(mBuffer, BlockPointer.SIZE * aIndex);
-		aHighPointer.marshal(mBuffer, BlockPointer.SIZE * (aIndex + aLowPointer.getRange()));
+		put(aIndex, aLowPointer);
+		put(aIndex + aLowPointer.getRange(), aHighPointer);
 	}
 
 
@@ -99,7 +99,7 @@ public class IndexNode implements Node
 		ensureEmpty(aIndex + 1, bp1.getRange() - 1);
 		ensureEmpty(aIndex + bp1.getRange() + 1, bp2.getRange() - 1);
 
-		aBlockPointer.marshal(mBuffer, BlockPointer.SIZE * aIndex);
+		put(aIndex, aBlockPointer);
 
 		int offset = BlockPointer.SIZE * (aIndex + bp1.getRange());
 		Arrays.fill(mBuffer, offset, offset + BlockPointer.SIZE, (byte)0);
@@ -126,12 +126,11 @@ public class IndexNode implements Node
 
 	String integrityCheck()
 	{
-		BlockPointer bp = new BlockPointer();
 		int rangeRemain = 0;
 
 		for (int i = 0; i < getPointerCount(); i++)
 		{
-			bp.unmarshal(mBuffer, BlockPointer.SIZE * i);
+			BlockPointer bp = get(i);
 
 			if (rangeRemain > 0)
 			{
@@ -159,11 +158,9 @@ public class IndexNode implements Node
 	{
 		StringBuilder sb = new StringBuilder();
 
-		BlockPointer bp = new BlockPointer();
-
 		for (int i = 0; i < mBuffer.length / BlockPointer.SIZE;)
 		{
-			bp.unmarshal(mBuffer, BlockPointer.SIZE * i);
+			BlockPointer bp = get(i);
 
 			if (bp.getRange() == 0)
 			{
@@ -191,5 +188,17 @@ public class IndexNode implements Node
 	public int getType()
 	{
 		return Node.NODE;
+	}
+
+
+	private BlockPointer get(int aIndex)
+	{
+		return new BlockPointer().unmarshal(mBuffer, aIndex * BlockPointer.SIZE);
+	}
+
+
+	private void put(int aIndex, BlockPointer aBlockPointer)
+	{
+		aBlockPointer.marshal(mBuffer, aIndex * BlockPointer.SIZE);
 	}
 }
