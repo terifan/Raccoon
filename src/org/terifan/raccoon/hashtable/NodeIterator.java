@@ -10,7 +10,7 @@ import static org.terifan.raccoon.Node.*;
 import org.terifan.raccoon.util.Result;
 
 
-public class NodeIterator implements Iterator<Entry>
+class NodeIterator implements Iterator<Entry>
 {
 	private long mModCount;
 	private int mEntryIndex;

@@ -3,31 +3,17 @@ package org.terifan.raccoon;
 
 public class LeafNode extends ByteBufferMap implements Node
 {
-	private LeafNode(byte[] aBuffer)
+	public LeafNode(byte[] aBuffer)
 	{
 		super(aBuffer);
+		Stats.leafNodeCreation++;
 	}
 
 
-	private LeafNode(int aCapacity)
+	public LeafNode(int aCapacity)
 	{
 		super(aCapacity);
-	}
-
-
-	public static LeafNode alloc(int aCapacity)
-	{
 		Stats.leafNodeCreation++;
-
-		return new LeafNode(aCapacity);
-	}
-
-
-	public static LeafNode wrap(byte[] aBuffer)
-	{
-		Stats.leafNodeCreation++;
-
-		return new LeafNode(aBuffer);
 	}
 
 

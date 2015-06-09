@@ -3,7 +3,6 @@ package org.terifan.raccoon;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import org.terifan.raccoon.hashtable.IndexNode;
 import org.terifan.raccoon.util.Result;
 
 
@@ -54,10 +53,6 @@ public class ByteBufferMap implements Iterable<byte[]>
 	private int mFreeSpaceOffset;
 	private int mEntryCount;
 	private int mModCount;
-
-	public boolean mDirty;
-	public IndexNode mParent;
-	public int mIndex;
 
 
 	public static class PutResult

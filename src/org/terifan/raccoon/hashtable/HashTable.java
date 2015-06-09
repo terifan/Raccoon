@@ -65,7 +65,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			Log.inc();
 
 			mCreateInstance = true;
-			mRootMap = LeafNode.alloc(mLeafSize);
+			mRootMap = new LeafNode(mLeafSize);
 			mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode, aTransactionId);
 		}
 		else
@@ -462,7 +462,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		if (mCreateInstance)
 		{
-			mRootMap = LeafNode.alloc(mLeafSize);
+			mRootMap = new LeafNode(mLeafSize);
 		}
 		else
 		{
@@ -500,7 +500,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			modCount++;
 
 			mRootNode = null;
-			mRootMap = LeafNode.alloc(mLeafSize);
+			mRootMap = new LeafNode(mLeafSize);
 		}
 
 		freeBlock(mRootBlockPointer);
@@ -642,7 +642,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		Log.v("upgrade hole to leaf");
 		Log.inc();
 
-		LeafNode map = LeafNode.alloc(mLeafSize);
+		LeafNode map = new LeafNode(mLeafSize);
 
 		map.put(aType, aKey, aValue, aResult);
 
@@ -659,8 +659,8 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		Stats.splitLeaf++;
 
-		LeafNode low = LeafNode.alloc(mLeafSize);
-		LeafNode high = LeafNode.alloc(mLeafSize);
+		LeafNode low = new LeafNode(mLeafSize);
+		LeafNode high = new LeafNode(mLeafSize);
 		int halfRange = mPointersPerNode / 2;
 
 		for (int i = 0, sz = aMap.size(); i < sz; i++)
@@ -681,7 +681,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		BlockPointer lowIndex = low.isEmpty() ? new BlockPointer().setType(HOLE).setRange(halfRange) : writeBlock(low, halfRange, aTransactionId);
 		BlockPointer highIndex = high.isEmpty() ? new BlockPointer().setType(HOLE).setRange(halfRange) : writeBlock(high, halfRange, aTransactionId);
 
-		IndexNode node = IndexNode.wrap(new byte[mNodeSize]);
+		IndexNode node = new IndexNode(new byte[mNodeSize]);
 		node.setPointer(0, lowIndex);
 		node.setPointer(halfRange, highIndex);
 
@@ -705,8 +705,8 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		Log.inc();
 		Log.v("split leaf");
 
-		LeafNode low = LeafNode.alloc(mLeafSize);
-		LeafNode high = LeafNode.alloc(mLeafSize);
+		LeafNode low = new LeafNode(mLeafSize);
+		LeafNode high = new LeafNode(mLeafSize);
 		int halfRange = aBlockPointer.getRange() / 2;
 
 		int mid = aIndex + halfRange;
@@ -785,7 +785,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			return mRootMap;
 		}
 
-		return LeafNode.wrap(readBlock(aBlockPointer));
+		return new LeafNode(readBlock(aBlockPointer));
 	}
 
 
@@ -798,7 +798,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			return mRootNode;
 		}
 
-		return IndexNode.wrap(readBlock(aBlockPointer));
+		return new IndexNode(readBlock(aBlockPointer));
 	}
 
 
