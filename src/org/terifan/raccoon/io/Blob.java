@@ -11,14 +11,12 @@ public final class Blob
 	}
 
 
-	public static void deleteBlob(IManagedBlockDevice aBlockDevice, byte[] aHeader) throws IOException
+	public static void deleteBlob(BlockAccessor aBlockAccessor, byte[] aHeader) throws IOException
 	{
-		BlockAccessor blockAccessor = new BlockAccessor(aBlockDevice);
-
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aHeader);
 		buffer.readVar64(); // skip total length
 
-		freeBlocks(blockAccessor, buffer);
+		freeBlocks(aBlockAccessor, buffer);
 	}
 
 

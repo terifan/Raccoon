@@ -3,7 +3,6 @@ package org.terifan.raccoon.io;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
@@ -21,7 +20,7 @@ public class BlockAccessor
 
 	private IManagedBlockDevice mBlockDevice;
 	private int mPageSize;
-	private int mCompression;
+	private int mCompressionLevel;
 
 
 	public BlockAccessor(IManagedBlockDevice aBlockDevice) throws IOException
@@ -29,7 +28,7 @@ public class BlockAccessor
 		mBlockDevice = aBlockDevice;
 		mPageSize = mBlockDevice.getBlockSize();
 
-		mCompression = 1;
+		mCompressionLevel = 1;
 	}
 
 
@@ -39,13 +38,13 @@ public class BlockAccessor
 	}
 
 
-	public void close() throws IOException
+	public void setCompressionLevel(int aCompressionLevel)
 	{
-		mBlockDevice.close();
+		mCompressionLevel = aCompressionLevel;
 	}
 
 
-	public synchronized void freeBlock(BlockPointer aBlockPointer)
+	public void freeBlock(BlockPointer aBlockPointer)
 	{
 		try
 		{
@@ -61,7 +60,7 @@ public class BlockAccessor
 	}
 
 
-	public synchronized byte[] readBlock(BlockPointer aBlockPointer)
+	public byte[] readBlock(BlockPointer aBlockPointer)
 	{
 		try
 		{
@@ -82,7 +81,7 @@ public class BlockAccessor
 			{
 				buffer = decompress(aBlockPointer, buffer);
 			}
-			
+
 			Log.dec();
 
 			return buffer;
@@ -94,24 +93,24 @@ public class BlockAccessor
 	}
 
 
-	public synchronized BlockPointer writeBlock(byte[] aBuffer, int aLength, int aType, int aRange, long aTransactionId)
+	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength)
 	{
 		try
 		{
 			int physicalSize = 0;
 			int compression = 0;
 
-			if (mCompression > 0)
+			if (mCompressionLevel > 0)
 			{
 				ByteArrayOutputStream baos = new ByteArrayOutputStream(aLength);
-				try (DeflaterOutputStream dis = new DeflaterOutputStream(baos, new Deflater(DEFLATER_LEVELS[mCompression])))
+				try (DeflaterOutputStream dis = new DeflaterOutputStream(baos, new Deflater(DEFLATER_LEVELS[mCompressionLevel])))
 				{
-					dis.write(aBuffer, 0, aLength);
+					dis.write(aBuffer, aOffset, aLength);
 				}
 				physicalSize = baos.size();
 				if (roundUp(physicalSize) < roundUp(aLength))
 				{
-					compression = mCompression;
+					compression = mCompressionLevel;
 					baos.write(new byte[roundUp(physicalSize) - physicalSize]);
 					aBuffer = baos.toByteArray();
 				}
@@ -120,7 +119,10 @@ public class BlockAccessor
 			if (compression == 0)
 			{
 				physicalSize = aLength;
-				aBuffer = Arrays.copyOfRange(aBuffer, 0, roundUp(physicalSize));
+
+				byte[] tmp = new byte[roundUp(physicalSize)];
+				System.arraycopy(aBuffer, aOffset, tmp, 0, physicalSize);
+				aBuffer = tmp;
 			}
 
 			assert aBuffer.length % mPageSize == 0;
@@ -130,22 +132,19 @@ public class BlockAccessor
 			Stats.blockAlloc++;
 
 			BlockPointer blockPointer = new BlockPointer();
-			blockPointer.setType(aType);
 			blockPointer.setCompression(compression);
 			blockPointer.setChecksum(MurmurHash3.hash_x86_32(aBuffer, 0, physicalSize, CHECKSUM_HASH_SEED));
 			blockPointer.setBlockKey(ISAAC.PRNG.nextLong());
 			blockPointer.setOffset(blockIndex);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
-			blockPointer.setRange(aRange);
-			blockPointer.setTransactionId(aTransactionId);
 
 			Log.v("write block %s", blockPointer);
 			Log.inc();
 
 			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getBlockKey());
 			Stats.blockWrite++;
-			
+
 			Log.dec();
 
 			return blockPointer;
@@ -160,7 +159,7 @@ public class BlockAccessor
 	private byte [] decompress(BlockPointer aBlockPointer, byte[] aInput) throws IOException
 	{
 		byte[] output = new byte[aBlockPointer.getLogicalSize()];
-		
+
 		try (InflaterInputStream iis = new InflaterInputStream(new ByteArrayInputStream(aInput, 0, aBlockPointer.getLogicalSize())))
 		{
 			for (int position = 0;;)

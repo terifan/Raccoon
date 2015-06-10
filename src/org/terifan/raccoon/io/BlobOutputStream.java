@@ -23,12 +23,12 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 	private BlockAccessor mBlockAccessor;
 
 
-	public BlobOutputStream(IManagedBlockDevice aBlockDevice, long aTransactionId) throws IOException
+	public BlobOutputStream(BlockAccessor aBlockAccessor, long aTransactionId) throws IOException
 	{
+		mBlockAccessor = aBlockAccessor;
 		mTransactionId = aTransactionId;
-		mBlockAccessor = new BlockAccessor(aBlockDevice);
-		mPointerBuffer = new ByteArrayBuffer(aBlockDevice.getBlockSize());
 		mBuffer = new ByteArrayBuffer(FRAGMENT_SIZE);
+		mPointerBuffer = new ByteArrayBuffer(mBlockAccessor.getBlockDevice().getBlockSize());
 	}
 
 
@@ -68,7 +68,10 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 		// create indirect block if pointers exceed max length
 		if (pointerBufferLength > POINTER_MAX_LENGTH)
 		{
-			BlockPointer bp = mBlockAccessor.writeBlock(mPointerBuffer.array(), mPointerBuffer.position(), TYPE_INDIRECT, 0, mTransactionId);
+			BlockPointer bp = mBlockAccessor.writeBlock(mPointerBuffer.array(), 0, mPointerBuffer.position());
+			bp.setTransactionId(mTransactionId);
+			bp.setType(TYPE_INDIRECT);
+			bp.setRange(0);
 			bp.marshal(mPointerBuffer.position(0));
 			pointerBufferLength = BlockPointer.SIZE;
 		}
@@ -94,7 +97,10 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 
 	private void flushBlock() throws IOException
 	{
-		BlockPointer bp = mBlockAccessor.writeBlock(mBuffer.array(), mBuffer.position(), TYPE_DATA, 0, mTransactionId);
+		BlockPointer bp = mBlockAccessor.writeBlock(mBuffer.array(), 0, mBuffer.position());
+		bp.setTransactionId(mTransactionId);
+		bp.setType(TYPE_DATA);
+		bp.setRange(0);
 		bp.marshal(mPointerBuffer);
 		mBuffer.position(0);
 

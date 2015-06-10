@@ -31,12 +31,12 @@ public class BlobInputStreamNGTest
 		IManagedBlockDevice blockDevice = new ManagedBlockDevice(secureBlockDevice);
 
 		byte[] header;
-		try (BlobOutputStream bos = new BlobOutputStream(blockDevice, 0))
+		try (BlobOutputStream bos = new BlobOutputStream(new BlockAccessor(blockDevice), 0))
 		{
 			bos.write(out);
 			header = bos.finish();
 		}
-		
+
 		if (aUnitSize == 0)
 		{
 			assertEquals(header.length, 1);
@@ -54,7 +54,7 @@ public class BlobInputStreamNGTest
 
 		byte[] in = new byte[out.length];
 
-		try (BlobInputStream bis = new BlobInputStream(blockDevice, header))
+		try (BlobInputStream bis = new BlobInputStream(new BlockAccessor(blockDevice), header))
 		{
 			bis.read(in);
 		}
@@ -65,7 +65,7 @@ public class BlobInputStreamNGTest
 
 		assertEquals(in, out);
 	}
-	
+
 	@DataProvider(name = "unitSizes")
 	private Object[][] unitSizes()
 	{

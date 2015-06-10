@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import org.terifan.raccoon.hashtable.HashTable;
+import org.terifan.raccoon.io.BlockAccessor;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
@@ -87,7 +88,7 @@ class Table<T> implements Iterable<T>
 //			return baos.toByteArray();
 		}
 
-		mTableImplementation = new HashTable(mDatabase.getBlockDevice(), aBlockPointer, mHashSeed, 4*mDatabase.getBlockDevice().getBlockSize(), 8*mDatabase.getBlockDevice().getBlockSize(), mDatabase.getTransactionId());
+		mTableImplementation = new HashTable(new BlockAccessor(mDatabase.getBlockDevice()), aBlockPointer, mHashSeed, 4*mDatabase.getBlockDevice().getBlockSize(), 8*mDatabase.getBlockDevice().getBlockSize(), mDatabase.getTransactionId());
 
 		Log.dec();
 

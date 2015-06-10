@@ -3,7 +3,6 @@ package org.terifan.raccoon.io;
 import java.io.IOException;
 import java.io.InputStream;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.util.Log;
 import static org.terifan.raccoon.io.BlobOutputStream.TYPE_INDIRECT;
 
 
@@ -17,9 +16,9 @@ public class BlobInputStream extends InputStream implements AutoCloseable
 	private long mRemaining;
 
 
-	public BlobInputStream(IManagedBlockDevice aBlockDevice, byte[] aHeader) throws IOException
+	public BlobInputStream(BlockAccessor aBlockAccessor, byte[] aHeader) throws IOException
 	{
-		mBlockAccessor = new BlockAccessor(aBlockDevice);
+		mBlockAccessor = aBlockAccessor;
 		mPointerBuffer = new ByteArrayBuffer(aHeader);
 		mRemaining = mPointerBuffer.readVar64();
 

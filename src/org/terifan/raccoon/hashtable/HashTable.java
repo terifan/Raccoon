@@ -29,7 +29,6 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 {
 	private final static String TAG = HashTable.class.getName();
 
-	private IManagedBlockDevice mBlockDevice;
 	private BlockAccessor mBlockAccessor;
 	private BlockPointer mRootBlockPointer;
 	private LeafNode mRootMap;
@@ -46,18 +45,17 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 //	private HashMap<BlockPointer,LeafNode> mLeafs = new HashMap<>();
 
 
-	public HashTable(IManagedBlockDevice aBlockDevice, BlockPointer aRootBlockPointer, long aHashSeed, int aNodeSize, int aLeafSize, long aTransactionId) throws IOException
+	public HashTable(BlockAccessor aBlockAccessor, BlockPointer aRootBlockPointer, long aHashSeed, int aNodeSize, int aLeafSize, long aTransactionId) throws IOException
 	{
-		assert mNodeSize % aBlockDevice.getBlockSize() == 0;
-		assert mLeafSize % aBlockDevice.getBlockSize() == 0;
-		assert mNodeSize % BlockPointer.SIZE == 0;
+		assert aNodeSize % BlockPointer.SIZE == 0;
+		assert aNodeSize % aBlockAccessor.getBlockDevice().getBlockSize() == 0;
+		assert aLeafSize % aBlockAccessor.getBlockDevice().getBlockSize() == 0;
 
-		mBlockDevice = aBlockDevice;
+		mBlockAccessor = aBlockAccessor;
 		mNodeSize = aNodeSize;
 		mLeafSize = aLeafSize;
 		mHashSeed = aHashSeed;
 		mPointersPerNode = mNodeSize / BlockPointer.SIZE;
-		mBlockAccessor = new BlockAccessor(mBlockDevice);
 
 		if (aRootBlockPointer == null)
 		{
@@ -79,6 +77,12 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		}
 
 		Log.dec();
+	}
+
+
+	BlockAccessor getBlockAccessor()
+	{
+		return mBlockAccessor;
 	}
 
 
@@ -144,7 +148,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		try
 		{
-			return Streams.fetch(new BlobInputStream(mBlockDevice, value));
+			return Streams.fetch(new BlobInputStream(mBlockAccessor, value));
 		}
 		catch (Exception e)
 		{
@@ -190,7 +194,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 //		else
 		if (aValue instanceof InputStream)
 		{
-			try (BlobOutputStream bos = new BlobOutputStream(mBlockDevice, aTransactionId))
+			try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, aTransactionId))
 			{
 				bos.write(Streams.fetch((InputStream)aValue));
 				value = bos.finish();
@@ -209,7 +213,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 			if (value.length > mLeafSize / 2)
 			{
-				try (BlobOutputStream bos = new BlobOutputStream(mBlockDevice, aTransactionId))
+				try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, aTransactionId))
 				{
 					bos.write(value);
 					value = bos.finish();
@@ -272,7 +276,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			try
 			{
-				Blob.deleteBlob(mBlockDevice, result.value);
+				Blob.deleteBlob(mBlockAccessor, result.value);
 			}
 			catch (IOException e)
 			{
@@ -303,7 +307,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		try
 		{
-			return new BlobInputStream(mBlockDevice, value);
+			return new BlobInputStream(mBlockAccessor, value);
 		}
 		catch (Exception e)
 		{
@@ -352,7 +356,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			try
 			{
-				Blob.deleteBlob(mBlockDevice, value);
+				Blob.deleteBlob(mBlockAccessor, value);
 			}
 			catch (IOException e)
 			{
@@ -529,7 +533,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			throw new IllegalStateException("HashTable is closed");
 		}
 
-		Result<Integer> result = new Result<>();
+		Result<Integer> result = new Result<>(0);
 
 		visit((aPointerIndex, aBlockPointer)->
 		{
@@ -876,6 +880,10 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 	private BlockPointer writeBlock(Node aNode, int aRange, long aTransactionId)
 	{
-		return mBlockAccessor.writeBlock(aNode.array(), aNode.array().length, aNode.getType(), aRange, aTransactionId);
+		BlockPointer bp = mBlockAccessor.writeBlock(aNode.array(), 0, aNode.array().length);
+		bp.setTransactionId(aTransactionId);
+		bp.setType(aNode.getType());
+		bp.setRange(aRange);
+		return bp;
 	}
 }

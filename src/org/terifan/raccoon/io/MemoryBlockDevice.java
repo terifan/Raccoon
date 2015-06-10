@@ -2,8 +2,10 @@ package org.terifan.raccoon.io;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import org.terifan.raccoon.util.Log;
+import static sample.Utils.b;
 
 
 public class MemoryBlockDevice implements IPhysicalBlockDevice
@@ -88,5 +90,15 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	public long length()
 	{
 		return mStorage.isEmpty() ? 0L : mStorage.lastKey() + 1;
+	}
+
+
+	public void dump()
+	{
+		for (Entry<Long,byte[]> entry : mStorage.entrySet())
+		{
+			Log.out.println("Block Index " + entry.getKey() + ":");
+			Log.hexDump(entry.getValue());
+		}
 	}
 }

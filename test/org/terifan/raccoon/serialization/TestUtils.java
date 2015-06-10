@@ -61,7 +61,7 @@ public class TestUtils
 	}
 
 
-	public static String t()
+	public static byte[] tb()
 	{
 		byte[] alpha = "abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÖÖ".getBytes();
 		byte[] buf = new byte[3 + rnd.nextInt(16)];
@@ -69,7 +69,13 @@ public class TestUtils
 		{
 			buf[i] = alpha[rnd.nextInt(alpha.length)];
 		}
-		return new String(buf);
+		return buf;
+	}
+
+
+	public static String t()
+	{
+		return new String(tb());
 	}
 
 
