@@ -393,14 +393,14 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	}
 
 
-	public synchronized List<Entry> list()
+	public synchronized ArrayList<Entry> list()
 	{
 		if (mClosed)
 		{
 			throw new IllegalStateException("HashTable is closed");
 		}
 
-		List<Entry> list = new ArrayList<>();
+		ArrayList<Entry> list = new ArrayList<>();
 
 		for (Iterator<Entry> it = iterator(); it.hasNext(); )
 		{

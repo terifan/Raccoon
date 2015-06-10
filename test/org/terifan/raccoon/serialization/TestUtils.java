@@ -64,7 +64,7 @@ public class TestUtils
 	public static byte[] tb()
 	{
 		byte[] alpha = "abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÖÖ".getBytes();
-		byte[] buf = new byte[3 + rnd.nextInt(16)];
+		byte[] buf = new byte[4 + rnd.nextInt(16)];
 		for (int i = 0; i < buf.length; i++)
 		{
 			buf[i] = alpha[rnd.nextInt(alpha.length)];
