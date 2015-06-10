@@ -38,7 +38,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	private int mPointersPerNode;
 	/*private*/ int mModCount;
 	private long mHashSeed;
-	private boolean mCreateInstance;
+	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mModified;
 
@@ -62,7 +62,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			Log.i("create hash table");
 			Log.inc();
 
-			mCreateInstance = true;
+			mWasEmptyInstance = true;
 			mRootMap = new LeafNode(mLeafSize);
 			mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode, aTransactionId);
 		}
@@ -447,7 +447,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		}
 		finally
 		{
-			mCreateInstance = false;
+			mWasEmptyInstance = false;
 		}
 	}
 
@@ -464,12 +464,17 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		mRootNode = null;
 		mRootMap = null;
 
-		if (mCreateInstance)
+		if (mWasEmptyInstance)
 		{
+			Log.v("rollback empty");
+
+			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
 			mRootMap = new LeafNode(mLeafSize);
 		}
 		else
 		{
+			Log.v("rollback " + (mRootBlockPointer.getType() == LEAF ? "root map" : "root node"));
+
 			loadRoot();
 		}
 	}

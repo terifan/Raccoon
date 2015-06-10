@@ -15,7 +15,6 @@ import org.terifan.raccoon.util.Log;
 
 public class BlockAccessor
 {
-	private final static int CHECKSUM_HASH_SEED = 0x26e54d19;
 	private final static int[] DEFLATER_LEVELS = {0,1,5,9};
 
 	private IManagedBlockDevice mBlockDevice;
@@ -72,7 +71,7 @@ public class BlockAccessor
 			mBlockDevice.readBlock(aBlockPointer.getOffset(), buffer, 0, buffer.length, aBlockPointer.getBlockKey());
 			Stats.blockRead++;
 
-			if (MurmurHash3.hash_x86_32(buffer, 0, aBlockPointer.getPhysicalSize(), CHECKSUM_HASH_SEED) != aBlockPointer.getChecksum())
+			if (MurmurHash3.hash_x86_32(buffer, 0, aBlockPointer.getPhysicalSize(), (int)aBlockPointer.getOffset()) != aBlockPointer.getChecksum())
 			{
 				throw new IOException("Checksum error in block " + aBlockPointer);
 			}
@@ -133,7 +132,7 @@ public class BlockAccessor
 
 			BlockPointer blockPointer = new BlockPointer();
 			blockPointer.setCompression(compression);
-			blockPointer.setChecksum(MurmurHash3.hash_x86_32(aBuffer, 0, physicalSize, CHECKSUM_HASH_SEED));
+			blockPointer.setChecksum(MurmurHash3.hash_x86_32(aBuffer, 0, physicalSize, (int)blockIndex));
 			blockPointer.setBlockKey(ISAAC.PRNG.nextLong());
 			blockPointer.setOffset(blockIndex);
 			blockPointer.setPhysicalSize(physicalSize);
