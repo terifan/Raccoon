@@ -41,11 +41,12 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mModified;
+	private boolean mStandAlone;
 
 //	private HashMap<BlockPointer,LeafNode> mLeafs = new HashMap<>();
 
 
-	public HashTable(BlockAccessor aBlockAccessor, BlockPointer aRootBlockPointer, long aHashSeed, int aNodeSize, int aLeafSize, long aTransactionId) throws IOException
+	public HashTable(BlockAccessor aBlockAccessor, BlockPointer aRootBlockPointer, long aHashSeed, int aNodeSize, int aLeafSize, long aTransactionId, boolean aStandAlone) throws IOException
 	{
 		assert aNodeSize % BlockPointer.SIZE == 0;
 		assert aNodeSize % aBlockAccessor.getBlockDevice().getBlockSize() == 0;
@@ -56,6 +57,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		mLeafSize = aLeafSize;
 		mHashSeed = aHashSeed;
 		mPointersPerNode = mNodeSize / BlockPointer.SIZE;
+		mStandAlone = aStandAlone;
 
 		if (aRootBlockPointer == null)
 		{
@@ -80,12 +82,6 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	}
 
 
-	BlockAccessor getBlockAccessor()
-	{
-		return mBlockAccessor;
-	}
-
-
 	public BlockPointer getRootBlockPointer()
 	{
 		return mRootBlockPointer;
@@ -107,28 +103,21 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	}
 
 
-	public synchronized byte[] getRaw(byte[] aKey, Result<Integer> aType)
+	private byte[] getRaw(byte[] aKey, Result<Integer> aType)
 	{
 		if (mClosed)
 		{
 			throw new IllegalStateException("HashTable is closed");
 		}
 
-		byte[] value;
-
 		if (mRootMap != null)
 		{
-			value = mRootMap.get(aKey, aType);
+			return mRootMap.get(aKey, aType);
 		}
 		else
 		{
-			value = getValue(computeHash(aKey), 0, aKey, aType, mRootNode);
+			return getValue(computeHash(aKey), 0, aKey, aType, mRootNode);
 		}
-
-//		Log.hexDump(aKey);
-//		Log.hexDump(value);
-
-		return value;
 	}
 
 
@@ -411,7 +400,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	}
 
 
-	public synchronized boolean commit(long aTransactionId)
+	public synchronized boolean commit(long aTransactionId) throws IOException
 	{
 		if (mClosed)
 		{
@@ -436,11 +425,20 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 				{
 					mRootBlockPointer = writeBlock(mRootNode, mPointersPerNode, aTransactionId);
 				}
+		
+				if (mStandAlone)
+				{
+					mBlockAccessor.getBlockDevice().commit();
+				}
 
 				Log.dec();
 				assert mModCount == modCount : "concurrent modification";
 
 				return true;
+			}
+			else if (mWasEmptyInstance && mStandAlone)
+			{
+				mBlockAccessor.getBlockDevice().commit();
 			}
 
 			return false;
@@ -452,7 +450,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	}
 
 
-	public synchronized void rollback()
+	public synchronized void rollback() throws IOException
 	{
 		if (mClosed)
 		{
@@ -460,6 +458,11 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		}
 
 		Log.i("rollback");
+		
+		if (mStandAlone)
+		{
+			mBlockAccessor.getBlockDevice().rollback();
+		}
 
 		mRootNode = null;
 		mRootMap = null;

@@ -87,6 +87,8 @@ public class BlockAccessor
 		}
 		catch (Exception e)
 		{
+			e.printStackTrace();
+			
 			throw new DatabaseException("Error reading block", e);
 		}
 	}

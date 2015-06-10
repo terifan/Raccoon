@@ -3,6 +3,7 @@ package org.terifan.raccoon.io;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import org.terifan.raccoon.util.Log;
 
 
 public final class Streams

@@ -88,7 +88,7 @@ class Table<T> implements Iterable<T>
 //			return baos.toByteArray();
 		}
 
-		mTableImplementation = new HashTable(new BlockAccessor(mDatabase.getBlockDevice()), aBlockPointer, mHashSeed, 4*mDatabase.getBlockDevice().getBlockSize(), 8*mDatabase.getBlockDevice().getBlockSize(), mDatabase.getTransactionId());
+		mTableImplementation = new HashTable(new BlockAccessor(mDatabase.getBlockDevice()), aBlockPointer, mHashSeed, 4*mDatabase.getBlockDevice().getBlockSize(), 8*mDatabase.getBlockDevice().getBlockSize(), mDatabase.getTransactionId(), false);
 
 		Log.dec();
 

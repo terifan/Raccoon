@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import static org.terifan.raccoon.io.BlobOutputStream.TYPE_INDIRECT;
+import org.terifan.raccoon.util.Log;
 
 
 public class BlobInputStream extends InputStream implements AutoCloseable
@@ -68,6 +69,8 @@ public class BlobInputStream extends InputStream implements AutoCloseable
 		{
 			return -1;
 		}
+		
+		int bytesRead = 0;
 
 		for (int remaining = (int)Math.min(aLength, mRemaining); remaining > 0;)
 		{
@@ -78,12 +81,13 @@ public class BlobInputStream extends InputStream implements AutoCloseable
 
 			int len = mBuffer.read(aBuffer, aOffset, remaining);
 			remaining -= len;
+			bytesRead += len;
 			aOffset += len;
 		}
 
-		mRemaining -= aLength;
+		mRemaining -= bytesRead;
 
-		return aLength;
+		return bytesRead;
 	}
 
 
