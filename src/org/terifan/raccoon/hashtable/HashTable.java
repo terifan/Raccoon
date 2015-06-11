@@ -425,7 +425,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 				{
 					mRootBlockPointer = writeBlock(mRootNode, mPointersPerNode, aTransactionId);
 				}
-		
+
 				if (mStandAlone)
 				{
 					mBlockAccessor.getBlockDevice().commit();
@@ -458,7 +458,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		}
 
 		Log.i("rollback");
-		
+
 		if (mStandAlone)
 		{
 			mBlockAccessor.getBlockDevice().rollback();
