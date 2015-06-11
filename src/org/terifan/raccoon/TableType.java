@@ -17,7 +17,7 @@ public class TableType
 		mClass = aClass;
 		mName = mClass.getName();
 
-		mHash = MurmurHash3.hash_x86_32(mName, 0x94936d91);
+		mHash = MurmurHash3.hash_x86_32(mName.getBytes(), 0x94936d91);
 		mMarshaller = new Marshaller(aClass);
 	}
 

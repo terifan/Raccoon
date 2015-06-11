@@ -233,314 +233,314 @@ public final class Twofish extends Cipher
 	 * @param outOffset
 	 *    Index in the out buffer where ciphertext should be written.
 	 */
-	@Override
-	public void engineEncryptBlock(byte [] in, int inOffset, byte [] out, int outOffset)
-	{
-		int [] sbox = mSBox;
-		int [] skey = mSubKeys;
-
-		int x0 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset++] << 24)) ^ mSubKey0;
-		int x1 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset++] << 24)) ^ mSubKey1;
-		int x2 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset++] << 24)) ^ mSubKey2;
-		int x3 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset  ] << 24)) ^ mSubKey3;
-
-		int k = 8;
-
-		// unrolled for-loop, 8 iterations
-
-		// round 0-1
-		int t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		int t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x2 ^= t0 + t1 + skey[k++];
-		x2  = x2 >>> 1 | x2 << 31;
-		x3  = x3 << 1 | x3 >>> 31;
-		x3 ^= t0 + 2*t1 + skey[k++];
-
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x0 ^= t0 + t1 + skey[k++];
-		x0  = x0 >>> 1 | x0 << 31;
-		x1  = x1 << 1 | x1 >>> 31;
-		x1 ^= t0 + 2*t1 + skey[k++];
-
-		// round 2-3
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x2 ^= t0 + t1 + skey[k++];
-		x2  = x2 >>> 1 | x2 << 31;
-		x3  = x3 << 1 | x3 >>> 31;
-		x3 ^= t0 + 2*t1 + skey[k++];
-
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x0 ^= t0 + t1 + skey[k++];
-		x0  = x0 >>> 1 | x0 << 31;
-		x1  = x1 << 1 | x1 >>> 31;
-		x1 ^= t0 + 2*t1 + skey[k++];
-
-		// round 4-5
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x2 ^= t0 + t1 + skey[k++];
-		x2  = x2 >>> 1 | x2 << 31;
-		x3  = x3 << 1 | x3 >>> 31;
-		x3 ^= t0 + 2*t1 + skey[k++];
-
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x0 ^= t0 + t1 + skey[k++];
-		x0  = x0 >>> 1 | x0 << 31;
-		x1  = x1 << 1 | x1 >>> 31;
-		x1 ^= t0 + 2*t1 + skey[k++];
-
-		// round 6-7
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x2 ^= t0 + t1 + skey[k++];
-		x2  = x2 >>> 1 | x2 << 31;
-		x3  = x3 << 1 | x3 >>> 31;
-		x3 ^= t0 + 2*t1 + skey[k++];
-
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x0 ^= t0 + t1 + skey[k++];
-		x0  = x0 >>> 1 | x0 << 31;
-		x1  = x1 << 1 | x1 >>> 31;
-		x1 ^= t0 + 2*t1 + skey[k++];
-
-		// round 8-9
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x2 ^= t0 + t1 + skey[k++];
-		x2  = x2 >>> 1 | x2 << 31;
-		x3  = x3 << 1 | x3 >>> 31;
-		x3 ^= t0 + 2*t1 + skey[k++];
-
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x0 ^= t0 + t1 + skey[k++];
-		x0  = x0 >>> 1 | x0 << 31;
-		x1  = x1 << 1 | x1 >>> 31;
-		x1 ^= t0 + 2*t1 + skey[k++];
-
-		// round 10-11
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x2 ^= t0 + t1 + skey[k++];
-		x2  = x2 >>> 1 | x2 << 31;
-		x3  = x3 << 1 | x3 >>> 31;
-		x3 ^= t0 + 2*t1 + skey[k++];
-
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x0 ^= t0 + t1 + skey[k++];
-		x0  = x0 >>> 1 | x0 << 31;
-		x1  = x1 << 1 | x1 >>> 31;
-		x1 ^= t0 + 2*t1 + skey[k++];
-
-		// round 12-13
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x2 ^= t0 + t1 + skey[k++];
-		x2  = x2 >>> 1 | x2 << 31;
-		x3  = x3 << 1 | x3 >>> 31;
-		x3 ^= t0 + 2*t1 + skey[k++];
-
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x0 ^= t0 + t1 + skey[k++];
-		x0  = x0 >>> 1 | x0 << 31;
-		x1  = x1 << 1 | x1 >>> 31;
-		x1 ^= t0 + 2*t1 + skey[k++];
-
-		// round 14-15
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x2 ^= t0 + t1 + skey[k++];
-		x2  = x2 >>> 1 | x2 << 31;
-		x3  = x3 << 1 | x3 >>> 31;
-		x3 ^= t0 + 2*t1 + skey[k++];
-
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x0 ^= t0 + t1 + skey[k++];
-		x0  = x0 >>> 1 | x0 << 31;
-		x1  = x1 << 1 | x1 >>> 31;
-		x1 ^= t0 + 2*t1 + skey[k++];
-
-
-		x2 ^= mSubKey4;
-		x3 ^= mSubKey5;
-		x0 ^= mSubKey6;
-		x1 ^= mSubKey7;
-
-		out[outOffset++] = (byte)x2; out[outOffset++] = (byte)(x2 >> 8); out[outOffset++] = (byte)(x2 >> 16); out[outOffset++] = (byte)(x2 >>> 24);
-		out[outOffset++] = (byte)x3; out[outOffset++] = (byte)(x3 >> 8); out[outOffset++] = (byte)(x3 >> 16); out[outOffset++] = (byte)(x3 >>> 24);
-		out[outOffset++] = (byte)x0; out[outOffset++] = (byte)(x0 >> 8); out[outOffset++] = (byte)(x0 >> 16); out[outOffset++] = (byte)(x0 >>> 24);
-		out[outOffset++] = (byte)x1; out[outOffset++] = (byte)(x1 >> 8); out[outOffset++] = (byte)(x1 >> 16); out[outOffset++] = (byte)(x1 >>> 24);
-	}
-
-
-	/**
-	 * Decrypts a single block of ciphertext in ECB-mode.<p>
-	 *
-	 * Note: It is possible to use the same buffer for input and output.
-	 *
-	 * @param in
-	 *    A buffer containing the ciphertext to be decrypted.
-	 * @param inOffset
-	 *    Index in the in buffer where ciphertext should be read.
-	 * @param out
-	 *    A buffer where plaintext is written.
-	 * @param outOffset
-	 *    Index in the out buffer where plaintext should be written.
-	 */
-	@Override
-	public void engineDecryptBlock(byte [] in, int inOffset, byte [] out, int outOffset)
-	{
-		int [] sbox = mSBox;
-		int [] skey = mSubKeys;
-
-		int x2 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset++] << 24)) ^ mSubKey4;
-		int x3 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset++] << 24)) ^ mSubKey5;
-		int x0 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset++] << 24)) ^ mSubKey6;
-		int x1 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset  ] << 24)) ^ mSubKey7;
-
-		int k = 39;
-
-		// unrolled for-loop, 8 iterations
-
-		// round 0-1
-		int t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		int t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x1 ^= t0 + 2*t1 + skey[k--];
-		x1  = x1 >>> 1 | x1 << 31;
-		x0  = x0 << 1 | x0 >>> 31;
-		x0 ^= t0 + t1 + skey[k--];
-
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x3 ^= t0 + 2*t1 + skey[k--];
-		x3  = x3 >>> 1 | x3 << 31;
-		x2  = x2 << 1 | x2 >>> 31;
-		x2 ^= t0 + t1 + skey[k--];
-
-		// round 2-3
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x1 ^= t0 + 2*t1 + skey[k--];
-		x1  = x1 >>> 1 | x1 << 31;
-		x0  = x0 << 1 | x0 >>> 31;
-		x0 ^= t0 + t1 + skey[k--];
-
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x3 ^= t0 + 2*t1 + skey[k--];
-		x3  = x3 >>> 1 | x3 << 31;
-		x2  = x2 << 1 | x2 >>> 31;
-		x2 ^= t0 + t1 + skey[k--];
-
-		// round 4-5
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x1 ^= t0 + 2*t1 + skey[k--];
-		x1  = x1 >>> 1 | x1 << 31;
-		x0  = x0 << 1 | x0 >>> 31;
-		x0 ^= t0 + t1 + skey[k--];
-
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x3 ^= t0 + 2*t1 + skey[k--];
-		x3  = x3 >>> 1 | x3 << 31;
-		x2  = x2 << 1 | x2 >>> 31;
-		x2 ^= t0 + t1 + skey[k--];
-
-		// round 6-7
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x1 ^= t0 + 2*t1 + skey[k--];
-		x1  = x1 >>> 1 | x1 << 31;
-		x0  = x0 << 1 | x0 >>> 31;
-		x0 ^= t0 + t1 + skey[k--];
-
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x3 ^= t0 + 2*t1 + skey[k--];
-		x3  = x3 >>> 1 | x3 << 31;
-		x2  = x2 << 1 | x2 >>> 31;
-		x2 ^= t0 + t1 + skey[k--];
-
-		// round 8-9
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x1 ^= t0 + 2*t1 + skey[k--];
-		x1  = x1 >>> 1 | x1 << 31;
-		x0  = x0 << 1 | x0 >>> 31;
-		x0 ^= t0 + t1 + skey[k--];
-
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x3 ^= t0 + 2*t1 + skey[k--];
-		x3  = x3 >>> 1 | x3 << 31;
-		x2  = x2 << 1 | x2 >>> 31;
-		x2 ^= t0 + t1 + skey[k--];
-
-		// round 10-11
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x1 ^= t0 + 2*t1 + skey[k--];
-		x1  = x1 >>> 1 | x1 << 31;
-		x0  = x0 << 1 | x0 >>> 31;
-		x0 ^= t0 + t1 + skey[k--];
-
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x3 ^= t0 + 2*t1 + skey[k--];
-		x3  = x3 >>> 1 | x3 << 31;
-		x2  = x2 << 1 | x2 >>> 31;
-		x2 ^= t0 + t1 + skey[k--];
-
-		// round 12-13
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x1 ^= t0 + 2*t1 + skey[k--];
-		x1  = x1 >>> 1 | x1 << 31;
-		x0  = x0 << 1 | x0 >>> 31;
-		x0 ^= t0 + t1 + skey[k--];
-
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x3 ^= t0 + 2*t1 + skey[k--];
-		x3  = x3 >>> 1 | x3 << 31;
-		x2  = x2 << 1 | x2 >>> 31;
-		x2 ^= t0 + t1 + skey[k--];
-
-		// round 14-15
-		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
-		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
-		x1 ^= t0 + 2*t1 + skey[k--];
-		x1  = x1 >>> 1 | x1 << 31;
-		x0  = x0 << 1 | x0 >>> 31;
-		x0 ^= t0 + t1 + skey[k--];
-
-		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
-		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
-		x3 ^= t0 + 2*t1 + skey[k--];
-		x3  = x3 >>> 1 | x3 << 31;
-		x2  = x2 << 1 | x2 >>> 31;
-		x2 ^= t0 + t1 + skey[k--];
-
-
-		x0 ^= mSubKey0;
-		x1 ^= mSubKey1;
-		x2 ^= mSubKey2;
-		x3 ^= mSubKey3;
-
-		out[outOffset++] = (byte)x0; out[outOffset++] = (byte)(x0 >> 8); out[outOffset++] = (byte)(x0 >> 16); out[outOffset++] = (byte)(x0 >>> 24);
-		out[outOffset++] = (byte)x1; out[outOffset++] = (byte)(x1 >> 8); out[outOffset++] = (byte)(x1 >> 16); out[outOffset++] = (byte)(x1 >>> 24);
-		out[outOffset++] = (byte)x2; out[outOffset++] = (byte)(x2 >> 8); out[outOffset++] = (byte)(x2 >> 16); out[outOffset++] = (byte)(x2 >>> 24);
-		out[outOffset++] = (byte)x3; out[outOffset++] = (byte)(x3 >> 8); out[outOffset++] = (byte)(x3 >> 16); out[outOffset++] = (byte)(x3 >>> 24);
-	}
+//	@Override
+//	public void engineEncryptBlock(byte [] in, int inOffset, byte [] out, int outOffset)
+//	{
+//		int [] sbox = mSBox;
+//		int [] skey = mSubKeys;
+//
+//		int x0 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset++] << 24)) ^ mSubKey0;
+//		int x1 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset++] << 24)) ^ mSubKey1;
+//		int x2 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset++] << 24)) ^ mSubKey2;
+//		int x3 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset  ] << 24)) ^ mSubKey3;
+//
+//		int k = 8;
+//
+//		// unrolled for-loop, 8 iterations
+//
+//		// round 0-1
+//		int t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		int t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x2 ^= t0 + t1 + skey[k++];
+//		x2  = x2 >>> 1 | x2 << 31;
+//		x3  = x3 << 1 | x3 >>> 31;
+//		x3 ^= t0 + 2*t1 + skey[k++];
+//
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x0 ^= t0 + t1 + skey[k++];
+//		x0  = x0 >>> 1 | x0 << 31;
+//		x1  = x1 << 1 | x1 >>> 31;
+//		x1 ^= t0 + 2*t1 + skey[k++];
+//
+//		// round 2-3
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x2 ^= t0 + t1 + skey[k++];
+//		x2  = x2 >>> 1 | x2 << 31;
+//		x3  = x3 << 1 | x3 >>> 31;
+//		x3 ^= t0 + 2*t1 + skey[k++];
+//
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x0 ^= t0 + t1 + skey[k++];
+//		x0  = x0 >>> 1 | x0 << 31;
+//		x1  = x1 << 1 | x1 >>> 31;
+//		x1 ^= t0 + 2*t1 + skey[k++];
+//
+//		// round 4-5
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x2 ^= t0 + t1 + skey[k++];
+//		x2  = x2 >>> 1 | x2 << 31;
+//		x3  = x3 << 1 | x3 >>> 31;
+//		x3 ^= t0 + 2*t1 + skey[k++];
+//
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x0 ^= t0 + t1 + skey[k++];
+//		x0  = x0 >>> 1 | x0 << 31;
+//		x1  = x1 << 1 | x1 >>> 31;
+//		x1 ^= t0 + 2*t1 + skey[k++];
+//
+//		// round 6-7
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x2 ^= t0 + t1 + skey[k++];
+//		x2  = x2 >>> 1 | x2 << 31;
+//		x3  = x3 << 1 | x3 >>> 31;
+//		x3 ^= t0 + 2*t1 + skey[k++];
+//
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x0 ^= t0 + t1 + skey[k++];
+//		x0  = x0 >>> 1 | x0 << 31;
+//		x1  = x1 << 1 | x1 >>> 31;
+//		x1 ^= t0 + 2*t1 + skey[k++];
+//
+//		// round 8-9
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x2 ^= t0 + t1 + skey[k++];
+//		x2  = x2 >>> 1 | x2 << 31;
+//		x3  = x3 << 1 | x3 >>> 31;
+//		x3 ^= t0 + 2*t1 + skey[k++];
+//
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x0 ^= t0 + t1 + skey[k++];
+//		x0  = x0 >>> 1 | x0 << 31;
+//		x1  = x1 << 1 | x1 >>> 31;
+//		x1 ^= t0 + 2*t1 + skey[k++];
+//
+//		// round 10-11
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x2 ^= t0 + t1 + skey[k++];
+//		x2  = x2 >>> 1 | x2 << 31;
+//		x3  = x3 << 1 | x3 >>> 31;
+//		x3 ^= t0 + 2*t1 + skey[k++];
+//
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x0 ^= t0 + t1 + skey[k++];
+//		x0  = x0 >>> 1 | x0 << 31;
+//		x1  = x1 << 1 | x1 >>> 31;
+//		x1 ^= t0 + 2*t1 + skey[k++];
+//
+//		// round 12-13
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x2 ^= t0 + t1 + skey[k++];
+//		x2  = x2 >>> 1 | x2 << 31;
+//		x3  = x3 << 1 | x3 >>> 31;
+//		x3 ^= t0 + 2*t1 + skey[k++];
+//
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x0 ^= t0 + t1 + skey[k++];
+//		x0  = x0 >>> 1 | x0 << 31;
+//		x1  = x1 << 1 | x1 >>> 31;
+//		x1 ^= t0 + 2*t1 + skey[k++];
+//
+//		// round 14-15
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x2 ^= t0 + t1 + skey[k++];
+//		x2  = x2 >>> 1 | x2 << 31;
+//		x3  = x3 << 1 | x3 >>> 31;
+//		x3 ^= t0 + 2*t1 + skey[k++];
+//
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x0 ^= t0 + t1 + skey[k++];
+//		x0  = x0 >>> 1 | x0 << 31;
+//		x1  = x1 << 1 | x1 >>> 31;
+//		x1 ^= t0 + 2*t1 + skey[k++];
+//
+//
+//		x2 ^= mSubKey4;
+//		x3 ^= mSubKey5;
+//		x0 ^= mSubKey6;
+//		x1 ^= mSubKey7;
+//
+//		out[outOffset++] = (byte)x2; out[outOffset++] = (byte)(x2 >> 8); out[outOffset++] = (byte)(x2 >> 16); out[outOffset++] = (byte)(x2 >>> 24);
+//		out[outOffset++] = (byte)x3; out[outOffset++] = (byte)(x3 >> 8); out[outOffset++] = (byte)(x3 >> 16); out[outOffset++] = (byte)(x3 >>> 24);
+//		out[outOffset++] = (byte)x0; out[outOffset++] = (byte)(x0 >> 8); out[outOffset++] = (byte)(x0 >> 16); out[outOffset++] = (byte)(x0 >>> 24);
+//		out[outOffset++] = (byte)x1; out[outOffset++] = (byte)(x1 >> 8); out[outOffset++] = (byte)(x1 >> 16); out[outOffset++] = (byte)(x1 >>> 24);
+//	}
+//
+//
+//	/**
+//	 * Decrypts a single block of ciphertext in ECB-mode.<p>
+//	 *
+//	 * Note: It is possible to use the same buffer for input and output.
+//	 *
+//	 * @param in
+//	 *    A buffer containing the ciphertext to be decrypted.
+//	 * @param inOffset
+//	 *    Index in the in buffer where ciphertext should be read.
+//	 * @param out
+//	 *    A buffer where plaintext is written.
+//	 * @param outOffset
+//	 *    Index in the out buffer where plaintext should be written.
+//	 */
+//	@Override
+//	public void engineDecryptBlock(byte [] in, int inOffset, byte [] out, int outOffset)
+//	{
+//		int [] sbox = mSBox;
+//		int [] skey = mSubKeys;
+//
+//		int x2 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset++] << 24)) ^ mSubKey4;
+//		int x3 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset++] << 24)) ^ mSubKey5;
+//		int x0 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset++] << 24)) ^ mSubKey6;
+//		int x1 = ((255 & in[inOffset++]) + ((255 & in[inOffset++]) << 8) + ((255 & in[inOffset++]) << 16) + (in[inOffset  ] << 24)) ^ mSubKey7;
+//
+//		int k = 39;
+//
+//		// unrolled for-loop, 8 iterations
+//
+//		// round 0-1
+//		int t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		int t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x1 ^= t0 + 2*t1 + skey[k--];
+//		x1  = x1 >>> 1 | x1 << 31;
+//		x0  = x0 << 1 | x0 >>> 31;
+//		x0 ^= t0 + t1 + skey[k--];
+//
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x3 ^= t0 + 2*t1 + skey[k--];
+//		x3  = x3 >>> 1 | x3 << 31;
+//		x2  = x2 << 1 | x2 >>> 31;
+//		x2 ^= t0 + t1 + skey[k--];
+//
+//		// round 2-3
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x1 ^= t0 + 2*t1 + skey[k--];
+//		x1  = x1 >>> 1 | x1 << 31;
+//		x0  = x0 << 1 | x0 >>> 31;
+//		x0 ^= t0 + t1 + skey[k--];
+//
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x3 ^= t0 + 2*t1 + skey[k--];
+//		x3  = x3 >>> 1 | x3 << 31;
+//		x2  = x2 << 1 | x2 >>> 31;
+//		x2 ^= t0 + t1 + skey[k--];
+//
+//		// round 4-5
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x1 ^= t0 + 2*t1 + skey[k--];
+//		x1  = x1 >>> 1 | x1 << 31;
+//		x0  = x0 << 1 | x0 >>> 31;
+//		x0 ^= t0 + t1 + skey[k--];
+//
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x3 ^= t0 + 2*t1 + skey[k--];
+//		x3  = x3 >>> 1 | x3 << 31;
+//		x2  = x2 << 1 | x2 >>> 31;
+//		x2 ^= t0 + t1 + skey[k--];
+//
+//		// round 6-7
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x1 ^= t0 + 2*t1 + skey[k--];
+//		x1  = x1 >>> 1 | x1 << 31;
+//		x0  = x0 << 1 | x0 >>> 31;
+//		x0 ^= t0 + t1 + skey[k--];
+//
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x3 ^= t0 + 2*t1 + skey[k--];
+//		x3  = x3 >>> 1 | x3 << 31;
+//		x2  = x2 << 1 | x2 >>> 31;
+//		x2 ^= t0 + t1 + skey[k--];
+//
+//		// round 8-9
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x1 ^= t0 + 2*t1 + skey[k--];
+//		x1  = x1 >>> 1 | x1 << 31;
+//		x0  = x0 << 1 | x0 >>> 31;
+//		x0 ^= t0 + t1 + skey[k--];
+//
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x3 ^= t0 + 2*t1 + skey[k--];
+//		x3  = x3 >>> 1 | x3 << 31;
+//		x2  = x2 << 1 | x2 >>> 31;
+//		x2 ^= t0 + t1 + skey[k--];
+//
+//		// round 10-11
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x1 ^= t0 + 2*t1 + skey[k--];
+//		x1  = x1 >>> 1 | x1 << 31;
+//		x0  = x0 << 1 | x0 >>> 31;
+//		x0 ^= t0 + t1 + skey[k--];
+//
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x3 ^= t0 + 2*t1 + skey[k--];
+//		x3  = x3 >>> 1 | x3 << 31;
+//		x2  = x2 << 1 | x2 >>> 31;
+//		x2 ^= t0 + t1 + skey[k--];
+//
+//		// round 12-13
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x1 ^= t0 + 2*t1 + skey[k--];
+//		x1  = x1 >>> 1 | x1 << 31;
+//		x0  = x0 << 1 | x0 >>> 31;
+//		x0 ^= t0 + t1 + skey[k--];
+//
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x3 ^= t0 + 2*t1 + skey[k--];
+//		x3  = x3 >>> 1 | x3 << 31;
+//		x2  = x2 << 1 | x2 >>> 31;
+//		x2 ^= t0 + t1 + skey[k--];
+//
+//		// round 14-15
+//		t0 = sbox[(510 & (x2 <<   1))] ^ sbox[1 + (510 & (x2 >> 7))] ^ sbox[512 + (510 & (x2 >> 15))] ^ sbox[513 + (510 & (x2 >>> 23))];
+//		t1 = sbox[(510 & (x3 >>> 23))] ^ sbox[1 + (510 & (x3 << 1))] ^ sbox[512 + (510 & (x3 >>  7))] ^ sbox[513 + (510 & (x3 >>  15))];
+//		x1 ^= t0 + 2*t1 + skey[k--];
+//		x1  = x1 >>> 1 | x1 << 31;
+//		x0  = x0 << 1 | x0 >>> 31;
+//		x0 ^= t0 + t1 + skey[k--];
+//
+//		t0 = sbox[(510 & (x0 <<   1))] ^ sbox[1 + (510 & (x0 >> 7))] ^ sbox[512 + (510 & (x0 >> 15))] ^ sbox[513 + (510 & (x0 >>> 23))];
+//		t1 = sbox[(510 & (x1 >>> 23))] ^ sbox[1 + (510 & (x1 << 1))] ^ sbox[512 + (510 & (x1 >>  7))] ^ sbox[513 + (510 & (x1 >>  15))];
+//		x3 ^= t0 + 2*t1 + skey[k--];
+//		x3  = x3 >>> 1 | x3 << 31;
+//		x2  = x2 << 1 | x2 >>> 31;
+//		x2 ^= t0 + t1 + skey[k--];
+//
+//
+//		x0 ^= mSubKey0;
+//		x1 ^= mSubKey1;
+//		x2 ^= mSubKey2;
+//		x3 ^= mSubKey3;
+//
+//		out[outOffset++] = (byte)x0; out[outOffset++] = (byte)(x0 >> 8); out[outOffset++] = (byte)(x0 >> 16); out[outOffset++] = (byte)(x0 >>> 24);
+//		out[outOffset++] = (byte)x1; out[outOffset++] = (byte)(x1 >> 8); out[outOffset++] = (byte)(x1 >> 16); out[outOffset++] = (byte)(x1 >>> 24);
+//		out[outOffset++] = (byte)x2; out[outOffset++] = (byte)(x2 >> 8); out[outOffset++] = (byte)(x2 >> 16); out[outOffset++] = (byte)(x2 >>> 24);
+//		out[outOffset++] = (byte)x3; out[outOffset++] = (byte)(x3 >> 8); out[outOffset++] = (byte)(x3 >> 16); out[outOffset++] = (byte)(x3 >>> 24);
+//	}
 
 
 	/**
