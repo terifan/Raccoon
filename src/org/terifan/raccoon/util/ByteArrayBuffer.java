@@ -34,7 +34,7 @@ public class ByteArrayBuffer
 	 */
 	public ByteArrayBuffer(byte[] aBuffer)
 	{
-		array(aBuffer);
+		wrap(aBuffer);
 	}
 
 
@@ -127,7 +127,7 @@ public class ByteArrayBuffer
 	}
 
 
-	public ByteArrayBuffer array(byte[] aBuffer)
+	public ByteArrayBuffer wrap(byte[] aBuffer)
 	{
 		mBuffer = aBuffer;
 		mLocked = true;

@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.io.ByteArrayInputStream;
 import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.serialization.FieldCategory;
 import java.io.IOException;
@@ -12,7 +13,11 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import org.terifan.raccoon.hashtable.HashTable;
+import org.terifan.raccoon.io.Blob;
+import org.terifan.raccoon.io.BlobInputStream;
+import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.BlockAccessor;
+import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
@@ -28,12 +33,20 @@ class Table<T> implements Iterable<T>
 	private transient Database mDatabase;
 	private transient TableType mTableType;
 	private transient HashTable mTableImplementation;
+	private transient BlockAccessor mBlockAccessor;
+	private transient int mNodeSize;
+	private transient int mLeafSize;
+	private transient Initializer mInitializer;
 
 
 	Table(Database aDatabase, TableType aTableType, Object aDiscriminator) throws IOException
 	{
 		mDatabase = aDatabase;
 		mTableType = aTableType;
+		mBlockAccessor = new BlockAccessor(mDatabase.getBlockDevice());
+		mNodeSize = 4 * mDatabase.getBlockDevice().getBlockSize();
+		mLeafSize = 8 * mDatabase.getBlockDevice().getBlockSize();
+		mInitializer = mDatabase.getInitializer(mTableType.getType());
 
 		mName = mTableType.getName();
 		mType = mTableType.getType().getName();
@@ -88,7 +101,7 @@ class Table<T> implements Iterable<T>
 //			return baos.toByteArray();
 		}
 
-		mTableImplementation = new HashTable(new BlockAccessor(mDatabase.getBlockDevice()), aBlockPointer, mHashSeed, 4*mDatabase.getBlockDevice().getBlockSize(), 8*mDatabase.getBlockDevice().getBlockSize(), mDatabase.getTransactionId(), false);
+		mTableImplementation = new HashTable(mBlockAccessor, aBlockPointer, mHashSeed, mNodeSize, mLeafSize, getTransactionId(), false);
 
 		Log.dec();
 
@@ -96,18 +109,9 @@ class Table<T> implements Iterable<T>
 	}
 
 
-	public boolean save(T aEntity)
+	private long getTransactionId()
 	{
-		Log.i("save entity");
-		Log.inc();
-
-		byte[] key = getKeys(aEntity);
-		byte[] value = getValues(aEntity);
-		boolean b = mTableImplementation.put(key, value, mDatabase.getTransactionId());
-
-		Log.dec();
-
-		return b;
+		return mDatabase.getTransactionId();
 	}
 
 
@@ -134,6 +138,12 @@ class Table<T> implements Iterable<T>
 	}
 
 
+	private static byte[] trimValue(byte[] aValue)
+	{
+		return Arrays.copyOfRange(aValue, 1, aValue.length);
+	}
+
+
 	public boolean contains(T aEntity)
 	{
 		byte[] key = getKeys(aEntity);
@@ -149,27 +159,118 @@ class Table<T> implements Iterable<T>
 	}
 
 
-	public Database getDatabase()
+	public synchronized InputStream read(T aEntity)
 	{
-		return mDatabase;
+		byte[] key = getKeys(aEntity);
+
+		byte[] value = mTableImplementation.get(key);
+
+		if (value == null)
+		{
+			return null;
+		}
+
+		if (value[0] == 0)
+		{
+			return new ByteArrayInputStream(value, 1, value.length - 1);
+		}
+
+		try
+		{
+			return new BlobInputStream(mBlockAccessor, new ByteArrayBuffer(value).position(1));
+		}
+		catch (Exception e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
-	public synchronized InputStream read(T aEntity)
+	public boolean save(T aEntity)
 	{
-		return mTableImplementation.read(getKeys(aEntity));
+		Log.i("save entity");
+		Log.inc();
+
+		byte[] key = getKeys(aEntity);
+		byte[] tmp = getValues(aEntity);
+		byte[] value;
+		byte type = 0;
+
+		if (tmp.length > mLeafSize / 2)
+		{
+			type = 1;
+
+			try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, getTransactionId()))
+			{
+				bos.write(tmp);
+				tmp = bos.finish();
+			}
+			catch (IOException e)
+			{
+				throw new DatabaseException(e);
+			}
+		}
+
+		value = new byte[1 + tmp.length];
+		value[0] = type;
+		System.arraycopy(tmp, 0, value, 1, tmp.length);
+
+		byte[] oldValue = mTableImplementation.put(key, value, getTransactionId());
+
+		deleteIfBlob(oldValue);
+		
+		Log.dec();
+
+		return oldValue == null;
+	}
+
+
+	private void deleteIfBlob(byte[] aOldValue) throws DatabaseException
+	{
+		if (aOldValue != null && aOldValue[0] == 1)
+		{
+			try
+			{
+				Blob.deleteBlob(mBlockAccessor, Arrays.copyOfRange(aOldValue, 1, aOldValue.length - 1));
+			}catch (IOException e)
+			{
+				throw new DatabaseException(e);
+			}
+		}
 	}
 
 
 	public boolean save(T aEntity, InputStream aInputStream)
 	{
-		return mTableImplementation.put(getKeys(aEntity), aInputStream, mDatabase.getTransactionId());
+		try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, getTransactionId()))
+		{
+			bos.write(Streams.fetch(aInputStream));
+
+			byte[] tmp = bos.finish();
+			byte[] value = new byte[1 + tmp.length];
+			value[0] = 1;
+			System.arraycopy(tmp, 0, value, 1, tmp.length);
+
+			byte[] oldValue = mTableImplementation.put(getKeys(aEntity), value, getTransactionId());
+
+			deleteIfBlob(oldValue);
+
+			return oldValue == null;
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
 	public boolean remove(T aEntity)
 	{
-		return mTableImplementation.remove(getKeys(aEntity), mDatabase.getTransactionId());
+		byte[] oldValue = mTableImplementation.remove(getKeys(aEntity), getTransactionId());
+
+		deleteIfBlob(oldValue);
+		
+		return oldValue != null;
 	}
 
 
@@ -188,7 +289,7 @@ class Table<T> implements Iterable<T>
 
 	public void clear() throws IOException
 	{
-		mTableImplementation.clear(mDatabase.getTransactionId());
+		mTableImplementation.clear(getTransactionId());
 	}
 
 
@@ -206,7 +307,7 @@ class Table<T> implements Iterable<T>
 
 	boolean commit() throws IOException
 	{
-		if (!mTableImplementation.commit(mDatabase.getTransactionId()))
+		if (!mTableImplementation.commit(getTransactionId()))
 		{
 			return false;
 		}
@@ -239,12 +340,6 @@ class Table<T> implements Iterable<T>
 	}
 
 
-	public Initializer getInitializer()
-	{
-		return mDatabase.getInitializer(mTableType.getType());
-	}
-
-
 	byte[] getDiscriminators(Object aInput)
 	{
 		return mTableType.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.DISCRIMINATOR).trim().array();
@@ -265,7 +360,27 @@ class Table<T> implements Iterable<T>
 
 	void update(Object aOutput, byte[] aMarshalledData, FieldCategory aCategory)
 	{
-		mTableType.getMarshaller().unmarshal(new ByteArrayBuffer(aMarshalledData), aOutput, aCategory);
+		ByteArrayBuffer buffer = new ByteArrayBuffer(aMarshalledData);
+
+		if (aCategory == FieldCategory.VALUE)
+		{
+			if (buffer.read() == 1)
+			{
+				try
+				{
+					buffer.wrap(Streams.fetch(new BlobInputStream(mBlockAccessor, buffer)));
+					buffer.position(0);
+				}
+				catch (Exception e)
+				{
+					Log.dec();
+
+					throw new DatabaseException(e);
+				}
+			}
+		}
+
+		mTableType.getMarshaller().unmarshal(buffer, aOutput, aCategory);
 	}
 
 
@@ -281,6 +396,11 @@ class Table<T> implements Iterable<T>
 			if (mDiscriminator != null)
 			{
 				mTableType.getMarshaller().unmarshal(new ByteArrayBuffer(mDiscriminator), object, FieldCategory.DISCRIMINATOR);
+			}
+
+			if (mInitializer != null)
+			{
+				mInitializer.initialize(object);
 			}
 
 			return object;

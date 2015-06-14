@@ -29,12 +29,6 @@ public class EntityIterator<T> implements Iterator<T>
 	{
 		T outputEntity = (T)mTable.newEntityInstance();
 
-		Initializer initializer = mTable.getInitializer();
-		if (initializer != null)
-		{
-			initializer.initialize(outputEntity);
-		}
-
 		Entry entry = mIterator.next();
 
 		mTable.update(outputEntity, entry.getKey(), FieldCategory.KEY);

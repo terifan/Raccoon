@@ -17,9 +17,9 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 
 
-public class DatabaseTest
+public class DatabaseNGTest
 {
-	public DatabaseTest()
+	public DatabaseNGTest()
 	{
 		Log.LEVEL = 0;
 	}
@@ -52,8 +52,8 @@ public class DatabaseTest
 		{
 			_Fruit apple = new _Fruit("red", "apple");
 			assertTrue(database.get(apple));
-			assertEquals("apple", apple.name);
-			assertEquals(123, apple.value);
+			assertEquals(apple.name, "apple");
+			assertEquals(apple.value, 123);
 		}
 	}
 
@@ -107,8 +107,8 @@ public class DatabaseTest
 			{
 				_Fruit apple = new _Fruit("red", "apple-"+i);
 				assertTrue(database.get(apple));
-				assertEquals("apple-"+i, apple.name);
-				assertEquals(i, apple.value);
+				assertEquals(apple.name, "apple-"+i);
+				assertEquals(apple.value, i);
 			}
 		}
 	}
@@ -136,13 +136,13 @@ public class DatabaseTest
 			{
 				_Fruit apple = new _Fruit("red", "apple-"+i);
 				assertTrue(database.get(apple));
-				assertEquals("apple-"+i, apple.name);
-				assertEquals(i, apple.value);
+				assertEquals(apple.name, "apple-"+i);
+				assertEquals(apple.value, i);
 
 				_Animal animal = new _Animal("dog-"+i);
 				assertTrue(database.get(animal));
-				assertEquals("dog-"+i, animal.name);
-				assertEquals(i, animal.number);
+				assertEquals(animal.name, "dog-"+i);
+				assertEquals(animal.number, i);
 			}
 		}
 	}
@@ -192,8 +192,8 @@ public class DatabaseTest
 							int j = n.incrementAndGet();
 							_Fruit apple = new _Fruit("red", "apple-"+j);
 							assertTrue(database.get(apple));
-							assertEquals("apple-"+j, apple.name);
-							assertEquals(j, apple.value);
+							assertEquals(apple.name, "apple-"+j);
+							assertEquals(apple.value, j);
 						}
 						catch (IOException e)
 						{
@@ -230,9 +230,9 @@ public class DatabaseTest
 			{
 				_DiscriminatedNumber entity = new _DiscriminatedNumber(i);
 				assertTrue(database.get(entity));
-				assertEquals(numberNames[i], entity.name);
-				assertEquals(i, entity.number);
-				assertEquals((i&1)==1, entity.odd);
+				assertEquals(entity.name, numberNames[i]);
+				assertEquals(entity.number, i);
+				assertEquals(entity.odd, (i&1)==1);
 			}
 		}
 	}
@@ -277,8 +277,8 @@ public class DatabaseTest
 		{
 			_Blob1 blob = new _Blob1("my blob");
 			assertTrue(database.get(blob));
-			assertEquals("my blob", blob.name);
-			assertEquals(content, blob.content);
+			assertEquals(blob.name, "my blob");
+			assertEquals(blob.content, content);
 		}
 	}
 
@@ -302,7 +302,7 @@ public class DatabaseTest
 			try (InputStream in = database.read(new _Blob2("my blob")))
 			{
 				assertNotNull(in);
-				assertEquals(content, Streams.fetch(in));
+				assertEquals(Streams.fetch(in), content);
 			}
 		}
 	}

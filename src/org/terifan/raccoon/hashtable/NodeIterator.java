@@ -60,13 +60,10 @@ class NodeIterator implements Iterator<Entry>
 
 		if (mMap != null)
 		{
-			Result<Integer> type = new Result<>();
-
 			byte[] key = mMap.getKey(mEntryIndex);
 
 			mNextEntry.setKey(key);
-			mNextEntry.setValue(mMap.get(key, type));
-			mNextEntry.setType(type.get());
+			mNextEntry.setValue(mMap.get(key));
 			mHasEntry = true;
 
 			return true;

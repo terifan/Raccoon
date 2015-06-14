@@ -360,8 +360,6 @@ public class Database implements AutoCloseable
 			for (Table table : mOpenTables.values())
 			{
 				table.rollback();
-
-//				mSystemTable.save(table);
 			}
 
 			mSystemTable.rollback();

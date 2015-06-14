@@ -17,10 +17,16 @@ public class BlobInputStream extends InputStream implements AutoCloseable
 	private long mRemaining;
 
 
-	public BlobInputStream(BlockAccessor aBlockAccessor, byte[] aHeader) throws IOException
+	public BlobInputStream(BlockAccessor aBlockAccessor, byte[] aPointerBuffer) throws IOException
+	{
+		this(aBlockAccessor, new ByteArrayBuffer(aPointerBuffer));
+	}
+	
+	
+	public BlobInputStream(BlockAccessor aBlockAccessor, ByteArrayBuffer aPointerBuffer) throws IOException
 	{
 		mBlockAccessor = aBlockAccessor;
-		mPointerBuffer = new ByteArrayBuffer(aHeader);
+		mPointerBuffer = aPointerBuffer;
 		mRemaining = mPointerBuffer.readVar64();
 
 		if (mRemaining > 0)
