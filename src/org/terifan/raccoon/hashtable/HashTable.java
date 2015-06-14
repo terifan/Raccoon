@@ -341,8 +341,6 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 				}
 			});
 
-			modCount++;
-
 			mRootNode = null;
 			mRootMap = new LeafNode(mLeafSize);
 		}
@@ -401,8 +399,10 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			case LEAF:
 				return readLeaf(blockPointer).get(aKey);
 			case HOLE:
-			default:
 				return null;
+			case FREE:
+			default:
+				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
 		}
 	}
 
@@ -431,8 +431,9 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			case HOLE:
 				oldValue = upgradeHoleToLeaf(aKey, aValue, aNode, blockPointer, index, aTransactionId);
 				break;
+			case FREE:
 			default:
-				throw new IllegalStateException();
+				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
 		}
 
 		Log.dec();
@@ -614,8 +615,10 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 				}
 				return oldValue;
 			case HOLE:
-			default:
 				return null;
+			case FREE:
+			default:
+				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
 		}
 	}
 
