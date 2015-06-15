@@ -48,9 +48,12 @@ public class BlockAccessor
 		try
 		{
 			Log.v("free block ", aBlockPointer);
+			Log.inc();
 
 			mBlockDevice.freeBlock(aBlockPointer.getOffset(), roundUp(aBlockPointer.getPhysicalSize()) / mBlockDevice.getBlockSize());
 			Stats.blockFree++;
+			
+			Log.dec();
 		}
 		catch (Exception e)
 		{
@@ -88,7 +91,7 @@ public class BlockAccessor
 		catch (Exception e)
 		{
 			e.printStackTrace();
-			
+
 			throw new DatabaseException("Error reading block", e);
 		}
 	}

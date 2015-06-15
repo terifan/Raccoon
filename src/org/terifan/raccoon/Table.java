@@ -147,7 +147,7 @@ class Table<T> implements Iterable<T>
 	public boolean contains(T aEntity)
 	{
 		byte[] key = getKeys(aEntity);
-		return mTableImplementation.contains(key);
+		return mTableImplementation.containsKey(key);
 	}
 
 

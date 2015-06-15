@@ -28,6 +28,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private int mBlockSize;
 	private HashSet<Integer> mUncommitedAllocations;
 	private boolean mDoubleCommit;
+	private Marshaller mSuperBlockMarshaller;
 
 
 	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice) throws IOException
@@ -298,8 +299,10 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			writeSpaceMap();
 
-			if (mDoubleCommit)
+			if (mDoubleCommit) // enabled by default
 			{
+				// commit twice since write operations on disk may occur out of order ie. superblock may be written before spacemap even
+				// tough calls made in reverse order
 				mBlockDevice.commit(false);
 			}
 
@@ -343,6 +346,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.v("read super block");
 		Log.inc();
 
+		mSuperBlockMarshaller = new Marshaller(SuperBlock.class);
+
 		SuperBlock superBlockOne = new SuperBlock();
 		SuperBlock superBlockTwo = new SuperBlock();
 
@@ -352,10 +357,14 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		if (superBlockOne.mWriteCounter == superBlockTwo.mWriteCounter + 1)
 		{
 			mSuperBlock = superBlockOne;
+
+			Log.v("using super block 0");
 		}
 		else if (superBlockTwo.mWriteCounter == superBlockOne.mWriteCounter + 1)
 		{
 			mSuperBlock = superBlockTwo;
+
+			Log.v("using super block 1");
 		}
 		else
 		{
@@ -368,11 +377,11 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	private synchronized void writeSuperBlock() throws IOException
 	{
-		Log.v("write super block");
-		Log.inc();
-
 		mSuperBlock.mWriteCounter++;
 		mSuperBlock.mUpdated = new Date();
+
+		Log.v("write super block %s", mSuperBlock.mWriteCounter & 1L);
+		Log.inc();
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[mBlockSize]);
 		buffer.position(CHECKSUM_SIZE); // leave space for checksum
@@ -605,8 +614,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			ByteArrayBuffer buffer = readCheckedBlock(aPageIndex, -aPageIndex, mBlockSize);
 
-			Marshaller m = new Marshaller(SuperBlock.class);
-			m.unmarshal(buffer, this, FieldCategory.VALUE);
+			mSuperBlockMarshaller.unmarshal(buffer, this, FieldCategory.VALUE);
 		}
 	}
 }

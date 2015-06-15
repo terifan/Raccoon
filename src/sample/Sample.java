@@ -14,8 +14,8 @@ public class Sample
 	{
 		try
 		{
-			Log.LEVEL = 10;
-			
+//			Log.LEVEL = 10;
+
 			AccessCredentials accessCredentials = new AccessCredentials("password");
 
 			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.CREATE_NEW, accessCredentials))

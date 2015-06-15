@@ -1,6 +1,7 @@
 package org.terifan.raccoon.hashtable;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import org.terifan.raccoon.io.BlockPointer;
@@ -18,32 +19,49 @@ import org.testng.annotations.DataProvider;
 
 public class HashTableNGTest
 {
-	@Test
-	public void testSimpleCreateWriteOpenRead() throws Exception
+	@Test(dataProvider = "itemSizes")
+	public void testSimpleCreateWriteOpenRead(int aSize) throws Exception
 	{
+		Log.LEVEL = 10;
+
+		HashMap<byte[],byte[]> map = new HashMap<>();
+
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		BlockPointer root = null;
 		long tx = 0;
 
+		Log.out.println("####################################################################################################################################################################");
+
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
-			hashTable.put("key".getBytes(), "value".getBytes(), tx);
-			hashTable.commit(tx);
+			for (int i = 0; i < aSize; i++)
+			{
+				byte[] key = tb();
+				byte[] value = tb();
+				hashTable.put(key, value, tx);
+				map.put(key, value);
+			}
 
+			hashTable.commit(tx);
 			root = hashTable.getRootBlockPointer();
 		}
 
+		Log.out.println("--------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
-			byte[] value = hashTable.get("key".getBytes());
+			for (byte[] key : map.keySet())
+			{
+				assertTrue(hashTable.containsKey(key));
 
-			assertEquals("value", Log.toString(value));
+				assertEquals(map.get(key), hashTable.get(key));
+			}
 		}
 	}
 
 
-	@Test(dataProvider="rollbackSizes")
+	@Test(dataProvider="itemSizes")
 	public void testRollback(int aSize) throws Exception
 	{
 		HashMap<String,String> map = new HashMap<>();
@@ -171,7 +189,7 @@ public class HashTableNGTest
 			{
 				String key = t();
 				String value = t();
-				
+
 				map.put(key, value);
 
 				hashTable.put(key.getBytes(), value.getBytes(), tx);
@@ -187,7 +205,7 @@ public class HashTableNGTest
 			{
 				String key = Log.toString(entry.getKey());
 				String value = Log.toString(entry.getValue());
-				
+
 				assertTrue(map.containsKey(key));
 				assertEquals(map.get(key), value);
 			}
@@ -269,18 +287,6 @@ public class HashTableNGTest
 	}
 
 
-	@Test
-	public void testContains()
-	{
-	}
-
-
-	@Test
-	public void testClear()
-	{
-	}
-
-
 	@DataProvider(name="iteratorSizes")
 	private Object[][] iteratorSizes()
 	{
@@ -295,10 +301,11 @@ public class HashTableNGTest
 	}
 
 
-	@DataProvider(name="rollbackSizes")
-	private Object[][] rollbackSizes()
+	@DataProvider(name="itemSizes")
+	private Object[][] itemSizes()
 	{
-		return new Object[][]{{1},{10},{1000}};
+//		return new Object[][]{{1},{10},{35}};
+		return new Object[][]{{35}};
 	}
 
 

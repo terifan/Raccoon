@@ -110,7 +110,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	}
 
 
-	public synchronized boolean contains(byte[] aKey)
+	public synchronized boolean containsKey(byte[] aKey)
 	{
 		return get(aKey) != null;
 	}
@@ -184,7 +184,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			oldValue = removeValue(computeHash(aKey), 0, aKey, mRootNode, aTransactionId);
 		}
-		
+
 		assert mModCount == modCount : "concurrent modification";
 
 		return oldValue;
@@ -262,6 +262,8 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 				{
 					mBlockAccessor.getBlockDevice().commit();
 				}
+
+				Log.i("commit finished; new root %s", mRootBlockPointer);
 
 				Log.dec();
 				assert mModCount == modCount : "concurrent modification";
