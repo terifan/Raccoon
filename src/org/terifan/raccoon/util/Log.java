@@ -9,7 +9,7 @@ public class Log
 
 	public static int LEVEL = 0;
 
-	private final static String INDENT = "... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ";
+	private final static String INDENT = "... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ";
 
 	private static int mIndent;
 

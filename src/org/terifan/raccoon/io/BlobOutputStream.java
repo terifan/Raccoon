@@ -68,10 +68,7 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 		// create indirect block if pointers exceed max length
 		if (pointerBufferLength > POINTER_MAX_LENGTH)
 		{
-			BlockPointer bp = mBlockAccessor.writeBlock(mPointerBuffer.array(), 0, mPointerBuffer.position());
-			bp.setTransactionId(mTransactionId);
-			bp.setType(TYPE_INDIRECT);
-			bp.setRange(0);
+			BlockPointer bp = mBlockAccessor.writeBlock(mPointerBuffer.array(), 0, mPointerBuffer.position(), mTransactionId, TYPE_INDIRECT, 0);
 			bp.marshal(mPointerBuffer.position(0));
 			pointerBufferLength = BlockPointer.SIZE;
 		}
@@ -97,10 +94,7 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 
 	private void flushBlock() throws IOException
 	{
-		BlockPointer bp = mBlockAccessor.writeBlock(mBuffer.array(), 0, mBuffer.position());
-		bp.setTransactionId(mTransactionId);
-		bp.setType(TYPE_DATA);
-		bp.setRange(0);
+		BlockPointer bp = mBlockAccessor.writeBlock(mBuffer.array(), 0, mBuffer.position(), mTransactionId, TYPE_DATA, 0);
 		bp.marshal(mPointerBuffer);
 		mBuffer.position(0);
 

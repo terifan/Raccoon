@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.UUID;
+import org.terifan.raccoon.util.Log;
 
 
 /**
@@ -237,12 +238,12 @@ public class ByteBufferMap implements Iterable<byte[]>
 
 	public byte[] getValue(int aIndex)
 	{
-		int modCount = mModCount;
-
 		if (aIndex < 0)
 		{
 			return null;
 		}
+
+		int modCount = mModCount;
 
 		int offset = mStartOffset + readValueOffset(aIndex);
 		byte[] value = Arrays.copyOfRange(mBuffer, offset, offset + readValueLength(aIndex));
@@ -631,11 +632,7 @@ public class ByteBufferMap implements Iterable<byte[]>
 					throw new ConcurrentModificationException();
 				}
 
-				int offset = mStartOffset + readKeyOffset(mIndex);
-				int keyLength = readKeyLength(mIndex);
-				mIndex++;
-
-				return Arrays.copyOfRange(mBuffer, offset, offset + keyLength);
+				return getKey(mIndex++);
 			}
 
 

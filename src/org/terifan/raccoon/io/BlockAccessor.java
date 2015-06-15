@@ -99,6 +99,12 @@ public class BlockAccessor
 
 	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength)
 	{
+		return writeBlock(aBuffer, aOffset, aLength, 0L, 0, 0);
+	}
+	
+	
+	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, int aType, int aRange)
+	{
 		try
 		{
 			int physicalSize = 0;
@@ -142,6 +148,9 @@ public class BlockAccessor
 			blockPointer.setOffset(blockIndex);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
+			blockPointer.setTransactionId(aTransactionId);
+			blockPointer.setType(aType);
+			blockPointer.setRange(aRange);
 
 			Log.v("write block %s", blockPointer);
 			Log.inc();
