@@ -9,11 +9,6 @@ import org.testng.annotations.Test;
 
 public class ByteArrayBufferNGTest
 {
-	public ByteArrayBufferNGTest()
-	{
-	}
-
-
 	@Test
 	public void testReadAndWriteVariableBuffer() throws IOException
 	{

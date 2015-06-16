@@ -1,4 +1,4 @@
-package sample;
+package tests;
 
 import java.io.File;
 import org.terifan.raccoon.Database;

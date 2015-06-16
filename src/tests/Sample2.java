@@ -1,4 +1,4 @@
-package sample;
+package tests;
 
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.serialization.FieldCategory;

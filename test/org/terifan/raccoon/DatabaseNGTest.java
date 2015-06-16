@@ -1,58 +1,47 @@
 package org.terifan.raccoon;
 
+import tests._Blob1K;
+import tests.__FixedThreadExecutor;
+import tests._Fruit2K;
+import tests._KeyValue1K;
+import tests._Number1K1D;
+import tests._Animal1K;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
-import org.terifan.raccoon.io.SecureBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.io.UnsupportedVersionException;
-import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
+import static tests.__TestUtils.t;
 
 
 public class DatabaseNGTest
 {
-	public DatabaseNGTest()
-	{
-		Log.LEVEL = 0;
-	}
-
-
 	@Test
 	public void testSingleTableInsertTiny() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-//		AccessCredentials
-//		Compression
-//		NodeSize
-//		LeafSize
-//		Checksum
-
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
-			database.save(new _Fruit("red", "apple", 123));
+			database.save(new _Fruit2K("red", "apple", 123));
 			database.commit();
 			assertNull(database.integrityCheck());
 		}
 
-//		for (byte[] b : device.getStorage().values())
-//		{
-//			Log.hexDump(b);
-//		}
-
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			_Fruit apple = new _Fruit("red", "apple");
+			_Fruit2K apple = new _Fruit2K("red", "apple");
 			assertTrue(database.get(apple));
-			assertEquals(apple.name, "apple");
+			assertEquals(apple._name, "apple");
 			assertEquals(apple.value, 123);
 		}
 	}
@@ -65,22 +54,22 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
-			database.save(new _Fruit("red", "apple", 123));
-			database.save(new _Fruit("green", "apple", 456));
+			database.save(new _Fruit2K("red", "apple", 123));
+			database.save(new _Fruit2K("green", "apple", 456));
 			database.commit();
 			assertNull(database.integrityCheck());
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			_Fruit redApple = new _Fruit("red", "apple");
+			_Fruit2K redApple = new _Fruit2K("red", "apple");
 			assertTrue(database.get(redApple));
-			assertEquals("apple", redApple.name);
+			assertEquals("apple", redApple._name);
 			assertEquals(123, redApple.value);
 
-			_Fruit greenApple = new _Fruit("green", "apple");
+			_Fruit2K greenApple = new _Fruit2K("green", "apple");
 			assertTrue(database.get(greenApple));
-			assertEquals("apple", greenApple.name);
+			assertEquals("apple", greenApple._name);
 			assertEquals(456, greenApple.value);
 		}
 	}
@@ -95,7 +84,7 @@ public class DatabaseNGTest
 		{
 			for (int i = 0; i < 10000; i++)
 			{
-				database.save(new _Fruit("red", "apple-" + i, i));
+				database.save(new _Fruit2K("red", "apple-" + i, i));
 			}
 			database.commit();
 			assertNull(database.integrityCheck());
@@ -105,9 +94,9 @@ public class DatabaseNGTest
 		{
 			for (int i = 0; i < 10000; i++)
 			{
-				_Fruit apple = new _Fruit("red", "apple-"+i);
+				_Fruit2K apple = new _Fruit2K("red", "apple-"+i);
 				assertTrue(database.get(apple));
-				assertEquals(apple.name, "apple-"+i);
+				assertEquals(apple._name, "apple-"+i);
 				assertEquals(apple.value, i);
 			}
 		}
@@ -123,8 +112,8 @@ public class DatabaseNGTest
 		{
 			for (int i = 0; i < 10000; i++)
 			{
-				database.save(new _Fruit("red", "apple-" + i, i));
-				database.save(new _Animal("dog-" + i, i));
+				database.save(new _Fruit2K("red", "apple-" + i, i));
+				database.save(new _Animal1K("dog-" + i, i));
 			}
 			database.commit();
 			assertNull(database.integrityCheck());
@@ -134,20 +123,55 @@ public class DatabaseNGTest
 		{
 			for (int i = 0; i < 10000; i++)
 			{
-				_Fruit apple = new _Fruit("red", "apple-"+i);
+				_Fruit2K apple = new _Fruit2K("red", "apple-"+i);
 				assertTrue(database.get(apple));
-				assertEquals(apple.name, "apple-"+i);
+				assertEquals(apple._name, "apple-"+i);
 				assertEquals(apple.value, i);
 
-				_Animal animal = new _Animal("dog-"+i);
+				_Animal1K animal = new _Animal1K("dog-"+i);
 				assertTrue(database.get(animal));
-				assertEquals(animal.name, "dog-"+i);
+				assertEquals(animal._name, "dog-"+i);
 				assertEquals(animal.number, i);
 			}
 		}
 	}
 
+	
+	@Test
+	public void testSingleTableMultiColumnKey() throws Exception
+	{
+		ArrayList<_Fruit2K> list = new ArrayList<>();
+		
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			for (int i = 0; i < 10; i++)
+			{
+				_Fruit2K item = new _Fruit2K("red", "apple" + i, 123, t(1000));
+				list.add(item);
+				database.save(item);
+			}
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			for (_Fruit2K entry : list)
+			{
+				_Fruit2K item = new _Fruit2K(entry._color, entry._name);
+
+				assertTrue(database.get(item));
+				assertEquals(item.shape, entry.shape);
+				assertEquals(item.taste, entry.taste);
+				assertEquals(item.value, entry.value);
+			}
+		}
+
+		assertTrue(true);
+	}
+
+	
 	@Test
 	public void testSingleTableMultiConcurrentInsert() throws Exception
 	{
@@ -155,7 +179,7 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
-			try (_FixedThreadExecutor executor = new _FixedThreadExecutor(1f))
+			try (__FixedThreadExecutor executor = new __FixedThreadExecutor(1f))
 			{
 				AtomicInteger n = new AtomicInteger();
 				for (int i = 0; i < 10000; i++)
@@ -165,7 +189,7 @@ public class DatabaseNGTest
 						try
 						{
 							int j = n.incrementAndGet();
-							database.save(new _Fruit("red", "apple-" + j, j));
+							database.save(new _Fruit2K("red", "apple-" + j, j));
 						}
 						catch (Throwable e)
 						{
@@ -180,7 +204,7 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			try (_FixedThreadExecutor executor = new _FixedThreadExecutor(1f))
+			try (__FixedThreadExecutor executor = new __FixedThreadExecutor(1f))
 			{
 				AtomicInteger n = new AtomicInteger();
 				for (int i = 0; i < 10000; i++)
@@ -190,9 +214,9 @@ public class DatabaseNGTest
 						try
 						{
 							int j = n.incrementAndGet();
-							_Fruit apple = new _Fruit("red", "apple-"+j);
+							_Fruit2K apple = new _Fruit2K("red", "apple-"+j);
 							assertTrue(database.get(apple));
-							assertEquals(apple.name, "apple-"+j);
+							assertEquals(apple._name, "apple-"+j);
 							assertEquals(apple.value, j);
 						}
 						catch (IOException e)
@@ -217,7 +241,7 @@ public class DatabaseNGTest
 		{
 			for (int i = 0; i < numberNames.length; i++)
 			{
-				database.save(new _DiscriminatedNumber(numberNames[i], i));
+				database.save(new _Number1K1D(numberNames[i], i));
 			}
 			database.commit();
 
@@ -228,11 +252,11 @@ public class DatabaseNGTest
 		{
 			for (int i = 0; i < numberNames.length; i++)
 			{
-				_DiscriminatedNumber entity = new _DiscriminatedNumber(i);
+				_Number1K1D entity = new _Number1K1D(i);
 				assertTrue(database.get(entity));
 				assertEquals(entity.name, numberNames[i]);
-				assertEquals(entity.number, i);
-				assertEquals(entity.odd, (i&1)==1);
+				assertEquals(entity._number, i);
+				assertEquals(entity._odd, (i&1)==1);
 			}
 		}
 	}
@@ -246,13 +270,13 @@ public class DatabaseNGTest
 
 		try (Database db = Database.open(device, OpenOption.CREATE_NEW, accessCredentials))
 		{
-			db.save(new _Fruit("red", "apple", 3467));
+			db.save(new _Fruit2K("red", "apple", 3467));
 			db.commit();
 		}
 
 		try (Database db = Database.open(device, OpenOption.OPEN, accessCredentials))
 		{
-			_Fruit fruit = new _Fruit("red", "apple");
+			_Fruit2K fruit = new _Fruit2K("red", "apple");
 			assertTrue(db.get(fruit));
 			assertEquals(fruit.value, 3467);
 		}
@@ -268,16 +292,16 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
-			database.save(new _Blob1("my blob", content));
+			database.save(new _KeyValue1K("my blob", content));
 			database.commit();
 			assertNull(database.integrityCheck());
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			_Blob1 blob = new _Blob1("my blob");
+			_KeyValue1K blob = new _KeyValue1K("my blob");
 			assertTrue(database.get(blob));
-			assertEquals(blob.name, "my blob");
+			assertEquals(blob._name, "my blob");
 			assertEquals(blob.content, content);
 		}
 	}
@@ -292,14 +316,14 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
-			database.save(new _Blob2("my blob"), new ByteArrayInputStream(content));
+			database.save(new _Blob1K("my blob"), new ByteArrayInputStream(content));
 			database.commit();
 			assertNull(database.integrityCheck());
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			try (InputStream in = database.read(new _Blob2("my blob")))
+			try (InputStream in = database.read(new _Blob1K("my blob")))
 			{
 				assertNotNull(in);
 				assertEquals(Streams.fetch(in), content);
@@ -312,152 +336,17 @@ public class DatabaseNGTest
 	public void testDatabaseVersionConflict() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
-		AccessCredentials accessCredentials = new AccessCredentials("password");
 
-		try (IManagedBlockDevice blockDevice = new ManagedBlockDevice(new SecureBlockDevice(device, accessCredentials)))
+		try (IManagedBlockDevice blockDevice = new ManagedBlockDevice(device))
 		{
 			blockDevice.setExtraData(new byte[100]);
 			blockDevice.allocBlock(100);
 			blockDevice.commit();
 		}
 
-		try (Database db = Database.open(device, OpenOption.OPEN, accessCredentials))
+		try (Database db = Database.open(device, OpenOption.OPEN)) // throws exception
 		{
-			_Fruit fruit = new _Fruit("red", "apple");
-			assertTrue(db.get(fruit));
-			assertEquals(fruit.value, 3467);
+			fail();
 		}
 	}
-
-
-//	@Test
-//	public void testIterators() throws Exception
-//	{
-//		MemoryBlockDevice device = new MemoryBlockDevice(512);
-//
-//		String[] numberNames = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
-//
-//		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
-//		{
-//			for (int i = 0; i < numberNames.length; i++)
-//			{
-//				database.save(new _DiscriminatedNumber(numberNames[i], i));
-//			}
-//			database.commit();
-//
-//			assertNull(database.integrityCheck());
-//
-//			Log.out.println("---------");
-//
-//			_DiscriminatedNumber discriminator = new _DiscriminatedNumber();
-//			discriminator.odd = true;
-//
-//			database.iterable(_DiscriminatedNumber.class, discriminator).forEach(e -> Log.out.println(e.number+" "+e.name+" "+e.odd));
-//
-//			Log.out.println("---------");
-//
-//			database.stream(_DiscriminatedNumber.class, discriminator).forEach(e -> Log.out.println(e.number+" "+e.name+" "+e.odd));
-//
-//			Log.out.println("----sorted-----");
-//
-//			database
-//				.stream(_DiscriminatedNumber.class, discriminator)
-//				.filter(e -> e.odd)
-//				.sorted((o1, o2) -> Integer.compare(o1.number, o2.number))
-//				.forEach(e -> Log.out.println(e.number+" "+e.name+" "+e.odd));
-//
-//			Log.out.println("-----x----");
-//
-//			for (_DiscriminatedNumber e : database.list(_DiscriminatedNumber.class, discriminator))
-//			{
-//				Log.out.println(e.number+" "+e.name+" "+e.odd);
-//			}
-//
-//			Log.out.println("---------");
-//
-//			for (_DiscriminatedNumber e : database.iterable(_DiscriminatedNumber.class, discriminator))
-//			{
-//				Log.out.println(e.number+" "+e.name+" "+e.odd);
-//			}
-//		}
-//	}
-
-
-//	@Test
-//	public void testFieldOrder() throws Exception
-//	{
-//		MemoryBlockDevice device = new MemoryBlockDevice(512);
-//
-//		_FieldOrder1 f1 = new _FieldOrder1(123, 456, "abc", 3.14);
-//		_FieldOrder2 f2 = new _FieldOrder2(123, 456);
-//
-//		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
-//		{
-//			database.save(f1);
-//			database.commit();
-//
-//			assertNull(database.integrityCheck());
-//		}
-//
-//		try (Database database = Database.open(device, OpenOption.OPEN))
-//		{
-//			assertTrue(database.get(f2));
-//			assertEquals(f1.a, f2.a);
-//			assertEquals(f1.b, f2.b);
-//			assertEquals(f1.s, f2.s);
-//			assertEquals(f1.d, f2.d, 0);
-//		}
-//	}
-
-
-//	@Test
-//	public void testExtraFields() throws Exception
-//	{
-//		MemoryBlockDevice device = new MemoryBlockDevice(512);
-//
-//		_ExtraField1 f1_i = new _ExtraField1(112, 123, "abc", 3.14);
-//		_ExtraField2 f2_i = new _ExtraField2(134, 145, "def", 1.59, 100);
-//		_ExtraField3 f3_i = new _ExtraField3(156, 167, "ghi", 2.63, "jkl");
-//		_ExtraField1 f1_o_1 = new _ExtraField1(112);
-//		_ExtraField2 f1_o_2 = new _ExtraField2(112);
-//		_ExtraField3 f1_o_3 = new _ExtraField3(112);
-//		_ExtraField1 f2_o_1 = new _ExtraField1(134);
-//		_ExtraField2 f2_o_2 = new _ExtraField2(134);
-//		_ExtraField3 f2_o_3 = new _ExtraField3(134);
-//		_ExtraField1 f3_o_1 = new _ExtraField1(156);
-//		_ExtraField2 f3_o_2 = new _ExtraField2(156);
-//		_ExtraField3 f3_o_3 = new _ExtraField3(156);
-//
-////		try (Database database = Database.open(device, Options.CREATE)) { }
-////		try (Database database = Database.open(device, Options.CREATE_NEW)) { }
-////		try (Database database = Database.open(device, Options.OPEN)) { }
-////		try (Database database = Database.open(device, Options.READ_ONLY)) { }
-//
-//		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
-//		{
-//			database.save(f1_i);
-//			database.save(f2_i);
-//			database.save(f3_i);
-//			database.commit();
-//
-//			assertNull(database.integrityCheck());
-//		}
-//
-//		try (Database database = Database.open(device, OpenOption.OPEN))
-//		{
-//			assertTrue(database.get(f1_o_1));
-//			assertTrue(database.get(f1_o_2));
-//			assertTrue(database.get(f1_o_3));
-//			assertTrue(database.get(f2_o_1));
-//			assertTrue(database.get(f2_o_2));
-//			assertTrue(database.get(f2_o_3));
-//			assertTrue(database.get(f3_o_1));
-//			assertTrue(database.get(f3_o_2));
-//			assertTrue(database.get(f3_o_3));
-//
-////			assertEquals(f1_i.b, f1_o.a);
-////			assertEquals(f1_i.s, f1_o.s);
-////			assertEquals(f1_i.d, f1_o.d, 0);
-//		}
-//	}
 }

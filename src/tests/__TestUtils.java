@@ -1,4 +1,4 @@
-package sample;
+package tests;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -8,9 +8,9 @@ import java.util.Random;
 import org.terifan.raccoon.util.Log;
 
 
-public class Utils
+public class __TestUtils
 {
-	public static Random rnd = new Random(0);
+	public final static Random rnd = new Random(0);
 
 
 	public static boolean x()
@@ -63,16 +63,56 @@ public class Utils
 
 	public static String t()
 	{
+		return new String(tb());
+	}
+
+
+	public static String t(int aMaxLength)
+	{
+		return new String(tb(aMaxLength));
+	}
+
+
+	public static byte[] tb()
+	{
+		return tb(16);
+	}
+	
+	
+	public static byte[] tb(int aMaxLength)
+	{
 		byte[] alpha = "abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÖÖ".getBytes();
-		byte[] buf = new byte[3 + rnd.nextInt(16)];
+		byte[] buf = new byte[3 + rnd.nextInt(aMaxLength-3)];
 		for (int i = 0; i < buf.length; i++)
 		{
 			buf[i] = alpha[rnd.nextInt(alpha.length)];
 		}
-		return new String(buf);
+		return buf;
 	}
 
 
+
+	public static byte[] createBuffer(long aSeed, int aLength)
+	{
+		Random r = new Random(aSeed);
+		byte[] buf = new byte[aLength];
+		r.nextBytes(buf);
+		return buf;
+	}
+
+
+	public static void verifyBuffer(long aSeed, byte[] aBuffer)
+	{
+		Random r = new Random(aSeed);
+		byte[] buf = new byte[aBuffer.length];
+		r.nextBytes(buf);
+		if (!Arrays.equals(aBuffer, buf))
+		{
+			throw new IllegalArgumentException("Data missmatch");
+		}
+	}
+
+	
 	public static String compareObjects(Object msg0, Object msg1)
 	{
 		try

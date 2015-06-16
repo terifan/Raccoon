@@ -7,7 +7,7 @@ import org.testng.annotations.DataProvider;
 import static org.testng.Assert.*;
 
 
-public class SecureBlockDeviceTest
+public class SecureBlockDeviceNGTest
 {
 	@Test
 	public void testSomeMethod() throws IOException

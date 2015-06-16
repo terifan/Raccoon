@@ -6,7 +6,7 @@ import java.util.Map;
 import org.terifan.raccoon.Entry;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
-import static org.terifan.raccoon.serialization.TestUtils.*;
+import static tests.__TestUtils.*;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
@@ -333,8 +333,7 @@ public class HashTableNGTest
 	@DataProvider(name="itemSizes")
 	private Object[][] itemSizes()
 	{
-//		return new Object[][]{{1},{10},{35}};
-		return new Object[][]{{35}};
+		return new Object[][]{{1},{10},{1000}};
 	}
 
 

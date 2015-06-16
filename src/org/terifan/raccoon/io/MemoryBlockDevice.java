@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import org.terifan.raccoon.util.Log;
-import static sample.Utils.b;
+import static tests.__TestUtils.b;
 
 
 public class MemoryBlockDevice implements IPhysicalBlockDevice

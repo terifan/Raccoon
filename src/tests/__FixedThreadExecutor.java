@@ -1,4 +1,4 @@
-package org.terifan.raccoon;
+package tests;
 
 import java.lang.management.ManagementFactory;
 import java.util.concurrent.ExecutorService;
@@ -6,13 +6,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 
-class _FixedThreadExecutor implements AutoCloseable
+public class __FixedThreadExecutor implements AutoCloseable
 {
 	private ExecutorService mExecutorService;
 	private int mThreads;
 
 
-	public _FixedThreadExecutor(int aThreads)
+	public __FixedThreadExecutor(int aThreads)
 	{
 		mThreads = aThreads;
 	}
@@ -23,7 +23,7 @@ class _FixedThreadExecutor implements AutoCloseable
 	 * @param aThreads
 	 *   number of threads expressed as a number between 0 and 1 out of total available CPUs
 	 */
-	public _FixedThreadExecutor(float aThreads)
+	public __FixedThreadExecutor(float aThreads)
 	{
 		int cpu = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
 

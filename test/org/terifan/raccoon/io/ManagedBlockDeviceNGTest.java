@@ -1,14 +1,12 @@
 package org.terifan.raccoon.io;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Random;
 import org.testng.annotations.Test;
-import org.testng.annotations.DataProvider;
 import static org.testng.Assert.*;
+import static tests.__TestUtils.*;
 
 
-public class ManagedBlockDeviceTest
+public class ManagedBlockDeviceNGTest
 {
 	@Test
 	public void testAllocationSimple() throws IOException
@@ -83,38 +81,17 @@ public class ManagedBlockDeviceTest
 					for (int i = 0; i < rows; i++)
 					{
 						dev.readBlock(positions[i], buf, 0, s, 0L);
-						verify(i,buf);
+						verifyBuffer(i,buf);
 					}
 				}
 
 				for (int i = test * rows; i < test * rows + rows; i++)
 				{
 					positions[i] = dev.allocBlock(1);
-					dev.writeBlock(positions[i], create(i,s), 0, s, 0L);
+					dev.writeBlock(positions[i], createBuffer(i,s), 0, s, 0L);
 				}
 				dev.commit();
 			}
-		}
-	}
-
-
-	private static byte[] create(long aBlockIndex, int aSize)
-	{
-		Random rnd = new Random(aBlockIndex);
-		byte[] buf = new byte[aSize];
-		rnd.nextBytes(buf);
-		return buf;
-	}
-
-
-	private static void verify(long aBlockIndex, byte[] aBuffer)
-	{
-		Random rnd = new Random(aBlockIndex);
-		byte[] buf = new byte[aBuffer.length];
-		rnd.nextBytes(buf);
-		if (!Arrays.equals(aBuffer, buf))
-		{
-			throw new IllegalArgumentException("Data missmatch");
 		}
 	}
 }

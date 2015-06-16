@@ -1,28 +1,23 @@
 package org.terifan.raccoon.serialization;
 
-import org.terifan.raccoon.util.Log;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import tests._BigObject1K;
 
 
 public class MarshallerNGTest
 {
-	public MarshallerNGTest()
-	{
-	}
-
-
 	@Test
 	public void testSomeMethod() throws Exception
 	{
-		_BigObject in = new _BigObject();
+		_BigObject1K in = new _BigObject1K();
 		in.random();
 
-		Marshaller marshaller = new Marshaller(_BigObject.class);
+		Marshaller marshaller = new Marshaller(_BigObject1K.class);
 		TypeDeclarations types = marshaller.getTypeDeclarations();
 		byte[] buffer = marshaller.marshal(in, FieldCategory.VALUE);
 
-		_BigObject out = new _BigObject();
+		_BigObject1K out = new _BigObject1K();
 
 		new Marshaller(types).unmarshal(buffer, out, FieldCategory.VALUE);
 

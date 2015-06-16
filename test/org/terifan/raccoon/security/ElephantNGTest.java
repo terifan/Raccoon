@@ -6,13 +6,8 @@ import org.testng.annotations.DataProvider;
 import static org.testng.Assert.*;
 
 
-public class ElephantTest
+public class ElephantNGTest
 {
-	public ElephantTest()
-	{
-	}
-
-
 	@Test(dataProvider = "Data-Provider-Function")
 	public void testSimpleReadWrite(int aUnitSize) throws Exception
 	{

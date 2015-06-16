@@ -6,29 +6,28 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 import org.testng.annotations.Test;
-import org.testng.annotations.DataProvider;
 import static org.testng.Assert.*;
 
 
-public class MemoryBlockDeviceTest
+public class FileBlockDeviceNGTest
 {
 	@Test
 	public void testSomeMethod() throws IOException
 	{
+		File file = File.createTempFile("blkdev","tmp");
+
 		Random rnd = new Random(1);
 		int s = 512;
 		HashMap<Long,byte[]> blocks = new HashMap<>();
 		ArrayList<Long> offsets = new ArrayList<>();
 
-		MemoryBlockDevice memoryBlockDevice = new MemoryBlockDevice(s);
-
 		for (int k = 0; k < 5; k++)
 		{
-			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice))
+			try (ManagedBlockDevice dev = new ManagedBlockDevice(new FileBlockDevice(file, s)))
 			{
-				for (int j = 0; j < 50; j++)
+				for (int j = 0; j < 10; j++)
 				{
-					for (int i = 0; i < 200; i++)
+					for (int i = 0; i < 50; i++)
 					{
 						long pos = dev.allocBlock(1);
 						byte[] buf = new byte[s];
@@ -38,7 +37,7 @@ public class MemoryBlockDeviceTest
 						offsets.add(pos);
 					}
 
-					for (int i = 0; i < 100; i++)
+					for (int i = 0; i < 25; i++)
 					{
 						long pos = offsets.remove(rnd.nextInt(offsets.size()));
 						byte[] buf = new byte[s];
@@ -51,5 +50,7 @@ public class MemoryBlockDeviceTest
 				}
 			}
 		}
+
+		file.delete();
 	}
 }

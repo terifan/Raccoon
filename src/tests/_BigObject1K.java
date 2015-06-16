@@ -1,4 +1,4 @@
-package sample;
+package tests;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -6,75 +6,78 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import static sample.Utils.*;
+import org.terifan.raccoon.Key;
+import static tests.__TestUtils.*;
 
 
-public class _BigObject implements Serializable
+public class _BigObject1K implements Serializable
 {
 	private transient static final long serialVersionUID = 1L;
 
-	boolean mBoolean;
-	byte mByte;
+	@Key public int _key;
+
+	public boolean mBoolean;
+	public byte mByte;
 	short mShort;
-	char mChar;
-	int mInt;
-	long mLong;
-	float mFloat;
-	double mDouble;
-	String mString;
-	Date mDate;
+	public char mChar;
+	public int mInt;
+	public long mLong;
+	public float mFloat;
+	public double mDouble;
+	public String mString;
+	public Date mDate;
 
-	boolean[] mBooleans;
-	byte[] mBytes;
-	short[] mShorts;
-	char[] mChars;
-	int[] mInts;
-	long[] mLongs;
-	float[] mFloats;
-	double[] mDoubles;
-	String[] mStrings;
-	Date[] mDates;
+	public boolean[] mBooleans;
+	public byte[] mBytes;
+	public short[] mShorts;
+	public char[] mChars;
+	public int[] mInts;
+	public long[] mLongs;
+	public float[] mFloats;
+	public double[] mDoubles;
+	public String[] mStrings;
+	public Date[] mDates;
 
-	ArrayList<Boolean> mBooleanList;
-	ArrayList<Byte> mByteList;
-	ArrayList<Short> mShortList;
-	ArrayList<Character> mCharList;
-	ArrayList<Integer> mIntList;
-	ArrayList<Long> mLongList;
-	ArrayList<Float> mFloatList;
-	ArrayList<Double> mDoubleList;
-	ArrayList<String> mStringList;
-	ArrayList<Date> mDateList;
+	public ArrayList<Boolean> mBooleanList;
+	public ArrayList<Byte> mByteList;
+	public ArrayList<Short> mShortList;
+	public ArrayList<Character> mCharList;
+	public ArrayList<Integer> mIntList;
+	public ArrayList<Long> mLongList;
+	public ArrayList<Float> mFloatList;
+	public ArrayList<Double> mDoubleList;
+	public ArrayList<String> mStringList;
+	public ArrayList<Date> mDateList;
 
-	HashSet<Boolean> mBooleanSet;
-	HashSet<Byte> mByteSet;
-	HashSet<Short> mShortSet;
-	HashSet<Character> mCharSet;
-	HashSet<Integer> mIntSet;
-	HashSet<Long> mLongSet;
-	HashSet<Float> mFloatSet;
-	HashSet<Double> mDoubleSet;
-	HashSet<String> mStringSet;
-	HashSet<Date> mDateSet;
+	public HashSet<Boolean> mBooleanSet;
+	public HashSet<Byte> mByteSet;
+	public HashSet<Short> mShortSet;
+	public HashSet<Character> mCharSet;
+	public HashSet<Integer> mIntSet;
+	public HashSet<Long> mLongSet;
+	public HashSet<Float> mFloatSet;
+	public HashSet<Double> mDoubleSet;
+	public HashSet<String> mStringSet;
+	public HashSet<Date> mDateSet;
 
-	HashMap<String,Boolean> mBooleanMap;
-	HashMap<String,Byte> mByteMap;
-	HashMap<String,Short> mShortMap;
-	HashMap<String,Character> mCharMap;
-	HashMap<String,Integer> mIntMap;
-	HashMap<String,Long> mLongMap;
-	HashMap<String,Float> mFloatMap;
-	HashMap<String,Double> mDoubleMap;
-	HashMap<String,String> mStringMap;
-	HashMap<String,Date> mDateMap;
+	public HashMap<String,Boolean> mBooleanMap;
+	public HashMap<String,Byte> mByteMap;
+	public HashMap<String,Short> mShortMap;
+	public HashMap<String,Character> mCharMap;
+	public HashMap<String,Integer> mIntMap;
+	public HashMap<String,Long> mLongMap;
+	public HashMap<String,Float> mFloatMap;
+	public HashMap<String,Double> mDoubleMap;
+	public HashMap<String,String> mStringMap;
+	public HashMap<String,Date> mDateMap;
 
-	ArrayList<String[]> mStringListArray;
-	HashMap<String[],String[]> mStringMapArray;
+	public ArrayList<String[]> mStringListArray;
+	public HashMap<String[],String[]> mStringMapArray;
 
 //	HashMap<String,ArrayList<String>> mStringMapList;
 
 
-	_BigObject random()
+	public _BigObject1K random()
 	{
 		mBoolean = x();
 		mByte = b();

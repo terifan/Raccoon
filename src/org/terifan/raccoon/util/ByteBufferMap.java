@@ -1,4 +1,4 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.util;
 
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;

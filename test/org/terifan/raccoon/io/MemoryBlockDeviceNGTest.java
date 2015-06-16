@@ -1,6 +1,5 @@
 package org.terifan.raccoon.io;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,25 +8,25 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 
 
-public class FileBlockDeviceTest
+public class MemoryBlockDeviceNGTest
 {
 	@Test
 	public void testSomeMethod() throws IOException
 	{
-		File file = File.createTempFile("blkdev","tmp");
-
 		Random rnd = new Random(1);
 		int s = 512;
 		HashMap<Long,byte[]> blocks = new HashMap<>();
 		ArrayList<Long> offsets = new ArrayList<>();
 
+		MemoryBlockDevice memoryBlockDevice = new MemoryBlockDevice(s);
+
 		for (int k = 0; k < 5; k++)
 		{
-			try (ManagedBlockDevice dev = new ManagedBlockDevice(new FileBlockDevice(file, s)))
+			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice))
 			{
-				for (int j = 0; j < 10; j++)
+				for (int j = 0; j < 50; j++)
 				{
-					for (int i = 0; i < 50; i++)
+					for (int i = 0; i < 200; i++)
 					{
 						long pos = dev.allocBlock(1);
 						byte[] buf = new byte[s];
@@ -37,7 +36,7 @@ public class FileBlockDeviceTest
 						offsets.add(pos);
 					}
 
-					for (int i = 0; i < 25; i++)
+					for (int i = 0; i < 100; i++)
 					{
 						long pos = offsets.remove(rnd.nextInt(offsets.size()));
 						byte[] buf = new byte[s];
@@ -50,7 +49,5 @@ public class FileBlockDeviceTest
 				}
 			}
 		}
-
-		file.delete();
 	}
 }

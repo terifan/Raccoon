@@ -1,20 +1,14 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.util;
 
 import java.util.HashMap;
 import java.util.Map;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
-import static org.terifan.raccoon.serialization.TestUtils.*;
-import org.terifan.raccoon.util.Log;
+import static tests.__TestUtils.*;
 
 
 public class ByteBufferMapNGTest
 {
-	public ByteBufferMapNGTest()
-	{
-	}
-
-
 	@Test
 	public void testSinglePutGet()
 	{

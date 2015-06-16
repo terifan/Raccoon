@@ -10,11 +10,6 @@ import static org.testng.AssertJUnit.*;
 
 public class BlockAccessorNGTest
 {
-	public BlockAccessorNGTest()
-	{
-	}
-
-
 	@Test
 	public void testWriteReadFreeSingleBlock() throws IOException
 	{

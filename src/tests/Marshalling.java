@@ -1,4 +1,4 @@
-package sample;
+package tests;
 
 import org.terifan.raccoon.serialization.FieldCategory;
 import org.terifan.raccoon.serialization.Marshaller;
@@ -6,7 +6,7 @@ import org.terifan.raccoon.serialization.TypeDeclarations;
 import org.terifan.raccoon.util.Log;
 
 
-public class Sample3
+public class Marshalling
 {
 	public static void main(String... args)
 	{
@@ -14,10 +14,10 @@ public class Sample3
 		{
 			Log.LEVEL = 10;
 
-			_BigObject in = new _BigObject();
+			_BigObject1K in = new _BigObject1K();
 			in.random();
 
-			Marshaller marshaller = new Marshaller(_BigObject.class);
+			Marshaller marshaller = new Marshaller(_BigObject1K.class);
 			TypeDeclarations types = marshaller.getTypeDeclarations();
 			byte[] buffer = marshaller.marshal(in, FieldCategory.VALUE);
 
@@ -27,7 +27,7 @@ public class Sample3
 			Log.hexDump(buffer);
 			Log.out.println("---------");
 
-			_BigObject out = new _BigObject();
+			_BigObject1K out = new _BigObject1K();
 
 			new Marshaller(types).unmarshal(buffer, out, FieldCategory.VALUE);
 

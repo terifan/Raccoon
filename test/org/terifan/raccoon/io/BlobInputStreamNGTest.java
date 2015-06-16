@@ -11,13 +11,8 @@ import org.testng.annotations.Test;
 
 public class BlobInputStreamNGTest
 {
-	public BlobInputStreamNGTest()
-	{
-	}
-
-
 	@Test(dataProvider = "unitSizes")
-	public void testSomeMethod(int aUnitSize, int aPointers, boolean aIndirect) throws IOException
+	public void testReadWriteBlob(int aUnitSize, int aPointers, boolean aIndirect) throws IOException
 	{
 //		Log.LEVEL = 10;
 
@@ -58,10 +53,6 @@ public class BlobInputStreamNGTest
 		{
 			bis.read(in);
 		}
-
-//		Log.hexDump(out);
-//		Log.out.println();
-//		Log.hexDump(in);
 
 		assertEquals(in, out);
 	}

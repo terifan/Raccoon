@@ -7,7 +7,7 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 
 
-public class RangeMapTest
+public class RangeMapNGTest
 {
 	@Test
 	public void testSerialization1() throws IOException

@@ -7,19 +7,15 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import tests._BigObject1K;
 
 
 public class FieldTypeNGTest
 {
-	public FieldTypeNGTest()
-	{
-	}
-
-
 	@Test
 	public void testSomeMethod() throws IOException, ClassNotFoundException
 	{
-		Marshaller marshaller = new Marshaller(_BigObject.class);
+		Marshaller marshaller = new Marshaller(_BigObject1K.class);
 		TypeDeclarations out = marshaller.getTypeDeclarations();
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try (ObjectOutputStream oos = new ObjectOutputStream(baos))

@@ -6,7 +6,7 @@ import org.terifan.raccoon.Entry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import org.terifan.raccoon.ByteBufferMap;
+import org.terifan.raccoon.util.ByteBufferMap;
 import org.terifan.raccoon.security.MurmurHash3;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.LeafNode;
