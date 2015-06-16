@@ -1,6 +1,5 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.io.BlockPointer;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -27,13 +26,12 @@ import org.terifan.raccoon.util.Log;
 
 public class Database implements AutoCloseable
 {
-	private final static int EXTRA_LENGTH = 8 + 4 + 8 + BlockPointer.SIZE + 4;
 	private final static int EXTRA_DATA_CHECKSUM_SEED = 0xf49209b1;
 	private final static long IDENTITY = 0x726163636f6f6e00L; // 'raccoon\0'
 	private final static int VERSION = 1;
 
 	private IManagedBlockDevice mBlockDevice;
-	private BlockPointer mSystemRootBlockPointer;
+	private byte[] mSystemTableHeader;
 	private HashMap<Class,Initializer> mInitializers;
 	private HashMap<TableType,Table> mOpenTables;
 	private HashMap<Class<?>,TableType> mTableTypes;
@@ -188,14 +186,14 @@ public class Database implements AutoCloseable
 
 		byte[] extraData = aBlockDevice.getExtraData();
 
-		if (extraData == null || extraData.length != EXTRA_LENGTH)
+		if (extraData == null || extraData.length < 20)
 		{
 			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra data length)");
 		}
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(extraData);
 
-		if (MurmurHash3.hash_x86_32(buffer.array(), 4, EXTRA_LENGTH-4, EXTRA_DATA_CHECKSUM_SEED) != buffer.readInt32())
+		if (MurmurHash3.hash_x86_32(buffer.array(), 4, buffer.capacity()-4, EXTRA_DATA_CHECKSUM_SEED) != buffer.readInt32())
 		{
 			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra checksum)");
 		}
@@ -213,13 +211,12 @@ public class Database implements AutoCloseable
 		}
 
 		db.mTransactionId = buffer.readInt64();
-		BlockPointer rootPointer = new BlockPointer().unmarshal(buffer);
 
 		TableType systemTableType = new TableType(Table.class);
 
 		db.mBlockDevice = aBlockDevice;
-		db.mSystemTable = new Table(db, systemTableType, null).open(rootPointer);
-		db.mSystemRootBlockPointer = db.mSystemTable.getRootBlockPointer();
+		db.mSystemTable = new Table(db, systemTableType, null).open(buffer);
+		db.mSystemTableHeader = db.mSystemTable.getTableHeader();
 
 		Log.dec();
 
@@ -334,7 +331,7 @@ public class Database implements AutoCloseable
 
 				mBlockDevice.commit();
 
-				mSystemRootBlockPointer = mSystemTable.getRootBlockPointer();
+				mSystemTableHeader = mSystemTable.getTableHeader();
 			}
 
 			Log.dec();
@@ -381,19 +378,18 @@ public class Database implements AutoCloseable
 
 		mTransactionId++;
 
-		if (mSystemTable.getRootBlockPointer() != mSystemRootBlockPointer)
-		{
-			ByteArrayBuffer buffer = new ByteArrayBuffer(EXTRA_LENGTH);
-			buffer.writeInt32(0); // leave space for checksum
-			buffer.writeInt64(IDENTITY);
-			buffer.writeInt32(VERSION);
-			buffer.writeInt64(mTransactionId);
-			mSystemTable.getRootBlockPointer().marshal(buffer);
+		ByteArrayBuffer buffer = new ByteArrayBuffer(100);
+		buffer.writeInt32(0); // leave space for checksum
+		buffer.writeInt64(IDENTITY);
+		buffer.writeInt32(VERSION);
+		buffer.writeInt64(mTransactionId);
+		buffer.write(mSystemTable.getTableHeader());
+		buffer.trim();
 
-			buffer.position(0).writeInt32(MurmurHash3.hash_x86_32(buffer.array(), 4, EXTRA_LENGTH-4, EXTRA_DATA_CHECKSUM_SEED));
+		int checksum = MurmurHash3.hash_x86_32(buffer.array(), 4, buffer.position()-4, EXTRA_DATA_CHECKSUM_SEED);
+		buffer.position(0).writeInt32(checksum);
 
-			mBlockDevice.setExtraData(buffer.array());
-		}
+		mBlockDevice.setExtraData(buffer.array());
 	}
 
 

@@ -14,6 +14,9 @@ import org.terifan.raccoon.Node;
 import org.terifan.raccoon.Stats;
 import org.terifan.raccoon.util.Log;
 import static org.terifan.raccoon.Node.*;
+import org.terifan.raccoon.io.IManagedBlockDevice;
+import org.terifan.raccoon.security.ISAAC;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
 public class HashTable implements AutoCloseable, Iterable<Entry>
@@ -33,24 +36,46 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	private boolean mStandAlone;
 
 
-	public HashTable(BlockAccessor aBlockAccessor, BlockPointer aRootBlockPointer, long aHashSeed, int aNodeSize, int aLeafSize, long aTransactionId, boolean aStandAlone) throws IOException
+	/**
+	 * Create a new HashTable with custom settings.
+	 */
+	public HashTable(IManagedBlockDevice aBlockDevice, long aTransactionId, boolean aStandAlone, long aHashSeed, int aNodeSize, int aLeafSize) throws IOException
 	{
-		assert aNodeSize % BlockPointer.SIZE == 0;
-		assert aNodeSize % aBlockAccessor.getBlockDevice().getBlockSize() == 0;
-		assert aLeafSize % aBlockAccessor.getBlockDevice().getBlockSize() == 0;
-
-		mBlockAccessor = aBlockAccessor;
 		mNodeSize = aNodeSize;
 		mLeafSize = aLeafSize;
 		mHashSeed = aHashSeed;
-		mPointersPerNode = mNodeSize / BlockPointer.SIZE;
+
+		init(aBlockDevice, null, aTransactionId, aStandAlone);
+	}
+
+
+	/**
+	 * Open an existing HashTable or create a new HashTable with default settings.
+	 */
+	public HashTable(IManagedBlockDevice aBlockDevice, ByteArrayBuffer aTableHeader, long aTransactionId, boolean aStandAlone) throws IOException
+	{
+		if (aTableHeader == null)
+		{
+			mNodeSize = 4 * aBlockDevice.getBlockSize();
+			mLeafSize = 8 * aBlockDevice.getBlockSize();
+			mHashSeed = ISAAC.PRNG.nextLong();
+		}
+
+		init(aBlockDevice, aTableHeader, aTransactionId, aStandAlone);
+	}
+
+
+	private void init(IManagedBlockDevice aBlockDevice, ByteArrayBuffer aTableHeader, long aTransactionId, boolean aStandAlone) throws IOException
+	{
+		mBlockAccessor = new BlockAccessor(aBlockDevice);
 		mStandAlone = aStandAlone;
 
-		if (aRootBlockPointer == null)
+		if (aTableHeader == null)
 		{
 			Log.i("create hash table");
 			Log.inc();
 
+			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 			mWasEmptyInstance = true;
 			mRootMap = new LeafNode(mLeafSize);
 			mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode, aTransactionId);
@@ -60,7 +85,15 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			Log.i("open hash table");
 			Log.inc();
 
-			mRootBlockPointer = new BlockPointer().unmarshal(aRootBlockPointer.marshal(new byte[BlockPointer.SIZE], 0), 0);
+			mRootBlockPointer = new BlockPointer();
+
+			mRootBlockPointer.unmarshal(aTableHeader);
+			mHashSeed = aTableHeader.readInt64();
+			mNodeSize = aTableHeader.readVar32();
+			mLeafSize = aTableHeader.readVar32();
+			mBlockAccessor.setCompressionLevel(aTableHeader.readVar32());
+
+			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 
 			loadRoot();
 		}
@@ -69,9 +102,16 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	}
 
 
-	public BlockPointer getRootBlockPointer()
+	public byte[] getTableHeader()
 	{
-		return mRootBlockPointer;
+		ByteArrayBuffer buffer = new ByteArrayBuffer(BlockPointer.SIZE + 8 + 4 + 4 + 1);
+		mRootBlockPointer.marshal(buffer);
+		buffer.writeInt64(mHashSeed);
+		buffer.writeVar32(mNodeSize);
+		buffer.writeVar32(mLeafSize);
+		buffer.writeVar32(mBlockAccessor.getCompressionLevel());
+
+		return buffer.trim().array();
 	}
 
 
@@ -577,8 +617,8 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			}
 		}
 	}
-	
-	
+
+
 	private BlockPointer writeIfNotEmpty(LeafNode aLeaf, int aRange, long aTransactionId)
 	{
 		return aLeaf.isEmpty() ? new BlockPointer().setType(HOLE).setRange(aRange) : writeBlock(aLeaf, aRange, aTransactionId);

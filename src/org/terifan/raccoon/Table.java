@@ -1,13 +1,11 @@
 package org.terifan.raccoon;
 
 import java.io.ByteArrayInputStream;
-import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.serialization.FieldCategory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -17,6 +15,7 @@ import org.terifan.raccoon.io.Blob;
 import org.terifan.raccoon.io.BlobInputStream;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.BlockAccessor;
+import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -28,14 +27,12 @@ class Table<T> implements Iterable<T>
 	@Key private byte[] mDiscriminator;
 	private byte[] mPointer;
 	private String mType;
-	private long mHashSeed;
 
 	private transient Database mDatabase;
 	private transient TableType mTableType;
 	private transient HashTable mTableImplementation;
 	private transient BlockAccessor mBlockAccessor;
-	private transient int mNodeSize;
-	private transient int mLeafSize;
+	private transient IManagedBlockDevice mBlockDevice;
 	private transient Initializer mInitializer;
 
 
@@ -43,9 +40,8 @@ class Table<T> implements Iterable<T>
 	{
 		mDatabase = aDatabase;
 		mTableType = aTableType;
-		mBlockAccessor = new BlockAccessor(mDatabase.getBlockDevice());
-		mNodeSize = 4 * mDatabase.getBlockDevice().getBlockSize();
-		mLeafSize = 8 * mDatabase.getBlockDevice().getBlockSize();
+		mBlockDevice = mDatabase.getBlockDevice();
+		mBlockAccessor = new BlockAccessor(mBlockDevice);
 		mInitializer = mDatabase.getInitializer(mTableType.getType());
 
 		mName = mTableType.getName();
@@ -68,27 +64,18 @@ class Table<T> implements Iterable<T>
 	}
 
 
-	Table open(BlockPointer aBlockPointer) throws IOException
+	Table open(ByteArrayBuffer aTableHeader) throws IOException
 	{
 		Log.i("open table");
 		Log.inc();
 
-		if (aBlockPointer == null && mPointer != null)
+		if (aTableHeader == null && mPointer != null)
 		{
-			aBlockPointer = new BlockPointer().unmarshal(mPointer, 0);
+			aTableHeader = new ByteArrayBuffer(mPointer);
 		}
 
-		if (mPointer == null)
-		{
-			if (mTableType.getType() == Table.class)
-			{
-				mHashSeed = 0x654196f4434970d4L;
-			}
-			else
-			{
-				mHashSeed = new SecureRandom().nextLong();
-			}
-
+//		if (mPointer == null)
+//		{
 //			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 //			try (ObjectOutputStream oos = new ObjectOutputStream(baos))
 //			{
@@ -99,9 +86,9 @@ class Table<T> implements Iterable<T>
 //				throw new DatabaseException(e);
 //			}
 //			return baos.toByteArray();
-		}
+//		}
 
-		mTableImplementation = new HashTable(mBlockAccessor, aBlockPointer, mHashSeed, mNodeSize, mLeafSize, getTransactionId(), false);
+		mTableImplementation = new HashTable(mBlockDevice, aTableHeader, getTransactionId(), false);
 
 		Log.dec();
 
@@ -196,7 +183,7 @@ class Table<T> implements Iterable<T>
 		byte[] value;
 		byte type = 0;
 
-		if (tmp.length > mLeafSize / 2)
+		if ((key.length + tmp.length + 1) > mTableImplementation.getEntryMaximumLength() / 4)
 		{
 			type = 1;
 
@@ -218,7 +205,7 @@ class Table<T> implements Iterable<T>
 		byte[] oldValue = mTableImplementation.put(key, value, getTransactionId());
 
 		deleteIfBlob(oldValue);
-		
+
 		Log.dec();
 
 		return oldValue == null;
@@ -269,7 +256,7 @@ class Table<T> implements Iterable<T>
 		byte[] oldValue = mTableImplementation.remove(getKeys(aEntity), getTransactionId());
 
 		deleteIfBlob(oldValue);
-		
+
 		return oldValue != null;
 	}
 
@@ -293,9 +280,9 @@ class Table<T> implements Iterable<T>
 	}
 
 
-	BlockPointer getRootBlockPointer()
+	byte[] getTableHeader()
 	{
-		return mTableImplementation.getRootBlockPointer();
+		return mTableImplementation.getTableHeader();
 	}
 
 
@@ -312,11 +299,11 @@ class Table<T> implements Iterable<T>
 			return false;
 		}
 
-		byte[] pointer = mTableImplementation.getRootBlockPointer().marshal(new byte[BlockPointer.SIZE], 0);
+		byte[] newPointer = mTableImplementation.getTableHeader();
 
-		boolean wasUpdated = !Arrays.equals(pointer, mPointer);
+		boolean wasUpdated = !Arrays.equals(newPointer, mPointer);
 
-		mPointer = pointer;
+		mPointer = newPointer;
 
 		return wasUpdated;
 	}

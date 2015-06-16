@@ -3,13 +3,11 @@ package org.terifan.raccoon.hashtable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.terifan.raccoon.io.BlockPointer;
-import java.util.Random;
 import org.terifan.raccoon.Entry;
-import org.terifan.raccoon.io.BlockAccessor;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import static org.terifan.raccoon.serialization.TestUtils.*;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
@@ -25,11 +23,10 @@ public class HashTableNGTest
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		BlockPointer root = null;
-		long seed = new Random().nextLong();
+		byte[] root = null;
 		long tx = 0;
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice, seed))
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (int i = 0; i < aSize; i++)
 			{
@@ -40,10 +37,10 @@ public class HashTableNGTest
 			}
 
 			hashTable.commit(tx);
-			root = hashTable.getRootBlockPointer();
+			root = hashTable.getTableHeader();
 		}
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice, seed))
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (byte[] key : map.keySet())
 			{
@@ -66,11 +63,10 @@ public class HashTableNGTest
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		long seed = new Random().nextLong();
-		BlockPointer root = null;
+		byte[] root = null;
 		long tx = 0;
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice, seed))
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -110,8 +106,7 @@ public class HashTableNGTest
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		long seed = new Random().nextLong();
-		BlockPointer root = null;
+		byte[] root = null;
 		long tx = 0;
 
 		byte[] k0 = tb();
@@ -123,7 +118,7 @@ public class HashTableNGTest
 		byte[] v2 = tb();
 		byte[] v3 = tb();
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice, seed))
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			hashTable.put(k0, v0, tx);
 
@@ -135,10 +130,10 @@ public class HashTableNGTest
 
 			assertEquals(hashTable.size(), 2);
 
-			root = hashTable.getRootBlockPointer();
+			root = hashTable.getTableHeader();
 		}
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice, seed))
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			assertEquals(hashTable.size(), 2);
 
@@ -176,11 +171,10 @@ public class HashTableNGTest
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		long seed = new Random().nextLong();
-		BlockPointer root = null;
+		byte[] root = null;
 		long tx = 0;
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice, seed))
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (int i = 0; i < aSize; i++)
 			{
@@ -193,10 +187,10 @@ public class HashTableNGTest
 			}
 
 			hashTable.commit(tx);
-			root = hashTable.getRootBlockPointer();
+			root = hashTable.getTableHeader();
 		}
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice, seed))
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (Entry entry : hashTable)
 			{
@@ -221,11 +215,10 @@ public class HashTableNGTest
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		long seed = new Random().nextLong();
-		BlockPointer root = null;
+		byte[] root = null;
 		long tx = 0;
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice, seed))
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -233,10 +226,10 @@ public class HashTableNGTest
 			}
 
 			hashTable.commit(tx);
-			root = hashTable.getRootBlockPointer();
+			root = hashTable.getTableHeader();
 		}
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice, seed))
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (Entry entry : hashTable.list())
 			{
@@ -261,11 +254,10 @@ public class HashTableNGTest
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		long seed = new Random().nextLong();
-		BlockPointer root = null;
+		byte[] root = null;
 		long tx = 0;
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice, seed))
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -273,10 +265,10 @@ public class HashTableNGTest
 			}
 
 			hashTable.commit(tx);
-			root = hashTable.getRootBlockPointer();
+			root = hashTable.getTableHeader();
 		}
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice, seed))
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			hashTable.clear(tx);
 			hashTable.commit(tx);
@@ -297,11 +289,10 @@ public class HashTableNGTest
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		long seed = new Random().nextLong();
-		BlockPointer root = null;
+		byte[] root = null;
 		long tx = 0;
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice, seed))
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -309,10 +300,10 @@ public class HashTableNGTest
 			}
 
 			hashTable.commit(tx);
-			root = hashTable.getRootBlockPointer();
+			root = hashTable.getTableHeader();
 		}
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice, seed))
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -347,11 +338,8 @@ public class HashTableNGTest
 	}
 
 
-	private HashTable newHashTable(BlockPointer aRoot, long aTx, MemoryBlockDevice aBlockDevice, long aSeed) throws IOException
+	private HashTable newHashTable(byte[] aRoot, long aTx, MemoryBlockDevice aBlockDevice) throws IOException
 	{
-		int nodeSize = 512;
-		int leafSize = 1024;
-
-		return new HashTable(new BlockAccessor(new ManagedBlockDevice(aBlockDevice)), aRoot, aSeed, nodeSize, leafSize, aTx, true);
+		return new HashTable(new ManagedBlockDevice(aBlockDevice), aRoot == null ? null : new ByteArrayBuffer(aRoot), aTx, true);
 	}
 }

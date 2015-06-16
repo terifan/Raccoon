@@ -43,6 +43,12 @@ public class BlockAccessor
 	}
 
 
+	public int getCompressionLevel()
+	{
+		return mCompressionLevel;
+	}
+
+
 	public void freeBlock(BlockPointer aBlockPointer)
 	{
 		try
@@ -52,7 +58,7 @@ public class BlockAccessor
 
 			mBlockDevice.freeBlock(aBlockPointer.getOffset(), roundUp(aBlockPointer.getPhysicalSize()) / mBlockDevice.getBlockSize());
 			Stats.blockFree++;
-			
+
 			Log.dec();
 		}
 		catch (Exception e)
@@ -101,8 +107,8 @@ public class BlockAccessor
 	{
 		return writeBlock(aBuffer, aOffset, aLength, 0L, 0, 0);
 	}
-	
-	
+
+
 	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, int aType, int aRange)
 	{
 		try

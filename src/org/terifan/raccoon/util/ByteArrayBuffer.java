@@ -129,6 +129,11 @@ public class ByteArrayBuffer
 
 	public ByteArrayBuffer wrap(byte[] aBuffer)
 	{
+		if (aBuffer == null)
+		{
+			throw new IllegalArgumentException("Buffer provided is null.");
+		}
+
 		mBuffer = aBuffer;
 		mLocked = true;
 		mLimit = Integer.MAX_VALUE;
