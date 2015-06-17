@@ -14,13 +14,14 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 	final static int FRAGMENT_SIZE = 1024 * 1024;
 	private final static int POINTER_MAX_LENGTH = 4 * BlockPointer.SIZE;
 
+	private BlockAccessor mBlockAccessor;
 	private ByteArrayBuffer mBuffer;
 	private ByteArrayBuffer mPointerBuffer;
 	private long mTransactionId;
 	private long mTotalLength;
 	private byte[] mHeader;
 	private boolean mClosed;
-	private BlockAccessor mBlockAccessor;
+	private OnCloseListener mOnCloseListener;
 
 
 	public BlobOutputStream(BlockAccessor aBlockAccessor, long aTransactionId) throws IOException
@@ -29,6 +30,12 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 		mTransactionId = aTransactionId;
 		mBuffer = new ByteArrayBuffer(FRAGMENT_SIZE);
 		mPointerBuffer = new ByteArrayBuffer(mBlockAccessor.getBlockDevice().getBlockSize());
+	}
+
+
+	public void setOnCloseListener(OnCloseListener aOnCloseListener)
+	{
+		mOnCloseListener = aOnCloseListener;
 	}
 
 
@@ -58,6 +65,9 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 			return;
 		}
 
+		Log.v("closing blob");
+		Log.inc();
+
 		if (mBuffer.position() > 0)
 		{
 			flushBlock();
@@ -77,10 +87,15 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 		output.writeVar64(mTotalLength);
 		output.write(mPointerBuffer.array(), 0, pointerBufferLength);
 
-		Log.d("blob closed, total length %d", mTotalLength);
-
 		mHeader = output.trim().array();
 		mClosed = true;
+
+		if (mOnCloseListener != null)
+		{
+			mOnCloseListener.onClose(mHeader);
+		}
+
+		Log.dec();
 	}
 
 
@@ -99,5 +114,11 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 		mBuffer.position(0);
 
 		Arrays.fill(mBuffer.array(), (byte)0);
+	}
+	
+	
+	public interface OnCloseListener
+	{
+		void onClose(byte[] aHeader);
 	}
 }

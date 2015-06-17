@@ -18,6 +18,7 @@ import org.terifan.raccoon.io.SecureBlockDevice;
 import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.AccessCredentials;
+import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.security.MurmurHash3;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -436,7 +437,7 @@ public class Database implements AutoCloseable
 	 * Saves an entity.
 	 *
 	 * @return
-	 *   true if the entity was a new entity / false if an existing entity was updated.
+	 *   true if the entity didn't previously existed.
 	 */
 	public boolean save(Object aEntity) throws IOException
 	{
@@ -567,10 +568,10 @@ public class Database implements AutoCloseable
 	/**
 	 * The contents of the stream is associated with the key found in the entity provided. The stream will persist the entity when it's closed.
 	 */
-//	public OutputStream write(Object aEntity) throws IOException
-//	{
-//		return openTable(aEntity.getClass(), aEntity, OpenOption.CREATE).push(aEntity);
-//	}
+	public BlobOutputStream saveBlob(Object aEntity) throws IOException
+	{
+		return openTable(aEntity.getClass(), aEntity, OpenOption.CREATE).saveBlob(aEntity);
+	}
 
 
 	/**

@@ -1,6 +1,8 @@
 package tests;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.OutputStream;
 import java.util.Arrays;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.OpenOption;
@@ -16,29 +18,21 @@ public class Sample2
 	{
 		try
 		{
+			Log.LEVEL = 10;
+			
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 			ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
 
-			_KeyValue1K in = new _KeyValue1K("apple", createBuffer(0, 1000_000));
-			_KeyValue1K out = new _KeyValue1K("apple");
+			_BlobKey1K in = new _BlobKey1K("apple");
 
 			try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
 			{
-				db.save(in);
+				try (OutputStream out = db.saveBlob(in))
+				{
+					out.write(new byte[100000]);
+				}
 				db.commit();
 			}
-
-			try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
-			{
-				db.get(out);
-
-				db.remove(out);
-				db.commit();
-			}
-			
-			Log.out.println(managedBlockDevice);
-			
-			Log.out.println(Arrays.equals(in.content, out.content));
 		}
 		catch (Throwable e)
 		{

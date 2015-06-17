@@ -8,6 +8,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import org.terifan.raccoon.hashtable.HashTable;
@@ -34,6 +35,7 @@ class Table<T> implements Iterable<T>
 	private transient BlockAccessor mBlockAccessor;
 	private transient IManagedBlockDevice mBlockDevice;
 	private transient Initializer mInitializer;
+	private transient HashSet<BlobOutputStream> mOpenOutputStreams;
 
 
 	Table(Database aDatabase, TableType aTableType, Object aDiscriminator) throws IOException
@@ -46,6 +48,8 @@ class Table<T> implements Iterable<T>
 
 		mName = mTableType.getName();
 		mType = mTableType.getType().getName();
+
+		mOpenOutputStreams = new HashSet<>();
 
 		if (aDiscriminator != null)
 		{
@@ -221,6 +225,39 @@ class Table<T> implements Iterable<T>
 	}
 
 
+	public BlobOutputStream saveBlob(T aEntityKey) throws IOException
+	{
+		long tx = getTransactionId();
+		
+		BlobOutputStream out = new BlobOutputStream(mBlockAccessor, tx);
+
+		synchronized (this)
+		{
+			mOpenOutputStreams.add(out);
+		}
+
+		out.setOnCloseListener((aHeader)->
+		{
+			Log.v("write blob entry");
+
+			byte[] value = new byte[1 + aHeader.length];
+			value[0] = 1;
+			System.arraycopy(aHeader, 0, value, 1, aHeader.length);
+
+			byte[] oldValue = mTableImplementation.put(getKeys(aEntityKey), value, getTransactionId());
+
+			deleteIfBlob(oldValue);
+
+			synchronized (this)
+			{
+				mOpenOutputStreams.remove(out);
+			}
+		});
+		
+		return out;
+	}
+
+
 	public boolean save(T aEntity, InputStream aInputStream)
 	{
 		try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, getTransactionId()))
@@ -288,6 +325,14 @@ class Table<T> implements Iterable<T>
 
 	boolean commit() throws IOException
 	{
+		synchronized (this)
+		{
+			if (!mOpenOutputStreams.isEmpty())
+			{
+				throw new DatabaseException("A table cannot be commited while a stream is open.");
+			}
+		}
+		
 		if (!mTableImplementation.commit(getTransactionId()))
 		{
 			return false;
