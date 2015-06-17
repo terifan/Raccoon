@@ -1,9 +1,13 @@
 package tests;
 
-import org.terifan.raccoon.Key;
-import org.terifan.raccoon.serialization.FieldCategory;
-import org.terifan.raccoon.serialization.Marshaller;
+import java.io.File;
+import java.util.Arrays;
+import org.terifan.raccoon.Database;
+import org.terifan.raccoon.OpenOption;
+import org.terifan.raccoon.io.ManagedBlockDevice;
+import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.util.Log;
+import static tests.__TestUtils.*;
 
 
 public class Sample2
@@ -12,43 +16,33 @@ public class Sample2
 	{
 		try
 		{
-			Fruit f = new Fruit("apple", 52.8);
+			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+			ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
 
-			byte[] v1 = new Marshaller(Fruit.class).marshal(f, FieldCategory.KEY);
-			byte[] v2 = new Marshaller(Fruit.class).marshal(f, FieldCategory.VALUE);
+			_KeyValue1K in = new _KeyValue1K("apple", createBuffer(0, 1000_000));
+			_KeyValue1K out = new _KeyValue1K("apple");
 
-			Log.hexDump(v1);
-			Log.hexDump(v2);
+			try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
+			{
+				db.save(in);
+				db.commit();
+			}
+
+			try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+			{
+				db.get(out);
+
+				db.remove(out);
+				db.commit();
+			}
+			
+			Log.out.println(managedBlockDevice);
+			
+			Log.out.println(Arrays.equals(in.content, out.content));
 		}
 		catch (Throwable e)
 		{
 			e.printStackTrace(System.out);
-		}
-	}
-
-
-	static class Fruit
-	{
-		@Key String name;
-		double calories;
-
-
-		public Fruit()
-		{
-		}
-
-
-		public Fruit(String aName, double aCalories)
-		{
-			name = aName;
-			calories = aCalories;
-		}
-
-
-		@Override
-		public String toString()
-		{
-			return name + ", " + calories;
 		}
 	}
 }

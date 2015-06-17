@@ -3,17 +3,17 @@ package tests;
 import org.terifan.raccoon.Key;
 
 
-public class _Blob1K
+public class _BlobKey1K
 {
 	@Key public String _name;
 
 
-	public _Blob1K()
+	public _BlobKey1K()
 	{
 	}
 
 
-	public _Blob1K(String aName)
+	public _BlobKey1K(String aName)
 	{
 		_name = aName;
 	}

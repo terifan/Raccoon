@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import tests._Blob1K;
+import tests._BlobKey1K;
 import tests.__FixedThreadExecutor;
 import tests._Fruit2K;
 import tests._KeyValue1K;
@@ -316,14 +316,14 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
-			database.save(new _Blob1K("my blob"), new ByteArrayInputStream(content));
+			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
 			database.commit();
 			assertNull(database.integrityCheck());
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			try (InputStream in = database.read(new _Blob1K("my blob")))
+			try (InputStream in = database.read(new _BlobKey1K("my blob")))
 			{
 				assertNotNull(in);
 				assertEquals(Streams.fetch(in), content);

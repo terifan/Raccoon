@@ -135,7 +135,16 @@ public class Database implements AutoCloseable
 
 		ManagedBlockDevice device;
 
-		if (accessCredentials == null)
+		if (aBlockDevice instanceof IManagedBlockDevice)
+		{
+			if (accessCredentials != null)
+			{
+				throw new IllegalArgumentException("The BlockDevice provided cannot be secured, ensure that the BlockDevice it writes to is a secure BlockDevice.");
+			}
+			
+			device = (ManagedBlockDevice)aBlockDevice;
+		}
+		else if (accessCredentials == null)
 		{
 			device = new ManagedBlockDevice(aBlockDevice);
 		}
