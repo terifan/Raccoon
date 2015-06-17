@@ -141,7 +141,7 @@ public class Database implements AutoCloseable
 			{
 				throw new IllegalArgumentException("The BlockDevice provided cannot be secured, ensure that the BlockDevice it writes to is a secure BlockDevice.");
 			}
-			
+
 			device = (ManagedBlockDevice)aBlockDevice;
 		}
 		else if (accessCredentials == null)
@@ -342,6 +342,8 @@ public class Database implements AutoCloseable
 
 				mSystemTableHeader = mSystemTable.getTableHeader();
 			}
+
+			assert integrityCheck() == null : integrityCheck();
 
 			Log.dec();
 		}
@@ -799,6 +801,18 @@ public class Database implements AutoCloseable
 	public long getTransactionId()
 	{
 		return mTransactionId;
+	}
+
+
+	public int size(Class aType) throws IOException
+	{
+		return openTable(aType, null, OpenOption.OPEN).size();
+	}
+
+
+	public int size(Object aDiscriminator) throws IOException
+	{
+		return openTable(aDiscriminator.getClass(), aDiscriminator, OpenOption.OPEN).size();
 	}
 
 

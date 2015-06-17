@@ -20,6 +20,9 @@ import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
+import org.testng.annotations.DataProvider;
+import tests._Fruit1K;
+import static tests.__TestUtils.createBuffer;
 import static tests.__TestUtils.t;
 
 
@@ -32,17 +35,17 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
-			database.save(new _Fruit2K("red", "apple", 123));
+			database.save(new _Fruit1K("apple", 123.0));
 			database.commit();
-			assertNull(database.integrityCheck());
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			_Fruit2K apple = new _Fruit2K("red", "apple");
+			_Fruit1K apple = new _Fruit1K("apple");
+
 			assertTrue(database.get(apple));
 			assertEquals(apple._name, "apple");
-			assertEquals(apple.value, 123);
+			assertEquals(apple.calories, 123.0);
 		}
 	}
 
@@ -57,7 +60,6 @@ public class DatabaseNGTest
 			database.save(new _Fruit2K("red", "apple", 123));
 			database.save(new _Fruit2K("green", "apple", 456));
 			database.commit();
-			assertNull(database.integrityCheck());
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
@@ -75,24 +77,26 @@ public class DatabaseNGTest
 	}
 
 
-	@Test
-	public void testSingleTableMultiInsert() throws Exception
+	@Test(dataProvider = "itemSizes")
+	public void testSingleTableMultiInsert(int aSize) throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
-			for (int i = 0; i < 10000; i++)
+			for (int i = 0; i < aSize; i++)
 			{
 				database.save(new _Fruit2K("red", "apple-" + i, i));
 			}
+
 			database.commit();
-			assertNull(database.integrityCheck());
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			for (int i = 0; i < 10000; i++)
+			assertEquals(aSize, database.size(_Fruit2K.class));
+
+			for (int i = 0; i < aSize; i++)
 			{
 				_Fruit2K apple = new _Fruit2K("red", "apple-"+i);
 				assertTrue(database.get(apple));
@@ -116,7 +120,6 @@ public class DatabaseNGTest
 				database.save(new _Animal1K("dog-" + i, i));
 			}
 			database.commit();
-			assertNull(database.integrityCheck());
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
@@ -136,12 +139,12 @@ public class DatabaseNGTest
 		}
 	}
 
-	
+
 	@Test
 	public void testSingleTableMultiColumnKey() throws Exception
 	{
 		ArrayList<_Fruit2K> list = new ArrayList<>();
-		
+
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
@@ -171,7 +174,7 @@ public class DatabaseNGTest
 		assertTrue(true);
 	}
 
-	
+
 	@Test
 	public void testSingleTableMultiConcurrentInsert() throws Exception
 	{
@@ -199,7 +202,6 @@ public class DatabaseNGTest
 				}
 			}
 			database.commit();
-			assertNull(database.integrityCheck());
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
@@ -244,8 +246,6 @@ public class DatabaseNGTest
 				database.save(new _Number1K1D(numberNames[i], i));
 			}
 			database.commit();
-
-			assertNull(database.integrityCheck());
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
@@ -294,7 +294,6 @@ public class DatabaseNGTest
 		{
 			database.save(new _KeyValue1K("my blob", content));
 			database.commit();
-			assertNull(database.integrityCheck());
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
@@ -318,7 +317,6 @@ public class DatabaseNGTest
 		{
 			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
 			database.commit();
-			assertNull(database.integrityCheck());
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
@@ -348,5 +346,68 @@ public class DatabaseNGTest
 		{
 			fail();
 		}
+	}
+
+
+	@Test
+	public void testEraseBlob() throws IOException
+	{
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+
+		_KeyValue1K in = new _KeyValue1K("apple", createBuffer(0, 1000_000));
+		_KeyValue1K out = new _KeyValue1K("apple");
+
+		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
+		{
+			db.save(in);
+			db.commit();
+		}
+
+		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+		{
+			db.get(out);
+
+			db.remove(out);
+			db.commit();
+		}
+
+		assertEquals(in.content, out.content);
+		assertEquals(managedBlockDevice.getUsedSpace(), 5);
+		assertTrue(managedBlockDevice.getFreeSpace() > 1000_000 / 512);
+	}
+
+
+	@Test
+	public void testReplaceBlob() throws IOException
+	{
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+
+		_KeyValue1K in = new _KeyValue1K("apple", createBuffer(0, 1000_000));
+
+		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
+		{
+			db.save(in);
+			db.commit();
+		}
+
+		in.content = null;
+
+		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+		{
+			db.save(in);
+			db.commit();
+		}
+
+		assertEquals(managedBlockDevice.getUsedSpace(), 5);
+		assertTrue(managedBlockDevice.getFreeSpace() > 1000_000 / 512);
+	}
+
+
+	@DataProvider(name="itemSizes")
+	private Object[][] itemSizes()
+	{
+		return new Object[][]{{1},{10},{1000}};
 	}
 }

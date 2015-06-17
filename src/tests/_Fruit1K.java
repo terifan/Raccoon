@@ -14,6 +14,12 @@ public class _Fruit1K
 	}
 
 
+	public _Fruit1K(String aName)
+	{
+		_name = aName;
+	}
+
+
 	public _Fruit1K(String aName, double aCalories)
 	{
 		_name = aName;

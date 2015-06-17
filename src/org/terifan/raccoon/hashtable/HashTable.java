@@ -558,7 +558,6 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		Log.dec();
 		Log.dec();
-		assert node.integrityCheck() == null : node.integrityCheck();
 
 		return node;
 	}
@@ -594,8 +593,6 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		Log.dec();
 		Log.dec();
-
-		assert aNode.integrityCheck() == null : aNode.integrityCheck();
 
 		return true;
 	}

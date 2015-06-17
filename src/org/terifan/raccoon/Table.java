@@ -125,12 +125,6 @@ class Table<T> implements Iterable<T>
 	}
 
 
-	private static byte[] trimValue(byte[] aValue)
-	{
-		return Arrays.copyOfRange(aValue, 1, aValue.length);
-	}
-
-
 	public boolean contains(T aEntity)
 	{
 		byte[] key = getKeys(aEntity);

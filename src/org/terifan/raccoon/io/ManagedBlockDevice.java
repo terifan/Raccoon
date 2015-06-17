@@ -596,6 +596,15 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
+	/**
+	 * Return the number of blocks actually used.
+	 */
+	public long getUsedSpace() throws IOException
+	{
+		return mRangeMap.getUsedSpace();
+	}
+
+
 	class SuperBlock
 	{
 		Date mCreated;
