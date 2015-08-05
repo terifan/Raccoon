@@ -4,6 +4,7 @@ import java.io.File;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.OpenOption;
 import org.terifan.raccoon.io.AccessCredentials;
+import org.terifan.raccoon.util.Log;
 
 
 public class Sample
@@ -12,7 +13,7 @@ public class Sample
 	{
 		try
 		{
-//			Log.LEVEL = 10;
+			Log.LEVEL = 10;
 
 			AccessCredentials accessCredentials = new AccessCredentials("password");
 

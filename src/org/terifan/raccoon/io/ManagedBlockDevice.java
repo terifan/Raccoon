@@ -74,6 +74,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		mSuperBlock = new SuperBlock();
 		mSuperBlock.mCreated = new Date();
+		mSuperBlock.mWriteCounter = -1L; // counter is incremented in writeSuperBlock method and we want to ensure we write block 0 before block 1
 
 		setExtraData(null);
 
