@@ -5,5 +5,8 @@ public enum FieldCategory
 {
 	KEY,
 	DISCRIMINATOR,
-	VALUE
+	VALUE,
+
+	/** used in marshaling to get both discriminator and value fields */
+	DISCRIMINATOR_VALUE
 }

@@ -18,6 +18,7 @@ import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.io.UnsupportedVersionException;
+import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
@@ -257,6 +258,35 @@ public class DatabaseNGTest
 				assertEquals(entity.name, numberNames[i]);
 				assertEquals(entity._number, i);
 				assertEquals(entity._odd, (i&1)==1);
+			}
+		}
+	}
+
+
+	@Test
+	public void testDiscriminatorList() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		String[] numberNames = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			for (int i = 0; i < numberNames.length; i++)
+			{
+				database.save(new _Number1K1D(numberNames[i], i));
+			}
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			_Number1K1D disc = new _Number1K1D();
+			disc._odd = !true;
+
+			for (_Number1K1D item : database.list(_Number1K1D.class, disc))
+			{
+				Log.out.println(item);
 			}
 		}
 	}

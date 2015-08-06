@@ -24,6 +24,9 @@ import org.terifan.raccoon.util.Log;
 
 class Table<T> implements Iterable<T>
 {
+	private static final int DIRECT_DATA = 0;
+	private static final int INDIRECT_DATA = 1;
+
 	@Key private String mName;
 	@Key private byte[] mDiscriminator;
 	private byte[] mPointer;
@@ -121,7 +124,7 @@ class Table<T> implements Iterable<T>
 			return false;
 		}
 
-		update(aEntity, value, FieldCategory.VALUE);
+		update(aEntity, value, FieldCategory.DISCRIMINATOR_VALUE);
 
 		Log.dec();
 
@@ -155,7 +158,9 @@ class Table<T> implements Iterable<T>
 			return null;
 		}
 
-		if (value[0] == 0)
+		assert value[0] == INDIRECT_DATA || value[0] == DIRECT_DATA;
+
+		if (value[0] == DIRECT_DATA)
 		{
 			return new ByteArrayInputStream(value, 1, value.length - 1);
 		}
@@ -177,13 +182,13 @@ class Table<T> implements Iterable<T>
 		Log.inc();
 
 		byte[] key = getKeys(aEntity);
-		byte[] tmp = getValues(aEntity);
+		byte[] tmp = getNonKeys(aEntity);
 		byte[] value;
-		byte type = 0;
+		byte type = DIRECT_DATA;
 
 		if ((key.length + tmp.length + 1) > mTableImplementation.getEntryMaximumLength() / 4)
 		{
-			type = 1;
+			type = INDIRECT_DATA;
 
 			try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, getTransactionId()))
 			{
@@ -212,7 +217,7 @@ class Table<T> implements Iterable<T>
 
 	private void deleteIfBlob(byte[] aOldValue) throws DatabaseException
 	{
-		if (aOldValue != null && aOldValue[0] == 1)
+		if (aOldValue != null && aOldValue[0] == INDIRECT_DATA)
 		{
 			try
 			{
@@ -228,7 +233,7 @@ class Table<T> implements Iterable<T>
 	public BlobOutputStream saveBlob(T aEntityKey) throws IOException
 	{
 		long tx = getTransactionId();
-		
+
 		BlobOutputStream out = new BlobOutputStream(mBlockAccessor, tx);
 
 		synchronized (this)
@@ -241,7 +246,7 @@ class Table<T> implements Iterable<T>
 			Log.v("write blob entry");
 
 			byte[] value = new byte[1 + aHeader.length];
-			value[0] = 1;
+			value[0] = INDIRECT_DATA;
 			System.arraycopy(aHeader, 0, value, 1, aHeader.length);
 
 			byte[] oldValue = mTableImplementation.put(getKeys(aEntityKey), value, getTransactionId());
@@ -253,7 +258,7 @@ class Table<T> implements Iterable<T>
 				mOpenOutputStreams.remove(out);
 			}
 		});
-		
+
 		return out;
 	}
 
@@ -266,7 +271,7 @@ class Table<T> implements Iterable<T>
 
 			byte[] tmp = bos.finish();
 			byte[] value = new byte[1 + tmp.length];
-			value[0] = 1;
+			value[0] = INDIRECT_DATA;
 			System.arraycopy(tmp, 0, value, 1, tmp.length);
 
 			byte[] oldValue = mTableImplementation.put(getKeys(aEntity), value, getTransactionId());
@@ -332,7 +337,7 @@ class Table<T> implements Iterable<T>
 				throw new DatabaseException("A table cannot be commited while a stream is open.");
 			}
 		}
-		
+
 		if (!mTableImplementation.commit(getTransactionId()))
 		{
 			return false;
@@ -378,9 +383,9 @@ class Table<T> implements Iterable<T>
 	}
 
 
-	byte[] getValues(Object aInput)
+	byte[] getNonKeys(Object aInput)
 	{
-		return mTableType.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.VALUE).trim().array();
+		return mTableType.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.DISCRIMINATOR_VALUE).trim().array();
 	}
 
 
@@ -388,9 +393,9 @@ class Table<T> implements Iterable<T>
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aMarshalledData);
 
-		if (aCategory == FieldCategory.VALUE)
+		if (aCategory == FieldCategory.VALUE || aCategory == FieldCategory.DISCRIMINATOR_VALUE)
 		{
-			if (buffer.read() == 1)
+			if (buffer.read() == INDIRECT_DATA)
 			{
 				try
 				{

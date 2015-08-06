@@ -52,11 +52,12 @@ public class Marshaller
 
 			for (FieldType fieldType : mTypeDeclarations)
 			{
-				if (fieldType.category == aFieldCategory)
+				if (fieldType.category == aFieldCategory || aFieldCategory == FieldCategory.DISCRIMINATOR_VALUE && (fieldType.category == FieldCategory.VALUE || fieldType.category == FieldCategory.DISCRIMINATOR))
 				{
 					Field field = findField(fieldType);
 					Object value = field.get(aObject);
 					FieldWriter.writeField(fieldType, aBuffer, value);
+					Log.out.println(field);
 				}
 			}
 
@@ -92,7 +93,7 @@ public class Marshaller
 
 			for (FieldType fieldType : mTypeDeclarations)
 			{
-				if (fieldType.category == aFieldCategory)
+				if (fieldType.category == aFieldCategory || aFieldCategory == FieldCategory.DISCRIMINATOR_VALUE && (fieldType.category == FieldCategory.VALUE || fieldType.category == FieldCategory.DISCRIMINATOR))
 				{
 					Field field = findField(fieldType);
 

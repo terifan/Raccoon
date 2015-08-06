@@ -32,7 +32,7 @@ public class EntityIterator<T> implements Iterator<T>
 		Entry entry = mIterator.next();
 
 		mTable.update(outputEntity, entry.getKey(), FieldCategory.KEY);
-		mTable.update(outputEntity, entry.getValue(), FieldCategory.VALUE);
+		mTable.update(outputEntity, entry.getValue(), FieldCategory.DISCRIMINATOR_VALUE);
 
 		return outputEntity;
 	}

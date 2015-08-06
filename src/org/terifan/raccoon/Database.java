@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -172,7 +173,7 @@ public class Database implements AutoCloseable
 
 		Database db = new Database();
 
-		TableType systemTableType = new TableType(Table.class);
+		TableType systemTableType = new TableType(Table.class, null);
 
 		db.mBlockDevice = aBlockDevice;
 		db.mSystemTable = new Table(db, systemTableType, null).open(null);
@@ -222,7 +223,7 @@ public class Database implements AutoCloseable
 
 		db.mTransactionId = buffer.readInt64();
 
-		TableType systemTableType = new TableType(Table.class);
+		TableType systemTableType = new TableType(Table.class, null);
 
 		db.mBlockDevice = aBlockDevice;
 		db.mSystemTable = new Table(db, systemTableType, null).open(buffer);
@@ -255,7 +256,7 @@ public class Database implements AutoCloseable
 
 			if (tableType == null)
 			{
-				tableType = new TableType(aType);
+				tableType = new TableType(aType, aDiscriminator);
 
 				mTableTypes.put(aType, tableType);
 			}
@@ -767,7 +768,7 @@ public class Database implements AutoCloseable
 			Table table = openTable(aType, aEntity, OpenOption.OPEN);
 			if (table == null)
 			{
-				return null;
+				return new ArrayList<>();
 			}
 			return table.list(aType);
 		}

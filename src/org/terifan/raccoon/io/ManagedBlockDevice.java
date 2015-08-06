@@ -388,7 +388,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		buffer.position(CHECKSUM_SIZE); // leave space for checksum
 
 		Marshaller m = new Marshaller(SuperBlock.class);
-		ByteArrayBuffer buf = m.marshal(buffer, mSuperBlock, FieldCategory.VALUE);
+		ByteArrayBuffer buf = m.marshal(buffer, mSuperBlock, FieldCategory.DISCRIMINATOR_VALUE);
 
 		if (mBlockDevice instanceof SecureBlockDevice)
 		{
@@ -624,7 +624,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			ByteArrayBuffer buffer = readCheckedBlock(aPageIndex, -aPageIndex, mBlockSize);
 
-			mSuperBlockMarshaller.unmarshal(buffer, this, FieldCategory.VALUE);
+			mSuperBlockMarshaller.unmarshal(buffer, this, FieldCategory.DISCRIMINATOR_VALUE);
 		}
 	}
 }
