@@ -10,12 +10,12 @@ public class ByteArray
 {
 	private final static boolean FIXED = false;
 
-	
+
 	private ByteArray()
 	{
 	}
 
-	
+
 	public static void writeVarInt(DataOutput aDataOutput, int aValue) throws IOException
 	{
 		if (FIXED)
@@ -279,5 +279,14 @@ public class ByteArray
 		}
 
 		return new String(array, 0, bufOffset);
+	}
+
+
+	public static byte[] join(byte[] aBuffer0, byte[] aBuffer1)
+	{
+		byte[] buf = new byte[aBuffer0.length + aBuffer1.length];
+		System.arraycopy(aBuffer0, 0, buf, 0, aBuffer0.length);
+		System.arraycopy(aBuffer1, 0, buf, aBuffer0.length, aBuffer1.length);
+		return buf;
 	}
 }

@@ -36,7 +36,7 @@ public class Database implements AutoCloseable
 	private byte[] mSystemTableHeader;
 	private HashMap<Class,Initializer> mInitializers;
 	private HashMap<TableType,Table> mOpenTables;
-	private HashMap<Class<?>,TableType> mTableTypes;
+	private TableTypeMap mTableTypes;
 	private Table mSystemTable;
 	private long mTransactionId;
     private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
@@ -47,7 +47,7 @@ public class Database implements AutoCloseable
 	private Database()
 	{
 		mOpenTables = new HashMap<>();
-		mTableTypes = new HashMap<>();
+		mTableTypes = new TableTypeMap();
 		mInitializers = new HashMap<>();
 	}
 
@@ -252,13 +252,13 @@ public class Database implements AutoCloseable
 
 		synchronized (this)
 		{
-			tableType = mTableTypes.get(aType);
+			tableType = mTableTypes.get(aType, aDiscriminator);
 
 			if (tableType == null)
 			{
 				tableType = new TableType(aType, aDiscriminator);
 
-				mTableTypes.put(aType, tableType);
+				mTableTypes.add(tableType);
 			}
 		}
 

@@ -57,7 +57,6 @@ public class Marshaller
 					Field field = findField(fieldType);
 					Object value = field.get(aObject);
 					FieldWriter.writeField(fieldType, aBuffer, value);
-					Log.out.println(field);
 				}
 			}
 

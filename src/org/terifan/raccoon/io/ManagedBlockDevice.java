@@ -235,6 +235,9 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	private void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
+		assert aBufferLength > 0;
+		assert (aBufferLength % mBlockSize) == 0;
+
 		if (!mRangeMap.isFree((int)aBlockIndex, aBufferLength / mBlockSize))
 		{
 			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
@@ -269,6 +272,9 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
+		assert aBufferLength > 0;
+		assert (aBufferLength % mBlockSize) == 0;
+
 		if (!mRangeMap.isFree((int)aBlockIndex, aBufferLength / mBlockSize))
 		{
 			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));

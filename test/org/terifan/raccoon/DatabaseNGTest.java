@@ -282,7 +282,7 @@ public class DatabaseNGTest
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
 			_Number1K1D disc = new _Number1K1D();
-			disc._odd = !true;
+			disc._odd = true;
 
 			for (_Number1K1D item : database.list(_Number1K1D.class, disc))
 			{
