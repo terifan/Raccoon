@@ -1,7 +1,11 @@
 package org.terifan.raccoon.serialization;
 
+import java.io.IOException;
 import java.util.Date;
+import org.terifan.bundle.BinaryDecoder;
+import org.terifan.bundle.Bundle;
 import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.raccoon.util.Log;
 
 
 class ValueReader
@@ -47,6 +51,19 @@ class ValueReader
 		if (aType == Date.class)
 		{
 			return new Date(aDataInput.readVar64());
+		}
+		if (aType == Bundle.class)
+		{
+			try
+			{
+				byte[] buf = new byte[aDataInput.readVar32()];
+				aDataInput.read(buf);
+				return new BinaryDecoder().unmarshal(buf);
+			}
+			catch (IOException e)
+			{
+				throw new IllegalStateException(e);
+			}
 		}
 
 		throw new IllegalArgumentException("Unsupported type: " + aType);

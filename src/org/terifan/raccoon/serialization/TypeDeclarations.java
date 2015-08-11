@@ -6,7 +6,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -14,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import org.terifan.bundle.Bundle;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
@@ -164,7 +164,12 @@ public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 
 	private boolean isValidType(Class aType)
 	{
-		return Number.class.isAssignableFrom(aType) || aType == String.class || aType == Character.class || aType == Boolean.class || aType == Date.class;
+		return Number.class.isAssignableFrom(aType)
+			|| aType == String.class
+			|| aType == Character.class
+			|| aType == Boolean.class
+			|| aType == Date.class
+			|| aType == Bundle.class;
 	}
 
 
