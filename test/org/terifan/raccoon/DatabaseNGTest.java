@@ -7,6 +7,7 @@ import tests._KeyValue1K;
 import tests._Number1K1D;
 import tests._Animal1K;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.terifan.bundle.Bundle;
 import org.terifan.raccoon.io.AccessCredentials;
+import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
@@ -494,6 +496,22 @@ public class DatabaseNGTest
 		assertEquals(out.content.getByteArray("bigdata"), in.content.getByteArray("bigdata"));
 	}
 
+	
+	@Test
+	public void openCloseTest() throws IOException
+	{
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+
+		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
+		{
+		}
+		
+		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
+		{
+		}
+	}
+	
 
 	@DataProvider(name="itemSizes")
 	private Object[][] itemSizes()

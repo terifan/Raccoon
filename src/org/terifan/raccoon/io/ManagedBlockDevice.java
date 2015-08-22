@@ -127,7 +127,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public long length() throws IOException
 	{
-		return mBlockDevice.length();
+		return mBlockDevice.length() - RESERVED_BLOCKS;
 	}
 
 
