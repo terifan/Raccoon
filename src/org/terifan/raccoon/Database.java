@@ -268,6 +268,8 @@ public class Database implements AutoCloseable
 
 	private Table openTable(TableType aTableType, Object aDiscriminator, OpenOption aOptions) throws IOException
 	{
+		checkOpen();
+		
 		synchronized (this)
 		{
 			Table table = mOpenTables.get(aTableType);
@@ -304,6 +306,15 @@ public class Database implements AutoCloseable
 			}
 
 			return table;
+		}
+	}
+
+
+	private void checkOpen() throws IllegalStateException
+	{
+		if (mSystemTable == null)
+		{
+			throw new IllegalStateException("Database is closed");
 		}
 	}
 
