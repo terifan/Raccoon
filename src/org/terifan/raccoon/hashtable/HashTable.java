@@ -132,10 +132,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 	public byte[] get(byte[] aKey)
 	{
-		if (mClosed)
-		{
-			throw new IllegalStateException("HashTable is closed");
-		}
+		checkOpen();
 
 		if (mRootMap != null)
 		{
@@ -156,10 +153,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 	public byte[] put(byte[] aKey, byte[] aValue, long aTransactionId)
 	{
-		if (mClosed)
-		{
-			throw new IllegalStateException("HashTable is closed");
-		}
+		checkOpen();
 
 		if (aKey.length + aValue.length > getEntryMaximumLength())
 		{
@@ -204,10 +198,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 	public byte[] remove(byte[] aKey, long aTransactionId)
 	{
-		if (mClosed)
-		{
-			throw new IllegalStateException("HashTable is closed");
-		}
+		checkOpen();
 
 		int modCount = ++mModCount;
 		mModified = true;
@@ -232,10 +223,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	@Override
 	public Iterator<Entry> iterator()
 	{
-		if (mClosed)
-		{
-			throw new IllegalStateException("HashTable is closed");
-		}
+		checkOpen();
 
 		if (mRootNode != null)
 		{
@@ -254,10 +242,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 	public ArrayList<Entry> list()
 	{
-		if (mClosed)
-		{
-			throw new IllegalStateException("HashTable is closed");
-		}
+		checkOpen();
 
 		ArrayList<Entry> list = new ArrayList<>();
 
@@ -268,14 +253,19 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		return list;
 	}
+	
+	
+	public boolean isChanged()
+	{
+		checkOpen();
+
+		return mModified;
+	}
 
 
 	public boolean commit(long aTransactionId) throws IOException
 	{
-		if (mClosed)
-		{
-			throw new IllegalStateException("HashTable is closed");
-		}
+		checkOpen();
 
 		try
 		{
@@ -324,10 +314,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 	public void rollback() throws IOException
 	{
-		if (mClosed)
-		{
-			throw new IllegalStateException("HashTable is closed");
-		}
+		checkOpen();
 
 		Log.i("rollback");
 
@@ -357,10 +344,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 	public void clear(long aTransactionId)
 	{
-		if (mClosed)
-		{
-			throw new IllegalStateException("HashTable is closed");
-		}
+		checkOpen();
 
 		Log.i("clear");
 
@@ -406,10 +390,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 	public int size()
 	{
-		if (mClosed)
-		{
-			throw new IllegalStateException("HashTable is closed");
-		}
+		checkOpen();
 
 		Result<Integer> result = new Result<>(0);
 
@@ -763,5 +744,14 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	private BlockPointer writeBlock(Node aNode, int aRange, long aTransactionId)
 	{
 		return mBlockAccessor.writeBlock(aNode.array(), 0, aNode.array().length, aTransactionId, aNode.getType(), aRange);
+	}
+
+
+	private void checkOpen() throws IllegalStateException
+	{
+		if (mClosed)
+		{
+			throw new IllegalStateException("HashTable is closed");
+		}
 	}
 }

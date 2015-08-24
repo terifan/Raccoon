@@ -52,7 +52,7 @@ public class Database implements AutoCloseable
 	}
 
 
-	public synchronized static Database open(File aFile, OpenOption aOptions, Object... aParameters) throws IOException, UnsupportedVersionException
+	public static Database open(File aFile, OpenOption aOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
 		FileBlockDevice fileBlockDevice = null;
 
@@ -111,7 +111,7 @@ public class Database implements AutoCloseable
 	 *   AccessCredentials
 	 * @return
 	 */
-	public synchronized static Database open(IPhysicalBlockDevice aBlockDevice, OpenOption aOptions, Object... aParameters) throws IOException, UnsupportedVersionException
+	public static Database open(IPhysicalBlockDevice aBlockDevice, OpenOption aOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
 		if ((aOptions == OpenOption.READ_ONLY || aOptions == OpenOption.OPEN) && aBlockDevice.length() == 0)
 		{
@@ -248,6 +248,8 @@ public class Database implements AutoCloseable
 
 	private Table openTable(Class aType, Object aDiscriminator, OpenOption aOptions) throws IOException
 	{
+		checkOpen();
+		
 		TableType tableType;
 
 		synchronized (this)
@@ -260,53 +262,48 @@ public class Database implements AutoCloseable
 
 				mTableTypes.add(tableType);
 			}
-		}
 
-		return openTable(tableType, aDiscriminator, aOptions);
+			return openTable(tableType, aDiscriminator, aOptions);
+		}
 	}
 
 
 	private Table openTable(TableType aTableType, Object aDiscriminator, OpenOption aOptions) throws IOException
 	{
-		checkOpen();
-		
-		synchronized (this)
+		Table table = mOpenTables.get(aTableType);
+
+		if (table == null)
 		{
-			Table table = mOpenTables.get(aTableType);
+			table = new Table(this, aTableType, aDiscriminator);
 
-			if (table == null)
+			Log.i("open table '" + table + "' with option " + aOptions);
+			Log.inc();
+
+			boolean tableExists = mSystemTable.get(table);
+
+			if (!tableExists && (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY))
 			{
-				table = new Table(this, aTableType, aDiscriminator);
-
-				Log.i("open table '" + table + "' with option " + aOptions);
-				Log.inc();
-
-				boolean tableExists = mSystemTable.get(table);
-
-				if (!tableExists && (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY))
-				{
-					return null;
-				}
-
-				table.open(null);
-
-				if (!tableExists)
-				{
-					mSystemTable.save(table);
-				}
-
-				mOpenTables.put(aTableType, table);
-
-				Log.dec();
+				return null;
 			}
 
-			if (aOptions == OpenOption.CREATE_NEW)
+			table.open(null);
+
+			if (!tableExists)
 			{
-				table.clear();
+				mSystemTable.save(table);
 			}
 
-			return table;
+			mOpenTables.put(aTableType, table);
+
+			Log.dec();
 		}
+
+		if (aOptions == OpenOption.CREATE_NEW)
+		{
+			table.clear();
+		}
+
+		return table;
 	}
 
 
@@ -317,6 +314,22 @@ public class Database implements AutoCloseable
 			throw new IllegalStateException("Database is closed");
 		}
 	}
+	
+	
+	public boolean isChanged()
+	{
+		checkOpen();
+
+		for (Table table : mOpenTables.values())
+		{
+			if (table.isChanged())
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
 
 
 	/**
@@ -324,6 +337,8 @@ public class Database implements AutoCloseable
 	 */
 	public void commit() throws IOException
 	{
+		checkOpen();
+
 		mWriteLock.lock();
 
 		boolean changed = false;
@@ -372,6 +387,8 @@ public class Database implements AutoCloseable
 	 */
 	public void rollback() throws IOException
 	{
+		checkOpen();
+
 		mWriteLock.lock();
 		try
 		{

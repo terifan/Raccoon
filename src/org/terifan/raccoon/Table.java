@@ -326,6 +326,12 @@ class Table<T> implements Iterable<T>
 	{
 		mTableImplementation.close();
 	}
+	
+	
+	boolean isChanged()
+	{
+		return mTableImplementation.isChanged();
+	}
 
 
 	boolean commit() throws IOException
