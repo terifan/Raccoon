@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
+import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 
@@ -14,6 +15,8 @@ public class FileBlockDeviceNGTest
 	@Test
 	public void testSomeMethod() throws IOException
 	{
+		Log.LEVEL = 10;
+
 		File file = File.createTempFile("blkdev","tmp");
 
 		Random rnd = new Random(1);

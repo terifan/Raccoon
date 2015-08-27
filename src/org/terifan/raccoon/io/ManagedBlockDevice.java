@@ -134,7 +134,16 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public void close() throws IOException
 	{
-		rollback();
+		if (mModified)
+		{
+			rollback();
+		}
+
+		if (mBlockDevice != null)
+		{
+			mBlockDevice.close();
+			mBlockDevice = null;
+		}
 	}
 
 
