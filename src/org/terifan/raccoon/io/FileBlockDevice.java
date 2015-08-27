@@ -61,13 +61,11 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	{
 		Log.v("close");
 
-		Log.out.println("#"+mFileLock);
 		if (mFileLock != null)
 		{
 			try
 			{
-//				mFileLock.release();
-				mFileLock.close();
+				mFileLock.release();
 				mFileLock = null;
 			}
 			catch (Exception e)
