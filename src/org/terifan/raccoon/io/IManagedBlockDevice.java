@@ -58,10 +58,7 @@ public interface IManagedBlockDevice extends IPhysicalBlockDevice
 	 * Rollback any pending blocks.
 	 */
 	void rollback() throws IOException;
-
-
-	/**
-	 * Clears all blocks.
-	 */
-	void wipe() throws IOException;
+	
+	
+	void clear() throws IOException;
 }

@@ -93,6 +93,21 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	}
 
 
+	@Override
+	public void setLength(long aNewLength) throws IOException
+	{
+		Long[] offsets = mStorage.keySet().toArray(new Long[mStorage.size()]);
+
+		for (Long offset : offsets)
+		{
+			if (offset >= aNewLength)
+			{
+				mStorage.remove(offset);
+			}
+		}
+	}
+
+
 	public void dump()
 	{
 		for (Entry<Long,byte[]> entry : mStorage.entrySet())

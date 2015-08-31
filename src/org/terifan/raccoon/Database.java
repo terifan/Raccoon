@@ -30,7 +30,12 @@ public class Database implements AutoCloseable
 {
 	private final static int EXTRA_DATA_CHECKSUM_SEED = 0xf49209b1;
 	private final static long IDENTITY = 0x726163636f6f6e00L; // 'raccoon\0'
+	private final static int DEFAULT_BLOCK_SIZE = 4096;
 	private final static int VERSION = 1;
+
+    private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
+    private final Lock mReadLock = mReadWriteLock.readLock();
+    private final Lock mWriteLock = mReadWriteLock.writeLock();
 
 	private IManagedBlockDevice mBlockDevice;
 	private byte[] mSystemTableHeader;
@@ -39,9 +44,7 @@ public class Database implements AutoCloseable
 	private TableTypeMap mTableTypes;
 	private Table mSystemTable;
 	private long mTransactionId;
-    private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
-    private final Lock mReadLock = mReadWriteLock.readLock();
-    private final Lock mWriteLock = mReadWriteLock.writeLock();
+	private boolean mChanged;
 
 
 	private Database()
@@ -52,7 +55,7 @@ public class Database implements AutoCloseable
 	}
 
 
-	public static Database open(File aFile, OpenOption aOptions, Object... aParameters) throws IOException, UnsupportedVersionException
+	public static Database open(File aFile, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
 		FileBlockDevice fileBlockDevice = null;
 
@@ -60,28 +63,28 @@ public class Database implements AutoCloseable
 		{
 			if (aFile.exists())
 			{
-				if (aOptions == OpenOption.CREATE_NEW)
+				if (aOpenOptions == OpenOption.CREATE_NEW)
 				{
 					if (!aFile.delete())
 					{
 						throw new IOException("Failed to delete existing file: " + aFile);
 					}
 				}
-				else if ((aOptions == OpenOption.READ_ONLY || aOptions == OpenOption.OPEN) && aFile.length() == 0)
+				else if ((aOpenOptions == OpenOption.READ_ONLY || aOpenOptions == OpenOption.OPEN) && aFile.length() == 0)
 				{
 					throw new IOException("File is empty.");
 				}
 			}
-			else if (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY)
+			else if (aOpenOptions == OpenOption.OPEN || aOpenOptions == OpenOption.READ_ONLY)
 			{
 				throw new IOException("File not found: " + aFile);
 			}
 
 			boolean newFile = !aFile.exists();
-			String mode = aOptions == OpenOption.READ_ONLY ? "r" : "rw";
+			String mode = aOpenOptions == OpenOption.READ_ONLY ? "r" : "rw";
 
 			RandomAccessFile file = new RandomAccessFile(aFile, mode);
-			fileBlockDevice = new FileBlockDevice(file, 4096);
+			fileBlockDevice = new FileBlockDevice(file, DEFAULT_BLOCK_SIZE);
 
 			return init(fileBlockDevice, newFile, aParameters);
 		}
@@ -106,25 +109,25 @@ public class Database implements AutoCloseable
 	/**
 	 *
 	 * @param aBlockDevice
-	 * @param aOptions
+	 * @param aOpenOptions
 	 * @param aParameters
 	 *   AccessCredentials
 	 * @return
 	 */
-	public static Database open(IPhysicalBlockDevice aBlockDevice, OpenOption aOptions, Object... aParameters) throws IOException, UnsupportedVersionException
+	public static Database open(IPhysicalBlockDevice aBlockDevice, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
-		if ((aOptions == OpenOption.READ_ONLY || aOptions == OpenOption.OPEN) && aBlockDevice.length() <= ManagedBlockDevice.RESERVED_BLOCKS)
+		if ((aOpenOptions == OpenOption.READ_ONLY || aOpenOptions == OpenOption.OPEN) && aBlockDevice.length() == 0)
 		{
 			throw new IOException("Block device is empty.");
 		}
 
-		boolean newFile = aBlockDevice.length() <= ManagedBlockDevice.RESERVED_BLOCKS || aOptions == OpenOption.CREATE_NEW;
+		boolean create = aBlockDevice.length() == 0 || aOpenOptions == OpenOption.CREATE_NEW;
 
-		return init(aBlockDevice, newFile, aParameters);
+		return init(aBlockDevice, create, aParameters);
 	}
 
 
-	private static Database init(IPhysicalBlockDevice aBlockDevice, boolean aNewFile, Object[] aParameters) throws IOException
+	private static Database init(IPhysicalBlockDevice aBlockDevice, boolean aCreate, Object[] aParameters) throws IOException
 	{
 		AccessCredentials accessCredentials = null;
 		for (Object param : aParameters)
@@ -155,7 +158,7 @@ public class Database implements AutoCloseable
 			device = new ManagedBlockDevice(new SecureBlockDevice(aBlockDevice, accessCredentials));
 		}
 
-		if (aNewFile)
+		if (aCreate)
 		{
 			return create(device);
 		}
@@ -174,7 +177,8 @@ public class Database implements AutoCloseable
 		if (aBlockDevice.length() > 0)
 		{
 			aBlockDevice.setExtraData(null);
-			aBlockDevice.wipe();
+			aBlockDevice.clear();
+			aBlockDevice.commit();
 		}
 
 		Database db = new Database();
@@ -183,6 +187,7 @@ public class Database implements AutoCloseable
 
 		db.mBlockDevice = aBlockDevice;
 		db.mSystemTable = new Table(db, systemTableType, null).open(null);
+		db.mChanged = true;
 
 		db.updateSuperBlock();
 
@@ -347,8 +352,6 @@ public class Database implements AutoCloseable
 
 		mWriteLock.lock();
 
-		boolean changed = false;
-
 		try
 		{
 			Log.i("commit database");
@@ -360,13 +363,13 @@ public class Database implements AutoCloseable
 				{
 					Log.i("table updated '" + table + "'");
 
-					changed = true;
-
 					mSystemTable.save(table);
+
+					mChanged = true;
 				}
 			}
 
-			if (changed)
+			if (mChanged)
 			{
 				mSystemTable.commit();
 
@@ -375,9 +378,10 @@ public class Database implements AutoCloseable
 				mBlockDevice.commit();
 
 				mSystemTableHeader = mSystemTable.getTableHeader();
-			}
+				mChanged = false;
 
-			assert integrityCheck() == null : integrityCheck();
+				assert integrityCheck() == null : integrityCheck();
+			}
 
 			Log.dec();
 		}

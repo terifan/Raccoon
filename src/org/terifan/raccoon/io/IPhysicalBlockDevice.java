@@ -63,4 +63,13 @@ public interface IPhysicalBlockDevice extends AutoCloseable
 	 *   the size of each block on this device.
 	 */
 	int getBlockSize() throws IOException;
+	
+	
+	/**
+	 * Truncates this block device to the number of blocks specified.
+	 * 
+	 * @param aNewLength 
+	 *   number of blocks
+	 */
+	void setLength(long aNewLength) throws IOException;
 }

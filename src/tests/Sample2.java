@@ -18,7 +18,7 @@ public class Sample2
 	{
 		try
 		{
-			Log.LEVEL = 10;
+//			Log.LEVEL = 10;
 			
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 			ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);

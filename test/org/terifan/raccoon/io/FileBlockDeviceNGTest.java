@@ -15,8 +15,6 @@ public class FileBlockDeviceNGTest
 	@Test
 	public void testSomeMethod() throws IOException
 	{
-		Log.LEVEL = 10;
-
 		File file = File.createTempFile("blkdev","tmp");
 
 		Random rnd = new Random(1);

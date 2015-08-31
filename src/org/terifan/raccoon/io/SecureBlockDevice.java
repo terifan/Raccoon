@@ -151,6 +151,13 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 
 	@Override
+	public void setLength(long aLength) throws IOException
+	{
+		mBlockDevice.setLength(aLength + 1);
+	}
+
+
+	@Override
 	public void close() throws IOException
 	{
 		if (mCipher != null)

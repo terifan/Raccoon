@@ -109,4 +109,11 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	{
 		return mBlockSize;
 	}
+
+
+	@Override
+	public void setLength(long aNewLength) throws IOException
+	{
+		mFile.setLength(aNewLength * mBlockSize);
+	}
 }
