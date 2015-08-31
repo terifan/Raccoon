@@ -3,7 +3,6 @@ package org.terifan.raccoon.io;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import org.terifan.raccoon.util.Log;
 
@@ -19,7 +18,15 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	{
 		mFile = new RandomAccessFile(aFile, "rw");
 		mBlockSize = aBlockSize;
-		mFileLock = mFile.getChannel().lock();
+
+		try
+		{
+			mFileLock = mFile.getChannel().lock();
+		}
+		catch (Exception e)
+		{
+			throw new FileAlreadyOpenException("Failed to lock file: " + aFile, e);
+		}
 	}
 
 

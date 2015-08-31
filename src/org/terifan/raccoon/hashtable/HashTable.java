@@ -79,6 +79,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			mWasEmptyInstance = true;
 			mRootMap = new LeafNode(mLeafSize);
 			mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode, aTransactionId);
+			mModified = true;
 		}
 		else
 		{
@@ -253,8 +254,8 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		return list;
 	}
-	
-	
+
+
 	public boolean isChanged()
 	{
 		checkOpen();

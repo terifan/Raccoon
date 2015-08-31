@@ -113,12 +113,12 @@ public class Database implements AutoCloseable
 	 */
 	public static Database open(IPhysicalBlockDevice aBlockDevice, OpenOption aOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
-		if ((aOptions == OpenOption.READ_ONLY || aOptions == OpenOption.OPEN) && aBlockDevice.length() == 0)
+		if ((aOptions == OpenOption.READ_ONLY || aOptions == OpenOption.OPEN) && aBlockDevice.length() <= ManagedBlockDevice.RESERVED_BLOCKS)
 		{
 			throw new IOException("Block device is empty.");
 		}
 
-		boolean newFile = aBlockDevice.length() == 0 || aOptions == OpenOption.CREATE_NEW;
+		boolean newFile = aBlockDevice.length() <= ManagedBlockDevice.RESERVED_BLOCKS || aOptions == OpenOption.CREATE_NEW;
 
 		return init(aBlockDevice, newFile, aParameters);
 	}
@@ -171,6 +171,12 @@ public class Database implements AutoCloseable
 		Log.i("create database");
 		Log.inc();
 
+		if (aBlockDevice.length() > 0)
+		{
+			aBlockDevice.setExtraData(null);
+			aBlockDevice.wipe();
+		}
+
 		Database db = new Database();
 
 		TableType systemTableType = new TableType(Table.class, null);
@@ -199,7 +205,7 @@ public class Database implements AutoCloseable
 
 		if (extraData == null || extraData.length < 20)
 		{
-			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra data length)");
+			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra data length) ("+(extraData==null?null:extraData.length)+")");
 		}
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(extraData);
@@ -249,7 +255,7 @@ public class Database implements AutoCloseable
 	private Table openTable(Class aType, Object aDiscriminator, OpenOption aOptions) throws IOException
 	{
 		checkOpen();
-		
+
 		TableType tableType;
 
 		synchronized (this)
@@ -314,8 +320,8 @@ public class Database implements AutoCloseable
 			throw new IllegalStateException("Database is closed");
 		}
 	}
-	
-	
+
+
 	public boolean isChanged()
 	{
 		checkOpen();

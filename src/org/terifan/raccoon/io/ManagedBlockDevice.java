@@ -16,8 +16,8 @@ import org.terifan.raccoon.util.Log;
 
 public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 {
-	private final static int RESERVED_BLOCKS = 2;
 	private final static int CHECKSUM_SIZE = 16;
+	public final static int RESERVED_BLOCKS = 2;
 
 	private IPhysicalBlockDevice mBlockDevice;
 	private RangeMap mRangeMap;
@@ -40,7 +40,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		mBlockDevice = aBlockDevice;
 		mBlockSize = aBlockDevice.getBlockSize();
-		mWasCreated = mBlockDevice.length() == 0;
+		mWasCreated = mBlockDevice.length() <= ManagedBlockDevice.RESERVED_BLOCKS;
 		mUncommitedAllocations = new HashSet<>();
 		mDoubleCommit = true;
 
@@ -127,7 +127,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public long length() throws IOException
 	{
-		return mBlockDevice.length() - RESERVED_BLOCKS;
+		return mBlockDevice.length();
 	}
 
 
@@ -172,7 +172,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		int blockIndex = mRangeMap.next(aBlockCount);
 
-		if (blockIndex == -1)
+		if (blockIndex < 0)
 		{
 			return -1;
 		}
@@ -618,6 +618,15 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	public long getUsedSpace() throws IOException
 	{
 		return mRangeMap.getUsedSpace();
+	}
+
+
+	@Override
+	public void wipe() throws IOException
+	{
+		mPendingRangeMap = new RangeMap();
+		mPendingRangeMap.add(0, Integer.MAX_VALUE);
+		mUncommitedAllocations.clear();
 	}
 
 
