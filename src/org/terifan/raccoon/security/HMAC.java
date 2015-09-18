@@ -1,6 +1,5 @@
 package org.terifan.raccoon.security;
 
-import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.util.Arrays;
 
@@ -25,30 +24,6 @@ public final class HMAC extends MessageDigest implements Cloneable
 		this(aMessageDigest);
 
 		init(aPassword);
-	}
-
-
-	/**
-	 * Instantiate a new HMAC.
-	 *
-	 * @param aMessageDigest
-	 *   the Message Digest algorithm used
-	 * @param aPassword
-	 *   the password, converted to a byte array by UTF-8 encoding.
-	 * @deprecated
-	 */
-	public HMAC(MessageDigest aMessageDigest, String aPassword)
-	{
-		this(aMessageDigest);
-
-		try
-		{
-			init(aPassword.getBytes("utf-8"));
-		}
-		catch (UnsupportedEncodingException e)
-		{
-			throw new RuntimeException(e.toString());
-		}
 	}
 
 

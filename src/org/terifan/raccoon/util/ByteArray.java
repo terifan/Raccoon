@@ -289,4 +289,12 @@ public class ByteArray
 		System.arraycopy(aBuffer1, 0, buf, aBuffer0.length, aBuffer1.length);
 		return buf;
 	}
+
+
+	public static byte[] getBytes(byte[] aBuffer, int aOffset, int aLength)
+	{
+		byte[] buf = new byte[aLength];
+		System.arraycopy(aBuffer, aOffset, buf, 0, aLength);
+		return buf;
+	}
 }

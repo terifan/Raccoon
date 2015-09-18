@@ -123,7 +123,6 @@ public final class AES extends Cipher
 
 	public AES()
 	{
-		super();
 	}
 
 
@@ -475,26 +474,6 @@ public final class AES extends Cipher
 
 
 	/**
-	 * Returns the block size.
-	 */
-	@Override
-	public int engineGetBlockSize()
-	{
-		return 16;
-	}
-
-
-	/**
-	 * Returns the key size.
-	 */
-	@Override
-	public int engineGetKeySize()
-	{
-		return mKeySize;
-	}
-
-
-	/**
 	 * Resets all internal state data. This Cipher object needs to be
 	 * reinitialized again before it can be used again.
 	 */
@@ -521,15 +500,5 @@ public final class AES extends Cipher
 	public String toString()
 	{
 		return "AES";
-	}
-
-
-	/**
-	 * This method returns a new instance of the Twofish cipher.
-	 */
-	@Override
-	public Cipher newInstance()
-	{
-		return new AES();
 	}
 }

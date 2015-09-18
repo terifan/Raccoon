@@ -13,6 +13,9 @@ import org.terifan.raccoon.security.Serpent;
 import org.terifan.raccoon.security.Twofish;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
+import static org.terifan.raccoon.util.ByteArray.putInt;
+import static org.terifan.raccoon.util.ByteArray.getInt;
+import static org.terifan.raccoon.util.ByteArray.getBytes;
 
 
 // Boot block layout:
@@ -336,7 +339,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 			int offset = aKeyPoolOffset;
 
-			mTweakCipher.init(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
+			mTweakCipher.engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
 			offset += KEY_SIZE_BYTES;
 
 			for (int i = 0; i < TWEAK_SIZE_INTS; i++)
@@ -349,7 +352,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 			{
 				if (j < mCiphers.length)
 				{
-					mCiphers[j].init(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
+					mCiphers[j].engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
 				}
 				offset += KEY_SIZE_BYTES;
 			}
@@ -377,7 +380,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		{
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mElephant.encrypt(aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
+				mElephant.encrypt(aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
 			}
 		}
 
@@ -386,7 +389,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		{
 			for (int i = mCiphers.length; --i >= 0; )
 			{
-				mElephant.decrypt(aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
+				mElephant.decrypt(aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
 			}
 		}
 
@@ -397,10 +400,10 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 			{
 				for (Cipher cipher : mCiphers)
 				{
-					cipher.reset();
+					cipher.engineReset();
 				}
 
-				mTweakCipher.reset();
+				mTweakCipher.engineReset();
 
 				mElephant.reset();
 
@@ -412,43 +415,4 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 			}
 		}
 	};
-
-
-	private static int getInt(final byte[] aBuffer, final int aOffset)
-	{
-		return ((0xff & aBuffer[aOffset + 0]) << 24)
-			 + ((0xff & aBuffer[aOffset + 1]) << 16)
-			 + ((0xff & aBuffer[aOffset + 2]) <<  8)
-			 + ((0xff & aBuffer[aOffset + 3])      );
-	}
-
-
-	private static void putInt(final byte[] aBuffer, final int aValue, final int aOffset)
-	{
-		aBuffer[aOffset + 0] = (byte)(aValue >>> 24);
-		aBuffer[aOffset + 1] = (byte)(aValue >> 16);
-		aBuffer[aOffset + 2] = (byte)(aValue >> 8);
-		aBuffer[aOffset + 3] = (byte)(aValue);
-	}
-
-
-//	private static long getLong(byte [] aBuffer, int aOffset)
-//	{
-//		return (((long)(aBuffer[aOffset + 7]      ) << 56)
-//			  + ((long)(aBuffer[aOffset + 6] & 255) << 48)
-//			  + ((long)(aBuffer[aOffset + 5] & 255) << 40)
-//			  + ((long)(aBuffer[aOffset + 4] & 255) << 32)
-//			  + ((long)(aBuffer[aOffset + 3] & 255) << 24)
-//			  + ((      aBuffer[aOffset + 2] & 255) << 16)
-//			  + ((      aBuffer[aOffset + 1] & 255) <<  8)
-//			  + ((      aBuffer[aOffset    ] & 255       )));
-//	}
-
-
-	private static byte[] getBytes(final byte[] aBuffer, final int aOffset, final int aLength)
-	{
-		byte[] buf = new byte[aLength];
-		System.arraycopy(aBuffer, aOffset, buf, 0, aLength);
-		return buf;
-	}
 }

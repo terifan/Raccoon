@@ -49,11 +49,19 @@ public final class Elephant
 	}
 
 
-	public synchronized void encrypt(byte[] aBuffer, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
+	// todo: remove synchronized
+	public synchronized void encrypt(byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
 	{
+		assert aLength >= mUnitSize;
+		assert (aLength % mUnitSize) == 0;
+		assert aTweakKey.length == 8;
+		assert aIV.length == 4;
+		assert aInput.length >= aOffset + aLength;
+		assert aInput.length == aOutput.length;
+
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / mUnitSize; unitIndex < numDataUnits; unitIndex++, offset += mUnitSize)
 		{
-			toInts(aBuffer, offset, mWords, mWordsPerUnit);
+			toInts(aInput, offset, mWords, mWordsPerUnit);
 
 			// encryption cbc mode
 
@@ -90,16 +98,23 @@ public final class Elephant
 				mWords[i & mWordMask] -= (mWords[(i - 2) & mWordMask] ^ rol(mWords[(i - 5) & mWordMask], ROTATE1[i & 3]));
 			}
 
-			toBytes(mWords, offset, aBuffer, mWordsPerUnit);
+			toBytes(mWords, offset, aOutput, mWordsPerUnit);
 		}
 	}
 
-
-	public synchronized void decrypt(byte[] aBuffer, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
+	// todo: remove synchronized
+	public synchronized void decrypt(byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
 	{
+		assert aLength >= mUnitSize;
+		assert (aLength % mUnitSize) == 0;
+		assert aTweakKey.length == 8;
+		assert aIV.length == 4;
+		assert aInput.length >= aOffset + aLength;
+		assert aInput.length == aOutput.length;
+
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / mUnitSize; unitIndex < numDataUnits; unitIndex++, offset += mUnitSize)
 		{
-			toInts(aBuffer, offset, mWords, mWordsPerUnit);
+			toInts(aInput, offset, mWords, mWordsPerUnit);
 
 			// elephant diffuser
 
@@ -138,12 +153,12 @@ public final class Elephant
 				System.arraycopy(mTemp, 0, mIV, 0, WORDS_PER_CIPHER_BLOCK);
 			}
 
-			toBytes(mWords, offset, aBuffer, mWordsPerUnit);
+			toBytes(mWords, offset, aOutput, mWordsPerUnit);
 		}
 	}
 
 
-	private void prepareIV(long aDataUnitNo, int [] aInputIV, int [] aOutputIV, Cipher aTweakCipher)
+	private static void prepareIV(long aDataUnitNo, int [] aInputIV, int [] aOutputIV, Cipher aTweakCipher)
 	{
 		aOutputIV[0] = aInputIV[0];
 		aOutputIV[1] = aInputIV[1];
@@ -154,7 +169,7 @@ public final class Elephant
 	}
 
 
-	private void prepareTweak(long aDataUnitNo, int[] aInputTweak, int[] aOutputTweak, Cipher aTweakCipher, long aExtraTweak)
+	private static void prepareTweak(long aDataUnitNo, int[] aInputTweak, int[] aOutputTweak, Cipher aTweakCipher, long aExtraTweak)
 	{
 		aOutputTweak[0] = aInputTweak[0] ^ (int)(aExtraTweak >>> 32);
 		aOutputTweak[1] = aInputTweak[1];
@@ -171,7 +186,7 @@ public final class Elephant
 	}
 
 
-	private int rol(int i, int distance)
+	private static int rol(int i, int distance)
 	{
 		return (i << distance) | (i >>> -distance);
 	}
