@@ -30,15 +30,15 @@ class Table<T> implements Iterable<T>
 	@Key private String mName;
 	@Key private byte[] mDiscriminator;
 	private byte[] mPointer;
-	private String mType;
+//	private String mType;
 
-	private transient Database mDatabase;
-	private transient TableType mTableType;
+	private transient final Database mDatabase;
+	private transient final TableType mTableType;
+	private transient final BlockAccessor mBlockAccessor;
+	private transient final IManagedBlockDevice mBlockDevice;
+	private transient final Initializer mInitializer;
+	private transient final HashSet<BlobOutputStream> mOpenOutputStreams;
 	private transient HashTable mTableImplementation;
-	private transient BlockAccessor mBlockAccessor;
-	private transient IManagedBlockDevice mBlockDevice;
-	private transient Initializer mInitializer;
-	private transient HashSet<BlobOutputStream> mOpenOutputStreams;
 
 
 	Table(Database aDatabase, TableType aTableType, Object aDiscriminator) throws IOException
@@ -50,7 +50,7 @@ class Table<T> implements Iterable<T>
 		mInitializer = mDatabase.getInitializer(mTableType.getType());
 
 		mName = mTableType.getName();
-		mType = mTableType.getType().getName();
+//		mType = mTableType.getType().getName();
 
 		mOpenOutputStreams = new HashSet<>();
 

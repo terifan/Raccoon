@@ -600,7 +600,12 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 	private BlockPointer writeIfNotEmpty(LeafNode aLeaf, int aRange, long aTransactionId)
 	{
-		return aLeaf.isEmpty() ? new BlockPointer().setType(HOLE).setRange(aRange) : writeBlock(aLeaf, aRange, aTransactionId);
+		if (aLeaf.isEmpty())
+		{
+			return new BlockPointer().setType(HOLE).setRange(aRange);
+		}
+
+		return writeBlock(aLeaf, aRange, aTransactionId);
 	}
 
 

@@ -39,9 +39,9 @@ public class Database implements AutoCloseable
 
 	private IManagedBlockDevice mBlockDevice;
 	private byte[] mSystemTableHeader;
-	private HashMap<Class,Initializer> mInitializers;
-	private HashMap<TableType,Table> mOpenTables;
-	private TableTypeMap mTableTypes;
+	private final HashMap<Class,Initializer> mInitializers;
+	private final HashMap<TableType,Table> mOpenTables;
+	private final TableTypeMap mTableTypes;
 	private Table mSystemTable;
 	private long mTransactionId;
 	private boolean mChanged;
@@ -151,10 +151,14 @@ public class Database implements AutoCloseable
 		}
 		else if (accessCredentials == null)
 		{
+			Log.d("creating a managed block device");
+
 			device = new ManagedBlockDevice(aBlockDevice);
 		}
 		else
 		{
+			Log.d("creating a secure block device");
+
 			device = new ManagedBlockDevice(new SecureBlockDevice(aBlockDevice, accessCredentials));
 		}
 

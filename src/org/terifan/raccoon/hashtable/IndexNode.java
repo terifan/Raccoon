@@ -10,8 +10,8 @@ class IndexNode implements Node
 {
 	private final static BlockPointer EMPTY_POINTER = new BlockPointer();
 
-	private ByteArrayBuffer mBuffer;
-	private int mPointerCount;
+	private final ByteArrayBuffer mBuffer;
+	private final int mPointerCount;
 
 
 	public IndexNode(byte[] aBuffer)

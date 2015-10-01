@@ -14,10 +14,10 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 	final static int FRAGMENT_SIZE = 1024 * 1024;
 	private final static int POINTER_MAX_LENGTH = 4 * BlockPointer.SIZE;
 
-	private BlockAccessor mBlockAccessor;
-	private ByteArrayBuffer mBuffer;
-	private ByteArrayBuffer mPointerBuffer;
-	private long mTransactionId;
+	private final BlockAccessor mBlockAccessor;
+	private final ByteArrayBuffer mBuffer;
+	private final ByteArrayBuffer mPointerBuffer;
+	private final long mTransactionId;
 	private long mTotalLength;
 	private byte[] mHeader;
 	private boolean mClosed;

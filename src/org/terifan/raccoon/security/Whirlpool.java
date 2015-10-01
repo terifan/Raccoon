@@ -99,7 +99,7 @@ public final class Whirlpool extends MessageDigest implements Cloneable
 	private transient long [] L	 = new long[8];
 	private transient long [] block = new long[8];
 	private transient long [] state = new long[8];
-	private transient byte [] dummyBuffer = new byte[1];
+	private transient final byte [] dummyBuffer = new byte[1];
 
 
 	public Whirlpool()

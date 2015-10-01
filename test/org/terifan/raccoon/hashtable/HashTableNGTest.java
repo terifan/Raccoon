@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.terifan.raccoon.Entry;
+import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import static tests.__TestUtils.*;
@@ -313,6 +314,30 @@ public class HashTableNGTest
 
 			assertEquals(hashTable.size(), 0);
 		}
+	}
+
+
+	@Test
+	public void testPut() throws Exception
+	{
+		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
+		HashTable hashTable = new HashTable(blockDevice, 0, true, 0, 512, 512);
+
+		byte[] key = new byte[hashTable.getEntryMaximumLength() - 1];
+		byte[] value = {85};
+
+		hashTable.put(key, value, 0);
+
+		assertEquals(hashTable.get(key), value);
+	}
+
+
+	@Test(expectedExceptions = IllegalArgumentException.class)
+	public void testPutTooBig() throws Exception
+	{
+		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
+		HashTable hashTable = new HashTable(blockDevice, 0, true, 0, 512, 512);
+		hashTable.put(new byte[hashTable.getEntryMaximumLength()], new byte[1], 0);
 	}
 
 

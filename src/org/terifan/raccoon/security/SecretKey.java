@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 public final class SecretKey
 {
-	private transient byte[] mKeyBytes;
+	private transient final byte[] mKeyBytes;
 
 
 	public SecretKey(byte[] aKeyBytes)

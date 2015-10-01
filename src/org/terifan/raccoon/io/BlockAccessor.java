@@ -17,8 +17,8 @@ public class BlockAccessor
 {
 	private final static int[] DEFLATER_LEVELS = {0,1,5,9};
 
-	private IManagedBlockDevice mBlockDevice;
-	private int mPageSize;
+	private final IManagedBlockDevice mBlockDevice;
+	private final int mPageSize;
 	private int mCompressionLevel;
 
 

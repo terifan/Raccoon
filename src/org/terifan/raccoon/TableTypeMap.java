@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 class TableTypeMap
 {
-	private ArrayList<TableType> mTableTypes;
+	private final ArrayList<TableType> mTableTypes;
 
 
 	public TableTypeMap()

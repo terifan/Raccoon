@@ -6,8 +6,8 @@ import org.terifan.raccoon.serialization.FieldCategory;
 
 public class EntityIterator<T> implements Iterator<T>
 {
-	private Iterator<Entry> mIterator;
-	private Table mTable;
+	private final Iterator<Entry> mIterator;
+	private final Table mTable;
 
 
 	EntityIterator(Table aTable, Iterator<Entry> aIterator)

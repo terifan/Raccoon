@@ -3,7 +3,7 @@ package org.terifan.raccoon.util;
 import java.util.Arrays;
 
 
-public class ByteArrayBuffer
+public final class ByteArrayBuffer
 {
 	private final static boolean FORCE_FIXED = false;
 

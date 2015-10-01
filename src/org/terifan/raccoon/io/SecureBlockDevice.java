@@ -199,8 +199,8 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		int checksum = MurmurHash3.hash_x86_32(salt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(payload, HEADER_SIZE, payload.length - HEADER_SIZE, CHECKSUM_SEED);
 
 		// update header
-		putInt(payload, SIGNATURE, 0);
-		putInt(payload, checksum, 4);
+		putInt(payload, 0, SIGNATURE);
+		putInt(payload, 4, checksum);
 
 		// create the cipher used to encrypt data blocks
 		mCipher = new CipherImplementation(aCredentials.getEncryptionFunction(), payload, HEADER_SIZE, mBlockDevice.getBlockSize());

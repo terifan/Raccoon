@@ -10,8 +10,8 @@ import static tests.__TestUtils.b;
 
 public class MemoryBlockDevice implements IPhysicalBlockDevice
 {
-	private TreeMap<Long, byte[]> mStorage = new TreeMap<>();
-	private int mBlockSize;
+	private final TreeMap<Long, byte[]> mStorage = new TreeMap<>();
+	private final int mBlockSize;
 
 
 	public MemoryBlockDevice(int aBlockSize)

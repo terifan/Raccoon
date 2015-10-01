@@ -70,7 +70,7 @@ public class Log
 
 			StackTraceElement[] trace = Thread.currentThread().getStackTrace();
 			String className = trace[3].getClassName();
-			className = className.substring(className.lastIndexOf(".") + 1);
+			className = className.substring(className.lastIndexOf('.') + 1);
 			String methodName = trace[3].getMethodName();
 			String loggerName = trace[3].getFileName() + ":" + trace[3].getLineNumber();
 

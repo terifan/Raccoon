@@ -19,7 +19,6 @@ import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.io.UnsupportedVersionException;
-import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
@@ -548,5 +547,14 @@ public class DatabaseNGTest
 	private Object[][] itemSizes()
 	{
 		return new Object[][]{{1},{10},{1000}};
+	}
+
+
+	@Test(expectedExceptions = IllegalArgumentException.class)
+	public void testInit() throws Exception
+	{
+		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
+
+		Database.open(blockDevice, OpenOption.CREATE, new Object[]{new AccessCredentials("password")});
 	}
 }

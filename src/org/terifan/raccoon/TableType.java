@@ -9,7 +9,7 @@ import org.terifan.raccoon.util.ByteArray;
 import org.terifan.raccoon.util.Log;
 
 
-public class TableType
+public final class TableType
 {
 	private Class mClass;
 	private String mName;
@@ -17,7 +17,7 @@ public class TableType
 	private byte[] mDiscriminatorKey;
 	private Marshaller mMarshaller;
 	private Object mDiscriminator;
-	private int mHash;
+	private final int mHash;
 
 
 	public TableType(Class aClass, Object aDiscriminator)

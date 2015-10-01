@@ -15,7 +15,7 @@ import java.util.Arrays;
  * <p>
  * This algorithm and source code is released to the public domain.
  */
-public class Skein512 extends MessageDigest implements Cloneable
+public final class Skein512 extends MessageDigest implements Cloneable
 {
 	private final static int DIGEST_LENGTH = 64;
 	private final static int DIGEST_LENGTH_BITS = 512;

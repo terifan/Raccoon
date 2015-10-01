@@ -12,20 +12,18 @@ import java.security.DigestException;
  *
  * Copyright (c) 2000-2006 The Legion Of The Bouncy Castle (http://www.bouncycastle.org)
  */
-public abstract class SHABase extends MessageDigest implements Cloneable
+public abstract class SHABase extends MessageDigest
 {
-    private static final int BYTE_LENGTH = 128;
+	private byte[] xBuf;
+	private int xBufOff;
 
-    private byte[]  xBuf;
-    private int     xBufOff;
+	private long byteCount1;
+	private long byteCount2;
 
-    private long    byteCount1;
-    private long    byteCount2;
+	protected long H1, H2, H3, H4, H5, H6, H7, H8;
 
-    protected long    H1, H2, H3, H4, H5, H6, H7, H8;
-
-    private long[]  W = new long[80];
-    private int     wOff;
+	private long[] W = new long[80];
+	private int wOff;
 
 
     protected SHABase(String aAlgorithm)

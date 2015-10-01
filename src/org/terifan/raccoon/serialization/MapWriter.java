@@ -19,7 +19,7 @@ class MapWriter
 		FieldType keyComponentType = aFieldType.componentType[0];
 		FieldType valueComponentType = aFieldType.componentType[1];
 
-		ArrayWriter.writeArray(keyComponentType, ((Map)aValue).keySet().toArray(), 1, keyComponentType.depth + 1, aDataOutput);
-		ArrayWriter.writeArray(valueComponentType, ((Map)aValue).values().toArray(), 1, valueComponentType.depth + 1, aDataOutput);
+		ArrayWriter.writeArray(keyComponentType, aValue.keySet().toArray(), 1, keyComponentType.depth + 1, aDataOutput);
+		ArrayWriter.writeArray(valueComponentType, aValue.values().toArray(), 1, valueComponentType.depth + 1, aDataOutput);
 	}
 }

@@ -196,10 +196,10 @@ public final class Elephant
 	{
 		for (int i = 0; i < aNumWords; i++)
 		{
-			aOutput[i] = (int)(((255 & aInput[aOffset++]) << 24)
-					   +       ((255 & aInput[aOffset++]) << 16)
-					   +       ((255 & aInput[aOffset++]) <<  8)
-					   +       ((255 & aInput[aOffset++])      ));
+			aOutput[i] = ((255 & aInput[aOffset++]) << 24)
+					   + ((255 & aInput[aOffset++]) << 16)
+					   + ((255 & aInput[aOffset++]) <<  8)
+					   + ((255 & aInput[aOffset++])      );
 		}
 	}
 

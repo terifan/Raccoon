@@ -27,7 +27,7 @@ public class __FixedThreadExecutor implements AutoCloseable
 	{
 		int cpu = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
 
-		mThreads = Math.max(1, Math.min(cpu, (int)Math.round(cpu * (aThreads - (int)(aThreads - 0.000001)))));
+		mThreads = Math.max(1, Math.min(cpu, Math.round(cpu * aThreads)));
 	}
 
 
