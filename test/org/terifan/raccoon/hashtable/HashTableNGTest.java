@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.terifan.raccoon.Entry;
+import org.terifan.raccoon.TransactionId;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
@@ -25,7 +26,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		long tx = 0;
+		TransactionId tx = new TransactionId(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -33,11 +34,11 @@ public class HashTableNGTest
 			{
 				byte[] key = tb();
 				byte[] value = tb();
-				hashTable.put(key, value, tx);
+				hashTable.put(key, value);
 				map.put(key, value);
 			}
 
-			hashTable.commit(tx);
+			hashTable.commit();
 			root = hashTable.getTableHeader();
 		}
 
@@ -65,19 +66,19 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		long tx = 0;
+		TransactionId tx = new TransactionId(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				hashTable.put(entry.getKey().getBytes(), entry.getValue().getBytes(), tx);
+				hashTable.put(entry.getKey().getBytes(), entry.getValue().getBytes());
 			}
-			hashTable.commit(tx);
+			hashTable.commit();
 
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				hashTable.put(entry.getKey().getBytes(), "err".getBytes(), tx);
+				hashTable.put(entry.getKey().getBytes(), "err".getBytes());
 			}
 			assertEquals(Log.toString(hashTable.get(map.keySet().iterator().next().getBytes())), "err");
 			hashTable.rollback();
@@ -89,7 +90,7 @@ public class HashTableNGTest
 
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				hashTable.remove(entry.getKey().getBytes(), tx);
+				hashTable.remove(entry.getKey().getBytes());
 			}
 			assertEquals(hashTable.get(map.keySet().iterator().next().getBytes()), null);
 			hashTable.rollback();
@@ -108,7 +109,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		long tx = 0;
+		TransactionId tx = new TransactionId(0);
 
 		byte[] k0 = tb();
 		byte[] k1 = tb();
@@ -121,13 +122,13 @@ public class HashTableNGTest
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
-			hashTable.put(k0, v0, tx);
+			hashTable.put(k0, v0);
 
 			assertEquals(hashTable.size(), 1);
 
-			hashTable.put(k1, v1, tx);
+			hashTable.put(k1, v1);
 
-			hashTable.commit(tx);
+			hashTable.commit();
 
 			assertEquals(hashTable.size(), 2);
 
@@ -138,17 +139,17 @@ public class HashTableNGTest
 		{
 			assertEquals(hashTable.size(), 2);
 
-			hashTable.put(k2, v2, tx);
+			hashTable.put(k2, v2);
 
 			assertEquals(hashTable.size(), 3);
 
-			hashTable.commit(tx);
+			hashTable.commit();
 
-			hashTable.put(k1, v1, tx); // replace value
+			hashTable.put(k1, v1); // replace value
 
 			assertEquals(hashTable.size(), 3);
 
-			hashTable.put(k3, v3, tx);
+			hashTable.put(k3, v3);
 
 			hashTable.rollback();
 
@@ -156,9 +157,9 @@ public class HashTableNGTest
 
 			for (int i = 0; i < aSize; i++)
 			{
-				hashTable.put(tb(), tb(), tx);
+				hashTable.put(tb(), tb());
 			}
-			hashTable.commit(tx);
+			hashTable.commit();
 
 			assertEquals(hashTable.size(), 3 + aSize);
 		}
@@ -173,7 +174,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		long tx = 0;
+		TransactionId tx = new TransactionId(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -184,10 +185,10 @@ public class HashTableNGTest
 
 				map.put(key, value);
 
-				hashTable.put(key.getBytes(), value.getBytes(), tx);
+				hashTable.put(key.getBytes(), value.getBytes());
 			}
 
-			hashTable.commit(tx);
+			hashTable.commit();
 			root = hashTable.getTableHeader();
 		}
 
@@ -217,16 +218,16 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		long tx = 0;
+		TransactionId tx = new TransactionId(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				hashTable.put(entry.getKey().getBytes(), entry.getValue().getBytes(), tx);
+				hashTable.put(entry.getKey().getBytes(), entry.getValue().getBytes());
 			}
 
-			hashTable.commit(tx);
+			hashTable.commit();
 			root = hashTable.getTableHeader();
 		}
 
@@ -256,23 +257,23 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		long tx = 0;
+		TransactionId tx = new TransactionId(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				hashTable.put(entry.getKey().getBytes(), entry.getValue().getBytes(), tx);
+				hashTable.put(entry.getKey().getBytes(), entry.getValue().getBytes());
 			}
 
-			hashTable.commit(tx);
+			hashTable.commit();
 			root = hashTable.getTableHeader();
 		}
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
-			hashTable.clear(tx);
-			hashTable.commit(tx);
+			hashTable.clear();
+			hashTable.commit();
 
 			assertEquals(hashTable.size(), 0);
 		}
@@ -291,16 +292,16 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		long tx = 0;
+		TransactionId tx = new TransactionId(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				hashTable.put(entry.getKey().getBytes(), entry.getValue().getBytes(), tx);
+				hashTable.put(entry.getKey().getBytes(), entry.getValue().getBytes());
 			}
 
-			hashTable.commit(tx);
+			hashTable.commit();
 			root = hashTable.getTableHeader();
 		}
 
@@ -308,9 +309,9 @@ public class HashTableNGTest
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				assertEquals(hashTable.remove(entry.getKey().getBytes(), tx), entry.getValue().getBytes());
+				assertEquals(hashTable.remove(entry.getKey().getBytes()), entry.getValue().getBytes());
 			}
-			hashTable.commit(tx);
+			hashTable.commit();
 
 			assertEquals(hashTable.size(), 0);
 		}
@@ -321,12 +322,12 @@ public class HashTableNGTest
 	public void testPut() throws Exception
 	{
 		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
-		HashTable hashTable = new HashTable(blockDevice, 0, true, 0, 512, 512);
+		HashTable hashTable = new HashTable(blockDevice, new TransactionId(0), true, 0, 512, 512);
 
 		byte[] key = new byte[hashTable.getEntryMaximumLength() - 1];
 		byte[] value = {85};
 
-		hashTable.put(key, value, 0);
+		hashTable.put(key, value);
 
 		assertEquals(hashTable.get(key), value);
 	}
@@ -336,8 +337,8 @@ public class HashTableNGTest
 	public void testPutTooBig() throws Exception
 	{
 		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
-		HashTable hashTable = new HashTable(blockDevice, 0, true, 0, 512, 512);
-		hashTable.put(new byte[hashTable.getEntryMaximumLength()], new byte[1], 0);
+		HashTable hashTable = new HashTable(blockDevice, new TransactionId(0), true, 0, 512, 512);
+		hashTable.put(new byte[hashTable.getEntryMaximumLength()], new byte[1]);
 	}
 
 
@@ -362,8 +363,8 @@ public class HashTableNGTest
 	}
 
 
-	private HashTable newHashTable(byte[] aRoot, long aTx, MemoryBlockDevice aBlockDevice) throws IOException
+	private HashTable newHashTable(byte[] aRoot, TransactionId aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
 	{
-		return new HashTable(new ManagedBlockDevice(aBlockDevice), aRoot == null ? null : new ByteArrayBuffer(aRoot), aTx, true);
+		return new HashTable(new ManagedBlockDevice(aBlockDevice), aRoot == null ? null : new ByteArrayBuffer(aRoot), aTransactionId, true);
 	}
 }

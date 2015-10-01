@@ -103,9 +103,9 @@ class Table<T> implements Iterable<T>
 	}
 
 
-	private long getTransactionId()
+	private TransactionId getTransactionId()
 	{
-		return mDatabase.getTransactionId();
+		return new TransactionId(mDatabase.getTransactionId());
 	}
 
 
@@ -205,7 +205,7 @@ class Table<T> implements Iterable<T>
 		value[0] = type;
 		System.arraycopy(tmp, 0, value, 1, tmp.length);
 
-		byte[] oldValue = mTableImplementation.put(key, value, getTransactionId());
+		byte[] oldValue = mTableImplementation.put(key, value);
 
 		deleteIfBlob(oldValue);
 
@@ -232,9 +232,7 @@ class Table<T> implements Iterable<T>
 
 	public BlobOutputStream saveBlob(T aEntityKey) throws IOException
 	{
-		long tx = getTransactionId();
-
-		BlobOutputStream out = new BlobOutputStream(mBlockAccessor, tx);
+		BlobOutputStream out = new BlobOutputStream(mBlockAccessor, getTransactionId());
 
 		synchronized (this)
 		{
@@ -249,7 +247,7 @@ class Table<T> implements Iterable<T>
 			value[0] = INDIRECT_DATA;
 			System.arraycopy(aHeader, 0, value, 1, aHeader.length);
 
-			byte[] oldValue = mTableImplementation.put(getKeys(aEntityKey), value, getTransactionId());
+			byte[] oldValue = mTableImplementation.put(getKeys(aEntityKey), value);
 
 			deleteIfBlob(oldValue);
 
@@ -274,7 +272,7 @@ class Table<T> implements Iterable<T>
 			value[0] = INDIRECT_DATA;
 			System.arraycopy(tmp, 0, value, 1, tmp.length);
 
-			byte[] oldValue = mTableImplementation.put(getKeys(aEntity), value, getTransactionId());
+			byte[] oldValue = mTableImplementation.put(getKeys(aEntity), value);
 
 			deleteIfBlob(oldValue);
 
@@ -289,7 +287,7 @@ class Table<T> implements Iterable<T>
 
 	public boolean remove(T aEntity)
 	{
-		byte[] oldValue = mTableImplementation.remove(getKeys(aEntity), getTransactionId());
+		byte[] oldValue = mTableImplementation.remove(getKeys(aEntity));
 
 		deleteIfBlob(oldValue);
 
@@ -312,7 +310,7 @@ class Table<T> implements Iterable<T>
 
 	public void clear() throws IOException
 	{
-		mTableImplementation.clear(getTransactionId());
+		mTableImplementation.clear();
 	}
 
 
@@ -344,7 +342,7 @@ class Table<T> implements Iterable<T>
 			}
 		}
 
-		if (!mTableImplementation.commit(getTransactionId()))
+		if (!mTableImplementation.commit())
 		{
 			return false;
 		}

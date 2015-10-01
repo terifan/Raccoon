@@ -2,6 +2,7 @@ package org.terifan.raccoon.io;
 
 import java.io.IOException;
 import java.util.Random;
+import org.terifan.raccoon.TransactionId;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.testng.annotations.DataProvider;
@@ -26,7 +27,7 @@ public class BlobInputStreamNGTest
 		IManagedBlockDevice blockDevice = new ManagedBlockDevice(secureBlockDevice);
 
 		byte[] header;
-		try (BlobOutputStream bos = new BlobOutputStream(new BlockAccessor(blockDevice), 0))
+		try (BlobOutputStream bos = new BlobOutputStream(new BlockAccessor(blockDevice), new TransactionId(0)))
 		{
 			bos.write(out);
 			header = bos.finish();

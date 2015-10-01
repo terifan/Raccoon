@@ -103,12 +103,6 @@ public class BlockAccessor
 	}
 
 
-	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength)
-	{
-		return writeBlock(aBuffer, aOffset, aLength, 0L, 0, 0);
-	}
-
-
 	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, int aType, int aRange)
 	{
 		try
