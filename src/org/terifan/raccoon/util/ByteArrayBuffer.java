@@ -475,10 +475,10 @@ public final class ByteArrayBuffer
 	}
 
 
-	public ByteArrayBuffer writeBit(boolean aBit)
-	{
-		return writeBit(aBit ? 1 : 0);
-	}
+//	public ByteArrayBuffer writeBit(boolean aBit)
+//	{
+//		return writeBit(aBit ? 1 : 0);
+//	}
 
 
 	public ByteArrayBuffer writeBit(int aBit)

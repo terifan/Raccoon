@@ -7,7 +7,6 @@ import java.util.ArrayDeque;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import static org.terifan.raccoon.Node.*;
-import org.terifan.raccoon.util.Result;
 
 
 class NodeIterator implements Iterator<Entry>

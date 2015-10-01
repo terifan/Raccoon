@@ -13,9 +13,6 @@ import org.terifan.raccoon.security.Serpent;
 import org.terifan.raccoon.security.Twofish;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
-import static org.terifan.raccoon.util.ByteArray.putInt;
-import static org.terifan.raccoon.util.ByteArray.getInt;
-import static org.terifan.raccoon.util.ByteArray.getBytes;
 
 
 // Boot block layout:
@@ -415,4 +412,30 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 			}
 		}
 	};
+
+
+	private static int getInt(byte [] aBuffer, int aPosition)
+	{
+		return    ((aBuffer[aPosition++] & 255) << 24)
+				+ ((aBuffer[aPosition++] & 255) << 16)
+				+ ((aBuffer[aPosition++] & 255) <<  8)
+				+ ((aBuffer[aPosition  ] & 255)      );
+	}
+
+
+	private static void putInt(byte [] aBuffer, int aPosition, int aValue)
+	{
+		aBuffer[aPosition++] = (byte)(aValue >>> 24);
+		aBuffer[aPosition++] = (byte)(aValue >>  16);
+		aBuffer[aPosition++] = (byte)(aValue >>   8);
+		aBuffer[aPosition  ] = (byte)(aValue       );
+	}
+
+
+	private static byte[] getBytes(byte[] aBuffer, int aOffset, int aLength)
+	{
+		byte[] buf = new byte[aLength];
+		System.arraycopy(aBuffer, aOffset, buf, 0, aLength);
+		return buf;
+	}
 }

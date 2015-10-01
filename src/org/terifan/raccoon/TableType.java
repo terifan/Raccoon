@@ -5,8 +5,6 @@ import java.util.Arrays;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.security.MurmurHash3;
 import org.terifan.raccoon.serialization.FieldCategory;
-import org.terifan.raccoon.util.ByteArray;
-import org.terifan.raccoon.util.Log;
 
 
 public final class TableType
@@ -31,7 +29,7 @@ public final class TableType
 
 		try
 		{
-			mUniqueName = ByteArray.join(mName.getBytes("utf-8"), mDiscriminatorKey);
+			mUniqueName = join(mName.getBytes("utf-8"), mDiscriminatorKey);
 		}
 		catch (UnsupportedEncodingException e)
 		{
@@ -100,5 +98,14 @@ public final class TableType
 	byte[] getDiscriminatorKey()
 	{
 		return mDiscriminatorKey;
+	}
+
+
+	private static byte[] join(byte[] aBuffer0, byte[] aBuffer1)
+	{
+		byte[] buf = new byte[aBuffer0.length + aBuffer1.length];
+		System.arraycopy(aBuffer0, 0, buf, 0, aBuffer0.length);
+		System.arraycopy(aBuffer1, 0, buf, aBuffer0.length, aBuffer1.length);
+		return buf;
 	}
 }
