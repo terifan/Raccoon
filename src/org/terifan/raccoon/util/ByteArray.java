@@ -154,10 +154,10 @@ public class ByteArray
 
 	public static int getInt(byte [] aBuffer, int aPosition)
 	{
-		return (int)(((aBuffer[aPosition++] & 255) << 24)
+		return    ((aBuffer[aPosition++] & 255) << 24)
 				+ ((aBuffer[aPosition++] & 255) << 16)
 				+ ((aBuffer[aPosition++] & 255) <<  8)
-				+ ((aBuffer[aPosition  ] & 255)      ));
+				+ ((aBuffer[aPosition  ] & 255)      );
 	}
 
 
