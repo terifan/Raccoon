@@ -1,19 +1,39 @@
 package org.terifan.raccoon;
 
+import java.util.concurrent.atomic.AtomicLong;
 
-public class TransactionId 
+
+public class TransactionId
 {
-	private long mTransaction;
+	private AtomicLong mTransaction;
+
+
+	TransactionId()
+	{
+		mTransaction = new AtomicLong(0);
+	}
 
 
 	public TransactionId(long aTransaction)
 	{
-		mTransaction = aTransaction;
+		mTransaction = new AtomicLong(aTransaction);
 	}
-	
-	
+
+
 	public long get()
 	{
-		return mTransaction;
+		return mTransaction.get();
+	}
+
+
+	void increment()
+	{
+		mTransaction.incrementAndGet();
+	}
+
+
+	void set(long aTransactionId)
+	{
+		mTransaction.set(aTransactionId);
 	}
 }

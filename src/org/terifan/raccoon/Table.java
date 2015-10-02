@@ -95,17 +95,11 @@ class Table<T> implements Iterable<T>
 //			return baos.toByteArray();
 //		}
 
-		mTableImplementation = new HashTable(mBlockDevice, aTableHeader, getTransactionId(), false);
+		mTableImplementation = new HashTable(mBlockDevice, aTableHeader, mDatabase.getTransactionId(), false);
 
 		Log.dec();
 
 		return this;
-	}
-
-
-	private TransactionId getTransactionId()
-	{
-		return new TransactionId(mDatabase.getTransactionId());
 	}
 
 
@@ -190,7 +184,7 @@ class Table<T> implements Iterable<T>
 		{
 			type = INDIRECT_DATA;
 
-			try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, getTransactionId()))
+			try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId()))
 			{
 				bos.write(tmp);
 				tmp = bos.finish();
@@ -232,7 +226,7 @@ class Table<T> implements Iterable<T>
 
 	public BlobOutputStream saveBlob(T aEntityKey) throws IOException
 	{
-		BlobOutputStream out = new BlobOutputStream(mBlockAccessor, getTransactionId());
+		BlobOutputStream out = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId());
 
 		synchronized (this)
 		{
@@ -263,7 +257,7 @@ class Table<T> implements Iterable<T>
 
 	public boolean save(T aEntity, InputStream aInputStream)
 	{
-		try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, getTransactionId()))
+		try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId()))
 		{
 			bos.write(Streams.fetch(aInputStream));
 
@@ -324,8 +318,8 @@ class Table<T> implements Iterable<T>
 	{
 		mTableImplementation.close();
 	}
-	
-	
+
+
 	boolean isChanged()
 	{
 		return mTableImplementation.isChanged();

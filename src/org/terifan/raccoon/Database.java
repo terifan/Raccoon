@@ -42,8 +42,8 @@ public class Database implements AutoCloseable
 	private final HashMap<Class,Initializer> mInitializers;
 	private final HashMap<TableType,Table> mOpenTables;
 	private final TableTypeMap mTableTypes;
+	private final TransactionId mTransactionId;
 	private Table mSystemTable;
-	private long mTransactionId;
 	private boolean mChanged;
 
 
@@ -52,6 +52,7 @@ public class Database implements AutoCloseable
 		mOpenTables = new HashMap<>();
 		mTableTypes = new TableTypeMap();
 		mInitializers = new HashMap<>();
+		mTransactionId = new TransactionId();
 	}
 
 
@@ -236,7 +237,7 @@ public class Database implements AutoCloseable
 			throw new UnsupportedVersionException("Unsupported database version: provided: " + version + ", expected: " + VERSION);
 		}
 
-		db.mTransactionId = buffer.readInt64();
+		db.mTransactionId.set(buffer.readInt64());
 
 		TableType systemTableType = new TableType(Table.class, null);
 
@@ -431,13 +432,13 @@ public class Database implements AutoCloseable
 	{
 		Log.i("update SuperBlock");
 
-		mTransactionId++;
+		mTransactionId.increment();
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(100);
 		buffer.writeInt32(0); // leave space for checksum
 		buffer.writeInt64(IDENTITY);
 		buffer.writeInt32(VERSION);
-		buffer.writeInt64(mTransactionId);
+		buffer.writeInt64(mTransactionId.get());
 		buffer.write(mSystemTable.getTableHeader());
 		buffer.trim();
 
@@ -842,7 +843,7 @@ public class Database implements AutoCloseable
 	}
 
 
-	public long getTransactionId()
+	public TransactionId getTransactionId()
 	{
 		return mTransactionId;
 	}
