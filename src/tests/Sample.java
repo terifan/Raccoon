@@ -21,32 +21,32 @@ public class Sample
 
 			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.CREATE_NEW, accessCredentials))
 			{
-//				db.save(new _Fruit1K("apple", 52.12));
-//				db.save(new _Fruit1K("orange", 47.78));
-//				db.save(new _Fruit1K("banana", 89.45));
-//				db.commit();
-
-				db.bundle("fruits")
-					.key("name", "apple")
-					.putDouble("kcal", 52.12)
-					.save();
-				db.bundle("fruits")
-					.key("name", "orange")
-					.putDouble("kcal", 47.78)
-					.save();
-				db.bundle("fruits", new TextDecoder().unmarshal("{'name':'banana','kcal':89.45}"))
-					.key("name")
-					.save();
-
+				db.save(new _Fruit1K("apple", 52.12));
+				db.save(new _Fruit1K("orange", 47.78));
+				db.save(new _Fruit1K("banana", 89.45));
 				db.commit();
 
-				Bundle b = db.bundle("fruits")
-					.key("name", "orange")
-					.get();
-
-				List<Bundle> result = db.bundle("fruits")
-					.key("name", "orange")
-					.list();
+//				db.bundle("fruits")
+//					.key("name", "apple")
+//					.putDouble("kcal", 52.12)
+//					.save();
+//				db.bundle("fruits")
+//					.key("name", "orange")
+//					.putDouble("kcal", 47.78)
+//					.save();
+//				db.bundle("fruits", new TextDecoder().unmarshal("{'name':'banana','kcal':89.45}"))
+//					.key("name")
+//					.save();
+//
+//				db.commit();
+//
+//				Bundle b = db.bundle("fruits")
+//					.key("name", "orange")
+//					.get();
+//
+//				List<Bundle> result = db.bundle("fruits")
+//					.key("name", "orange")
+//					.list();
 			}
 
 			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.OPEN, accessCredentials))

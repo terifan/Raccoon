@@ -437,62 +437,62 @@ public class DatabaseNGTest
 	}
 
 
-	@Test
-	public void testBundle() throws IOException
-	{
-		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
-
-		Bundle bundle = new Bundle();
-		bundle.putString("message", "hello world");
-
-		_KeyValue1K1B in = new _KeyValue1K1B("bundle", bundle);
-		_KeyValue1K1B out = new _KeyValue1K1B("bundle");
-
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
-		{
-			db.save(in);
-			db.commit();
-		}
-
-		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
-		{
-			db.get(out);
-		}
-
-		assertEquals(out.content, in.content);
-	}
-
-
-	@Test
-	public void testBundleBlob() throws IOException
-	{
-		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
-
-		byte[] buf = new byte[1024*1024];
-		new Random().nextBytes(buf);
-		Bundle bundle = new Bundle();
-		bundle.putByteArray("bigdata", buf);
-
-		_KeyValue1K1B in = new _KeyValue1K1B("apple", bundle);
-		_KeyValue1K1B out = new _KeyValue1K1B("apple");
-
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
-		{
-			db.save(in);
-			db.commit();
-		}
-
-		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
-		{
-			db.get(out);
-		}
-
-		assertEquals(out.content, in.content);
-		assertNotNull(out.content.getByteArray("bigdata"));
-		assertEquals(out.content.getByteArray("bigdata"), in.content.getByteArray("bigdata"));
-	}
+//	@Test
+//	public void testBundle() throws IOException
+//	{
+//		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+//		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+//
+//		Bundle bundle = new Bundle();
+//		bundle.putString("message", "hello world");
+//
+//		_KeyValue1K1B in = new _KeyValue1K1B("bundle", bundle);
+//		_KeyValue1K1B out = new _KeyValue1K1B("bundle");
+//
+//		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
+//		{
+//			db.save(in);
+//			db.commit();
+//		}
+//
+//		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+//		{
+//			db.get(out);
+//		}
+//
+//		assertEquals(out.content, in.content);
+//	}
+//
+//
+//	@Test
+//	public void testBundleBlob() throws IOException
+//	{
+//		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+//		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+//
+//		byte[] buf = new byte[1024*1024];
+//		new Random().nextBytes(buf);
+//		Bundle bundle = new Bundle();
+//		bundle.putByteArray("bigdata", buf);
+//
+//		_KeyValue1K1B in = new _KeyValue1K1B("apple", bundle);
+//		_KeyValue1K1B out = new _KeyValue1K1B("apple");
+//
+//		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
+//		{
+//			db.save(in);
+//			db.commit();
+//		}
+//
+//		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+//		{
+//			db.get(out);
+//		}
+//
+//		assertEquals(out.content, in.content);
+//		assertNotNull(out.content.getByteArray("bigdata"));
+//		assertEquals(out.content.getByteArray("bigdata"), in.content.getByteArray("bigdata"));
+//	}
 
 	
 	@Test
