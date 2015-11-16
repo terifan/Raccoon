@@ -56,6 +56,8 @@ public class ConcurrencyTest
 							}
 						});
 					}
+					
+					Thread.sleep(10000);
 				}
 				db.commit();
 			}
