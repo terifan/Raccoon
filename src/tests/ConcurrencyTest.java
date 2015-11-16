@@ -41,18 +41,27 @@ public class ConcurrencyTest
 									{
 										if (!db.get(new _Fruit1K(key)))
 										{
-											Log.out.println("err");
+											synchronized (ConcurrencyTest.class)
+											{
+												Log.out.println("err");
+											}
 										}
 									}
 									catch (Exception e)
 									{
-										e.printStackTrace(Log.out);
+										synchronized (ConcurrencyTest.class)
+										{
+											e.printStackTrace(Log.out);
+										}
 									}
 								});
 							}
 							catch (Exception e)
 							{
-								e.printStackTrace(Log.out);
+								synchronized (ConcurrencyTest.class)
+								{
+									e.printStackTrace(Log.out);
+								}
 							}
 						});
 					}
