@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import org.terifan.bundle.Bundle;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
@@ -22,6 +21,7 @@ import org.terifan.raccoon.util.Log;
 
 public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 {
+	private static final long serialVersionUID = 1L;
 	private final static HashMap<String,Class> PRIMITIVE_TYPES;
 
 	static
@@ -168,8 +168,7 @@ public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 			|| aType == String.class
 			|| aType == Character.class
 			|| aType == Boolean.class
-			|| aType == Date.class
-			|| aType == Bundle.class;
+			|| aType == Date.class;
 	}
 
 

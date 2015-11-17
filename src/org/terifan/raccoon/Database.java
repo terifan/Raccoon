@@ -11,7 +11,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.terifan.bundle.Bundle;
 import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.IPhysicalBlockDevice;
@@ -884,49 +883,6 @@ public class Database implements AutoCloseable
 		finally
 		{
 			mWriteLock.unlock();
-		}
-	}
-
-
-	public MyBundle bundle(String aTable)
-	{
-		return new MyBundle();
-	}
-
-	public MyBundle bundle(String aTable, Bundle aCopyFrom)
-	{
-		return new MyBundle();
-	}
-
-
-	public static class MyBundle extends Bundle<MyBundle>
-	{
-		public void save()
-		{
-		}
-
-
-		public List<Bundle> list()
-		{
-			return null;
-		}
-
-
-		public MyBundle key(String... aKey)
-		{
-			return null;
-		}
-
-
-		public MyBundle key(String aKey, Object aValue)
-		{
-			return null;
-		}
-
-
-		public MyBundle get()
-		{
-			return null;
 		}
 	}
 }

@@ -2,8 +2,6 @@ package org.terifan.raccoon.serialization;
 
 import java.io.IOException;
 import java.util.Date;
-import org.terifan.bundle.BinaryEncoder;
-import org.terifan.bundle.Bundle;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
@@ -54,19 +52,6 @@ class ValueWriter
 		else if (Date.class.isAssignableFrom(type))
 		{
 			aDataOutput.writeVar64(((Date)aValue).getTime());
-		}
-		else if (Bundle.class.isAssignableFrom(type))
-		{
-			try
-			{
-				byte[] buf = new BinaryEncoder().marshal((Bundle)aValue);
-				aDataOutput.writeVar32(buf.length);
-				aDataOutput.write(buf);
-			}
-			catch (IOException e)
-			{
-				throw new IllegalStateException(e);
-			}
 		}
 		else
 		{
