@@ -40,7 +40,7 @@ public class ElephantNGTest
 		rnd.nextBytes(input);
 
 
-		Elephant elephant = new Elephant(aUnitSize);
+		CBCElephant elephant = new CBCElephant(aUnitSize);
 		byte[] cipherText = new byte[input.length];
 		byte[] output = new byte[input.length];
 

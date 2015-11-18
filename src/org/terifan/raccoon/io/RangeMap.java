@@ -19,7 +19,7 @@ class RangeMap
 	}
 
 
-	public synchronized void add(int aOffset, int aSize)
+	public /*synchronized*/ void add(int aOffset, int aSize)
 	{
 		if (aOffset < 0 || aSize <= 0)
 		{
@@ -70,7 +70,7 @@ class RangeMap
 	}
 
 
-	public synchronized void remove(int aOffset, int aSize)
+	public /*synchronized*/ void remove(int aOffset, int aSize)
 	{
 		if (aSize <= 0)
 		{
@@ -124,7 +124,7 @@ class RangeMap
 	}
 
 
-	public synchronized int next(int aSize)
+	public /*synchronized*/ int next(int aSize)
 	{
 		Entry<Integer, Integer> entry = mMap.firstEntry();
 
@@ -149,19 +149,19 @@ class RangeMap
 	}
 
 
-	public synchronized int getFreeSpace()
+	public /*synchronized*/ int getFreeSpace()
 	{
 		return mSpace;
 	}
 
 
-	public synchronized int getUsedSpace()
+	public /*synchronized*/ int getUsedSpace()
 	{
 		return mMap.lastEntry().getValue() - mSpace;
 	}
 
 
-	public synchronized boolean isFree(int aOffset, int aSize)
+	public /*synchronized*/ boolean isFree(int aOffset, int aSize)
 	{
 		Integer blockStart = mMap.floorKey(aOffset);
 
@@ -179,7 +179,7 @@ class RangeMap
 	}
 
 
-	public synchronized void clear()
+	public /*synchronized*/ void clear()
 	{
 		mMap.clear();
 		mSpace = 0;
@@ -187,7 +187,7 @@ class RangeMap
 
 
 	@Override
-	public synchronized RangeMap clone()
+	public /*synchronized*/ RangeMap clone()
 	{
 		RangeMap map;
 		try
@@ -206,7 +206,7 @@ class RangeMap
 	}
 
 
-	public synchronized void read(ByteArrayBuffer aDataInput) throws IOException
+	public /*synchronized*/ void read(ByteArrayBuffer aDataInput) throws IOException
 	{
 		int size = aDataInput.readVar32();
 
@@ -221,7 +221,7 @@ class RangeMap
 	}
 
 
-	public synchronized void write(ByteArrayBuffer aDataOutput) throws IOException
+	public /*synchronized*/ void write(ByteArrayBuffer aDataOutput) throws IOException
 	{
 		int prev = 0;
 
@@ -240,7 +240,7 @@ class RangeMap
 
 
 	@Override
-	public synchronized String toString()
+	public /*synchronized*/ String toString()
 	{
 		StringBuilder sb = new StringBuilder("{");
 		for (Integer key : mMap.keySet())

@@ -6,7 +6,7 @@ import java.util.Random;
 import org.terifan.raccoon.security.InvalidKeyException;
 import org.terifan.raccoon.security.AES;
 import org.terifan.raccoon.security.Cipher;
-import org.terifan.raccoon.security.Elephant;
+import org.terifan.raccoon.security.CBCElephant;
 import org.terifan.raccoon.security.MurmurHash3;
 import org.terifan.raccoon.security.SecretKey;
 import org.terifan.raccoon.security.Serpent;
@@ -286,7 +286,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		private transient final int [][] mIV = new int[3][4];
 		private transient final Cipher[] mCiphers;
 		private transient final Cipher mTweakCipher;
-		private transient final Elephant mElephant;
+		private transient final CBCElephant mElephant;
 		private transient final int mUnitLength;
 
 
@@ -369,7 +369,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 			}
 
 			mUnitLength = aUnitLength;
-			mElephant = new Elephant(mUnitLength);
+			mElephant = new CBCElephant(mUnitLength);
 		}
 
 

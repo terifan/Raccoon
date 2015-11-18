@@ -3,7 +3,7 @@ package org.terifan.raccoon.security;
 import java.util.Arrays;
 
 
-public final class Elephant
+public final class CBCElephant
 {
 	private final static int BYTES_PER_CIPHER_BLOCK = 16;
 	private final static int WORDS_PER_CIPHER_BLOCK = 4;
@@ -21,7 +21,7 @@ public final class Elephant
 	private final transient int mBlocksPerUnit;
 
 
-	public Elephant(int aUnitSize)
+	public CBCElephant(int aUnitSize)
 	{
 		if (aUnitSize < 32)
 		{
@@ -59,9 +59,12 @@ public final class Elephant
 		assert aInput.length >= aOffset + aLength;
 		assert aInput.length == aOutput.length;
 
+		int[] words = mWords;
+		int wordMask = mWordMask;
+
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / mUnitSize; unitIndex < numDataUnits; unitIndex++, offset += mUnitSize)
 		{
-			toInts(aInput, offset, mWords, mWordsPerUnit);
+			toInts(aInput, offset, words, mWordsPerUnit);
 
 			// encryption cbc mode
 
@@ -71,12 +74,12 @@ public final class Elephant
 			{
 				for (int j = 0; j < WORDS_PER_CIPHER_BLOCK; j++)
 				{
-					mIV[j] ^= mWords[i + j];
+					mIV[j] ^= words[i + j];
 				}
 
 				aCipher.engineEncryptBlock(mIV, 0, mIV, 0);
 
-				System.arraycopy(mIV, 0, mWords, i, WORDS_PER_CIPHER_BLOCK);
+				System.arraycopy(mIV, 0, words, i, WORDS_PER_CIPHER_BLOCK);
 			}
 
 			// elephant diffuser
@@ -85,20 +88,20 @@ public final class Elephant
 
 			for (int i = 0; i < mBlocksPerUnit; i++)
 			{
-				mWords[i] ^= mTweakKey[i & 7] ^ i;
+				words[i] ^= mTweakKey[i & 7] ^ i;
 			}
 
 			for (int i = 5 * mWordsPerUnit; --i >= 0;)
 			{
-				mWords[i & mWordMask] -= (mWords[(i + 2) & mWordMask] ^ rol(mWords[(i + 5) & mWordMask], ROTATE2[i & 3]));
+				words[i & wordMask] -= (words[(i + 2) & wordMask] ^ rol(words[(i + 5) & wordMask], ROTATE2[i & 3]));
 			}
 
 			for (int i = 3 * mWordsPerUnit; --i >= 0;)
 			{
-				mWords[i & mWordMask] -= (mWords[(i - 2) & mWordMask] ^ rol(mWords[(i - 5) & mWordMask], ROTATE1[i & 3]));
+				words[i & wordMask] -= (words[(i - 2) & wordMask] ^ rol(words[(i - 5) & wordMask], ROTATE1[i & 3]));
 			}
 
-			toBytes(mWords, offset, aOutput, mWordsPerUnit);
+			toBytes(words, offset, aOutput, mWordsPerUnit);
 		}
 	}
 
@@ -112,9 +115,12 @@ public final class Elephant
 		assert aInput.length >= aOffset + aLength;
 		assert aInput.length == aOutput.length;
 
+		int[] words = mWords;
+		int wordMask = mWordMask;
+
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / mUnitSize; unitIndex < numDataUnits; unitIndex++, offset += mUnitSize)
 		{
-			toInts(aInput, offset, mWords, mWordsPerUnit);
+			toInts(aInput, offset, words, mWordsPerUnit);
 
 			// elephant diffuser
 
@@ -122,17 +128,17 @@ public final class Elephant
 
 			for (int i = 0; i < 3 * mWordsPerUnit; i++)
 			{
-				mWords[i & mWordMask] += (mWords[(i - 2) & mWordMask] ^ rol(mWords[(i - 5) & mWordMask], ROTATE1[i & 3]));
+				words[i & wordMask] += (words[(i - 2) & wordMask] ^ rol(words[(i - 5) & wordMask], ROTATE1[i & 3]));
 			}
 
 			for (int i = 0; i < 5 * mWordsPerUnit; i++)
 			{
-				mWords[i & mWordMask] += (mWords[(i + 2) & mWordMask] ^ rol(mWords[(i + 5) & mWordMask], ROTATE2[i & 3]));
+				words[i & wordMask] += (words[(i + 2) & wordMask] ^ rol(words[(i + 5) & wordMask], ROTATE2[i & 3]));
 			}
 
 			for (int i = 0; i < mBlocksPerUnit; i++)
 			{
-				mWords[i] ^= mTweakKey[i & 7] ^ i;
+				words[i] ^= mTweakKey[i & 7] ^ i;
 			}
 
 			// decryption cbc mode
@@ -141,19 +147,19 @@ public final class Elephant
 
 			for (int i = 0; i < mWordsPerUnit; i += WORDS_PER_CIPHER_BLOCK)
 			{
-				System.arraycopy(mWords, i, mTemp, 0, WORDS_PER_CIPHER_BLOCK);
+				System.arraycopy(words, i, mTemp, 0, WORDS_PER_CIPHER_BLOCK);
 
-				aCipher.engineDecryptBlock(mWords, i, mWords, i);
+				aCipher.engineDecryptBlock(words, i, words, i);
 
 				for (int j = 0; j < WORDS_PER_CIPHER_BLOCK; j++)
 				{
-					mWords[i+j] ^= mIV[j];
+					words[i+j] ^= mIV[j];
 				}
 
 				System.arraycopy(mTemp, 0, mIV, 0, WORDS_PER_CIPHER_BLOCK);
 			}
 
-			toBytes(mWords, offset, aOutput, mWordsPerUnit);
+			toBytes(words, offset, aOutput, mWordsPerUnit);
 		}
 	}
 

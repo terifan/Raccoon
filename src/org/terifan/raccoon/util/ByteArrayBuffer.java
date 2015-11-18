@@ -1,5 +1,6 @@
 package org.terifan.raccoon.util;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 
@@ -181,7 +182,7 @@ public final class ByteArrayBuffer
 		{
 			int b = read();
 			value |= (b & 127) << n;
-			if ((b & 128) == 0)
+			if (b < 128)
 			{
 				return decodeZigZag32(value);
 			}
@@ -224,8 +225,7 @@ public final class ByteArrayBuffer
 			return readInt64();
 		}
 
-		long value = 0L;
-		for (int n = 0; n < 64; n += 7)
+		for (long n = 0, value = 0; n < 64; n += 7)
 		{
 			int b = read();
 			value |= (long)(b & 127) << n;
@@ -499,6 +499,8 @@ public final class ByteArrayBuffer
 
 	public int readBits(int aCount)
 	{
+		assert aCount <= 24;
+
 		int output = 0;
 
 		while (aCount > mReadBitCount)
@@ -507,13 +509,19 @@ public final class ByteArrayBuffer
 			output |= mBitBuffer << aCount;
 			mBitBuffer = read();
 			mReadBitCount = 8;
+
+			if (mBitBuffer == -1)
+			{
+				mReadBitCount = 0;
+				throw new IllegalStateException("Premature end of stream");
+			}
 		}
 
 		if (aCount > 0)
 		{
 			mReadBitCount -= aCount;
 			output |= mBitBuffer >> mReadBitCount;
-			mBitBuffer &= (1L << mReadBitCount) - 1;
+			mBitBuffer &= (1 << mReadBitCount) - 1;
 		}
 
 		return output;
@@ -562,7 +570,7 @@ public final class ByteArrayBuffer
 	}
 
 
-	private static long decodeZigZag64(final long n)
+	private static int decodeZigZag32(final int n)
 	{
 		return (n >>> 1) ^ -(n & 1);
 	}
@@ -574,7 +582,7 @@ public final class ByteArrayBuffer
 	}
 
 
-	private static int decodeZigZag32(final int n)
+	private static long decodeZigZag64(final long n)
 	{
 		return (n >>> 1) ^ -(n & 1);
 	}

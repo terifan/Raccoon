@@ -16,7 +16,7 @@ public class ConcurrencyTest
 		try
 		{
 			Random rnd = new Random();
-			String[] keys = new String[10000];
+			String[] keys = new String[100000];
 			char[] buf = new char[40];
 			for (int i = 0; i < keys.length; i++)
 			{
@@ -33,48 +33,51 @@ public class ConcurrencyTest
 
 			try (Database db = Database.open(blockDevice, OpenOption.CREATE_NEW, accessCredentials))
 			{
-				try (__FixedThreadExecutor executor = new __FixedThreadExecutor(8))
+				try (__FixedThreadExecutor executor2 = new __FixedThreadExecutor(4))
 				{
-					final AtomicInteger in = new AtomicInteger();
-
-					for (int i = 0; i < keys.length; i++)
+					try (__FixedThreadExecutor executor = new __FixedThreadExecutor(4))
 					{
-						executor.submit(()->
-						{
-							try
-							{
-								final String key = keys[in.incrementAndGet()];
-								db.save(new _Fruit1K(key, 52.12));
+						final AtomicInteger in = new AtomicInteger();
 
-								executor.submit(()->
+						for (int i = 0; i < keys.length; i++)
+						{
+							executor.submit(()->
+							{
+								try
 								{
-									try
+									final String key = keys[in.getAndIncrement()];
+									db.save(new _Fruit1K(key, 52.12));
+
+									executor2.submit(()->
 									{
-										if (!db.get(new _Fruit1K(key)))
+										try
+										{
+											if (!db.get(new _Fruit1K(key)))
+											{
+												synchronized (ConcurrencyTest.class)
+												{
+													Log.out.println("err");
+												}
+											}
+										}
+										catch (Exception e)
 										{
 											synchronized (ConcurrencyTest.class)
 											{
-												Log.out.println("err");
+												e.printStackTrace(Log.out);
 											}
 										}
-									}
-									catch (Exception e)
-									{
-										synchronized (ConcurrencyTest.class)
-										{
-											e.printStackTrace(Log.out);
-										}
-									}
-								});
-							}
-							catch (Exception e)
-							{
-								synchronized (ConcurrencyTest.class)
-								{
-									e.printStackTrace(Log.out);
+									});
 								}
-							}
-						});
+								catch (Exception e)
+								{
+									synchronized (ConcurrencyTest.class)
+									{
+										e.printStackTrace(Log.out);
+									}
+								}
+							});
+						}
 					}
 				}
 

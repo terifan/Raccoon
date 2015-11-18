@@ -155,7 +155,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public synchronized long allocBlock(int aBlockCount) throws IOException
+	public long allocBlock(int aBlockCount) throws IOException
 	{
 		long blockIndex = allocBlockInternal(aBlockCount) - RESERVED_BLOCKS;
 
@@ -168,7 +168,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private long allocBlockInternal(int aBlockCount) throws IOException
+	private synchronized long allocBlockInternal(int aBlockCount) throws IOException
 	{
 		int blockIndex = mRangeMap.next(aBlockCount);
 
@@ -193,7 +193,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public synchronized void freeBlock(long aBlockIndex, int aBlockCount) throws IOException
+	public void freeBlock(long aBlockIndex, int aBlockCount) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -204,7 +204,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private void freeBlockInternal(long aBlockIndex, int aBlockCount) throws IOException
+	private synchronized void freeBlockInternal(long aBlockIndex, int aBlockCount) throws IOException
 	{
 		Log.v("free block %d +%d", aBlockIndex, aBlockCount);
 
@@ -227,7 +227,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public synchronized void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -242,7 +242,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	private synchronized void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;
@@ -264,7 +264,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public synchronized void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -279,7 +279,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	private synchronized void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;
@@ -299,7 +299,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public synchronized void commit(boolean aMetadata) throws IOException
+	public void commit(boolean aMetadata) throws IOException
 	{
 		commit();
 	}
