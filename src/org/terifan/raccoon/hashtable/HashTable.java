@@ -123,7 +123,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 	private void loadRoot()
 	{
-		Log.i("load root ", mRootBlockPointer);
+		Log.i("load root %s", mRootBlockPointer);
 
 		if (mRootBlockPointer.getType() == LEAF)
 		{
@@ -341,7 +341,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		}
 		else
 		{
-			Log.v("rollback " + (mRootBlockPointer.getType() == LEAF ? "root map" : "root node"));
+			Log.v("rollback %s", mRootBlockPointer.getType() == LEAF ? "root map" : "root node");
 
 			loadRoot();
 		}

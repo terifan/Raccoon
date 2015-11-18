@@ -475,10 +475,10 @@ public final class ByteArrayBuffer
 	}
 
 
-//	public ByteArrayBuffer writeBit(boolean aBit)
-//	{
-//		return writeBit(aBit ? 1 : 0);
-//	}
+	public ByteArrayBuffer writeBit(boolean aBit)
+	{
+		return writeBit(aBit ? 1 : 0);
+	}
 
 
 	public ByteArrayBuffer writeBit(int aBit)
@@ -577,5 +577,65 @@ public final class ByteArrayBuffer
 	private static int decodeZigZag32(final int n)
 	{
 		return (n >>> 1) ^ -(n & 1);
+	}
+
+
+	public static short readInt16(byte[] aBuffer, int aOffset)
+	{
+		int ch1 = 0xFF & aBuffer[aOffset];
+		int ch2 = 0xFF & aBuffer[aOffset + 1];
+		return (short)((ch1 << 8) + ch2);
+	}
+
+
+	public static void writeInt16(byte[] aBuffer, int aOffset, short aValue)
+	{
+		aBuffer[aOffset++] = (byte)(aValue >> 8);
+		aBuffer[aOffset  ] = (byte)(aValue);
+	}
+
+
+	public static int readInt32(byte[] aBuffer, int aOffset)
+	{
+		int ch1 = 0xFF & aBuffer[aOffset++];
+		int ch2 = 0xFF & aBuffer[aOffset++];
+		int ch3 = 0xFF & aBuffer[aOffset++];
+		int ch4 = 0xFF & aBuffer[aOffset];
+		return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + ch4);
+	}
+
+
+	public static void writeInt32(byte[] aBuffer, int aOffset, int aValue)
+	{
+		aBuffer[aOffset++] = (byte)(aValue >>> 24);
+		aBuffer[aOffset++] = (byte)(aValue >> 16);
+		aBuffer[aOffset++] = (byte)(aValue >> 8);
+		aBuffer[aOffset  ] = (byte)(aValue);
+	}
+
+
+	public static long readInt64(byte[] aBuffer, int aOffset)
+	{
+		return (((long)aBuffer[aOffset++] << 56)
+			+ ((long)(aBuffer[aOffset++] & 255) << 48)
+			+ ((long)(aBuffer[aOffset++] & 255) << 40)
+			+ ((long)(aBuffer[aOffset++] & 255) << 32)
+			+ ((long)(aBuffer[aOffset++] & 255) << 24)
+			+ ((aBuffer[aOffset++] & 255) << 16)
+			+ ((aBuffer[aOffset++] & 255) << 8)
+			+ (aBuffer[aOffset] & 255));
+	}
+
+
+	public static void writeInt64(byte[] aBuffer, int aOffset, long aValue)
+	{
+		aBuffer[aOffset++] = (byte)(aValue >>> 56);
+		aBuffer[aOffset++] = (byte)(aValue >> 48);
+		aBuffer[aOffset++] = (byte)(aValue >> 40);
+		aBuffer[aOffset++] = (byte)(aValue >> 32);
+		aBuffer[aOffset++] = (byte)(aValue >> 24);
+		aBuffer[aOffset++] = (byte)(aValue >> 16);
+		aBuffer[aOffset++] = (byte)(aValue >> 8);
+		aBuffer[aOffset  ] = (byte)(aValue);
 	}
 }

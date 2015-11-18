@@ -47,7 +47,7 @@ public class Marshaller
 
 		try
 		{
-			Log.v("marshal entity fields " + aFieldCategory);
+			Log.v("marshal entity fields %s", aFieldCategory);
 			Log.inc();
 
 			for (FieldType fieldType : mTypeDeclarations)

@@ -206,23 +206,6 @@ class RangeMap
 	}
 
 
-	@Override
-	public synchronized String toString()
-	{
-		StringBuilder sb = new StringBuilder("{");
-		for (Integer key : mMap.keySet())
-		{
-			if (sb.length() > 1)
-			{
-				sb.append(", ");
-			}
-			sb.append(key + "-" + (mMap.get(key) - 1));
-		}
-		sb.append("}");
-		return sb.toString();
-	}
-
-
 	public synchronized void read(ByteArrayBuffer aDataInput) throws IOException
 	{
 		int size = aDataInput.readVar32();
@@ -256,57 +239,19 @@ class RangeMap
 	}
 
 
-//	public static void main(String... args)
-//	{
-//		try
-//		{
-//			final RangeMap map = new RangeMap();
-//
-//			JFrame frame = new JFrame();
-//			frame.add(new JPanel()
-//			{
-//				@Override
-//				protected void paintComponent(Graphics g)
-//				{
-//					g.setColor(Color.WHITE);
-//					g.fillRect(0,0,getWidth(),getHeight());
-//					Color freeColor = new Color(240,240,240);
-//					Color usedColor = new Color(240,0,0);
-//
-//					int s = 20;
-//					int wi = getWidth()/s;
-//					int hi = getHeight()/s;
-//
-//					for (int y = 0, i = 0; y < hi; y++)
-//					{
-//						for (int x = 0; x < wi; x++, i++)
-//						{
-//							g.setColor(map.contains(i,1) ? usedColor : freeColor);
-//							g.fillRect(s*x+1, s*y+1, s-1, s-1);
-//						}
-//					}
-//				}
-//			});
-//			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//			frame.setSize(1024, 768);
-//			frame.setLocationRelativeTo(null);
-//			frame.setVisible(true);
-//
-//			/* -x----*/ map.add(1, 1); frame.repaint(); Thread.sleep(1000); System.out.println(map.mMap);
-//			/* xx----*/ map.add(0, 1); frame.repaint(); Thread.sleep(1000); System.out.println(map.mMap);
-//			/* xxx---*/ map.add(2, 1); frame.repaint(); Thread.sleep(1000); System.out.println(map.mMap);
-//			/* xxx-x-*/ map.add(4, 1); frame.repaint(); Thread.sleep(1000); System.out.println(map.mMap);
-//			/* xxxxx-*/ map.add(3, 1); frame.repaint(); Thread.sleep(1000); System.out.println(map.mMap);
-//			/* -xxxx-*/ map.remove(0, 1); frame.repaint(); Thread.sleep(1000); System.out.println(map.mMap);
-//			/* -x-xx-*/ map.remove(2, 1); frame.repaint(); Thread.sleep(1000); System.out.println(map.mMap);
-//			/* ---xx-*/ map.remove(1, 1); frame.repaint(); Thread.sleep(1000); System.out.println(map.mMap);
-//			/* ---x--*/ map.remove(4, 1); frame.repaint(); Thread.sleep(1000); System.out.println(map.mMap);
-//			/* ------*/ map.remove(3, 1); frame.repaint(); Thread.sleep(1000); System.out.println(map.mMap);
-//			/* xxxxxx*/ map.add(0, 10000); frame.repaint(); Thread.sleep(1000); System.out.println(map.mMap);
-//		}
-//		catch (Exception e)
-//		{
-//			e.printStackTrace(System.out);
-//		}
-//	}
+	@Override
+	public synchronized String toString()
+	{
+		StringBuilder sb = new StringBuilder("{");
+		for (Integer key : mMap.keySet())
+		{
+			if (sb.length() > 1)
+			{
+				sb.append(", ");
+			}
+			sb.append(key + "-" + (mMap.get(key) - 1));
+		}
+		sb.append("}");
+		return sb.toString();
+	}
 }

@@ -292,7 +292,7 @@ public class Database implements AutoCloseable
 		{
 			table = new Table(this, aTableType, aDiscriminator);
 
-			Log.i("open table '" + table + "' with option " + aOptions);
+			Log.i("open table '%s' with option %s", table, aOptions);
 			Log.inc();
 
 			boolean tableExists = mSystemTable.get(table);
@@ -366,7 +366,7 @@ public class Database implements AutoCloseable
 			{
 				if (table.commit())
 				{
-					Log.i("table updated '" + table + "'");
+					Log.i("table updated '%s'", table);
 
 					mSystemTable.save(table);
 

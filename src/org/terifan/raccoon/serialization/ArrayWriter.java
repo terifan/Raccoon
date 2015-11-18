@@ -28,7 +28,7 @@ class ArrayWriter
 			{
 				for (int i = 0; i < length; i++)
 				{
-					aDataOutput.writeBit(Array.get(aArray, i) == null ? 1 : 0);
+					aDataOutput.writeBit(Array.get(aArray, i) == null);
 				}
 			}
 			for (int i = 0; i < length; i++)

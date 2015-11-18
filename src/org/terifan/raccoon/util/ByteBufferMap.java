@@ -3,8 +3,6 @@ package org.terifan.raccoon.util;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.UUID;
-import org.terifan.raccoon.util.Log;
 
 
 /**
@@ -41,11 +39,12 @@ public class ByteBufferMap implements Iterable<byte[]>
 	private final static int HEADER_SIZE = 3 + 3;
 	private final static int ENTRY_POINTER_SIZE = 3;
 	private final static int ENTRY_HEADER_SIZE = 2 + 2;
+	private final static int MAX_VALUE_SIZE = 65535;
 
 	private final static int ENTRY_OVERHEAD = ENTRY_POINTER_SIZE + ENTRY_HEADER_SIZE;
 	public final static int OVERHEAD = HEADER_SIZE + ENTRY_OVERHEAD + ENTRY_POINTER_SIZE;
-	
-	public final static byte[] OVERFLOW = UUID.randomUUID().toString().getBytes();
+
+	public final static byte[] OVERFLOW = new byte[MAX_VALUE_SIZE + 1];
 
 	private byte[] mBuffer;
 	private int mStartOffset;
@@ -119,12 +118,12 @@ public class ByteBufferMap implements Iterable<byte[]>
 		mBuffer = aBuffer;
 		mStartOffset = aOffset;
 		mCapacity = aCapacity;
-		update();
-	}
-
-
-	public ByteBufferMap update()
-	{
+//		update();
+//	}
+//
+//
+//	public ByteBufferMap update()
+//	{
 		mEntryCount = readTriple(0);
 		mFreeSpaceOffset = readTriple(3) + HEADER_SIZE;
 		mPointerListOffset = mCapacity - ENTRY_POINTER_SIZE * mEntryCount;
@@ -138,7 +137,7 @@ public class ByteBufferMap implements Iterable<byte[]>
 
 		assert integrityCheck() == null : integrityCheck();
 
-		return this;
+//		return this;
 	}
 
 
@@ -156,7 +155,7 @@ public class ByteBufferMap implements Iterable<byte[]>
 
 	public byte[] put(byte[] aKey, byte[] aValue)
 	{
-		if (aKey.length > 65535 || aValue.length > 65535 || aKey.length + aValue.length > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
+		if (aKey.length > MAX_VALUE_SIZE || aValue.length > MAX_VALUE_SIZE || aKey.length + aValue.length > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
 		{
 			throw new IllegalArgumentException("Entry length exceeds capacity of this map: " + (aKey.length + aValue.length) + " > " + (mCapacity - ENTRY_HEADER_SIZE - HEADER_SIZE - ENTRY_POINTER_SIZE));
 		}

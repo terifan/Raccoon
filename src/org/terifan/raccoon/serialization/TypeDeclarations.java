@@ -47,7 +47,7 @@ public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 
 	public TypeDeclarations(Class aType, HashMap<String, Field> mFields)
 	{
-		Log.v("create type declarations for " + aType);
+		Log.v("create type declarations for %s", aType);
 		Log.inc();
 
 		mTypes = new TreeSet<>();
@@ -97,7 +97,7 @@ public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 				throw new IllegalArgumentException("Unsupported type: " + field);
 			}
 
-			Log.v("type found: " + fieldType);
+			Log.v("type found: %s", fieldType);
 		}
 
 		Log.dec();

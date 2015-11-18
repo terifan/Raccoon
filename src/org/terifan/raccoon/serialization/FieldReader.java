@@ -16,7 +16,7 @@ class FieldReader
 {
 	static Object readField(FieldType aFieldType, ByteArrayBuffer aDataInput, Field aField)
 	{
-		Log.v("decode " + aFieldType);
+		Log.v("decode %s", aFieldType);
 
 		try
 		{

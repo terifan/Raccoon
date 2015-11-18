@@ -3,20 +3,20 @@ package org.terifan.raccoon;
 
 public class Stats 
 {
-	public static int blockRead;
-	public static int blockWrite;
-	public static int blockAlloc;
-	public static int blockFree;
-	public static int splitLeaf;
-	public static int upgradeHoleToLeaf;
-	public static int removeValue;
-	public static int putValueLeaf;
-	public static int putValue;
-	public static int getValue;
-	public static int pointerEncode;
-	public static int pointerDecode;
-	public static int indexNodeCreation;
-	public static int leafNodeCreation;
+	public static volatile int blockRead;
+	public static volatile int blockWrite;
+	public static volatile int blockAlloc;
+	public static volatile int blockFree;
+	public static volatile int splitLeaf;
+	public static volatile int upgradeHoleToLeaf;
+	public static volatile int removeValue;
+	public static volatile int putValueLeaf;
+	public static volatile int putValue;
+	public static volatile int getValue;
+	public static volatile int pointerEncode;
+	public static volatile int pointerDecode;
+	public static volatile int indexNodeCreation;
+	public static volatile int leafNodeCreation;
 
 	
 	public static void clear()

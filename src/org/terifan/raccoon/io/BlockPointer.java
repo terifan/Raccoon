@@ -158,7 +158,6 @@ public class BlockPointer implements Serializable
 	}
 
 
-	@Deprecated
 	public byte[] marshal(byte[] aBuffer, int aOffset)
 	{
 		return marshal(new ByteArrayBuffer(aBuffer).position(aOffset)).array();
@@ -191,10 +190,21 @@ public class BlockPointer implements Serializable
 	}
 
 
-	@Deprecated
 	public BlockPointer unmarshal(byte[] aBuffer, int aOffset)
 	{
-		return unmarshal(new ByteArrayBuffer(aBuffer).position(aOffset));
+		mType = aBuffer[aOffset];
+		mCompression = aBuffer[aOffset + 1];
+		mRange = ByteArrayBuffer.readInt16(aBuffer, aOffset + 2);
+		mLogicalSize = ByteArrayBuffer.readInt32(aBuffer, aOffset + 4);
+		mPhysicalSize = ByteArrayBuffer.readInt32(aBuffer, aOffset + 8);
+		mOffset = 0xFFFFFFFFL & ByteArrayBuffer.readInt32(aBuffer, aOffset + 12);
+		mTransactionId = 0xFFFFFFFFL & ByteArrayBuffer.readInt32(aBuffer, aOffset + 16);
+		mChecksum = ByteArrayBuffer.readInt32(aBuffer, aOffset + 20);
+		mBlockKey = ByteArrayBuffer.readInt64(aBuffer, aOffset + 24);
+
+		Stats.pointerDecode++;
+
+		return this;
 	}
 
 

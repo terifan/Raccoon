@@ -2,15 +2,17 @@ package org.terifan.raccoon.io;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import org.terifan.raccoon.util.Log;
-import static tests.__TestUtils.b;
 
 
 public class MemoryBlockDevice implements IPhysicalBlockDevice
 {
-	private final TreeMap<Long, byte[]> mStorage = new TreeMap<>();
+	private final SortedMap<Long, byte[]> mStorage = Collections.synchronizedSortedMap(new TreeMap<>());
 	private final int mBlockSize;
 
 
@@ -20,7 +22,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	}
 
 
-	public TreeMap<Long, byte[]> getStorage()
+	public Map<Long, byte[]> getStorage()
 	{
 		return mStorage;
 	}
@@ -29,7 +31,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		Log.v("write block " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
+		Log.v("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
 		while (aBufferLength > 0)
 		{
@@ -45,7 +47,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		Log.v("read block  " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		Log.v("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
 		while (aBufferLength > 0)
 		{
@@ -94,7 +96,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 
 
 	@Override
-	public void setLength(long aNewLength) throws IOException
+	public synchronized void setLength(long aNewLength) throws IOException
 	{
 		Long[] offsets = mStorage.keySet().toArray(new Long[mStorage.size()]);
 

@@ -177,7 +177,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			return -1;
 		}
 
-		Log.v("alloc block " + blockIndex + " +" + aBlockCount);
+		Log.v("alloc block %d +%d", blockIndex, aBlockCount);
 
 		mModified = true;
 
@@ -206,7 +206,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	private void freeBlockInternal(long aBlockIndex, int aBlockCount) throws IOException
 	{
-		Log.v("free block " + aBlockIndex + " +" + aBlockCount);
+		Log.v("free block %d +%d", aBlockIndex, aBlockCount);
 
 		mModified = true;
 
@@ -252,7 +252,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
 		}
 
-		Log.v("write block " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		Log.v("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 		Log.inc();
 
 		mModified = true;
@@ -289,7 +289,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
 		}
 
-		Log.v("read block " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		Log.v("read block %d +%d", aBlockIndex, aBufferLength/mBlockSize);
 		Log.inc();
 
 		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
@@ -396,7 +396,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mSuperBlock.mWriteCounter++;
 		mSuperBlock.mUpdated = new Date();
 
-		Log.v("write super block %s", mSuperBlock.mWriteCounter & 1L);
+		Log.v("write super block %d", mSuperBlock.mWriteCounter & 1L);
 		Log.inc();
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[mBlockSize]);
@@ -422,7 +422,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	private void readSpaceMap() throws IOException
 	{
-		Log.v("read space map " + mSuperBlock.mSpaceMapBlockIndex + " +" + mSuperBlock.mSpaceMapBlockCount + " (bytes used " + mSuperBlock.mSpaceMapLength + ")");
+		Log.v("read space map %d +%d (bytes used %d)", mSuperBlock.mSpaceMapBlockIndex, mSuperBlock.mSpaceMapBlockCount, mSuperBlock.mSpaceMapLength);
 		Log.inc();
 
 		mRangeMap = new RangeMap();

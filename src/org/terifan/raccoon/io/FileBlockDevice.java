@@ -40,7 +40,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		Log.v("read block " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		Log.v("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
 		mFile.seek(aBlockIndex * mBlockSize);
 		mFile.readFully(aBuffer, aBufferOffset, aBufferLength);
@@ -50,7 +50,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		Log.v("write block " + aBlockIndex + " +" + aBufferLength/mBlockSize);
+		Log.v("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
 		while (aBlockIndex > length())
 		{

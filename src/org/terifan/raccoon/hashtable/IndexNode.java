@@ -10,14 +10,14 @@ class IndexNode implements Node
 {
 	private final static BlockPointer EMPTY_POINTER = new BlockPointer();
 
-	private final ByteArrayBuffer mBuffer;
+	private final byte[] mBuffer;
 	private final int mPointerCount;
 
 
 	public IndexNode(byte[] aBuffer)
 	{
 		mPointerCount = aBuffer.length / BlockPointer.SIZE;
-		mBuffer = new ByteArrayBuffer(aBuffer);
+		mBuffer = aBuffer;
 
 		Stats.indexNodeCreation++;
 	}
@@ -26,7 +26,7 @@ class IndexNode implements Node
 	@Override
 	public byte[] array()
 	{
-		return mBuffer.array();
+		return mBuffer;
 	}
 
 
@@ -102,7 +102,7 @@ class IndexNode implements Node
 
 	private boolean ensureEmpty(int aIndex, int aRange)
 	{
-		byte[] array = mBuffer.array();
+		byte[] array = mBuffer;
 
 		for (int i = aIndex * BlockPointer.SIZE, limit = (aIndex + aRange) * BlockPointer.SIZE; i < limit; i++)
 		{
@@ -120,7 +120,7 @@ class IndexNode implements Node
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 
-		return BlockPointer.getType(mBuffer.array(), aIndex * BlockPointer.SIZE);
+		return BlockPointer.getType(mBuffer, aIndex * BlockPointer.SIZE);
 	}
 
 
@@ -128,7 +128,7 @@ class IndexNode implements Node
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 
-		return new BlockPointer().unmarshal(mBuffer.position(aIndex * BlockPointer.SIZE));
+		return new BlockPointer().unmarshal(mBuffer, aIndex * BlockPointer.SIZE);
 	}
 
 
@@ -136,7 +136,7 @@ class IndexNode implements Node
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 
-		aBlockPointer.marshal(mBuffer.position(aIndex * BlockPointer.SIZE));
+		aBlockPointer.marshal(mBuffer, aIndex * BlockPointer.SIZE);
 	}
 
 

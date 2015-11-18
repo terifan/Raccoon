@@ -95,7 +95,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 		aBlockIndex += RESERVED_BLOCKS;
 
-		Log.v("write block " + aBlockIndex + " +" + aBufferLength/mBlockDevice.getBlockSize());
+		Log.v("write block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
 		Log.inc();
 
 		byte[] workBuffer = aBuffer.clone();
@@ -118,7 +118,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 		aBlockIndex += RESERVED_BLOCKS;
 
-		Log.v("read block " + aBlockIndex + " +" + aBufferLength / mBlockDevice.getBlockSize());
+		Log.v("read block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
 		Log.inc();
 
 		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L); // block key is used by this blockdevice and not passed to lower levels
