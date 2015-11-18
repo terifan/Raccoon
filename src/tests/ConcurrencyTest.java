@@ -8,6 +8,7 @@ import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.util.Log;
 
+// 2:54
 
 public class ConcurrencyTest 
 {
@@ -15,7 +16,7 @@ public class ConcurrencyTest
 	{
 		try
 		{
-			Random rnd = new Random();
+			Random rnd = new Random(1);
 			String[] keys = new String[100000];
 			char[] buf = new char[40];
 			for (int i = 0; i < keys.length; i++)
