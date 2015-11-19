@@ -7,6 +7,7 @@ import org.terifan.raccoon.OpenOption;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.util.Log;
 
+// 1:10
 
 public class ConcurrencyTest
 {
@@ -47,14 +48,13 @@ public class ConcurrencyTest
 			{
 				for (int k = 0; k < 10; k++)
 				{
-					for (int i = 0; i < keys.length; i++)
+					for (String key : keys)
 					{
-						final int j = i;
 						executor.submit(()->
 						{
 							try
 							{
-								db.save(new _Fruit1K(keys[j], 52.12));
+								db.save(new _Fruit1K(key, 52.12));
 							}
 							catch (Exception e)
 							{
