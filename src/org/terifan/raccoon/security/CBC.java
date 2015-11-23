@@ -12,7 +12,7 @@ public final class CBC implements Crypto
 	private final static int WORDS_PER_CIPHER_BLOCK = 4;
 
 
-	public CBC(int aUnitSize)
+	public CBC()
 	{
 	}
 
@@ -24,9 +24,8 @@ public final class CBC implements Crypto
 
 
 	@Override
-	public void encrypt(byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
+	public void encrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
 	{
-		int aUnitSize = 4096;
 		int wordsPerUnit = aUnitSize / 4;
 		int [] words = new int[wordsPerUnit];
 		int [] iv = new int[WORDS_PER_CIPHER_BLOCK];
@@ -40,8 +39,6 @@ public final class CBC implements Crypto
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / aUnitSize; unitIndex < numDataUnits; unitIndex++, offset += aUnitSize)
 		{
 			toInts(aInput, offset, words, wordsPerUnit);
-
-			// encryption cbc mode
 
 			prepareIV(aStartDataUnitNo + unitIndex, aIV, iv, aTweakCipher);
 
@@ -63,9 +60,8 @@ public final class CBC implements Crypto
 
 
 	@Override
-	public void decrypt(byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
+	public void decrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
 	{
-		int aUnitSize = 4096;
 		int wordsPerUnit = aUnitSize / 4;
 		int [] words = new int[wordsPerUnit];
 		int [] iv = new int[WORDS_PER_CIPHER_BLOCK];

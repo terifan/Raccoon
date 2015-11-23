@@ -52,7 +52,7 @@ public final class CBCElephant implements Crypto
 
 	// todo: remove synchronized
 	@Override
-	public synchronized void encrypt(byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
+	public synchronized void encrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
 	{
 		assert aLength >= mUnitSize;
 		assert (aLength % mUnitSize) == 0;
@@ -109,7 +109,7 @@ public final class CBCElephant implements Crypto
 
 	// todo: remove synchronized
 	@Override
-	public synchronized void decrypt(byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
+	public synchronized void decrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
 	{
 		assert aLength >= mUnitSize;
 		assert (aLength % mUnitSize) == 0;

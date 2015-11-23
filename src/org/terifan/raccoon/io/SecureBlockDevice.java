@@ -14,6 +14,7 @@ import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
 import org.terifan.raccoon.security.CBC;
 import org.terifan.raccoon.security.Crypto;
+import org.terifan.raccoon.security.Diffuser;
 
 
 // Boot block layout:
@@ -288,7 +289,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		private transient final Cipher[] mCiphers;
 		private transient final Cipher mTweakCipher;
 		private transient final Crypto mCrypto;
-		private transient final int mUnitLength;
+		private transient final int mUnitSize;
 
 
 		public CipherImplementation(final EncryptionFunction aCiphers, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitLength)
@@ -369,27 +370,37 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 				throw new IllegalArgumentException("Bad offset: " + offset);
 			}
 
-			mUnitLength = aUnitLength;
-			mCrypto = new CBC(mUnitLength);
-//			mCrypto = new CBCElephant(mUnitLength);
+			mUnitSize = aUnitLength;
+			mCrypto = new CBC();
+//			mCrypto = new CBCElephant(mUnitSize);
+			if (diffuser==null || diffuser.getBlockSize()!=mUnitSize) diffuser = new Diffuser(mUnitSize);
 		}
+		static Diffuser diffuser;
 
 
 		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
+			diffuser.encode(aBuffer, 0);
+
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mCrypto.encrypt(aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
+				mCrypto.encrypt(mUnitSize, aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
 			}
+
+			diffuser.encode(aBuffer, 0);
 		}
 
 
 		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
+			diffuser.decode(aBuffer, 0);
+
 			for (int i = mCiphers.length; --i >= 0; )
 			{
-				mCrypto.decrypt(aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
+				mCrypto.decrypt(mUnitSize, aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
 			}
+
+			diffuser.decode(aBuffer, 0);
 		}
 
 

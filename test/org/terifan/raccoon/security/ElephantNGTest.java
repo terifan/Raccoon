@@ -46,15 +46,15 @@ public class ElephantNGTest
 
 		if (aEncryptUnitsInFirstChunk > 0)
 		{
-			elephant.encrypt(input, cipherText, 0, aUnitSize * aEncryptUnitsInFirstChunk, unit, iv, cipher, tweakCipher, tweakKey, extraTweak);
+			elephant.encrypt(0, input, cipherText, 0, aUnitSize * aEncryptUnitsInFirstChunk, unit, iv, cipher, tweakCipher, tweakKey, extraTweak);
 		}
-		elephant.encrypt(input, cipherText, aUnitSize * aEncryptUnitsInFirstChunk, input.length - aUnitSize * aEncryptUnitsInFirstChunk, unit + aEncryptUnitsInFirstChunk, iv, cipher, tweakCipher, tweakKey, extraTweak);
+		elephant.encrypt(0, input, cipherText, aUnitSize * aEncryptUnitsInFirstChunk, input.length - aUnitSize * aEncryptUnitsInFirstChunk, unit + aEncryptUnitsInFirstChunk, iv, cipher, tweakCipher, tweakKey, extraTweak);
 
 		if (adecryptUnitsInFirstChunk > 0)
 		{
-			elephant.decrypt(cipherText, output, 0, aUnitSize * adecryptUnitsInFirstChunk, unit, iv, cipher, tweakCipher, tweakKey, extraTweak);
+			elephant.decrypt(0, cipherText, output, 0, aUnitSize * adecryptUnitsInFirstChunk, unit, iv, cipher, tweakCipher, tweakKey, extraTweak);
 		}
-		elephant.decrypt(cipherText, output, aUnitSize * adecryptUnitsInFirstChunk, input.length - aUnitSize * adecryptUnitsInFirstChunk, unit + adecryptUnitsInFirstChunk, iv, cipher, tweakCipher, tweakKey, extraTweak);
+		elephant.decrypt(0, cipherText, output, aUnitSize * adecryptUnitsInFirstChunk, input.length - aUnitSize * adecryptUnitsInFirstChunk, unit + adecryptUnitsInFirstChunk, iv, cipher, tweakCipher, tweakKey, extraTweak);
 
 		assertEquals(input, output);
 		assertNotEquals(input, cipherText);
