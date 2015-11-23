@@ -27,7 +27,7 @@ public class BlockAccessor
 		mBlockDevice = aBlockDevice;
 		mPageSize = mBlockDevice.getBlockSize();
 
-		mCompressionLevel = 1;
+		mCompressionLevel = 0;
 	}
 
 

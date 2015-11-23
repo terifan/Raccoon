@@ -30,6 +30,7 @@ public abstract class Cipher
 	 *    Index in the out buffer where ciphertext should be written.
 	 */
 	public abstract void engineEncryptBlock(int [] in, int inOffset, int [] out, int outOffset);
+	public abstract void engineEncryptBlock(byte [] in, int inOffset, byte [] out, int outOffset);
 
 
 	/**
@@ -45,6 +46,7 @@ public abstract class Cipher
 	 *    Index in the out buffer where plaintext should be written.
 	 */
 	public abstract void engineDecryptBlock(int [] in, int inOffset, int [] out, int outOffset);
+	public abstract void engineDecryptBlock(byte [] in, int inOffset, byte [] out, int outOffset);
 
 
 	/**

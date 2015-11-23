@@ -6,13 +6,14 @@ import java.util.Random;
 import org.terifan.raccoon.security.InvalidKeyException;
 import org.terifan.raccoon.security.AES;
 import org.terifan.raccoon.security.Cipher;
-import org.terifan.raccoon.security.CBCElephant;
 import org.terifan.raccoon.security.MurmurHash3;
 import org.terifan.raccoon.security.SecretKey;
 import org.terifan.raccoon.security.Serpent;
 import org.terifan.raccoon.security.Twofish;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
+import org.terifan.raccoon.security.CBC;
+import org.terifan.raccoon.security.Crypto;
 
 
 // Boot block layout:
@@ -286,7 +287,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		private transient final int [][] mIV = new int[3][4];
 		private transient final Cipher[] mCiphers;
 		private transient final Cipher mTweakCipher;
-		private transient final CBCElephant mElephant;
+		private transient final Crypto mCrypto;
 		private transient final int mUnitLength;
 
 
@@ -369,7 +370,8 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 			}
 
 			mUnitLength = aUnitLength;
-			mElephant = new CBCElephant(mUnitLength);
+			mCrypto = new CBC(mUnitLength);
+//			mCrypto = new CBCElephant(mUnitLength);
 		}
 
 
@@ -377,7 +379,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		{
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mElephant.encrypt(aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
+				mCrypto.encrypt(aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
 			}
 		}
 
@@ -386,7 +388,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		{
 			for (int i = mCiphers.length; --i >= 0; )
 			{
-				mElephant.decrypt(aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
+				mCrypto.decrypt(aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
 			}
 		}
 
@@ -402,7 +404,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 				mTweakCipher.engineReset();
 
-				mElephant.reset();
+				mCrypto.reset();
 
 				fill(mIV[0], 0);
 				fill(mIV[1], 0);

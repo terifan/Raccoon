@@ -3,7 +3,7 @@ package org.terifan.raccoon.security;
 import java.util.Arrays;
 
 
-public final class CBCElephant
+public final class CBCElephant implements Crypto
 {
 	private final static int BYTES_PER_CIPHER_BLOCK = 16;
 	private final static int WORDS_PER_CIPHER_BLOCK = 4;
@@ -40,6 +40,7 @@ public final class CBCElephant
 	}
 
 
+	@Override
 	public void reset()
 	{
 		Arrays.fill(mIV, 0);
@@ -50,6 +51,7 @@ public final class CBCElephant
 
 
 	// todo: remove synchronized
+	@Override
 	public synchronized void encrypt(byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
 	{
 		assert aLength >= mUnitSize;
@@ -106,6 +108,7 @@ public final class CBCElephant
 	}
 
 	// todo: remove synchronized
+	@Override
 	public synchronized void decrypt(byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
 	{
 		assert aLength >= mUnitSize;

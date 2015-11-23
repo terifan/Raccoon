@@ -26,6 +26,7 @@ package org.terifan.raccoon.security;
  */
 public class Serpent extends Cipher
 {
+	private static final int DEFAULT_KEY_SIZE = 16;
 	private static final int DEFAULT_BLOCK_SIZE = 16;
 	private static final int ROUNDS = 32;
 
@@ -51,6 +52,7 @@ public class Serpent extends Cipher
 
 	public Serpent()
 	{
+		super();
 	}
 
 
@@ -171,6 +173,167 @@ public class Serpent extends Cipher
 		k124 = x0; k125 = x1; k126 = x2; k127 = x3;
 		sbox3(w[128], w[129], w[130], w[131]);
 		k128 = x0; k129 = x1; k130 = x2; k131 = x3;
+	}
+
+
+	/**
+	 * Encrypts a single block of ciphertext in ECB-mode.
+	 *
+	 * @param in
+	 *	 A buffer containing the plaintext to be encrypted.
+	 * @param inOffset
+	 *	 Index in the in buffer where plaintext should be read.
+	 * @param out
+	 *	 A buffer where ciphertext is written.
+	 * @param outOffset
+	 *	 Index in the out buffer where ciphertext should be written.
+	 */
+	@Override
+	public void engineEncryptBlock(byte [] in, int inOffset, byte [] out, int outOffset)
+	{
+		x0 = (in[inOffset	] & 0xff) | (in[inOffset+ 1] & 0xff) <<  8 | (in[inOffset+ 2] & 0xff) << 16 | (in[inOffset+ 3] & 0xff) << 24;
+		x1 = (in[inOffset+ 4] & 0xff) | (in[inOffset+ 5] & 0xff) <<  8 | (in[inOffset+ 6] & 0xff) << 16 | (in[inOffset+ 7] & 0xff) << 24;
+		x2 = (in[inOffset+ 8] & 0xff) | (in[inOffset+ 9] & 0xff) <<  8 | (in[inOffset+10] & 0xff) << 16 | (in[inOffset+11] & 0xff) << 24;
+		x3 = (in[inOffset+12] & 0xff) | (in[inOffset+13] & 0xff) <<  8 | (in[inOffset+14] & 0xff) << 16 | (in[inOffset+15] & 0xff) << 24;
+
+		x0 ^= k0; x1 ^= k1; x2 ^= k2; x3 ^= k3; sbox0();
+		x1 ^= k4; x4 ^= k5; x2 ^= k6; x0 ^= k7; sbox1();
+		x0 ^= k8; x4 ^= k9; x2 ^= k10; x1 ^= k11; sbox2();
+		x2 ^= k12; x1 ^= k13; x4 ^= k14; x3 ^= k15; sbox3();
+		x1 ^= k16; x4 ^= k17; x3 ^= k18; x0 ^= k19; sbox4();
+		x4 ^= k20; x2 ^= k21; x1 ^= k22; x0 ^= k23; sbox5();
+		x2 ^= k24; x0 ^= k25; x4 ^= k26; x1 ^= k27; sbox6();
+		x2 ^= k28; x0 ^= k29; x3 ^= k30; x4 ^= k31; sbox7();
+		x0 = x3; x3 = x2; x2 = x4;
+
+		x0 ^= k32; x1 ^= k33; x2 ^= k34; x3 ^= k35; sbox0();
+		x1 ^= k36; x4 ^= k37; x2 ^= k38; x0 ^= k39; sbox1();
+		x0 ^= k40; x4 ^= k41; x2 ^= k42; x1 ^= k43; sbox2();
+		x2 ^= k44; x1 ^= k45; x4 ^= k46; x3 ^= k47; sbox3();
+		x1 ^= k48; x4 ^= k49; x3 ^= k50; x0 ^= k51; sbox4();
+		x4 ^= k52; x2 ^= k53; x1 ^= k54; x0 ^= k55; sbox5();
+		x2 ^= k56; x0 ^= k57; x4 ^= k58; x1 ^= k59; sbox6();
+		x2 ^= k60; x0 ^= k61; x3 ^= k62; x4 ^= k63; sbox7();
+		x0 = x3; x3 = x2; x2 = x4;
+
+		x0 ^= k64; x1 ^= k65; x2 ^= k66; x3 ^= k67; sbox0();
+		x1 ^= k68; x4 ^= k69; x2 ^= k70; x0 ^= k71; sbox1();
+		x0 ^= k72; x4 ^= k73; x2 ^= k74; x1 ^= k75; sbox2();
+		x2 ^= k76; x1 ^= k77; x4 ^= k78; x3 ^= k79; sbox3();
+		x1 ^= k80; x4 ^= k81; x3 ^= k82; x0 ^= k83; sbox4();
+		x4 ^= k84; x2 ^= k85; x1 ^= k86; x0 ^= k87; sbox5();
+		x2 ^= k88; x0 ^= k89; x4 ^= k90; x1 ^= k91; sbox6();
+		x2 ^= k92; x0 ^= k93; x3 ^= k94; x4 ^= k95; sbox7();
+		x0 = x3; x3 = x2; x2 = x4;
+
+		x0 ^= k96; x1 ^= k97; x2 ^= k98; x3 ^= k99; sbox0();
+		x1 ^= k100; x4 ^= k101; x2 ^= k102; x0 ^= k103; sbox1();
+		x0 ^= k104; x4 ^= k105; x2 ^= k106; x1 ^= k107; sbox2();
+		x2 ^= k108; x1 ^= k109; x4 ^= k110; x3 ^= k111; sbox3();
+		x1 ^= k112; x4 ^= k113; x3 ^= k114; x0 ^= k115; sbox4();
+		x4 ^= k116; x2 ^= k117; x1 ^= k118; x0 ^= k119; sbox5();
+		x2 ^= k120; x0 ^= k121; x4 ^= k122; x1 ^= k123; sbox6();
+		x2 ^= k124; x0 ^= k125; x3 ^= k126; x4 ^= k127; sbox7noLT();
+		x0 = x3; x3 = x2; x2 = x4;
+		x0 ^= k128; x1 ^= k129; x2 ^= k130; x3 ^= k131;
+
+		out[outOffset	] = (byte) x0;
+		out[outOffset+ 1] = (byte)(x0 >>>  8);
+		out[outOffset+ 2] = (byte)(x0 >>> 16);
+		out[outOffset+ 3] = (byte)(x0 >>> 24);
+		out[outOffset+ 4] = (byte) x1;
+		out[outOffset+ 5] = (byte)(x1 >>>  8);
+		out[outOffset+ 6] = (byte)(x1 >>> 16);
+		out[outOffset+ 7] = (byte)(x1 >>> 24);
+		out[outOffset+ 8] = (byte) x2;
+		out[outOffset+ 9] = (byte)(x2 >>>  8);
+		out[outOffset+10] = (byte)(x2 >>> 16);
+		out[outOffset+11] = (byte)(x2 >>> 24);
+		out[outOffset+12] = (byte) x3;
+		out[outOffset+13] = (byte)(x3 >>>  8);
+		out[outOffset+14] = (byte)(x3 >>> 16);
+		out[outOffset+15] = (byte)(x3 >>> 24);
+	}
+
+
+	/**
+	 * Decrypts a single block of ciphertext in ECB-mode.
+	 *
+	 * @param in
+	 *   A buffer containing the ciphertext to be decrypted.
+	 * @param inOffset
+	 *   Index in the in buffer where ciphertext should be read.
+	 * @param out
+	 *   A buffer where plaintext is written.
+	 * @param outOffset
+	 *   Index in the out buffer where plaintext should be written.
+	 */
+	@Override
+	public void engineDecryptBlock(byte [] in, int inOffset, byte [] out, int outOffset)
+	{
+		x0 = (in[inOffset	] & 0xff) | (in[inOffset+ 1] & 0xff) <<  8 | (in[inOffset+ 2] & 0xff) << 16 | (in[inOffset+ 3] & 0xff) << 24;
+		x1 = (in[inOffset+ 4] & 0xff) | (in[inOffset+ 5] & 0xff) <<  8 | (in[inOffset+ 6] & 0xff) << 16 | (in[inOffset+ 7] & 0xff) << 24;
+		x2 = (in[inOffset+ 8] & 0xff) | (in[inOffset+ 9] & 0xff) <<  8 | (in[inOffset+10] & 0xff) << 16 | (in[inOffset+11] & 0xff) << 24;
+		x3 = (in[inOffset+12] & 0xff) | (in[inOffset+13] & 0xff) <<  8 | (in[inOffset+14] & 0xff) << 16 | (in[inOffset+15] & 0xff) << 24;
+
+		x0 ^= k128; x1 ^= k129; x2 ^= k130; x3 ^= k131; sboxI7noLT();
+		x3 ^= k124; x0 ^= k125; x1 ^= k126; x4 ^= k127; sboxI6();
+		x0 ^= k120; x1 ^= k121; x2 ^= k122; x4 ^= k123; sboxI5();
+		x1 ^= k116; x3 ^= k117; x4 ^= k118; x2 ^= k119; sboxI4();
+		x1 ^= k112; x2 ^= k113; x4 ^= k114; x0 ^= k115; sboxI3();
+		x0 ^= k108; x1 ^= k109; x4 ^= k110; x2 ^= k111; sboxI2();
+		x1 ^= k104; x3 ^= k105; x4 ^= k106; x2 ^= k107; sboxI1();
+		x0 ^= k100; x1 ^= k101; x2 ^= k102; x4 ^= k103; sboxI0();
+		x0 ^= k96; x3 ^= k97; x1 ^= k98; x4 ^= k99; sboxI7();
+		x1 = x3; x3 = x4; x4 = x2;
+
+		x3 ^= k92; x0 ^= k93; x1 ^= k94; x4 ^= k95; sboxI6();
+		x0 ^= k88; x1 ^= k89; x2 ^= k90; x4 ^= k91; sboxI5();
+		x1 ^= k84; x3 ^= k85; x4 ^= k86; x2 ^= k87; sboxI4();
+		x1 ^= k80; x2 ^= k81; x4 ^= k82; x0 ^= k83; sboxI3();
+		x0 ^= k76; x1 ^= k77; x4 ^= k78; x2 ^= k79; sboxI2();
+		x1 ^= k72; x3 ^= k73; x4 ^= k74; x2 ^= k75; sboxI1();
+		x0 ^= k68; x1 ^= k69; x2 ^= k70; x4 ^= k71; sboxI0();
+		x0 ^= k64; x3 ^= k65; x1 ^= k66; x4 ^= k67; sboxI7();
+		x1 = x3; x3 = x4; x4 = x2;
+
+		x3 ^= k60; x0 ^= k61; x1 ^= k62; x4 ^= k63; sboxI6();
+		x0 ^= k56; x1 ^= k57; x2 ^= k58; x4 ^= k59; sboxI5();
+		x1 ^= k52; x3 ^= k53; x4 ^= k54; x2 ^= k55; sboxI4();
+		x1 ^= k48; x2 ^= k49; x4 ^= k50; x0 ^= k51; sboxI3();
+		x0 ^= k44; x1 ^= k45; x4 ^= k46; x2 ^= k47; sboxI2();
+		x1 ^= k40; x3 ^= k41; x4 ^= k42; x2 ^= k43; sboxI1();
+		x0 ^= k36; x1 ^= k37; x2 ^= k38; x4 ^= k39; sboxI0();
+		x0 ^= k32; x3 ^= k33; x1 ^= k34; x4 ^= k35; sboxI7();
+		x1 = x3; x3 = x4; x4 = x2;
+
+		x3 ^= k28; x0 ^= k29; x1 ^= k30; x4 ^= k31; sboxI6();
+		x0 ^= k24; x1 ^= k25; x2 ^= k26; x4 ^= k27; sboxI5();
+		x1 ^= k20; x3 ^= k21; x4 ^= k22; x2 ^= k23; sboxI4();
+		x1 ^= k16; x2 ^= k17; x4 ^= k18; x0 ^= k19; sboxI3();
+		x0 ^= k12; x1 ^= k13; x4 ^= k14; x2 ^= k15; sboxI2();
+		x1 ^= k8; x3 ^= k9; x4 ^= k10; x2 ^= k11; sboxI1();
+		x0 ^= k4; x1 ^= k5; x2 ^= k6; x4 ^= k7; sboxI0();
+		x2 = x1; x1 = x3; x3 = x4;
+
+		x0 ^= k0; x1 ^= k1; x2 ^= k2; x3 ^= k3;
+
+		out[outOffset	] = (byte) x0;
+		out[outOffset+ 1] = (byte)(x0 >>>  8);
+		out[outOffset+ 2] = (byte)(x0 >>> 16);
+		out[outOffset+ 3] = (byte)(x0 >>> 24);
+		out[outOffset+ 4] = (byte) x1;
+		out[outOffset+ 5] = (byte)(x1 >>>  8);
+		out[outOffset+ 6] = (byte)(x1 >>> 16);
+		out[outOffset+ 7] = (byte)(x1 >>> 24);
+		out[outOffset+ 8] = (byte) x2;
+		out[outOffset+ 9] = (byte)(x2 >>>  8);
+		out[outOffset+10] = (byte)(x2 >>> 16);
+		out[outOffset+11] = (byte)(x2 >>> 24);
+		out[outOffset+12] = (byte) x3;
+		out[outOffset+13] = (byte)(x3 >>>  8);
+		out[outOffset+14] = (byte)(x3 >>> 16);
+		out[outOffset+15] = (byte)(x3 >>> 24);
 	}
 
 

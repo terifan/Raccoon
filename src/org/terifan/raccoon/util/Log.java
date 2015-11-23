@@ -104,7 +104,7 @@ public class Log
 			return;
 		}
 
-		int LW = 40;
+		int LW = 16;
 		int MR = 100;
 
 		StringBuilder binText = new StringBuilder("");
@@ -142,8 +142,8 @@ public class Log
 			hexText.setLength(0);
 		}
 	}
-	
-	
+
+
 	public static String toString(byte[] aValue)
 	{
 		return aValue == null ? null : new String(aValue);
