@@ -42,8 +42,11 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	{
 		Log.v("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
-		mFile.seek(aBlockIndex * mBlockSize);
-		mFile.readFully(aBuffer, aBufferOffset, aBufferLength);
+		synchronized (this)
+		{
+			mFile.seek(aBlockIndex * mBlockSize);
+			mFile.readFully(aBuffer, aBufferOffset, aBufferLength);
+		}
 	}
 
 
@@ -52,14 +55,17 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	{
 		Log.v("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
-		while (aBlockIndex > length())
+		synchronized (this)
 		{
-			mFile.seek(mBlockSize * length());
-			mFile.write(new byte[mBlockSize]);
-		}
+			while (aBlockIndex > length())
+			{
+				mFile.seek(mBlockSize * length());
+				mFile.write(new byte[mBlockSize]);
+			}
 
-		mFile.seek(aBlockIndex * mBlockSize);
-		mFile.write(aBuffer, aBufferOffset, aBufferLength);
+			mFile.seek(aBlockIndex * mBlockSize);
+			mFile.write(aBuffer, aBufferOffset, aBufferLength);
+		}
 	}
 
 
@@ -68,22 +74,25 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	{
 		Log.v("close");
 
-		if (mFileLock != null)
+		synchronized (this)
 		{
-			try
+			if (mFileLock != null)
 			{
-				mFileLock.release();
-				mFileLock = null;
+				try
+				{
+					mFileLock.release();
+					mFileLock = null;
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace(Log.out);
+				}
 			}
-			catch (Exception e)
+			if (mFile != null)
 			{
-				e.printStackTrace(Log.out);
+				mFile.close();
+				mFile = null;
 			}
-		}
-		if (mFile != null)
-		{
-			mFile.close();
-			mFile = null;
 		}
 	}
 
@@ -100,7 +109,10 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	{
 		Log.v("commit");
 
-		mFile.getChannel().force(aMetadata);
+		synchronized (this)
+		{
+			mFile.getChannel().force(aMetadata);
+		}
 	}
 
 
@@ -114,6 +126,9 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void setLength(long aNewLength) throws IOException
 	{
-		mFile.setLength(aNewLength * mBlockSize);
+		synchronized (this)
+		{
+			mFile.setLength(aNewLength * mBlockSize);
+		}
 	}
 }
