@@ -13,8 +13,7 @@ import org.terifan.raccoon.security.Twofish;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
 import org.terifan.raccoon.security.CBC;
-import org.terifan.raccoon.security.Crypto;
-import org.terifan.raccoon.security.Diffuser;
+import org.terifan.raccoon.security.TranspositionDiffuser;
 
 
 // Boot block layout:
@@ -40,11 +39,11 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 {
 	private final static int RESERVED_BLOCKS = 1;
 	private final static int SALT_SIZE = 256;
-	private final static int IV_SIZE_INTS = 4;
-	private final static int TWEAK_SIZE_INTS = 8;
+	private final static int IV_SIZE = 16;
+	private final static int TWEAK_SIZE = 16;
 	private final static int KEY_SIZE_BYTES = 32;
 	private final static int HEADER_SIZE = 8;
-	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + 4 * TWEAK_SIZE_INTS + 3 * KEY_SIZE_BYTES + 3 * 4 * IV_SIZE_INTS;
+	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + 2 * TWEAK_SIZE + 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
 	private final static int ITERATION_COUNT = 10_000;
 	private final static int PAYLOAD_SIZE = 256; // HEADER_SIZE + KEY_POOL_SIZE
 	private final static int SIGNATURE = 0xf46a290c;
@@ -284,12 +283,13 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 	private static final class CipherImplementation
 	{
-		private transient final int [] mTweakKey = new int[8];
-		private transient final int [][] mIV = new int[3][4];
+		private transient final byte [][] mTweakKey = new byte[2][16];
+		private transient final byte [][] mIV = new byte[3][16];
 		private transient final Cipher[] mCiphers;
 		private transient final Cipher mTweakCipher;
-		private transient final Crypto mCrypto;
+		private transient final CBC mCipher;
 		private transient final int mUnitSize;
+		private transient final TranspositionDiffuser mDiffuser;
 
 
 		public CipherImplementation(final EncryptionFunction aCiphers, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitLength)
@@ -341,11 +341,10 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 			mTweakCipher.engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
 			offset += KEY_SIZE_BYTES;
 
-			for (int i = 0; i < TWEAK_SIZE_INTS; i++)
-			{
-				mTweakKey[i] = getInt(aKeyPool, offset);
-				offset += 4;
-			}
+			System.arraycopy(aKeyPool, offset, mTweakKey[0], 0, TWEAK_SIZE);
+			offset += TWEAK_SIZE;
+			System.arraycopy(aKeyPool, offset, mTweakKey[1], 0, TWEAK_SIZE);
+			offset += TWEAK_SIZE;
 
 			for (int j = 0; j < 3; j++)
 			{
@@ -358,11 +357,8 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 			for (int j = 0; j < 3; j++)
 			{
-				for (int i = 0; i < IV_SIZE_INTS; i++)
-				{
-					mIV[j][i] = getInt(aKeyPool, offset);
-					offset += 4;
-				}
+				System.arraycopy(aKeyPool, offset, mIV[j], 0, IV_SIZE);
+				offset += IV_SIZE;
 			}
 
 			if (offset != aKeyPoolOffset + KEY_POOL_SIZE)
@@ -371,38 +367,32 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 			}
 
 			mUnitSize = aUnitLength;
-			mCrypto = new CBC();
-//			mCrypto = new CBCElephant(mUnitSize);
-			if (diffuser==null || diffuser.getBlockSize()!=mUnitSize) diffuser = new Diffuser(mUnitSize);
+			mCipher = new CBC();
+			mDiffuser = new TranspositionDiffuser(mTweakKey[0], mTweakKey[1], mUnitSize);
 		}
-		static Diffuser diffuser;
 
 
 		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
-			diffuser.encode(aBuffer, 0);
+			mDiffuser.encode(aBuffer, aOffset, aLength);
 
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mCrypto.encrypt(mUnitSize, aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
+				mCipher.encrypt(mUnitSize, aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, aBlockKey);
 			}
-
-			diffuser.encode(aBuffer, 0);
 		}
 
 
 		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
-			diffuser.decode(aBuffer, 0);
-
 			for (int i = mCiphers.length; --i >= 0; )
 			{
-				mCrypto.decrypt(mUnitSize, aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, mTweakKey, aBlockKey);
+				mCipher.decrypt(mUnitSize, aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, aBlockKey);
 			}
 
-			diffuser.decode(aBuffer, 0);
+			mDiffuser.decode(aBuffer, aOffset, aLength);
 		}
-
+		
 
 		private void reset()
 		{
@@ -414,13 +404,13 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 				}
 
 				mTweakCipher.engineReset();
+				mDiffuser.reset();
 
-				mCrypto.reset();
-
-				fill(mIV[0], 0);
-				fill(mIV[1], 0);
-				fill(mIV[2], 0);
-				fill(mTweakKey, 0);
+				fill(mIV[0], (byte)0);
+				fill(mIV[1], (byte)0);
+				fill(mIV[2], (byte)0);
+				fill(mTweakKey[0], (byte)0);
+				fill(mTweakKey[1], (byte)0);
 				fill(mCiphers, null);
 			}
 		}

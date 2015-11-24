@@ -1,135 +1,95 @@
 package org.terifan.raccoon.security;
 
-import java.util.Arrays;
+import org.terifan.raccoon.util.Log;
 
-/*
-x[((i + shift) ^ trans) & sz] ^ xor
-
-12+12+8
-*/
-public final class CBC implements Crypto
+public final class CBC
 {
-	private final static int WORDS_PER_CIPHER_BLOCK = 4;
-
-
 	public CBC()
 	{
 	}
 
 
-	@Override
-	public void reset()
+	public void encrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, byte[] aIV, Cipher aCipher, Cipher aTweakCipher, long aBlockKey)
 	{
-	}
-
-
-	@Override
-	public void encrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
-	{
-		int wordsPerUnit = aUnitSize / 4;
-		int [] words = new int[wordsPerUnit];
-		int [] iv = new int[WORDS_PER_CIPHER_BLOCK];
-
 		assert aLength >= aUnitSize;
 		assert (aLength % aUnitSize) == 0;
-		assert aIV.length == 4;
+		assert aIV.length == 16;
 		assert aInput.length >= aOffset + aLength;
 		assert aInput.length == aOutput.length;
 
+		byte [] iv = new byte[16];
+
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / aUnitSize; unitIndex < numDataUnits; unitIndex++, offset += aUnitSize)
 		{
-			toInts(aInput, offset, words, wordsPerUnit);
+			prepareIV(aStartDataUnitNo + unitIndex, aIV, iv, aTweakCipher, aBlockKey);
 
-			prepareIV(aStartDataUnitNo + unitIndex, aIV, iv, aTweakCipher);
-
-			for (int i = 0; i < wordsPerUnit; i += WORDS_PER_CIPHER_BLOCK)
+			for (int i = 0; i < aUnitSize; i += 16)
 			{
-				for (int j = 0; j < WORDS_PER_CIPHER_BLOCK; j++)
+				for (int j = 0; j < 16; j++)
 				{
-					iv[j] ^= words[i + j];
+					iv[j] ^= aInput[offset + i + j];
 				}
 
 				aCipher.engineEncryptBlock(iv, 0, iv, 0);
 
-				System.arraycopy(iv, 0, words, i, WORDS_PER_CIPHER_BLOCK);
+				System.arraycopy(iv, 0, aOutput, offset + i, 16);
 			}
-
-			toBytes(words, offset, aOutput, wordsPerUnit);
 		}
 	}
 
 
-	@Override
-	public void decrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, int[] aIV, Cipher aCipher, Cipher aTweakCipher, int[] aTweakKey, long aExtraTweak)
+	public void decrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, byte[] aIV, Cipher aCipher, Cipher aTweakCipher, long aBlockKey)
 	{
-		int wordsPerUnit = aUnitSize / 4;
-		int [] words = new int[wordsPerUnit];
-		int [] iv = new int[WORDS_PER_CIPHER_BLOCK];
-		int [] temp = new int[WORDS_PER_CIPHER_BLOCK];
-
 		assert aLength >= aUnitSize;
 		assert (aLength % aUnitSize) == 0;
-		assert aIV.length == 4;
+		assert aIV.length == 16;
 		assert aInput.length >= aOffset + aLength;
 		assert aInput.length == aOutput.length;
 
+		byte [] iv = new byte[16 + 16]; // stores IV and next IV
+
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / aUnitSize; unitIndex < numDataUnits; unitIndex++, offset += aUnitSize)
 		{
-			toInts(aInput, offset, words, wordsPerUnit);
+			prepareIV(aStartDataUnitNo + unitIndex, aIV, iv, aTweakCipher, aBlockKey);
 
-			prepareIV(aStartDataUnitNo + unitIndex, aIV, iv, aTweakCipher);
-
-			for (int i = 0; i < wordsPerUnit; i += WORDS_PER_CIPHER_BLOCK)
+			for (int i = 0; i < aUnitSize; i += 16)
 			{
-				System.arraycopy(words, i, temp, 0, WORDS_PER_CIPHER_BLOCK);
+				System.arraycopy(aInput, offset + i, iv, 16, 16);
 
-				aCipher.engineDecryptBlock(words, i, words, i);
+				aCipher.engineDecryptBlock(aInput, offset + i, aOutput, offset + i);
 
-				for (int j = 0; j < WORDS_PER_CIPHER_BLOCK; j++)
+				for (int j = 0; j < 16; j++)
 				{
-					words[i+j] ^= iv[j];
+					aOutput[offset + i + j] ^= iv[j];
 				}
 
-				System.arraycopy(temp, 0, iv, 0, WORDS_PER_CIPHER_BLOCK);
+				System.arraycopy(iv, 16, iv, 0, 16);
 			}
-
-			toBytes(words, offset, aOutput, wordsPerUnit);
 		}
 	}
 
 
-	private static void prepareIV(long aDataUnitNo, int [] aInputIV, int [] aOutputIV, Cipher aTweakCipher)
+	private static void prepareIV(long aDataUnitNo, byte [] aInputIV, byte [] aOutputIV, Cipher aTweakCipher, long aBlockKey)
 	{
-		aOutputIV[0] = aInputIV[0];
-		aOutputIV[1] = aInputIV[1];
-		aOutputIV[2] = aInputIV[2] + (int)(aDataUnitNo >>> 32);
-		aOutputIV[3] = aInputIV[3] + (int)(aDataUnitNo);
+		System.arraycopy(aInputIV, 0, aOutputIV, 0, 16);
+
+		aOutputIV[0] ^= (byte)(aBlockKey >>> 56);
+		aOutputIV[1] ^= (byte)(aBlockKey >> 48);
+		aOutputIV[2] ^= (byte)(aBlockKey >> 40);
+		aOutputIV[3] ^= (byte)(aBlockKey >> 32);
+		aOutputIV[4] ^= (byte)(aBlockKey >> 24);
+		aOutputIV[5] ^= (byte)(aBlockKey >> 16);
+		aOutputIV[6] ^= (byte)(aBlockKey >> 8);
+		aOutputIV[7] ^= (byte)(aBlockKey);
+		aOutputIV[8] ^= (byte)(aDataUnitNo >>> 56);
+		aOutputIV[9] ^= (byte)(aDataUnitNo >> 48);
+		aOutputIV[10] ^= (byte)(aDataUnitNo >> 40);
+		aOutputIV[11] ^= (byte)(aDataUnitNo >> 32);
+		aOutputIV[12] ^= (byte)(aDataUnitNo >> 24);
+		aOutputIV[13] ^= (byte)(aDataUnitNo >> 16);
+		aOutputIV[14] ^= (byte)(aDataUnitNo >> 8);
+		aOutputIV[15] ^= (byte)(aDataUnitNo);
 
 		aTweakCipher.engineEncryptBlock(aOutputIV, 0, aOutputIV, 0);
-	}
-
-
-	private static void toInts(byte [] aInput, int aOffset, int [] aOutput, int aNumWords)
-	{
-		for (int i = 0; i < aNumWords; i++)
-		{
-			aOutput[i] = ((255 & aInput[aOffset++]) << 24)
-					   + ((255 & aInput[aOffset++]) << 16)
-					   + ((255 & aInput[aOffset++]) <<  8)
-					   + ((255 & aInput[aOffset++])      );
-		}
-	}
-
-
-	private static void toBytes(int [] aInput, int aOffset, byte [] aOutput, int aNumWords)
-	{
-		for (int i = 0; i < aNumWords; i++)
-		{
-			int v = aInput[i];
-			aOutput[aOffset++] = (byte)(v >>> 24);
-			aOutput[aOffset++] = (byte)(v >>  16);
-			aOutput[aOffset++] = (byte)(v >>   8);
-			aOutput[aOffset++] = (byte)(v       );
-		}
 	}
 }
