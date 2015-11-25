@@ -1,6 +1,5 @@
 package org.terifan.raccoon.security;
 
-import org.terifan.raccoon.util.Log;
 
 public final class CBC
 {
@@ -9,7 +8,7 @@ public final class CBC
 	}
 
 
-	public void encrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, byte[] aIV, Cipher aCipher, Cipher aTweakCipher, long aBlockKey)
+	public void encrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, byte[] aIV, Cipher aCipher, Cipher aTweakCipher, int aBlockKey)
 	{
 		assert aLength >= aUnitSize;
 		assert (aLength % aUnitSize) == 0;
@@ -38,7 +37,7 @@ public final class CBC
 	}
 
 
-	public void decrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, byte[] aIV, Cipher aCipher, Cipher aTweakCipher, long aBlockKey)
+	public void decrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, byte[] aIV, Cipher aCipher, Cipher aTweakCipher, int aBlockKey)
 	{
 		assert aLength >= aUnitSize;
 		assert (aLength % aUnitSize) == 0;
@@ -69,18 +68,15 @@ public final class CBC
 	}
 
 
-	private static void prepareIV(long aDataUnitNo, byte [] aInputIV, byte [] aOutputIV, Cipher aTweakCipher, long aBlockKey)
+	private static void prepareIV(long aDataUnitNo, byte [] aInputIV, byte [] aOutputIV, Cipher aTweakCipher, int aBlockKey)
 	{
 		System.arraycopy(aInputIV, 0, aOutputIV, 0, 16);
 
-		aOutputIV[0] ^= (byte)(aBlockKey >>> 56);
-		aOutputIV[1] ^= (byte)(aBlockKey >> 48);
-		aOutputIV[2] ^= (byte)(aBlockKey >> 40);
-		aOutputIV[3] ^= (byte)(aBlockKey >> 32);
-		aOutputIV[4] ^= (byte)(aBlockKey >> 24);
-		aOutputIV[5] ^= (byte)(aBlockKey >> 16);
-		aOutputIV[6] ^= (byte)(aBlockKey >> 8);
-		aOutputIV[7] ^= (byte)(aBlockKey);
+		aOutputIV[0] ^= (byte)(aBlockKey >>> 24);
+		aOutputIV[1] ^= (byte)(aBlockKey >> 16);
+		aOutputIV[2] ^= (byte)(aBlockKey >> 8);
+		aOutputIV[3] ^= (byte)(aBlockKey);
+
 		aOutputIV[8] ^= (byte)(aDataUnitNo >>> 56);
 		aOutputIV[9] ^= (byte)(aDataUnitNo >> 48);
 		aOutputIV[10] ^= (byte)(aDataUnitNo >> 40);

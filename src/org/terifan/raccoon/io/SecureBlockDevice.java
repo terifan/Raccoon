@@ -374,25 +374,48 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
-			mDiffuser.encode(aBuffer, aOffset, aLength);
+			int hi = (int)(aBlockKey >>> 32);
+			int lo = (int)aBlockKey;
+
+			mDiffuser.encode(aBuffer, aOffset, aLength, mix(hi, aBlockIndex));
 
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mCipher.encrypt(mUnitSize, aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, aBlockKey);
+				mCipher.encrypt(mUnitSize, aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, lo);
 			}
 		}
 
 
 		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
+			int hi = (int)(aBlockKey >>> 32);
+			int lo = (int)aBlockKey;
+
 			for (int i = mCiphers.length; --i >= 0; )
 			{
-				mCipher.decrypt(mUnitSize, aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, aBlockKey);
+				mCipher.decrypt(mUnitSize, aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, lo);
 			}
 
-			mDiffuser.decode(aBuffer, aOffset, aLength);
+			mDiffuser.decode(aBuffer, aOffset, aLength, mix(hi, aBlockIndex));
 		}
-		
+
+
+		/**
+		 * Create a more "random" key as both aKey and aBlockIndex may be very low numbers.
+		 */
+		private int mix(int aKey, long aBlockIndex)
+		{
+			int v = aKey ^ 0xcafebabe;
+			v += aBlockIndex;
+			v = Integer.rotateRight(v, 13);
+			v ^= aBlockIndex;
+			v = Integer.rotateRight(v, 7);
+			v ^= aBlockIndex;
+			v = Integer.rotateRight(v, 3);
+			v ^= aBlockIndex;
+			return v;
+		}
+
 
 		private void reset()
 		{

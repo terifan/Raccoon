@@ -118,7 +118,6 @@ public final class AES extends Cipher
 	}
 	private transient int[][] Ke;
 	private transient int[][] Kd;
-	private transient int mKeySize;
 
 
 	public AES()
@@ -142,7 +141,6 @@ public final class AES extends Cipher
 			throw new IllegalArgumentException("Incorrect key length");
 		}
 
-		mKeySize = k.length;
 		int bs = 16;
 
 		int ROUNDS = getRounds(k.length, bs);
@@ -480,7 +478,6 @@ public final class AES extends Cipher
 	@Override
 	public void engineReset()
 	{
-		mKeySize = 0;
 		if (Ke != null)
 		{
 			for (int i = 0; i < Ke.length; i++)

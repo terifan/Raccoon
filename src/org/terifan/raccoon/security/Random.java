@@ -5,10 +5,11 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public final class Random 
+public final class Random
 {
 	private final transient Cipher mCipher;
 	private final transient int[] mCounter;
+	private final transient int[] mState;
 	private transient int mIndex;
 
 
@@ -16,6 +17,8 @@ public final class Random
 	{
 		assert aSeed.length == 16;
 		assert aCounter.length == 16;
+
+		mState = new int[4];
 
 		mCipher = new AES(new SecretKey(aSeed));
 
@@ -33,30 +36,26 @@ public final class Random
 	{
 		mCounter[3] = mIndex++;
 
-		mCipher.engineEncryptBlock(mCounter, 0, mCounter, 0);
+		mCipher.engineEncryptBlock(mCounter, 0, mState, 0);
 
-		if (mIndex == 0)
-		{
-			mCounter[2]++;
-		}
-
-		return mCounter[0] ^ mCounter[1];
+		return mState[0] ^ mState[1];
 	}
-	
-	
+
+
 	public void reset()
 	{
 		mCipher.engineReset();
 		Arrays.fill(mCounter, 0);
+		Arrays.fill(mState, 0);
 	}
-	
-	
+
+
 	public static void main(String... args)
 	{
 		try
 		{
 			Random random = new Random("0123456789abcdef".getBytes(), "0123456789abcdef".getBytes());
-			
+
 			int zero = 0;
 			int n = 10000000;
 			for (int i = 0; i < n; i++)
