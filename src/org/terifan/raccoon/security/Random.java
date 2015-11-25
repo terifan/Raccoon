@@ -2,15 +2,16 @@ package org.terifan.raccoon.security;
 
 import java.util.Arrays;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.util.Log;
 
 
+/**
+ * AES-CTR random number generator. This implementation is only safe to produce maximum 2^32 numbers.
+ */
 public final class Random
 {
 	private final transient Cipher mCipher;
 	private final transient int[] mCounter;
-	private final transient int[] mState;
-	private transient int mIndex;
+	private final transient int[] mOutput;
 
 
 	public Random(byte[] aSeed, byte[] aCounter)
@@ -18,7 +19,7 @@ public final class Random
 		assert aSeed.length == 16;
 		assert aCounter.length == 16;
 
-		mState = new int[4];
+		mOutput = new int[4];
 
 		mCipher = new AES(new SecretKey(aSeed));
 
@@ -27,18 +28,16 @@ public final class Random
 		mCounter[1] = ByteArrayBuffer.readInt32(aCounter, 4);
 		mCounter[2] = ByteArrayBuffer.readInt32(aCounter, 8);
 		mCounter[3] = ByteArrayBuffer.readInt32(aCounter, 12);
-
-		mIndex = mCounter[3];
 	}
 
 
 	public int nextInt()
 	{
-		mCounter[3] = mIndex++;
+		mCounter[0]++;
 
-		mCipher.engineEncryptBlock(mCounter, 0, mState, 0);
+		mCipher.engineEncryptBlock(mCounter, 0, mOutput, 0);
 
-		return mState[0] ^ mState[1];
+		return mOutput[0] ^ mOutput[1] ^ mOutput[2] ^ mOutput[3];
 	}
 
 
@@ -46,29 +45,6 @@ public final class Random
 	{
 		mCipher.engineReset();
 		Arrays.fill(mCounter, 0);
-		Arrays.fill(mState, 0);
-	}
-
-
-	public static void main(String... args)
-	{
-		try
-		{
-			Random random = new Random("0123456789abcdef".getBytes(), "0123456789abcdef".getBytes());
-
-			int zero = 0;
-			int n = 10000000;
-			for (int i = 0; i < n; i++)
-			{
-				if ((random.nextInt() & 1) == 0) zero++;
-			}
-
-			Log.out.println(zero);
-			Log.out.println(n-zero);
-		}
-		catch (Throwable e)
-		{
-			e.printStackTrace(System.out);
-		}
+		Arrays.fill(mOutput, 0);
 	}
 }
