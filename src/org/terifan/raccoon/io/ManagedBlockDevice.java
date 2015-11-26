@@ -16,6 +16,7 @@ import org.terifan.raccoon.util.Log;
 
 public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 {
+	private final static byte FORMAT_VERSION = 1;
 	private final static int CHECKSUM_SIZE = 16;
 	private final static int RESERVED_BLOCKS = 2;
 
@@ -29,9 +30,26 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private HashSet<Integer> mUncommitedAllocations;
 	private boolean mDoubleCommit;
 	private Marshaller mSuperBlockMarshaller;
+	private String mBlockDeviceLabel;
 
 
+	/**
+	 * Create/open a ManagedBlockDevice with an empty label.
+	 */
 	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice) throws IOException
+	{
+		this(aBlockDevice, "");
+	}
+
+
+	/**
+	 * Create/open a ManagedBlockDevice with an user defined label.
+	 *
+	 * @param aBlockDeviceLabel
+	 *   a label describing contents of the block device. If a non-null value is provided then this value must match the value found inside
+	 *   the block device opened or an exception is thrown.
+	 */
+	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice, String aBlockDeviceLabel) throws IOException
 	{
 		if (aBlockDevice.getBlockSize() < 512)
 		{
@@ -39,6 +57,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		}
 
 		mBlockDevice = aBlockDevice;
+		mBlockDeviceLabel = aBlockDeviceLabel;
 		mBlockSize = aBlockDevice.getBlockSize();
 		mWasCreated = mBlockDevice.length() < ManagedBlockDevice.RESERVED_BLOCKS;
 		mUncommitedAllocations = new HashSet<>();
@@ -75,6 +94,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mSuperBlock = new SuperBlock();
 		mSuperBlock.mCreated = new Date();
 		mSuperBlock.mWriteCounter = -1L; // counter is incremented in writeSuperBlock method and we want to ensure we write block 0 before block 1
+		mSuperBlock.mFormatVersion = FORMAT_VERSION;
+		mSuperBlock.mBlockDeviceLabel = mBlockDeviceLabel == null ? "" : mBlockDeviceLabel;
 
 		setExtraData(null);
 
@@ -370,6 +391,15 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		superBlockOne.unmarshal(0L);
 		superBlockTwo.unmarshal(1L);
 
+		if (superBlockOne.mFormatVersion != FORMAT_VERSION)
+		{
+			throw new UnsupportedVersionException("Data format is not supported: was " + superBlockOne.mFormatVersion + ", expected " + FORMAT_VERSION);
+		}
+		if (!(mBlockDeviceLabel == null || mBlockDeviceLabel.isEmpty() && superBlockOne.mBlockDeviceLabel.isEmpty() || mBlockDeviceLabel.equals(superBlockOne.mBlockDeviceLabel)))
+		{
+			throw new UnsupportedVersionException("Block device label don't match: was " + (superBlockOne.mBlockDeviceLabel.isEmpty()?"<empty>" : superBlockOne.mBlockDeviceLabel) + ", expected " + (mBlockDeviceLabel.isEmpty()?"<empty>" : mBlockDeviceLabel));
+		}
+
 		if (superBlockOne.mWriteCounter == superBlockTwo.mWriteCounter + 1)
 		{
 			mSuperBlock = superBlockOne;
@@ -641,6 +671,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	class SuperBlock
 	{
+		byte mFormatVersion;
 		Date mCreated;
 		Date mUpdated;
 		long mWriteCounter;
@@ -648,6 +679,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		int mSpaceMapBlockCount;
 		int mSpaceMapLength;
 		long mSpaceMapBlockKey;
+		String mBlockDeviceLabel;
 		byte[] mExtraData;
 
 

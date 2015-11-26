@@ -1,6 +1,8 @@
 package org.terifan.raccoon.io;
 
 import java.io.IOException;
+import org.terifan.raccoon.Database;
+import org.terifan.raccoon.OpenOption;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import static tests.__TestUtils.*;
@@ -93,5 +95,24 @@ public class ManagedBlockDeviceNGTest
 				dev.commit();
 			}
 		}
+	}
+
+
+	@Test(expectedExceptions = UnsupportedVersionException.class)
+	public void testBadLabel() throws Exception
+	{
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "AnimalFarm");
+
+		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
+		{
+		}
+
+		try (Database db = Database.open(blockDevice, OpenOption.CREATE)) // default empty label won't match the "AnimalFarm" label causing an exception
+		{
+		}
+
+		fail();
 	}
 }

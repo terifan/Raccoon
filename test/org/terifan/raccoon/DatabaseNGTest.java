@@ -18,6 +18,7 @@ import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.io.UnsupportedVersionException;
+import org.terifan.raccoon.security.InvalidKeyException;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
@@ -490,11 +491,67 @@ public class DatabaseNGTest
 	}
 
 
+	@Test(expectedExceptions = InvalidKeyException.class)
+	public void testBasPassword() throws Exception
+	{
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+
+		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password")))
+		{
+		}
+
+		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("bad-password")))
+		{
+		}
+
+		fail();
+	}
+
+
 	@Test(expectedExceptions = IllegalArgumentException.class)
-	public void testInit() throws Exception
+	public void testUnsupportedDevice() throws Exception
 	{
 		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
 
-		Database.open(blockDevice, OpenOption.CREATE, new Object[]{new AccessCredentials("password")});
+		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password")))
+		{
+		}
+
+		fail();
+	}
+
+
+	@Test(expectedExceptions = InvalidKeyException.class)
+	public void testUnsupportedData() throws Exception
+	{
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+		blockDevice.writeBlock(0, new byte[512], 0, 512, 0);
+
+		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password")))
+		{
+		}
+
+		fail();
+	}
+
+
+	@Test(expectedExceptions = UnsupportedVersionException.class)
+	public void testUnsupportedVersion() throws Exception
+	{
+		String s = "44ef4c34b93ef0bc3da1af0e0357586f6c19552e91c879f0cdc3e123c02f6a696c7965e12141686a1ded4107c93349766a5fb8418f4e5c8190ecbb9e7887801a8438cbaba1dcd85746305c5161203a1a24dde7e782ee88c78c2d3047b776932c99f0c3dcc4486a13925ce0cdee68414be325fec9a8376aa65fbb411aa2351c2acd7d6a079df51199080c8810b7af560841d29bfb0676b4861f42a111c010b2c3d7422a84409867a96ad3d547a40d32ffae561b7ae3062fd0d5df50c67e11eb507fe7c97d46475f9ca864ee71c5c2beefef29f94448bda35efceedcf4ad3679d023679f544ea77ac16b818385cb7603bc993baa438756a64a06a1f392ff3c86bc5d22f04d66c010199543ac9deb7b60f43399af499ba73f7a28f40dbf883e21d4325b37e5c7b21d1024ca0021fc21fb13a0ce0126efe25a9cc01b13773cc6a6eb31297cc0d0fad04ddf8cfde8697a9cc13e541991cbddaedc7f63e1c31dcc58828a11bdd7b9812a74e3895eb600d7126270169aa4977a11276281a65a777d3d014018a332ce5f8d649cf911633e6c59a8eb905353bf4906592724a4e4b02daa2c2a90645aaa03a42205e669d674d10670e43e0660bc2e7c217e3adcae95b393ae836ce1103d7d67be2aaa0b628332366b5cf3efcc6603426a50acfe1b8750ee4c7ef508db88e288a1f5ddfed31f113b74ac9eac98aa112c4dce2941471a50b6be0b8bece943af9f32823ebe72b5d02cba9e28b589f9d727ad3154e2fabc0c9c82d8da537f550f1d6523436b8033635f4f2d59b3d8907e0fe5b58868fc6c4edf78845b69984b4ffc7a091f41390c2402d5581afe9a4be81dc612dd42cbc81bdf4b055ef27a6787dc89b2d7a79cf554aa9a64f05a5a26002d784692efa613d4848914344d9ad3ab67d3c9435b7b5db968a3c8700ccbf93a79c733b8c688f6d087c19e147a3859bfe04b8c97be1dca5997ff10bc5c920d54c37bccb5c9d7045c433d316671e0eccf416204039fc288652e5a9ffa1878d4c8fcfd77842cb173fca5e81a5c54042d60f308660b46f32e55897527771a4432686726dd9a13f06ec9635523fb8ef6e951abb963f331760b027b90c2beaf522cd969cc63c40436d63a5562c5deefe7ac85a407d150ec968d9043afe20e6e93d4a35f57177c6a54d9d68abbf6e0e16688d13f5d29b31bd22ee38e3caddfe18d6f91631510f80894a57797eaff2649e0a02e1494dff8eb0f89aa02441bfa45e17cb8f4bf2c62696b9dda8572f34c0bc0d823eb4964f0c8ddb1eca3648d25a0208f22ac8cea45138bba03a55d71aab4a391de3da704589e10f644cd3249db5216e7bd30ae4bd67be7bd93091c99d811fec6615cbb8ece46cfded4565e736246e6b021799f671e8df58647e71cc0d5b37769b74b51dd372457f6be2807896032452b9e7ec5e7420b7689f6e31b70ae97dd05e657a1c3ac69bc48a23e4ed9afae9665bb937e5d449a0a44f039882b97ea09e53f61aa4b988083ca2ada48ad4e555f95900a238a190179c81bea7204d2e3c0270044565f07dc2ebf207b595eae37ee0027199a4f46fb44f7ec0188ca9c421736b2298aa01064f183b2148417000ea61cbb644fa015016bb2a978170220052ee6f0e8928eb2d5adb4e3ffe057e3464c12dd763a9abedbae62b36e5fb18370248bfbc6510974e5b3ffb99caf6924fe76e361e447a0e5fcbcb1e664bc7c64ff9291d91f372fc8d985548f7f29a8112ae1e30700e83ff29147fcdc49600637b5dfde1ee7cf2302c27fd4bd382e629f46a77658f55f3dc8877d1c554ab093d463bd59a800fe70a854484d7d8ec9845432eac4fed717f5b7e61d198e08e58b4b7ff2b9c5fe7e1cfb2e094e1063d93246a74ae5beffd8ea261ea56b39f3f5422f7a62df48153505d7d34503c20dcec84387da504e3b9fc3ba0f792ab457ffae77f04557dbaa721d1d45ce01c20c7ed1ece0056013f865788da6607c2cba78ac202af8083b521cc7a546e341857ec41bee568b6f867fcd991382639a23564f76a6dccccd67347a831672bae84cdf8ab300d1472457b10c0d2df711de300cbb6d415173e95b550f21b06b6a9a93163f7c9d561cd869aa95530f4716c0f3c58c02cbdb3699d7e51b72cf182d6cb06d59345ec49e06b1c82dc15e6562dfef29a2";
+		byte[] buf = new byte[s.length() / 2];
+		for (int i = 0; i < buf.length; i++)
+		{
+			buf[i] = (byte)Integer.parseInt(s.substring(2*i, 2*i+2), 16);
+		}
+
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+		blockDevice.writeBlock(0, buf, 0, buf.length, 0);
+
+		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password")))
+		{
+		}
+
+		fail();
 	}
 }
