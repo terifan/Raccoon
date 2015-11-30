@@ -15,8 +15,6 @@ import org.terifan.raccoon.util.Log;
 
 public class BlockAccessor
 {
-	private final static int[] DEFLATER_LEVELS = {0,1,5,9};
-
 	private final IManagedBlockDevice mBlockDevice;
 	private final int mPageSize;
 	private int mCompressionLevel;
@@ -27,7 +25,7 @@ public class BlockAccessor
 		mBlockDevice = aBlockDevice;
 		mPageSize = mBlockDevice.getBlockSize();
 
-		mCompressionLevel = 0;
+		mCompressionLevel = Deflater.BEST_SPEED;
 	}
 
 
@@ -111,7 +109,7 @@ public class BlockAccessor
 			if (mCompressionLevel > 0)
 			{
 				ByteArrayOutputStream baos = new ByteArrayOutputStream(aLength);
-				try (DeflaterOutputStream dis = new DeflaterOutputStream(baos, new Deflater(DEFLATER_LEVELS[mCompressionLevel])))
+				try (DeflaterOutputStream dis = new DeflaterOutputStream(baos, new Deflater(mCompressionLevel)))
 				{
 					dis.write(aBuffer, aOffset, aLength);
 				}

@@ -47,6 +47,7 @@ class Table<T> implements Iterable<T>
 		mTableType = aTableType;
 		mBlockDevice = mDatabase.getBlockDevice();
 		mBlockAccessor = new BlockAccessor(mBlockDevice);
+		mBlockAccessor.setCompressionLevel(mDatabase.getParameter(CompressionParam.class, new CompressionParam(0)).getValue());
 		mInitializer = mDatabase.getInitializer(mTableType.getType());
 
 		mName = mTableType.getName();
