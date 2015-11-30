@@ -1,7 +1,12 @@
 package org.terifan.raccoon.serialization;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
@@ -52,6 +57,20 @@ class ValueWriter
 		else if (Date.class.isAssignableFrom(type))
 		{
 			aDataOutput.writeVar64(((Date)aValue).getTime());
+		}
+		else if (Serializable.class.isAssignableFrom(type))
+		{
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			try (ObjectOutputStream oos = new ObjectOutputStream(baos))
+			{
+				oos.writeObject(aValue);
+			}
+			catch (IOException e)
+			{
+				throw new IllegalArgumentException(e);
+			}
+			aDataOutput.writeVar32(baos.size());
+			aDataOutput.write(baos.toByteArray());
 		}
 		else
 		{
