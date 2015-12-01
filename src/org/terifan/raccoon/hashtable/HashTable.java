@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
+import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.util.ByteBufferMap;
 import org.terifan.raccoon.security.MurmurHash3;
 import org.terifan.raccoon.util.Result;
@@ -17,7 +18,6 @@ import org.terifan.raccoon.util.Log;
 import static org.terifan.raccoon.Node.*;
 import org.terifan.raccoon.TransactionId;
 import org.terifan.raccoon.io.IManagedBlockDevice;
-import org.terifan.raccoon.security.ISAAC;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
@@ -99,7 +99,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			mHashSeed = tmp.readInt64();
 			mNodeSize = tmp.readVar32();
 			mLeafSize = tmp.readVar32();
-			mBlockAccessor.setCompressionLevel(tmp.readVar32());
+			mBlockAccessor.setCompressionParam(new CompressionParam(tmp.readVar32(), tmp.readVar32()));
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 
@@ -117,7 +117,8 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		buffer.writeInt64(mHashSeed);
 		buffer.writeVar32(mNodeSize);
 		buffer.writeVar32(mLeafSize);
-		buffer.writeVar32(mBlockAccessor.getCompressionLevel());
+		buffer.writeVar32(mBlockAccessor.getCompressionParam().getLeaf());
+		buffer.writeVar32(mBlockAccessor.getCompressionParam().getNode());
 
 		return buffer.trim().array();
 	}

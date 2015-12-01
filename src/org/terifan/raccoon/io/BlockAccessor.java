@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
+import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
+import org.terifan.raccoon.Node;
 import org.terifan.raccoon.Stats;
 import org.terifan.raccoon.security.ISAAC;
 import org.terifan.raccoon.security.MurmurHash3;
@@ -17,7 +19,7 @@ public class BlockAccessor
 {
 	private final IManagedBlockDevice mBlockDevice;
 	private final int mPageSize;
-	private int mCompressionLevel;
+	private CompressionParam mCompressionParam;
 
 
 	public BlockAccessor(IManagedBlockDevice aBlockDevice) throws IOException
@@ -25,7 +27,7 @@ public class BlockAccessor
 		mBlockDevice = aBlockDevice;
 		mPageSize = mBlockDevice.getBlockSize();
 
-		mCompressionLevel = Deflater.BEST_SPEED;
+		mCompressionParam = new CompressionParam(0, 0);
 	}
 
 
@@ -35,15 +37,15 @@ public class BlockAccessor
 	}
 
 
-	public void setCompressionLevel(int aCompressionLevel)
+	public void setCompressionParam(CompressionParam aCompressionParam)
 	{
-		mCompressionLevel = aCompressionLevel;
+		mCompressionParam = aCompressionParam;
 	}
 
 
-	public int getCompressionLevel()
+	public CompressionParam getCompressionParam()
 	{
-		return mCompressionLevel;
+		return mCompressionParam;
 	}
 
 
@@ -106,17 +108,19 @@ public class BlockAccessor
 			int physicalSize = 0;
 			int compression = 0;
 
-			if (mCompressionLevel > 0)
+			int cp = aType == Node.LEAF ? mCompressionParam.getLeaf() : mCompressionParam.getNode();
+
+			if (cp > 0)
 			{
 				ByteArrayOutputStream baos = new ByteArrayOutputStream(aLength);
-				try (DeflaterOutputStream dis = new DeflaterOutputStream(baos, new Deflater(mCompressionLevel)))
+				try (DeflaterOutputStream dis = new DeflaterOutputStream(baos, new Deflater(cp)))
 				{
 					dis.write(aBuffer, aOffset, aLength);
 				}
 				physicalSize = baos.size();
 				if (roundUp(physicalSize) < roundUp(aLength))
 				{
-					compression = mCompressionLevel;
+					compression = cp;
 					baos.write(new byte[roundUp(physicalSize) - physicalSize]);
 					aBuffer = baos.toByteArray();
 				}

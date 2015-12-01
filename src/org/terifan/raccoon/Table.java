@@ -48,8 +48,9 @@ public class Table<T> implements Iterable<T>
 		mBlockDevice = mDatabase.getBlockDevice();
 		mInitializer = mDatabase.getInitializer(mTableMetadata.getType());
 		mTableImplementation = new HashTable(mBlockDevice, mPointer, mDatabase.getTransactionId(), false);
+
 		mBlockAccessor = new BlockAccessor(mBlockDevice);
-		mBlockAccessor.setCompressionLevel(mDatabase.getParameter(CompressionParam.class, new CompressionParam(0)).getValue());
+		mBlockAccessor.setCompressionParam(mDatabase.getParameter(CompressionParam.class, new CompressionParam(0, 0)));
 	}
 
 

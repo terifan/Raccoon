@@ -3,6 +3,7 @@ package org.terifan.raccoon.io;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
+import org.terifan.raccoon.Node;
 import org.terifan.raccoon.TransactionId;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -10,8 +11,8 @@ import org.terifan.raccoon.util.Log;
 
 public class BlobOutputStream extends OutputStream implements AutoCloseable
 {
-	final static int TYPE_DATA = 0;
-	final static int TYPE_INDIRECT = 1;
+	final static int TYPE_DATA = Node.LEAF;
+	final static int TYPE_INDIRECT = Node.NODE;
 	final static int FRAGMENT_SIZE = 1024 * 1024;
 	private final static int POINTER_MAX_LENGTH = 4 * BlockPointer.SIZE;
 
