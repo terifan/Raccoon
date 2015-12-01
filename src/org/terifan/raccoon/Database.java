@@ -30,7 +30,7 @@ public class Database implements AutoCloseable
 {
 	private final static int EXTRA_DATA_CHECKSUM_SEED = 0xf49209b1;
 	private final static long IDENTITY = 0x726163636f6f6e00L; // 'raccoon\0'
-	private final static int DEFAULT_BLOCK_SIZE = 4096;
+	private final static BlockSizeParam DEFAULT_BLOCK_SIZE = new BlockSizeParam(4096);
 	private final static int VERSION = 1;
 
     private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
@@ -45,6 +45,7 @@ public class Database implements AutoCloseable
 	private final TransactionId mTransactionId;
 	private Table mSystemTable;
 	private boolean mChanged;
+	private Object[] mProperties;
 
 
 	private Database()
@@ -53,6 +54,17 @@ public class Database implements AutoCloseable
 		mTableTypes = new TableTypeMap();
 		mInitializers = new HashMap<>();
 		mTransactionId = new TransactionId();
+
+		setInitializer(Table.class, (e)->{
+			try
+			{
+				e.init(this, new TableType(Table.class, null), null);
+			}
+			catch (Exception ex)
+			{
+				throw new IllegalStateException(ex);
+			}
+		});
 	}
 
 
@@ -84,8 +96,10 @@ public class Database implements AutoCloseable
 			boolean newFile = !aFile.exists();
 			String mode = aOpenOptions == OpenOption.READ_ONLY ? "r" : "rw";
 
+			BlockSizeParam blockSizeParam = getParameter(BlockSizeParam.class, aParameters, DEFAULT_BLOCK_SIZE);
+
 			RandomAccessFile file = new RandomAccessFile(aFile, mode);
-			fileBlockDevice = new FileBlockDevice(file, DEFAULT_BLOCK_SIZE);
+			fileBlockDevice = new FileBlockDevice(file, blockSizeParam.getValue());
 
 			return init(fileBlockDevice, newFile, aParameters);
 		}
@@ -109,11 +123,8 @@ public class Database implements AutoCloseable
 
 	/**
 	 *
-	 * @param aBlockDevice
-	 * @param aOpenOptions
 	 * @param aParameters
 	 *   AccessCredentials
-	 * @return
 	 */
 	public static Database open(IPhysicalBlockDevice aBlockDevice, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
@@ -130,14 +141,7 @@ public class Database implements AutoCloseable
 
 	private static Database init(IPhysicalBlockDevice aBlockDevice, boolean aCreate, Object[] aParameters) throws IOException
 	{
-		AccessCredentials accessCredentials = null;
-		for (Object param : aParameters)
-		{
-			if (param instanceof AccessCredentials)
-			{
-				accessCredentials = (AccessCredentials)param;
-			}
-		}
+		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aParameters, null);
 
 		ManagedBlockDevice device;
 
@@ -165,16 +169,16 @@ public class Database implements AutoCloseable
 
 		if (aCreate)
 		{
-			return create(device);
+			return create(device, aParameters);
 		}
 		else
 		{
-			return open(device);
+			return open(device, aParameters);
 		}
 	}
 
 
-	private static Database create(IManagedBlockDevice aBlockDevice) throws IOException
+	private static Database create(IManagedBlockDevice aBlockDevice, Object[] aParameters) throws IOException
 	{
 		Log.i("create database");
 		Log.inc();
@@ -193,6 +197,7 @@ public class Database implements AutoCloseable
 		db.mBlockDevice = aBlockDevice;
 		db.mSystemTable = new Table(db, systemTableType, null).open(null);
 		db.mChanged = true;
+		db.mProperties = aParameters;
 
 		db.updateSuperBlock();
 
@@ -204,7 +209,7 @@ public class Database implements AutoCloseable
 	}
 
 
-	private static Database open(IManagedBlockDevice aBlockDevice) throws IOException, UnsupportedVersionException
+	private static Database open(IManagedBlockDevice aBlockDevice, Object[] aParameters) throws IOException, UnsupportedVersionException
 	{
 		Database db = new Database();
 
@@ -244,22 +249,12 @@ public class Database implements AutoCloseable
 		db.mBlockDevice = aBlockDevice;
 		db.mSystemTable = new Table(db, systemTableType, null).open(buffer);
 		db.mSystemTableHeader = db.mSystemTable.getTableHeader();
+		db.mProperties = aParameters;
 
 		Log.dec();
 
 		return db;
 	}
-
-
-//	public List<Schema> getSchemas()
-//	{
-//		ArrayList<Schema> list = new ArrayList<>();
-//		for (Table t : (List<Table>)mSystemTable.list(Table.class))
-//		{
-//			list.add(Schema.decode(t.getName()));
-//		}
-//		return list;
-//	}
 
 
 	private Table openTable(Class aType, Object aDiscriminator, OpenOption aOptions) throws IOException
@@ -884,5 +879,41 @@ public class Database implements AutoCloseable
 		{
 			mWriteLock.unlock();
 		}
+	}
+
+
+	private static <E> E getParameter(Class aType, Object[] aParameters, E aDefaultValue)
+	{
+		if (aParameters != null)
+		{
+			for (Object param : aParameters)
+			{
+				if (aType.isAssignableFrom(param.getClass()))
+				{
+					return (E)param;
+				}
+			}
+		}
+
+		return aDefaultValue;
+	}
+
+
+	<E> E getParameter(Class<E> aType, E aDefaultParam)
+	{
+		return getParameter(aType, mProperties, aDefaultParam);
+	}
+
+
+	public List<Schema> getSchemas() throws IOException
+	{
+		ArrayList<Schema> schemas = new ArrayList<>();
+
+		for (Table table : (List<Table>)mSystemTable.list(Table.class))
+		{
+			schemas.add(new Schema(table));
+		}
+
+		return schemas;
 	}
 }
