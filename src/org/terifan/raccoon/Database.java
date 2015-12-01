@@ -29,42 +29,33 @@ import org.terifan.raccoon.util.Log;
 public class Database implements AutoCloseable
 {
 	private final static int EXTRA_DATA_CHECKSUM_SEED = 0xf49209b1;
-	private final static long IDENTITY = 0x726163636f6f6e00L; // 'raccoon\0'
+	private final static long RACCOON_DB_IDENTITY = 0x726163636f6f6e00L; // 'raccoon\0'
 	private final static BlockSizeParam DEFAULT_BLOCK_SIZE = new BlockSizeParam(4096);
-	private final static int VERSION = 1;
+	private final static int RACCOON_DB_VERSION = 1;
 
     private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
     private final Lock mReadLock = mReadWriteLock.readLock();
     private final Lock mWriteLock = mReadWriteLock.writeLock();
 
 	private IManagedBlockDevice mBlockDevice;
-	private byte[] mSystemTableHeader;
 	private final HashMap<Class,Initializer> mInitializers;
-	private final HashMap<TableType,Table> mOpenTables;
-	private final TableTypeMap mTableTypes;
+	private final HashMap<Class,Factory> mFactories;
+	private final HashMap<TableMetadata,Table> mOpenTables;
+	private final TableMetadataMap mTableMetadatas;
 	private final TransactionId mTransactionId;
 	private Table mSystemTable;
 	private boolean mChanged;
 	private Object[] mProperties;
+	private TableMetadata mSystemTableMetadata;
 
 
 	private Database()
 	{
 		mOpenTables = new HashMap<>();
-		mTableTypes = new TableTypeMap();
+		mTableMetadatas = new TableMetadataMap();
 		mInitializers = new HashMap<>();
+		mFactories = new HashMap<>();
 		mTransactionId = new TransactionId();
-
-		setInitializer(Table.class, (e)->{
-			try
-			{
-				e.init(this, new TableType(Table.class, null), null);
-			}
-			catch (Exception ex)
-			{
-				throw new IllegalStateException(ex);
-			}
-		});
 	}
 
 
@@ -192,12 +183,11 @@ public class Database implements AutoCloseable
 
 		Database db = new Database();
 
-		TableType systemTableType = new TableType(Table.class, null);
-
-		db.mBlockDevice = aBlockDevice;
-		db.mSystemTable = new Table(db, systemTableType, null).open(null);
-		db.mChanged = true;
 		db.mProperties = aParameters;
+		db.mBlockDevice = aBlockDevice;
+		db.mSystemTableMetadata = new TableMetadata().create(TableMetadata.class, null);
+		db.mSystemTable = new Table(db, db.mSystemTableMetadata, null);
+		db.mChanged = true;
 
 		db.updateSuperBlock();
 
@@ -233,23 +223,21 @@ public class Database implements AutoCloseable
 		long identity = buffer.readInt64();
 		int version = buffer.readInt32();
 
-		if (identity != IDENTITY)
+		if (identity != RACCOON_DB_IDENTITY)
 		{
 			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra identity)");
 		}
-		if (version != VERSION)
+		if (version != RACCOON_DB_VERSION)
 		{
-			throw new UnsupportedVersionException("Unsupported database version: provided: " + version + ", expected: " + VERSION);
+			throw new UnsupportedVersionException("Unsupported database version: provided: " + version + ", expected: " + RACCOON_DB_VERSION);
 		}
 
 		db.mTransactionId.set(buffer.readInt64());
 
-		TableType systemTableType = new TableType(Table.class, null);
-
-		db.mBlockDevice = aBlockDevice;
-		db.mSystemTable = new Table(db, systemTableType, null).open(buffer);
-		db.mSystemTableHeader = db.mSystemTable.getTableHeader();
 		db.mProperties = aParameters;
+		db.mBlockDevice = aBlockDevice;
+		db.mSystemTableMetadata = new TableMetadata().create(TableMetadata.class, null);
+		db.mSystemTable = new Table(db, db.mSystemTableMetadata, buffer.crop().array());
 
 		Log.dec();
 
@@ -261,50 +249,46 @@ public class Database implements AutoCloseable
 	{
 		checkOpen();
 
-		TableType tableType;
-
 		synchronized (this)
 		{
-			tableType = mTableTypes.get(aType, aDiscriminator);
+			TableMetadata tableMetadata = mTableMetadatas.get(aType, aDiscriminator);
 
-			if (tableType == null)
+			if (tableMetadata == null)
 			{
-				tableType = new TableType(aType, aDiscriminator);
+				tableMetadata = new TableMetadata().create(aType, aDiscriminator);
 
-				mTableTypes.add(tableType);
+				mTableMetadatas.add(tableMetadata);
 			}
 
-			return openTable(tableType, aDiscriminator, aOptions);
+			return openTable(tableMetadata, aOptions);
 		}
 	}
 
 
-	private Table openTable(TableType aTableType, Object aDiscriminator, OpenOption aOptions) throws IOException
+	private Table openTable(TableMetadata aTableMetadata, OpenOption aOptions) throws IOException
 	{
-		Table table = mOpenTables.get(aTableType);
+		Table table = mOpenTables.get(aTableMetadata);
 
 		if (table == null)
 		{
-			table = new Table(this, aTableType, aDiscriminator);
-
 			Log.i("open table '%s' with option %s", table, aOptions);
 			Log.inc();
 
-			boolean tableExists = mSystemTable.get(table);
+			boolean tableExists = mSystemTable.get(aTableMetadata);
 
 			if (!tableExists && (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY))
 			{
 				return null;
 			}
 
-			table.open(null);
+			table = new Table(this, aTableMetadata, aTableMetadata.getPointer());
 
 			if (!tableExists)
 			{
-				mSystemTable.save(table);
+				mSystemTable.save(aTableMetadata);
 			}
 
-			mOpenTables.put(aTableType, table);
+			mOpenTables.put(aTableMetadata, table);
 
 			Log.dec();
 		}
@@ -357,13 +341,13 @@ public class Database implements AutoCloseable
 			Log.i("commit database");
 			Log.inc();
 
-			for (Table table : mOpenTables.values())
+			for (java.util.Map.Entry<TableMetadata,Table> entry : mOpenTables.entrySet())
 			{
-				if (table.commit())
+				if (entry.getValue().commit())
 				{
-					Log.i("table updated '%s'", table);
+					Log.i("table updated '%s'", entry.getKey());
 
-					mSystemTable.save(table);
+					mSystemTable.save(entry.getKey());
 
 					mChanged = true;
 				}
@@ -377,7 +361,6 @@ public class Database implements AutoCloseable
 
 				mBlockDevice.commit();
 
-				mSystemTableHeader = mSystemTable.getTableHeader();
 				mChanged = false;
 
 				assert integrityCheck() == null : integrityCheck();
@@ -431,13 +414,13 @@ public class Database implements AutoCloseable
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(100);
 		buffer.writeInt32(0); // leave space for checksum
-		buffer.writeInt64(IDENTITY);
-		buffer.writeInt32(VERSION);
+		buffer.writeInt64(RACCOON_DB_IDENTITY);
+		buffer.writeInt32(RACCOON_DB_VERSION);
 		buffer.writeInt64(mTransactionId.get());
-		buffer.write(mSystemTable.getTableHeader());
+		if (mSystemTableMetadata.getPointer()!=null) buffer.write(mSystemTableMetadata.getPointer());
 		buffer.trim();
 
-		int checksum = MurmurHash3.hash_x86_32(buffer.array(), 4, buffer.position()-4, EXTRA_DATA_CHECKSUM_SEED);
+		int checksum = MurmurHash3.hash_x86_32(buffer.array(), 4, buffer.position() - 4, EXTRA_DATA_CHECKSUM_SEED);
 		buffer.position(0).writeInt32(checksum);
 
 		mBlockDevice.setExtraData(buffer.array());
@@ -832,6 +815,21 @@ public class Database implements AutoCloseable
 	}
 
 
+	/**
+	 * Sets the Initializer associated with the specified type. The Initializer is called for each entity created by the database of specified type.
+	 */
+	public <T> void setFactory(Class<T> aType, Factory<T> aFactory)
+	{
+		mFactories.put(aType, aFactory);
+	}
+
+
+	<T> Factory<T> getFactory(Class<T> aType)
+	{
+		return mFactories.get(aType);
+	}
+
+
 	public IManagedBlockDevice getBlockDevice()
 	{
 		return mBlockDevice;
@@ -905,15 +903,15 @@ public class Database implements AutoCloseable
 	}
 
 
-	public List<Schema> getSchemas() throws IOException
+	public synchronized List<Table> getTables() throws IOException
 	{
-		ArrayList<Schema> schemas = new ArrayList<>();
+		ArrayList<Table> tables = new ArrayList<>();
 
-		for (Table table : (List<Table>)mSystemTable.list(Table.class))
+		for (TableMetadata tableMetadata : (List<TableMetadata>)mSystemTable.list(TableMetadata.class))
 		{
-			schemas.add(new Schema(table));
+			tables.add(openTable(tableMetadata, OpenOption.OPEN));
 		}
 
-		return schemas;
+		return tables;
 	}
 }

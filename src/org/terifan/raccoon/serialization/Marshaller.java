@@ -79,7 +79,7 @@ public class Marshaller
 	}
 
 
-	public void unmarshal(ByteArrayBuffer aBuffer, Object aOutputObject, FieldCategory aFieldCategory) throws IOException
+	public void unmarshal(ByteArrayBuffer aBuffer, Object aOutputObject, FieldCategory aFieldCategory)
 	{
 		if (aOutputObject != null && mFields == null)
 		{
@@ -108,7 +108,7 @@ public class Marshaller
 
 			Log.dec();
 		}
-		catch (IllegalAccessException e)
+		catch (IOException | IllegalArgumentException | IllegalAccessException e)
 		{
 			throw new DatabaseException("Failed to reconstruct entity: " + (aOutputObject == null ? null : aOutputObject.getClass()), e);
 		}

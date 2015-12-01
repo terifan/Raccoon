@@ -4,6 +4,7 @@ import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.io.BlockAccessor;
 import org.terifan.raccoon.Entry;
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.terifan.raccoon.util.ByteBufferMap;
@@ -55,7 +56,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	/**
 	 * Open an existing HashTable or create a new HashTable with default settings.
 	 */
-	public HashTable(IManagedBlockDevice aBlockDevice, ByteArrayBuffer aTableHeader, TransactionId aTransactionId, boolean aStandAlone) throws IOException
+	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionId aTransactionId, boolean aStandAlone) throws IOException
 	{
 		mTransactionId = aTransactionId;
 
@@ -63,14 +64,14 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			mNodeSize = 4 * aBlockDevice.getBlockSize();
 			mLeafSize = 8 * aBlockDevice.getBlockSize();
-			mHashSeed = ISAAC.PRNG.nextLong();
+			mHashSeed = new SecureRandom().nextLong();
 		}
 
 		init(aBlockDevice, aTableHeader, aStandAlone);
 	}
 
 
-	private void init(IManagedBlockDevice aBlockDevice, ByteArrayBuffer aTableHeader, boolean aStandAlone) throws IOException
+	private void init(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, boolean aStandAlone) throws IOException
 	{
 		mBlockAccessor = new BlockAccessor(aBlockDevice);
 		mStandAlone = aStandAlone;
@@ -93,11 +94,12 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 			mRootBlockPointer = new BlockPointer();
 
-			mRootBlockPointer.unmarshal(aTableHeader);
-			mHashSeed = aTableHeader.readInt64();
-			mNodeSize = aTableHeader.readVar32();
-			mLeafSize = aTableHeader.readVar32();
-			mBlockAccessor.setCompressionLevel(aTableHeader.readVar32());
+			ByteArrayBuffer tmp = new ByteArrayBuffer(aTableHeader);
+			mRootBlockPointer.unmarshal(tmp);
+			mHashSeed = tmp.readInt64();
+			mNodeSize = tmp.readVar32();
+			mLeafSize = tmp.readVar32();
+			mBlockAccessor.setCompressionLevel(tmp.readVar32());
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 

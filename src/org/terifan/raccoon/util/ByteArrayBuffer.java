@@ -120,6 +120,15 @@ public final class ByteArrayBuffer
 	}
 
 
+	public ByteArrayBuffer crop()
+	{
+		mBuffer = Arrays.copyOfRange(mBuffer, mOffset, mBuffer.length);
+		position(0);
+		mLimit = 0;
+		return this;
+	}
+
+
 	public byte[] array()
 	{
 		flushBits();

@@ -1,11 +1,9 @@
 package org.terifan.raccoon;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import org.terifan.raccoon.serialization.FieldCategory;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -24,52 +22,34 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-class Table<T> implements Iterable<T>
+public class Table<T> implements Iterable<T>
 {
 	private static final int DIRECT_DATA = 0;
 	private static final int INDIRECT_DATA = 1;
 
-	@Key private String mName;
-	@Key private byte[] mDiscriminator;
+	private Database mDatabase;
+	private TableMetadata mTableMetadata;
+	private BlockAccessor mBlockAccessor;
+	private IManagedBlockDevice mBlockDevice;
+	private Initializer mInitializer;
+	private HashSet<BlobOutputStream> mOpenOutputStreams;
+	private HashTable mTableImplementation;
 	private byte[] mPointer;
-	private String mType;
-	private byte[] mFormat;
-
-	private transient Database mDatabase;
-	private transient TableType mTableType;
-	private transient BlockAccessor mBlockAccessor;
-	private transient IManagedBlockDevice mBlockDevice;
-	private transient Initializer mInitializer;
-	private transient HashSet<BlobOutputStream> mOpenOutputStreams;
-	private transient HashTable mTableImplementation;
 
 
-	public Table()
+	Table(Database aDatabase, TableMetadata aTableMetadata, byte[] aPointer) throws IOException
 	{
-	}
+		mOpenOutputStreams = new HashSet<>();
 
+		mDatabase = aDatabase;
+		mTableMetadata = aTableMetadata;
+		mPointer = aPointer;
 
-	Table(Database aDatabase, TableType aTableType, Object aDiscriminator) throws IOException
-	{
-		init(aDatabase, aTableType, aDiscriminator);
-	}
-
-
-	Table open(ByteArrayBuffer aTableHeader) throws IOException
-	{
-		Log.i("open table");
-		Log.inc();
-
-		if (aTableHeader == null && mPointer != null)
-		{
-			aTableHeader = new ByteArrayBuffer(mPointer);
-		}
-
-		mTableImplementation = new HashTable(mBlockDevice, aTableHeader, mDatabase.getTransactionId(), false);
-
-		Log.dec();
-
-		return this;
+		mBlockDevice = mDatabase.getBlockDevice();
+		mInitializer = mDatabase.getInitializer(mTableMetadata.getType());
+		mTableImplementation = new HashTable(mBlockDevice, mPointer, mDatabase.getTransactionId(), false);
+		mBlockAccessor = new BlockAccessor(mBlockDevice);
+		mBlockAccessor.setCompressionLevel(mDatabase.getParameter(CompressionParam.class, new CompressionParam(0)).getValue());
 	}
 
 
@@ -278,12 +258,6 @@ class Table<T> implements Iterable<T>
 	}
 
 
-	byte[] getTableHeader()
-	{
-		return mTableImplementation.getTableHeader();
-	}
-
-
 	void close() throws IOException
 	{
 		mTableImplementation.close();
@@ -315,7 +289,7 @@ class Table<T> implements Iterable<T>
 
 		boolean wasUpdated = !Arrays.equals(newPointer, mPointer);
 
-		mPointer = newPointer;
+		mTableMetadata.setPointer(newPointer);
 
 		return wasUpdated;
 	}
@@ -336,24 +310,6 @@ class Table<T> implements Iterable<T>
 	String integrityCheck()
 	{
 		return mTableImplementation.integrityCheck();
-	}
-
-
-	byte[] getDiscriminators(Object aInput)
-	{
-		return mTableType.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.DISCRIMINATOR).trim().array();
-	}
-
-
-	byte[] getKeys(Object aInput)
-	{
-		return mTableType.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.KEY).trim().array();
-	}
-
-
-	byte[] getNonKeys(Object aInput)
-	{
-		return mTableType.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.DISCRIMINATOR_VALUE).trim().array();
 	}
 
 
@@ -379,7 +335,7 @@ class Table<T> implements Iterable<T>
 			}
 		}
 
-		mTableType.getMarshaller().unmarshal(buffer, aOutput, aCategory);
+		mTableMetadata.getMarshaller().unmarshal(buffer, aOutput, aCategory);
 	}
 
 
@@ -387,15 +343,10 @@ class Table<T> implements Iterable<T>
 	{
 		try
 		{
-			Constructor constructor = mTableType.getType().getDeclaredConstructor();
+			Constructor constructor = mTableMetadata.getType().getDeclaredConstructor();
 			constructor.setAccessible(true);
 
 			Object object = constructor.newInstance();
-
-			if (mDiscriminator != null)
-			{
-				mTableType.getMarshaller().unmarshal(new ByteArrayBuffer(mDiscriminator), object, FieldCategory.DISCRIMINATOR);
-			}
 
 			if (mInitializer != null)
 			{
@@ -411,69 +362,27 @@ class Table<T> implements Iterable<T>
 	}
 
 
+	byte[] getKeys(Object aInput)
+	{
+		return mTableMetadata.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.KEY).trim().array();
+	}
+
+
+	byte[] getNonKeys(Object aInput)
+	{
+		return mTableMetadata.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.DISCRIMINATOR_VALUE).trim().array();
+	}
+
+
+	public TableMetadata getTableMetadata()
+	{
+		return mTableMetadata;
+	}
+
+
 	@Override
 	public String toString()
 	{
-		return mName;
-	}
-
-
-	void init(Database aDatabase, TableType aTableType, Object aDiscriminator) throws IOException
-	{
-		mDatabase = aDatabase;
-		mTableType = aTableType;
-		mBlockDevice = mDatabase.getBlockDevice();
-		mBlockAccessor = new BlockAccessor(mBlockDevice);
-		mBlockAccessor.setCompressionLevel(mDatabase.getParameter(CompressionParam.class, new CompressionParam(0)).getValue());
-		mInitializer = mDatabase.getInitializer(mTableType.getType());
-
-		mName = mTableType.getName();
-		mType = mTableType.getType().getName();
-
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try (ObjectOutputStream oos = new ObjectOutputStream(baos))
-		{
-			oos.writeObject(mTableType.getMarshaller().getTypeDeclarations());
-		}
-		catch (IOException e)
-		{
-			throw new DatabaseException(e);
-		}
-		mFormat = baos.toByteArray();
-
-		mOpenOutputStreams = new HashSet<>();
-
-		if (aDiscriminator != null)
-		{
-			Log.v("find discriminator");
-			Log.inc();
-
-			mDiscriminator = mTableType.getMarshaller().marshal(new ByteArrayBuffer(16), aDiscriminator, FieldCategory.DISCRIMINATOR).trim().array();
-
-			if (mDiscriminator.length == 0)
-			{
-				mDiscriminator = null;
-			}
-
-			Log.dec();
-		}
-	}
-
-
-	public String getName()
-	{
-		return mName;
-	}
-
-
-	public TableType getTableType()
-	{
-		return mTableType;
-	}
-
-
-	public byte[] getFormat()
-	{
-		return mFormat;
+		return mTableMetadata.toString();
 	}
 }

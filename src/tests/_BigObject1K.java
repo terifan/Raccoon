@@ -79,6 +79,8 @@ public class _BigObject1K implements Serializable
 
 	public _BigObject1K random()
 	{
+		_key = (int)System.nanoTime();
+		
 		mBoolean = x();
 		mByte = b();
 		mShort = s();

@@ -6,7 +6,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 
-class FieldType implements Externalizable, Comparable<FieldType>
+public class FieldType implements Externalizable, Comparable<FieldType>
 {
 	private final static long serialVersionUID = 1L;
 
@@ -96,5 +96,47 @@ class FieldType implements Externalizable, Comparable<FieldType>
 			s.append(" (nullable)");
 		}
 		return s.toString();
+	}
+
+
+	public FieldCategory getCategory()
+	{
+		return category;
+	}
+
+
+	public String getName()
+	{
+		return name;
+	}
+
+
+	public Class getType()
+	{
+		return type;
+	}
+
+
+	public boolean isNullable()
+	{
+		return nullable;
+	}
+
+
+	public int getDepth()
+	{
+		return depth;
+	}
+
+
+	public FieldFormat getFormat()
+	{
+		return format;
+	}
+
+
+	public FieldType[] getComponentType()
+	{
+		return componentType;
 	}
 }

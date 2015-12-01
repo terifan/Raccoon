@@ -365,6 +365,6 @@ public class HashTableNGTest
 
 	private HashTable newHashTable(byte[] aRoot, TransactionId aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
 	{
-		return new HashTable(new ManagedBlockDevice(aBlockDevice), aRoot == null ? null : new ByteArrayBuffer(aRoot), aTransactionId, true);
+		return new HashTable(new ManagedBlockDevice(aBlockDevice), aRoot, aTransactionId, true);
 	}
 }
