@@ -1,12 +1,13 @@
 package org.terifan.raccoon.serialization;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
 class ArrayReader
 {
-	static Object readArray(FieldType aFieldType, int aLevel, int aDepth, ByteArrayBuffer aDataInput)
+	static Object readArray(FieldType aFieldType, int aLevel, int aDepth, ByteArrayBuffer aDataInput) throws IOException
 	{
 		if (aDataInput.readBit() == 1)
 		{

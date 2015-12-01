@@ -388,8 +388,15 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		SuperBlock superBlockOne = new SuperBlock();
 		SuperBlock superBlockTwo = new SuperBlock();
 
-		superBlockOne.unmarshal(0L);
-		superBlockTwo.unmarshal(1L);
+		try
+		{
+			superBlockOne.unmarshal(0L);
+			superBlockTwo.unmarshal(1L);
+		}
+		catch (IOException e)
+		{
+			throw new UnsupportedVersionException("Failed to decode SuperBlock");
+		}
 
 		if (superBlockOne.mFormatVersion != FORMAT_VERSION)
 		{

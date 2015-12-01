@@ -3,12 +3,11 @@ package org.terifan.raccoon.serialization;
 import java.io.IOException;
 import java.util.Date;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.util.Log;
 
 
 class ValueReader
 {
-	static Object readValue(Class aType, ByteArrayBuffer aDataInput)
+	static Object readValue(Class aType, ByteArrayBuffer aDataInput) throws IOException
 	{
 		if (aType == Boolean.class || aType == Boolean.TYPE)
 		{

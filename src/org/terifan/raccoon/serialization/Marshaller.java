@@ -1,5 +1,6 @@
 package org.terifan.raccoon.serialization;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -72,13 +73,13 @@ public class Marshaller
 
 
 	@Deprecated
-	public void unmarshal(byte[] aBuffer, Object aOutputObject, FieldCategory aFieldCategory)
+	public void unmarshal(byte[] aBuffer, Object aOutputObject, FieldCategory aFieldCategory) throws IOException
 	{
 		unmarshal(new ByteArrayBuffer(aBuffer), aOutputObject, aFieldCategory);
 	}
 
 
-	public void unmarshal(ByteArrayBuffer aBuffer, Object aOutputObject, FieldCategory aFieldCategory)
+	public void unmarshal(ByteArrayBuffer aBuffer, Object aOutputObject, FieldCategory aFieldCategory) throws IOException
 	{
 		if (aOutputObject != null && mFields == null)
 		{
