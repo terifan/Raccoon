@@ -54,6 +54,17 @@ public class Database implements AutoCloseable
 		mTableTypes = new TableTypeMap();
 		mInitializers = new HashMap<>();
 		mTransactionId = new TransactionId();
+
+		setInitializer(Table.class, (e)->{
+			try
+			{
+				e.init(this, new TableType(Table.class, null), null);
+			}
+			catch (Exception ex)
+			{
+				throw new IllegalStateException(ex);
+			}
+		});
 	}
 
 
@@ -244,17 +255,6 @@ public class Database implements AutoCloseable
 
 		return db;
 	}
-
-
-//	public List<Schema> getSchemas()
-//	{
-//		ArrayList<Schema> list = new ArrayList<>();
-//		for (Table t : (List<Table>)mSystemTable.list(Table.class))
-//		{
-//			list.add(Schema.decode(t.getName()));
-//		}
-//		return list;
-//	}
 
 
 	private Table openTable(Class aType, Object aDiscriminator, OpenOption aOptions) throws IOException
@@ -902,5 +902,18 @@ public class Database implements AutoCloseable
 	<E> E getParameter(Class<E> aType, E aDefaultParam)
 	{
 		return getParameter(aType, mProperties, aDefaultParam);
+	}
+
+
+	public List<Schema> getSchemas() throws IOException
+	{
+		ArrayList<Schema> schemas = new ArrayList<>();
+
+		for (Table table : (List<Table>)mSystemTable.list(Table.class))
+		{
+			schemas.add(new Schema(table));
+		}
+
+		return schemas;
 	}
 }
