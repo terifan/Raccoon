@@ -1,6 +1,7 @@
 package org.terifan.raccoon.security;
 
 import java.util.Arrays;
+import org.terifan.raccoon.util.Log;
 
 
 public final class TranspositionDiffuser
