@@ -54,8 +54,8 @@ public final class TranspositionDiffuser
 	public void encode(byte[] aBuffer, int aOffset, int aLength, int aBlockKey)
 	{
 		int limit = mUnitSize - 1;
-		int xor1 = (aBlockKey >>> 24)  & limit;
-		int add1 = (aBlockKey >> 12)  & limit;
+		int xor1 = (aBlockKey >>> 24) & limit;
+		int add1 = (aBlockKey >> 12) & limit;
 		int xor2 = aBlockKey & limit;
 
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / mUnitSize; unitIndex < numDataUnits; unitIndex++, offset += mUnitSize)
@@ -73,8 +73,8 @@ public final class TranspositionDiffuser
 	public void decode(byte[] aBuffer, int aOffset, int aLength, int aBlockKey)
 	{
 		int limit = mUnitSize - 1;
-		int xor1 = (aBlockKey >>> 24)  & limit;
-		int add1 = (aBlockKey >> 12)  & limit;
+		int xor1 = (aBlockKey >>> 24) & limit;
+		int add1 = (aBlockKey >> 12) & limit;
 		int xor2 = aBlockKey & limit;
 
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / mUnitSize; unitIndex < numDataUnits; unitIndex++, offset += mUnitSize)
