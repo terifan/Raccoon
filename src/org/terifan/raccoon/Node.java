@@ -8,6 +8,8 @@ public interface Node
 	final static int LEAF = 2;
 	final static int NODE = 3;
 
+	final static int BLOB = 4;
+
 	byte[] array();
 
 	int getType();

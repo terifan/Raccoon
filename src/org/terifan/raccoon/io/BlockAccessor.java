@@ -17,9 +17,9 @@ import org.terifan.raccoon.util.Log;
 
 public class BlockAccessor
 {
-	private final IManagedBlockDevice mBlockDevice;
-	private final int mPageSize;
+	private IManagedBlockDevice mBlockDevice;
 	private CompressionParam mCompressionParam;
+	private int mPageSize;
 
 
 	public BlockAccessor(IManagedBlockDevice aBlockDevice) throws IOException
@@ -27,7 +27,7 @@ public class BlockAccessor
 		mBlockDevice = aBlockDevice;
 		mPageSize = mBlockDevice.getBlockSize();
 
-		mCompressionParam = new CompressionParam(0, 0);
+		mCompressionParam = CompressionParam.NO_COMPRESSION;
 	}
 
 
@@ -108,7 +108,7 @@ public class BlockAccessor
 			int physicalSize = 0;
 			int compression = 0;
 
-			int cp = aType == Node.LEAF ? mCompressionParam.getLeaf() : mCompressionParam.getNode();
+			int cp = aType == Node.BLOB ? mCompressionParam.getBlob() : aType == Node.LEAF ? mCompressionParam.getLeaf() : mCompressionParam.getNode();
 
 			if (cp > 0)
 			{

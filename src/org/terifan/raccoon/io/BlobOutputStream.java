@@ -11,7 +11,7 @@ import org.terifan.raccoon.util.Log;
 
 public class BlobOutputStream extends OutputStream implements AutoCloseable
 {
-	final static int TYPE_DATA = Node.LEAF;
+	final static int TYPE_DATA = Node.BLOB;
 	final static int TYPE_INDIRECT = Node.NODE;
 	final static int FRAGMENT_SIZE = 1024 * 1024;
 	private final static int POINTER_MAX_LENGTH = 4 * BlockPointer.SIZE;
@@ -117,8 +117,8 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 
 		Arrays.fill(mBuffer.array(), (byte)0);
 	}
-	
-	
+
+
 	public interface OnCloseListener
 	{
 		void onClose(byte[] aHeader);

@@ -42,21 +42,21 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	/**
 	 * Create a new HashTable with custom settings.
 	 */
-	public HashTable(IManagedBlockDevice aBlockDevice, TransactionId aTransactionId, boolean aStandAlone, long aHashSeed, int aNodeSize, int aLeafSize) throws IOException
+	public HashTable(IManagedBlockDevice aBlockDevice, TransactionId aTransactionId, boolean aStandAlone, long aHashSeed, int aNodeSize, int aLeafSize, CompressionParam aCompressionParam) throws IOException
 	{
 		mTransactionId = aTransactionId;
 		mNodeSize = aNodeSize;
 		mLeafSize = aLeafSize;
 		mHashSeed = aHashSeed;
 
-		init(aBlockDevice, null, aStandAlone);
+		init(aBlockDevice, null, aStandAlone, aCompressionParam);
 	}
 
 
 	/**
 	 * Open an existing HashTable or create a new HashTable with default settings.
 	 */
-	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionId aTransactionId, boolean aStandAlone) throws IOException
+	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionId aTransactionId, boolean aStandAlone, CompressionParam aCompressionParam) throws IOException
 	{
 		mTransactionId = aTransactionId;
 
@@ -67,14 +67,19 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			mHashSeed = new SecureRandom().nextLong();
 		}
 
-		init(aBlockDevice, aTableHeader, aStandAlone);
+		init(aBlockDevice, aTableHeader, aStandAlone, aCompressionParam);
 	}
 
 
-	private void init(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, boolean aStandAlone) throws IOException
+	private void init(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, boolean aStandAlone, CompressionParam aCompressionParam) throws IOException
 	{
 		mBlockAccessor = new BlockAccessor(aBlockDevice);
 		mStandAlone = aStandAlone;
+
+		if (aCompressionParam != null)
+		{
+			mBlockAccessor.setCompressionParam(aCompressionParam);
+		}
 
 		if (aTableHeader == null)
 		{
@@ -99,7 +104,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			mHashSeed = tmp.readInt64();
 			mNodeSize = tmp.readVar32();
 			mLeafSize = tmp.readVar32();
-			mBlockAccessor.setCompressionParam(new CompressionParam(tmp.readVar32(), tmp.readVar32()));
+			mBlockAccessor.setCompressionParam(new CompressionParam(tmp.readVar32(), tmp.readVar32(), tmp.readVar32()));
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 
@@ -119,6 +124,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		buffer.writeVar32(mLeafSize);
 		buffer.writeVar32(mBlockAccessor.getCompressionParam().getLeaf());
 		buffer.writeVar32(mBlockAccessor.getCompressionParam().getNode());
+		buffer.writeVar32(mBlockAccessor.getCompressionParam().getBlob());
 
 		return buffer.trim().array();
 	}

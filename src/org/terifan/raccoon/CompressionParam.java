@@ -3,21 +3,20 @@ package org.terifan.raccoon;
 
 public class CompressionParam
 {
+	public final static CompressionParam BEST_SPEED = new CompressionParam(2, 1, 0);
+	public final static CompressionParam BEST_COMPRESSION = new CompressionParam(9, 9, 9);
+	public final static CompressionParam NO_COMPRESSION = new CompressionParam(0, 0, 0);
+
 	private int mNode;
 	private int mLeaf;
+	private int mBlob;
 
 
-	/**
-	 * 
-	 * @param aNode
-	 *   compression used on node data. Using some compression is preferred.
-	 * @param aLeaf 
-	 *   compression used on leaf data ie the actual data records stored in the database. Using a fast or no compression at all is preferred.
-	 */
-	public CompressionParam(int aNode, int aLeaf)
+	public CompressionParam(int aNode, int aLeaf, int aBlob)
 	{
 		mNode = aNode;
 		mLeaf = aLeaf;
+		mBlob = aBlob;
 	}
 
 
@@ -30,5 +29,18 @@ public class CompressionParam
 	public int getNode()
 	{
 		return mNode;
+	}
+
+
+	public int getBlob()
+	{
+		return mBlob;
+	}
+
+
+	@Override
+	public String toString()
+	{
+		return "{node=" + mNode + ", leaf=" + mLeaf + ", blob=" + mBlob + "}";
 	}
 }

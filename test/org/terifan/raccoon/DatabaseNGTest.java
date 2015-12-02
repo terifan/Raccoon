@@ -19,6 +19,7 @@ import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.terifan.raccoon.security.InvalidKeyException;
+import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
@@ -389,7 +390,7 @@ public class DatabaseNGTest
 		_KeyValue1K in = new _KeyValue1K("apple", createBuffer(0, 1000_000));
 		_KeyValue1K out = new _KeyValue1K("apple");
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
+		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_COMPRESSION))
 		{
 			db.save(in);
 			db.commit();
@@ -417,7 +418,7 @@ public class DatabaseNGTest
 
 		_KeyValue1K in = new _KeyValue1K("apple", createBuffer(0, 1000_000));
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
+		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_COMPRESSION))
 		{
 			db.save(in);
 			db.commit();
