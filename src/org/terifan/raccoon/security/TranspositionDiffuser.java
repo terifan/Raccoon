@@ -11,7 +11,7 @@ public final class TranspositionDiffuser
 	private transient final byte[] mWork;
 
 
-	public TranspositionDiffuser(byte[] aSeed, byte[] aCounter, int aUnitSize)
+	public TranspositionDiffuser(byte[] aSeed, int aUnitSize)
 	{
 		mUnitSize = aUnitSize;
 
@@ -24,15 +24,14 @@ public final class TranspositionDiffuser
 			mEncodeOrder[i] = i;
 		}
 
-		Random prng = new Random(aSeed, aCounter);
+		Random prng = new Random(aSeed);
 
 		for (int i = 0; i < mUnitSize; i++)
 		{
-			int p = i & (mUnitSize - 1);
-			int q = prng.nextInt() & (mUnitSize - 1);
-			int t = mEncodeOrder[p];
-			mEncodeOrder[p] = mEncodeOrder[q];
-			mEncodeOrder[q] = t;
+			int j = prng.nextInt() & (mUnitSize - 1);
+			int t = mEncodeOrder[i];
+			mEncodeOrder[i] = mEncodeOrder[j];
+			mEncodeOrder[j] = t;
 		}
 
 		for (int i = 0; i < mEncodeOrder.length; i++)

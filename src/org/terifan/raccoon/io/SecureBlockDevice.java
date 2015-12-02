@@ -40,10 +40,10 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 	private final static int RESERVED_BLOCKS = 1;
 	private final static int SALT_SIZE = 256;
 	private final static int IV_SIZE = 16;
-	private final static int TWEAK_SIZE = 16;
+	private final static int TWEAK_SIZE = 32;
 	private final static int KEY_SIZE_BYTES = 32;
 	private final static int HEADER_SIZE = 8;
-	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + 2 * TWEAK_SIZE + 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
+	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + TWEAK_SIZE + 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
 	private final static int ITERATION_COUNT = 10_000;
 	private final static int PAYLOAD_SIZE = 256; // HEADER_SIZE + KEY_POOL_SIZE
 	private final static int SIGNATURE = 0xf46a290c;
@@ -283,7 +283,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 	private static final class CipherImplementation
 	{
-		private transient final byte [][] mTweakKey = new byte[2][16];
+		private transient final byte [] mTweakKey = new byte[32];
 		private transient final byte [][] mIV = new byte[3][16];
 		private transient final Cipher[] mCiphers;
 		private transient final Cipher mTweakCipher;
@@ -341,9 +341,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 			mTweakCipher.engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
 			offset += KEY_SIZE_BYTES;
 
-			System.arraycopy(aKeyPool, offset, mTweakKey[0], 0, TWEAK_SIZE);
-			offset += TWEAK_SIZE;
-			System.arraycopy(aKeyPool, offset, mTweakKey[1], 0, TWEAK_SIZE);
+			System.arraycopy(aKeyPool, offset, mTweakKey, 0, TWEAK_SIZE);
 			offset += TWEAK_SIZE;
 
 			for (int j = 0; j < 3; j++)
@@ -368,7 +366,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 			mUnitSize = aUnitLength;
 			mCipher = new CBC();
-			mDiffuser = new TranspositionDiffuser(mTweakKey[0], mTweakKey[1], mUnitSize);
+			mDiffuser = new TranspositionDiffuser(mTweakKey, mUnitSize);
 		}
 
 
@@ -432,8 +430,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 				fill(mIV[0], (byte)0);
 				fill(mIV[1], (byte)0);
 				fill(mIV[2], (byte)0);
-				fill(mTweakKey[0], (byte)0);
-				fill(mTweakKey[1], (byte)0);
+				fill(mTweakKey, (byte)0);
 				fill(mCiphers, null);
 			}
 		}
