@@ -1,7 +1,6 @@
 package org.terifan.raccoon.security;
 
 import java.util.Arrays;
-import org.terifan.raccoon.util.Log;
 
 
 public final class TranspositionDiffuser
@@ -52,18 +51,27 @@ public final class TranspositionDiffuser
 	}
 
 
+	public static int mix(long aA, long aC)
+	{
+		long v = 1103515245L * aA + aC;
+		v ^= v << 21;
+		v ^= v >>> 35;
+		v ^= v << 4;
+		return (int)v ^ (int)(v >>> 32);
+	}
+
+
 	public void encode(byte[] aBuffer, int aOffset, int aLength, int aBlockKey)
 	{
 		int limit = mUnitSize - 1;
-		int xor1 = (aBlockKey >>> 24) & limit;
-		int add1 = (aBlockKey >> 12) & limit;
-		int xor2 = aBlockKey & limit;
+		int add = limit & mix(97241L * aBlockKey, 0xd617c055 & aBlockKey);
+		int xor = limit & mix(60601L * aBlockKey, 0x23d1fac7 & aBlockKey);
 
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / mUnitSize; unitIndex < numDataUnits; unitIndex++, offset += mUnitSize)
 		{
 			for (int i = 0; i < mUnitSize; i++)
 			{
-				mWork[i ^ xor1] = aBuffer[offset + mEncodeOrder[((i + add1) ^ xor2) & limit]];
+				mWork[i] = aBuffer[offset + mEncodeOrder[((i + add) ^ xor) & limit]];
 			}
 
 			System.arraycopy(mWork, 0, aBuffer, offset, mUnitSize);
@@ -74,15 +82,14 @@ public final class TranspositionDiffuser
 	public void decode(byte[] aBuffer, int aOffset, int aLength, int aBlockKey)
 	{
 		int limit = mUnitSize - 1;
-		int xor1 = (aBlockKey >>> 24) & limit;
-		int add1 = (aBlockKey >> 12) & limit;
-		int xor2 = aBlockKey & limit;
+		int add = limit & mix(97241L * aBlockKey, 0xd617c055 & aBlockKey);
+		int xor = limit & mix(60601L * aBlockKey, 0x23d1fac7 & aBlockKey);
 
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / mUnitSize; unitIndex < numDataUnits; unitIndex++, offset += mUnitSize)
 		{
 			for (int i = 0; i < mUnitSize; i++)
 			{
-				mWork[i] = aBuffer[offset + ((((mDecodeOrder[i] ^ xor2) - add1) & limit) ^ xor1)];
+				mWork[i] = aBuffer[offset + (((mDecodeOrder[i] ^ xor) - add) & limit)];
 			}
 
 			System.arraycopy(mWork, 0, aBuffer, offset, mUnitSize);

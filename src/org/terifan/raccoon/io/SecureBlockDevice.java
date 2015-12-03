@@ -49,8 +49,8 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 	private final static int SIGNATURE = 0xf46a290c;
 	private final static int CHECKSUM_SEED = 0x2fc8d359;
 
-	private IPhysicalBlockDevice mBlockDevice;
-	private CipherImplementation mCipher;
+	private transient IPhysicalBlockDevice mBlockDevice;
+	private transient CipherImplementation mCipher;
 
 
 	/**
@@ -372,10 +372,10 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
-			int hi = (int)(aBlockKey >>> 32);
-			int lo = (int)aBlockKey;
+			int hi = TranspositionDiffuser.mix(aBlockKey, Long.reverseBytes(aBlockIndex));
+			int lo = TranspositionDiffuser.mix(aBlockKey, aBlockIndex);
 
-			mDiffuser.encode(aBuffer, aOffset, aLength, mix(hi, aBlockIndex));
+			mDiffuser.encode(aBuffer, aOffset, aLength, hi);
 
 			for (int i = 0; i < mCiphers.length; i++)
 			{
@@ -386,32 +386,15 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
-			int hi = (int)(aBlockKey >>> 32);
-			int lo = (int)aBlockKey;
+			int hi = TranspositionDiffuser.mix(aBlockKey, Long.reverseBytes(aBlockIndex));
+			int lo = TranspositionDiffuser.mix(aBlockKey, aBlockIndex);
 
 			for (int i = mCiphers.length; --i >= 0; )
 			{
 				mCipher.decrypt(mUnitSize, aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, lo);
 			}
 
-			mDiffuser.decode(aBuffer, aOffset, aLength, mix(hi, aBlockIndex));
-		}
-
-
-		/**
-		 * Create a more "random" key as both aKey and aBlockIndex may be very low numbers.
-		 */
-		private int mix(int aKey, long aBlockIndex)
-		{
-			int v = aKey ^ 0xcafebabe;
-			v += aBlockIndex;
-			v = Integer.rotateRight(v, 13);
-			v ^= aBlockIndex;
-			v = Integer.rotateRight(v, 7);
-			v ^= aBlockIndex;
-			v = Integer.rotateRight(v, 3);
-			v ^= aBlockIndex;
-			return v;
+			mDiffuser.decode(aBuffer, aOffset, aLength, hi);
 		}
 
 
