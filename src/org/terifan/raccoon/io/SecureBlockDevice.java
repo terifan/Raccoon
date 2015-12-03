@@ -372,8 +372,8 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
-			int hi = TranspositionDiffuser.mix(aBlockKey, Long.reverseBytes(aBlockIndex));
-			int lo = TranspositionDiffuser.mix(aBlockKey, aBlockIndex);
+			int hi = mix(aBlockKey, Long.reverseBytes(aBlockIndex));
+			int lo = mix(aBlockKey, aBlockIndex);
 
 			mDiffuser.encode(aBuffer, aOffset, aLength, hi);
 
@@ -386,8 +386,8 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
-			int hi = TranspositionDiffuser.mix(aBlockKey, Long.reverseBytes(aBlockIndex));
-			int lo = TranspositionDiffuser.mix(aBlockKey, aBlockIndex);
+			int hi = mix(aBlockKey, Long.reverseBytes(aBlockIndex));
+			int lo = mix(aBlockKey, aBlockIndex);
 
 			for (int i = mCiphers.length; --i >= 0; )
 			{
@@ -395,6 +395,16 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 			}
 
 			mDiffuser.decode(aBuffer, aOffset, aLength, hi);
+		}
+
+
+		public static int mix(long aA, long aC)
+		{
+			long v = 1103515245L * aA + aC;
+			v ^= v << 21;
+			v ^= v >>> 35;
+			v ^= v << 4;
+			return (int)v ^ (int)(v >>> 32);
 		}
 
 

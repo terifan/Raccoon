@@ -51,30 +51,19 @@ public final class TranspositionDiffuser
 	}
 
 
-	public static int mix(long aA, long aC)
-	{
-		long v = 1103515245L * aA + aC;
-		v ^= v << 21;
-		v ^= v >>> 35;
-		v ^= v << 4;
-		return (int)v ^ (int)(v >>> 32);
-	}
-
-
 	public void encode(byte[] aBuffer, int aOffset, int aLength, int aBlockKey)
 	{
 		int limit = mUnitSize - 1;
-		int add = limit & mix(97241L * aBlockKey, 0xd617c055 & aBlockKey);
-		int xor = limit & mix(60601L * aBlockKey, 0x23d1fac7 & aBlockKey);
 
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / mUnitSize; unitIndex < numDataUnits; unitIndex++, offset += mUnitSize)
 		{
 			for (int i = 0; i < mUnitSize; i++)
 			{
-				mWork[i] = aBuffer[offset + mEncodeOrder[((i + add) ^ xor) & limit]];
+				mWork[i] = aBuffer[offset + mEncodeOrder[(aBlockKey + i) & limit]];
 			}
 
 			System.arraycopy(mWork, 0, aBuffer, offset, mUnitSize);
+			aBlockKey = Integer.rotateRight(aBlockKey, 1) ^ ((aBlockKey & 1) << 8);
 		}
 	}
 
@@ -82,17 +71,16 @@ public final class TranspositionDiffuser
 	public void decode(byte[] aBuffer, int aOffset, int aLength, int aBlockKey)
 	{
 		int limit = mUnitSize - 1;
-		int add = limit & mix(97241L * aBlockKey, 0xd617c055 & aBlockKey);
-		int xor = limit & mix(60601L * aBlockKey, 0x23d1fac7 & aBlockKey);
 
 		for (int unitIndex = 0, offset = aOffset, numDataUnits = aLength / mUnitSize; unitIndex < numDataUnits; unitIndex++, offset += mUnitSize)
 		{
 			for (int i = 0; i < mUnitSize; i++)
 			{
-				mWork[i] = aBuffer[offset + (((mDecodeOrder[i] ^ xor) - add) & limit)];
+				mWork[i] = aBuffer[offset + ((mDecodeOrder[i] - aBlockKey) & limit)];
 			}
 
 			System.arraycopy(mWork, 0, aBuffer, offset, mUnitSize);
+			aBlockKey = Integer.rotateRight(aBlockKey, 1) ^ ((aBlockKey & 1) << 8);
 		}
 	}
 }

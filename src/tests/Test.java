@@ -19,7 +19,7 @@ public class Test
 
 			byte[] tmp;
 
-			TranspositionDiffuser diffuser = new TranspositionDiffuser(new byte[32], 16);
+			TranspositionDiffuser diffuser = new TranspositionDiffuser(new byte[32], 8);
 
 			tmp = buf.clone(); diffuser.encode(tmp, 0, 16, 0); Log.hexDump(tmp);
 			tmp = buf.clone(); diffuser.encode(tmp, 0, 16, 1); Log.hexDump(tmp);
