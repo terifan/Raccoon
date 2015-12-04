@@ -13,7 +13,6 @@ import org.terifan.raccoon.security.Twofish;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
 import org.terifan.raccoon.security.CBC;
-import org.terifan.raccoon.security.TranspositionDiffuser;
 
 
 // Boot block layout:
@@ -289,7 +288,6 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		private transient final Cipher mTweakCipher;
 		private transient final CBC mCipher;
 		private transient final int mUnitSize;
-		private transient final TranspositionDiffuser mDiffuser;
 
 
 		public CipherImplementation(final EncryptionFunction aCiphers, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitLength)
@@ -366,45 +364,42 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 			mUnitSize = aUnitLength;
 			mCipher = new CBC();
-			mDiffuser = new TranspositionDiffuser(mTweakKey, mUnitSize);
 		}
 
 
 		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
-			int hi = mix(aBlockKey, Long.reverseBytes(aBlockIndex));
-			int lo = mix(aBlockKey, aBlockIndex);
+			byte[] src = aBuffer.clone();
+			byte[] dst = aBuffer.clone();
 
-			mDiffuser.encode(aBuffer, aOffset, aLength, hi);
+			System.arraycopy(aBuffer, 0, src, 0, aBuffer.length);
 
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mCipher.encrypt(mUnitSize, aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, lo);
+				mCipher.encrypt(mUnitSize, src, dst, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, aBlockKey);
+
+				System.arraycopy(dst, 0, src, 0, aBuffer.length);
 			}
+
+			System.arraycopy(dst, 0, aBuffer, 0, aBuffer.length);
 		}
 
 
 		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
-			int hi = mix(aBlockKey, Long.reverseBytes(aBlockIndex));
-			int lo = mix(aBlockKey, aBlockIndex);
+			byte[] src = aBuffer.clone();
+			byte[] dst = aBuffer.clone();
+
+			System.arraycopy(aBuffer, 0, src, 0, aBuffer.length);
 
 			for (int i = mCiphers.length; --i >= 0; )
 			{
-				mCipher.decrypt(mUnitSize, aBuffer, aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, lo);
+				mCipher.decrypt(mUnitSize, src, dst, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, aBlockKey);
+
+				System.arraycopy(dst, 0, src, 0, aBuffer.length);
 			}
 
-			mDiffuser.decode(aBuffer, aOffset, aLength, hi);
-		}
-
-
-		public static int mix(long aA, long aC)
-		{
-			long v = 1103515245L * aA + aC;
-			v ^= v << 21;
-			v ^= v >>> 35;
-			v ^= v << 4;
-			return (int)v ^ (int)(v >>> 32);
+			System.arraycopy(dst, 0, aBuffer, 0, aBuffer.length);
 		}
 
 
@@ -418,7 +413,6 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 				}
 
 				mTweakCipher.engineReset();
-				mDiffuser.reset();
 
 				fill(mIV[0], (byte)0);
 				fill(mIV[1], (byte)0);
