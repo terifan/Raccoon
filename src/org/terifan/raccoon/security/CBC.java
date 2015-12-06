@@ -1,131 +1,96 @@
 package org.terifan.raccoon.security;
 
-import org.terifan.raccoon.util.Log;
-
-
 
 public final class CBC
 {
-	public CBC()
+	private transient int mUnitSize;
+	private transient Cipher mTweakCipher;
+
+
+	public CBC(int aUnitSize, Cipher aTweakCipher)
 	{
+		assert aUnitSize >= 16;
+		assert (aUnitSize & -aUnitSize) == aUnitSize;
+		
+		mUnitSize = aUnitSize;
+		mTweakCipher = aTweakCipher;
 	}
 
 
-	public void encrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, byte[] aIV, Cipher aCipher, Cipher aTweakCipher, long aBlockKey)
+	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final long aStartDataUnitNo, final byte[] aIV, final Cipher aCipher, final long aBlockKey)
 	{
-		assert aLength >= aUnitSize;
-		assert (aLength % aUnitSize) == 0;
-		assert aIV.length == 16;
-		assert aInput.length >= aOffset + aLength;
-		assert aInput.length == aOutput.length;
-		assert aInput != aOutput;
+		byte[] iv = new byte[16];
+		int numDataUnits = aLength / mUnitSize;
+		int numBlocks = mUnitSize >> 4;
 
-		byte [] iv = new byte[16];
-		int numDataUnits = aLength / aUnitSize;
-		int numBlocks = aUnitSize >> 4;
-		int ivSeed = (int)aBlockKey;
-		int blkSrc;
-		int blkDst;
-
-		for (int unitIndex = 0, offset = aOffset; unitIndex < numDataUnits; unitIndex++, offset += aUnitSize)
+		for (int unitIndex = 0, offset = aOffset; unitIndex < numDataUnits; unitIndex++)
 		{
-			aBlockKey = mix(aBlockKey);
-			blkSrc = (int)(aBlockKey >>> 32) & (numBlocks - 1);
-			blkDst = (int)(aBlockKey >>> 48) & (numBlocks - 1);
+			prepareIV(aStartDataUnitNo, unitIndex, aIV, mTweakCipher, aBlockKey, iv);
 
-			prepareIV(aStartDataUnitNo + unitIndex, aIV, iv, aTweakCipher, ivSeed);
-
-			for (int i = 0; i < numBlocks; i++)
+			for (int i = 0; i < numBlocks; i++, offset += 16)
 			{
-				int s = (i ^ blkSrc) << 4;
-				int t = (i ^ blkDst) << 4;
-				Log.out.printf("%3d-%-3d  ",s,t);
-
 				for (int j = 0; j < 16; j++)
 				{
-					iv[j] ^= aInput[offset + s + j];
+					iv[j] ^= aBuffer[offset + j];
 				}
 
-				aCipher.engineEncryptBlock(iv, 0, iv, 0);
+				aCipher.engineEncryptBlock(iv, 0, aBuffer, offset);
 
-				System.arraycopy(iv, 0, aOutput, offset + t, 16);
-			}
-			Log.out.println();
-		}
-	}
-
-
-	public void decrypt(int aUnitSize, byte[] aInput, byte[] aOutput, int aOffset, int aLength, long aStartDataUnitNo, byte[] aIV, Cipher aCipher, Cipher aTweakCipher, long aBlockKey)
-	{
-		assert aLength >= aUnitSize;
-		assert (aLength % aUnitSize) == 0;
-		assert aIV.length == 16;
-		assert aInput.length >= aOffset + aLength;
-		assert aInput.length == aOutput.length;
-		assert aInput != aOutput;
-
-		byte [] iv = new byte[16 + 16]; // stores IV and next IV
-		int numDataUnits = aLength / aUnitSize;
-		int numBlocks = aUnitSize >> 4;
-		int ivSeed = (int)aBlockKey;
-		int blkSrc;
-		int blkDst;
-
-		for (int unitIndex = 0, offset = aOffset; unitIndex < numDataUnits; unitIndex++, offset += aUnitSize)
-		{
-			aBlockKey = mix(aBlockKey);
-			blkSrc = (int)(aBlockKey >>> 32) & (numBlocks - 1);
-			blkDst = (int)(aBlockKey >>> 48) & (numBlocks - 1);
-
-			prepareIV(aStartDataUnitNo + unitIndex, aIV, iv, aTweakCipher, ivSeed);
-
-			for (int i = 0; i < numBlocks; i++)
-			{
-				int s = (i ^ blkSrc) << 4;
-				int t = (i ^ blkDst) << 4;
-
-				System.arraycopy(aInput, offset + t, iv, 16, 16);
-
-				aCipher.engineDecryptBlock(aInput, offset + t, aOutput, offset + s);
-
-				for (int j = 0; j < 16; j++)
-				{
-					aOutput[offset + s + j] ^= iv[j];
-				}
-
-				System.arraycopy(iv, 16, iv, 0, 16);
+				System.arraycopy(aBuffer, offset, iv, 0, 16);
 			}
 		}
 	}
 
 
-	private static void prepareIV(long aDataUnitNo, byte [] aInputIV, byte [] aOutputIV, Cipher aTweakCipher, int aBlockKey)
+	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final long aStartDataUnitNo, final byte[] aIV, final Cipher aCipher, final long aBlockKey)
 	{
+		byte[] iv = new byte[16 + 16]; // IV + next IV
+		int numDataUnits = aLength / mUnitSize;
+		int numBlocks = mUnitSize >> 4;
+
+		for (int unitIndex = 0, offset = aOffset; unitIndex < numDataUnits; unitIndex++)
+		{
+			prepareIV(aStartDataUnitNo, unitIndex, aIV, mTweakCipher, aBlockKey, iv);
+
+			for (int i = 0, x = 0; i < numBlocks; i++, x = 16 - x, offset += 16)
+			{
+				System.arraycopy(aBuffer, offset, iv, 16 - x, 16);
+
+				aCipher.engineDecryptBlock(aBuffer, offset, aBuffer, offset);
+
+				for (int j = 0; j < 16; j++)
+				{
+					aBuffer[offset + j] ^= iv[j + x];
+				}
+			}
+		}
+	}
+
+
+	private static void prepareIV(long aDataUnitNo, int aUnitIndex, byte[] aInputIV, Cipher aTweakCipher, long aBlockKey, byte[] aOutputIV)
+	{
+		long dataUnitNo = aDataUnitNo ^ Long.reverseBytes(aUnitIndex);
+
 		System.arraycopy(aInputIV, 0, aOutputIV, 0, 16);
 
-		aOutputIV[0] ^= (byte)(aBlockKey >>> 24);
-		aOutputIV[1] ^= (byte)(aBlockKey >> 16);
-		aOutputIV[2] ^= (byte)(aBlockKey >> 8);
-		aOutputIV[3] ^= (byte)(aBlockKey);
+		aOutputIV[0] ^= (byte)(aBlockKey >>> 56);
+		aOutputIV[1] ^= (byte)(aBlockKey >> 48);
+		aOutputIV[2] ^= (byte)(aBlockKey >> 40);
+		aOutputIV[3] ^= (byte)(aBlockKey >> 32);
+		aOutputIV[4] ^= (byte)(aBlockKey >> 24);
+		aOutputIV[5] ^= (byte)(aBlockKey >> 16);
+		aOutputIV[6] ^= (byte)(aBlockKey >> 8);
+		aOutputIV[7] ^= (byte)(aBlockKey);
 
-		aOutputIV[8] ^= (byte)(aDataUnitNo >>> 56);
-		aOutputIV[9] ^= (byte)(aDataUnitNo >> 48);
-		aOutputIV[10] ^= (byte)(aDataUnitNo >> 40);
-		aOutputIV[11] ^= (byte)(aDataUnitNo >> 32);
-		aOutputIV[12] ^= (byte)(aDataUnitNo >> 24);
-		aOutputIV[13] ^= (byte)(aDataUnitNo >> 16);
-		aOutputIV[14] ^= (byte)(aDataUnitNo >> 8);
-		aOutputIV[15] ^= (byte)(aDataUnitNo);
+		aOutputIV[8] ^= (byte)(dataUnitNo >>> 56);
+		aOutputIV[9] ^= (byte)(dataUnitNo >> 48);
+		aOutputIV[10] ^= (byte)(dataUnitNo >> 40);
+		aOutputIV[11] ^= (byte)(dataUnitNo >> 32);
+		aOutputIV[12] ^= (byte)(dataUnitNo >> 24);
+		aOutputIV[13] ^= (byte)(dataUnitNo >> 16);
+		aOutputIV[14] ^= (byte)(dataUnitNo >> 8);
+		aOutputIV[15] ^= (byte)(dataUnitNo);
 
 		aTweakCipher.engineEncryptBlock(aOutputIV, 0, aOutputIV, 0);
-	}
-
-
-	private static long mix(long v)
-	{
-		v ^= v << 21;
-		v ^= v >>> 35;
-		v ^= v << 4;
-		return v;
 	}
 }

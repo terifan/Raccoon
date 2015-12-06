@@ -23,10 +23,9 @@ import org.terifan.raccoon.security.CBC;
 //           4 checksum (salt + key pool + payload padding)
 //     208 key pool
 //          32 tweak cipher key
-//          32 tweak seed
 //          96 ciper keys (3 x 32)
 //          48 cipher iv (3 x 16)
-//      40 payload padding
+//      56 payload padding
 //   n padding (random, plaintext)
 
 /**
@@ -39,10 +38,9 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 	private final static int RESERVED_BLOCKS = 1;
 	private final static int SALT_SIZE = 256;
 	private final static int IV_SIZE = 16;
-	private final static int TWEAK_SIZE = 32;
 	private final static int KEY_SIZE_BYTES = 32;
 	private final static int HEADER_SIZE = 8;
-	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + TWEAK_SIZE + 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
+	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
 	private final static int ITERATION_COUNT = 10_000;
 	private final static int PAYLOAD_SIZE = 256; // HEADER_SIZE + KEY_POOL_SIZE
 	private final static int SIGNATURE = 0xf46a290c;
@@ -282,15 +280,13 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 	private static final class CipherImplementation
 	{
-		private transient final byte [] mTweakKey = new byte[32];
-		private transient final byte [][] mIV = new byte[3][16];
+		private transient final byte [][] mIV = new byte[3][IV_SIZE];
 		private transient final Cipher[] mCiphers;
 		private transient final Cipher mTweakCipher;
 		private transient final CBC mCipher;
-		private transient final int mUnitSize;
 
 
-		public CipherImplementation(final EncryptionFunction aCiphers, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitLength)
+		public CipherImplementation(final EncryptionFunction aCiphers, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitSize)
 		{
 			switch (aCiphers)
 			{
@@ -339,9 +335,6 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 			mTweakCipher.engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
 			offset += KEY_SIZE_BYTES;
 
-			System.arraycopy(aKeyPool, offset, mTweakKey, 0, TWEAK_SIZE);
-			offset += TWEAK_SIZE;
-
 			for (int j = 0; j < 3; j++)
 			{
 				if (j < mCiphers.length)
@@ -362,44 +355,25 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 				throw new IllegalArgumentException("Bad offset: " + offset);
 			}
 
-			mUnitSize = aUnitLength;
-			mCipher = new CBC();
+			mCipher = new CBC(aUnitSize, mTweakCipher);
 		}
 
 
 		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
-			byte[] src = aBuffer.clone();
-			byte[] dst = aBuffer.clone();
-
-			System.arraycopy(aBuffer, 0, src, 0, aBuffer.length);
-
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mCipher.encrypt(mUnitSize, src, dst, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, aBlockKey);
-
-				System.arraycopy(dst, 0, src, 0, aBuffer.length);
+				mCipher.encrypt(aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], aBlockKey);
 			}
-
-			System.arraycopy(dst, 0, aBuffer, 0, aBuffer.length);
 		}
 
 
 		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
 		{
-			byte[] src = aBuffer.clone();
-			byte[] dst = aBuffer.clone();
-
-			System.arraycopy(aBuffer, 0, src, 0, aBuffer.length);
-
 			for (int i = mCiphers.length; --i >= 0; )
 			{
-				mCipher.decrypt(mUnitSize, src, dst, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], mTweakCipher, aBlockKey);
-
-				System.arraycopy(dst, 0, src, 0, aBuffer.length);
+				mCipher.decrypt(aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], aBlockKey);
 			}
-
-			System.arraycopy(dst, 0, aBuffer, 0, aBuffer.length);
 		}
 
 
@@ -417,7 +391,6 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 				fill(mIV[0], (byte)0);
 				fill(mIV[1], (byte)0);
 				fill(mIV[2], (byte)0);
-				fill(mTweakKey, (byte)0);
 				fill(mCiphers, null);
 			}
 		}
