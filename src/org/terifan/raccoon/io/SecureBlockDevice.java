@@ -5,6 +5,7 @@ import java.security.SecureRandom;
 import java.util.Random;
 import org.terifan.raccoon.security.InvalidKeyException;
 import org.terifan.raccoon.security.AES;
+import org.terifan.raccoon.security.CBC;
 import org.terifan.raccoon.security.Cipher;
 import org.terifan.raccoon.security.MurmurHash3;
 import org.terifan.raccoon.security.SecretKey;
@@ -12,7 +13,6 @@ import org.terifan.raccoon.security.Serpent;
 import org.terifan.raccoon.security.Twofish;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
-import org.terifan.raccoon.security.CBC;
 
 
 // Boot block layout:
@@ -191,7 +191,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		rand.nextBytes(salt);
 
 		// compute checksum
-		int checksum = MurmurHash3.hash_x86_32(salt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(payload, HEADER_SIZE, payload.length - HEADER_SIZE, CHECKSUM_SEED);
+		int checksum = MurmurHash3.hash_x86_32(salt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(payload, HEADER_SIZE, PAYLOAD_SIZE - HEADER_SIZE, CHECKSUM_SEED);
 
 		// update header
 		putInt(payload, 0, SIGNATURE);
@@ -204,14 +204,14 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		byte[] userKeyPool = aCredentials.generateKeyPool(salt, ITERATION_COUNT, KEY_POOL_SIZE);
 
 		// encrypt payload
-		CipherImplementation cipher = new CipherImplementation(aCredentials.getEncryptionFunction(), userKeyPool, 0, payload.length);
-		cipher.encrypt(0, payload, 0, payload.length, 0L);
+		CipherImplementation cipher = new CipherImplementation(aCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
+		cipher.encrypt(0, payload, 0, PAYLOAD_SIZE, 0L);
 
 		// assemble output buffer
 		byte[] blockData = new byte[mBlockDevice.getBlockSize()];
-		System.arraycopy(salt, 0, blockData, 0, salt.length);
-		System.arraycopy(payload, 0, blockData, salt.length, payload.length);
-		System.arraycopy(padding, 0, blockData, salt.length + payload.length, padding.length);
+		System.arraycopy(salt, 0, blockData, 0, SALT_SIZE);
+		System.arraycopy(payload, 0, blockData, SALT_SIZE, PAYLOAD_SIZE);
+		System.arraycopy(padding, 0, blockData, SALT_SIZE + PAYLOAD_SIZE, padding.length);
 
 		// write boot block to disk
 		mBlockDevice.writeBlock(0, blockData, 0, mBlockDevice.getBlockSize(), 0L);
@@ -246,8 +246,8 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 				byte[] payloadCopy = payload.clone();
 
 				// decrypt payload using the user key
-				CipherImplementation cipher = new CipherImplementation(ciphers, userKeyPool, 0, payloadCopy.length);
-				cipher.decrypt(0, payloadCopy, 0, payloadCopy.length, 0L);
+				CipherImplementation cipher = new CipherImplementation(ciphers, userKeyPool, 0, PAYLOAD_SIZE);
+				cipher.decrypt(0, payloadCopy, 0, PAYLOAD_SIZE, 0L);
 
 				// read header
 				int signature = getInt(payloadCopy, 0);
@@ -256,7 +256,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 				if (signature == SIGNATURE)
 				{
 					// verify checksum of boot block
-					int actualChecksum = MurmurHash3.hash_x86_32(salt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(payloadCopy, HEADER_SIZE, payload.length - HEADER_SIZE, CHECKSUM_SEED);
+					int actualChecksum = MurmurHash3.hash_x86_32(salt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(payloadCopy, HEADER_SIZE, PAYLOAD_SIZE - HEADER_SIZE, CHECKSUM_SEED);
 
 					if (expectedChecksum == actualChecksum)
 					{

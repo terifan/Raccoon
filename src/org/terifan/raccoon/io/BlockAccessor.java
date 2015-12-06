@@ -3,6 +3,7 @@ package org.terifan.raccoon.io;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
@@ -105,34 +106,21 @@ public class BlockAccessor
 	{
 		try
 		{
-			int physicalSize = 0;
-			int compression = 0;
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			int result = compress(aBuffer, aOffset, aLength, aType, baos);
 
-			int cp = aType == Node.BLOB ? mCompressionParam.getBlob() : aType == Node.LEAF ? mCompressionParam.getLeaf() : mCompressionParam.getNode();
-
-			if (cp > 0)
-			{
-				ByteArrayOutputStream baos = new ByteArrayOutputStream(aLength);
-				try (DeflaterOutputStream dis = new DeflaterOutputStream(baos, new Deflater(cp)))
-				{
-					dis.write(aBuffer, aOffset, aLength);
-				}
-				physicalSize = baos.size();
-				if (roundUp(physicalSize) < roundUp(aLength))
-				{
-					compression = cp;
-					baos.write(new byte[roundUp(physicalSize) - physicalSize]);
-					aBuffer = baos.toByteArray();
-				}
-			}
+			int compression = result >>> 24;
+			int physicalSize;
 
 			if (compression == 0)
 			{
 				physicalSize = aLength;
-
-				byte[] tmp = new byte[roundUp(physicalSize)];
-				System.arraycopy(aBuffer, aOffset, tmp, 0, physicalSize);
-				aBuffer = tmp;
+				aBuffer = Arrays.copyOfRange(aBuffer, aOffset, aOffset + roundUp(aLength));
+			}
+			else
+			{
+				physicalSize = result & 0xffffff;
+				aBuffer = baos.toByteArray();
 			}
 
 			assert aBuffer.length % mPageSize == 0;
@@ -166,6 +154,31 @@ public class BlockAccessor
 		{
 			throw new DatabaseException("Error writing block", e);
 		}
+	}
+
+
+	private int compress(byte[] aBuffer, int aOffset, int aLength, int aType, ByteArrayOutputStream baos) throws IOException
+	{
+		int compressor = aType == Node.BLOB ? mCompressionParam.getBlob() : aType == Node.LEAF ? mCompressionParam.getLeaf() : mCompressionParam.getNode();
+
+		if (compressor > 0)
+		{
+			try (DeflaterOutputStream dis = new DeflaterOutputStream(baos, new Deflater(compressor)))
+			{
+				dis.write(aBuffer, aOffset, aLength);
+			}
+
+			int physicalSize = baos.size();
+			
+			if (roundUp(physicalSize) < roundUp(aLength))
+			{
+				baos.write(new byte[roundUp(physicalSize) - physicalSize]); // padding
+
+				return (compressor << 24) + physicalSize;
+			}
+		}
+
+		return 0;
 	}
 
 
