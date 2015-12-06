@@ -25,7 +25,7 @@ import org.terifan.raccoon.security.CBC;
 //          32 tweak cipher key
 //          96 ciper keys (3 x 32)
 //          48 cipher iv (3 x 16)
-//      56 payload padding
+//      40 payload padding
 //   n padding (random, plaintext)
 
 /**
