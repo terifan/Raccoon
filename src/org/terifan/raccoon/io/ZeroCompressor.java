@@ -13,12 +13,8 @@ import org.terifan.raccoon.util.Log;
  */
 public class ZeroCompressor implements Compressor
 {
-	private int mPageSize;
-
-
 	ZeroCompressor(int aPageSize)
 	{
-		mPageSize = aPageSize;
 	}
 
 
@@ -36,26 +32,29 @@ public class ZeroCompressor implements Compressor
 					for (; j < aInputLength && aInput[aInputOffset + j] == 0; j++)
 					{
 					}
-					ByteArrayBuffer.writeVar32(aOutputStream, 2 * (j - i - 1) + 1);
+					ByteArrayBuffer.writeVar32(aOutputStream, j - i); // 1..n
 				}
 				else
 				{
-					for (; j == aInputLength || j < aInputLength - 1 && (aInput[aInputOffset + j] != 0 || aInput[aInputOffset + j + 1] != 0); j++)
+					for (; j == aInputLength - 1 || j < aInputLength - 2 && (aInput[aInputOffset + j] != 0 || aInput[aInputOffset + j + 1] != 0); j++)
 					{
 					}
-					ByteArrayBuffer.writeVar32(aOutputStream, 2 * (j - i - 1));
+
+					ByteArrayBuffer.writeVar32(aOutputStream, i - j + 1); // -n..0
 					aOutputStream.write(aInput, aInputOffset + i, j - i);
 				}
 
 				i = j;
 			}
+
+			return true;
 		}
 		catch (Exception e)
 		{
 			e.printStackTrace(Log.out);
-		}
 
-		return true;
+			return false;
+		}
 	}
 
 
@@ -66,20 +65,15 @@ public class ZeroCompressor implements Compressor
 
 		for (int position = 0; buffer.position() < aInputOffset + aInputLength;)
 		{
-			int code = buffer.readVar32();
-			int len = (code >> 1) + 1;
+			int len = buffer.readVar32();
 
-			if (position + len > aOutputLength)
-			{
-				throw new IOException((position + len)+" > "+aOutputLength);
-			}
-
-			if ((code & 1) == 1)
+			if (len > 0)
 			{
 				Arrays.fill(aOutput, aOutputOffset + position, aOutputOffset + position + len, (byte)0);
 			}
 			else
 			{
+				len = - (len - 1);
 				buffer.read(aOutput, aOutputOffset + position, len);
 			}
 
