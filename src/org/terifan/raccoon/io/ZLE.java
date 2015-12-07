@@ -1,6 +1,9 @@
 package org.terifan.raccoon.io;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 /**
@@ -9,102 +12,77 @@ import org.terifan.raccoon.util.Log;
  */
 public class ZLE implements Compressor
 {
-	private final static int LIMIT = 240;
-	
-	
-	ZLE()
-	{
-	}
-	
+	private int mPageSize;
 
-	@Override
-	public int compress(byte[] aInput, int aInputOffset, int aInputLength, byte[] aOutput, int aOutputOffset, int aOutputLimit)
-	{
-		int src = aInputOffset;
-		int dst = aOutputOffset;
-		int dstEnd = aOutputOffset + aOutputLimit;
-		
-		for (; src < aInputLength && dst < dstEnd - 1;)
-		{
-			int first = src;
-			int len = dst++;
-			if (aInput[src] == 0)
-			{
-				int end = Math.min(aInputLength, src + 256 - LIMIT);
-				while (src < end && aInput[src] == 0)
-				{
-					src++;
-				}
-				aOutput[len] = (byte) (src - first - 1 + LIMIT);
-			}
-			else
-			{
-				int last = src + LIMIT;
-				int end = Math.min(aInputLength, last) - 1;
-				while (dst < aInputLength - 1 && src < end && (aInput[src] != 0 || aInput[src + 1] != 0))
-				{
-					aOutput[dst++] = aInput[src++];
-				}
-				if (aInput[src] != 0)
-				{
-					aOutput[dst++] = aInput[src++];
-				}
-				aOutput[len] = (byte) (src - first - 1);
-			}
-		}
 
-		return src == aInputOffset + aInputLength ? dst : Compressor.COMPRESSION_FAILED;
+	ZLE(int aPageSize)
+	{
+		mPageSize = aPageSize;
 	}
 
 
 	@Override
-	public void decompress(byte[] aInput, int aInputOffset, int aInputLength, byte[] aOutput, int aOutputOffset, int aOutputLength)
-	{
-		int src = aInputOffset;
-		int dst = aOutputOffset;
-
-		while (src < aInputLength && dst < aOutputLength)
-		{
-			int len = 1 + (255 & aInput[src++]);
-			if (len <= LIMIT)
-			{
-				while (len-- != 0)
-				{
-					aOutput[dst++] = aInput[src++];
-				}
-			}
-			else
-			{
-				len -= LIMIT;
-				while (len-- != 0)
-				{
-					aOutput[dst++] = 0;
-				}
-			}
-		}
-
-		if (dst != aOutputOffset + aOutputLength)
-		{
-			throw new IllegalStateException("Failed to decompress data.");
-		}
-	}
-	
-	
-	public static void main(String... args)
+	public boolean compress(byte[] aInput, int aInputOffset, int aInputLength, ByteArrayOutputStream aOutputStream)
 	{
 		try
 		{
-			byte[] input = new byte[32768];
-			byte[] output = new byte[32768];
+			for (int i = 0; i < aInputLength;)
+			{
+				int j = i;
 
-			Arrays.fill(input, 0, 100, (byte)'a');
-			Arrays.fill(input, input.length-20, input.length, (byte)'a');
+				if (aInput[aInputOffset + i] == 0)
+				{
+					for (; j < aInputLength && aInput[aInputOffset + j] == 0; j++)
+					{
+					}
+					ByteArrayBuffer.writeVar32(aOutputStream, 2 * (j-i-1) + 1);
+				}
+				else
+				{
+					for (; j == aInputLength - 1 || j < aInputLength && !(aInput[aInputOffset + j] == 0 && aInput[aInputOffset + j + 1] == 0); j++)
+					{
+					}
+					ByteArrayBuffer.writeVar32(aOutputStream, 2 * (j-i-1));
+					aOutputStream.write(aInput, aInputOffset + i, j-i);
+				}
 
-			Log.out.println(new ZLE().compress(input, 0, input.length, output, 0, output.length));
+				i = j;
+			}
 		}
-		catch (Throwable e)
+		catch (Exception e)
 		{
-			e.printStackTrace(System.out);
+			e.printStackTrace(Log.out);
+		}
+
+		return true;
+	}
+
+
+	@Override
+	public void decompress(byte[] aInput, int aInputOffset, int aInputLength, byte[] aOutput, int aOutputOffset, int aOutputLength) throws IOException
+	{
+		ByteArrayBuffer buffer = new ByteArrayBuffer(aInput).position(aInputOffset);
+
+		for (int position = 0; buffer.position() < aInputOffset + aInputLength;)
+		{
+			int code = buffer.readVar32();
+			int len = (code >> 1) + 1;
+
+			if (position + len > aOutputLength)
+			{
+				throw new IOException();
+			}
+
+			if ((code & 1) == 1)
+			{
+				Arrays.fill(aOutput, aOutputOffset + position, aOutputOffset + position + len, (byte)0);
+			}
+			else
+			{
+				buffer.read(aOutput, aOutputOffset + position, len);
+			}
+
+			position += len;
 		}
 	}
 }

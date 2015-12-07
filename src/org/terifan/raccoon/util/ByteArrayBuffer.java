@@ -1,6 +1,7 @@
 package org.terifan.raccoon.util;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
 
 
@@ -654,5 +655,25 @@ public final class ByteArrayBuffer
 		aBuffer[aOffset++] = (byte)(aValue >> 16);
 		aBuffer[aOffset++] = (byte)(aValue >> 8);
 		aBuffer[aOffset  ] = (byte)(aValue);
+	}
+
+
+	public static void writeVar32(OutputStream aOutputStream, int aValue) throws IOException
+	{
+		aValue = encodeZigZag32(aValue);
+
+		while (true)
+		{
+			if ((aValue & ~127) == 0)
+			{
+				aOutputStream.write(aValue);
+				break;
+			}
+			else
+			{
+				aOutputStream.write(128 | (aValue & 127));
+				aValue >>>= 7;
+			}
+		}
 	}
 }

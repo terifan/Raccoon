@@ -1,11 +1,12 @@
 package org.terifan.raccoon.io;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
-public interface Compressor 
+
+public interface Compressor
 {
-	int COMPRESSION_FAILED = -1;
-	
-	int compress(byte[] aInput, int aInputOffset, int aInputLength, byte[] aOutput, int aOutputOffset, int aOutputLimit);
-	
-	void decompress(byte[] aInput, int aInputOffset, int aInputLength, byte[] aOutput, int aOutputOffset, int aOutputLength);
+	boolean compress(byte[] aInput, int aInputOffset, int aInputLength, ByteArrayOutputStream aOutputStream);
+
+	void decompress(byte[] aInput, int aInputOffset, int aInputLength, byte[] aOutput, int aOutputOffset, int aOutputLength) throws IOException;
 }

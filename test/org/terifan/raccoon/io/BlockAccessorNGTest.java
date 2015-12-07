@@ -40,13 +40,13 @@ public class BlockAccessorNGTest
 		assertEquals(1 + 3, managedBlockDevice.getFreeSpace()); // 1 spacemap + 3 data
 	}
 
-	
+
 	@Test(dataProvider = "deviceType")
 	public void testConcurrency(boolean aSecure) throws IOException
 	{
 //for(int test=0; test<100; test++)
 {
-		
+
 		int iterations = 1000;
 		int size = 100;
 		int offset = 100;
@@ -104,11 +104,11 @@ public class BlockAccessorNGTest
 				});
 			}
 		}
-		
+
 }
 	}
-	
-	
+
+
 	@DataProvider
 	private Object[][] deviceType()
 	{

@@ -3,9 +3,15 @@ package org.terifan.raccoon;
 
 public class CompressionParam
 {
-	public final static CompressionParam BEST_SPEED = new CompressionParam(2, 1, 0);
-	public final static CompressionParam BEST_COMPRESSION = new CompressionParam(9, 9, 9);
-	public final static CompressionParam NO_COMPRESSION = new CompressionParam(0, 0, 0);
+	public final static int NONE = 0;
+	public final static int ZLE = 1;
+	public final static int DEFLATE_FAST = 2;
+	public final static int DEFLATE_DEFAULT = 3;
+	public final static int DEFLATE_BEST = 4;
+
+	public final static CompressionParam BEST_SPEED = new CompressionParam(DEFLATE_FAST, ZLE, NONE);
+	public final static CompressionParam BEST_COMPRESSION = new CompressionParam(DEFLATE_BEST, DEFLATE_BEST, DEFLATE_BEST);
+	public final static CompressionParam NO_COMPRESSION = new CompressionParam(NONE, NONE, NONE);
 
 	private int mNode;
 	private int mLeaf;
@@ -42,5 +48,21 @@ public class CompressionParam
 	public String toString()
 	{
 		return "{node=" + mNode + ", leaf=" + mLeaf + ", blob=" + mBlob + "}";
+	}
+
+
+	public int getCompressorId(int aType)
+	{
+		switch (aType)
+		{
+			case Node.LEAF:
+				return mLeaf;
+			case Node.NODE:
+				return mNode;
+			case Node.BLOB:
+				return mBlob;
+			default:
+				return NONE;
+		}
 	}
 }

@@ -1,12 +1,9 @@
 package org.terifan.raccoon.io;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.InflaterInputStream;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Node;
@@ -86,9 +83,11 @@ public class BlockAccessor
 				throw new IOException("Checksum error in block " + aBlockPointer);
 			}
 
-			if (aBlockPointer.getCompression() > 0)
+			if (aBlockPointer.getCompression() != CompressionParam.NONE)
 			{
-				buffer = decompress(aBlockPointer, buffer);
+				byte[] tmp = new byte[aBlockPointer.getLogicalSize()];
+				getCompressor(aBlockPointer.getCompression()).decompress(buffer, 0, buffer.length, tmp, 0, tmp.length);
+				buffer = tmp;
 			}
 
 			Log.dec();
@@ -107,20 +106,27 @@ public class BlockAccessor
 		try
 		{
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			int result = compress(aBuffer, aOffset, aLength, aType, baos);
 
-			int compression = result >>> 24;
 			int physicalSize;
+			boolean result = false;
+			int compressorId = mCompressionParam.getCompressorId(aType);
 
-			if (compression == 0)
+			if (compressorId != CompressionParam.NONE)
 			{
-				physicalSize = aLength;
-				aBuffer = Arrays.copyOfRange(aBuffer, aOffset, aOffset + roundUp(aLength));
+				result = getCompressor(compressorId).compress(aBuffer, aOffset, aLength, baos);
+			}
+
+			if (result && roundUp(baos.size()) < roundUp(aBuffer.length)) // use the compressed result only if we actual save one page or more
+			{
+				physicalSize = baos.size();
+				baos.write(new byte[roundUp(physicalSize) - physicalSize]); // padding
+				aBuffer = baos.toByteArray();
 			}
 			else
 			{
-				physicalSize = result & 0xffffff;
-				aBuffer = baos.toByteArray();
+				physicalSize = aLength;
+				aBuffer = Arrays.copyOfRange(aBuffer, aOffset, aOffset + roundUp(aLength));
+				compressorId = CompressionParam.NONE;
 			}
 
 			assert aBuffer.length % mPageSize == 0;
@@ -130,7 +136,7 @@ public class BlockAccessor
 			Stats.blockAlloc++;
 
 			BlockPointer blockPointer = new BlockPointer();
-			blockPointer.setCompression(compression);
+			blockPointer.setCompression(compressorId);
 			blockPointer.setChecksum(MurmurHash3.hash_x86_32(aBuffer, 0, physicalSize, (int)blockIndex));
 			blockPointer.setBlockKey(ISAAC.PRNG.nextLong());
 			blockPointer.setOffset(blockIndex);
@@ -157,51 +163,27 @@ public class BlockAccessor
 	}
 
 
-	private int compress(byte[] aBuffer, int aOffset, int aLength, int aType, ByteArrayOutputStream baos) throws IOException
+	private Compressor getCompressor(int aCompressorId)
 	{
-		int compressor = aType == Node.BLOB ? mCompressionParam.getBlob() : aType == Node.LEAF ? mCompressionParam.getLeaf() : mCompressionParam.getNode();
-
-		if (compressor > 0)
+		Compressor compressor;
+		switch (aCompressorId)
 		{
-			try (DeflaterOutputStream dis = new DeflaterOutputStream(baos, new Deflater(compressor)))
-			{
-				dis.write(aBuffer, aOffset, aLength);
-			}
-
-			int physicalSize = baos.size();
-			
-			if (roundUp(physicalSize) < roundUp(aLength))
-			{
-				baos.write(new byte[roundUp(physicalSize) - physicalSize]); // padding
-
-				return (compressor << 24) + physicalSize;
-			}
+			case CompressionParam.ZLE:
+				compressor = new ZLE(mPageSize);
+				break;
+			case CompressionParam.DEFLATE_FAST:
+				compressor = new DeflateCompressor(mPageSize, Deflater.BEST_SPEED);
+				break;
+			case CompressionParam.DEFLATE_DEFAULT:
+				compressor = new DeflateCompressor(mPageSize, Deflater.DEFAULT_COMPRESSION);
+				break;
+			case CompressionParam.DEFLATE_BEST:
+				compressor = new DeflateCompressor(mPageSize, Deflater.BEST_COMPRESSION);
+				break;
+			default:
+				throw new IllegalStateException("Illegal compressor: " + aCompressorId);
 		}
-
-		return 0;
-	}
-
-
-	private byte [] decompress(BlockPointer aBlockPointer, byte[] aInput) throws IOException
-	{
-		byte[] output = new byte[aBlockPointer.getLogicalSize()];
-
-		try (InflaterInputStream iis = new InflaterInputStream(new ByteArrayInputStream(aInput, 0, aBlockPointer.getLogicalSize())))
-		{
-			for (int position = 0;;)
-			{
-				int len = iis.read(output, position, output.length - position);
-
-				if (len <= 0)
-				{
-					break;
-				}
-
-				position += len;
-			}
-		}
-
-		return output;
+		return compressor;
 	}
 
 
