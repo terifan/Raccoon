@@ -169,7 +169,7 @@ public class BlockAccessor
 		switch (aCompressorId)
 		{
 			case CompressionParam.ZLE:
-				compressor = new ZLE(mPageSize);
+				compressor = new ZeroCompressor(mPageSize);
 				break;
 			case CompressionParam.DEFLATE_FAST:
 				compressor = new DeflateCompressor(mPageSize, Deflater.BEST_SPEED);

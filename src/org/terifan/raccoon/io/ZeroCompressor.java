@@ -10,12 +10,12 @@ import org.terifan.raccoon.util.Log;
  * Zero-run-length encoding. This is a fast and simple algorithm to eliminate
  * runs of zeroes.
  */
-public class ZLE implements Compressor
+public class ZeroCompressor implements Compressor
 {
 	private int mPageSize;
 
 
-	ZLE(int aPageSize)
+	ZeroCompressor(int aPageSize)
 	{
 		mPageSize = aPageSize;
 	}

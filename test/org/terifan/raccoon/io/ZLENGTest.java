@@ -41,9 +41,9 @@ public class ZLENGTest
 		}
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		new ZLE(0).compress(input, srcOffset, length, baos);
+		new ZeroCompressor(0).compress(input, srcOffset, length, baos);
 
-		new ZLE(0).decompress(baos.toByteArray(), 0, baos.size(), output, dstOffset, length);
+		new ZeroCompressor(0).decompress(baos.toByteArray(), 0, baos.size(), output, dstOffset, length);
 
 		assertEquals(Arrays.copyOfRange(input, srcOffset, srcOffset + length), Arrays.copyOfRange(output, dstOffset, dstOffset + length));
 	}
