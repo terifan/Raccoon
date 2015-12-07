@@ -4,15 +4,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
-import org.terifan.raccoon.CompressionParam;
-import static org.terifan.raccoon.CompressionParam.ZLE;
 import org.terifan.raccoon.util.Log;
-import static org.testng.Assert.*;
 import static org.testng.AssertJUnit.assertEquals;
 import org.testng.annotations.Test;
 
 
-public class ZLENGTest
+public class ZeroCompressorNGTest
 {
 	@Test
 	public void testCompression() throws IOException
@@ -27,10 +24,11 @@ public class ZLENGTest
 		Arrays.fill(input, (byte)'x');
 		Arrays.fill(output, (byte)'z');
 
-		Random rnd = new Random(7);
+		Random rnd = new Random(1);
+
 		for (int i = 0; i < length; i++)
 		{
-			if (rnd.nextBoolean())
+			if (rnd.nextInt(100) < 20)
 			{
 				input[srcOffset + i] = (byte)rnd.nextInt();
 			}

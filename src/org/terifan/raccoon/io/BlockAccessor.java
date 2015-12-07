@@ -86,7 +86,7 @@ public class BlockAccessor
 			if (aBlockPointer.getCompression() != CompressionParam.NONE)
 			{
 				byte[] tmp = new byte[aBlockPointer.getLogicalSize()];
-				getCompressor(aBlockPointer.getCompression()).decompress(buffer, 0, buffer.length, tmp, 0, tmp.length);
+				getCompressor(aBlockPointer.getCompression()).decompress(buffer, 0, aBlockPointer.getPhysicalSize(), tmp, 0, tmp.length);
 				buffer = tmp;
 			}
 

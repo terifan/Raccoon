@@ -6,6 +6,7 @@ import java.util.Arrays;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
+
 /**
  * Zero-run-length encoding. This is a fast and simple algorithm to eliminate
  * runs of zeroes.
@@ -35,15 +36,15 @@ public class ZeroCompressor implements Compressor
 					for (; j < aInputLength && aInput[aInputOffset + j] == 0; j++)
 					{
 					}
-					ByteArrayBuffer.writeVar32(aOutputStream, 2 * (j-i-1) + 1);
+					ByteArrayBuffer.writeVar32(aOutputStream, 2 * (j - i - 1) + 1);
 				}
 				else
 				{
-					for (; j == aInputLength - 1 || j < aInputLength && !(aInput[aInputOffset + j] == 0 && aInput[aInputOffset + j + 1] == 0); j++)
+					for (; j == aInputLength || j < aInputLength - 1 && (aInput[aInputOffset + j] != 0 || aInput[aInputOffset + j + 1] != 0); j++)
 					{
 					}
-					ByteArrayBuffer.writeVar32(aOutputStream, 2 * (j-i-1));
-					aOutputStream.write(aInput, aInputOffset + i, j-i);
+					ByteArrayBuffer.writeVar32(aOutputStream, 2 * (j - i - 1));
+					aOutputStream.write(aInput, aInputOffset + i, j - i);
 				}
 
 				i = j;
@@ -70,7 +71,7 @@ public class ZeroCompressor implements Compressor
 
 			if (position + len > aOutputLength)
 			{
-				throw new IOException();
+				throw new IOException((position + len)+" > "+aOutputLength);
 			}
 
 			if ((code & 1) == 1)

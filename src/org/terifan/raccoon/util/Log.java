@@ -104,7 +104,7 @@ public class Log
 			return;
 		}
 
-		int LW = 64;
+		int LW = 56;
 		int MR = 100;
 
 		StringBuilder binText = new StringBuilder("");
