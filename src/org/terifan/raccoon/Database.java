@@ -886,7 +886,7 @@ public class Database implements AutoCloseable
 		{
 			for (Object param : aParameters)
 			{
-				if (aType.isAssignableFrom(param.getClass()))
+				if (param != null && aType.isAssignableFrom(param.getClass()))
 				{
 					return (E)param;
 				}

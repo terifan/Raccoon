@@ -32,7 +32,7 @@ public class DeflateCompressor implements Compressor
 				dis.write(aInput, aInputOffset, aInputLength);
 			}
 
-			return true;
+			return aOutputStream.size() < aInputLength;
 		}
 		catch (IOException e)
 		{

@@ -8,8 +8,7 @@ import org.terifan.raccoon.util.Log;
 
 
 /**
- * Zero-run-length encoding. This is a fast and simple algorithm to eliminate
- * runs of zeroes.
+ * This is a fast and simple algorithm to eliminate runs of zeroes.
  */
 public class ZeroCompressor implements Compressor
 {
@@ -36,8 +35,12 @@ public class ZeroCompressor implements Compressor
 				}
 				else
 				{
-					for (; j == aInputLength - 1 || j < aInputLength - 2 && (aInput[aInputOffset + j] != 0 || aInput[aInputOffset + j + 1] != 0); j++)
+					for (; j < aInputLength - 1 && (aInput[aInputOffset + j] != 0 || aInput[aInputOffset + j + 1] != 0); j++)
 					{
+					}
+					if (j == aInputLength - 1)
+					{
+						j++;
 					}
 
 					ByteArrayBuffer.writeVar32(aOutputStream, i - j + 1); // -n..0
@@ -47,7 +50,7 @@ public class ZeroCompressor implements Compressor
 				i = j;
 			}
 
-			return true;
+			return aOutputStream.size() < aInputLength;
 		}
 		catch (Exception e)
 		{
