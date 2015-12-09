@@ -31,7 +31,6 @@ public class Table<T> implements Iterable<T>
 	private TableMetadata mTableMetadata;
 	private BlockAccessor mBlockAccessor;
 	private IManagedBlockDevice mBlockDevice;
-	private Initializer mInitializer;
 	private HashSet<BlobOutputStream> mOpenOutputStreams;
 	private HashTable mTableImplementation;
 	private byte[] mPointer;
@@ -46,7 +45,6 @@ public class Table<T> implements Iterable<T>
 		mPointer = aPointer;
 
 		mBlockDevice = mDatabase.getBlockDevice();
-		mInitializer = mDatabase.getInitializer(mTableMetadata.getType());
 		mTableImplementation = new HashTable(mBlockDevice, mPointer, mDatabase.getTransactionId(), false, mDatabase.getParameter(CompressionParam.class, null));
 
 		mBlockAccessor = new BlockAccessor(mBlockDevice);
@@ -56,6 +54,12 @@ public class Table<T> implements Iterable<T>
 		{
 			mBlockAccessor.setCompressionParam(parameter);
 		}
+	}
+
+
+	public Database getDatabase()
+	{
+		return mDatabase;
 	}
 
 
@@ -74,7 +78,7 @@ public class Table<T> implements Iterable<T>
 			return false;
 		}
 
-		update(aEntity, value, FieldCategory.DISCRIMINATOR_VALUE);
+		update(aEntity, value, FieldCategory.DISCRIMINATOR_AND_VALUES);
 
 		Log.dec();
 
@@ -323,7 +327,7 @@ public class Table<T> implements Iterable<T>
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aMarshalledData);
 
-		if (aCategory == FieldCategory.VALUE || aCategory == FieldCategory.DISCRIMINATOR_VALUE)
+		if (aCategory == FieldCategory.VALUES || aCategory == FieldCategory.DISCRIMINATOR_AND_VALUES)
 		{
 			if (buffer.read() == INDIRECT_DATA)
 			{
@@ -349,14 +353,19 @@ public class Table<T> implements Iterable<T>
 	{
 		try
 		{
-			Constructor constructor = mTableMetadata.getType().getDeclaredConstructor();
-			constructor.setAccessible(true);
+			Factory factory = mDatabase.getFactory(mTableMetadata.getType());
+			Object object;
 
-			Object object = constructor.newInstance();
-
-			if (mInitializer != null)
+			if (factory != null)
 			{
-				mInitializer.initialize(object);
+				object = factory.newInstance();
+			}
+			else
+			{
+				Constructor constructor = mTableMetadata.getType().getDeclaredConstructor();
+				constructor.setAccessible(true);
+
+				object = constructor.newInstance();
 			}
 
 			return object;
@@ -370,13 +379,13 @@ public class Table<T> implements Iterable<T>
 
 	byte[] getKeys(Object aInput)
 	{
-		return mTableMetadata.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.KEY).trim().array();
+		return mTableMetadata.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.KEYS).trim().array();
 	}
 
 
 	byte[] getNonKeys(Object aInput)
 	{
-		return mTableMetadata.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.DISCRIMINATOR_VALUE).trim().array();
+		return mTableMetadata.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategory.DISCRIMINATOR_AND_VALUES).trim().array();
 	}
 
 

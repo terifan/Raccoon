@@ -549,7 +549,7 @@ public final class ByteArrayBuffer
 	}
 
 
-	private void align()
+	public void align()
 	{
 		if (mWriteBitsToGo < 8)
 		{

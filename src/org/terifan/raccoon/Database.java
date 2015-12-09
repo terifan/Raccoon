@@ -56,6 +56,17 @@ public class Database implements AutoCloseable
 		mInitializers = new HashMap<>();
 		mFactories = new HashMap<>();
 		mTransactionId = new TransactionId();
+		
+		mInitializers.put(TableMetadata.class, (e)->{
+			try
+			{
+				((TableMetadata)e).initialize();
+			}
+			catch (Exception ex)
+			{
+				ex.printStackTrace(Log.out);
+			}
+		});
 	}
 
 

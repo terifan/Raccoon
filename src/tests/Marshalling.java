@@ -19,7 +19,7 @@ public class Marshalling
 
 			Marshaller marshaller = new Marshaller(_BigObject1K.class);
 			TypeDeclarations types = marshaller.getTypeDeclarations();
-			byte[] buffer = marshaller.marshal(in, FieldCategory.VALUE);
+			byte[] buffer = marshaller.marshal(in, FieldCategory.VALUES);
 
 			Log.out.println("---------");
 			Log.out.println(types);
@@ -29,7 +29,7 @@ public class Marshalling
 
 			_BigObject1K out = new _BigObject1K();
 
-			new Marshaller(types).unmarshal(buffer, out, FieldCategory.VALUE);
+			new Marshaller(types).unmarshal(buffer, out, FieldCategory.VALUES);
 
 			Log.out.println(in.mStringMapArray.keySet().iterator().next()[0]);
 			Log.out.println(out.mStringMapArray.keySet().iterator().next()[0]);

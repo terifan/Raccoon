@@ -31,32 +31,29 @@ public final class TableMetadata
 		mClass = aClass;
 		mName = mClass.getSimpleName();
 		mTypeName = mClass.getName();
+
 		mMarshaller = new Marshaller(mClass);
-		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);
 		mTypeDeclarations = mMarshaller.getTypeDeclarations();
-		
+
+		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);
+
 		return this;
 	}
 
 
-	// TODO: compare mTypeDeclarations and mMarshaller.mTypeDeclarations
-	TableMetadata open()
+	TableMetadata initialize()
 	{
+		mMarshaller = new Marshaller(mTypeDeclarations);
+
 		try
 		{
 			mClass = Class.forName(mTypeName);
-			mMarshaller = new Marshaller(mClass);
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace(Log.out);
+			Log.out.println("Error loading entity class: " + e.toString());
 		}
 
-		if (mMarshaller == null)
-		{
-			mMarshaller = new Marshaller(mTypeDeclarations);
-		}
-		
 		return this;
 	}
 
@@ -65,7 +62,7 @@ public final class TableMetadata
 	{
 		if (aDiscriminator != null)
 		{
-			return mMarshaller.marshal(new ByteArrayBuffer(16), aDiscriminator, FieldCategory.DISCRIMINATOR).trim().array();
+			return mMarshaller.marshal(new ByteArrayBuffer(16), aDiscriminator, FieldCategory.DISCRIMINATORS).trim().array();
 		}
 
 		return new byte[0];
@@ -90,13 +87,13 @@ public final class TableMetadata
 	}
 
 
-	public Iterable<FieldType> getFields()
+	public FieldType[] getFields()
 	{
-		return mTypeDeclarations;
+		return mTypeDeclarations.getTypes().clone();
 	}
 
 
-	Marshaller getMarshaller()
+	public Marshaller getMarshaller()
 	{
 		return mMarshaller;
 	}
@@ -156,15 +153,13 @@ public final class TableMetadata
 		{
 			try
 			{
-				Object out = Class.forName(mTypeName).newInstance();
+				Object out = mClass.newInstance();
 				
-				mMarshaller = new Marshaller(mTypeDeclarations);
-				
-				mMarshaller.unmarshal(mDiscriminatorKey, out, FieldCategory.DISCRIMINATOR);
+				mMarshaller.unmarshal(mDiscriminatorKey, out, FieldCategory.DISCRIMINATORS);
 
 				for (FieldType type : mTypeDeclarations.getTypes())
 				{
-					if (type.getCategory() == FieldCategory.DISCRIMINATOR)
+					if (type.getCategory() == FieldCategory.DISCRIMINATORS)
 					{
 						if (!d.isEmpty())
 						{
@@ -176,7 +171,7 @@ public final class TableMetadata
 			}
 			catch (Exception e)
 			{
-				e.printStackTrace(Log.out);
+				Log.e("Error: %s", e.getMessage());
 			}
 		}
 
@@ -186,9 +181,9 @@ public final class TableMetadata
 
 	public boolean hasDiscriminatorFields()
 	{
-		for (FieldType fieldType : getFields())
+		for (FieldType fieldType : mTypeDeclarations.getTypes())
 		{
-			if (fieldType.getCategory() == FieldCategory.DISCRIMINATOR)
+			if (fieldType.getCategory() == FieldCategory.DISCRIMINATORS)
 			{
 				return true;
 			}

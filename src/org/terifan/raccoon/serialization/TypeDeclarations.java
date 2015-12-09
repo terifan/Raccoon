@@ -9,18 +9,16 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.util.Log;
 
 
-public class TypeDeclarations implements Externalizable, Iterable<FieldType>
+public class TypeDeclarations implements Externalizable
 {
 	private static final long serialVersionUID = 1L;
 	private final static HashMap<String,Class> PRIMITIVE_TYPES;
@@ -38,7 +36,7 @@ public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 		PRIMITIVE_TYPES.put(Double.TYPE.getSimpleName(), Double.TYPE);
 	}
 
-	private TreeSet<FieldType> mTypes;
+	private FieldType[] mTypes;
 
 
 	public TypeDeclarations()
@@ -46,22 +44,26 @@ public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 	}
 
 
-	public TreeSet<FieldType> getTypes()
+	public FieldType[] getTypes()
 	{
 		return mTypes;
 	}
 
 
-	public TypeDeclarations(Class aType, HashMap<String, Field> mFields)
+	public TypeDeclarations(Class aType, Field[] aFields)
 	{
 		Log.v("create type declarations for %s", aType);
 		Log.inc();
 
-		mTypes = new TreeSet<>();
+		mTypes = new FieldType[aFields.length];
 
-		for (Field field : mFields.values())
+		int fieldIndex = 0;
+		for (Field field : aFields)
 		{
 			FieldType fieldType = new FieldType();
+
+			mTypes[fieldIndex++] = fieldType;
+
 			fieldType.name = field.getName();
 			fieldType.type = field.getType();
 			boolean array = fieldType.type.isArray();
@@ -72,8 +74,6 @@ public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 			}
 			fieldType.nullable = !fieldType.type.isPrimitive();
 			fieldType.category = classify(field);
-
-			mTypes.add(fieldType);
 
 			if (array)
 			{
@@ -108,13 +108,6 @@ public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 		}
 
 		Log.dec();
-	}
-
-
-	@Override
-	public Iterator<FieldType> iterator()
-	{
-		return mTypes.iterator();
 	}
 
 
@@ -184,20 +177,20 @@ public class TypeDeclarations implements Externalizable, Iterable<FieldType>
 	{
 		if (aField.getAnnotation(Key.class) != null)
 		{
-			return FieldCategory.KEY;
+			return FieldCategory.KEYS;
 		}
 		if (aField.getAnnotation(Discriminator.class) != null)
 		{
-			return FieldCategory.DISCRIMINATOR;
+			return FieldCategory.DISCRIMINATORS;
 		}
-		return FieldCategory.VALUE;
+		return FieldCategory.VALUES;
 	}
 
 
 	@Override
 	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
 	{
-		mTypes = (TreeSet<FieldType>)aIn.readObject();
+		mTypes = (FieldType[])aIn.readObject();
 	}
 
 

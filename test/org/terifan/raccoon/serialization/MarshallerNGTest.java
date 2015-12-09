@@ -15,11 +15,11 @@ public class MarshallerNGTest
 
 		Marshaller marshaller = new Marshaller(_BigObject1K.class);
 		TypeDeclarations types = marshaller.getTypeDeclarations();
-		byte[] buffer = marshaller.marshal(in, FieldCategory.VALUE);
+		byte[] buffer = marshaller.marshal(in, FieldCategory.VALUES);
 
 		_BigObject1K out = new _BigObject1K();
 
-		new Marshaller(types).unmarshal(buffer, out, FieldCategory.VALUE);
+		new Marshaller(types).unmarshal(buffer, out, FieldCategory.VALUES);
 
 		assertEquals(out.mString, in.mString);
 		assertEquals(out.mDate, in.mDate);

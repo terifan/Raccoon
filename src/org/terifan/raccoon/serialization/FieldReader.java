@@ -51,17 +51,20 @@ class FieldReader
 
 	private static <T> T newInstance(Class<T> aType, Class aParentType, Field aField) throws DatabaseException, InstantiationException, IllegalAccessException
 	{
-		Class type = aField.getType();
-
-		if (aParentType.isAssignableFrom(type) && !type.isInterface())
+		if (aField != null)
 		{
-			try
+			Class type = aField.getType();
+
+			if (aParentType.isAssignableFrom(type) && !type.isInterface())
 			{
-				return (T)type.newInstance();
-			}
-			catch (InstantiationException | IllegalAccessException e)
-			{
-				throw new DatabaseException("Failed to create new object instance while deserializing field " + aField, e);
+				try
+				{
+					return (T)type.newInstance();
+				}
+				catch (InstantiationException | IllegalAccessException e)
+				{
+					throw new DatabaseException("Failed to create new object instance while deserializing field " + aField, e);
+				}
 			}
 		}
 

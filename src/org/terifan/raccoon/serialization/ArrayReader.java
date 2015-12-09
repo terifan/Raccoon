@@ -3,6 +3,7 @@ package org.terifan.raccoon.serialization;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.raccoon.util.Log;
 
 
 class ArrayReader
