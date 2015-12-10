@@ -5,8 +5,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -154,17 +154,19 @@ public class Browser
 					
 					if (userObject instanceof Table)
 					{
-						Table table = (Table)userObject;
-
 						tableContentmodel.setColumnCount(0);
-						for (FieldType field : table.getTableMetadata().getFields())
+
+						Table table = (Table)userObject;
+						FieldType[] fields = table.getTableMetadata().getFields();
+
+						for (FieldType field : fields)
 						{
 							tableContentmodel.addColumn(field.getName());
 						}
 
 						frame.setTitle(table.getTableMetadata().toString());
 
-						for (FieldType field : table.getTableMetadata().getFields())
+						for (FieldType field : fields)
 						{
 							tableFormatModel.addRow(new Object[]{
 								field.getCategory(),
@@ -181,14 +183,15 @@ public class Browser
 						{
 							Entry entry = it.next();
 
-							if (entry.getValue().length > 40)
+							Map<String, ?> map = table.getTableMetadata().getMarshaller().unmarshal(entry);
+
+							Object[] values = new Object[map.size()];
+							for (int i = 0; i < fields.length; i++)
 							{
-								HashMap<String, ?> map = table.getTableMetadata().getMarshaller().unmarshal(entry);
-
-								Object[] values = map.values().toArray();
-
-								tableContentmodel.addRow(values);
+								values[i] = map.get(fields[i].getName()); 
 							}
+
+							tableContentmodel.addRow(values);
 						}
 					}
 

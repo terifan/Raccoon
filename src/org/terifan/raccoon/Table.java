@@ -25,7 +25,7 @@ import org.terifan.raccoon.util.Log;
 public class Table<T> implements Iterable<T>
 {
 	private static final int DIRECT_DATA = 0;
-	private static final int INDIRECT_DATA = 1;
+	static final int INDIRECT_DATA = 1;
 
 	private Database mDatabase;
 	private TableMetadata mTableMetadata;

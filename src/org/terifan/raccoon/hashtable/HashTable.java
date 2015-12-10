@@ -774,4 +774,10 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 			throw new IllegalStateException("HashTable is closed");
 		}
 	}
+
+
+	public BlockAccessor getBlockAccessor()
+	{
+		return mBlockAccessor;
+	}
 }

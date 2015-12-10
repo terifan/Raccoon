@@ -25,7 +25,7 @@ class NodeIterator implements Iterator<Entry>
 		mNodes = new ArrayDeque<>();
 
 		mHashTable = aHashTable;
-		mNextEntry = new Entry();
+		mNextEntry = new Entry(aHashTable);
 		mModCount = mHashTable.mModCount;
 
 		mNodes.add(aBlockPointer);
@@ -37,7 +37,7 @@ class NodeIterator implements Iterator<Entry>
 		mNodes = new ArrayDeque<>();
 
 		mHashTable = aHashTable;
-		mNextEntry = new Entry();
+		mNextEntry = new Entry(aHashTable);
 		mModCount = mHashTable.mModCount;
 
 		mMap = aDataPage;
@@ -60,9 +60,10 @@ class NodeIterator implements Iterator<Entry>
 		if (mMap != null)
 		{
 			byte[] key = mMap.getKey(mEntryIndex);
+			byte[] value = mMap.get(key);
 
 			mNextEntry.setKey(key);
-			mNextEntry.setValue(mMap.get(key));
+			mNextEntry.setValue(value);
 			mHasEntry = true;
 
 			return true;

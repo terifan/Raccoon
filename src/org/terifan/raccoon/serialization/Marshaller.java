@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Entry;
+import org.terifan.raccoon.io.BlobInputStream;
+import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
@@ -83,24 +85,24 @@ public class Marshaller
 		Log.inc();
 
 		HashMap<String,Object> map = new HashMap<>();
-		
+
 		try
 		{
-			ByteArrayBuffer buffer = new ByteArrayBuffer(aEntry.getValue());
+			ByteArrayBuffer buffer = new ByteArrayBuffer(aEntry.getKey());
 
 			for (FieldType fieldType : mTypeDeclarations.getTypes())
 			{
-				if (fieldType.category == FieldCategory.VALUES || fieldType.category == FieldCategory.DISCRIMINATORS)
+				if (fieldType.category == FieldCategory.KEYS)
 				{
 					map.put(fieldType.getName(), FieldReader.readField(fieldType, buffer, null));
 				}
 			}
 
-			buffer = new ByteArrayBuffer(aEntry.getKey());
+			buffer = aEntry.x();
 
 			for (FieldType fieldType : mTypeDeclarations.getTypes())
 			{
-				if (fieldType.category == FieldCategory.KEYS)
+				if (fieldType.category == FieldCategory.VALUES || fieldType.category == FieldCategory.DISCRIMINATORS)
 				{
 					map.put(fieldType.getName(), FieldReader.readField(fieldType, buffer, null));
 				}
