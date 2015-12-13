@@ -16,7 +16,7 @@ class CollectionWriter
 
 		aDataOutput.writeBit(0);
 
-		FieldType componentType = aFieldType.componentType[0];
-		ArrayWriter.writeArray(componentType, aCollection.toArray(), 1, componentType.depth + 1, aDataOutput);
+		FieldType componentType = aFieldType.getComponentType()[0];
+		ArrayWriter.writeArray(componentType, aCollection.toArray(), 1, componentType.getDepth() + 1, aDataOutput);
 	}
 }

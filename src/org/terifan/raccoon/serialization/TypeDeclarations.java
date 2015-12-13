@@ -20,7 +20,7 @@ import org.terifan.raccoon.util.Log;
 
 public class TypeDeclarations implements Externalizable
 {
-	private static final long serialVersionUID = 1L;
+	private final static long serialVersionUID = 1L;
 	private final static HashMap<String,Class> PRIMITIVE_TYPES;
 
 	static
@@ -44,12 +44,6 @@ public class TypeDeclarations implements Externalizable
 	}
 
 
-	public FieldType[] getTypes()
-	{
-		return mTypes;
-	}
-
-
 	public TypeDeclarations(Class aType, Field[] aFields)
 	{
 		Log.v("create type declarations for %s", aType);
@@ -64,40 +58,40 @@ public class TypeDeclarations implements Externalizable
 
 			mTypes[fieldIndex++] = fieldType;
 
-			fieldType.name = field.getName();
-			fieldType.type = field.getType();
-			boolean array = fieldType.type.isArray();
-			while (fieldType.type.isArray())
+			fieldType.setName(field.getName());
+			fieldType.setType(field.getType());
+			boolean array = fieldType.getType().isArray();
+			while (fieldType.getType().isArray())
 			{
-				fieldType.type = fieldType.type.getComponentType();
-				fieldType.depth++;
+				fieldType.setType(fieldType.getType().getComponentType());
+				fieldType.setDepth(fieldType.getDepth() + 1);
 			}
-			fieldType.nullable = !fieldType.type.isPrimitive();
-			fieldType.category = classify(field);
+			fieldType.setNullable(!fieldType.getType().isPrimitive());
+			fieldType.setCategory(classify(field));
 
 			if (array)
 			{
-				fieldType.format = FieldFormat.ARRAY;
+				fieldType.setFormat(FieldFormat.ARRAY);
 			}
-			else if (List.class.isAssignableFrom(fieldType.type))
+			else if (List.class.isAssignableFrom(fieldType.getType()))
 			{
 				getGenericType(field, fieldType, 0);
-				fieldType.format = FieldFormat.LIST;
+				fieldType.setFormat(FieldFormat.LIST);
 			}
-			else if (Set.class.isAssignableFrom(fieldType.type))
+			else if (Set.class.isAssignableFrom(fieldType.getType()))
 			{
 				getGenericType(field, fieldType, 0);
-				fieldType.format = FieldFormat.SET;
+				fieldType.setFormat(FieldFormat.SET);
 			}
-			else if (Map.class.isAssignableFrom(fieldType.type))
+			else if (Map.class.isAssignableFrom(fieldType.getType()))
 			{
 				getGenericType(field, fieldType, 0);
 				getGenericType(field, fieldType, 1);
-				fieldType.format = FieldFormat.MAP;
+				fieldType.setFormat(FieldFormat.MAP);
 			}
-			else if (fieldType.type.isPrimitive() || isValidType(fieldType.type))
+			else if (fieldType.getType().isPrimitive() || isValidType(fieldType.getType()))
 			{
-				fieldType.format = FieldFormat.VALUE;
+				fieldType.setFormat(FieldFormat.VALUE);
 			}
 			else
 			{
@@ -111,6 +105,51 @@ public class TypeDeclarations implements Externalizable
 	}
 
 
+	public FieldType[] getTypes()
+	{
+		return mTypes;
+	}
+
+
+	@Override
+	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
+	{
+		mTypes = new FieldType[aIn.readInt()];
+		for (int i = 0; i < mTypes.length; i++)
+		{
+			mTypes[i] = new FieldType();
+			mTypes[i].readExternal(aIn);
+		}
+	}
+
+
+	@Override
+	public void writeExternal(ObjectOutput aOut) throws IOException
+	{
+		aOut.writeInt(mTypes.length);
+		for (FieldType fieldType : mTypes)
+		{
+			fieldType.writeExternal(aOut);
+		}
+	}
+
+
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		for (FieldType fieldType : mTypes)
+		{
+			if (sb.length() > 0)
+			{
+				sb.append("\n");
+			}
+			sb.append(fieldType);
+		}
+		return sb.toString();
+	}
+
+
 	private void getGenericType(Field aField, FieldType aFieldType, int aIndex)
 	{
 		if (!(aField.getGenericType() instanceof ParameterizedType))
@@ -118,29 +157,29 @@ public class TypeDeclarations implements Externalizable
 			throw new IllegalArgumentException("Generic type must be parameterized: " + aField);
 		}
 
-		if (aFieldType.componentType == null)
+		if (aFieldType.getComponentType() == null)
 		{
-			aFieldType.componentType = new FieldType[2];
+			aFieldType.setComponentType(new FieldType[2]);
 		}
 
 		FieldType componentType = new FieldType();
-		aFieldType.componentType[aIndex] = componentType;
+		aFieldType.getComponentType()[aIndex] = componentType;
 
 		String typeName = ((ParameterizedType)aField.getGenericType()).getActualTypeArguments()[aIndex].getTypeName();
 
 		while (typeName.endsWith("[]"))
 		{
 			typeName = typeName.substring(0, typeName.length() - 2);
-			componentType.depth++;
-			componentType.format = FieldFormat.ARRAY;
+			componentType.setDepth(componentType.getDepth() + 1);
+			componentType.setFormat(FieldFormat.ARRAY);
 		}
 
 		Class primitiveType = PRIMITIVE_TYPES.get(typeName);
-		componentType.nullable = primitiveType == null;
+		componentType.setNullable(primitiveType == null);
 
 		if (primitiveType != null)
 		{
-			componentType.type = primitiveType;
+			componentType.setType(primitiveType);
 			return;
 		}
 
@@ -153,7 +192,7 @@ public class TypeDeclarations implements Externalizable
 				throw new IllegalArgumentException("Unsupported type: " + type);
 			}
 
-			componentType.type = type;
+			componentType.setType(type);
 		}
 		catch (ClassNotFoundException e)
 		{
@@ -184,35 +223,5 @@ public class TypeDeclarations implements Externalizable
 			return FieldCategory.DISCRIMINATORS;
 		}
 		return FieldCategory.VALUES;
-	}
-
-
-	@Override
-	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
-	{
-		mTypes = (FieldType[])aIn.readObject();
-	}
-
-
-	@Override
-	public void writeExternal(ObjectOutput aOut) throws IOException
-	{
-		aOut.writeObject(mTypes);
-	}
-
-
-	@Override
-	public String toString()
-	{
-		StringBuilder sb = new StringBuilder();
-		for (FieldType fieldType : mTypes)
-		{
-			if (sb.length() > 0)
-			{
-				sb.append("\n");
-			}
-			sb.append(fieldType);
-		}
-		return sb.toString();
 	}
 }

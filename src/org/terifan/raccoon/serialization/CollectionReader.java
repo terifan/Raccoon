@@ -15,8 +15,8 @@ class CollectionReader
 			return null;
 		}
 
-		FieldType componentType = aFieldType.componentType[0];
-		Object values = ArrayReader.readArray(componentType, 1, componentType.depth + 1, aDataInput);
+		FieldType componentType = aFieldType.getComponentType()[0];
+		Object values = ArrayReader.readArray(componentType, 1, componentType.getDepth() + 1, aDataInput);
 
 		for (int i = 0, sz = Array.getLength(values); i < sz; i++)
 		{

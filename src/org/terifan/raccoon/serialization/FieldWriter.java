@@ -12,10 +12,10 @@ class FieldWriter
 	{
 		Log.v("encode " + aFieldType);
 
-		switch (aFieldType.format)
+		switch (aFieldType.getFormat())
 		{
 			case ARRAY:
-				ArrayWriter.writeArray(aFieldType, aValue, 1, aFieldType.depth, aDataOutput);
+				ArrayWriter.writeArray(aFieldType, aValue, 1, aFieldType.getDepth(), aDataOutput);
 				break;
 			case LIST:
 			case SET:
@@ -25,7 +25,7 @@ class FieldWriter
 				MapWriter.writeMap(aFieldType, (Map)aValue, aDataOutput);
 				break;
 			case VALUE:
-				if (aFieldType.nullable)
+				if (aFieldType.isNullable())
 				{
 					if (aValue == null)
 					{

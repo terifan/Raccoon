@@ -24,7 +24,7 @@ class ArrayWriter
 
 		if (aLevel == aDepth)
 		{
-			if (aFieldType.nullable)
+			if (aFieldType.isNullable())
 			{
 				for (int i = 0; i < length; i++)
 				{

@@ -5,6 +5,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import javax.swing.JFrame;
@@ -81,40 +82,28 @@ public class Browser
 			final DefaultTableModel tableFormatModel = new DefaultTableModel(new String[]{"Category","Name","Format","Type","Nullable","Component","Depth"}, 0);
 
 			DefaultMutableTreeNode root = new DefaultMutableTreeNode();
-			DefaultMutableTreeNode group = null;
-			String typeName = null;
+			HashMap<String,DefaultMutableTreeNode> groups = new HashMap<>();
 			for (Table table : database.getTables())
 			{
-				if (!table.getTableMetadata().getTypeName().equals(typeName))
+				if (table.getTableMetadata().hasDiscriminatorFields())
 				{
-					if (table.getTableMetadata().hasDiscriminatorFields())
-					{
-						typeName = table.getTableMetadata().getTypeName();
-						group = new DefaultMutableTreeNode(typeName);
-						root.add(group);
-					}
-					else
-					{
-						group = null;
-					}
-				}
+					String typeName = table.getTableMetadata().getTypeName();
+					DefaultMutableTreeNode group = groups.get(typeName);
 
-				if (group != null)
-				{
+					if (group == null)
+					{
+						group =	new DefaultMutableTreeNode(typeName);
+						root.add(group);
+						groups.put(typeName, group);
+					}
+
 					DefaultMutableTreeNode node = new DefaultMutableTreeNode(table)
 					{
 						@Override
 						public String toString()
 						{
-							try
-							{
-								return ((Table)userObject).getTableMetadata().getDiscriminatorDescription();
-							}
-							catch (Throwable e)
-							{
-//								Log.out.println(e.getMessage());
-								return "";
-							}
+							String groupName = ((Table)userObject).getTableMetadata().getDiscriminatorDescription();
+							return groupName;
 						}
 					};
 					group.add(node);
@@ -127,7 +116,6 @@ public class Browser
 			}
 			
 			JTree tableList = new JTree(root);
-			tableList.setRootVisible(false);
 			for (int i = 0; i < tableList.getRowCount(); i++)
 			{
 				tableList.expandRow(i);

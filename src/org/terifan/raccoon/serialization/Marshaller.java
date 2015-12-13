@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Entry;
-import org.terifan.raccoon.io.BlobInputStream;
-import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
@@ -58,7 +56,7 @@ public class Marshaller
 
 			for (FieldType fieldType : mTypeDeclarations.getTypes())
 			{
-				if (fieldType.category == aFieldCategory || aFieldCategory == FieldCategory.DISCRIMINATOR_AND_VALUES && (fieldType.category == FieldCategory.VALUES || fieldType.category == FieldCategory.DISCRIMINATORS))
+				if (fieldType.getCategory() == aFieldCategory || aFieldCategory == FieldCategory.DISCRIMINATOR_AND_VALUES && (fieldType.getCategory() == FieldCategory.VALUES || fieldType.getCategory() == FieldCategory.DISCRIMINATORS))
 				{
 					Field field = findField(fieldType);
 					Object value = field.get(aObject);
@@ -86,31 +84,47 @@ public class Marshaller
 
 		HashMap<String,Object> map = new HashMap<>();
 
-		try
+		ByteArrayBuffer buffer = new ByteArrayBuffer(aEntry.getKey());
+
+		for (FieldType fieldType : mTypeDeclarations.getTypes())
 		{
-			ByteArrayBuffer buffer = new ByteArrayBuffer(aEntry.getKey());
-
-			for (FieldType fieldType : mTypeDeclarations.getTypes())
+			if (fieldType.getCategory() == FieldCategory.KEYS)
 			{
-				if (fieldType.category == FieldCategory.KEYS)
-				{
-					map.put(fieldType.getName(), FieldReader.readField(fieldType, buffer, null));
-				}
-			}
-
-			buffer = aEntry.x();
-
-			for (FieldType fieldType : mTypeDeclarations.getTypes())
-			{
-				if (fieldType.category == FieldCategory.VALUES || fieldType.category == FieldCategory.DISCRIMINATORS)
-				{
-					map.put(fieldType.getName(), FieldReader.readField(fieldType, buffer, null));
-				}
+				map.put(fieldType.getName(), FieldReader.readField(fieldType, buffer, null));
 			}
 		}
-		catch (Exception e)
+
+		buffer = aEntry.x();
+
+		for (FieldType fieldType : mTypeDeclarations.getTypes())
 		{
-			e.printStackTrace(Log.out);
+			if (fieldType.getCategory() == FieldCategory.VALUES || fieldType.getCategory() == FieldCategory.DISCRIMINATORS)
+			{
+				map.put(fieldType.getName(), FieldReader.readField(fieldType, buffer, null));
+			}
+		}
+
+		Log.dec();
+
+		return map;
+	}
+
+
+	public HashMap<String, Object> unmarshalDISCRIMINATORS(byte[] aBuffer) throws IOException
+	{
+		Log.v("unmarshal entity");
+		Log.inc();
+
+		HashMap<String,Object> map = new HashMap<>();
+
+		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer);
+
+		for (FieldType fieldType : mTypeDeclarations.getTypes())
+		{
+			if (fieldType.getCategory() == FieldCategory.DISCRIMINATORS)
+			{
+				map.put(fieldType.getName(), FieldReader.readField(fieldType, buffer, null));
+			}
 		}
 
 		Log.dec();
@@ -139,7 +153,7 @@ public class Marshaller
 
 			for (FieldType fieldType : mTypeDeclarations.getTypes())
 			{
-				if (fieldType.category == aFieldCategory || aFieldCategory == FieldCategory.DISCRIMINATOR_AND_VALUES && (fieldType.category == FieldCategory.VALUES || fieldType.category == FieldCategory.DISCRIMINATORS))
+				if (fieldType.getCategory() == aFieldCategory || aFieldCategory == FieldCategory.DISCRIMINATOR_AND_VALUES && (fieldType.getCategory() == FieldCategory.VALUES || fieldType.getCategory() == FieldCategory.DISCRIMINATORS))
 				{
 					Field field = findField(fieldType);
 
@@ -169,7 +183,7 @@ public class Marshaller
 
 	private Field findField(FieldType aFieldType)
 	{
-		return mFields.get(aFieldType.name);
+		return mFields.get(aFieldType.getName());
 	}
 
 

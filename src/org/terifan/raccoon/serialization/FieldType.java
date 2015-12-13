@@ -6,17 +6,17 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 
-public class FieldType implements Externalizable, Comparable<FieldType>
+public class FieldType implements Comparable<FieldType>, Externalizable
 {
 	private final static long serialVersionUID = 1L;
 
-	FieldCategory category;
-	String name;
-	Class type;
-	boolean nullable;
-	int depth;
-	FieldFormat format;
-	FieldType[] componentType;
+	private FieldCategory mCategory;
+	private String mName;
+	private Class mType;
+	private boolean mNullable;
+	private int mDepth;
+	private FieldFormat mFormat;
+	private FieldType[] mComponentType;
 
 
 	public FieldType()
@@ -27,33 +27,33 @@ public class FieldType implements Externalizable, Comparable<FieldType>
 	@Override
 	public void writeExternal(ObjectOutput aOut) throws IOException
 	{
-		aOut.writeObject(category);
-		aOut.writeObject(componentType);
-		aOut.writeObject(depth);
-		aOut.writeObject(format);
-		aOut.writeObject(name);
-		aOut.writeObject(nullable);
-		aOut.writeObject(type);
+		aOut.writeObject(mName);
+		aOut.writeObject(mType);
+		aOut.writeObject(mCategory);
+		aOut.writeObject(mNullable);
+		aOut.writeObject(mFormat);
+		aOut.writeObject(mDepth);
+		aOut.writeObject(mComponentType);
 	}
 
 
 	@Override
 	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
 	{
-		category = (FieldCategory)aIn.readObject();
-		componentType = (FieldType[])aIn.readObject();
-		depth = (Integer)aIn.readObject();
-		format = (FieldFormat)aIn.readObject();
-		name = (String)aIn.readObject();
-		nullable = (Boolean)aIn.readObject();
-		type = (Class)aIn.readObject();
+		mName = (String)aIn.readObject();
+		mType = (Class)aIn.readObject();
+		mCategory = (FieldCategory)aIn.readObject();
+		mNullable = (Boolean)aIn.readObject();
+		mFormat = (FieldFormat)aIn.readObject();
+		mDepth = (Integer)aIn.readObject();
+		mComponentType = (FieldType[])aIn.readObject();
 	}
 
 
 	@Override
 	public int compareTo(FieldType aOther)
 	{
-		return name.compareTo(aOther.name);
+		return mName.compareTo(aOther.mName);
 	}
 
 
@@ -61,28 +61,28 @@ public class FieldType implements Externalizable, Comparable<FieldType>
 	public String toString()
 	{
 		StringBuilder s = new StringBuilder();
-		s.append(type.getSimpleName());
-		for (int i = 0; i < depth; i++)
+		s.append(mName);
+		for (int i = 0; i < mDepth; i++)
 		{
 			s.append("[]");
 		}
-		if (componentType != null)
+		if (mComponentType != null)
 		{
 			s.append("<");
-			s.append(componentType[0].type.getSimpleName());
-			if (componentType[0].format == FieldFormat.ARRAY)
+			s.append(mComponentType[0].getType().getSimpleName());
+			if (mComponentType[0].mFormat == FieldFormat.ARRAY)
 			{
-				for (int i = 0; i < componentType[0].depth; i++)
+				for (int i = 0; i < mComponentType[0].mDepth; i++)
 				{
 					s.append("[]");
 				}
 			}
-			if (componentType[1] != null)
+			if (mComponentType[1] != null)
 			{
-				s.append("," + componentType[1].type.getSimpleName());
-				if (componentType[1].format == FieldFormat.ARRAY)
+				s.append("," + mComponentType[1].getType().getSimpleName());
+				if (mComponentType[1].mFormat == FieldFormat.ARRAY)
 				{
-					for (int i = 0; i < componentType[1].depth; i++)
+					for (int i = 0; i < mComponentType[1].mDepth; i++)
 					{
 						s.append("[]");
 					}
@@ -90,8 +90,8 @@ public class FieldType implements Externalizable, Comparable<FieldType>
 			}
 			s.append(">");
 		}
-		s.append(" " + name);
-		if (nullable)
+		s.append(" " + mName);
+		if (mNullable)
 		{
 			s.append(" (nullable)");
 		}
@@ -101,42 +101,84 @@ public class FieldType implements Externalizable, Comparable<FieldType>
 
 	public FieldCategory getCategory()
 	{
-		return category;
+		return mCategory;
+	}
+
+
+	public void setCategory(FieldCategory aCategory)
+	{
+		mCategory = aCategory;
 	}
 
 
 	public String getName()
 	{
-		return name;
+		return mName;
+	}
+
+
+	public void setName(String aName)
+	{
+		mName = aName;
 	}
 
 
 	public Class getType()
 	{
-		return type;
+		return mType;
+	}
+
+
+	public void setType(Class aType)
+	{
+		mType = aType;
 	}
 
 
 	public boolean isNullable()
 	{
-		return nullable;
+		return mNullable;
+	}
+
+
+	public void setNullable(boolean aNullable)
+	{
+		mNullable = aNullable;
 	}
 
 
 	public int getDepth()
 	{
-		return depth;
+		return mDepth;
+	}
+
+
+	public void setDepth(int aDepth)
+	{
+		mDepth = aDepth;
 	}
 
 
 	public FieldFormat getFormat()
 	{
-		return format;
+		return mFormat;
+	}
+
+
+	public void setFormat(FieldFormat aFormat)
+	{
+		mFormat = aFormat;
 	}
 
 
 	public FieldType[] getComponentType()
 	{
-		return componentType;
+		return mComponentType;
+	}
+
+
+	public void setComponentType(FieldType[] aComponentType)
+	{
+		mComponentType = aComponentType;
 	}
 }

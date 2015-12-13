@@ -15,11 +15,11 @@ class MapReader
 			return null;
 		}
 
-		FieldType keyComponentType = aFieldType.componentType[0];
-		FieldType valueComponentType = aFieldType.componentType[1];
+		FieldType keyComponentType = aFieldType.getComponentType()[0];
+		FieldType valueComponentType = aFieldType.getComponentType()[1];
 
-		Object keys = ArrayReader.readArray(keyComponentType, 1, keyComponentType.depth + 1, aDataInput);
-		Object values = ArrayReader.readArray(valueComponentType, 1, valueComponentType.depth + 1, aDataInput);
+		Object keys = ArrayReader.readArray(keyComponentType, 1, keyComponentType.getDepth() + 1, aDataInput);
+		Object values = ArrayReader.readArray(valueComponentType, 1, valueComponentType.getDepth() + 1, aDataInput);
 
 		for (int i = 0, sz = Array.getLength(keys); i < sz; i++)
 		{

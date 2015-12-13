@@ -1,6 +1,7 @@
 package org.terifan.raccoon;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.FieldCategory;
 import org.terifan.raccoon.serialization.FieldType;
@@ -153,9 +154,8 @@ public final class TableMetadata
 		{
 			try
 			{
-				Object out = mClass.newInstance();
-				
-				mMarshaller.unmarshal(mDiscriminatorKey, out, FieldCategory.DISCRIMINATORS);
+				Marshaller marshaller = new Marshaller(mTypeDeclarations);
+				HashMap<String, Object> map = marshaller.unmarshalDISCRIMINATORS(mDiscriminatorKey);
 
 				for (FieldType type : mTypeDeclarations.getTypes())
 				{
@@ -165,7 +165,7 @@ public final class TableMetadata
 						{
 							d += ", ";
 						}
-						d += type.getName() + "=" + out.getClass().getField(type.getName()).get(out);
+						d += type.getName() + "=" + map.get(type.getName());
 					}
 				}
 			}

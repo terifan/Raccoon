@@ -20,9 +20,9 @@ class ArrayReader
 		int[] dims = new int[aDepth - aLevel + 1];
 		dims[0] = length;
 
-		Object array = Array.newInstance(aFieldType.type, dims);
+		Object array = Array.newInstance(aFieldType.getType(), dims);
 
-		if (aLevel == aDepth && aFieldType.type == Byte.TYPE)
+		if (aLevel == aDepth && aFieldType.getType() == Byte.TYPE)
 		{
 			aDataInput.read((byte[])array);
 		}
@@ -31,7 +31,7 @@ class ArrayReader
 			if (aLevel == aDepth)
 			{
 				boolean[] nulls = new boolean[length];
-				if (aFieldType.nullable)
+				if (aFieldType.isNullable())
 				{
 					for (int i = 0; i < length; i++)
 					{
@@ -47,7 +47,7 @@ class ArrayReader
 					}
 					else
 					{
-						value = ValueReader.readValue(aFieldType.type, aDataInput);
+						value = ValueReader.readValue(aFieldType.getType(), aDataInput);
 					}
 					Array.set(array, i, value);
 				}

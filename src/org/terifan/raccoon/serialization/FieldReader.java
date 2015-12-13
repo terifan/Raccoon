@@ -21,17 +21,17 @@ class FieldReader
 
 		try
 		{
-			switch (aFieldType.format)
+			switch (aFieldType.getFormat())
 			{
 				case VALUE:
-					if (aFieldType.nullable && aDataInput.readBit() == 1)
+					if (aFieldType.isNullable() && aDataInput.readBit() == 1)
 					{
 						return null;
 					}
 
-					return ValueReader.readValue(aFieldType.type, aDataInput);
+					return ValueReader.readValue(aFieldType.getType(), aDataInput);
 				case ARRAY:
-					return ArrayReader.readArray(aFieldType, 1, aFieldType.depth, aDataInput);
+					return ArrayReader.readArray(aFieldType, 1, aFieldType.getDepth(), aDataInput);
 				case LIST:
 					return CollectionReader.readCollection(aFieldType, aDataInput, newInstance(ArrayList.class, List.class, aField));
 				case SET:
