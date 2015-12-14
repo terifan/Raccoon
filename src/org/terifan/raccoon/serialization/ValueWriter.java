@@ -18,7 +18,7 @@ class ValueWriter
 
 		if (type == Boolean.class)
 		{
-			aDataOutput.writeBit(((Boolean)aValue) ? 1 : 0);
+			aDataOutput.write(((Boolean)aValue) ? 1 : 0);
 		}
 		else if (type == Byte.class)
 		{

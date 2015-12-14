@@ -126,6 +126,7 @@ public class ByteArrayBufferNGTest
 		out.writeBit(0);
 		out.writeBit(1);
 		out.writeBit(1);
+		out.align();
 		out.write(0b10101010);
 
 		byte[] buf = out.array();
@@ -134,6 +135,7 @@ public class ByteArrayBufferNGTest
 
 		ByteArrayBuffer in = new ByteArrayBuffer(buf);
 		assertEquals(in.readBits(4), 0b1011);
+		out.align();
 		assertEquals(in.read(), 0b10101010);
 	}
 
@@ -143,15 +145,19 @@ public class ByteArrayBufferNGTest
 	{
 		ByteArrayBuffer out = new ByteArrayBuffer(4);
 		out.writeBit(1);
+		out.align();
 		out.write(0b10101010);
 		out.position(1);
 		out.writeBit(1);
+		out.align();
 		out.write(0b10101010);
 
 		out.position(0);
 		assertEquals(out.readBit(), 1);
+		out.align();
 		out.position(1);
 		assertEquals(out.readBit(), 1);
+		out.align();
 		assertEquals(out.read(), 0b10101010);
 	}
 }

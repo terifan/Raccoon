@@ -14,7 +14,7 @@ class ValueReader
 	{
 		if (aType == Boolean.class || aType == Boolean.TYPE)
 		{
-			return aDataInput.readBit() == 1;
+			return aDataInput.read() != 0;
 		}
 		if (aType == Byte.class || aType == Byte.TYPE)
 		{

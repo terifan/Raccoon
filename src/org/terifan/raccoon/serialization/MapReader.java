@@ -10,7 +10,7 @@ class MapReader
 {
 	static Map readMap(FieldType aFieldType, ByteArrayBuffer aDataInput, Map aOutput) throws IOException
 	{
-		if (aDataInput.readBit() == 1)
+		if (aDataInput.read() != 0)
 		{
 			return null;
 		}

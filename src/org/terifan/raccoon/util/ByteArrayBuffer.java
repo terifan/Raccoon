@@ -71,7 +71,6 @@ public final class ByteArrayBuffer extends InputStream
 
 	public ByteArrayBuffer position(int aOffset)
 	{
-		align();
 		mOffset = aOffset;
 		return this;
 	}
@@ -165,16 +164,12 @@ public final class ByteArrayBuffer extends InputStream
 //			throw new EOFException("Reading beyond end of buffer, capacity " + mBuffer.length + ", offset " + mOffset + ", limit " + mLimit);
 		}
 
-		align();
-
 		return 0xff & mBuffer[mOffset++];
 	}
 
 
 	public ByteArrayBuffer write(int aByte)
 	{
-		align();
-
 		if (mOffset >= mBuffer.length)
 		{
 			ensureCapacity(1);
@@ -289,8 +284,6 @@ public final class ByteArrayBuffer extends InputStream
 	@Override
 	public int read(byte[] aBuffer, int aOffset, int aLength)
 	{
-		align();
-
 		int len = Math.min(aLength, remaining());
 
 		System.arraycopy(mBuffer, mOffset, aBuffer, aOffset, len);
@@ -308,7 +301,6 @@ public final class ByteArrayBuffer extends InputStream
 
 	public ByteArrayBuffer write(byte[] aBuffer, int aOffset, int aLength)
 	{
-		align();
 		ensureCapacity(aLength);
 
 		System.arraycopy(aBuffer, aOffset, mBuffer, mOffset, aLength);
@@ -319,7 +311,6 @@ public final class ByteArrayBuffer extends InputStream
 
 	public short readInt16()
 	{
-		align();
 		int ch1 = read();
 		int ch2 = read();
 		return (short)((ch1 << 8) + ch2);
@@ -328,7 +319,6 @@ public final class ByteArrayBuffer extends InputStream
 
 	public ByteArrayBuffer writeInt16(short aValue)
 	{
-		align();
 		ensureCapacity(2);
 		mBuffer[mOffset++] = (byte)(aValue >> 8);
 		mBuffer[mOffset++] = (byte)(aValue);
@@ -338,7 +328,6 @@ public final class ByteArrayBuffer extends InputStream
 
 	public int readInt32()
 	{
-		align();
 		int ch1 = read();
 		int ch2 = read();
 		int ch3 = read();
@@ -349,7 +338,6 @@ public final class ByteArrayBuffer extends InputStream
 
 	public ByteArrayBuffer writeInt32(int aValue)
 	{
-		align();
 		ensureCapacity(4);
 		mBuffer[mOffset++] = (byte)(aValue >>> 24);
 		mBuffer[mOffset++] = (byte)(aValue >> 16);
@@ -361,7 +349,6 @@ public final class ByteArrayBuffer extends InputStream
 
 	public long readInt64()
 	{
-		align();
 		read(readBuffer, 0, 8);
 		return (((long)readBuffer[0] << 56)
 			+ ((long)(readBuffer[1] & 255) << 48)
@@ -376,7 +363,6 @@ public final class ByteArrayBuffer extends InputStream
 
 	public ByteArrayBuffer writeInt64(long aValue)
 	{
-		align();
 		ensureCapacity(8);
 		mBuffer[mOffset++] = (byte)(aValue >>> 56);
 		mBuffer[mOffset++] = (byte)(aValue >> 48);
@@ -416,7 +402,6 @@ public final class ByteArrayBuffer extends InputStream
 
 	public String readString(int aLength)
 	{
-		align();
 		char[] array = new char[aLength];
 
 		for (int i = 0, j = 0; i < aLength; i++)
@@ -447,7 +432,6 @@ public final class ByteArrayBuffer extends InputStream
 
 	public ByteArrayBuffer writeString(String aInput)
 	{
-		align();
 		ensureCapacity(aInput.length());
 
 		for (int i = 0; i < aInput.length(); i++)

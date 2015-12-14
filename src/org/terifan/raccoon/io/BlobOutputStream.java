@@ -11,7 +11,7 @@ import static org.terifan.raccoon.io.BlockPointer.Types.*;
 
 public class BlobOutputStream extends OutputStream implements AutoCloseable
 {
-	final static int FRAGMENT_SIZE = 1024 * 1024;
+	private final static int FRAGMENT_SIZE = 1024 * 1024;
 	private final static int POINTER_MAX_LENGTH = 4 * BlockPointer.SIZE;
 
 	private final BlockAccessor mBlockAccessor;

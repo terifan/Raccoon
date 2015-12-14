@@ -10,11 +10,11 @@ class CollectionWriter
 	{
 		if (aCollection == null)
 		{
-			aDataOutput.writeBit(1);
+			aDataOutput.write(1);
 			return;
 		}
 
-		aDataOutput.writeBit(0);
+		aDataOutput.write(0);
 
 		FieldType componentType = aFieldType.getComponentType()[0];
 		ArrayWriter.writeArray(componentType, aCollection.toArray(), 1, componentType.getDepth() + 1, aDataOutput);

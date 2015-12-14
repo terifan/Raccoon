@@ -29,10 +29,10 @@ class FieldWriter
 				{
 					if (aValue == null)
 					{
-						aDataOutput.writeBit(1);
+						aDataOutput.write(1);
 						break;
 					}
-					aDataOutput.writeBit(0);
+					aDataOutput.write(0);
 				}
 				ValueWriter.writeValue(aValue, aDataOutput);
 				break;

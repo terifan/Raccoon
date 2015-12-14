@@ -12,11 +12,11 @@ class ArrayWriter
 
 		if (aArray == null)
 		{
-			aDataOutput.writeBit(1);
+			aDataOutput.write(1);
 			return;
 		}
 
-		aDataOutput.writeBit(0);
+		aDataOutput.write(0);
 
 		int length = Array.getLength(aArray);
 
@@ -30,6 +30,7 @@ class ArrayWriter
 				{
 					aDataOutput.writeBit(Array.get(aArray, i) == null);
 				}
+				aDataOutput.align();
 			}
 			for (int i = 0; i < length; i++)
 			{

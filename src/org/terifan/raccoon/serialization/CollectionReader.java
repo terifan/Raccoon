@@ -10,7 +10,7 @@ class CollectionReader
 {
 	static Collection readCollection(FieldType aFieldType, ByteArrayBuffer aDataInput, Collection aOutput) throws IOException
 	{
-		if (aDataInput.readBit() == 1)
+		if (aDataInput.read() != 0)
 		{
 			return null;
 		}

@@ -10,7 +10,7 @@ class ArrayReader
 {
 	static Object readArray(FieldType aFieldType, int aLevel, int aDepth, ByteArrayBuffer aDataInput) throws IOException
 	{
-		if (aDataInput.readBit() == 1)
+		if (aDataInput.read() != 0)
 		{
 			return null;
 		}
@@ -35,8 +35,9 @@ class ArrayReader
 				{
 					for (int i = 0; i < length; i++)
 					{
-						nulls[i] = aDataInput.readBit() == 1;
+						nulls[i] = aDataInput.readBit() != 0;
 					}
+					aDataInput.align();
 				}
 				for (int i = 0; i < length; i++)
 				{

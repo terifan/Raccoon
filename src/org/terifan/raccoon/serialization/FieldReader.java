@@ -24,7 +24,7 @@ class FieldReader
 			switch (aFieldType.getFormat())
 			{
 				case VALUE:
-					if (aFieldType.isNullable() && aDataInput.readBit() == 1)
+					if (aFieldType.isNullable() && aDataInput.read() != 0)
 					{
 						return null;
 					}

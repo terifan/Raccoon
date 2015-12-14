@@ -10,11 +10,11 @@ class MapWriter
 	{
 		if (aValue == null)
 		{
-			aDataOutput.writeBit(1);
+			aDataOutput.write(1);
 			return;
 		}
 
-		aDataOutput.writeBit(0);
+		aDataOutput.write(0);
 
 		FieldType keyComponentType = aFieldType.getComponentType()[0];
 		FieldType valueComponentType = aFieldType.getComponentType()[1];
