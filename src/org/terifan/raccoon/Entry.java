@@ -48,7 +48,7 @@ public class Entry
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(mValue);
 
-		if (buffer.read() == Table.INDIRECT_DATA)
+		if (buffer.read() == Table.PTR_BLOB)
 		{
 			try
 			{

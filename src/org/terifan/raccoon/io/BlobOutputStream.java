@@ -3,16 +3,14 @@ package org.terifan.raccoon.io;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
-import org.terifan.raccoon.Node;
 import org.terifan.raccoon.TransactionId;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+import static org.terifan.raccoon.io.BlockPointer.Types.*;
 
 
 public class BlobOutputStream extends OutputStream implements AutoCloseable
 {
-	final static int TYPE_DATA = Node.BLOB;
-	final static int TYPE_INDIRECT = Node.NODE;
 	final static int FRAGMENT_SIZE = 1024 * 1024;
 	private final static int POINTER_MAX_LENGTH = 4 * BlockPointer.SIZE;
 
@@ -80,7 +78,7 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 		// create indirect block if pointers exceed max length
 		if (pointerBufferLength > POINTER_MAX_LENGTH)
 		{
-			BlockPointer bp = mBlockAccessor.writeBlock(mPointerBuffer.array(), 0, mPointerBuffer.position(), mTransactionId.get(), TYPE_INDIRECT, 0);
+			BlockPointer bp = mBlockAccessor.writeBlock(mPointerBuffer.array(), 0, mPointerBuffer.position(), mTransactionId.get(), BLOB_INDIRECT, 0);
 			bp.marshal(mPointerBuffer.position(0));
 			pointerBufferLength = BlockPointer.SIZE;
 		}
@@ -111,7 +109,7 @@ public class BlobOutputStream extends OutputStream implements AutoCloseable
 
 	private void flushBlock() throws IOException
 	{
-		BlockPointer bp = mBlockAccessor.writeBlock(mBuffer.array(), 0, mBuffer.position(), mTransactionId.get(), TYPE_DATA, 0);
+		BlockPointer bp = mBlockAccessor.writeBlock(mBuffer.array(), 0, mBuffer.position(), mTransactionId.get(), BLOB_DATA, 0);
 		bp.marshal(mPointerBuffer);
 		mBuffer.position(0);
 

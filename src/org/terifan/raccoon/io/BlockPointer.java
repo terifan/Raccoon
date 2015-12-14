@@ -16,7 +16,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
  * |                                    block key                                  |
  * +---------+---------+---------+---------+---------+---------+---------+---------+
  *
- *   8 type (2)
+ *   8 type (3)
  *   8 compression (2)
  *  16 range (12)
  *  32 logical size (20)
@@ -29,7 +29,18 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 public class BlockPointer implements Serializable
 {
 	private final static long serialVersionUID = 1;
+
 	public final static int SIZE = 32;
+
+	public interface Types
+	{
+		public final static int NODE_FREE = 0;
+		public final static int NODE_HOLE = 1;
+		public final static int NODE_LEAF = 2;
+		public final static int NODE_INDIRECT = 3;
+		public final static int BLOB_DATA = 4;
+		public final static int BLOB_INDIRECT = 5;
+	}
 
 	private int mType;
 	private int mCompression;

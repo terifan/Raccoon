@@ -15,7 +15,7 @@ import org.terifan.raccoon.LeafNode;
 import org.terifan.raccoon.Node;
 import org.terifan.raccoon.Stats;
 import org.terifan.raccoon.util.Log;
-import static org.terifan.raccoon.Node.*;
+import static org.terifan.raccoon.io.BlockPointer.Types.*;
 import org.terifan.raccoon.TransactionId;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -134,7 +134,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	{
 		Log.i("load root %s", mRootBlockPointer);
 
-		if (mRootBlockPointer.getType() == LEAF)
+		if (mRootBlockPointer.getType() == NODE_LEAF)
 		{
 			mRootMap = readLeaf(mRootBlockPointer);
 		}
@@ -350,7 +350,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		}
 		else
 		{
-			Log.v("rollback %s", mRootBlockPointer.getType() == LEAF ? "root map" : "root node");
+			Log.v("rollback %s", mRootBlockPointer.getType() == NODE_LEAF ? "root map" : "root node");
 
 			loadRoot();
 		}
@@ -374,7 +374,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			visit((aPointerIndex, aBlockPointer) ->
 			{
-				if (aPointerIndex != Visitor.ROOT_POINTER && aBlockPointer != null && (aBlockPointer.getType() == NODE || aBlockPointer.getType() == LEAF))
+				if (aPointerIndex != Visitor.ROOT_POINTER && aBlockPointer != null && (aBlockPointer.getType() == NODE_INDIRECT || aBlockPointer.getType() == NODE_LEAF))
 				{
 					freeBlock(aBlockPointer);
 				}
@@ -411,7 +411,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		visit((aPointerIndex, aBlockPointer)->
 		{
-			if (aBlockPointer != null && aBlockPointer.getType() == LEAF)
+			if (aBlockPointer != null && aBlockPointer.getType() == NODE_LEAF)
 			{
 				result.set(result.get() + readLeaf(aBlockPointer).size());
 			}
@@ -431,13 +431,13 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		switch (blockPointer.getType())
 		{
-			case NODE:
+			case NODE_INDIRECT:
 				return getValue(aHash, aLevel + 1, aKey, readNode(blockPointer));
-			case LEAF:
+			case NODE_LEAF:
 				return readLeaf(blockPointer).get(aKey);
-			case HOLE:
+			case NODE_HOLE:
 				return null;
-			case FREE:
+			case NODE_FREE:
 			default:
 				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
 		}
@@ -456,19 +456,19 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		switch (blockPointer.getType())
 		{
-			case NODE:
+			case NODE_INDIRECT:
 				IndexNode node = readNode(blockPointer);
 				oldValue = putValue(aKey, aValue, aHash, aLevel + 1, node);
 				freeBlock(blockPointer);
 				aNode.setPointer(index, writeBlock(node, blockPointer.getRange()));
 				break;
-			case LEAF:
+			case NODE_LEAF:
 				oldValue = putValueLeaf(blockPointer, index, aKey, aValue, aLevel, aNode, aHash);
 				break;
-			case HOLE:
+			case NODE_HOLE:
 				oldValue = upgradeHoleToLeaf(aKey, aValue, aNode, blockPointer, index);
 				break;
-			case FREE:
+			case NODE_FREE:
 			default:
 				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
 		}
@@ -616,7 +616,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	{
 		if (aLeaf.isEmpty())
 		{
-			return new BlockPointer().setType(HOLE).setRange(aRange);
+			return new BlockPointer().setType(NODE_HOLE).setRange(aRange);
 		}
 
 		return writeBlock(aLeaf, aRange);
@@ -634,7 +634,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 		switch (blockPointer.getType())
 		{
-			case NODE:
+			case NODE_INDIRECT:
 				IndexNode node = readNode(blockPointer);
 				oldValue = removeValue(aHash, aLevel + 1, aKey, node);
 				if (oldValue != null)
@@ -644,7 +644,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 					aNode.setPointer(index, newBlockPointer);
 				}
 				return oldValue;
-			case LEAF:
+			case NODE_LEAF:
 				LeafNode map = readLeaf(blockPointer);
 				oldValue = map.remove(aKey);
 				if (oldValue != null)
@@ -654,9 +654,9 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 					aNode.setPointer(index, newBlockPointer);
 				}
 				return oldValue;
-			case HOLE:
+			case NODE_HOLE:
 				return null;
-			case FREE:
+			case NODE_FREE:
 			default:
 				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
 		}
@@ -665,7 +665,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 	LeafNode readLeaf(BlockPointer aBlockPointer)
 	{
-		assert aBlockPointer.getType() == LEAF;
+		assert aBlockPointer.getType() == NODE_LEAF;
 
 		if (aBlockPointer.getOffset() == mRootBlockPointer.getOffset() && mRootMap != null)
 		{
@@ -678,7 +678,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 
 	IndexNode readNode(BlockPointer aBlockPointer)
 	{
-		assert aBlockPointer.getType() == NODE;
+		assert aBlockPointer.getType() == NODE_INDIRECT;
 
 		if (aBlockPointer.getOffset() == mRootBlockPointer.getOffset() && mRootNode != null)
 		{
@@ -739,7 +739,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			BlockPointer next = node.getPointer(i);
 
-			if (next != null && next.getType() == NODE)
+			if (next != null && next.getType() == NODE_INDIRECT)
 			{
 				visitNode(aVisitor, next);
 			}

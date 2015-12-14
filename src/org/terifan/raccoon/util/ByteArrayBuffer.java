@@ -1,13 +1,15 @@
 package org.terifan.raccoon.util;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
 
-public final class ByteArrayBuffer
+public final class ByteArrayBuffer extends InputStream
 {
 	private final static boolean FORCE_FIXED = false;
+	private final static int NO_LIMIT = Integer.MAX_VALUE;
 
 	private byte readBuffer[] = new byte[8];
 	private byte[] mBuffer;
@@ -25,7 +27,7 @@ public final class ByteArrayBuffer
 	public ByteArrayBuffer(int aInitialSize)
 	{
 		mBuffer = new byte[aInitialSize];
-		mLimit = Integer.MAX_VALUE;
+		mLimit = NO_LIMIT;
 		mBitBuffer = 0;
 		mWriteBitsToGo = 8;
 	}
@@ -91,7 +93,7 @@ public final class ByteArrayBuffer
 
 	public int remaining()
 	{
-		return ByteArrayBuffer.this.capacity() - position();
+		return mLimit == NO_LIMIT ? capacity() - position() : mLimit - position();
 	}
 
 
@@ -125,7 +127,7 @@ public final class ByteArrayBuffer
 	{
 		mBuffer = Arrays.copyOfRange(mBuffer, mOffset, mBuffer.length);
 		position(0);
-		mLimit = 0;
+		mLimit = NO_LIMIT;
 		return this;
 	}
 
@@ -147,18 +149,20 @@ public final class ByteArrayBuffer
 
 		mBuffer = aBuffer;
 		mLocked = true;
-		mLimit = Integer.MAX_VALUE;
+		mLimit = NO_LIMIT;
 		mBitBuffer = 0;
 		mWriteBitsToGo = 8;
 		return this;
 	}
 
 
+	@Override
 	public int read()
 	{
 		if (mOffset >= mBuffer.length || mOffset >= mLimit)
 		{
-			throw new EOFException("Reading beyond end of buffer, capacity " + mBuffer.length + ", offset " + mOffset + ", limit " + mLimit);
+			return -1;
+//			throw new EOFException("Reading beyond end of buffer, capacity " + mBuffer.length + ", offset " + mOffset + ", limit " + mLimit);
 		}
 
 		align();
@@ -275,12 +279,14 @@ public final class ByteArrayBuffer
 	}
 
 
+	@Override
 	public int read(byte[] aBuffer)
 	{
 		return read(aBuffer, 0, aBuffer.length);
 	}
 
 
+	@Override
 	public int read(byte[] aBuffer, int aOffset, int aLength)
 	{
 		align();

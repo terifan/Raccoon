@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.util.Random;
 import org.terifan.raccoon.TransactionId;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.util.Log;
 import org.testng.annotations.DataProvider;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import static org.terifan.raccoon.io.BlockPointer.Types.*;
 
 
 public class BlobInputStreamNGTest
@@ -44,7 +44,7 @@ public class BlobInputStreamNGTest
 			BlockPointer bp = new BlockPointer();
 
 			assertEquals(len, aUnitSize);
-			assertEquals(bp.unmarshal(tmp).getType(), aIndirect ? BlobOutputStream.TYPE_INDIRECT : BlobOutputStream.TYPE_DATA);
+			assertEquals(bp.unmarshal(tmp).getType(), aIndirect ? BLOB_INDIRECT : BLOB_DATA);
 			assertEquals(tmp.remaining(), BlockPointer.SIZE * (aPointers - 1));
 		}
 

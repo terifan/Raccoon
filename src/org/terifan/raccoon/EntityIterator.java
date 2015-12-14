@@ -31,8 +31,8 @@ public class EntityIterator<T> implements Iterator<T>
 
 		Entry entry = mIterator.next();
 
-		mTable.update(outputEntity, entry.getKey(), FieldCategory.KEYS);
-		mTable.update(outputEntity, entry.getValue(), FieldCategory.DISCRIMINATOR_AND_VALUES);
+		mTable.unmarshalToObject(outputEntity, entry.getKey(), FieldCategory.KEYS);
+		mTable.unmarshalToObject(outputEntity, entry.getValue(), FieldCategory.DISCRIMINATOR_AND_VALUES);
 
 		Initializer initializer = mTable.getDatabase().getInitializer(mTable.getTableMetadata().getType());
 		if (initializer != null)

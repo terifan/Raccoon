@@ -61,7 +61,7 @@ public class BlockAccessor
 		}
 		catch (Exception e)
 		{
-			throw new DatabaseException(e);
+			throw new DatabaseException(aBlockPointer.toString(), e);
 		}
 	}
 

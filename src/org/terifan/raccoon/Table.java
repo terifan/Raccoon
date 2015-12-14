@@ -24,8 +24,8 @@ import org.terifan.raccoon.util.Log;
 
 public class Table<T> implements Iterable<T>
 {
-	private static final int DIRECT_DATA = 0;
-	static final int INDIRECT_DATA = 1;
+	static final byte PTR_RECORD = 0;
+	static final byte PTR_BLOB = 1;
 
 	private Database mDatabase;
 	private TableMetadata mTableMetadata;
@@ -78,7 +78,7 @@ public class Table<T> implements Iterable<T>
 			return false;
 		}
 
-		update(aEntity, value, FieldCategory.DISCRIMINATOR_AND_VALUES);
+		unmarshalToObject(aEntity, value, FieldCategory.DISCRIMINATOR_AND_VALUES);
 
 		Log.dec();
 
@@ -104,7 +104,6 @@ public class Table<T> implements Iterable<T>
 	public synchronized InputStream read(T aEntity)
 	{
 		byte[] key = getKeys(aEntity);
-
 		byte[] value = mTableImplementation.get(key);
 
 		if (value == null)
@@ -112,16 +111,16 @@ public class Table<T> implements Iterable<T>
 			return null;
 		}
 
-		assert value[0] == INDIRECT_DATA || value[0] == DIRECT_DATA;
+		ByteArrayBuffer buffer = new ByteArrayBuffer(value);
 
-		if (value[0] == DIRECT_DATA)
+		if (buffer.read() == PTR_RECORD)
 		{
-			return new ByteArrayInputStream(value, 1, value.length - 1);
+			return buffer;
 		}
 
 		try
 		{
-			return new BlobInputStream(mBlockAccessor, new ByteArrayBuffer(value).position(1));
+			return new BlobInputStream(mBlockAccessor, buffer);
 		}
 		catch (Exception e)
 		{
@@ -136,18 +135,17 @@ public class Table<T> implements Iterable<T>
 		Log.inc();
 
 		byte[] key = getKeys(aEntity);
-		byte[] tmp = getNonKeys(aEntity);
-		byte[] value;
-		byte type = DIRECT_DATA;
+		byte[] value = getNonKeys(aEntity);
+		byte type = PTR_RECORD;
 
-		if ((key.length + tmp.length + 1) > mTableImplementation.getEntryMaximumLength() / 4)
+		if ((key.length + value.length + 1) > mTableImplementation.getEntryMaximumLength() / 4)
 		{
-			type = INDIRECT_DATA;
+			type = PTR_BLOB;
 
 			try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId()))
 			{
-				bos.write(tmp);
-				tmp = bos.finish();
+				bos.write(value);
+				value = bos.finish();
 			}
 			catch (IOException e)
 			{
@@ -155,11 +153,7 @@ public class Table<T> implements Iterable<T>
 			}
 		}
 
-		value = new byte[1 + tmp.length];
-		value[0] = type;
-		System.arraycopy(tmp, 0, value, 1, tmp.length);
-
-		byte[] oldValue = mTableImplementation.put(key, value);
+		byte[] oldValue = putWrap(key, value, type);
 
 		deleteIfBlob(oldValue);
 
@@ -171,12 +165,13 @@ public class Table<T> implements Iterable<T>
 
 	private void deleteIfBlob(byte[] aOldValue) throws DatabaseException
 	{
-		if (aOldValue != null && aOldValue[0] == INDIRECT_DATA)
+		if (aOldValue != null && aOldValue[0] == PTR_BLOB)
 		{
 			try
 			{
-				Blob.deleteBlob(mBlockAccessor, Arrays.copyOfRange(aOldValue, 1, aOldValue.length - 1));
-			}catch (IOException e)
+				Blob.deleteBlob(mBlockAccessor, Arrays.copyOfRange(aOldValue, 1, aOldValue.length));
+			}
+			catch (IOException e)
 			{
 				throw new DatabaseException(e);
 			}
@@ -197,11 +192,7 @@ public class Table<T> implements Iterable<T>
 		{
 			Log.v("write blob entry");
 
-			byte[] value = new byte[1 + aHeader.length];
-			value[0] = INDIRECT_DATA;
-			System.arraycopy(aHeader, 0, value, 1, aHeader.length);
-
-			byte[] oldValue = mTableImplementation.put(getKeys(aEntityKey), value);
+			byte[] oldValue = putWrap(getKeys(aEntityKey), aHeader, PTR_BLOB);
 
 			deleteIfBlob(oldValue);
 
@@ -215,18 +206,24 @@ public class Table<T> implements Iterable<T>
 	}
 
 
+	private byte[] putWrap(byte[] aKey, byte[] aValue, byte aType)
+	{
+		byte[] value = new byte[aValue.length + 1];
+		System.arraycopy(aValue, 0, value, 1, aValue.length);
+
+		value[0] = aType;
+
+		return mTableImplementation.put(aKey, value);
+	}
+
+
 	public boolean save(T aEntity, InputStream aInputStream)
 	{
 		try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId()))
 		{
 			bos.write(Streams.fetch(aInputStream));
 
-			byte[] tmp = bos.finish();
-			byte[] value = new byte[1 + tmp.length];
-			value[0] = INDIRECT_DATA;
-			System.arraycopy(tmp, 0, value, 1, tmp.length);
-
-			byte[] oldValue = mTableImplementation.put(getKeys(aEntity), value);
+			byte[] oldValue = putWrap(getKeys(aEntity), bos.finish(), PTR_BLOB);
 
 			deleteIfBlob(oldValue);
 
@@ -323,13 +320,13 @@ public class Table<T> implements Iterable<T>
 	}
 
 
-	void update(Object aOutput, byte[] aMarshalledData, FieldCategory aCategory)
+	void unmarshalToObject(Object aOutput, byte[] aMarshalledData, FieldCategory aCategory)
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aMarshalledData);
 
 		if (aCategory == FieldCategory.VALUES || aCategory == FieldCategory.DISCRIMINATOR_AND_VALUES)
 		{
-			if (buffer.read() == INDIRECT_DATA)
+			if (buffer.read() == PTR_BLOB)
 			{
 				try
 				{
@@ -399,5 +396,11 @@ public class Table<T> implements Iterable<T>
 	public String toString()
 	{
 		return mTableMetadata.toString();
+	}
+
+
+	public class TypeResult
+	{
+		public byte type;
 	}
 }

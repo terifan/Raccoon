@@ -11,7 +11,7 @@ import java.util.Iterator;
  * maintaining all necessary structural information inside the array at all time.
  *
  * implementation notes:
- * - an empty map will always consist of only ASCII zero bytes
+ * - an empty map will always consist of only zero value bytes
  * - the map does not record the capacity hence this must be provided when an instance is created
  * - the map has a six byte overhead
  * - each entry has a seven byte overhead
@@ -453,7 +453,7 @@ public class ByteBufferMap implements Iterable<byte[]>
 		assert mModCount == modCount : mModCount + " == " + modCount;
 
 		byte[] oldValue = aDestinationMap.put(key, value);
-		
+
 		assert oldValue != OVERFLOW;
 	}
 
