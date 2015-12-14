@@ -10,7 +10,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.IManagedBlockDevice;
@@ -19,7 +18,6 @@ import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.terifan.raccoon.security.InvalidKeyException;
-import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
@@ -316,11 +314,10 @@ public class DatabaseNGTest
 
 
 	@Test
-	public void testSaveEntryAsBlob() throws Exception
+	public void testBlobSave() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
-		byte[] content = new byte[10*1024*1024];
-		new Random().nextBytes(content);
+		byte[] content = createBuffer(0, 10*1024*1024);
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
@@ -339,14 +336,64 @@ public class DatabaseNGTest
 
 
 	@Test
-	public void testSaveBlobFromStream() throws Exception
+	public void testBlobSaveFromStream() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
-		byte[] content = new byte[10*1024*1024];
-		new Random().nextBytes(content);
+		byte[] content = createBuffer(0, 10*1024*1024);
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
+			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			try (InputStream in = database.read(new _BlobKey1K("my blob")))
+			{
+				assertNotNull(in);
+				assertEquals(Streams.fetch(in), content);
+			}
+		}
+	}
+
+
+	@Test
+	public void testBlobUpdateFromStreamInline() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+		byte[] content = createBuffer(0, 10*1024*1024);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
+
+			content = createBuffer(0, 10*1024*1024);
+
+			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
+
+			try (InputStream in = database.read(new _BlobKey1K("my blob")))
+			{
+				assertNotNull(in);
+				assertEquals(Streams.fetch(in), content);
+			}
+		}
+	}
+
+
+	@Test
+	public void testBlobUpdateFromStream() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+		byte[] content = createBuffer(0, 10*1024*1024);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
+			database.commit();
+
+			content = createBuffer(0, 10*1024*1024);
+
 			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
 			database.commit();
 		}
@@ -382,7 +429,7 @@ public class DatabaseNGTest
 
 
 	@Test
-	public void testEraseBlob() throws IOException
+	public void testBlobDelete() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
@@ -411,7 +458,32 @@ public class DatabaseNGTest
 
 
 	@Test
-	public void testReplaceBlob() throws IOException
+	public void testBlobDeleteFromStream() throws IOException
+	{
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+
+		byte[] content = createBuffer(0, 10*1024*1024);
+
+		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_COMPRESSION))
+		{
+			db.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
+			db.commit();
+		}
+
+		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+		{
+			db.remove(new _BlobKey1K("my blob"));
+			db.commit();
+		}
+
+		assertEquals(managedBlockDevice.getUsedSpace(), 5);
+		assertTrue(managedBlockDevice.getFreeSpace() > 1000_000 / 512);
+	}
+
+
+	@Test
+	public void testBlobUpdate() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
@@ -493,7 +565,7 @@ public class DatabaseNGTest
 
 
 	@Test(expectedExceptions = InvalidKeyException.class)
-	public void testBasPassword() throws Exception
+	public void testBadPassword() throws Exception
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
