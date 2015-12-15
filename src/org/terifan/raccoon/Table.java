@@ -343,6 +343,12 @@ public class Table<T> implements Iterable<T>
 		}
 
 		mTableMetadata.getMarshaller().unmarshal(buffer, aOutput, aCategory);
+
+		Initializer<Object> initializer = (Initializer<Object>)mDatabase.getInitializer(aOutput.getClass());
+		if (initializer != null)
+		{
+			initializer.initialize(aOutput);
+		}
 	}
 
 
