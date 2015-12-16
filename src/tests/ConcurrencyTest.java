@@ -1,10 +1,11 @@
 package tests;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Random;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.OpenOption;
-import org.terifan.raccoon.io.MemoryBlockDevice;
+import org.terifan.raccoon.io.FileBlockDevice1;
 import org.terifan.raccoon.util.Log;
 
 // 1:10
@@ -32,7 +33,8 @@ public class ConcurrencyTest
 				keys[i] = new String(buf, 0, 5 + rnd.nextInt(35));
 			}
 
-			MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
+//			MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
+			FileBlockDevice1 blockDevice = new FileBlockDevice1(new File("d:/test.dat"), 4096, false);
 
 			db = Database.open(blockDevice, OpenOption.CREATE_NEW);
 

@@ -20,6 +20,7 @@ import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
+import org.terifan.raccoon.io.FileBlockDevice1;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.security.MurmurHash3;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -56,7 +57,7 @@ public class Database implements AutoCloseable
 		mInitializers = new HashMap<>();
 		mFactories = new HashMap<>();
 		mTransactionId = new TransactionId();
-		
+
 		mInitializers.put(TableMetadata.class, (e)->{
 			try
 			{
@@ -72,7 +73,7 @@ public class Database implements AutoCloseable
 
 	public static Database open(File aFile, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
-		FileBlockDevice fileBlockDevice = null;
+		FileBlockDevice1 fileBlockDevice = null;
 
 		try
 		{
@@ -96,12 +97,14 @@ public class Database implements AutoCloseable
 			}
 
 			boolean newFile = !aFile.exists();
-			String mode = aOpenOptions == OpenOption.READ_ONLY ? "r" : "rw";
 
 			BlockSizeParam blockSizeParam = getParameter(BlockSizeParam.class, aParameters, DEFAULT_BLOCK_SIZE);
 
-			RandomAccessFile file = new RandomAccessFile(aFile, mode);
-			fileBlockDevice = new FileBlockDevice(file, blockSizeParam.getValue());
+//			String mode = aOpenOptions == OpenOption.READ_ONLY ? "r" : "rw";
+//			RandomAccessFile file = new RandomAccessFile(aFile, mode);
+//			fileBlockDevice = new FileBlockDevice(file, blockSizeParam.getValue());
+
+			fileBlockDevice = new FileBlockDevice1(aFile, blockSizeParam.getValue(), aOpenOptions == OpenOption.READ_ONLY);
 
 			return init(fileBlockDevice, newFile, aParameters);
 		}
