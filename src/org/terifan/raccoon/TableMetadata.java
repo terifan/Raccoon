@@ -12,6 +12,7 @@ import org.terifan.raccoon.util.Log;
 
 public final class TableMetadata
 {
+	@Discriminator private String mTypeGroup;
 	@Key private String mTypeName;
 	@Key private byte[] mDiscriminatorKey;
 	private String mName;
@@ -32,6 +33,7 @@ public final class TableMetadata
 		mClass = aClass;
 		mName = mClass.getSimpleName();
 		mTypeName = mClass.getName();
+		mTypeGroup = mTypeName;
 
 		mMarshaller = new Marshaller(mClass);
 		mTypeDeclarations = mMarshaller.getTypeDeclarations();
@@ -142,40 +144,42 @@ public final class TableMetadata
 	@Override
 	public String toString()
 	{
-		return mTypeName;
+		return mTypeName + "[" + getDiscriminatorDescription() + "]";
 	}
 	
 	
 	public String getDiscriminatorDescription()
 	{
-		String d = "";
-
-		if (mDiscriminatorKey.length > 0)
+		if (mDiscriminatorKey.length == 0)
 		{
-			try
-			{
-				Marshaller marshaller = new Marshaller(mTypeDeclarations);
-				HashMap<String, Object> map = marshaller.unmarshalDISCRIMINATORS(mDiscriminatorKey);
-
-				for (FieldType type : mTypeDeclarations.getTypes())
-				{
-					if (type.getCategory() == FieldCategory.DISCRIMINATORS)
-					{
-						if (!d.isEmpty())
-						{
-							d += ", ";
-						}
-						d += type.getName() + "=" + map.get(type.getName());
-					}
-				}
-			}
-			catch (Exception e)
-			{
-				Log.e("Error: %s", e.getMessage());
-			}
+			return null;
 		}
 
-		return d;
+		StringBuilder result = new StringBuilder();
+
+		try
+		{
+			Marshaller marshaller = new Marshaller(mTypeDeclarations);
+			HashMap<String, Object> map = marshaller.unmarshalDISCRIMINATORS(mDiscriminatorKey);
+
+			for (FieldType type : mTypeDeclarations.getTypes())
+			{
+				if (type.getCategory() == FieldCategory.DISCRIMINATORS)
+				{
+					if (result.length() == 0)
+					{
+						result.append(", ");
+					}
+					result.append(type.getName()).append("=").append(map.get(type.getName()));
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			Log.e("Error: %s", e.getMessage());
+		}
+
+		return result.toString();
 	}
 
 

@@ -4,14 +4,12 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
@@ -870,12 +868,12 @@ public class Database implements AutoCloseable
 
 	public String integrityCheck()
 	{
+		// this exists to ensure MemoryBlockDevice is included in distributions
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+
 		mWriteLock.lock();
 		try
 		{
-			// this exists to ensure MemoryBlockDevice is included in distributions
-			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-
 			for (Table table : mOpenTables.values())
 			{
 				String s = table.integrityCheck();
@@ -928,4 +926,17 @@ public class Database implements AutoCloseable
 
 		return tables;
 	}
+
+
+//	public synchronized <E> List<E> listDiscriminators(Class<E> aType) throws IOException
+//	{
+//		ArrayList<E> list = new ArrayList<>();
+//
+//		for (TableMetadata tableMetadata : (List<TableMetadata>)mSystemTable.list(TableMetadata.class))
+//		{
+//			list.add(openTable(tableMetadata, OpenOption.OPEN));
+//		}
+//
+//		return list;
+//	}
 }

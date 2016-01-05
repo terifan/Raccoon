@@ -18,6 +18,7 @@ import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.terifan.raccoon.security.InvalidKeyException;
+import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
@@ -626,5 +627,27 @@ public class DatabaseNGTest
 //		}
 //
 //		fail();
+//	}
+
+
+//	@Test
+//	public void testX() throws Exception
+//	{
+//		MemoryBlockDevice device = new MemoryBlockDevice(512);
+//
+//		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+//		{
+//			database.save(new _Number1K1D("apple", 1));
+//			database.save(new _Number1K1D("banana", 2));
+//			database.save(new _Number1K1D("lemon", 3));
+//			database.commit();
+//
+//			database.listDiscriminators(_Number1K1D.class);
+//			
+//			for (_Number1K1D f : database.list(_Number1K1D.class, new _Number1K1D("", 1)))
+//			{
+//				Log.out.println(f);
+//			}
+//		}
 //	}
 }
