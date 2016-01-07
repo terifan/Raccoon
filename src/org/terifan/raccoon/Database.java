@@ -46,6 +46,7 @@ public class Database implements AutoCloseable
 	private boolean mChanged;
 	private Object[] mProperties;
 	private TableMetadata mSystemTableMetadata;
+	private boolean mCloseDeviceOnCloseDatabase;
 
 
 	private Database()
@@ -98,13 +99,9 @@ public class Database implements AutoCloseable
 
 			BlockSizeParam blockSizeParam = getParameter(BlockSizeParam.class, aParameters, DEFAULT_BLOCK_SIZE);
 
-//			String mode = aOpenOptions == OpenOption.READ_ONLY ? "r" : "rw";
-//			RandomAccessFile file = new RandomAccessFile(aFile, mode);
-//			fileBlockDevice = new FileBlockDevice(file, blockSizeParam.getValue());
-
 			fileBlockDevice = new FileBlockDevice1(aFile, blockSizeParam.getValue(), aOpenOptions == OpenOption.READ_ONLY);
 
-			return init(fileBlockDevice, newFile, aParameters);
+			return init(fileBlockDevice, newFile, true, aParameters);
 		}
 		catch (Throwable e)
 		{
@@ -138,14 +135,14 @@ public class Database implements AutoCloseable
 
 		boolean create = aBlockDevice.length() == 0 || aOpenOptions == OpenOption.CREATE_NEW;
 
-		return init(aBlockDevice, create, aParameters);
+		return init(aBlockDevice, create, false, aParameters);
 	}
 
 
-	private static Database init(IPhysicalBlockDevice aBlockDevice, boolean aCreate, Object[] aParameters) throws IOException
+	private static Database init(IPhysicalBlockDevice aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, Object[] aParameters) throws IOException
 	{
 		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aParameters, null);
-
+		
 		ManagedBlockDevice device;
 
 		if (aBlockDevice instanceof IManagedBlockDevice)
@@ -170,14 +167,20 @@ public class Database implements AutoCloseable
 			device = new ManagedBlockDevice(new SecureBlockDevice(aBlockDevice, accessCredentials));
 		}
 
+		Database db;
+
 		if (aCreate)
 		{
-			return create(device, aParameters);
+			db = create(device, aParameters);
 		}
 		else
 		{
-			return open(device, aParameters);
+			db = open(device, aParameters);
 		}
+
+		db.mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
+
+		return db;
 	}
 
 
@@ -443,6 +446,12 @@ public class Database implements AutoCloseable
 	public void close() throws IOException
 	{
 		mWriteLock.lock();
+		
+		if (mBlockDevice == null)
+		{
+			return;
+		}
+
 		try
 		{
 			if (mSystemTable != null)
@@ -459,6 +468,13 @@ public class Database implements AutoCloseable
 				mSystemTable.close();
 				mSystemTable = null;
 			}
+			
+			if (mCloseDeviceOnCloseDatabase)
+			{
+				mBlockDevice.close();
+			}
+
+			mBlockDevice = null;
 		}
 		finally
 		{
