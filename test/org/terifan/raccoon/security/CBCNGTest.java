@@ -1,6 +1,6 @@
 package org.terifan.raccoon.security;
 
-import org.terifan.security.cryptography.CBC;
+import org.terifan.security.cryptography.CBCCipherMode;
 import org.terifan.security.cryptography.AES;
 import org.terifan.security.cryptography.SecretKey;
 import static org.testng.Assert.*;
@@ -30,18 +30,18 @@ public class CBCNGTest
 		rnd.nextBytes(tweakKey);
 		long blockKey = rnd.nextLong();
 		long unitNo = rnd.nextLong();
-		
+
 		AES cipher1 = new AES(new SecretKey(key1));
 		AES cipher2 = new AES(new SecretKey(key2));
 
 		byte[] output = input.clone();
 
-		CBC cbc = new CBC(unitSize, cipher2);
-		cbc.encrypt(output, offset, length, unitNo, iv, cipher1, blockKey);
+		CBCCipherMode cbc = new CBCCipherMode();
+		cbc.encrypt(output, offset, length, cipher1, iv, unitNo, blockKey, cipher2, unitSize);
 
 		assertNotEquals(output, input);
 
-		cbc.decrypt(output, offset, length, unitNo, iv, cipher1, blockKey);
+		cbc.decrypt(output, offset, length, cipher1, iv, unitNo, blockKey, cipher2, unitSize);
 
 		assertEquals(output, input);
 	}

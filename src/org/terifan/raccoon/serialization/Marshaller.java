@@ -58,7 +58,12 @@ public class Marshaller
 			{
 				if (fieldType.getCategory() == aFieldCategory || aFieldCategory == FieldCategory.DISCRIMINATOR_AND_VALUES && (fieldType.getCategory() == FieldCategory.VALUES || fieldType.getCategory() == FieldCategory.DISCRIMINATORS))
 				{
-					Field field = findField(fieldType);
+					Field field = mFields.get(fieldType.getName());
+					if (field == null)
+					{
+						throw new DatabaseException("Field not found: " + fieldType.getName() + ", " + mFields.keySet());
+					}
+
 					Object value = field.get(aObject);
 					FieldWriter.writeField(fieldType, aBuffer, value);
 				}
@@ -155,8 +160,7 @@ public class Marshaller
 			{
 				if (fieldType.getCategory() == aFieldCategory || aFieldCategory == FieldCategory.DISCRIMINATOR_AND_VALUES && (fieldType.getCategory() == FieldCategory.VALUES || fieldType.getCategory() == FieldCategory.DISCRIMINATORS))
 				{
-					Field field = findField(fieldType);
-
+					Field field = mFields.get(fieldType.getName());
 					Object value = FieldReader.readField(fieldType, aBuffer, field);
 
 					if (field != null && aOutputObject != null)
@@ -178,12 +182,6 @@ public class Marshaller
 	public TypeDeclarations getTypeDeclarations()
 	{
 		return mTypeDeclarations;
-	}
-
-
-	private Field findField(FieldType aFieldType)
-	{
-		return mFields.get(aFieldType.getName());
 	}
 
 

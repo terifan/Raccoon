@@ -5,9 +5,9 @@ import java.security.SecureRandom;
 import java.util.Random;
 import org.terifan.security.cryptography.InvalidKeyException;
 import org.terifan.security.cryptography.AES;
-import org.terifan.security.cryptography.CBC;
-import org.terifan.security.cryptography.Cipher;
-import org.terifan.security.cryptography.MurmurHash3;
+import org.terifan.security.cryptography.CBCCipherMode;
+import org.terifan.security.cryptography.BlockCipher;
+import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.security.cryptography.SecretKey;
 import org.terifan.security.cryptography.Serpent;
 import org.terifan.security.cryptography.Twofish;
@@ -281,9 +281,10 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 	private static final class CipherImplementation
 	{
 		private transient final byte [][] mIV = new byte[3][IV_SIZE];
-		private transient final Cipher[] mCiphers;
-		private transient final Cipher mTweakCipher;
-		private transient final CBC mCipher;
+		private transient final BlockCipher[] mCiphers;
+		private transient final BlockCipher mTweakCipher;
+		private transient final CBCCipherMode mCipher;
+		private int mUnitSize;
 
 
 		public CipherImplementation(final EncryptionFunction aCiphers, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitSize)
@@ -291,39 +292,39 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 			switch (aCiphers)
 			{
 				case AES:
-					mCiphers = new Cipher[]{new AES()};
+					mCiphers = new BlockCipher[]{new AES()};
 					mTweakCipher = new AES();
 					break;
 				case Twofish:
-					mCiphers = new Cipher[]{new Twofish()};
+					mCiphers = new BlockCipher[]{new Twofish()};
 					mTweakCipher = new Twofish();
 					break;
 				case Serpent:
-					mCiphers = new Cipher[]{new Serpent()};
+					mCiphers = new BlockCipher[]{new Serpent()};
 					mTweakCipher = new Serpent();
 					break;
 				case AESTwofish:
-					mCiphers = new Cipher[]{new AES(), new Twofish()};
+					mCiphers = new BlockCipher[]{new AES(), new Twofish()};
 					mTweakCipher = new AES();
 					break;
 				case TwofishSerpent:
-					mCiphers = new Cipher[]{new Twofish(), new Serpent()};
+					mCiphers = new BlockCipher[]{new Twofish(), new Serpent()};
 					mTweakCipher = new Twofish();
 					break;
 				case SerpentAES:
-					mCiphers = new Cipher[]{new Serpent(), new AES()};
+					mCiphers = new BlockCipher[]{new Serpent(), new AES()};
 					mTweakCipher = new Serpent();
 					break;
 				case AESTwofishSerpent:
-					mCiphers = new Cipher[]{new AES(), new Twofish(), new Serpent()};
+					mCiphers = new BlockCipher[]{new AES(), new Twofish(), new Serpent()};
 					mTweakCipher = new AES();
 					break;
 				case TwofishAESSerpent:
-					mCiphers = new Cipher[]{new Twofish(), new AES(), new Serpent()};
+					mCiphers = new BlockCipher[]{new Twofish(), new AES(), new Serpent()};
 					mTweakCipher = new Twofish();
 					break;
 				case SerpentTwofishAES:
-					mCiphers = new Cipher[]{new Serpent(), new Twofish(), new AES()};
+					mCiphers = new BlockCipher[]{new Serpent(), new Twofish(), new AES()};
 					mTweakCipher = new Serpent();
 					break;
 				default:
@@ -355,7 +356,8 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 				throw new IllegalArgumentException("Bad offset: " + offset);
 			}
 
-			mCipher = new CBC(aUnitSize, mTweakCipher);
+			mCipher = new CBCCipherMode();
+			mUnitSize = aUnitSize;
 		}
 
 
@@ -363,7 +365,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		{
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mCipher.encrypt(aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], aBlockKey);
+				mCipher.encrypt(aBuffer, aOffset, aLength, mCiphers[i], mIV[i], aBlockIndex, aBlockKey, mTweakCipher, mUnitSize);
 			}
 		}
 
@@ -372,7 +374,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		{
 			for (int i = mCiphers.length; --i >= 0; )
 			{
-				mCipher.decrypt(aBuffer, aOffset, aLength, aBlockIndex, mIV[i], mCiphers[i], aBlockKey);
+				mCipher.decrypt(aBuffer, aOffset, aLength, mCiphers[i], mIV[i], aBlockIndex, aBlockKey, mTweakCipher, mUnitSize);
 			}
 		}
 
@@ -381,7 +383,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		{
 			if (mTweakCipher != null)
 			{
-				for (Cipher cipher : mCiphers)
+				for (BlockCipher cipher : mCiphers)
 				{
 					cipher.engineReset();
 				}

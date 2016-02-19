@@ -20,9 +20,9 @@ import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.io.Streams;
-import org.terifan.security.cryptography.MurmurHash3;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+import org.terifan.security.messagedigest.MurmurHash3;
 
 
 public class Database implements AutoCloseable
@@ -43,10 +43,10 @@ public class Database implements AutoCloseable
 	private final TableMetadataMap mTableMetadatas;
 	private final TransactionId mTransactionId;
 	private Table mSystemTable;
+	private boolean mChanged;
 	private Object[] mProperties;
 	private TableMetadata mSystemTableMetadata;
-	private boolean mChanged;
-	private boolean mCloseDeviceOnDatabaseClose;
+	private boolean mCloseDeviceOnCloseDatabase;
 
 
 	private Database()
@@ -99,10 +99,6 @@ public class Database implements AutoCloseable
 
 			BlockSizeParam blockSizeParam = getParameter(BlockSizeParam.class, aParameters, DEFAULT_BLOCK_SIZE);
 
-//			String mode = aOpenOptions == OpenOption.READ_ONLY ? "r" : "rw";
-//			RandomAccessFile file = new RandomAccessFile(aFile, mode);
-//			fileBlockDevice = new FileBlockDevice(file, blockSizeParam.getValue());
-
 			fileBlockDevice = new FileBlockDevice(aFile, blockSizeParam.getValue(), aOpenOptions == OpenOption.READ_ONLY);
 
 			return init(fileBlockDevice, newFile, true, aParameters);
@@ -143,7 +139,7 @@ public class Database implements AutoCloseable
 	}
 
 
-	private static Database init(IPhysicalBlockDevice aBlockDevice, boolean aCreate, boolean aCloseDeviceOnDatabaseClose, Object[] aParameters) throws IOException
+	private static Database init(IPhysicalBlockDevice aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, Object[] aParameters) throws IOException
 	{
 		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aParameters, null);
 
@@ -182,7 +178,7 @@ public class Database implements AutoCloseable
 			db = open(device, aParameters);
 		}
 
-		db.mCloseDeviceOnDatabaseClose = aCloseDeviceOnDatabaseClose;
+		db.mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
 
 		return db;
 	}
@@ -450,6 +446,12 @@ public class Database implements AutoCloseable
 	public void close() throws IOException
 	{
 		mWriteLock.lock();
+
+		if (mBlockDevice == null)
+		{
+			return;
+		}
+
 		try
 		{
 			if (mSystemTable != null)
@@ -467,10 +469,12 @@ public class Database implements AutoCloseable
 				mSystemTable = null;
 			}
 
-			if (mCloseDeviceOnDatabaseClose)
+			if (mCloseDeviceOnCloseDatabase)
 			{
 				mBlockDevice.close();
 			}
+
+			mBlockDevice = null;
 		}
 		finally
 		{
@@ -880,12 +884,12 @@ public class Database implements AutoCloseable
 
 	public String integrityCheck()
 	{
+		// this exists to ensure MemoryBlockDevice is included in distributions
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+
 		mWriteLock.lock();
 		try
 		{
-			// this exists to ensure MemoryBlockDevice is included in distributions
-			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-
 			for (Table table : mOpenTables.values())
 			{
 				String s = table.integrityCheck();
@@ -938,4 +942,17 @@ public class Database implements AutoCloseable
 
 		return tables;
 	}
+
+
+//	public synchronized <E> List<E> listDiscriminators(Class<E> aType) throws IOException
+//	{
+//		ArrayList<E> list = new ArrayList<>();
+//
+//		for (TableMetadata tableMetadata : (List<TableMetadata>)mSystemTable.list(TableMetadata.class))
+//		{
+//			list.add(openTable(tableMetadata, OpenOption.OPEN));
+//		}
+//
+//		return list;
+//	}
 }

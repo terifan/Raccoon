@@ -2,9 +2,9 @@ package org.terifan.raccoon.io;
 
 import java.security.MessageDigest;
 import org.terifan.security.cryptography.HMAC;
-import org.terifan.security.cryptography.SHA512;
-import org.terifan.security.cryptography.Skein512;
-import org.terifan.security.cryptography.Whirlpool;
+import org.terifan.security.messagedigest.SHA512;
+import org.terifan.security.messagedigest.Skein512;
+import org.terifan.security.messagedigest.Whirlpool;
 import org.terifan.security.cryptography.PBKDF2;
 
 
