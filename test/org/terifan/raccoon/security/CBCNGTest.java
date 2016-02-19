@@ -1,5 +1,8 @@
 package org.terifan.raccoon.security;
 
+import org.terifan.security.cryptography.CBC;
+import org.terifan.security.cryptography.AES;
+import org.terifan.security.cryptography.SecretKey;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import java.util.Random;

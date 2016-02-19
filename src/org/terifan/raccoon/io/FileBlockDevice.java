@@ -2,26 +2,36 @@ package org.terifan.raccoon.io;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.file.StandardOpenOption;
 import org.terifan.raccoon.util.Log;
 
 
 public class FileBlockDevice implements IPhysicalBlockDevice
 {
-	protected RandomAccessFile mFile;
-	protected int mBlockSize;
+	protected FileChannel mFile;
 	protected FileLock mFileLock;
+	protected int mBlockSize;
 
 
-	public FileBlockDevice(File aFile, int aBlockSize) throws IOException
+	public FileBlockDevice(File aFile, int aBlockSize, boolean aReadOnly) throws IOException
 	{
-		mFile = new RandomAccessFile(aFile, "rw");
+		if (aReadOnly)
+		{
+			mFile = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ);
+		}
+		else
+		{
+			mFile = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+		}
+
 		mBlockSize = aBlockSize;
 
 		try
 		{
-			mFileLock = mFile.getChannel().lock();
+			mFileLock = mFile.lock();
 		}
 		catch (Exception e)
 		{
@@ -30,10 +40,19 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	}
 
 
-	public FileBlockDevice(RandomAccessFile aFile, int aBlockSize) throws IOException
+	public void readBlock(long aBlockIndex, ByteBuffer aBuffer, long aBlockKey) throws IOException
 	{
-		mFile = aFile;
-		mBlockSize = aBlockSize;
+		Log.v("read block %d +%d", aBlockIndex, (aBuffer.limit() - aBuffer.position()) / mBlockSize);
+
+		mFile.read(aBuffer, aBlockIndex * mBlockSize);
+	}
+
+
+	public void writeBlock(long aBlockIndex, ByteBuffer aBuffer, long aBlockKey) throws IOException
+	{
+		Log.v("write block %d +%d", aBlockIndex, (aBuffer.limit() - aBuffer.position()) / mBlockSize);
+
+		mFile.write(aBuffer, aBlockIndex * mBlockSize);
 	}
 
 
@@ -42,11 +61,8 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	{
 		Log.v("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
-		synchronized (this)
-		{
-			mFile.seek(aBlockIndex * mBlockSize);
-			mFile.readFully(aBuffer, aBufferOffset, aBufferLength);
-		}
+		ByteBuffer buf = ByteBuffer.wrap(aBuffer, aBufferOffset, aBufferLength);
+		mFile.read(buf, aBlockIndex * mBlockSize);
 	}
 
 
@@ -55,17 +71,8 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	{
 		Log.v("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
-		synchronized (this)
-		{
-			while (aBlockIndex > length())
-			{
-				mFile.seek(mBlockSize * length());
-				mFile.write(new byte[mBlockSize]);
-			}
-
-			mFile.seek(aBlockIndex * mBlockSize);
-			mFile.write(aBuffer, aBufferOffset, aBufferLength);
-		}
+		ByteBuffer buf = ByteBuffer.wrap(aBuffer, aBufferOffset, aBufferLength);
+		mFile.write(buf, aBlockIndex * mBlockSize);
 	}
 
 
@@ -100,7 +107,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public long length() throws IOException
 	{
-		return mFile.length() / mBlockSize;
+		return mFile.size() / mBlockSize;
 	}
 
 
@@ -111,7 +118,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 		synchronized (this)
 		{
-			mFile.getChannel().force(aMetadata);
+			mFile.force(aMetadata);
 		}
 	}
 
@@ -126,9 +133,6 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void setLength(long aNewLength) throws IOException
 	{
-		synchronized (this)
-		{
-			mFile.setLength(aNewLength * mBlockSize);
-		}
+		mFile.truncate(aNewLength * mBlockSize);
 	}
 }

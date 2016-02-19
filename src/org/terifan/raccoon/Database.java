@@ -4,14 +4,12 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
@@ -20,9 +18,9 @@ import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
-import org.terifan.raccoon.io.FileBlockDevice1;
+import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.io.Streams;
-import org.terifan.raccoon.security.MurmurHash3;
+import org.terifan.security.cryptography.MurmurHash3;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
@@ -45,9 +43,10 @@ public class Database implements AutoCloseable
 	private final TableMetadataMap mTableMetadatas;
 	private final TransactionId mTransactionId;
 	private Table mSystemTable;
-	private boolean mChanged;
 	private Object[] mProperties;
 	private TableMetadata mSystemTableMetadata;
+	private boolean mChanged;
+	private boolean mCloseDeviceOnDatabaseClose;
 
 
 	private Database()
@@ -73,7 +72,7 @@ public class Database implements AutoCloseable
 
 	public static Database open(File aFile, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
-		FileBlockDevice1 fileBlockDevice = null;
+		FileBlockDevice fileBlockDevice = null;
 
 		try
 		{
@@ -104,9 +103,9 @@ public class Database implements AutoCloseable
 //			RandomAccessFile file = new RandomAccessFile(aFile, mode);
 //			fileBlockDevice = new FileBlockDevice(file, blockSizeParam.getValue());
 
-			fileBlockDevice = new FileBlockDevice1(aFile, blockSizeParam.getValue(), aOpenOptions == OpenOption.READ_ONLY);
+			fileBlockDevice = new FileBlockDevice(aFile, blockSizeParam.getValue(), aOpenOptions == OpenOption.READ_ONLY);
 
-			return init(fileBlockDevice, newFile, aParameters);
+			return init(fileBlockDevice, newFile, true, aParameters);
 		}
 		catch (Throwable e)
 		{
@@ -140,11 +139,11 @@ public class Database implements AutoCloseable
 
 		boolean create = aBlockDevice.length() == 0 || aOpenOptions == OpenOption.CREATE_NEW;
 
-		return init(aBlockDevice, create, aParameters);
+		return init(aBlockDevice, create, false, aParameters);
 	}
 
 
-	private static Database init(IPhysicalBlockDevice aBlockDevice, boolean aCreate, Object[] aParameters) throws IOException
+	private static Database init(IPhysicalBlockDevice aBlockDevice, boolean aCreate, boolean aCloseDeviceOnDatabaseClose, Object[] aParameters) throws IOException
 	{
 		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aParameters, null);
 
@@ -172,14 +171,20 @@ public class Database implements AutoCloseable
 			device = new ManagedBlockDevice(new SecureBlockDevice(aBlockDevice, accessCredentials));
 		}
 
+		Database db;
+
 		if (aCreate)
 		{
-			return create(device, aParameters);
+			db = create(device, aParameters);
 		}
 		else
 		{
-			return open(device, aParameters);
+			db = open(device, aParameters);
 		}
+
+		db.mCloseDeviceOnDatabaseClose = aCloseDeviceOnDatabaseClose;
+
+		return db;
 	}
 
 
@@ -460,6 +465,11 @@ public class Database implements AutoCloseable
 
 				mSystemTable.close();
 				mSystemTable = null;
+			}
+
+			if (mCloseDeviceOnDatabaseClose)
+			{
+				mBlockDevice.close();
 			}
 		}
 		finally

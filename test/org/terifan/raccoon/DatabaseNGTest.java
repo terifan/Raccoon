@@ -17,7 +17,7 @@ import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.io.UnsupportedVersionException;
-import org.terifan.raccoon.security.InvalidKeyException;
+import org.terifan.security.cryptography.InvalidKeyException;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;

@@ -8,8 +8,8 @@ import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Node;
 import org.terifan.raccoon.Stats;
-import org.terifan.raccoon.security.ISAAC;
-import org.terifan.raccoon.security.MurmurHash3;
+import org.terifan.security.cryptography.ISAAC;
+import org.terifan.security.cryptography.MurmurHash3;
 import org.terifan.raccoon.util.Log;
 
 

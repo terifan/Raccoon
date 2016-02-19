@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import org.terifan.raccoon.DatabaseException;
-import org.terifan.raccoon.security.ISAAC;
+import org.terifan.security.cryptography.ISAAC;
 import org.terifan.raccoon.serialization.FieldCategory;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.util.ByteArrayBuffer;

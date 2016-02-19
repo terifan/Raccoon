@@ -1,11 +1,11 @@
 package org.terifan.raccoon.io;
 
 import java.security.MessageDigest;
-import org.terifan.raccoon.security.HMAC;
-import org.terifan.raccoon.security.SHA512;
-import org.terifan.raccoon.security.Skein512;
-import org.terifan.raccoon.security.Whirlpool;
-import org.terifan.raccoon.security.PBKDF2;
+import org.terifan.security.cryptography.HMAC;
+import org.terifan.security.cryptography.SHA512;
+import org.terifan.security.cryptography.Skein512;
+import org.terifan.security.cryptography.Whirlpool;
+import org.terifan.security.cryptography.PBKDF2;
 
 
 public final class AccessCredentials

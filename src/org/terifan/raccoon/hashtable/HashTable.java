@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.util.ByteBufferMap;
-import org.terifan.raccoon.security.MurmurHash3;
+import org.terifan.security.cryptography.MurmurHash3;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.LeafNode;
 import org.terifan.raccoon.Node;
