@@ -227,7 +227,15 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 		// read boot block from disk
 		byte [] blockData = new byte[mBlockDevice.getBlockSize()];
-		mBlockDevice.readBlock(0, blockData, 0, mBlockDevice.getBlockSize(), 0L);
+
+		try
+		{
+			mBlockDevice.readBlock(0, blockData, 0, mBlockDevice.getBlockSize(), 0L);
+		}
+		catch (Exception e)
+		{
+			throw new FileAlreadyOpenException("Database file already open", e);
+		}
 
 		// extract the salt and payload
 		byte[] salt = getBytes(blockData, 0, SALT_SIZE);

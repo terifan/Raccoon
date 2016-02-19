@@ -7,16 +7,19 @@ import tests._KeyValue1K;
 import tests._Number1K1D;
 import tests._Animal1K;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.terifan.raccoon.io.AccessCredentials;
+import org.terifan.raccoon.io.FileAlreadyOpenException;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.io.UnsupportedVersionException;
+import org.terifan.raccoon.util.Log;
 import org.terifan.security.cryptography.InvalidKeyException;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
@@ -605,6 +608,34 @@ public class DatabaseNGTest
 		}
 
 		fail();
+	}
+
+
+	@Test(expectedExceptions = FileAlreadyOpenException.class)
+	public void testFailOpenLockedDatabase() throws Exception
+	{
+		AccessCredentials ac = new AccessCredentials("password");
+
+		File file = File.createTempFile("raccoon", ".tmp");
+		file.deleteOnExit();
+
+		try (Database db = Database.open(file, OpenOption.CREATE_NEW, ac))
+		{
+			try (Database db2 = Database.open(file, OpenOption.OPEN, ac))
+			{
+				fail("unreachable");
+			}
+
+			db.save(new _Fruit1K("banana", 152));
+			db.commit();
+		}
+
+		try (Database db = Database.open(file, OpenOption.READ_ONLY, ac))
+		{
+			_Fruit1K item = new _Fruit1K("banana");
+			assertTrue(db.get(item));
+			assertEquals(item.calories, 152);
+		}
 	}
 
 
