@@ -25,12 +25,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 		else
 		{
 			mFile = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
-		}
 
-		mBlockSize = aBlockSize;
-
-		if (!aReadOnly)
-		{
 			try
 			{
 				mFileLock = mFile.tryLock();
@@ -40,6 +35,8 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 				throw new FileAlreadyOpenException("Failed to lock file: " + aFile, e);
 			}
 		}
+
+		mBlockSize = aBlockSize;
 	}
 
 
