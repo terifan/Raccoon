@@ -14,7 +14,7 @@ public class Sample
 	{
 		try
 		{
-			Log.LEVEL = 10;
+//			Log.LEVEL = 10;
 
 			AccessCredentials accessCredentials = new AccessCredentials("password");
 

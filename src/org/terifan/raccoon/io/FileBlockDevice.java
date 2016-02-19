@@ -29,13 +29,16 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 		mBlockSize = aBlockSize;
 
-		try
+		if (!aReadOnly)
 		{
-			mFileLock = mFile.lock();
-		}
-		catch (Exception e)
-		{
-			throw new FileAlreadyOpenException("Failed to lock file: " + aFile, e);
+			try
+			{
+				mFileLock = mFile.tryLock();
+			}
+			catch (Exception e)
+			{
+				throw new FileAlreadyOpenException("Failed to lock file: " + aFile, e);
+			}
 		}
 	}
 
@@ -88,13 +91,15 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 				try
 				{
 					mFileLock.release();
+					mFileLock.close();
 					mFileLock = null;
 				}
-				catch (Exception e)
+				catch (Throwable e)
 				{
-					e.printStackTrace(Log.out);
+					Log.e("Unhandled error when releasing file lock", e);
 				}
 			}
+
 			if (mFile != null)
 			{
 				mFile.close();

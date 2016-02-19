@@ -5,6 +5,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.Arrays;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -24,6 +25,11 @@ import org.terifan.raccoon.Table;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.serialization.FieldType;
 import org.terifan.raccoon.util.Log;
+import tests._BigObject1K;
+import tests._Fruit1K;
+import tests._Number1K1D;
+import tests._Number1K2D;
+import tests._Object1K;
 
 
 public class Browser
@@ -45,35 +51,35 @@ public class Browser
 //			{
 //				return;
 //			}
-//			
+//
 //			File file = fileChooser.getSelectedFile();
 //			AccessCredentials ac = new AccessCredentials(password);
 
 			AccessCredentials ac = new AccessCredentials("test");
-			File file = new File("d:/sample.db");
+			File file = new File("d:/sample2.db");
 
-//			try (Database db = Database.open(file, OpenOption.CREATE_NEW))
-//			{
-//				db.save(new _Fruit1K("apple", 52.12));
-//				db.save(new _Fruit1K("orange", 47.78));
-//				db.save(new _Fruit1K("banana", 89.45));
-//				db.save(new _Number1K2D(1, "yellow", 89, "lemon"));
-//				db.save(new _Number1K2D(2, "green", 7, "apple"));
-//				db.save(new _Number1K2D(2, "red", 42, "apple"));
-//				db.save(new _Number1K2D(1, "yellow", 13, "banan"));
-//				db.save(new _Object1K("test", new GregorianCalendar()));
-//				db.save(new _Number1K1D("a", 1));
-//				db.save(new _Number1K1D("b", 2));
-//				db.save(new _Number1K1D("c", 3));
-//				db.save(new _Number1K1D("d", 4));
-//				db.save(new _BigObject1K().random());
-//				db.save(new _BigObject1K().random());
-//				db.save(new _BigObject1K().random());
-//				db.commit();
-//			}
+			try (Database db = Database.open(file, OpenOption.CREATE_NEW, ac))
+			{
+				db.save(new _Fruit1K("apple", 52.12));
+				db.save(new _Fruit1K("orange", 47.78));
+				db.save(new _Fruit1K("banana", 89.45));
+				db.save(new _Number1K2D(1, "yellow", 89, "lemon"));
+				db.save(new _Number1K2D(2, "green", 7, "apple"));
+				db.save(new _Number1K2D(2, "red", 42, "apple"));
+				db.save(new _Number1K2D(1, "yellow", 13, "banan"));
+				db.save(new _Object1K("test", new GregorianCalendar()));
+				db.save(new _Number1K1D("a", 1));
+				db.save(new _Number1K1D("b", 2));
+				db.save(new _Number1K1D("c", 3));
+				db.save(new _Number1K1D("d", 4));
+				db.save(new _BigObject1K().random());
+				db.save(new _BigObject1K().random());
+				db.save(new _BigObject1K().random());
+				db.commit();
+			}
 
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-			
+
 			JFrame frame = new JFrame();
 
 			final Database database = Database.open(file, OpenOption.READ_ONLY, ac);
@@ -114,13 +120,13 @@ public class Browser
 					root.add(node);
 				}
 			}
-			
+
 			JTree tableList = new JTree(root);
 			for (int i = 0; i < tableList.getRowCount(); i++)
 			{
 				tableList.expandRow(i);
 			}
-			
+
 			JTable tableFormat = new JTable(tableFormatModel);
 			JTable tableContent = new JTable(tableContentmodel);
 			tableContent.setAutoCreateRowSorter(true);
@@ -139,7 +145,7 @@ public class Browser
 					tableContentmodel.setNumRows(0);
 
 					Object userObject = ((DefaultMutableTreeNode)e.getPath().getLastPathComponent()).getUserObject();
-					
+
 					if (userObject instanceof Table)
 					{
 						tableContentmodel.setColumnCount(0);
@@ -176,7 +182,7 @@ public class Browser
 							Object[] values = new Object[map.size()];
 							for (int i = 0; i < fields.length; i++)
 							{
-								values[i] = map.get(fields[i].getName()); 
+								values[i] = map.get(fields[i].getName());
 							}
 
 							tableContentmodel.addRow(values);
