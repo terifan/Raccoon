@@ -20,6 +20,7 @@ import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.io.Streams;
+import org.terifan.raccoon.serialization.FieldCategory;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.security.messagedigest.MurmurHash3;
@@ -944,15 +945,22 @@ public class Database implements AutoCloseable
 	}
 
 
-//	public synchronized <E> List<E> listDiscriminators(Class<E> aType) throws IOException
-//	{
-//		ArrayList<E> list = new ArrayList<>();
-//
-//		for (TableMetadata tableMetadata : (List<TableMetadata>)mSystemTable.list(TableMetadata.class))
-//		{
-//			list.add(openTable(tableMetadata, OpenOption.OPEN));
-//		}
-//
-//		return list;
-//	}
+	public synchronized <T> List<T> getDiscriminators(Factory<T> aFactory) throws IOException
+	{
+		ArrayList<T> result = new ArrayList<>();
+
+		String name = aFactory.newInstance().getClass().getName();
+
+		for (TableMetadata tableMetadata : (List<TableMetadata>)mSystemTable.list(TableMetadata.class))
+		{
+			if (name.equals(tableMetadata.getTypeName()))
+			{
+				T instance = aFactory.newInstance();
+				tableMetadata.getMarshaller().unmarshal(tableMetadata.getDiscriminatorKey(), instance, FieldCategory.DISCRIMINATORS);
+				result.add(instance);
+			}
+		}
+
+		return result;
+	}
 }
