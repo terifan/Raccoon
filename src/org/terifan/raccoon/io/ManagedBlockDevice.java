@@ -32,6 +32,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private Marshaller mSuperBlockMarshaller;
 	private String mBlockDeviceLabel;
 
+	private CachingBlockDevice mCachingBlockDevice;
+
 
 	/**
 	 * Create/open a ManagedBlockDevice with an empty label.
@@ -62,6 +64,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mWasCreated = mBlockDevice.length() < ManagedBlockDevice.RESERVED_BLOCKS;
 		mUncommitedAllocations = new HashSet<>();
 		mDoubleCommit = true;
+		mCachingBlockDevice = new CachingBlockDevice(mBlockDevice);
 
 		init();
 	}
@@ -157,6 +160,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		if (mModified)
 		{
+			mCachingBlockDevice.clear();
+
 			rollback();
 		}
 
@@ -231,6 +236,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		mModified = true;
 
+		mCachingBlockDevice.free(aBlockIndex);
+
 		int blockIndex = (int)aBlockIndex;
 
 		for (int i = 0; i < aBlockCount; i++)
@@ -278,7 +285,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		mModified = true;
 
-		mBlockDevice.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mCachingBlockDevice.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 
 		Log.dec();
 	}
@@ -313,7 +320,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.v("read block %d +%d", aBlockIndex, aBufferLength/mBlockSize);
 		Log.inc();
 
-		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mCachingBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 
 		Log.dec();
 	}
@@ -331,6 +338,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		if (mModified)
 		{
+			mCachingBlockDevice.flush();
+
 			Log.i("committing managed block device");
 			Log.inc();
 
@@ -364,6 +373,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		{
 			Log.i("rollbacking block device");
 			Log.inc();
+
+			mCachingBlockDevice.clear();
 
 			mUncommitedAllocations.clear();
 

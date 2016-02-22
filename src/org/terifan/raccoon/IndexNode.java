@@ -1,7 +1,5 @@
-package org.terifan.raccoon.hashtable;
+package org.terifan.raccoon;
 
-import org.terifan.raccoon.Node;
-import org.terifan.raccoon.Stats;
 import org.terifan.raccoon.io.BlockPointer;
 import static org.terifan.raccoon.io.BlockPointer.Types.*;
 

@@ -1,27 +1,21 @@
-package org.terifan.raccoon.hashtable;
+package org.terifan.raccoon;
 
 import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.io.BlockAccessor;
-import org.terifan.raccoon.Entry;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
-import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.util.ByteBufferMap;
 import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.raccoon.util.Result;
-import org.terifan.raccoon.LeafNode;
-import org.terifan.raccoon.Node;
-import org.terifan.raccoon.Stats;
 import org.terifan.raccoon.util.Log;
 import static org.terifan.raccoon.io.BlockPointer.Types.*;
-import org.terifan.raccoon.TransactionId;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-public class HashTable implements AutoCloseable, Iterable<Entry>
+class HashTable implements AutoCloseable, Iterable<Entry>
 {
 	private BlockAccessor mBlockAccessor;
 	private BlockPointer mRootBlockPointer;
@@ -42,7 +36,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	/**
 	 * Create a new HashTable with custom settings.
 	 */
-	public HashTable(IManagedBlockDevice aBlockDevice, TransactionId aTransactionId, boolean aStandAlone, long aHashSeed, int aNodeSize, int aLeafSize, CompressionParam aCompressionParam) throws IOException
+	HashTable(IManagedBlockDevice aBlockDevice, TransactionId aTransactionId, boolean aStandAlone, long aHashSeed, int aNodeSize, int aLeafSize, CompressionParam aCompressionParam) throws IOException
 	{
 		mTransactionId = aTransactionId;
 		mNodeSize = aNodeSize;
@@ -56,7 +50,7 @@ public class HashTable implements AutoCloseable, Iterable<Entry>
 	/**
 	 * Open an existing HashTable or create a new HashTable with default settings.
 	 */
-	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionId aTransactionId, boolean aStandAlone, CompressionParam aCompressionParam) throws IOException
+	HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionId aTransactionId, boolean aStandAlone, CompressionParam aCompressionParam) throws IOException
 	{
 		mTransactionId = aTransactionId;
 

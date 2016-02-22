@@ -1,6 +1,5 @@
 package org.terifan.raccoon;
 
-import java.io.ByteArrayInputStream;
 import org.terifan.raccoon.serialization.FieldCategory;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,7 +10,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import org.terifan.raccoon.hashtable.HashTable;
 import org.terifan.raccoon.io.Blob;
 import org.terifan.raccoon.io.BlobInputStream;
 import org.terifan.raccoon.io.BlobOutputStream;

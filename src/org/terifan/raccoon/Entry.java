@@ -1,10 +1,10 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.hashtable.HashTable;
 import org.terifan.raccoon.io.BlobInputStream;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+
 
 public class Entry
 {
@@ -42,8 +42,8 @@ public class Entry
 	{
 		mValue = aValue;
 	}
-	
-	
+
+
 	public ByteArrayBuffer x()
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(mValue);

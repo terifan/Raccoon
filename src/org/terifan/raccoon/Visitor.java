@@ -1,6 +1,7 @@
-package org.terifan.raccoon.hashtable;
+package org.terifan.raccoon;
 
 import org.terifan.raccoon.io.BlockPointer;
+
 
 interface Visitor
 {
