@@ -3,10 +3,10 @@ package org.terifan.raccoon.io;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
-import org.terifan.raccoon.Node;
 import org.terifan.raccoon.Stats;
 import org.terifan.security.random.ISAAC;
 import org.terifan.security.messagedigest.MurmurHash3;
@@ -78,7 +78,7 @@ public class BlockAccessor
 			mBlockDevice.readBlock(aBlockPointer.getOffset(), buffer, 0, buffer.length, aBlockPointer.getBlockKey());
 			Stats.blockRead++;
 
-			if (MurmurHash3.hash_x86_32(buffer, 0, aBlockPointer.getPhysicalSize(), (int)aBlockPointer.getOffset()) != aBlockPointer.getChecksum())
+			if (digest(buffer, 0, aBlockPointer.getPhysicalSize(), (int)aBlockPointer.getOffset()) != aBlockPointer.getChecksum())
 			{
 				throw new IOException("Checksum error in block " + aBlockPointer);
 			}
@@ -137,7 +137,7 @@ public class BlockAccessor
 
 			BlockPointer blockPointer = new BlockPointer();
 			blockPointer.setCompression(compressorId);
-			blockPointer.setChecksum(MurmurHash3.hash_x86_32(aBuffer, 0, physicalSize, (int)blockIndex));
+			blockPointer.setChecksum(digest(aBuffer, 0, physicalSize, blockIndex));
 			blockPointer.setBlockKey(ISAAC.PRNG.nextLong());
 			blockPointer.setOffset(blockIndex);
 			blockPointer.setPhysicalSize(physicalSize);
@@ -160,6 +160,17 @@ public class BlockAccessor
 		{
 			throw new DatabaseException("Error writing block", e);
 		}
+	}
+
+
+	private int digest(byte[] aBuffer, int aOffset, int aLength, long aBlockIndex)
+	{
+//		return MurmurHash3.hash_x86_32(aBuffer, aOffset, aLength, (int)aBlockIndex);
+
+		CRC32 crc = new CRC32();
+		crc.update((int)aBlockIndex);
+		crc.update(aBuffer, aOffset, aLength);
+		return (int)(crc.getValue() ^ aBlockIndex);
 	}
 
 
