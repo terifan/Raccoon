@@ -13,7 +13,7 @@ public class PerformanceTest
 	{
 		try
 		{
-			try (Database db = Database.open(new File("i:/sample.db"), OpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION))
+			try (Database db = Database.open(new File("i:/sample.db"), OpenOption.CREATE_NEW, CompressionParam.BEST_SPEED))
 			{
 				for (int i = 0; i < 1000000; i++)
 				{

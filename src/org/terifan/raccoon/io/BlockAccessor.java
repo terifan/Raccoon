@@ -9,7 +9,6 @@ import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Stats;
 import org.terifan.security.random.ISAAC;
-import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.raccoon.util.Log;
 
 
@@ -18,14 +17,19 @@ public class BlockAccessor
 	private IManagedBlockDevice mBlockDevice;
 	private CompressionParam mCompressionParam;
 	private int mPageSize;
+	private Cache<Long,byte[]> mCache;
+	private boolean mCacheEnabled;
 
 
 	public BlockAccessor(IManagedBlockDevice aBlockDevice) throws IOException
 	{
 		mBlockDevice = aBlockDevice;
 		mPageSize = mBlockDevice.getBlockSize();
+		mCache = new Cache<>(1024);
 
 		mCompressionParam = CompressionParam.NO_COMPRESSION;
+
+		mCacheEnabled = !false;
 	}
 
 
@@ -57,6 +61,11 @@ public class BlockAccessor
 			mBlockDevice.freeBlock(aBlockPointer.getOffset(), roundUp(aBlockPointer.getPhysicalSize()) / mBlockDevice.getBlockSize());
 			Stats.blockFree++;
 
+			if (mCacheEnabled)
+			{
+				mCache.remove(aBlockPointer.getOffset());
+			}
+
 			Log.dec();
 		}
 		catch (Exception e)
@@ -72,6 +81,18 @@ public class BlockAccessor
 		{
 			Log.v("read block %s", aBlockPointer);
 			Log.inc();
+
+			if (mCacheEnabled)
+			{
+				byte[] copy = mCache.get(aBlockPointer.getOffset());
+
+				if (copy != null)
+				{
+					Log.dec();
+
+					return copy.clone();
+				}
+			}
 
 			byte[] buffer = new byte[roundUp(aBlockPointer.getPhysicalSize())];
 
@@ -116,6 +137,12 @@ public class BlockAccessor
 				result = getCompressor(compressorId).compress(aBuffer, aOffset, aLength, baos);
 			}
 
+			byte[] copy = null;
+			if (mCacheEnabled) // && aType == BlockPointer.Types.NODE_INDIRECT
+			{
+				copy = Arrays.copyOfRange(aBuffer, aOffset, aOffset + aLength);
+			}
+
 			if (result && roundUp(baos.size()) < roundUp(aBuffer.length)) // use the compressed result only if we actual save one page or more
 			{
 				physicalSize = baos.size();
@@ -153,6 +180,11 @@ public class BlockAccessor
 			Stats.blockWrite++;
 
 			Log.dec();
+
+			if (copy != null)
+			{
+				mCache.put(blockPointer.getOffset(), copy);
+			}
 
 			return blockPointer;
 		}
