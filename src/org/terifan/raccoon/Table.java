@@ -34,23 +34,30 @@ public class Table<T> implements Iterable<T>
 	private byte[] mPointer;
 
 
-	Table(Database aDatabase, TableMetadata aTableMetadata, byte[] aPointer) throws IOException
+	Table(Database aDatabase, TableMetadata aTableMetadata, byte[] aPointer)
 	{
-		mOpenOutputStreams = new HashSet<>();
-
-		mDatabase = aDatabase;
-		mTableMetadata = aTableMetadata;
-		mPointer = aPointer;
-
-		mBlockDevice = mDatabase.getBlockDevice();
-		mTableImplementation = new HashTable(mBlockDevice, mPointer, mDatabase.getTransactionId(), false, mDatabase.getParameter(CompressionParam.class, null));
-
-		mBlockAccessor = new BlockAccessor(mBlockDevice);
-
-		CompressionParam parameter = mDatabase.getParameter(CompressionParam.class, null);
-		if (parameter != null)
+		try
 		{
-			mBlockAccessor.setCompressionParam(parameter);
+			mOpenOutputStreams = new HashSet<>();
+
+			mDatabase = aDatabase;
+			mTableMetadata = aTableMetadata;
+			mPointer = aPointer;
+
+			mBlockDevice = mDatabase.getBlockDevice();
+			mTableImplementation = new HashTable(mBlockDevice, mPointer, mDatabase.getTransactionId(), false, mDatabase.getParameter(CompressionParam.class, null));
+
+			mBlockAccessor = new BlockAccessor(mBlockDevice);
+
+			CompressionParam parameter = mDatabase.getParameter(CompressionParam.class, null);
+			if (parameter != null)
+			{
+				mBlockAccessor.setCompressionParam(parameter);
+			}
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseIOException(e);
 		}
 	}
 
@@ -177,30 +184,37 @@ public class Table<T> implements Iterable<T>
 	}
 
 
-	public BlobOutputStream saveBlob(T aEntityKey) throws IOException
+	public BlobOutputStream saveBlob(T aEntityKey)
 	{
-		BlobOutputStream out = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId());
-
-		synchronized (this)
+		try
 		{
-			mOpenOutputStreams.add(out);
-		}
-
-		out.setOnCloseListener((aHeader)->
-		{
-			Log.v("write blob entry");
-
-			byte[] oldValue = putWrap(getKeys(aEntityKey), aHeader, PTR_BLOB);
-
-			deleteIfBlob(oldValue);
+			BlobOutputStream out = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId());
 
 			synchronized (this)
 			{
-				mOpenOutputStreams.remove(out);
+				mOpenOutputStreams.add(out);
 			}
-		});
 
-		return out;
+			out.setOnCloseListener((aHeader)->
+			{
+				Log.v("write blob entry");
+
+				byte[] oldValue = putWrap(getKeys(aEntityKey), aHeader, PTR_BLOB);
+
+				deleteIfBlob(oldValue);
+
+				synchronized (this)
+				{
+					mOpenOutputStreams.remove(out);
+				}
+			});
+
+			return out;
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseIOException(e);
+		}
 	}
 
 
@@ -257,7 +271,7 @@ public class Table<T> implements Iterable<T>
 	}
 
 
-	public void clear() throws IOException
+	public void clear()
 	{
 		mTableImplementation.clear();
 	}
@@ -275,7 +289,7 @@ public class Table<T> implements Iterable<T>
 	}
 
 
-	boolean commit() throws IOException
+	boolean commit()
 	{
 		synchronized (this)
 		{
@@ -285,9 +299,16 @@ public class Table<T> implements Iterable<T>
 			}
 		}
 
-		if (!mTableImplementation.commit())
+		try
 		{
-			return false;
+			if (!mTableImplementation.commit())
+			{
+				return false;
+			}
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseIOException(e);
 		}
 
 		byte[] newPointer = mTableImplementation.getTableHeader();
@@ -306,7 +327,7 @@ public class Table<T> implements Iterable<T>
 	}
 
 
-	int size() throws IOException
+	int size()
 	{
 		return mTableImplementation.size();
 	}

@@ -261,7 +261,7 @@ public class Database implements AutoCloseable
 	}
 
 
-	private Table openTable(Class aType, Object aDiscriminator, OpenOption aOptions) throws IOException
+	private Table openTable(Class aType, Object aDiscriminator, OpenOption aOptions)
 	{
 		checkOpen();
 
@@ -281,7 +281,7 @@ public class Database implements AutoCloseable
 	}
 
 
-	private Table openTable(TableMetadata aTableMetadata, OpenOption aOptions) throws IOException
+	private Table openTable(TableMetadata aTableMetadata, OpenOption aOptions)
 	{
 		Table table = mOpenTables.get(aTableMetadata);
 
@@ -346,7 +346,7 @@ public class Database implements AutoCloseable
 	/**
 	 * Persists all pending changes. It's necessary to commit changes on a regular basis to avoid data loss.
 	 */
-	public void commit() throws IOException
+	public void commit()
 	{
 		checkOpen();
 
@@ -375,7 +375,14 @@ public class Database implements AutoCloseable
 
 				updateSuperBlock();
 
-				mBlockDevice.commit();
+				try
+				{
+					mBlockDevice.commit();
+				}
+				catch (IOException e)
+				{
+					throw new DatabaseIOException(e);
+				}
 
 				mChanged = false;
 
@@ -490,7 +497,7 @@ public class Database implements AutoCloseable
 	 * @return
 	 *   true if the entity didn't previously existed.
 	 */
-	public boolean save(Object aEntity) throws IOException
+	public boolean save(Object aEntity)
 	{
 		mWriteLock.lock();
 		try
@@ -511,7 +518,7 @@ public class Database implements AutoCloseable
 	 * @return
 	 *   true if the entity was found.
 	 */
-	public boolean get(Object aEntity) throws IOException
+	public boolean tryGet(Object aEntity)
 	{
 		mReadLock.lock();
 		try
@@ -531,12 +538,36 @@ public class Database implements AutoCloseable
 
 
 	/**
+	 * 
+	 * @throws NoSuchEntityException
+	 *   if the entity cannot be found
+	 */
+	public <T> T get(T aEntity) throws DatabaseException
+	{
+		mReadLock.lock();
+		try
+		{
+			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.OPEN);
+			if (table == null || !table.get(aEntity))
+			{
+				throw new NoSuchEntityException("No entity found");
+			}
+			return aEntity;
+		}
+		finally
+		{
+			mReadLock.unlock();
+		}
+	}
+
+
+	/**
 	 * Retrieves an entity.
 	 *
 	 * @return
 	 *   true if the entity was found.
 	 */
-	public boolean contains(Object aEntity) throws IOException
+	public boolean contains(Object aEntity)
 	{
 		mReadLock.lock();
 		try
@@ -561,7 +592,7 @@ public class Database implements AutoCloseable
 	 * @return
 	 *   true if the entity was removed.
 	 */
-	public boolean remove(Object aEntity) throws IOException
+	public boolean remove(Object aEntity)
 	{
 		mWriteLock.lock();
 		try
@@ -583,7 +614,7 @@ public class Database implements AutoCloseable
 	/**
 	 * Remove all entries of the entities type.
 	 */
-	public void clear(Class aType) throws IOException
+	public void clear(Class aType)
 	{
 		clearImpl(aType, null);
 	}
@@ -592,13 +623,13 @@ public class Database implements AutoCloseable
 	/**
 	 * Remove all entries of the entities type and possible it's discriminator.
 	 */
-	public void clear(Object aEntity) throws IOException
+	public void clear(Object aEntity)
 	{
 		clearImpl(aEntity.getClass(), aEntity);
 	}
 
 
-	private void clearImpl(Class aType, Object aEntity) throws IOException
+	private void clearImpl(Class aType, Object aEntity)
 	{
 		mWriteLock.lock();
 		try
@@ -619,7 +650,7 @@ public class Database implements AutoCloseable
 	/**
 	 * The contents of the stream is associated with the key found in the entity provided. The stream will persist the entity when it's closed.
 	 */
-	public BlobOutputStream saveBlob(Object aEntity) throws IOException
+	public BlobOutputStream saveBlob(Object aEntity)
 	{
 		return openTable(aEntity.getClass(), aEntity, OpenOption.CREATE).saveBlob(aEntity);
 	}
@@ -628,7 +659,7 @@ public class Database implements AutoCloseable
 	/**
 	 * Save the contents of the stream with the key defined by the entity provided.
 	 */
-	public boolean save(Object aKeyEntity, InputStream aInputStream) throws IOException
+	public boolean save(Object aKeyEntity, InputStream aInputStream)
 	{
 		mWriteLock.lock();
 		try
@@ -646,7 +677,7 @@ public class Database implements AutoCloseable
 	/**
 	 * Return an InputStream to the value associated to the key defined by the entity provided.
 	 */
-	public InputStream read(Object aEntity) throws IOException
+	public InputStream read(Object aEntity)
 	{
 		mReadLock.lock();
 		try
@@ -670,48 +701,14 @@ public class Database implements AutoCloseable
 
 			return new ByteArrayInputStream(buffer);
 		}
+		catch (IOException e)
+		{
+			throw new DatabaseIOException(e);
+		}
 		finally
 		{
 			mReadLock.unlock();
 		}
-
-//		mReadLock.lock();
-//		try
-//		{
-//			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.OPEN);
-//			if (table == null)
-//			{
-//				return null;
-//			}
-//
-//			InputStream in = table.read(aEntity);
-//
-//			return new InputStream()
-//			{
-//				@Override
-//				public int read() throws IOException
-//				{
-//					return in.read();
-//				}
-//
-//				@Override
-//				public void close() throws IOException
-//				{
-//					try
-//					{
-//						in.close();
-//					}
-//					finally
-//					{
-//						mReadLock.unlock();
-//					}
-//				}
-//			};
-//		}
-//		finally
-//		{
-////			mReadLock.unlock();
-//		}
 	}
 
 
@@ -723,34 +720,23 @@ public class Database implements AutoCloseable
 
 	public <T> Iterable<T> iterable(Class<T> aType, T aDiscriminator)
 	{
-		Table table;
-		try
+		Table table = openTable(aType, aDiscriminator, OpenOption.OPEN);
+		if (table == null)
 		{
-			table = openTable(aType, aDiscriminator, OpenOption.OPEN);
-			if (table == null)
-			{
-				return null;
-			}
-		}
-		catch (IOException e)
-		{
-			throw new IllegalStateException(e);
+			return null;
 		}
 
-		return () ->
-		{
-			return table.iterator();
-		};
+		return ()->table.iterator();
 	}
 
 
-	public <T> Iterator<T> iterator(Class<T> aType) throws IOException
+	public <T> Iterator<T> iterator(Class<T> aType)
 	{
 		return iterator(aType, null);
 	}
 
 
-	public <T> Iterator<T> iterator(Class<T> aType, T aDiscriminator) throws IOException
+	public <T> Iterator<T> iterator(Class<T> aType, T aDiscriminator)
 	{
 		mReadLock.lock();
 		try
@@ -771,7 +757,7 @@ public class Database implements AutoCloseable
 	}
 
 
-//	public Iterator<Entry> iteratorRaw(Table aTable) throws IOException
+//	public Iterator<Entry> iteratorRaw(Table aTable)
 //	{
 //		mReadLock.lock();
 //		try
@@ -785,13 +771,13 @@ public class Database implements AutoCloseable
 //	}
 
 
-//	public <T> Stream<? extends T> stream(Class<T> aType) throws IOException
+//	public <T> Stream<? extends T> stream(Class<T> aType)
 //	{
 //		return stream(aType, null);
 //	}
 //
 //
-//	public <T> Stream<? extends T> stream(Class<T> aType, T aDiscriminator) throws IOException
+//	public <T> Stream<? extends T> stream(Class<T> aType, T aDiscriminator)
 //	{
 //		Table table = openTable(aType, aDiscriminator, OpenOption.OPEN);
 //
@@ -804,13 +790,13 @@ public class Database implements AutoCloseable
 //	}
 
 
-	public <T> List<T> list(Class<T> aType) throws IOException
+	public <T> List<T> list(Class<T> aType)
 	{
 		return list(aType, null);
 	}
 
 
-	public <T> List<T> list(Class<T> aType, T aEntity) throws IOException
+	public <T> List<T> list(Class<T> aType, T aEntity)
 	{
 		mReadLock.lock();
 		try
@@ -871,13 +857,13 @@ public class Database implements AutoCloseable
 	}
 
 
-	public int size(Class aType) throws IOException
+	public int size(Class aType)
 	{
 		return openTable(aType, null, OpenOption.OPEN).size();
 	}
 
 
-	public int size(Object aDiscriminator) throws IOException
+	public int size(Object aDiscriminator)
 	{
 		return openTable(aDiscriminator.getClass(), aDiscriminator, OpenOption.OPEN).size();
 	}
@@ -932,20 +918,15 @@ public class Database implements AutoCloseable
 	}
 
 
-	public synchronized List<Table> getTables() throws IOException
+	public synchronized List<Table> getTables()
 	{
 		ArrayList<Table> tables = new ArrayList<>();
-
-		for (TableMetadata tableMetadata : (List<TableMetadata>)mSystemTable.list(TableMetadata.class))
-		{
-			tables.add(openTable(tableMetadata, OpenOption.OPEN));
-		}
-
+		mSystemTable.list(TableMetadata.class).stream().forEach(e->tables.add(openTable((TableMetadata)e, OpenOption.OPEN)));
 		return tables;
 	}
 
 
-	public synchronized <T> List<T> getDiscriminators(Factory<T> aFactory) throws IOException
+	public synchronized <T> List<T> getDiscriminators(Factory<T> aFactory)
 	{
 		ArrayList<T> result = new ArrayList<>();
 

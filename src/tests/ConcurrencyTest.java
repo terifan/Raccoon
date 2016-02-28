@@ -72,7 +72,7 @@ public class ConcurrencyTest
 
 			for (String key : keys)
 			{
-				if (!db.get(new _Fruit1K(key)))
+				if (!db.tryGet(new _Fruit1K(key)))
 				{
 					synchronized (ConcurrencyTest.class)
 					{
@@ -110,7 +110,7 @@ public class ConcurrencyTest
 			{
 				try
 				{
-					db.get(new _Fruit1K(keys[rnd.nextInt(keys.length)]));
+					db.tryGet(new _Fruit1K(keys[rnd.nextInt(keys.length)]));
 					count++;
 				}
 				catch (Exception e)

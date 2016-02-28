@@ -46,7 +46,7 @@ public class DatabaseNGTest
 		{
 			_Fruit1K apple = new _Fruit1K("apple");
 
-			assertTrue(database.get(apple));
+			assertTrue(database.tryGet(apple));
 			assertEquals(apple._name, "apple");
 			assertEquals(apple.calories, 123.0);
 		}
@@ -68,12 +68,12 @@ public class DatabaseNGTest
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
 			_Fruit2K redApple = new _Fruit2K("red", "apple");
-			assertTrue(database.get(redApple));
+			assertTrue(database.tryGet(redApple));
 			assertEquals("apple", redApple._name);
 			assertEquals(123, redApple.value);
 
 			_Fruit2K greenApple = new _Fruit2K("green", "apple");
-			assertTrue(database.get(greenApple));
+			assertTrue(database.tryGet(greenApple));
 			assertEquals("apple", greenApple._name);
 			assertEquals(456, greenApple.value);
 		}
@@ -102,7 +102,7 @@ public class DatabaseNGTest
 			for (int i = 0; i < aSize; i++)
 			{
 				_Fruit2K apple = new _Fruit2K("red", "apple-"+i);
-				assertTrue(database.get(apple));
+				assertTrue(database.tryGet(apple));
 				assertEquals(apple._name, "apple-"+i);
 				assertEquals(apple.value, i);
 			}
@@ -130,12 +130,12 @@ public class DatabaseNGTest
 			for (int i = 0; i < 10000; i++)
 			{
 				_Fruit2K apple = new _Fruit2K("red", "apple-"+i);
-				assertTrue(database.get(apple));
+				assertTrue(database.tryGet(apple));
 				assertEquals(apple._name, "apple-"+i);
 				assertEquals(apple.value, i);
 
 				_Animal1K animal = new _Animal1K("dog-"+i);
-				assertTrue(database.get(animal));
+				assertTrue(database.tryGet(animal));
 				assertEquals(animal._name, "dog-"+i);
 				assertEquals(animal.number, i);
 			}
@@ -167,7 +167,7 @@ public class DatabaseNGTest
 			{
 				_Fruit2K item = new _Fruit2K(entry._color, entry._name);
 
-				assertTrue(database.get(item));
+				assertTrue(database.tryGet(item));
 				assertEquals(item.shape, entry.shape);
 				assertEquals(item.taste, entry.taste);
 				assertEquals(item.value, entry.value);
@@ -216,18 +216,11 @@ public class DatabaseNGTest
 				{
 					executor.submit(()->
 					{
-						try
-						{
-							int j = n.incrementAndGet();
-							_Fruit2K apple = new _Fruit2K("red", "apple-"+j);
-							assertTrue(database.get(apple));
-							assertEquals(apple._name, "apple-"+j);
-							assertEquals(apple.value, j);
-						}
-						catch (IOException e)
-						{
-							throw new RuntimeException(e);
-						}
+						int j = n.incrementAndGet();
+						_Fruit2K apple = new _Fruit2K("red", "apple-"+j);
+						assertTrue(database.tryGet(apple));
+						assertEquals(apple._name, "apple-"+j);
+						assertEquals(apple.value, j);
 					});
 				}
 			}
@@ -256,7 +249,7 @@ public class DatabaseNGTest
 			for (int i = 0; i < numberNames.length; i++)
 			{
 				_Number1K1D entity = new _Number1K1D(i);
-				assertTrue(database.get(entity));
+				assertTrue(database.tryGet(entity));
 				assertEquals(entity.name, numberNames[i]);
 				assertEquals(entity._number, i);
 				assertEquals(entity._odd, (i&1)==1);
@@ -310,7 +303,7 @@ public class DatabaseNGTest
 		try (Database db = Database.open(device, OpenOption.OPEN, accessCredentials))
 		{
 			_Fruit2K fruit = new _Fruit2K("red", "apple");
-			assertTrue(db.get(fruit));
+			assertTrue(db.tryGet(fruit));
 			assertEquals(fruit.value, 3467);
 		}
 	}
@@ -331,7 +324,7 @@ public class DatabaseNGTest
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
 			_KeyValue1K blob = new _KeyValue1K("my blob");
-			assertTrue(database.get(blob));
+			assertTrue(database.tryGet(blob));
 			assertEquals(blob._name, "my blob");
 			assertEquals(blob.content, content);
 		}
@@ -448,7 +441,7 @@ public class DatabaseNGTest
 
 		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
 		{
-			db.get(out);
+			db.tryGet(out);
 
 			db.remove(out);
 			db.commit();
@@ -633,7 +626,7 @@ public class DatabaseNGTest
 		try (Database db = Database.open(file, OpenOption.READ_ONLY, ac))
 		{
 			_Fruit1K item = new _Fruit1K("banana");
-			assertTrue(db.get(item));
+			assertTrue(db.tryGet(item));
 			assertEquals(item.calories, 152);
 		}
 	}

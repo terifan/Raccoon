@@ -138,7 +138,7 @@ public class Marshaller
 	}
 
 
-	public void unmarshal(byte[] aBuffer, Object aOutputObject, FieldCategory aFieldCategory) throws IOException
+	public void unmarshal(byte[] aBuffer, Object aOutputObject, FieldCategory aFieldCategory)
 	{
 		unmarshal(new ByteArrayBuffer(aBuffer), aOutputObject, aFieldCategory);
 	}
