@@ -11,7 +11,7 @@ import org.terifan.raccoon.Key;
 import org.terifan.raccoon.util.Log;
 
 
-public class TypeDeclarations implements Externalizable
+public class TableDescriptor implements Externalizable
 {
 	private final static long serialVersionUID = 1L;
 
@@ -19,12 +19,12 @@ public class TypeDeclarations implements Externalizable
 	private FieldType[] mFields;
 
 
-	public TypeDeclarations()
+	public TableDescriptor()
 	{
 	}
 
 
-	public TypeDeclarations(Class aType, Field[] aFields)
+	public TableDescriptor(Class aType, Field[] aFields)
 	{
 		Log.v("create type declarations for %s", aType);
 		Log.inc();
