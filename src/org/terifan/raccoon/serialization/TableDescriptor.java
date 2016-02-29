@@ -9,6 +9,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.util.Log;
@@ -17,7 +18,7 @@ import org.terifan.raccoon.util.Log;
 public class TableDescriptor implements Externalizable
 {
 	private String mName;
-	private FieldType[] mFieldTypes;
+	private LinkedHashMap<Integer,FieldType> mFieldTypes;
 
 	private final static HashMap<Class,ContentType> VALUE_TYPES = new HashMap<>();
 	private final static HashMap<Class,ContentType> CLASS_TYPES = new HashMap<>();
@@ -57,9 +58,8 @@ public class TableDescriptor implements Externalizable
 		ArrayList<Field> fields = loadFields(aType);
 
 		mName = aType.getName();
-
-		mFieldTypes = new FieldType[fields.size()];
-		short i = 0;
+		mFieldTypes = new LinkedHashMap<>();
+		int i = 0;
 
 		for (Field field : fields)
 		{
@@ -72,7 +72,7 @@ public class TableDescriptor implements Externalizable
 			categorizeContentType(field, fieldType);
 			classifyContentType(field, fieldType);
 
-			mFieldTypes[i++] = fieldType;
+			mFieldTypes.put(i++, fieldType);
 
 			Log.v("type found: %s", fieldType);
 		}
@@ -85,7 +85,7 @@ public class TableDescriptor implements Externalizable
 	{
 		for (Field field : loadFields(aType))
 		{
-			for (FieldType fieldType : mFieldTypes)
+			for (FieldType fieldType : mFieldTypes.values())
 			{
 				if (fieldType.getName().equals(field.getName()))
 				{
@@ -115,7 +115,7 @@ public class TableDescriptor implements Externalizable
 	}
 
 
-	public FieldType[] getTypes()
+	public HashMap<Integer,FieldType> getTypes()
 	{
 		return mFieldTypes;
 	}
@@ -130,14 +130,16 @@ public class TableDescriptor implements Externalizable
 	@Override
 	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
 	{
-		mName = aIn.readUTF();
-		mFieldTypes = new FieldType[aIn.readShort()];
+		mFieldTypes = new LinkedHashMap<>();
 
-		for (int i = 0; i < mFieldTypes.length; i++)
+		mName = aIn.readUTF();
+		short len = aIn.readShort();
+
+		for (int i = 0; i < len; i++)
 		{
 			FieldType tmp = new FieldType();
 			tmp.readExternal(aIn);
-			mFieldTypes[tmp.getIndex()] = tmp;
+			mFieldTypes.put(tmp.getIndex(), tmp);
 		}
 	}
 
@@ -146,9 +148,9 @@ public class TableDescriptor implements Externalizable
 	public void writeExternal(ObjectOutput aOut) throws IOException
 	{
 		aOut.writeUTF(mName);
-		aOut.writeShort(mFieldTypes.length);
+		aOut.writeShort(mFieldTypes.size());
 
-		for (FieldType fieldType : mFieldTypes)
+		for (FieldType fieldType : mFieldTypes.values())
 		{
 			fieldType.writeExternal(aOut);
 		}
@@ -159,7 +161,7 @@ public class TableDescriptor implements Externalizable
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
-		for (FieldType fieldType : mFieldTypes)
+		for (FieldType fieldType : mFieldTypes.values())
 		{
 			if (sb.length() > 0)
 			{

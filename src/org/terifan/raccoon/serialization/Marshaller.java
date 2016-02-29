@@ -10,17 +10,23 @@ import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import tests._BigObject1K;
-import tests._Number1K2D;
 
 
 public class Marshaller
 {
-	private TableDescriptor mTypeDeclarations;
+	private TableDescriptor mTableDescriptor;
 
 
 	public Marshaller(TableDescriptor aTypeDeclarations)
 	{
-		mTypeDeclarations = aTypeDeclarations;
+		mTableDescriptor = aTypeDeclarations;
+	}
+
+
+	@Deprecated
+	public byte[] marshal(Object aObject, Collection<FieldCategory> aFieldCategories)
+	{
+		return marshal(new ByteArrayBuffer(16), aObject, aFieldCategories).trim().array();
 	}
 
 
@@ -31,7 +37,7 @@ public class Marshaller
 			Log.v("marshal entity fields %s", aFieldCategories);
 			Log.inc();
 
-			for (FieldType fieldType : mTypeDeclarations.getTypes())
+			for (FieldType fieldType : mTableDescriptor.getTypes().values())
 			{
 				if (aFieldCategories.contains(fieldType.getCategory()))
 				{
@@ -66,6 +72,7 @@ public class Marshaller
 	}
 
 
+	@Deprecated
 	public void unmarshal(byte[] aBuffer, Object aOutputObject, Collection<FieldCategory> aFieldCategories)
 	{
 		unmarshal(new ByteArrayBuffer(aBuffer), aOutputObject, aFieldCategories);
@@ -81,13 +88,20 @@ public class Marshaller
 
 			for (int index; (index = aBuffer.readVar32()) != -1;)
 			{
-				FieldType fieldType = mTypeDeclarations.getTypes()[index];
+				FieldType fieldType = mTableDescriptor.getTypes().get(index);
 
 				Object value = FieldReader.readField(fieldType, aBuffer);
 
-				if (aObject != null && fieldType.getField() != null && aFieldCategories.contains(fieldType.getCategory()))
+				if (aObject != null && aFieldCategories.contains(fieldType.getCategory()))
 				{
-					fieldType.getField().set(aObject, value);
+					if (fieldType.getField() != null)
+					{
+						fieldType.getField().set(aObject, value);
+					}
+					else
+					{
+						// todo
+					}
 				}
 			}
 
@@ -98,39 +112,6 @@ public class Marshaller
 			throw new DatabaseException("Failed to reconstruct entity: " + (aObject == null ? null : aObject.getClass()), e);
 		}
 	}
-
-
-//	public HashMap<String, Object> unmarshal(Entry aEntry) throws IOException
-//	{
-//		Log.v("unmarshal entity");
-//		Log.inc();
-//
-//		HashMap<String,Object> map = new HashMap<>();
-//
-//		ByteArrayBuffer buffer = new ByteArrayBuffer(aEntry.getKey());
-//
-//		for (FieldType fieldType : mTypeDeclarations.getTypes())
-//		{
-//			if (fieldType.getCategory() == FieldCategory.KEY)
-//			{
-//				map.put(fieldType.getName(), FieldReader.readField(fieldType, buffer, null));
-//			}
-//		}
-//
-//		buffer = aEntry.x();
-//
-//		for (FieldType fieldType : mTypeDeclarations.getTypes())
-//		{
-//			if (fieldType.getCategory() == FieldCategory.VALUE || fieldType.getCategory() == FieldCategory.DISCRIMINATOR)
-//			{
-//				map.put(fieldType.getName(), FieldReader.readField(fieldType, buffer, null));
-//			}
-//		}
-//
-//		Log.dec();
-//
-//		return map;
-//	}
 	
 	
 	public static void main(String... args)
@@ -164,6 +145,8 @@ public class Marshaller
 			TableDescriptor td = new TableDescriptor();
 			td.readExternal(new ObjectInputStream(new ByteArrayInputStream(formatData)));
 			td.mapFields(Class.forName(td.getName()));
+			
+			Log.out.println(td);
 
 			Marshaller marshaller = new Marshaller(td);
 

@@ -9,7 +9,7 @@ import java.lang.reflect.Field;
 
 public class FieldType implements Comparable<FieldType>, Externalizable
 {
-	private short mIndex;
+	private int mIndex;
 	private String mName;
 	private boolean mNullable;
 	private boolean mArray;
@@ -37,13 +37,13 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	}
 
 
-	public short getIndex()
+	public int getIndex()
 	{
 		return mIndex;
 	}
 
 
-	public void setIndex(short aIndex)
+	public void setIndex(int aIndex)
 	{
 		mIndex = aIndex;
 	}
