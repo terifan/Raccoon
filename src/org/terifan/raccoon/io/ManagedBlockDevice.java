@@ -8,8 +8,8 @@ import java.util.Date;
 import java.util.HashSet;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.security.random.ISAAC;
-import org.terifan.raccoon.serialization.FieldCategory;
-import org.terifan.raccoon.serialization.Marshaller;
+import org.terifan.raccoon.serialization.old.FieldCategory;
+import org.terifan.raccoon.serialization.old.Marshaller;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 

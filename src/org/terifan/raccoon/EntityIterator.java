@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
 import java.util.Iterator;
-import org.terifan.raccoon.serialization.FieldCategory;
+import org.terifan.raccoon.serialization.old.FieldCategory;
 
 
 public class EntityIterator<T> implements Iterator<T>

@@ -2,10 +2,10 @@ package org.terifan.raccoon;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import org.terifan.raccoon.serialization.Marshaller;
-import org.terifan.raccoon.serialization.FieldCategory;
-import org.terifan.raccoon.serialization.FieldType;
-import org.terifan.raccoon.serialization.TypeDeclarations;
+import org.terifan.raccoon.serialization.old.Marshaller;
+import org.terifan.raccoon.serialization.old.FieldCategory;
+import org.terifan.raccoon.serialization.old.FieldType;
+import org.terifan.raccoon.serialization.old.TypeDeclarations;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 

@@ -1,4 +1,4 @@
-package org.terifan.raccoon.serialization;
+package org.terifan.raccoon.serialization.old;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

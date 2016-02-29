@@ -23,7 +23,7 @@ import org.terifan.raccoon.Entry;
 import org.terifan.raccoon.OpenOption;
 import org.terifan.raccoon.Table;
 import org.terifan.raccoon.io.AccessCredentials;
-import org.terifan.raccoon.serialization.FieldType;
+import org.terifan.raccoon.serialization.old.FieldType;
 import org.terifan.raccoon.util.Log;
 import tests._BigObject1K;
 import tests._Fruit1K;
@@ -56,27 +56,27 @@ public class Browser
 //			AccessCredentials ac = new AccessCredentials(password);
 
 			AccessCredentials ac = new AccessCredentials("test");
-			File file = new File("d:/sample2.db");
+			File file = new File("d:/testdata/out/sample.alb");
 
-			try (Database db = Database.open(file, OpenOption.CREATE_NEW, ac))
-			{
-				db.save(new _Fruit1K("apple", 52.12));
-				db.save(new _Fruit1K("orange", 47.78));
-				db.save(new _Fruit1K("banana", 89.45));
-				db.save(new _Number1K2D(1, "yellow", 89, "lemon"));
-				db.save(new _Number1K2D(2, "green", 7, "apple"));
-				db.save(new _Number1K2D(2, "red", 42, "apple"));
-				db.save(new _Number1K2D(1, "yellow", 13, "banan"));
-				db.save(new _Object1K("test", new GregorianCalendar()));
-				db.save(new _Number1K1D("a", 1));
-				db.save(new _Number1K1D("b", 2));
-				db.save(new _Number1K1D("c", 3));
-				db.save(new _Number1K1D("d", 4));
-				db.save(new _BigObject1K().random());
-				db.save(new _BigObject1K().random());
-				db.save(new _BigObject1K().random());
-				db.commit();
-			}
+//			try (Database db = Database.open(file, OpenOption.CREATE_NEW, ac))
+//			{
+//				db.save(new _Fruit1K("apple", 52.12));
+//				db.save(new _Fruit1K("orange", 47.78));
+//				db.save(new _Fruit1K("banana", 89.45));
+//				db.save(new _Number1K2D(1, "yellow", 89, "lemon"));
+//				db.save(new _Number1K2D(2, "green", 7, "apple"));
+//				db.save(new _Number1K2D(2, "red", 42, "apple"));
+//				db.save(new _Number1K2D(1, "yellow", 13, "banan"));
+//				db.save(new _Object1K("test", new GregorianCalendar()));
+//				db.save(new _Number1K1D("a", 1));
+//				db.save(new _Number1K1D("b", 2));
+//				db.save(new _Number1K1D("c", 3));
+//				db.save(new _Number1K1D("d", 4));
+//				db.save(new _BigObject1K().random());
+//				db.save(new _BigObject1K().random());
+//				db.save(new _BigObject1K().random());
+//				db.commit();
+//			}
 
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 

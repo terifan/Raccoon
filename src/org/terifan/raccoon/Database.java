@@ -20,7 +20,7 @@ import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.io.Streams;
-import org.terifan.raccoon.serialization.FieldCategory;
+import org.terifan.raccoon.serialization.old.FieldCategory;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.security.messagedigest.MurmurHash3;

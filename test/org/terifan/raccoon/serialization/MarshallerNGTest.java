@@ -1,5 +1,8 @@
 package org.terifan.raccoon.serialization;
 
+import org.terifan.raccoon.serialization.old.FieldCategory;
+import org.terifan.raccoon.serialization.old.TypeDeclarations;
+import org.terifan.raccoon.serialization.old.Marshaller;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import tests._BigObject1K;

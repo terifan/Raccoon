@@ -4,15 +4,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.util.Log;
@@ -21,22 +14,9 @@ import org.terifan.raccoon.util.Log;
 public class TypeDeclarations implements Externalizable
 {
 	private final static long serialVersionUID = 1L;
-	private final static HashMap<String,Class> PRIMITIVE_TYPES;
 
-	static
-	{
-		PRIMITIVE_TYPES = new HashMap<>();
-		PRIMITIVE_TYPES.put(Boolean.TYPE.getSimpleName(), Boolean.TYPE);
-		PRIMITIVE_TYPES.put(Byte.TYPE.getSimpleName(), Byte.TYPE);
-		PRIMITIVE_TYPES.put(Short.TYPE.getSimpleName(), Short.TYPE);
-		PRIMITIVE_TYPES.put(Character.TYPE.getSimpleName(), Character.TYPE);
-		PRIMITIVE_TYPES.put(Integer.TYPE.getSimpleName(), Integer.TYPE);
-		PRIMITIVE_TYPES.put(Long.TYPE.getSimpleName(), Long.TYPE);
-		PRIMITIVE_TYPES.put(Float.TYPE.getSimpleName(), Float.TYPE);
-		PRIMITIVE_TYPES.put(Double.TYPE.getSimpleName(), Double.TYPE);
-	}
-
-	private FieldType[] mTypes;
+	private String mName;
+	private FieldType[] mFields;
 
 
 	public TypeDeclarations()
@@ -49,54 +29,20 @@ public class TypeDeclarations implements Externalizable
 		Log.v("create type declarations for %s", aType);
 		Log.inc();
 
-		mTypes = new FieldType[aFields.length];
+		mName = aType.getName();
+		mFields = new FieldType[aFields.length];
 
 		int fieldIndex = 0;
 		for (Field field : aFields)
 		{
 			FieldType fieldType = new FieldType();
 
-			mTypes[fieldIndex++] = fieldType;
-
 			fieldType.setName(field.getName());
-			fieldType.setType(field.getType());
-			boolean array = fieldType.getType().isArray();
-			while (fieldType.getType().isArray())
-			{
-				fieldType.setType(fieldType.getType().getComponentType());
-				fieldType.setDepth(fieldType.getDepth() + 1);
-			}
-			fieldType.setNullable(!fieldType.getType().isPrimitive());
-			fieldType.setCategory(classify(field));
 
-			if (array)
-			{
-				fieldType.setFormat(FieldFormat.ARRAY);
-			}
-			else if (List.class.isAssignableFrom(fieldType.getType()))
-			{
-				getGenericType(field, fieldType, 0);
-				fieldType.setFormat(FieldFormat.LIST);
-			}
-			else if (Set.class.isAssignableFrom(fieldType.getType()))
-			{
-				getGenericType(field, fieldType, 0);
-				fieldType.setFormat(FieldFormat.SET);
-			}
-			else if (Map.class.isAssignableFrom(fieldType.getType()))
-			{
-				getGenericType(field, fieldType, 0);
-				getGenericType(field, fieldType, 1);
-				fieldType.setFormat(FieldFormat.MAP);
-			}
-			else if (fieldType.getType().isPrimitive() || isValidType(fieldType.getType()))
-			{
-				fieldType.setFormat(FieldFormat.VALUE);
-			}
-			else
-			{
-				throw new IllegalArgumentException("Unsupported type: " + field);
-			}
+			categorizeContentType(field, fieldType);
+			classifyContentType(field, fieldType);
+
+			mFields[fieldIndex++] = fieldType;
 
 			Log.v("type found: %s", fieldType);
 		}
@@ -107,18 +53,25 @@ public class TypeDeclarations implements Externalizable
 
 	public FieldType[] getTypes()
 	{
-		return mTypes;
+		return mFields;
+	}
+
+
+	public String getName()
+	{
+		return mName;
 	}
 
 
 	@Override
 	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
 	{
-		mTypes = new FieldType[aIn.readInt()];
-		for (int i = 0; i < mTypes.length; i++)
+		mName = aIn.readUTF();
+		mFields = new FieldType[aIn.readShort()];
+		for (int i = 0; i < mFields.length; i++)
 		{
-			mTypes[i] = new FieldType();
-			mTypes[i].readExternal(aIn);
+			mFields[i] = new FieldType();
+			mFields[i].readExternal(aIn);
 		}
 	}
 
@@ -126,8 +79,9 @@ public class TypeDeclarations implements Externalizable
 	@Override
 	public void writeExternal(ObjectOutput aOut) throws IOException
 	{
-		aOut.writeInt(mTypes.length);
-		for (FieldType fieldType : mTypes)
+		aOut.writeUTF(mName);
+		aOut.writeShort(mFields.length);
+		for (FieldType fieldType : mFields)
 		{
 			fieldType.writeExternal(aOut);
 		}
@@ -138,7 +92,7 @@ public class TypeDeclarations implements Externalizable
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
-		for (FieldType fieldType : mTypes)
+		for (FieldType fieldType : mFields)
 		{
 			if (sb.length() > 0)
 			{
@@ -150,78 +104,70 @@ public class TypeDeclarations implements Externalizable
 	}
 
 
-	private void getGenericType(Field aField, FieldType aFieldType, int aIndex)
+	private void categorizeContentType(Field aField, FieldType aFieldType)
 	{
-		if (!(aField.getGenericType() instanceof ParameterizedType))
+		if (aField.getAnnotation(Discriminator.class) != null)
 		{
-			throw new IllegalArgumentException("Generic type must be parameterized: " + aField);
+			aFieldType.setCategory(FieldCategory.DISCRIMINATOR);
+		}
+		else if (aField.getAnnotation(Key.class) != null)
+		{
+			aFieldType.setCategory(FieldCategory.KEY);
+		}
+		else
+		{
+			aFieldType.setCategory(FieldCategory.VALUE);
+		}
+	}
+
+
+	private void classifyContentType(Field aField, FieldType aFieldType)
+	{
+		Class<?> type = aField.getType();
+
+		if (type.isPrimitive())
+		{
+			ContentType primitiveType = ContentType.types.get(type);
+			if (primitiveType != null)
+			{
+				aFieldType.setContentType(primitiveType);
+				return;
+			}
 		}
 
-		if (aFieldType.getComponentType() == null)
+		aFieldType.setNullable(true);
+
+		if (type.isArray())
 		{
-			aFieldType.setComponentType(new FieldType[2]);
+			ContentType componentType = ContentType.types.get(type.getComponentType());
+			if (componentType != null)
+			{
+				aFieldType.setArray(true);
+				aFieldType.setContentType(componentType);
+				return;
+			}
+
+			if (Date.class.isAssignableFrom(type.getComponentType()))
+			{
+				aFieldType.setArray(true);
+				aFieldType.setContentType(ContentType.DATE);
+				return;
+			}
 		}
 
-		FieldType componentType = new FieldType();
-		aFieldType.getComponentType()[aIndex] = componentType;
-
-		String typeName = ((ParameterizedType)aField.getGenericType()).getActualTypeArguments()[aIndex].getTypeName();
-
-		while (typeName.endsWith("[]"))
+		ContentType classType = ContentType.classTypes.get(type);
+		if (classType != null)
 		{
-			typeName = typeName.substring(0, typeName.length() - 2);
-			componentType.setDepth(componentType.getDepth() + 1);
-			componentType.setFormat(FieldFormat.ARRAY);
-		}
-
-		Class primitiveType = PRIMITIVE_TYPES.get(typeName);
-		componentType.setNullable(primitiveType == null);
-
-		if (primitiveType != null)
-		{
-			componentType.setType(primitiveType);
+			aFieldType.setContentType(classType);
 			return;
 		}
 
-		try
+		if (Date.class.isAssignableFrom(type))
 		{
-			Class<?> type = Class.forName(typeName);
-
-			if (!isValidType(type))
-			{
-				throw new IllegalArgumentException("Unsupported type: " + type);
-			}
-
-			componentType.setType(type);
+			aFieldType.setContentType(ContentType.DATE);
+			return;
 		}
-		catch (ClassNotFoundException e)
-		{
-			throw new DatabaseException(e);
-		}
-	}
 
-
-	private boolean isValidType(Class aType)
-	{
-		return Number.class.isAssignableFrom(aType)
-			|| aType == String.class
-			|| aType == Character.class
-			|| aType == Boolean.class
-			|| aType == Date.class
-			|| Serializable.class.isAssignableFrom(aType);
-	}
-
-
-	private FieldCategory classify(Field aField)
-	{
-		if (aField.getAnnotation(Key.class) != null)
-		{
-			return FieldCategory.KEYS;
-		}
-		if (aField.getAnnotation(Discriminator.class) != null)
-		{
-			return FieldCategory.DISCRIMINATORS;
-		}
-		return FieldCategory.VALUES;
+		aFieldType.setContentType(ContentType.OBJECT);
 	}
 }

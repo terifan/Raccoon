@@ -1,4 +1,4 @@
-package org.terifan.raccoon.serialization;
+package org.terifan.raccoon.serialization.old;
 
 import java.util.Collection;
 import java.util.Map;

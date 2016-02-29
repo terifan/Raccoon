@@ -1,4 +1,4 @@
-package org.terifan.raccoon.serialization;
+package org.terifan.raccoon.serialization.old;
 
 import java.util.Collection;
 import org.terifan.raccoon.util.ByteArrayBuffer;

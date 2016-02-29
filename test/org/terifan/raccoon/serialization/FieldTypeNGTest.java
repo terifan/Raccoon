@@ -1,5 +1,7 @@
 package org.terifan.raccoon.serialization;
 
+import org.terifan.raccoon.serialization.old.TypeDeclarations;
+import org.terifan.raccoon.serialization.old.Marshaller;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

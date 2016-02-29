@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.serialization.FieldCategory;
+import org.terifan.raccoon.serialization.old.FieldCategory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
