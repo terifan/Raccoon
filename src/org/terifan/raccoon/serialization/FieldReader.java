@@ -62,6 +62,10 @@ class FieldReader
 				}
 			}
 		}
+		else if (aFieldType.getContentType() == ContentType.BYTE)
+		{
+			aInput.read((byte[])array);
+		}
 		else
 		{
 			for (int i = 0; i < len; i++)
