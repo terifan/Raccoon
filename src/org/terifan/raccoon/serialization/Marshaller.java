@@ -1,89 +1,105 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.Collection;
 import org.terifan.raccoon.DatabaseException;
-import org.terifan.raccoon.Entry;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+import tests._BigObject1K;
+import tests._Number1K2D;
 
 
 public class Marshaller
 {
-	
+	private TableDescriptor mTypeDeclarations;
 
-//	private LinkedHashMap<String, Field> mFields;
-//	private TypeDeclarations mTypeDeclarations;
-//
-//
-//	public Marshaller(TypeDeclarations aTypeDeclarations)
-//	{
-//		mTypeDeclarations = aTypeDeclarations;
-//	}
-//
-//
-//	public Marshaller(Class aType)
-//	{
-//		if (aType != null)
-//		{
-//			loadFields(aType);
-//		}
-//
-//		Field[] keys = mFields.values().toArray(new Field[mFields.size()]);
-//		mTypeDeclarations = new TypeDeclarations(aType, keys);
-//	}
-//
-//
-//	@Deprecated
-//	public byte[] marshal(Object aObject, FieldCategory aFieldCategory)
-//	{
-//		return marshal(new ByteArrayBuffer(16), aObject, aFieldCategory).trim().array();
-//	}
-//
-//
-//	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer, Object aObject, FieldCategory aFieldCategory)
-//	{
-//		if (aObject != null && mFields == null)
-//		{
-//			loadFields(aObject.getClass());
-//		}
-//
-//		try
-//		{
-//			Log.v("marshal entity fields %s", aFieldCategory);
-//			Log.inc();
-//
-//			for (FieldType fieldType : mTypeDeclarations.getTypes())
-//			{
-//				if (fieldType.getCategory() == aFieldCategory || aFieldCategory == FieldCategory.DISCRIMINATOR_AND_VALUES && (fieldType.getCategory() == FieldCategory.VALUE || fieldType.getCategory() == FieldCategory.DISCRIMINATOR))
-//				{
-//					Field field = mFields.get(fieldType.getName());
-//					if (field == null)
-//					{
-//						throw new DatabaseException("Field not found: " + fieldType.getName() + ", " + mFields.keySet());
-//					}
-//
-//					Object value = field.get(aObject);
-//					FieldWriter.writeField(fieldType, aBuffer, value);
-//				}
-//			}
-//
-//			aBuffer.align();
-//
-//			Log.dec();
-//
-//			return aBuffer;
-//		}
-//		catch (IllegalAccessException e)
-//		{
-//			throw new DatabaseException(e);
-//		}
-//	}
-//
-//
+
+	public Marshaller(TableDescriptor aTypeDeclarations)
+	{
+		mTypeDeclarations = aTypeDeclarations;
+	}
+
+
+	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer, Object aObject, Collection<FieldCategory> aFieldCategories)
+	{
+		try
+		{
+			Log.v("marshal entity fields %s", aFieldCategories);
+			Log.inc();
+
+			for (FieldType fieldType : mTypeDeclarations.getTypes())
+			{
+				if (aFieldCategories.contains(fieldType.getCategory()))
+				{
+					Field field = fieldType.getField();
+
+					if (field == null)
+					{
+						throw new DatabaseException("");
+					}
+
+					Object value = field.get(aObject);
+
+					if (value != null)
+					{
+						aBuffer.writeVar32(fieldType.getIndex());
+
+						FieldWriter.writeField(fieldType, value, aBuffer);
+					}
+				}
+			}
+
+			aBuffer.writeVar32(-1);
+
+			Log.dec();
+
+			return aBuffer;
+		}
+		catch (IllegalAccessException e)
+		{
+			throw new DatabaseException(e);
+		}
+	}
+
+
+	public void unmarshal(byte[] aBuffer, Object aOutputObject, Collection<FieldCategory> aFieldCategories)
+	{
+		unmarshal(new ByteArrayBuffer(aBuffer), aOutputObject, aFieldCategories);
+	}
+
+
+	public void unmarshal(ByteArrayBuffer aBuffer, Object aObject, Collection<FieldCategory> aFieldCategories)
+	{
+		try
+		{
+			Log.v("unmarshal entity fields");
+			Log.inc();
+
+			for (int index; (index = aBuffer.readVar32()) != -1;)
+			{
+				FieldType fieldType = mTypeDeclarations.getTypes()[index];
+
+				Object value = FieldReader.readField(fieldType, aBuffer);
+
+				if (aObject != null && fieldType.getField() != null && aFieldCategories.contains(fieldType.getCategory()))
+				{
+					fieldType.getField().set(aObject, value);
+				}
+			}
+
+			Log.dec();
+		}
+		catch (Exception e)
+		{
+			throw new DatabaseException("Failed to reconstruct entity: " + (aObject == null ? null : aObject.getClass()), e);
+		}
+	}
+
+
 //	public HashMap<String, Object> unmarshal(Entry aEntry) throws IOException
 //	{
 //		Log.v("unmarshal entity");
@@ -115,92 +131,49 @@ public class Marshaller
 //
 //		return map;
 //	}
-//
-//
-//	public HashMap<String, Object> unmarshalDISCRIMINATORS(byte[] aBuffer) throws IOException
-//	{
-//		Log.v("unmarshal entity");
-//		Log.inc();
-//
-//		HashMap<String,Object> map = new HashMap<>();
-//
-//		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer);
-//
-//		for (FieldType fieldType : mTypeDeclarations.getTypes())
-//		{
-//			if (fieldType.getCategory() == FieldCategory.DISCRIMINATOR)
-//			{
-//				map.put(fieldType.getName(), FieldReader.readField(fieldType, buffer, null));
-//			}
-//		}
-//
-//		Log.dec();
-//
-//		return map;
-//	}
-//
-//
-//	public void unmarshal(byte[] aBuffer, Object aOutputObject, FieldCategory aFieldCategory)
-//	{
-//		unmarshal(new ByteArrayBuffer(aBuffer), aOutputObject, aFieldCategory);
-//	}
-//
-//
-//	public void unmarshal(ByteArrayBuffer aBuffer, Object aOutputObject, FieldCategory aFieldCategory)
-//	{
-//		if (aOutputObject != null && mFields == null)
-//		{
-//			loadFields(aOutputObject.getClass());
-//		}
-//
-//		try
-//		{
-//			Log.v("unmarshal entity");
-//			Log.inc();
-//
-//			for (FieldType fieldType : mTypeDeclarations.getTypes())
-//			{
-//				if (fieldType.getCategory() == aFieldCategory || aFieldCategory == FieldCategory.DISCRIMINATOR_AND_VALUES && (fieldType.getCategory() == FieldCategory.VALUE || fieldType.getCategory() == FieldCategory.DISCRIMINATOR))
-//				{
-//					Field field = mFields.get(fieldType.getName());
-//					Object value = FieldReader.readField(fieldType, aBuffer, field);
-//
-//					if (field != null && aOutputObject != null)
-//					{
-//						field.set(aOutputObject, value);
-//					}
-//				}
-//			}
-//
-//			Log.dec();
-//		}
-//		catch (IOException | IllegalArgumentException | IllegalAccessException e)
-//		{
-//			throw new DatabaseException("Failed to reconstruct entity: " + (aOutputObject == null ? null : aOutputObject.getClass()), e);
-//		}
-//	}
-//
-//
-//	public TypeDeclarations getTypeDeclarations()
-//	{
-//		return mTypeDeclarations;
-//	}
-//
-//
-//	private void loadFields(Class aType) throws SecurityException
-//	{
-//		mFields = new LinkedHashMap<>();
-//
-//		for (Field field : aType.getDeclaredFields())
-//		{
-//			if ((field.getModifiers() & (Modifier.TRANSIENT | Modifier.STATIC | Modifier.FINAL)) != 0)
-//			{
-//				continue;
-//			}
-//
-//			field.setAccessible(true);
-//
-//			mFields.put(field.getName(), field);
-//		}
-//	}
+	
+	
+	public static void main(String... args)
+	{
+		try
+		{
+			byte[] formatData;
+			byte[] entryData;
+
+			{
+				TableDescriptor td = new TableDescriptor(_BigObject1K.class);
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				try (ObjectOutputStream oos = new ObjectOutputStream(baos))
+				{
+					td.writeExternal(oos);
+				}
+
+				formatData = baos.toByteArray();
+
+				Marshaller marshaller = new Marshaller(td);
+
+				ByteArrayBuffer buffer = new ByteArrayBuffer(16);
+				marshaller.marshal(buffer, new _BigObject1K().random(), FieldCategoryFilter.ALL);
+//				marshaller.marshal(buffer, new _Number1K2D(15, "red", 12, "apple"), FieldCategoryFilter.ALL);
+	
+				entryData = buffer.trim().array();
+			}			
+
+			Log.hexDump(entryData);
+			
+			TableDescriptor td = new TableDescriptor();
+			td.readExternal(new ObjectInputStream(new ByteArrayInputStream(formatData)));
+			td.mapFields(Class.forName(td.getName()));
+
+			Marshaller marshaller = new Marshaller(td);
+
+			Object object = Class.forName(td.getName()).newInstance();
+			marshaller.unmarshal(entryData, object, FieldCategoryFilter.ALL);
+			Log.out.println(object);
+		}
+		catch (Throwable e)
+		{
+			e.printStackTrace(System.out);
+		}
+	}
 }

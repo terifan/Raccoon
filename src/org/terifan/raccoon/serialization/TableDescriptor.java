@@ -5,7 +5,10 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.util.Log;
@@ -13,36 +16,63 @@ import org.terifan.raccoon.util.Log;
 
 public class TableDescriptor implements Externalizable
 {
-	private final static long serialVersionUID = 1L;
-
 	private String mName;
-	private FieldType[] mFields;
+	private FieldType[] mFieldTypes;
 
+	private final static HashMap<Class,ContentType> VALUE_TYPES = new HashMap<>();
+	private final static HashMap<Class,ContentType> CLASS_TYPES = new HashMap<>();
+
+	static
+	{
+		VALUE_TYPES.put(Boolean.TYPE, ContentType.BOOLEAN);
+		VALUE_TYPES.put(Byte.TYPE, ContentType.BYTE);
+		VALUE_TYPES.put(Short.TYPE, ContentType.SHORT);
+		VALUE_TYPES.put(Character.TYPE, ContentType.CHAR);
+		VALUE_TYPES.put(Integer.TYPE, ContentType.INT);
+		VALUE_TYPES.put(Long.TYPE, ContentType.LONG);
+		VALUE_TYPES.put(Float.TYPE, ContentType.FLOAT);
+		VALUE_TYPES.put(Double.TYPE, ContentType.DOUBLE);
+
+		CLASS_TYPES.put(Boolean.class, ContentType.BOOLEAN);
+		CLASS_TYPES.put(Byte.class, ContentType.BYTE);
+		CLASS_TYPES.put(Short.class, ContentType.SHORT);
+		CLASS_TYPES.put(Character.class, ContentType.CHAR);
+		CLASS_TYPES.put(Integer.class, ContentType.INT);
+		CLASS_TYPES.put(Long.class, ContentType.LONG);
+		CLASS_TYPES.put(Float.class, ContentType.FLOAT);
+		CLASS_TYPES.put(Double.class, ContentType.DOUBLE);
+	}
+	
 
 	public TableDescriptor()
 	{
 	}
 
 
-	public TableDescriptor(Class aType, Field[] aFields)
+	public TableDescriptor(Class aType)
 	{
 		Log.v("create type declarations for %s", aType);
 		Log.inc();
 
-		mName = aType.getName();
-		mFields = new FieldType[aFields.length];
+		ArrayList<Field> fields = loadFields(aType);
 
-		int fieldIndex = 0;
-		for (Field field : aFields)
+		mName = aType.getName();
+
+		mFieldTypes = new FieldType[fields.size()];
+		short i = 0;
+
+		for (Field field : fields)
 		{
 			FieldType fieldType = new FieldType();
-
+			fieldType.setIndex(i);
+			fieldType.setField(field);
 			fieldType.setName(field.getName());
+			fieldType.setDescription(field.getType().getName());
 
 			categorizeContentType(field, fieldType);
 			classifyContentType(field, fieldType);
 
-			mFields[fieldIndex++] = fieldType;
+			mFieldTypes[i++] = fieldType;
 
 			Log.v("type found: %s", fieldType);
 		}
@@ -51,9 +81,43 @@ public class TableDescriptor implements Externalizable
 	}
 
 
+	public void mapFields(Class aType)
+	{
+		for (Field field : loadFields(aType))
+		{
+			for (FieldType fieldType : mFieldTypes)
+			{
+				if (fieldType.getName().equals(field.getName()))
+				{
+					fieldType.setField(field);
+				}
+			}
+		}
+	}
+
+
+	private ArrayList<Field> loadFields(Class aType)
+	{
+		ArrayList<Field> fields = new ArrayList<>();
+
+		for (Field field : aType.getDeclaredFields())
+		{
+			if ((field.getModifiers() & (Modifier.TRANSIENT | Modifier.STATIC | Modifier.FINAL)) != 0)
+			{
+				continue;
+			}
+
+			field.setAccessible(true);
+			fields.add(field);
+		}
+
+		return fields;
+	}
+
+
 	public FieldType[] getTypes()
 	{
-		return mFields;
+		return mFieldTypes;
 	}
 
 
@@ -67,11 +131,13 @@ public class TableDescriptor implements Externalizable
 	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
 	{
 		mName = aIn.readUTF();
-		mFields = new FieldType[aIn.readShort()];
-		for (int i = 0; i < mFields.length; i++)
+		mFieldTypes = new FieldType[aIn.readShort()];
+
+		for (int i = 0; i < mFieldTypes.length; i++)
 		{
-			mFields[i] = new FieldType();
-			mFields[i].readExternal(aIn);
+			FieldType tmp = new FieldType();
+			tmp.readExternal(aIn);
+			mFieldTypes[tmp.getIndex()] = tmp;
 		}
 	}
 
@@ -80,8 +146,9 @@ public class TableDescriptor implements Externalizable
 	public void writeExternal(ObjectOutput aOut) throws IOException
 	{
 		aOut.writeUTF(mName);
-		aOut.writeShort(mFields.length);
-		for (FieldType fieldType : mFields)
+		aOut.writeShort(mFieldTypes.length);
+
+		for (FieldType fieldType : mFieldTypes)
 		{
 			fieldType.writeExternal(aOut);
 		}
@@ -92,7 +159,7 @@ public class TableDescriptor implements Externalizable
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
-		for (FieldType fieldType : mFields)
+		for (FieldType fieldType : mFieldTypes)
 		{
 			if (sb.length() > 0)
 			{
@@ -127,7 +194,8 @@ public class TableDescriptor implements Externalizable
 
 		if (type.isPrimitive())
 		{
-			ContentType primitiveType = ContentType.types.get(type);
+			ContentType primitiveType = VALUE_TYPES.get(type);
+
 			if (primitiveType != null)
 			{
 				aFieldType.setContentType(primitiveType);
@@ -135,37 +203,60 @@ public class TableDescriptor implements Externalizable
 			}
 		}
 
-		aFieldType.setNullable(true);
-
 		if (type.isArray())
 		{
-			ContentType componentType = ContentType.types.get(type.getComponentType());
-			if (componentType != null)
+			type = type.getComponentType();
+
+			if (!type.isArray())
 			{
-				aFieldType.setArray(true);
-				aFieldType.setContentType(componentType);
+				ContentType contentType = VALUE_TYPES.get(type);
+
+				if (contentType != null)
+				{
+					aFieldType.setArray(true);
+					aFieldType.setContentType(contentType);
+					return;
+				}
+
+				if (type == String.class)
+				{
+					aFieldType.setArray(true);
+					aFieldType.setContentType(ContentType.STRING);
+					aFieldType.setNullable(true);
+					return;
+				}
+
+				if (Date.class.isAssignableFrom(type))
+				{
+					aFieldType.setArray(true);
+					aFieldType.setContentType(ContentType.DATE);
+					aFieldType.setNullable(true);
+					return;
+				}
+			}
+		}
+		else
+		{
+			aFieldType.setNullable(true);
+
+			ContentType contentType = CLASS_TYPES.get(type);
+			if (contentType != null)
+			{
+				aFieldType.setContentType(contentType);
 				return;
 			}
 
-			if (Date.class.isAssignableFrom(type.getComponentType()))
+			if (type == String.class)
 			{
-				aFieldType.setArray(true);
+				aFieldType.setContentType(ContentType.STRING);
+				return;
+			}
+			
+			if (Date.class.isAssignableFrom(type))
+			{
 				aFieldType.setContentType(ContentType.DATE);
 				return;
 			}
-		}
-
-		ContentType classType = ContentType.classTypes.get(type);
-		if (classType != null)
-		{
-			aFieldType.setContentType(classType);
-			return;
-		}
-
-		if (Date.class.isAssignableFrom(type))
-		{
-			aFieldType.setContentType(ContentType.DATE);
-			return;
 		}
 
 		aFieldType.setContentType(ContentType.OBJECT);

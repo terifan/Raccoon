@@ -180,7 +180,7 @@ public final class ByteArrayBuffer extends InputStream
 	}
 
 
-	public int readVar32() throws IOException
+	public int readVar32()
 	{
 		if (FORCE_FIXED)
 		{
@@ -197,7 +197,7 @@ public final class ByteArrayBuffer extends InputStream
 			}
 		}
 
-		throw new IOException("Variable int exceeds maximum length");
+		throw new IllegalStateException("Variable int exceeds maximum length");
 	}
 
 
@@ -227,7 +227,7 @@ public final class ByteArrayBuffer extends InputStream
 	}
 
 
-	public long readVar64() throws IOException
+	public long readVar64()
 	{
 		if (FORCE_FIXED)
 		{
@@ -244,7 +244,7 @@ public final class ByteArrayBuffer extends InputStream
 			}
 		}
 
-		throw new IOException("Variable long exceeds maximum length");
+		throw new IllegalStateException("Variable long exceeds maximum length");
 	}
 
 
@@ -497,7 +497,7 @@ public final class ByteArrayBuffer extends InputStream
 	}
 
 
-	public int readBits(int aCount) throws IOException
+	public int readBits(int aCount)
 	{
 		assert aCount <= 24;
 
@@ -513,7 +513,7 @@ public final class ByteArrayBuffer extends InputStream
 			if (mBitBuffer == -1)
 			{
 				mReadBitCount = 0;
-				throw new IOException("Premature end of stream");
+				throw new IllegalStateException("Premature end of stream");
 			}
 		}
 

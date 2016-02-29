@@ -1,8 +1,5 @@
 package org.terifan.raccoon.serialization.old;
 
-import org.terifan.raccoon.serialization.old.FieldReader;
-import org.terifan.raccoon.serialization.old.FieldWriter;
-import org.terifan.raccoon.serialization.old.FieldType;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;

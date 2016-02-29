@@ -4,17 +4,20 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.lang.reflect.Field;
 
 
 public class FieldType implements Comparable<FieldType>, Externalizable
 {
-	private final static long serialVersionUID = 1L;
-
+	private short mIndex;
 	private String mName;
 	private boolean mNullable;
 	private boolean mArray;
 	private ContentType mContentType;
 	private FieldCategory mCategory;
+	private String mDescription;
+	
+	private transient Field mField;
 
 
 	public FieldType()
@@ -22,37 +25,27 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	}
 
 
-	@Override
-	public void writeExternal(ObjectOutput aOut) throws IOException
+	public Field getField()
 	{
-		int flags =
-			  (mNullable ? 1 : 0)
-			+ (mArray ? 2 : 0);
-		aOut.write(flags);
-
-		aOut.writeUTF(mName);
-		aOut.write(mContentType.ordinal());
-		aOut.write(mCategory.ordinal());
+		return mField;
 	}
 
 
-	@Override
-	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
+	public void setField(Field aField)
 	{
-		int flags = aIn.read();
-		mNullable = (flags & 1) != 0;
-		mArray = (flags & 2) != 0;
-
-		mName = aIn.readUTF();
-		mContentType = ContentType.values()[aIn.read()];
-		mCategory = FieldCategory.values()[aIn.read()];
+		mField = aField;
 	}
 
 
-	@Override
-	public int compareTo(FieldType aOther)
+	public short getIndex()
 	{
-		return mName.compareTo(aOther.mName);
+		return mIndex;
+	}
+
+
+	public void setIndex(short aIndex)
+	{
+		mIndex = aIndex;
 	}
 
 
@@ -112,10 +105,60 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 
 	public void setArray(boolean aArray)
 	{
-		this.mArray = aArray;
+		mArray = aArray;
 	}
 
 
+	public String getDescription()
+	{
+		return mDescription;
+	}
+
+
+	public void setDescription(String aDescription)
+	{
+		mDescription = aDescription;
+	}
+
+
+	@Override
+	public void writeExternal(ObjectOutput aOutput) throws IOException
+	{
+		int flags =
+			  (mNullable ? 1 : 0)
+			+ (mArray ? 2 : 0);
+		aOutput.write(flags);
+
+		aOutput.writeShort(mIndex);
+		aOutput.writeUTF(mName);
+		aOutput.write(mContentType.ordinal());
+		aOutput.write(mCategory.ordinal());
+		aOutput.writeUTF(mDescription);
+	}
+
+
+	@Override
+	public void readExternal(ObjectInput aInput) throws IOException, ClassNotFoundException
+	{
+		int flags = aInput.read();
+		mNullable = (flags & 1) != 0;
+		mArray = (flags & 2) != 0;
+
+		mIndex = aInput.readShort();
+		mName = aInput.readUTF();
+		mContentType = ContentType.values()[aInput.read()];
+		mCategory = FieldCategory.values()[aInput.read()];
+		mDescription = aInput.readUTF();
+	}
+
+
+	@Override
+	public int compareTo(FieldType aOther)
+	{
+		return mName.compareTo(aOther.mName);
+	}
+
+	
 	@Override
 	public String toString()
 	{

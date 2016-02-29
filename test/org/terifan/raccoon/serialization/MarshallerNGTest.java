@@ -26,14 +26,7 @@ public class MarshallerNGTest
 
 		assertEquals(out.mString, in.mString);
 		assertEquals(out.mDate, in.mDate);
-		assertEquals(out.mDateList, in.mDateList);
-		assertEquals(out.mDateMap, in.mDateMap);
 		assertEquals(out.mString, in.mString);
-		assertEquals(out.mStringList, in.mStringList);
-		assertEquals(out.mStringMap, in.mStringMap);
 		assertEquals(out.mDouble, in.mDouble);
-		assertEquals(out.mDoubleList, in.mDoubleList);
-		assertEquals(out.mDoubleMap, in.mDoubleMap);
-		assertEquals(out.mStringMapArray.values().iterator().next(), in.mStringMapArray.values().iterator().next());
 	}
 }
