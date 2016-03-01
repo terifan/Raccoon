@@ -16,7 +16,8 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	private ContentType mContentType;
 	private FieldCategory mCategory;
 	private String mDescription;
-	
+	private int mDepth;
+
 	private transient Field mField;
 
 
@@ -121,6 +122,18 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	}
 
 
+	public int getDepth()
+	{
+		return mDepth;
+	}
+
+
+	public void setDepth(int aDepth)
+	{
+		mDepth = aDepth;
+	}
+
+
 	@Override
 	public void writeExternal(ObjectOutput aOutput) throws IOException
 	{
@@ -134,6 +147,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 		aOutput.write(mContentType.ordinal());
 		aOutput.write(mCategory.ordinal());
 		aOutput.writeUTF(mDescription);
+		aOutput.write(mDepth);
 	}
 
 
@@ -149,6 +163,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 		mContentType = ContentType.values()[aInput.read()];
 		mCategory = FieldCategory.values()[aInput.read()];
 		mDescription = aInput.readUTF();
+		mDepth = aInput.read();
 	}
 
 
@@ -158,7 +173,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 		return mName.compareTo(aOther.mName);
 	}
 
-	
+
 	@Override
 	public String toString()
 	{

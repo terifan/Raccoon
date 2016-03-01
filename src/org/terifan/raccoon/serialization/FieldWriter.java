@@ -14,7 +14,7 @@ class FieldWriter
 	{
 		if (aFieldType.isArray())
 		{
-			writeArray(aValue, aOutput, aFieldType);
+			writeArray(aValue, aOutput, aFieldType, 1);
 		}
 		else
 		{
@@ -23,13 +23,13 @@ class FieldWriter
 	}
 
 
-	private static void writeArray(Object aValue, ByteArrayBuffer aOutput, FieldType aFieldType) throws ArrayIndexOutOfBoundsException, IllegalArgumentException
+	private static void writeArray(Object aValue, ByteArrayBuffer aOutput, FieldType aFieldType, int aLevel) throws ArrayIndexOutOfBoundsException, IllegalArgumentException
 	{
 		int len = Array.getLength(aValue);
-		
+
 		aOutput.writeVar32(len);
-		
-		if (aFieldType.isNullable())
+
+		if (aLevel < aFieldType.getDepth() || aFieldType.isNullable())
 		{
 			for (int i = 0; i < len; i++)
 			{
@@ -37,7 +37,22 @@ class FieldWriter
 			}
 
 			aOutput.align();
+		}
 
+		if (aLevel < aFieldType.getDepth())
+		{
+			for (int i = 0; i < len; i++)
+			{
+				Object value = Array.get(aValue, i);
+
+				if (value != null)
+				{
+					writeArray(value, aOutput, aFieldType, aLevel + 1);
+				}
+			}
+		}
+		else if (aFieldType.isNullable())
+		{
 			for (int i = 0; i < len; i++)
 			{
 				Object value = Array.get(aValue, i);
@@ -57,7 +72,7 @@ class FieldWriter
 		}
 	}
 
-	
+
 	private static void writeValue(FieldType aFieldType, Object aValue, ByteArrayBuffer aOutput)
 	{
 		switch (aFieldType.getContentType())

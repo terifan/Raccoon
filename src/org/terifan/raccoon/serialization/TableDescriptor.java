@@ -20,11 +20,23 @@ public class TableDescriptor implements Externalizable
 	private String mName;
 	private LinkedHashMap<Integer,FieldType> mFieldTypes;
 
-	private final static HashMap<Class,ContentType> VALUE_TYPES = new HashMap<>();
-	private final static HashMap<Class,ContentType> CLASS_TYPES = new HashMap<>();
+	final static HashMap<Class,ContentType> VALUE_TYPES = new HashMap<>();
+	final static HashMap<Class,ContentType> CLASS_TYPES = new HashMap<>();
+	final static HashMap<ContentType,Class> TYPES = new HashMap<>();
 
 	static
 	{
+		TYPES.put(ContentType.BOOLEAN, Boolean.TYPE);
+		TYPES.put(ContentType.BYTE, Byte.TYPE);
+		TYPES.put(ContentType.SHORT, Short.TYPE);
+		TYPES.put(ContentType.CHAR, Character.TYPE);
+		TYPES.put(ContentType.INT, Integer.TYPE);
+		TYPES.put(ContentType.LONG, Long.TYPE);
+		TYPES.put(ContentType.FLOAT, Float.TYPE);
+		TYPES.put(ContentType.DOUBLE, Double.TYPE);
+		TYPES.put(ContentType.STRING, String.class);
+		TYPES.put(ContentType.DATE, Date.class);
+
 		VALUE_TYPES.put(Boolean.TYPE, ContentType.BOOLEAN);
 		VALUE_TYPES.put(Byte.TYPE, ContentType.BYTE);
 		VALUE_TYPES.put(Short.TYPE, ContentType.SHORT);
@@ -43,7 +55,7 @@ public class TableDescriptor implements Externalizable
 		CLASS_TYPES.put(Float.class, ContentType.FLOAT);
 		CLASS_TYPES.put(Double.class, ContentType.DOUBLE);
 	}
-	
+
 
 	public TableDescriptor()
 	{
@@ -194,10 +206,16 @@ public class TableDescriptor implements Externalizable
 	{
 		Class<?> type = aField.getType();
 
+		while (type.isArray())
+		{
+			aFieldType.setArray(true);
+			aFieldType.setDepth(aFieldType.getDepth() + 1);
+			type = type.getComponentType();
+		}
+
 		if (type.isPrimitive())
 		{
 			ContentType primitiveType = VALUE_TYPES.get(type);
-
 			if (primitiveType != null)
 			{
 				aFieldType.setContentType(primitiveType);
@@ -205,62 +223,24 @@ public class TableDescriptor implements Externalizable
 			}
 		}
 
-		if (type.isArray())
+		aFieldType.setNullable(true);
+
+		ContentType contentType = CLASS_TYPES.get(type);
+		if (contentType != null)
 		{
-			type = type.getComponentType();
-
-			if (!type.isArray())
-			{
-				ContentType contentType = VALUE_TYPES.get(type);
-
-				if (contentType != null)
-				{
-					aFieldType.setArray(true);
-					aFieldType.setContentType(contentType);
-					return;
-				}
-
-				if (type == String.class)
-				{
-					aFieldType.setArray(true);
-					aFieldType.setContentType(ContentType.STRING);
-					aFieldType.setNullable(true);
-					return;
-				}
-
-				if (Date.class.isAssignableFrom(type))
-				{
-					aFieldType.setArray(true);
-					aFieldType.setContentType(ContentType.DATE);
-					aFieldType.setNullable(true);
-					return;
-				}
-			}
+			aFieldType.setContentType(contentType);
+		}
+		else if (type == String.class)
+		{
+			aFieldType.setContentType(ContentType.STRING);
+		}
+		else if (Date.class.isAssignableFrom(type))
+		{
+			aFieldType.setContentType(ContentType.DATE);
 		}
 		else
 		{
-			aFieldType.setNullable(true);
-
-			ContentType contentType = CLASS_TYPES.get(type);
-			if (contentType != null)
-			{
-				aFieldType.setContentType(contentType);
-				return;
-			}
-
-			if (type == String.class)
-			{
-				aFieldType.setContentType(ContentType.STRING);
-				return;
-			}
-			
-			if (Date.class.isAssignableFrom(type))
-			{
-				aFieldType.setContentType(ContentType.DATE);
-				return;
-			}
+			aFieldType.setContentType(ContentType.OBJECT);
 		}
-
-		aFieldType.setContentType(ContentType.OBJECT);
 	}
 }

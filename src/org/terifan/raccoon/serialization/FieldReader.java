@@ -15,7 +15,9 @@ class FieldReader
 
 		if (aFieldType.isArray())
 		{
-			value = readArray(aInput, aFieldType);
+			Class type = TableDescriptor.TYPES.get(aFieldType.getContentType());
+
+			value = readArray(aInput, aFieldType, 1, type);
 		}
 		else
 		{
@@ -26,32 +28,49 @@ class FieldReader
 	}
 
 
-	private static Object readArray(ByteArrayBuffer aInput, FieldType aFieldType) throws NegativeArraySizeException, IllegalArgumentException, ArrayIndexOutOfBoundsException
+	private static Object readArray(ByteArrayBuffer aInput, FieldType aFieldType, int aLevel, Class<?> aComponentType)
 	{
 		int len = aInput.readVar32();
-		
+
 		Object array;
-		
+
 		if (aFieldType.getField() == null)
 		{
 			array = null;
 		}
 		else
 		{
-			array = Array.newInstance(aFieldType.getField().getType().getComponentType(), len);
+			int[] dims = new int[aFieldType.getDepth() - aLevel + 1];
+			dims[0] = len;
+
+			array = Array.newInstance(aComponentType, dims);
 		}
-		
-		if (aFieldType.isNullable())
+
+		boolean[] isNull = null;
+
+		if (aLevel < aFieldType.getDepth() || aFieldType.isNullable())
 		{
-			boolean[] isNull = new boolean[len];
+			isNull = new boolean[len];
 
 			for (int i = 0; i < len; i++)
 			{
 				isNull[i] = aInput.readBit() == 1;
 			}
-			
-			aInput.align();
 
+			aInput.align();
+		}
+
+		if (aLevel < aFieldType.getDepth())
+		{
+			for (int i = 0; i < len; i++)
+			{
+				Object value = isNull[i] ? null : readArray(aInput, aFieldType, aLevel + 1, aComponentType);
+
+				Array.set(array, i, value);
+			}
+		}
+		else if (aFieldType.isNullable())
+		{
 			for (int i = 0; i < len; i++)
 			{
 				Object value = isNull[i] ? null : readValue(aFieldType, aInput);
@@ -71,18 +90,18 @@ class FieldReader
 			for (int i = 0; i < len; i++)
 			{
 				Object value = readValue(aFieldType, aInput);
-				
+
 				if (array != null)
 				{
 					Array.set(array, i, value);
 				}
 			}
 		}
-		
+
 		return array;
 	}
 
-	
+
 	private static Object readValue(FieldType aFieldType, ByteArrayBuffer aInput)
 	{
 		switch (aFieldType.getContentType())

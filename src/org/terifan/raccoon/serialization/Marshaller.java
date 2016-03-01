@@ -9,6 +9,7 @@ import java.util.Collection;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+import tests._ArrayK1;
 import tests._BigObject1K;
 
 
@@ -112,8 +113,8 @@ public class Marshaller
 			throw new DatabaseException("Failed to reconstruct entity: " + (aObject == null ? null : aObject.getClass()), e);
 		}
 	}
-	
-	
+
+
 	public static void main(String... args)
 	{
 		try
@@ -123,6 +124,7 @@ public class Marshaller
 
 			{
 				TableDescriptor td = new TableDescriptor(_BigObject1K.class);
+//				TableDescriptor td = new TableDescriptor(_ArrayK1.class);
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				try (ObjectOutputStream oos = new ObjectOutputStream(baos))
 				{
@@ -133,26 +135,34 @@ public class Marshaller
 
 				Marshaller marshaller = new Marshaller(td);
 
+//				Object object = new _ArrayK1(new byte[1], new byte[]{1,2,3}, new byte[][]{{1,2,3},{4,5,6}}, new byte[][][]{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}});
+				Object object = new _BigObject1K().random();
+//				Object object = new _Number1K2D(15, "red", 12, "apple");
+
 				ByteArrayBuffer buffer = new ByteArrayBuffer(16);
-				marshaller.marshal(buffer, new _BigObject1K().random(), FieldCategoryFilter.ALL);
-//				marshaller.marshal(buffer, new _Number1K2D(15, "red", 12, "apple"), FieldCategoryFilter.ALL);
-	
+				marshaller.marshal(buffer, object, FieldCategoryFilter.ALL);
+
 				entryData = buffer.trim().array();
-			}			
+			}
 
 			Log.hexDump(entryData);
-			
+
 			TableDescriptor td = new TableDescriptor();
 			td.readExternal(new ObjectInputStream(new ByteArrayInputStream(formatData)));
 			td.mapFields(Class.forName(td.getName()));
-			
-			Log.out.println(td);
 
 			Marshaller marshaller = new Marshaller(td);
 
 			Object object = Class.forName(td.getName()).newInstance();
 			marshaller.unmarshal(entryData, object, FieldCategoryFilter.ALL);
 			Log.out.println(object);
+
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			try (ObjectOutputStream oos = new ObjectOutputStream(baos))
+			{
+				oos.writeObject(object);
+			}
+			Log.hexDump(baos.toByteArray());
 		}
 		catch (Throwable e)
 		{
