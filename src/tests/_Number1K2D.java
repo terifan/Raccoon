@@ -1,10 +1,11 @@
 package tests;
 
+import java.io.Serializable;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
 
 
-public class _Number1K2D
+public class _Number1K2D implements Serializable
 {
 	@Discriminator public int _number;
 	@Discriminator public String _color;

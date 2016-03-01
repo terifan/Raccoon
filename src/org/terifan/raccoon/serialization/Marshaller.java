@@ -9,7 +9,6 @@ import java.util.Collection;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
-import tests._ArrayK1;
 import tests._BigObject1K;
 
 
@@ -123,8 +122,10 @@ public class Marshaller
 			byte[] entryData;
 
 			{
-				TableDescriptor td = new TableDescriptor(_BigObject1K.class);
-//				TableDescriptor td = new TableDescriptor(_ArrayK1.class);
+				Object object = new _BigObject1K().random();
+//				Object object = new _Number1K2D(15, "red", 12, "apple");
+
+				TableDescriptor td = new TableDescriptor(object.getClass());
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				try (ObjectOutputStream oos = new ObjectOutputStream(baos))
 				{
@@ -134,10 +135,6 @@ public class Marshaller
 				formatData = baos.toByteArray();
 
 				Marshaller marshaller = new Marshaller(td);
-
-//				Object object = new _ArrayK1(new byte[1], new byte[]{1,2,3}, new byte[][]{{1,2,3},{4,5,6}}, new byte[][][]{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}});
-				Object object = new _BigObject1K().random();
-//				Object object = new _Number1K2D(15, "red", 12, "apple");
 
 				ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 				marshaller.marshal(buffer, object, FieldCategoryFilter.ALL);

@@ -33,25 +33,14 @@ class FieldReader
 	{
 		int len = aInput.readVar32();
 
-		Object array;
+		int[] dims = new int[aFieldType.getDepth() - aLevel + 1];
+		dims[0] = len;
 
-		if (aFieldType.getField() == null)
-		{
-			array = null;
-		}
-		else
-		{
-			int[] dims = new int[aFieldType.getDepth() - aLevel + 1];
-			dims[0] = len;
-
-			array = Array.newInstance(aComponentType, dims);
-		}
-
-		boolean[] isNull = null;
+		Object array = Array.newInstance(aComponentType, dims);
 
 		if (aLevel < aFieldType.getDepth() || aFieldType.isNullable())
 		{
-			isNull = new boolean[len];
+			boolean[] isNull = new boolean[len];
 
 			for (int i = 0; i < len; i++)
 			{
@@ -59,25 +48,22 @@ class FieldReader
 			}
 
 			aInput.align();
-		}
 
-		if (aLevel < aFieldType.getDepth())
-		{
-			for (int i = 0; i < len; i++)
+			if (aLevel < aFieldType.getDepth())
 			{
-				Object value = isNull[i] ? null : readArray(aInput, aFieldType, aLevel + 1, aComponentType);
-
-				Array.set(array, i, value);
-			}
-		}
-		else if (aFieldType.isNullable())
-		{
-			for (int i = 0; i < len; i++)
-			{
-				Object value = isNull[i] ? null : readValue(aFieldType, aInput);
-
-				if (array != null)
+				for (int i = 0; i < len; i++)
 				{
+					Object value = isNull[i] ? null : readArray(aInput, aFieldType, aLevel + 1, aComponentType);
+
+					Array.set(array, i, value);
+				}
+			}
+			else
+			{
+				for (int i = 0; i < len; i++)
+				{
+					Object value = isNull[i] ? null : readValue(aFieldType, aInput);
+
 					Array.set(array, i, value);
 				}
 			}
@@ -92,10 +78,7 @@ class FieldReader
 			{
 				Object value = readValue(aFieldType, aInput);
 
-				if (array != null)
-				{
-					Array.set(array, i, value);
-				}
+				Array.set(array, i, value);
 			}
 		}
 
