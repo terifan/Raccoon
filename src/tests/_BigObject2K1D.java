@@ -5,15 +5,19 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
 import static tests.__TestUtils.*;
 
 
-public class _BigObject1K implements Serializable
+public class _BigObject2K1D implements Serializable
 {
 	private transient static final long serialVersionUID = 1L;
 
-	@Key public int _key;
+	@Key public Long _key1;
+	@Key public Long _key2;
+
+	@Discriminator public Long _discriminator;
 
 	public boolean mBoolean;
 	public byte mByte;
@@ -78,9 +82,11 @@ public class _BigObject1K implements Serializable
 	public List<String> mArrayList;
 
 
-	public _BigObject1K random()
+	public _BigObject2K1D random()
 	{
-		_key = (int)System.nanoTime();
+		_key1 = System.nanoTime();
+		_key2 = System.nanoTime();
+		_discriminator = System.nanoTime();
 
 		mBoolean = x();
 		mByte = b();
@@ -104,16 +110,16 @@ public class _BigObject1K implements Serializable
 		mStrings = new String[]{t(),t(),t()};
 		mDates = new Date[]{new Date(),new Date(),new Date()};
 
-		mBooleans2 = new boolean[][]{{x(),x(),x()}, null, {x(),x(),x()}};
-		mBytes2 = new byte[][]{{b(),b(),b()}, null, {b(),b(),b()}};
-		mShorts2 = new short[][]{{s(),s(),s()}, null, {s(),s(),s()}};
-		mChars2 = new char[][]{{c(),c(),c()}, null, {c(),c(),c()}};
-		mInts2 = new int[][]{{i(),i(),i()}, null, {i(),i(),i()}};
-		mLongs2 = new long[][]{{l(),l(),l()}, null, {l(),l(),l()}};
-		mFloats2 = new float[][]{{f(),f(),f()}, null, {f(),f(),f()}};
-		mDoubles2 = new double[][]{{d(),d(),d()}, null, {d(),d(),d()}};
-		mStrings2 = new String[][]{{t(),t(),t()}, null, {t(),t(),t()}};
-		mDates2 = new Date[][]{{new Date(),new Date(),new Date()}, {new Date(),new Date(),new Date()}};
+		mBooleans2 = new boolean[][]{{x(),x(),x()}, null, {x(),x(),x()}, {}};
+		mBytes2 = new byte[][]{{b(),b(),b()}, null, {b(),b(),b()}, {}};
+		mShorts2 = new short[][]{{s(),s(),s()}, null, {s(),s(),s()}, {}};
+		mChars2 = new char[][]{{c(),c(),c()}, null, {c(),c(),c()}, {}};
+		mInts2 = new int[][]{{i(),i(),i()}, null, {i(),i(),i()}, {}};
+		mLongs2 = new long[][]{{l(),l(),l()}, null, {l(),l(),l()}, {}};
+		mFloats2 = new float[][]{{f(),f(),f()}, null, {f(),f(),f()}, {}};
+		mDoubles2 = new double[][]{{d(),d(),d()}, null, {d(),d(),d()}, {}};
+		mStrings2 = new String[][]{{t(),t(),t()}, null, {t(),t(),t()}, {}};
+		mDates2 = new Date[][]{{new Date(),new Date(),new Date()}, {new Date(),new Date(),new Date()}, {}};
 
 		mBooleanB = x();
 		mByteB = b();
@@ -133,16 +139,16 @@ public class _BigObject1K implements Serializable
 		mFloatsB = new Float[]{f(),f(), null,f()};
 		mDoublesB = new Double[]{d(),d(), null,d()};
 
-		mBooleans2B = new Boolean[][]{{x(),x(),x()}, null, {x(),x(), null,x()}};
-		mBytes2B = new Byte[][]{{b(),b(),b()}, null, {b(),b(), null,b()}};
-		mShorts2B = new Short[][]{{s(),s(),s()}, null, {s(),s(), null,s()}};
-		mChars2B = new Character[][]{{c(),c(),c()}, null, {c(),c(), null,c()}};
-		mInts2B = new Integer[][]{{i(),i(),i()}, null, {i(),i(), null,i()}};
-		mLongs2B = new Long[][]{{l(),l(),l()}, null, {l(),l(), null,l()}};
-		mFloats2B = new Float[][]{{f(),f(),f()}, null, {f(),f(), null,f()}};
-		mDoubles2B = new Double[][]{{d(),d(),d()}, null, {d(),d(), null,d()}};
+		mBooleans2B = new Boolean[][]{{x(),x(),x()}, null, {x(),x(), null,x()}, {}};
+		mBytes2B = new Byte[][]{{b(),b(),b()}, null, {b(),b(), null,b()}, {}};
+		mShorts2B = new Short[][]{{s(),s(),s()}, null, {s(),s(), null,s()}, {}};
+		mChars2B = new Character[][]{{c(),c(),c()}, null, {c(),c(), null,c()}, {}};
+		mInts2B = new Integer[][]{{i(),i(),i()}, null, {i(),i(), null,i()}, {}};
+		mLongs2B = new Long[][]{{l(),l(),l()}, null, {l(),l(), null,l()}, {}};
+		mFloats2B = new Float[][]{{f(),f(),f()}, null, {f(),f(), null,f()}, {}};
+		mDoubles2B = new Double[][]{{d(),d(),d()}, null, {d(),d(), null,d()}, {}};
 
-//		mArrayList = Arrays.asList("arraylist");
+		mArrayList = Arrays.asList("arraylist");
 
 		return this;
 	}

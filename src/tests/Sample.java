@@ -14,7 +14,7 @@ public class Sample
 	{
 		try
 		{
-//			Log.LEVEL = 10;
+			Log.LEVEL = 0;
 
 			AccessCredentials accessCredentials = new AccessCredentials("password");
 
@@ -29,6 +29,8 @@ public class Sample
 
 			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.OPEN, accessCredentials))
 			{
+				db.getTables().stream().forEach(e->Log.out.println(e));
+
 				db.list(_Fruit1K.class).stream().forEach(System.out::println);
 				db.list(_Object1K.class).stream().forEach(System.out::println);
 			}

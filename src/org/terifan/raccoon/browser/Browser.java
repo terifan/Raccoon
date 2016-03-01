@@ -5,7 +5,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.Arrays;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -23,13 +22,11 @@ import org.terifan.raccoon.Entry;
 import org.terifan.raccoon.OpenOption;
 import org.terifan.raccoon.Table;
 import org.terifan.raccoon.io.AccessCredentials;
-import org.terifan.raccoon.serialization.old.FieldType;
+import org.terifan.raccoon.serialization.FieldCategoryFilter;
+import org.terifan.raccoon.serialization.FieldType;
+import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.raccoon.util.Log;
-import tests._BigObject1K;
-import tests._Fruit1K;
-import tests._Number1K1D;
-import tests._Number1K2D;
-import tests._Object1K;
+import org.terifan.raccoon.util.ResultSet;
 
 
 public class Browser
@@ -151,24 +148,26 @@ public class Browser
 						tableContentmodel.setColumnCount(0);
 
 						Table table = (Table)userObject;
-						FieldType[] fields = table.getTableMetadata().getFields();
+						EntityDescriptor metadata = table.getTableMetadata().getEntityDescriptor();
 
-						for (FieldType field : fields)
+						for (FieldType field : metadata.getTypes())
 						{
 							tableContentmodel.addColumn(field.getName());
 						}
 
 						frame.setTitle(table.getTableMetadata().toString());
 
-						for (FieldType field : fields)
+						for (FieldType field : metadata.getTypes())
 						{
 							tableFormatModel.addRow(new Object[]{
 								field.getCategory(),
 								field.getName(),
-								field.getFormat(),
-								field.getType().getSimpleName(),
+								field.getContentType(),
+								field.getDescription(),
+								field.getIndex(),
+								field.getField(),
 								field.isNullable(),
-								Arrays.toString(field.getComponentType()),
+								field.isArray(),
 								field.getDepth()
 							});
 						}
@@ -177,13 +176,19 @@ public class Browser
 						{
 							Entry entry = it.next();
 
-							Map<String, ?> map = table.getTableMetadata().getMarshaller().unmarshal(entry);
+							Object[] values = new Object[2];
+							values[0] = new String(entry.getKey());
+							values[1] = new String(entry.getValue());
 
-							Object[] values = new Object[map.size()];
-							for (int i = 0; i < fields.length; i++)
-							{
-								values[i] = map.get(fields[i].getName());
-							}
+//							ResultSet map1 = table.getTableMetadata().getMarshaller().unmarshal(entry.getKey(), FieldCategoryFilter.KEYS);
+//							ResultSet map2 = table.getTableMetadata().getMarshaller().unmarshal(entry.getValue(), FieldCategoryFilter.ALL);
+//
+//							Object[] values = new Object[map1.getFields().length + map2.size()];
+//
+//							for (int i = 0; i < map1.getFields().length; i++)
+//							{
+//								values[i] = map.get(metadata[i].getName());
+//							}
 
 							tableContentmodel.addRow(values);
 						}

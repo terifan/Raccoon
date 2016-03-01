@@ -1,26 +1,21 @@
 package org.terifan.raccoon.serialization;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
-import tests._BigObject1K;
-import tests._BooleansK1;
+import org.terifan.raccoon.util.ResultSet;
 
 
 public class Marshaller
 {
-	private TableDescriptor mTableDescriptor;
+	private EntityDescriptor mEntityDescriptor;
 
 
-	public Marshaller(TableDescriptor aTypeDeclarations)
+	public Marshaller(EntityDescriptor aTypeDeclarations)
 	{
-		mTableDescriptor = aTypeDeclarations;
+		mEntityDescriptor = aTypeDeclarations;
 	}
 
 
@@ -38,29 +33,23 @@ public class Marshaller
 			Log.v("marshal entity fields %s", aFieldCategories);
 			Log.inc();
 
-			for (FieldType fieldType : mTableDescriptor.getTypes().values())
+			for (FieldType fieldType : mEntityDescriptor.getTypes())
 			{
 				if (aFieldCategories.contains(fieldType.getCategory()))
 				{
-					Field field = fieldType.getField();
-
-					if (field == null)
-					{
-						throw new DatabaseException("");
-					}
-
-					Object value = field.get(aObject);
+					Object value = fieldType.getField().get(aObject);
 
 					if (value != null)
 					{
-						aBuffer.writeVar32(fieldType.getIndex());
-
+						aBuffer.write(0);
 						FieldWriter.writeField(fieldType, value, aBuffer);
+					}
+					else
+					{
+						aBuffer.write(1);
 					}
 				}
 			}
-
-			aBuffer.writeVar32(-1);
 
 			Log.dec();
 
@@ -87,88 +76,70 @@ public class Marshaller
 			Log.v("unmarshal entity fields");
 			Log.inc();
 
-			for (int index; (index = aBuffer.readVar32()) != -1;)
+			FieldType[] types = mEntityDescriptor.getTypes();
+
+			for (FieldType fieldType : types)
 			{
-				FieldType fieldType = mTableDescriptor.getTypes().get(index);
-
-				Object value = FieldReader.readField(fieldType, aBuffer);
-
-				if (aObject != null && aFieldCategories.contains(fieldType.getCategory()))
+				if (aFieldCategories.contains(fieldType.getCategory()))
 				{
-					if (fieldType.getField() != null)
+					if (aBuffer.read() == 0)
 					{
-						fieldType.getField().set(aObject, value);
-					}
-					else
-					{
-						// todo
+						Object value = FieldReader.readField(fieldType, aBuffer);
+
+						if (aObject != null)
+						{
+							if (fieldType.getField() != null)
+							{
+								fieldType.getField().set(aObject, value);
+							}
+							else
+							{
+								// todo
+							}
+						}
 					}
 				}
 			}
 
 			Log.dec();
 		}
-		catch (Exception e)
+		catch (IllegalAccessException e)
 		{
-			throw new DatabaseException("Failed to reconstruct entity: " + (aObject == null ? null : aObject.getClass()), e);
+			throw new DatabaseException(e);
 		}
 	}
 
 
-	public static void main(String... args)
+	@Deprecated
+	public ResultSet unmarshal(byte[] aBuffer, Collection<FieldCategory> aFieldCategories)
 	{
-		try
+		return unmarshal(new ByteArrayBuffer(aBuffer), aFieldCategories);
+	}
+
+
+	public ResultSet unmarshal(ByteArrayBuffer aBuffer, Collection<FieldCategory> aFieldCategories)
+	{
+		Log.v("unmarshal entity fields");
+		Log.inc();
+
+		ResultSet resultSet = new ResultSet();
+		FieldType[] types = mEntityDescriptor.getTypes();
+
+		for (FieldType fieldType : types)
 		{
-			byte[] formatData;
-			byte[] entryData;
-
-			// 0000: 00 02 01 02 04 80 04 04  00 04 80 04 c0 06 04 00  04 00 04 80 04 80 04 00  04 80 04 80 01                                                                                      ............À................
-
-
+			if (aFieldCategories.contains(fieldType.getCategory()))
 			{
-				Object object = new _BooleansK1(new byte[]{1}, new boolean[]{true,false}, new boolean[][]{{true,false},{true,true}}, new boolean[][][]{{{true,false},{true,false}},{{true,false},{true,false}}});
-//				Object object = new _BigObject1K().random();
-//				Object object = new _Number1K2D(15, "red", 12, "apple");
-
-				TableDescriptor td = new TableDescriptor(object.getClass());
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				try (ObjectOutputStream oos = new ObjectOutputStream(baos))
+				if (aBuffer.read() == 0)
 				{
-					td.writeExternal(oos);
+					Object value = FieldReader.readField(fieldType, aBuffer);
+
+					resultSet.add(fieldType, value);
 				}
-
-				formatData = baos.toByteArray();
-
-				Marshaller marshaller = new Marshaller(td);
-
-				ByteArrayBuffer buffer = new ByteArrayBuffer(16);
-				marshaller.marshal(buffer, object, FieldCategoryFilter.ALL);
-
-				entryData = buffer.trim().array();
 			}
-
-			Log.hexDump(entryData);
-
-			TableDescriptor td = new TableDescriptor();
-			td.readExternal(new ObjectInputStream(new ByteArrayInputStream(formatData)));
-			td.mapFields(Class.forName(td.getName()));
-
-			Marshaller marshaller = new Marshaller(td);
-
-			Object object = Class.forName(td.getName()).newInstance();
-			marshaller.unmarshal(entryData, object, FieldCategoryFilter.ALL);
-			Log.out.println(object);
-
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			try (ObjectOutputStream oos = new ObjectOutputStream(baos))
-			{
-				oos.writeObject(object);
-			}
-			Log.hexDump(baos.toByteArray());
 		}
-		catch (Throwable e)
-		{
-			e.printStackTrace(System.out);
-		}
+
+		Log.dec();
+
+		return resultSet;
 	}
 }

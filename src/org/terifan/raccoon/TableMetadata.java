@@ -1,23 +1,23 @@
 package org.terifan.raccoon;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import org.terifan.raccoon.serialization.old.Marshaller;
-import org.terifan.raccoon.serialization.old.FieldCategory;
-import org.terifan.raccoon.serialization.old.FieldType;
-import org.terifan.raccoon.serialization.old.TypeDeclarations;
+import org.terifan.raccoon.serialization.FieldCategory;
+import org.terifan.raccoon.serialization.FieldCategoryFilter;
+import org.terifan.raccoon.serialization.FieldType;
+import org.terifan.raccoon.serialization.Marshaller;
+import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.util.ResultSet;
 
 
 public final class TableMetadata
 {
-	@Discriminator private String mTypeGroup;
 	@Key private String mTypeName;
 	@Key private byte[] mDiscriminatorKey;
 	private String mName;
 	private byte[] mPointer;
-	private TypeDeclarations mTypeDeclarations;
+	private EntityDescriptor mEntityDescriptor;
 
 	private transient Class mClass;
 	private transient Marshaller mMarshaller;
@@ -33,10 +33,9 @@ public final class TableMetadata
 		mClass = aClass;
 		mName = mClass.getSimpleName();
 		mTypeName = mClass.getName();
-		mTypeGroup = mTypeName;
 
-		mMarshaller = new Marshaller(mClass);
-		mTypeDeclarations = mMarshaller.getTypeDeclarations();
+		mEntityDescriptor = new EntityDescriptor(mClass);
+		mMarshaller = new Marshaller(mEntityDescriptor);
 
 		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);
 
@@ -46,7 +45,7 @@ public final class TableMetadata
 
 	TableMetadata initialize()
 	{
-		mMarshaller = new Marshaller(mTypeDeclarations);
+		mMarshaller = new Marshaller(mEntityDescriptor);
 
 		try
 		{
@@ -57,6 +56,13 @@ public final class TableMetadata
 			Log.out.println("Error loading entity class: " + e.toString());
 		}
 
+		if (mEntityDescriptor != null)
+		{
+			mEntityDescriptor.mapFields(mClass);
+		}
+		else 
+			Log.out.println("warning: mEntityDescriptor is null");
+
 		return this;
 	}
 
@@ -65,7 +71,7 @@ public final class TableMetadata
 	{
 		if (aDiscriminator != null)
 		{
-			return mMarshaller.marshal(new ByteArrayBuffer(16), aDiscriminator, FieldCategory.DISCRIMINATORS).trim().array();
+			return mMarshaller.marshal(new ByteArrayBuffer(16), aDiscriminator, FieldCategoryFilter.DISCRIMINATORS).trim().array();
 		}
 
 		return new byte[0];
@@ -90,9 +96,9 @@ public final class TableMetadata
 	}
 
 
-	public FieldType[] getFields()
+	public EntityDescriptor getEntityDescriptor()
 	{
-		return mTypeDeclarations.getTypes().clone();
+		return mEntityDescriptor;
 	}
 
 
@@ -154,23 +160,23 @@ public final class TableMetadata
 		{
 			return null;
 		}
-
+		
 		StringBuilder result = new StringBuilder();
 
 		try
 		{
-			Marshaller marshaller = new Marshaller(mTypeDeclarations);
-			HashMap<String, Object> map = marshaller.unmarshalDISCRIMINATORS(mDiscriminatorKey);
+			Marshaller marshaller = new Marshaller(mEntityDescriptor);
+			ResultSet resultSet = marshaller.unmarshal(mDiscriminatorKey, FieldCategoryFilter.DISCRIMINATORS);
 
-			for (FieldType type : mTypeDeclarations.getTypes())
+			for (FieldType fieldType : mEntityDescriptor.getTypes())
 			{
-				if (type.getCategory() == FieldCategory.DISCRIMINATORS)
+				if (fieldType.getCategory() == FieldCategory.DISCRIMINATOR)
 				{
 					if (result.length() == 0)
 					{
 						result.append(", ");
 					}
-					result.append(type.getName()).append("=").append(map.get(type.getName()));
+					result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType.getIndex()));
 				}
 			}
 		}
@@ -185,9 +191,9 @@ public final class TableMetadata
 
 	public boolean hasDiscriminatorFields()
 	{
-		for (FieldType fieldType : mTypeDeclarations.getTypes())
+		for (FieldType fieldType : mEntityDescriptor.getTypes())
 		{
-			if (fieldType.getCategory() == FieldCategory.DISCRIMINATORS)
+			if (fieldType.getCategory() == FieldCategory.DISCRIMINATOR)
 			{
 				return true;
 			}

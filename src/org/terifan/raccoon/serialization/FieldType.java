@@ -4,11 +4,14 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 
 
-public class FieldType implements Comparable<FieldType>, Externalizable
+public class FieldType implements Comparable<FieldType>, Serializable //, Externalizable
 {
+	private static final long serialVersionUID = 1L;
+
 	private int mIndex;
 	private String mName;
 	private boolean mNullable;
@@ -32,7 +35,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	}
 
 
-	public void setField(Field aField)
+	void setField(Field aField)
 	{
 		mField = aField;
 	}
@@ -44,7 +47,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	}
 
 
-	public void setIndex(int aIndex)
+	void setIndex(int aIndex)
 	{
 		mIndex = aIndex;
 	}
@@ -56,7 +59,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	}
 
 
-	public void setCategory(FieldCategory aCategory)
+	void setCategory(FieldCategory aCategory)
 	{
 		mCategory = aCategory;
 	}
@@ -68,7 +71,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	}
 
 
-	public void setName(String aName)
+	void setName(String aName)
 	{
 		mName = aName;
 	}
@@ -80,7 +83,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	}
 
 
-	public void setContentType(ContentType aContentType)
+	void setContentType(ContentType aContentType)
 	{
 		mContentType = aContentType;
 	}
@@ -92,7 +95,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	}
 
 
-	public void setNullable(boolean aNullable)
+	void setNullable(boolean aNullable)
 	{
 		mNullable = aNullable;
 	}
@@ -104,7 +107,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	}
 
 
-	public void setArray(boolean aArray)
+	void setArray(boolean aArray)
 	{
 		mArray = aArray;
 	}
@@ -116,7 +119,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	}
 
 
-	public void setDescription(String aDescription)
+	void setDescription(String aDescription)
 	{
 		mDescription = aDescription;
 	}
@@ -128,43 +131,43 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	}
 
 
-	public void setDepth(int aDepth)
+	void setDepth(int aDepth)
 	{
 		mDepth = aDepth;
 	}
 
 
-	@Override
-	public void writeExternal(ObjectOutput aOutput) throws IOException
-	{
-		int flags =
-			  (mNullable ? 1 : 0)
-			+ (mArray ? 2 : 0);
-		aOutput.write(flags);
-
-		aOutput.writeShort(mIndex);
-		aOutput.writeUTF(mName);
-		aOutput.write(mContentType.ordinal());
-		aOutput.write(mCategory.ordinal());
-		aOutput.writeUTF(mDescription);
-		aOutput.write(mDepth);
-	}
-
-
-	@Override
-	public void readExternal(ObjectInput aInput) throws IOException, ClassNotFoundException
-	{
-		int flags = aInput.read();
-		mNullable = (flags & 1) != 0;
-		mArray = (flags & 2) != 0;
-
-		mIndex = aInput.readShort();
-		mName = aInput.readUTF();
-		mContentType = ContentType.values()[aInput.read()];
-		mCategory = FieldCategory.values()[aInput.read()];
-		mDescription = aInput.readUTF();
-		mDepth = aInput.read();
-	}
+//	@Override
+//	public void writeExternal(ObjectOutput aOutput) throws IOException
+//	{
+//		int flags =
+//			  (mNullable ? 1 : 0)
+//			+ (mArray ? 2 : 0);
+//		aOutput.write(flags);
+//
+//		aOutput.writeShort(mIndex);
+//		aOutput.writeUTF(mName);
+//		aOutput.write(mContentType.ordinal());
+//		aOutput.write(mCategory.ordinal());
+//		aOutput.writeUTF(mDescription);
+//		aOutput.write(mDepth);
+//	}
+//
+//
+//	@Override
+//	public void readExternal(ObjectInput aInput) throws IOException, ClassNotFoundException
+//	{
+//		int flags = aInput.read();
+//		mNullable = (flags & 1) != 0;
+//		mArray = (flags & 2) != 0;
+//
+//		mIndex = aInput.readShort();
+//		mName = aInput.readUTF();
+//		mContentType = ContentType.values()[aInput.read()];
+//		mCategory = FieldCategory.values()[aInput.read()];
+//		mDescription = aInput.readUTF();
+//		mDepth = aInput.read();
+//	}
 
 
 	@Override

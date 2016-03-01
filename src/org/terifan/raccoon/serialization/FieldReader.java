@@ -15,7 +15,7 @@ class FieldReader
 
 		if (aFieldType.isArray())
 		{
-			Class type = aFieldType.isNullable() ? TableDescriptor.TYPE_CLASSES.get(aFieldType.getContentType()) : TableDescriptor.TYPE_VALUES.get(aFieldType.getContentType());
+			Class type = aFieldType.isNullable() ? EntityDescriptor.TYPE_CLASSES.get(aFieldType.getContentType()) : EntityDescriptor.TYPE_VALUES.get(aFieldType.getContentType());
 
 			value = readArray(aInput, aFieldType, 1, type);
 		}

@@ -6,7 +6,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 
-public class FieldType implements Comparable<FieldType>, Externalizable
+class FieldType implements Comparable<FieldType>, Externalizable
 {
 	private final static long serialVersionUID = 1L;
 

@@ -4,23 +4,23 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.util.Log;
 
 
-public class TableDescriptor implements Externalizable
+public class EntityDescriptor implements Serializable// implements Externalizable
 {
 	private static final long serialVersionUID = 1L;
 
 	private String mName;
-	private LinkedHashMap<Integer,FieldType> mFieldTypes;
+	private FieldType[] mFieldTypes;
 
 	final static HashMap<Class,ContentType> VALUE_TYPES = new HashMap<>();
 	final static HashMap<Class,ContentType> CLASS_TYPES = new HashMap<>();
@@ -71,12 +71,12 @@ public class TableDescriptor implements Externalizable
 	}
 
 
-	public TableDescriptor()
+	public EntityDescriptor()
 	{
 	}
 
 
-	public TableDescriptor(Class aType)
+	public EntityDescriptor(Class aType)
 	{
 		Log.v("create type declarations for %s", aType);
 		Log.inc();
@@ -84,13 +84,13 @@ public class TableDescriptor implements Externalizable
 		ArrayList<Field> fields = loadFields(aType);
 
 		mName = aType.getName();
-		mFieldTypes = new LinkedHashMap<>();
+		ArrayList<FieldType> tmp = new ArrayList<>();
 		int i = 0;
 
 		for (Field field : fields)
 		{
 			FieldType fieldType = new FieldType();
-			fieldType.setIndex(i);
+			fieldType.setIndex(i++);
 			fieldType.setField(field);
 			fieldType.setName(field.getName());
 			fieldType.setDescription(field.getType().getName());
@@ -98,10 +98,12 @@ public class TableDescriptor implements Externalizable
 			categorizeContentType(field, fieldType);
 			classifyContentType(field, fieldType);
 
-			mFieldTypes.put(i++, fieldType);
+			tmp.add(fieldType);
 
 			Log.v("type found: %s", fieldType);
 		}
+
+		mFieldTypes = tmp.toArray(new FieldType[tmp.size()]);
 
 		Log.dec();
 	}
@@ -111,7 +113,7 @@ public class TableDescriptor implements Externalizable
 	{
 		for (Field field : loadFields(aType))
 		{
-			for (FieldType fieldType : mFieldTypes.values())
+			for (FieldType fieldType : mFieldTypes)
 			{
 				if (fieldType.getName().equals(field.getName()))
 				{
@@ -141,7 +143,7 @@ public class TableDescriptor implements Externalizable
 	}
 
 
-	public HashMap<Integer,FieldType> getTypes()
+	public FieldType[] getTypes()
 	{
 		return mFieldTypes;
 	}
@@ -153,41 +155,41 @@ public class TableDescriptor implements Externalizable
 	}
 
 
-	@Override
-	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
-	{
-		mFieldTypes = new LinkedHashMap<>();
-
-		mName = aIn.readUTF();
-		short len = aIn.readShort();
-
-		for (int i = 0; i < len; i++)
-		{
-			FieldType tmp = new FieldType();
-			tmp.readExternal(aIn);
-			mFieldTypes.put(tmp.getIndex(), tmp);
-		}
-	}
-
-
-	@Override
-	public void writeExternal(ObjectOutput aOut) throws IOException
-	{
-		aOut.writeUTF(mName);
-		aOut.writeShort(mFieldTypes.size());
-
-		for (FieldType fieldType : mFieldTypes.values())
-		{
-			fieldType.writeExternal(aOut);
-		}
-	}
+//	@Override
+//	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
+//	{
+//		mName = aIn.readUTF();
+//		short len = aIn.readShort();
+//
+//		mFieldTypes = new FieldType[len];
+//
+//		for (int i = 0; i < len; i++)
+//		{
+//			FieldType tmp = new FieldType();
+//			tmp.readExternal(aIn);
+//			mFieldTypes[tmp.getIndex()] = tmp;
+//		}
+//	}
+//
+//
+//	@Override
+//	public void writeExternal(ObjectOutput aOut) throws IOException
+//	{
+//		aOut.writeUTF(mName);
+//		aOut.writeShort(mFieldTypes.length);
+//
+//		for (FieldType fieldType : mFieldTypes)
+//		{
+//			fieldType.writeExternal(aOut);
+//		}
+//	}
 
 
 	@Override
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
-		for (FieldType fieldType : mFieldTypes.values())
+		for (FieldType fieldType : mFieldTypes)
 		{
 			if (sb.length() > 0)
 			{

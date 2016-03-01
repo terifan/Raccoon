@@ -20,7 +20,7 @@ import org.terifan.raccoon.Key;
 import org.terifan.raccoon.util.Log;
 
 
-public class TypeDeclarations implements Externalizable
+class TypeDeclarations implements Externalizable
 {
 	private final static long serialVersionUID = 1L;
 	private final static HashMap<String,Class> PRIMITIVE_TYPES;

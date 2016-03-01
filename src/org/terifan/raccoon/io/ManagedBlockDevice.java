@@ -7,9 +7,11 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import org.terifan.raccoon.DatabaseException;
+import org.terifan.raccoon.serialization.FieldCategory;
+import org.terifan.raccoon.serialization.FieldCategoryFilter;
+import org.terifan.raccoon.serialization.Marshaller;
+import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.security.random.ISAAC;
-import org.terifan.raccoon.serialization.old.FieldCategory;
-import org.terifan.raccoon.serialization.old.Marshaller;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
@@ -394,7 +396,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.v("read super block");
 		Log.inc();
 
-		mSuperBlockMarshaller = new Marshaller(SuperBlock.class);
+		mSuperBlockMarshaller = new Marshaller(new EntityDescriptor(SuperBlock.class));
 
 		SuperBlock superBlockOne = new SuperBlock();
 		SuperBlock superBlockTwo = new SuperBlock();
@@ -450,8 +452,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[mBlockSize]);
 		buffer.position(CHECKSUM_SIZE); // leave space for checksum
 
-		Marshaller m = new Marshaller(SuperBlock.class);
-		ByteArrayBuffer buf = m.marshal(buffer, mSuperBlock, FieldCategory.DISCRIMINATOR_AND_VALUES);
+		Marshaller m = new Marshaller(new EntityDescriptor(SuperBlock.class));
+		ByteArrayBuffer buf = m.marshal(buffer, mSuperBlock, FieldCategoryFilter.DISCRIMINATORS_VALUES);
 
 		if (mBlockDevice instanceof SecureBlockDevice)
 		{
@@ -707,7 +709,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			ByteArrayBuffer buffer = readCheckedBlock(aPageIndex, -aPageIndex, mBlockSize);
 
-			mSuperBlockMarshaller.unmarshal(buffer, this, FieldCategory.DISCRIMINATOR_AND_VALUES);
+			mSuperBlockMarshaller.unmarshal(buffer, this, FieldCategoryFilter.DISCRIMINATORS_VALUES);
 		}
 	}
 }

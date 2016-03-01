@@ -11,7 +11,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public class Marshaller
+class Marshaller
 {
 	private LinkedHashMap<String, Field> mFields;
 	private TypeDeclarations mTypeDeclarations;

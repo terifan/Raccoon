@@ -1,7 +1,7 @@
 package org.terifan.raccoon.serialization.old;
 
 
-public enum FieldCategory
+enum FieldCategory
 {
 	KEYS,
 	DISCRIMINATORS,

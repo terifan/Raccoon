@@ -20,7 +20,7 @@ import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.io.Streams;
-import org.terifan.raccoon.serialization.old.FieldCategory;
+import org.terifan.raccoon.serialization.FieldCategoryFilter;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.security.messagedigest.MurmurHash3;
@@ -287,11 +287,11 @@ public class Database implements AutoCloseable
 
 		if (table == null)
 		{
-			Log.i("open table '%s' with option %s", table, aOptions);
+			Log.i("open table '%s' with option %s", aTableMetadata.getName(), aOptions);
 			Log.inc();
 
 			boolean tableExists = mSystemTable.get(aTableMetadata);
-
+			
 			if (!tableExists && (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY))
 			{
 				return null;
@@ -937,7 +937,7 @@ public class Database implements AutoCloseable
 			if (name.equals(tableMetadata.getTypeName()))
 			{
 				T instance = aFactory.newInstance();
-				tableMetadata.getMarshaller().unmarshal(tableMetadata.getDiscriminatorKey(), instance, FieldCategory.DISCRIMINATORS);
+				tableMetadata.getMarshaller().unmarshal(tableMetadata.getDiscriminatorKey(), instance, FieldCategoryFilter.DISCRIMINATORS);
 				result.add(instance);
 			}
 		}

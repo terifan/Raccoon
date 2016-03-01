@@ -27,7 +27,7 @@ public class BlockAccessor
 		mPageSize = mBlockDevice.getBlockSize();
 		mCache = new Cache<>(1024);
 
-		mCompressionParam = CompressionParam.NO_COMPRESSION;
+		mCompressionParam = CompressionParam.BEST_SPEED;
 
 		mCacheEnabled = !false;
 	}
