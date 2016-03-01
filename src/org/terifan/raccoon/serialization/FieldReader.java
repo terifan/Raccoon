@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.lang.reflect.Array;
 import java.util.Date;
 import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.raccoon.util.Log;
 
 
 class FieldReader
@@ -15,7 +16,7 @@ class FieldReader
 
 		if (aFieldType.isArray())
 		{
-			Class type = TableDescriptor.TYPES.get(aFieldType.getContentType());
+			Class type = aFieldType.isNullable() ? TableDescriptor.CLASSES.get(aFieldType.getContentType()) : TableDescriptor.TYPES.get(aFieldType.getContentType());
 
 			value = readArray(aInput, aFieldType, 1, type);
 		}

@@ -23,6 +23,7 @@ public class TableDescriptor implements Externalizable
 	final static HashMap<Class,ContentType> VALUE_TYPES = new HashMap<>();
 	final static HashMap<Class,ContentType> CLASS_TYPES = new HashMap<>();
 	final static HashMap<ContentType,Class> TYPES = new HashMap<>();
+	final static HashMap<ContentType,Class> CLASSES = new HashMap<>();
 
 	static
 	{
@@ -36,6 +37,17 @@ public class TableDescriptor implements Externalizable
 		TYPES.put(ContentType.DOUBLE, Double.TYPE);
 		TYPES.put(ContentType.STRING, String.class);
 		TYPES.put(ContentType.DATE, Date.class);
+
+		CLASSES.put(ContentType.BOOLEAN, Boolean.class);
+		CLASSES.put(ContentType.BYTE, Byte.class);
+		CLASSES.put(ContentType.SHORT, Short.class);
+		CLASSES.put(ContentType.CHAR, Character.class);
+		CLASSES.put(ContentType.INT, Integer.class);
+		CLASSES.put(ContentType.LONG, Long.class);
+		CLASSES.put(ContentType.FLOAT, Float.class);
+		CLASSES.put(ContentType.DOUBLE, Double.class);
+		CLASSES.put(ContentType.STRING, String.class);
+		CLASSES.put(ContentType.DATE, Date.class);
 
 		VALUE_TYPES.put(Boolean.TYPE, ContentType.BOOLEAN);
 		VALUE_TYPES.put(Byte.TYPE, ContentType.BYTE);
