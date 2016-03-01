@@ -17,37 +17,39 @@ import org.terifan.raccoon.util.Log;
 
 public class TableDescriptor implements Externalizable
 {
+	private static final long serialVersionUID = 1L;
+
 	private String mName;
 	private LinkedHashMap<Integer,FieldType> mFieldTypes;
 
 	final static HashMap<Class,ContentType> VALUE_TYPES = new HashMap<>();
 	final static HashMap<Class,ContentType> CLASS_TYPES = new HashMap<>();
-	final static HashMap<ContentType,Class> TYPES = new HashMap<>();
-	final static HashMap<ContentType,Class> CLASSES = new HashMap<>();
+	final static HashMap<ContentType,Class> TYPE_VALUES = new HashMap<>();
+	final static HashMap<ContentType,Class> TYPE_CLASSES = new HashMap<>();
 
 	static
 	{
-		TYPES.put(ContentType.BOOLEAN, Boolean.TYPE);
-		TYPES.put(ContentType.BYTE, Byte.TYPE);
-		TYPES.put(ContentType.SHORT, Short.TYPE);
-		TYPES.put(ContentType.CHAR, Character.TYPE);
-		TYPES.put(ContentType.INT, Integer.TYPE);
-		TYPES.put(ContentType.LONG, Long.TYPE);
-		TYPES.put(ContentType.FLOAT, Float.TYPE);
-		TYPES.put(ContentType.DOUBLE, Double.TYPE);
-		TYPES.put(ContentType.STRING, String.class);
-		TYPES.put(ContentType.DATE, Date.class);
+		TYPE_VALUES.put(ContentType.BOOLEAN, Boolean.TYPE);
+		TYPE_VALUES.put(ContentType.BYTE, Byte.TYPE);
+		TYPE_VALUES.put(ContentType.SHORT, Short.TYPE);
+		TYPE_VALUES.put(ContentType.CHAR, Character.TYPE);
+		TYPE_VALUES.put(ContentType.INT, Integer.TYPE);
+		TYPE_VALUES.put(ContentType.LONG, Long.TYPE);
+		TYPE_VALUES.put(ContentType.FLOAT, Float.TYPE);
+		TYPE_VALUES.put(ContentType.DOUBLE, Double.TYPE);
+		TYPE_VALUES.put(ContentType.STRING, String.class);
+		TYPE_VALUES.put(ContentType.DATE, Date.class);
 
-		CLASSES.put(ContentType.BOOLEAN, Boolean.class);
-		CLASSES.put(ContentType.BYTE, Byte.class);
-		CLASSES.put(ContentType.SHORT, Short.class);
-		CLASSES.put(ContentType.CHAR, Character.class);
-		CLASSES.put(ContentType.INT, Integer.class);
-		CLASSES.put(ContentType.LONG, Long.class);
-		CLASSES.put(ContentType.FLOAT, Float.class);
-		CLASSES.put(ContentType.DOUBLE, Double.class);
-		CLASSES.put(ContentType.STRING, String.class);
-		CLASSES.put(ContentType.DATE, Date.class);
+		TYPE_CLASSES.put(ContentType.BOOLEAN, Boolean.class);
+		TYPE_CLASSES.put(ContentType.BYTE, Byte.class);
+		TYPE_CLASSES.put(ContentType.SHORT, Short.class);
+		TYPE_CLASSES.put(ContentType.CHAR, Character.class);
+		TYPE_CLASSES.put(ContentType.INT, Integer.class);
+		TYPE_CLASSES.put(ContentType.LONG, Long.class);
+		TYPE_CLASSES.put(ContentType.FLOAT, Float.class);
+		TYPE_CLASSES.put(ContentType.DOUBLE, Double.class);
+		TYPE_CLASSES.put(ContentType.STRING, String.class);
+		TYPE_CLASSES.put(ContentType.DATE, Date.class);
 
 		VALUE_TYPES.put(Boolean.TYPE, ContentType.BOOLEAN);
 		VALUE_TYPES.put(Byte.TYPE, ContentType.BYTE);

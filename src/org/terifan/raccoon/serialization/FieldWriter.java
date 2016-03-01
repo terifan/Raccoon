@@ -20,6 +20,8 @@ class FieldWriter
 		{
 			writeValue(aFieldType, aValue, aOutput);
 		}
+
+		aOutput.align();
 	}
 
 
@@ -62,6 +64,8 @@ class FieldWriter
 					writeValue(aFieldType, value, aOutput);
 				}
 			}
+
+			aOutput.align();
 		}
 		else
 		{
@@ -69,6 +73,8 @@ class FieldWriter
 			{
 				writeValue(aFieldType, Array.get(aValue, i), aOutput);
 			}
+
+			aOutput.align();
 		}
 	}
 
@@ -78,7 +84,8 @@ class FieldWriter
 		switch (aFieldType.getContentType())
 		{
 			case BOOLEAN:
-				aOutput.write((Boolean)aValue ? 1 : 0);
+				aOutput.writeBit((Boolean)aValue);
+//				aOutput.write((Boolean)aValue ? 1 : 0);
 				break;
 			case BYTE:
 				aOutput.write((Byte)aValue);

@@ -10,6 +10,7 @@ import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import tests._BigObject1K;
+import tests._BooleansK1;
 
 
 public class Marshaller
@@ -121,8 +122,12 @@ public class Marshaller
 			byte[] formatData;
 			byte[] entryData;
 
+			// 0000: 00 02 01 02 04 80 04 04  00 04 80 04 c0 06 04 00  04 00 04 80 04 80 04 00  04 80 04 80 01                                                                                      ............À................
+
+
 			{
-				Object object = new _BigObject1K().random();
+				Object object = new _BooleansK1(new byte[]{1}, new boolean[]{true,false}, new boolean[][]{{true,false},{true,true}}, new boolean[][][]{{{true,false},{true,false}},{{true,false},{true,false}}});
+//				Object object = new _BigObject1K().random();
 //				Object object = new _Number1K2D(15, "red", 12, "apple");
 
 				TableDescriptor td = new TableDescriptor(object.getClass());

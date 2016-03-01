@@ -5,7 +5,6 @@ import java.io.ObjectInputStream;
 import java.lang.reflect.Array;
 import java.util.Date;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.util.Log;
 
 
 class FieldReader
@@ -16,7 +15,7 @@ class FieldReader
 
 		if (aFieldType.isArray())
 		{
-			Class type = aFieldType.isNullable() ? TableDescriptor.CLASSES.get(aFieldType.getContentType()) : TableDescriptor.TYPES.get(aFieldType.getContentType());
+			Class type = aFieldType.isNullable() ? TableDescriptor.TYPE_CLASSES.get(aFieldType.getContentType()) : TableDescriptor.TYPE_VALUES.get(aFieldType.getContentType());
 
 			value = readArray(aInput, aFieldType, 1, type);
 		}
@@ -24,6 +23,8 @@ class FieldReader
 		{
 			value = readValue(aFieldType, aInput);
 		}
+
+		aInput.align();
 
 		return value;
 	}
@@ -66,6 +67,8 @@ class FieldReader
 
 					Array.set(array, i, value);
 				}
+
+				aInput.align();
 			}
 		}
 		else if (aFieldType.getContentType() == ContentType.BYTE)
@@ -80,6 +83,8 @@ class FieldReader
 
 				Array.set(array, i, value);
 			}
+
+			aInput.align();
 		}
 
 		return array;
@@ -91,7 +96,8 @@ class FieldReader
 		switch (aFieldType.getContentType())
 		{
 			case BOOLEAN:
-				return aInput.read() != 0;
+//				return aInput.read() != 0;
+				return aInput.readBit() == 1;
 			case BYTE:
 				return (byte)aInput.read();
 			case SHORT:
