@@ -38,7 +38,6 @@ public class Database implements AutoCloseable
     private final Lock mWriteLock = mReadWriteLock.writeLock();
 
 	private IManagedBlockDevice mBlockDevice;
-//	private final HashMap<Class,Initializer> mInitializers;
 	private final HashMap<Class,Factory> mFactories;
 	private final HashMap<TableMetadata,Table> mOpenTables;
 	private final TableMetadataMap mTableMetadatas;
@@ -56,9 +55,6 @@ public class Database implements AutoCloseable
 		mTableMetadatas = new TableMetadataMap();
 		mFactories = new HashMap<>();
 		mTransactionId = new TransactionCounter();
-
-//		mInitializers = new HashMap<>();
-//		mInitializers.put(TableMetadata.class, e->((TableMetadata)e).initialize());
 	}
 
 
