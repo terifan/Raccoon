@@ -34,6 +34,6 @@ public class _Number1K1D
 	@Override
 	public String toString()
 	{
-		return "number="+_number+", name="+name+", odd="+_odd;
+		return "_Number1K1D{" + "_odd=" + _odd + ", _number=" + _number + ", name=" + name + '}';
 	}
 }

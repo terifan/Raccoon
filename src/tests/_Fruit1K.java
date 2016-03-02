@@ -30,6 +30,6 @@ public class _Fruit1K
 	@Override
 	public String toString()
 	{
-		return _name + ", " + calories;
+		return "_Fruit1K{" + "_name=" + _name + ", calories=" + calories + '}';
 	}
 }

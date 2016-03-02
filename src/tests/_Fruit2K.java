@@ -5,8 +5,8 @@ import org.terifan.raccoon.Key;
 
 public class _Fruit2K
 {
-	@Key public String _name;
 	@Key public String _color;
+	@Key public String _name;
 	public String shape;
 	public String taste;
 	public int value;
@@ -38,5 +38,12 @@ public class _Fruit2K
 		_name = aName;
 		value = aNumber;
 		taste = aTaste;
+	}
+
+
+	@Override
+	public String toString()
+	{
+		return "_Fruit2K{" + "_color=" + _color + ", _name=" + _name + ", shape=" + shape + ", taste=" + taste + ", value=" + value + '}';
 	}
 }

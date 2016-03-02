@@ -33,7 +33,19 @@ public class Marshaller
 			Log.v("marshal entity fields %s", aFieldCategories);
 			Log.inc();
 
-			for (FieldType fieldType : mEntityDescriptor.getTypes())
+			FieldType[] types = mEntityDescriptor.getTypes();
+
+			for (FieldType fieldType : types)
+			{
+				if (aFieldCategories.contains(fieldType.getCategory()))
+				{
+					aBuffer.writeBit(fieldType.getField().get(aObject) == null);
+				}
+			}
+
+			aBuffer.align();
+
+			for (FieldType fieldType : types)
 			{
 				if (aFieldCategories.contains(fieldType.getCategory()))
 				{
@@ -41,15 +53,12 @@ public class Marshaller
 
 					if (value != null)
 					{
-						aBuffer.write(0);
 						FieldWriter.writeField(fieldType, value, aBuffer);
-					}
-					else
-					{
-						aBuffer.write(1);
 					}
 				}
 			}
+
+//			Log.hexDump(new ByteArrayBuffer(aBuffer.array()).capacity(aBuffer.position()).crop().array());
 
 			Log.dec();
 
@@ -78,11 +87,25 @@ public class Marshaller
 
 			FieldType[] types = mEntityDescriptor.getTypes();
 
+			boolean[] isNull = new boolean[types.length];
+
+			int i = 0;
 			for (FieldType fieldType : types)
 			{
 				if (aFieldCategories.contains(fieldType.getCategory()))
 				{
-					if (aBuffer.read() == 0)
+					isNull[i++] = aBuffer.readBit() == 1;
+				}
+			}
+
+			aBuffer.align();
+
+			i = 0;
+			for (FieldType fieldType : types)
+			{
+				if (aFieldCategories.contains(fieldType.getCategory()))
+				{
+					if (!isNull[i++])
 					{
 						Object value = FieldReader.readField(fieldType, aBuffer);
 
@@ -125,11 +148,26 @@ public class Marshaller
 		ResultSet resultSet = new ResultSet();
 		FieldType[] types = mEntityDescriptor.getTypes();
 
+		boolean[] isNull = new boolean[types.length];
+
+		int i = 0;
 		for (FieldType fieldType : types)
 		{
 			if (aFieldCategories.contains(fieldType.getCategory()))
 			{
-				if (aBuffer.read() == 0)
+				isNull[i++] = aBuffer.readBit() == 1;
+			}
+		}
+
+		aBuffer.align();
+
+		i = 0;
+
+		for (FieldType fieldType : types)
+		{
+			if (aFieldCategories.contains(fieldType.getCategory()))
+			{
+				if (!isNull[i++])
 				{
 					Object value = FieldReader.readField(fieldType, aBuffer);
 
