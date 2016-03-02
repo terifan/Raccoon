@@ -24,7 +24,7 @@ public class Sample
 				db.save(new _Fruit1K("orange", 47.78));
 				db.save(new _Fruit1K("banana", 89.45));
 				db.save(new _Fruit2K("yellow", "lemmon", 89, "bitter"));
-				db.save(new _Person1K("Patrik", "Olsson", "Spannlandsgatan 10", "41479", "Göteborg", "Sverige", "+46317228825", "+46704106025", "Surikat AB", 182, 87));
+				db.save(new _Person1K("Stig", "Helmer", "Stiggatan 10", "41478", "Göteborg", "Sverige", "+46311694797", "+46701649947", "Global Company", 182, 87));
 				db.save(new _Object1K("test", new GregorianCalendar()));
 				db.commit();
 			}
