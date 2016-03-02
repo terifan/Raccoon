@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.terifan.raccoon.Entry;
-import org.terifan.raccoon.TransactionId;
+import org.terifan.raccoon.TransactionCounter;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
@@ -27,7 +27,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionId tx = new TransactionId(0);
+		TransactionCounter tx = new TransactionCounter(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -67,7 +67,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionId tx = new TransactionId(0);
+		TransactionCounter tx = new TransactionCounter(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -110,7 +110,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionId tx = new TransactionId(0);
+		TransactionCounter tx = new TransactionCounter(0);
 
 		byte[] k0 = tb();
 		byte[] k1 = tb();
@@ -175,7 +175,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionId tx = new TransactionId(0);
+		TransactionCounter tx = new TransactionCounter(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -219,7 +219,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionId tx = new TransactionId(0);
+		TransactionCounter tx = new TransactionCounter(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -258,7 +258,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionId tx = new TransactionId(0);
+		TransactionCounter tx = new TransactionCounter(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -293,7 +293,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionId tx = new TransactionId(0);
+		TransactionCounter tx = new TransactionCounter(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -323,7 +323,7 @@ public class HashTableNGTest
 	public void testPut() throws Exception
 	{
 		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
-		HashTable hashTable = new HashTable(blockDevice, new TransactionId(0), true, 0, 512, 512, null);
+		HashTable hashTable = new HashTable(blockDevice, new TransactionCounter(0), true, 0, 512, 512, null);
 
 		byte[] key = new byte[hashTable.getEntryMaximumLength() - 1];
 		byte[] value = {85};
@@ -338,7 +338,7 @@ public class HashTableNGTest
 	public void testPutTooBig() throws Exception
 	{
 		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
-		HashTable hashTable = new HashTable(blockDevice, new TransactionId(0), true, 0, 512, 512, null);
+		HashTable hashTable = new HashTable(blockDevice, new TransactionCounter(0), true, 0, 512, 512, null);
 		hashTable.put(new byte[hashTable.getEntryMaximumLength()], new byte[1]);
 	}
 
@@ -364,7 +364,7 @@ public class HashTableNGTest
 	}
 
 
-	private HashTable newHashTable(byte[] aRoot, TransactionId aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
+	private HashTable newHashTable(byte[] aRoot, TransactionCounter aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
 	{
 		return new HashTable(new ManagedBlockDevice(aBlockDevice), aRoot, aTransactionId, true, null);
 	}

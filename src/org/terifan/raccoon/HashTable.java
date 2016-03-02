@@ -30,13 +30,13 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 	private boolean mClosed;
 	private boolean mModified;
 	private boolean mStandAlone;
-	private TransactionId mTransactionId;
+	private TransactionCounter mTransactionId;
 
 
 	/**
 	 * Create a new HashTable with custom settings.
 	 */
-	HashTable(IManagedBlockDevice aBlockDevice, TransactionId aTransactionId, boolean aStandAlone, long aHashSeed, int aNodeSize, int aLeafSize, CompressionParam aCompressionParam) throws IOException
+	HashTable(IManagedBlockDevice aBlockDevice, TransactionCounter aTransactionId, boolean aStandAlone, long aHashSeed, int aNodeSize, int aLeafSize, CompressionParam aCompressionParam) throws IOException
 	{
 		mTransactionId = aTransactionId;
 		mNodeSize = aNodeSize;
@@ -50,7 +50,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 	/**
 	 * Open an existing HashTable or create a new HashTable with default settings.
 	 */
-	HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionId aTransactionId, boolean aStandAlone, CompressionParam aCompressionParam) throws IOException
+	HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionCounter aTransactionId, boolean aStandAlone, CompressionParam aCompressionParam) throws IOException
 	{
 		mTransactionId = aTransactionId;
 

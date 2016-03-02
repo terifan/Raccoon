@@ -341,11 +341,11 @@ public class Table<T> implements Iterable<T>
 	}
 
 
-	void unmarshalToObject(Object aOutput, byte[] aMarshalledData, Collection<FieldCategory> aCategory)
+	void unmarshalToObject(Object aOutput, byte[] aMarshalledData, Collection<FieldCategory> aFieldCategories)
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aMarshalledData);
 
-		if (aCategory.contains(FieldCategory.VALUE) || aCategory.contains(FieldCategory.DISCRIMINATOR))
+		if (aFieldCategories.contains(FieldCategory.VALUE) || aFieldCategories.contains(FieldCategory.DISCRIMINATOR))
 		{
 			if (buffer.read() == PTR_BLOB)
 			{
@@ -363,41 +363,7 @@ public class Table<T> implements Iterable<T>
 			}
 		}
 
-		mTableMetadata.getMarshaller().unmarshal(buffer, aOutput, aCategory);
-
-		Initializer<Object> initializer = (Initializer<Object>)mDatabase.getInitializer(aOutput.getClass());
-		if (initializer != null)
-		{
-			initializer.initialize(aOutput);
-		}
-	}
-
-
-	Object newEntityInstance()
-	{
-		try
-		{
-			Factory factory = mDatabase.getFactory(mTableMetadata.getType());
-			Object object;
-
-			if (factory != null)
-			{
-				object = factory.newInstance();
-			}
-			else
-			{
-				Constructor constructor = mTableMetadata.getType().getDeclaredConstructor();
-				constructor.setAccessible(true);
-
-				object = constructor.newInstance();
-			}
-
-			return object;
-		}
-		catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
-		{
-			throw new DatabaseException(e);
-		}
+		mTableMetadata.getMarshaller().unmarshal(buffer, aOutput, aFieldCategories);
 	}
 
 

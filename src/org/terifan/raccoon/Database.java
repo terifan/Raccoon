@@ -38,11 +38,11 @@ public class Database implements AutoCloseable
     private final Lock mWriteLock = mReadWriteLock.writeLock();
 
 	private IManagedBlockDevice mBlockDevice;
-	private final HashMap<Class,Initializer> mInitializers;
+//	private final HashMap<Class,Initializer> mInitializers;
 	private final HashMap<Class,Factory> mFactories;
 	private final HashMap<TableMetadata,Table> mOpenTables;
 	private final TableMetadataMap mTableMetadatas;
-	private final TransactionId mTransactionId;
+	private final TransactionCounter mTransactionId;
 	private Table mSystemTable;
 	private boolean mChanged;
 	private Object[] mProperties;
@@ -54,20 +54,11 @@ public class Database implements AutoCloseable
 	{
 		mOpenTables = new HashMap<>();
 		mTableMetadatas = new TableMetadataMap();
-		mInitializers = new HashMap<>();
 		mFactories = new HashMap<>();
-		mTransactionId = new TransactionId();
+		mTransactionId = new TransactionCounter();
 
-		mInitializers.put(TableMetadata.class, (e)->{
-			try
-			{
-				((TableMetadata)e).initialize();
-			}
-			catch (Exception ex)
-			{
-				ex.printStackTrace(Log.out);
-			}
-		});
+//		mInitializers = new HashMap<>();
+//		mInitializers.put(TableMetadata.class, e->((TableMetadata)e).initialize());
 	}
 
 
@@ -287,7 +278,7 @@ public class Database implements AutoCloseable
 
 		if (table == null)
 		{
-			Log.i("open table '%s' with option %s", aTableMetadata.getName(), aOptions);
+			Log.i("open table '%s' with option %s", aTableMetadata.getTypeName(), aOptions);
 			Log.inc();
 
 			boolean tableExists = mSystemTable.get(aTableMetadata);
@@ -296,6 +287,8 @@ public class Database implements AutoCloseable
 			{
 				return null;
 			}
+
+			aTableMetadata.initialize();
 
 			table = new Table(this, aTableMetadata, aTableMetadata.getPointer());
 
@@ -313,7 +306,7 @@ public class Database implements AutoCloseable
 		{
 			table.clear();
 		}
-
+		
 		return table;
 	}
 
@@ -818,20 +811,23 @@ public class Database implements AutoCloseable
 	/**
 	 * Sets the Initializer associated with the specified type. The Initializer is called for each entity created by the database of specified type.
 	 */
-	public <T> void setInitializer(Class<T> aType, Initializer<T> aInitializer)
-	{
-		mInitializers.put(aType, aInitializer);
-	}
-
-
-	<T> Initializer<T> getInitializer(Class<T> aType)
-	{
-		return mInitializers.get(aType);
-	}
+//	public <T> void setInitializer(Class<T> aType, Initializer<T> aInitializer)
+//	{
+//		mInitializers.put(aType, aInitializer);
+//	}
+//
+//
+//	<T> Initializer<T> getInitializer(Class<T> aType)
+//	{
+//		return mInitializers.get(aType);
+//	}
 
 
 	/**
 	 * Sets the Initializer associated with the specified type. The Initializer is called for each entity created by the database of specified type.
+	 * 
+	 * E.g:
+	 * 	 mDatabase.setFactory(Photo.class, ()->new Photo(PhotoAlbum.this));
 	 */
 	public <T> void setFactory(Class<T> aType, Factory<T> aFactory)
 	{
@@ -851,7 +847,7 @@ public class Database implements AutoCloseable
 	}
 
 
-	public TransactionId getTransactionId()
+	public TransactionCounter getTransactionId()
 	{
 		return mTransactionId;
 	}

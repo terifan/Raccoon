@@ -15,7 +15,6 @@ public final class TableMetadata
 {
 	@Key private String mTypeName;
 	@Key private byte[] mDiscriminatorKey;
-	private String mName;
 	private byte[] mPointer;
 	private EntityDescriptor mEntityDescriptor;
 
@@ -31,9 +30,7 @@ public final class TableMetadata
 	TableMetadata create(Class aClass, Object aDiscriminator)
 	{
 		mClass = aClass;
-		mName = mClass.getSimpleName();
 		mTypeName = mClass.getName();
-
 		mEntityDescriptor = new EntityDescriptor(mClass);
 		mMarshaller = new Marshaller(mEntityDescriptor);
 
@@ -53,15 +50,13 @@ public final class TableMetadata
 		}
 		catch (Exception e)
 		{
-			Log.out.println("Error loading entity class: " + e.toString());
+			Log.e("Error loading entity class: %s", e.toString());
 		}
 
-		if (mEntityDescriptor != null)
+		if (mClass != null)
 		{
 			mEntityDescriptor.mapFields(mClass);
 		}
-		else 
-			Log.out.println("warning: mEntityDescriptor is null");
 
 		return this;
 	}
@@ -75,12 +70,6 @@ public final class TableMetadata
 		}
 
 		return new byte[0];
-	}
-
-
-	public String getName()
-	{
-		return mName;
 	}
 
 

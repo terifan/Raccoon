@@ -1,5 +1,7 @@
 package org.terifan.raccoon;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 import org.terifan.raccoon.serialization.FieldCategoryFilter;
 
@@ -27,20 +29,41 @@ public class EntityIterator<T> implements Iterator<T>
 	@Override
 	public T next()
 	{
-		T outputEntity = (T)mTable.newEntityInstance();
+		T outputEntity = (T)newEntityInstance();
 
 		Entry entry = mIterator.next();
 
 		mTable.unmarshalToObject(outputEntity, entry.getKey(), FieldCategoryFilter.KEYS);
 		mTable.unmarshalToObject(outputEntity, entry.getValue(), FieldCategoryFilter.DISCRIMINATORS_VALUES);
 
-		Initializer initializer = mTable.getDatabase().getInitializer(mTable.getTableMetadata().getType());
-		if (initializer != null)
-		{
-			initializer.initialize(outputEntity);
-		}
-
 		return outputEntity;
+	}
+
+
+	private Object newEntityInstance()
+	{
+		try
+		{
+			Class type = mTable.getTableMetadata().getType();
+
+			Factory factory = mTable.getDatabase().getFactory(type);
+
+			if (factory != null)
+			{
+				return factory.newInstance();
+			}
+			else
+			{
+				Constructor constructor = type.getDeclaredConstructor();
+				constructor.setAccessible(true);
+
+				return constructor.newInstance();
+			}
+		}
+		catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
