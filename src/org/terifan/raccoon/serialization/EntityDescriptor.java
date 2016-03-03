@@ -21,6 +21,9 @@ public class EntityDescriptor implements Serializable// implements Externalizabl
 
 	private String mName;
 	private FieldType[] mFieldTypes;
+	private FieldType[] mKeyFields;
+	private FieldType[] mDiscriminatorFields;
+	private FieldType[] mValueFields;
 
 	final static HashMap<Class,ContentType> VALUE_TYPES = new HashMap<>();
 	final static HashMap<Class,ContentType> CLASS_TYPES = new HashMap<>();
@@ -85,6 +88,9 @@ public class EntityDescriptor implements Serializable// implements Externalizabl
 
 		mName = aType.getName();
 		ArrayList<FieldType> tmp = new ArrayList<>();
+		ArrayList<FieldType> tmpK = new ArrayList<>();
+		ArrayList<FieldType> tmpD = new ArrayList<>();
+		ArrayList<FieldType> tmpV = new ArrayList<>();
 		int i = 0;
 
 		for (Field field : fields)
@@ -100,10 +106,18 @@ public class EntityDescriptor implements Serializable// implements Externalizabl
 
 			tmp.add(fieldType);
 
+			if (fieldType.getCategory() == FieldCategory.KEY) tmpK.add(fieldType);
+			if (fieldType.getCategory() == FieldCategory.DISCRIMINATOR) tmpD.add(fieldType);
+			if (fieldType.getCategory() != FieldCategory.KEY) tmpV.add(fieldType);
+
 			Log.v("type found: %s", fieldType);
 		}
 
 		mFieldTypes = tmp.toArray(new FieldType[tmp.size()]);
+
+		mKeyFields = tmpK.toArray(new FieldType[tmpK.size()]);
+		mDiscriminatorFields = tmpD.toArray(new FieldType[tmpD.size()]);
+		mValueFields = tmpV.toArray(new FieldType[tmpV.size()]);
 
 		Log.dec();
 	}
@@ -258,5 +272,23 @@ public class EntityDescriptor implements Serializable// implements Externalizabl
 		{
 			aFieldType.setContentType(ContentType.OBJECT);
 		}
+	}
+
+
+	FieldType[] getKeyFields()
+	{
+		return mKeyFields;
+	}
+
+
+	FieldType[] getDiscriminatorFields()
+	{
+		return mDiscriminatorFields;
+	}
+
+
+	FieldType[] getValueFields()
+	{
+		return mValueFields;
 	}
 }

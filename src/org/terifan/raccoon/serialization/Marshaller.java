@@ -1,12 +1,6 @@
 package org.terifan.raccoon.serialization;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import org.terifan.raccoon.DatabaseException;
-import static org.terifan.raccoon.serialization.FieldCategory.DISCRIMINATOR;
-import static org.terifan.raccoon.serialization.FieldCategory.KEY;
-import static org.terifan.raccoon.serialization.FieldCategory.VALUE;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.ResultSet;
@@ -15,10 +9,6 @@ import org.terifan.raccoon.util.ResultSet;
 public class Marshaller
 {
 	private EntityDescriptor mEntityDescriptor;
-
-	private final static List<FieldCategory> KEYS = Arrays.asList(KEY);
-	private final static List<FieldCategory> DISCRIMINATORS = Arrays.asList(DISCRIMINATOR);
-	private final static List<FieldCategory> VALUES = Arrays.asList(DISCRIMINATOR, VALUE);
 
 
 	public Marshaller(EntityDescriptor aTypeDeclarations)
@@ -29,51 +19,43 @@ public class Marshaller
 
 	public ByteArrayBuffer marshalKeys(ByteArrayBuffer aBuffer, Object aObject)
 	{
-		return marshalImpl(aBuffer, aObject, KEYS);
+		return marshalImpl(aBuffer, aObject, mEntityDescriptor.getKeyFields());
 	}
 
 
 	public ByteArrayBuffer marshalDiscriminators(ByteArrayBuffer aBuffer, Object aObject)
 	{
-		return marshalImpl(aBuffer, aObject, DISCRIMINATORS);
+		return marshalImpl(aBuffer, aObject, mEntityDescriptor.getDiscriminatorFields());
 	}
 
 
 	public ByteArrayBuffer marshalValues(ByteArrayBuffer aBuffer, Object aObject)
 	{
-		return marshalImpl(aBuffer, aObject, VALUES);
+		return marshalImpl(aBuffer, aObject, mEntityDescriptor.getValueFields());
 	}
 
 
-	private ByteArrayBuffer marshalImpl(ByteArrayBuffer aBuffer, Object aObject, Collection<FieldCategory> aFieldCategories)
+	private ByteArrayBuffer marshalImpl(ByteArrayBuffer aBuffer, Object aObject, FieldType[] types)
 	{
 		try
 		{
-			Log.v("marshal entity fields %s", aFieldCategories);
+			Log.v("marshal entity fields");
 			Log.inc();
-
-			FieldType[] types = mEntityDescriptor.getTypes();
 
 			for (FieldType fieldType : types)
 			{
-				if (aFieldCategories.contains(fieldType.getCategory()))
-				{
-					aBuffer.writeBit(fieldType.getField().get(aObject) == null);
-				}
+				aBuffer.writeBit(fieldType.getField().get(aObject) == null);
 			}
 
 			aBuffer.align();
 
 			for (FieldType fieldType : types)
 			{
-				if (aFieldCategories.contains(fieldType.getCategory()))
-				{
-					Object value = fieldType.getField().get(aObject);
+				Object value = fieldType.getField().get(aObject);
 
-					if (value != null)
-					{
-						FieldWriter.writeField(fieldType, value, aBuffer);
-					}
+				if (value != null)
+				{
+					FieldWriter.writeField(fieldType, value, aBuffer);
 				}
 			}
 
@@ -92,63 +74,54 @@ public class Marshaller
 
 	public void unmarshalKeys(ByteArrayBuffer aBuffer, Object aObject)
 	{
-		unmarshalImpl(aBuffer, aObject, KEYS);
+		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getKeyFields());
 	}
 
 
 	public void unmarshalDiscriminators(ByteArrayBuffer aBuffer, Object aObject)
 	{
-		unmarshalImpl(aBuffer, aObject, DISCRIMINATORS);
+		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getDiscriminatorFields());
 	}
 
 
 	public void unmarshalValues(ByteArrayBuffer aBuffer, Object aObject)
 	{
-		unmarshalImpl(aBuffer, aObject, VALUES);
+		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getValueFields());
 	}
 
 
-	private void unmarshalImpl(ByteArrayBuffer aBuffer, Object aObject, Collection<FieldCategory> aFieldCategories)
+	private void unmarshalImpl(ByteArrayBuffer aBuffer, Object aObject, FieldType[] types)
 	{
 		try
 		{
 			Log.v("unmarshal entity fields");
 			Log.inc();
 
-			FieldType[] types = mEntityDescriptor.getTypes();
-
 			boolean[] isNull = new boolean[types.length];
 
-			int i = 0;
-			for (FieldType fieldType : types)
+			for (int i = 0; i < types.length; i++)
 			{
-				if (aFieldCategories.contains(fieldType.getCategory()))
-				{
-					isNull[i++] = aBuffer.readBit() == 1;
-				}
+				isNull[i] = aBuffer.readBit() == 1;
 			}
 
 			aBuffer.align();
 
-			i = 0;
+			int i = 0;
 			for (FieldType fieldType : types)
 			{
-				if (aFieldCategories.contains(fieldType.getCategory()))
+				if (!isNull[i++])
 				{
-					if (!isNull[i++])
-					{
-						Object value = FieldReader.readField(fieldType, aBuffer);
+					Object value = FieldReader.readField(fieldType, aBuffer);
 
-						if (aObject != null)
+					if (aObject != null)
+					{
+						if (fieldType.getField() != null)
 						{
-							if (fieldType.getField() != null)
-							{
-								fieldType.getField().set(aObject, value);
-							}
-							else
-							{
-								// todo
-							}
+							fieldType.getField().set(aObject, value);
+						}
+						else
+						{
+							// todo
 						}
 					}
 				}
@@ -165,55 +138,46 @@ public class Marshaller
 
 	public ResultSet unmarshalKeys(ByteArrayBuffer aBuffer)
 	{
-		return unmarshalImpl(aBuffer, KEYS);
+		return unmarshalImpl(aBuffer, mEntityDescriptor.getKeyFields());
 	}
 
 
 	public ResultSet unmarshalDiscriminators(ByteArrayBuffer aBuffer)
 	{
-		return unmarshalImpl(aBuffer, DISCRIMINATORS);
+		return unmarshalImpl(aBuffer, mEntityDescriptor.getDiscriminatorFields());
 	}
 
 
 	public ResultSet unmarshalValues(ByteArrayBuffer aBuffer)
 	{
-		return unmarshalImpl(aBuffer, VALUES);
+		return unmarshalImpl(aBuffer, mEntityDescriptor.getValueFields());
 	}
 
 
-	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, Collection<FieldCategory> aFieldCategories)
+	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, FieldType[] types)
 	{
 		Log.v("unmarshal entity fields");
 		Log.inc();
 
 		ResultSet resultSet = new ResultSet();
-		FieldType[] types = mEntityDescriptor.getTypes();
 
 		boolean[] isNull = new boolean[types.length];
+
+			for (int i = 0; i < types.length; i++)
+			{
+				isNull[i] = aBuffer.readBit() == 1;
+			}
+
+		aBuffer.align();
 
 		int i = 0;
 		for (FieldType fieldType : types)
 		{
-			if (aFieldCategories.contains(fieldType.getCategory()))
+			if (!isNull[i++])
 			{
-				isNull[i++] = aBuffer.readBit() == 1;
-			}
-		}
+				Object value = FieldReader.readField(fieldType, aBuffer);
 
-		aBuffer.align();
-
-		i = 0;
-
-		for (FieldType fieldType : types)
-		{
-			if (aFieldCategories.contains(fieldType.getCategory()))
-			{
-				if (!isNull[i++])
-				{
-					Object value = FieldReader.readField(fieldType, aBuffer);
-
-					resultSet.add(fieldType, value);
-				}
+				resultSet.add(fieldType, value);
 			}
 		}
 
