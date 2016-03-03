@@ -4,11 +4,11 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.lang.reflect.Field;
+import static org.terifan.raccoon.serialization.TypeMappings.*;
 
 
-public class FieldType implements Comparable<FieldType>, Serializable //, Externalizable
+public class FieldType implements Comparable<FieldType>, Externalizable
 {
 	private static final long serialVersionUID = 1L;
 
@@ -18,7 +18,7 @@ public class FieldType implements Comparable<FieldType>, Serializable //, Extern
 	private boolean mArray;
 	private ContentType mContentType;
 	private FieldCategory mCategory;
-	private String mDescription;
+	private String mTypeName;
 	private int mDepth;
 
 	private transient Field mField;
@@ -113,15 +113,15 @@ public class FieldType implements Comparable<FieldType>, Serializable //, Extern
 	}
 
 
-	public String getDescription()
+	public String getTypeName()
 	{
-		return mDescription;
+		return mTypeName;
 	}
 
 
-	void setDescription(String aDescription)
+	void setTypeName(String aTypeName)
 	{
-		mDescription = aDescription;
+		mTypeName = aTypeName;
 	}
 
 
@@ -137,37 +137,37 @@ public class FieldType implements Comparable<FieldType>, Serializable //, Extern
 	}
 
 
-//	@Override
-//	public void writeExternal(ObjectOutput aOutput) throws IOException
-//	{
-//		int flags =
-//			  (mNullable ? 1 : 0)
-//			+ (mArray ? 2 : 0);
-//		aOutput.write(flags);
-//
-//		aOutput.writeShort(mIndex);
-//		aOutput.writeUTF(mName);
-//		aOutput.write(mContentType.ordinal());
-//		aOutput.write(mCategory.ordinal());
-//		aOutput.writeUTF(mDescription);
-//		aOutput.write(mDepth);
-//	}
-//
-//
-//	@Override
-//	public void readExternal(ObjectInput aInput) throws IOException, ClassNotFoundException
-//	{
-//		int flags = aInput.read();
-//		mNullable = (flags & 1) != 0;
-//		mArray = (flags & 2) != 0;
-//
-//		mIndex = aInput.readShort();
-//		mName = aInput.readUTF();
-//		mContentType = ContentType.values()[aInput.read()];
-//		mCategory = FieldCategory.values()[aInput.read()];
-//		mDescription = aInput.readUTF();
-//		mDepth = aInput.read();
-//	}
+	@Override
+	public void writeExternal(ObjectOutput aOutput) throws IOException
+	{
+		int flags =
+			  (mNullable ? 1 : 0)
+			+ (mArray ? 2 : 0);
+		aOutput.write(flags);
+
+		aOutput.writeUTF(mName);
+		aOutput.writeShort(mIndex);
+		aOutput.write(mContentType.ordinal());
+		aOutput.writeUTF(mTypeName);
+		aOutput.write(mCategory.ordinal());
+		aOutput.write(mDepth);
+	}
+
+
+	@Override
+	public void readExternal(ObjectInput aInput) throws IOException, ClassNotFoundException
+	{
+		int flags = aInput.read();
+		mNullable = (flags & 1) != 0;
+		mArray = (flags & 2) != 0;
+
+		mName = aInput.readUTF();
+		mIndex = aInput.readShort();
+		mContentType = ContentType.values()[aInput.read()];
+		mTypeName = aInput.readUTF();
+		mCategory = FieldCategory.values()[aInput.read()];
+		mDepth = aInput.read();
+	}
 
 
 	@Override
@@ -181,5 +181,11 @@ public class FieldType implements Comparable<FieldType>, Serializable //, Extern
 	public String toString()
 	{
 		return mCategory + " " + mContentType + (mArray ? "[]" : "") + (mNullable ? " nullable " : " ") + mName;
+	}
+
+
+	Class getTypeClass()
+	{
+		return mNullable ? TYPE_CLASSES.get(mContentType) : TYPE_VALUES.get(mContentType);
 	}
 }

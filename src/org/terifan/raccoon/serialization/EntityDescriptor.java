@@ -4,74 +4,26 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.util.Log;
+import static org.terifan.raccoon.serialization.TypeMappings.*;
 
 
-public class EntityDescriptor implements Serializable// implements Externalizable
+public class EntityDescriptor implements Externalizable
 {
 	private static final long serialVersionUID = 1L;
 
 	private String mName;
 	private FieldType[] mFieldTypes;
-	private FieldType[] mKeyFields;
-	private FieldType[] mDiscriminatorFields;
-	private FieldType[] mValueFields;
 
-	final static HashMap<Class,ContentType> VALUE_TYPES = new HashMap<>();
-	final static HashMap<Class,ContentType> CLASS_TYPES = new HashMap<>();
-	final static HashMap<ContentType,Class> TYPE_VALUES = new HashMap<>();
-	final static HashMap<ContentType,Class> TYPE_CLASSES = new HashMap<>();
-
-	static
-	{
-		TYPE_VALUES.put(ContentType.BOOLEAN, Boolean.TYPE);
-		TYPE_VALUES.put(ContentType.BYTE, Byte.TYPE);
-		TYPE_VALUES.put(ContentType.SHORT, Short.TYPE);
-		TYPE_VALUES.put(ContentType.CHAR, Character.TYPE);
-		TYPE_VALUES.put(ContentType.INT, Integer.TYPE);
-		TYPE_VALUES.put(ContentType.LONG, Long.TYPE);
-		TYPE_VALUES.put(ContentType.FLOAT, Float.TYPE);
-		TYPE_VALUES.put(ContentType.DOUBLE, Double.TYPE);
-		TYPE_VALUES.put(ContentType.STRING, String.class);
-		TYPE_VALUES.put(ContentType.DATE, Date.class);
-
-		TYPE_CLASSES.put(ContentType.BOOLEAN, Boolean.class);
-		TYPE_CLASSES.put(ContentType.BYTE, Byte.class);
-		TYPE_CLASSES.put(ContentType.SHORT, Short.class);
-		TYPE_CLASSES.put(ContentType.CHAR, Character.class);
-		TYPE_CLASSES.put(ContentType.INT, Integer.class);
-		TYPE_CLASSES.put(ContentType.LONG, Long.class);
-		TYPE_CLASSES.put(ContentType.FLOAT, Float.class);
-		TYPE_CLASSES.put(ContentType.DOUBLE, Double.class);
-		TYPE_CLASSES.put(ContentType.STRING, String.class);
-		TYPE_CLASSES.put(ContentType.DATE, Date.class);
-
-		VALUE_TYPES.put(Boolean.TYPE, ContentType.BOOLEAN);
-		VALUE_TYPES.put(Byte.TYPE, ContentType.BYTE);
-		VALUE_TYPES.put(Short.TYPE, ContentType.SHORT);
-		VALUE_TYPES.put(Character.TYPE, ContentType.CHAR);
-		VALUE_TYPES.put(Integer.TYPE, ContentType.INT);
-		VALUE_TYPES.put(Long.TYPE, ContentType.LONG);
-		VALUE_TYPES.put(Float.TYPE, ContentType.FLOAT);
-		VALUE_TYPES.put(Double.TYPE, ContentType.DOUBLE);
-
-		CLASS_TYPES.put(Boolean.class, ContentType.BOOLEAN);
-		CLASS_TYPES.put(Byte.class, ContentType.BYTE);
-		CLASS_TYPES.put(Short.class, ContentType.SHORT);
-		CLASS_TYPES.put(Character.class, ContentType.CHAR);
-		CLASS_TYPES.put(Integer.class, ContentType.INT);
-		CLASS_TYPES.put(Long.class, ContentType.LONG);
-		CLASS_TYPES.put(Float.class, ContentType.FLOAT);
-		CLASS_TYPES.put(Double.class, ContentType.DOUBLE);
-	}
+	private transient FieldType[] mKeyFields;
+	private transient FieldType[] mDiscriminatorFields;
+	private transient FieldType[] mValueFields;
 
 
 	public EntityDescriptor()
@@ -88,36 +40,26 @@ public class EntityDescriptor implements Serializable// implements Externalizabl
 
 		mName = aType.getName();
 		ArrayList<FieldType> tmp = new ArrayList<>();
-		ArrayList<FieldType> tmpK = new ArrayList<>();
-		ArrayList<FieldType> tmpD = new ArrayList<>();
-		ArrayList<FieldType> tmpV = new ArrayList<>();
-		int i = 0;
 
 		for (Field field : fields)
 		{
 			FieldType fieldType = new FieldType();
-			fieldType.setIndex(i++);
+			fieldType.setIndex(tmp.size());
 			fieldType.setField(field);
 			fieldType.setName(field.getName());
-			fieldType.setDescription(field.getType().getName());
+			fieldType.setTypeName(field.getType().getName());
 
-			categorizeContentType(field, fieldType);
-			classifyContentType(field, fieldType);
+			categorize(field, fieldType);
+			classify(field, fieldType);
 
 			tmp.add(fieldType);
-
-			if (fieldType.getCategory() == FieldCategory.KEY) tmpK.add(fieldType);
-			if (fieldType.getCategory() == FieldCategory.DISCRIMINATOR) tmpD.add(fieldType);
-			if (fieldType.getCategory() != FieldCategory.KEY) tmpV.add(fieldType);
 
 			Log.v("type found: %s", fieldType);
 		}
 
 		mFieldTypes = tmp.toArray(new FieldType[tmp.size()]);
 
-		mKeyFields = tmpK.toArray(new FieldType[tmpK.size()]);
-		mDiscriminatorFields = tmpD.toArray(new FieldType[tmpD.size()]);
-		mValueFields = tmpV.toArray(new FieldType[tmpV.size()]);
+		updateLookupTables();
 
 		Log.dec();
 	}
@@ -138,25 +80,6 @@ public class EntityDescriptor implements Serializable// implements Externalizabl
 	}
 
 
-	private ArrayList<Field> loadFields(Class aType)
-	{
-		ArrayList<Field> fields = new ArrayList<>();
-
-		for (Field field : aType.getDeclaredFields())
-		{
-			if ((field.getModifiers() & (Modifier.TRANSIENT | Modifier.STATIC | Modifier.FINAL)) != 0)
-			{
-				continue;
-			}
-
-			field.setAccessible(true);
-			fields.add(field);
-		}
-
-		return fields;
-	}
-
-
 	public FieldType[] getTypes()
 	{
 		return mFieldTypes;
@@ -169,34 +92,22 @@ public class EntityDescriptor implements Serializable// implements Externalizabl
 	}
 
 
-//	@Override
-//	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
-//	{
-//		mName = aIn.readUTF();
-//		short len = aIn.readShort();
-//
-//		mFieldTypes = new FieldType[len];
-//
-//		for (int i = 0; i < len; i++)
-//		{
-//			FieldType tmp = new FieldType();
-//			tmp.readExternal(aIn);
-//			mFieldTypes[tmp.getIndex()] = tmp;
-//		}
-//	}
-//
-//
-//	@Override
-//	public void writeExternal(ObjectOutput aOut) throws IOException
-//	{
-//		aOut.writeUTF(mName);
-//		aOut.writeShort(mFieldTypes.length);
-//
-//		for (FieldType fieldType : mFieldTypes)
-//		{
-//			fieldType.writeExternal(aOut);
-//		}
-//	}
+	@Override
+	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
+	{
+		mName = aIn.readUTF();
+		mFieldTypes = (FieldType[])aIn.readObject();
+
+		updateLookupTables();
+	}
+
+
+	@Override
+	public void writeExternal(ObjectOutput aOut) throws IOException
+	{
+		aOut.writeUTF(mName);
+		aOut.writeObject(mFieldTypes);
+	}
 
 
 	@Override
@@ -215,7 +126,42 @@ public class EntityDescriptor implements Serializable// implements Externalizabl
 	}
 
 
-	private void categorizeContentType(Field aField, FieldType aFieldType)
+	FieldType[] getKeyFields()
+	{
+		return mKeyFields;
+	}
+
+
+	FieldType[] getDiscriminatorFields()
+	{
+		return mDiscriminatorFields;
+	}
+
+
+	FieldType[] getValueFields()
+	{
+		return mValueFields;
+	}
+
+
+	private ArrayList<Field> loadFields(Class aType)
+	{
+		ArrayList<Field> fields = new ArrayList<>();
+
+		for (Field field : aType.getDeclaredFields())
+		{
+			if ((field.getModifiers() & (Modifier.TRANSIENT | Modifier.STATIC | Modifier.FINAL)) == 0)
+			{
+				field.setAccessible(true);
+				fields.add(field);
+			}
+		}
+
+		return fields;
+	}
+
+
+	private void categorize(Field aField, FieldType aFieldType)
 	{
 		if (aField.getAnnotation(Discriminator.class) != null)
 		{
@@ -232,7 +178,7 @@ public class EntityDescriptor implements Serializable// implements Externalizabl
 	}
 
 
-	private void classifyContentType(Field aField, FieldType aFieldType)
+	private void classify(Field aField, FieldType aFieldType)
 	{
 		Class<?> type = aField.getType();
 
@@ -275,20 +221,21 @@ public class EntityDescriptor implements Serializable// implements Externalizabl
 	}
 
 
-	FieldType[] getKeyFields()
+	private void updateLookupTables()
 	{
-		return mKeyFields;
-	}
+		ArrayList<FieldType> tmpK = new ArrayList<>();
+		ArrayList<FieldType> tmpD = new ArrayList<>();
+		ArrayList<FieldType> tmpV = new ArrayList<>();
 
+		for (FieldType fieldType : mFieldTypes)
+		{
+			if (fieldType.getCategory() == FieldCategory.KEY) tmpK.add(fieldType);
+			if (fieldType.getCategory() == FieldCategory.DISCRIMINATOR) tmpD.add(fieldType);
+			if (fieldType.getCategory() != FieldCategory.KEY) tmpV.add(fieldType);
+		}
 
-	FieldType[] getDiscriminatorFields()
-	{
-		return mDiscriminatorFields;
-	}
-
-
-	FieldType[] getValueFields()
-	{
-		return mValueFields;
+		mKeyFields = tmpK.toArray(new FieldType[tmpK.size()]);
+		mDiscriminatorFields = tmpD.toArray(new FieldType[tmpD.size()]);
+		mValueFields = tmpV.toArray(new FieldType[tmpV.size()]);
 	}
 }

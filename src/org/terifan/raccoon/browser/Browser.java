@@ -159,7 +159,7 @@ public class Browser
 								field.getCategory(),
 								field.getName(),
 								field.getContentType(),
-								field.getDescription(),
+								field.getTypeName(),
 								field.getIndex(),
 								field.getField(),
 								field.isNullable(),
