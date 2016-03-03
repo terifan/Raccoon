@@ -67,14 +67,22 @@ public class EntityDescriptor implements Externalizable
 
 	public void mapFields(Class aType)
 	{
-		for (Field field : loadFields(aType))
+		ArrayList<Field> fields = loadFields(aType);
+
+		for (FieldType fieldType : mFieldTypes)
 		{
-			for (FieldType fieldType : mFieldTypes)
+			for (Field field : fields)
 			{
-				if (fieldType.getName().equals(field.getName()))
+				if (fieldType.getName().equals(field.getName()) && fieldType.getTypeName().equals(field.getType().getName()))
 				{
 					fieldType.setField(field);
+					break;
 				}
+			}
+
+			if (fieldType.getField() == null)
+			{
+				Log.out.println("Entity field missing: " + fieldType);
 			}
 		}
 	}

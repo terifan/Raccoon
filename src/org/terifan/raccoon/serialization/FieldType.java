@@ -180,7 +180,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	@Override
 	public String toString()
 	{
-		return mCategory + " " + mContentType + (mArray ? "[]" : "") + (mNullable ? " nullable " : " ") + mName;
+		return mTypeName + (mArray ? "[]" : " ") + mName;
 	}
 
 

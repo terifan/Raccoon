@@ -119,10 +119,6 @@ public class Marshaller
 						{
 							fieldType.getField().set(aObject, value);
 						}
-						else
-						{
-							// todo
-						}
 					}
 				}
 			}
