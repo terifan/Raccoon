@@ -4,10 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -22,11 +20,9 @@ import org.terifan.raccoon.Entry;
 import org.terifan.raccoon.OpenOption;
 import org.terifan.raccoon.Table;
 import org.terifan.raccoon.io.AccessCredentials;
-import org.terifan.raccoon.serialization.FieldCategoryFilter;
 import org.terifan.raccoon.serialization.FieldType;
 import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.raccoon.util.Log;
-import org.terifan.raccoon.util.ResultSet;
 
 
 public class Browser

@@ -15,7 +15,6 @@ import org.terifan.raccoon.io.BlockAccessor;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.serialization.FieldCategory;
-import org.terifan.raccoon.serialization.FieldCategoryFilter;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
@@ -83,7 +82,7 @@ public class Table<T> implements Iterable<T>
 			return false;
 		}
 
-		unmarshalToObject(aEntity, value, FieldCategoryFilter.DISCRIMINATORS_VALUES);
+		unmarshalToObjectValues(aEntity, value);
 
 		Log.dec();
 
@@ -339,41 +338,46 @@ public class Table<T> implements Iterable<T>
 	}
 
 
-	void unmarshalToObject(Object aOutput, byte[] aMarshalledData, Collection<FieldCategory> aFieldCategories)
+	void unmarshalToObjectKeys(Object aOutput, byte[] aMarshalledData)
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aMarshalledData);
 
-		if (aFieldCategories.contains(FieldCategory.VALUE) || aFieldCategories.contains(FieldCategory.DISCRIMINATOR))
-		{
-			if (buffer.read() == PTR_BLOB)
-			{
-				try
-				{
-					buffer.wrap(Streams.fetch(new BlobInputStream(mBlockAccessor, buffer)));
-					buffer.position(0);
-				}
-				catch (Exception e)
-				{
-					Log.dec();
+		mTableMetadata.getMarshaller().unmarshalKeys(buffer, aOutput);
+	}
 
-					throw new DatabaseException(e);
-				}
+
+	void unmarshalToObjectValues(Object aOutput, byte[] aMarshalledData)
+	{
+		ByteArrayBuffer buffer = new ByteArrayBuffer(aMarshalledData);
+
+		if (buffer.read() == PTR_BLOB)
+		{
+			try
+			{
+				buffer.wrap(Streams.fetch(new BlobInputStream(mBlockAccessor, buffer)));
+				buffer.position(0);
+			}
+			catch (Exception e)
+			{
+				Log.dec();
+
+				throw new DatabaseException(e);
 			}
 		}
 
-		mTableMetadata.getMarshaller().unmarshal(buffer, aOutput, aFieldCategories);
+		mTableMetadata.getMarshaller().unmarshalValues(buffer, aOutput);
 	}
 
 
 	byte[] getKeys(Object aInput)
 	{
-		return mTableMetadata.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategoryFilter.KEYS).trim().array();
+		return mTableMetadata.getMarshaller().marshalKeys(new ByteArrayBuffer(16), aInput).trim().array();
 	}
 
 
 	byte[] getNonKeys(Object aInput)
 	{
-		return mTableMetadata.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, FieldCategoryFilter.DISCRIMINATORS_VALUES).trim().array();
+		return mTableMetadata.getMarshaller().marshalValues(new ByteArrayBuffer(16), aInput).trim().array();
 	}
 
 

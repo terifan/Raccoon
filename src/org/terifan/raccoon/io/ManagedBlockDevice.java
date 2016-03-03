@@ -7,8 +7,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import org.terifan.raccoon.DatabaseException;
-import org.terifan.raccoon.serialization.FieldCategory;
-import org.terifan.raccoon.serialization.FieldCategoryFilter;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.security.random.ISAAC;
@@ -453,7 +451,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		buffer.position(CHECKSUM_SIZE); // leave space for checksum
 
 		Marshaller m = new Marshaller(new EntityDescriptor(SuperBlock.class));
-		ByteArrayBuffer buf = m.marshal(buffer, mSuperBlock, FieldCategoryFilter.DISCRIMINATORS_VALUES);
+		ByteArrayBuffer buf = m.marshalValues(buffer, mSuperBlock);
 
 		if (mBlockDevice instanceof SecureBlockDevice)
 		{
@@ -709,7 +707,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			ByteArrayBuffer buffer = readCheckedBlock(aPageIndex, -aPageIndex, mBlockSize);
 
-			mSuperBlockMarshaller.unmarshal(buffer, this, FieldCategoryFilter.DISCRIMINATORS_VALUES);
+			mSuperBlockMarshaller.unmarshalValues(buffer, this);
 		}
 	}
 }

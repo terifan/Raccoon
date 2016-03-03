@@ -3,7 +3,6 @@ package org.terifan.raccoon;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
-import org.terifan.raccoon.serialization.FieldCategoryFilter;
 
 
 public class EntityIterator<T> implements Iterator<T>
@@ -33,8 +32,8 @@ public class EntityIterator<T> implements Iterator<T>
 
 		Entry entry = mIterator.next();
 
-		mTable.unmarshalToObject(outputEntity, entry.getKey(), FieldCategoryFilter.KEYS);
-		mTable.unmarshalToObject(outputEntity, entry.getValue(), FieldCategoryFilter.DISCRIMINATORS_VALUES);
+		mTable.unmarshalToObjectKeys(outputEntity, entry.getKey());
+		mTable.unmarshalToObjectValues(outputEntity, entry.getValue());
 
 		return outputEntity;
 	}

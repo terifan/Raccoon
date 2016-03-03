@@ -1,8 +1,12 @@
 package org.terifan.raccoon.serialization;
 
-import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import org.terifan.raccoon.DatabaseException;
+import static org.terifan.raccoon.serialization.FieldCategory.DISCRIMINATOR;
+import static org.terifan.raccoon.serialization.FieldCategory.KEY;
+import static org.terifan.raccoon.serialization.FieldCategory.VALUE;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.ResultSet;
@@ -12,6 +16,10 @@ public class Marshaller
 {
 	private EntityDescriptor mEntityDescriptor;
 
+	private final static List<FieldCategory> KEYS = Arrays.asList(KEY);
+	private final static List<FieldCategory> DISCRIMINATORS = Arrays.asList(DISCRIMINATOR);
+	private final static List<FieldCategory> VALUES = Arrays.asList(DISCRIMINATOR, VALUE);
+
 
 	public Marshaller(EntityDescriptor aTypeDeclarations)
 	{
@@ -19,14 +27,25 @@ public class Marshaller
 	}
 
 
-	@Deprecated
-	public byte[] marshal(Object aObject, Collection<FieldCategory> aFieldCategories)
+	public ByteArrayBuffer marshalKeys(ByteArrayBuffer aBuffer, Object aObject)
 	{
-		return marshal(new ByteArrayBuffer(16), aObject, aFieldCategories).trim().array();
+		return marshalImpl(aBuffer, aObject, KEYS);
 	}
 
 
-	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer, Object aObject, Collection<FieldCategory> aFieldCategories)
+	public ByteArrayBuffer marshalDiscriminators(ByteArrayBuffer aBuffer, Object aObject)
+	{
+		return marshalImpl(aBuffer, aObject, DISCRIMINATORS);
+	}
+
+
+	public ByteArrayBuffer marshalValues(ByteArrayBuffer aBuffer, Object aObject)
+	{
+		return marshalImpl(aBuffer, aObject, VALUES);
+	}
+
+
+	private ByteArrayBuffer marshalImpl(ByteArrayBuffer aBuffer, Object aObject, Collection<FieldCategory> aFieldCategories)
 	{
 		try
 		{
@@ -71,14 +90,25 @@ public class Marshaller
 	}
 
 
-	@Deprecated
-	public void unmarshal(byte[] aBuffer, Object aOutputObject, Collection<FieldCategory> aFieldCategories)
+	public void unmarshalKeys(ByteArrayBuffer aBuffer, Object aObject)
 	{
-		unmarshal(new ByteArrayBuffer(aBuffer), aOutputObject, aFieldCategories);
+		unmarshalImpl(aBuffer, aObject, KEYS);
 	}
 
 
-	public void unmarshal(ByteArrayBuffer aBuffer, Object aObject, Collection<FieldCategory> aFieldCategories)
+	public void unmarshalDiscriminators(ByteArrayBuffer aBuffer, Object aObject)
+	{
+		unmarshalImpl(aBuffer, aObject, DISCRIMINATORS);
+	}
+
+
+	public void unmarshalValues(ByteArrayBuffer aBuffer, Object aObject)
+	{
+		unmarshalImpl(aBuffer, aObject, VALUES);
+	}
+
+
+	private void unmarshalImpl(ByteArrayBuffer aBuffer, Object aObject, Collection<FieldCategory> aFieldCategories)
 	{
 		try
 		{
@@ -133,14 +163,25 @@ public class Marshaller
 	}
 
 
-	@Deprecated
-	public ResultSet unmarshal(byte[] aBuffer, Collection<FieldCategory> aFieldCategories)
+	public ResultSet unmarshalKeys(ByteArrayBuffer aBuffer)
 	{
-		return unmarshal(new ByteArrayBuffer(aBuffer), aFieldCategories);
+		return unmarshalImpl(aBuffer, KEYS);
 	}
 
 
-	public ResultSet unmarshal(ByteArrayBuffer aBuffer, Collection<FieldCategory> aFieldCategories)
+	public ResultSet unmarshalDiscriminators(ByteArrayBuffer aBuffer)
+	{
+		return unmarshalImpl(aBuffer, DISCRIMINATORS);
+	}
+
+
+	public ResultSet unmarshalValues(ByteArrayBuffer aBuffer)
+	{
+		return unmarshalImpl(aBuffer, VALUES);
+	}
+
+
+	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, Collection<FieldCategory> aFieldCategories)
 	{
 		Log.v("unmarshal entity fields");
 		Log.inc();

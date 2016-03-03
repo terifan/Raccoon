@@ -1,15 +1,5 @@
 package tests;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import org.terifan.raccoon.serialization.FieldCategoryFilter;
-import org.terifan.raccoon.serialization.Marshaller;
-import org.terifan.raccoon.serialization.EntityDescriptor;
-import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.util.Log;
-
 
 public class TestMarshall
 {

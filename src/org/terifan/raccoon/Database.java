@@ -20,7 +20,6 @@ import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.io.Streams;
-import org.terifan.raccoon.serialization.FieldCategoryFilter;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.security.messagedigest.MurmurHash3;
@@ -278,7 +277,7 @@ public class Database implements AutoCloseable
 			Log.inc();
 
 			boolean tableExists = mSystemTable.get(aTableMetadata);
-			
+
 			if (!tableExists && (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY))
 			{
 				return null;
@@ -302,7 +301,7 @@ public class Database implements AutoCloseable
 		{
 			table.clear();
 		}
-		
+
 		return table;
 	}
 
@@ -527,7 +526,7 @@ public class Database implements AutoCloseable
 
 
 	/**
-	 * 
+	 *
 	 * @throws NoSuchEntityException
 	 *   if the entity cannot be found
 	 */
@@ -821,7 +820,7 @@ public class Database implements AutoCloseable
 
 	/**
 	 * Sets the Initializer associated with the specified type. The Initializer is called for each entity created by the database of specified type.
-	 * 
+	 *
 	 * E.g:
 	 * 	 mDatabase.setFactory(Photo.class, ()->new Photo(PhotoAlbum.this));
 	 */
@@ -929,7 +928,7 @@ public class Database implements AutoCloseable
 			if (name.equals(tableMetadata.getTypeName()))
 			{
 				T instance = aFactory.newInstance();
-				tableMetadata.getMarshaller().unmarshal(tableMetadata.getDiscriminatorKey(), instance, FieldCategoryFilter.DISCRIMINATORS);
+				tableMetadata.getMarshaller().unmarshalDiscriminators(new ByteArrayBuffer(tableMetadata.getDiscriminatorKey()), instance);
 				result.add(instance);
 			}
 		}

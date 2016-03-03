@@ -2,7 +2,6 @@ package org.terifan.raccoon;
 
 import java.util.Arrays;
 import org.terifan.raccoon.serialization.FieldCategory;
-import org.terifan.raccoon.serialization.FieldCategoryFilter;
 import org.terifan.raccoon.serialization.FieldType;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.EntityDescriptor;
@@ -66,7 +65,7 @@ public final class TableMetadata
 	{
 		if (aDiscriminator != null)
 		{
-			return mMarshaller.marshal(new ByteArrayBuffer(16), aDiscriminator, FieldCategoryFilter.DISCRIMINATORS).trim().array();
+			return mMarshaller.marshalDiscriminators(new ByteArrayBuffer(16), aDiscriminator).trim().array();
 		}
 
 		return new byte[0];
@@ -141,21 +140,21 @@ public final class TableMetadata
 	{
 		return mTypeName + "[" + getDiscriminatorDescription() + "]";
 	}
-	
-	
+
+
 	public String getDiscriminatorDescription()
 	{
 		if (mDiscriminatorKey.length == 0)
 		{
 			return null;
 		}
-		
+
 		StringBuilder result = new StringBuilder();
 
 		try
 		{
 			Marshaller marshaller = new Marshaller(mEntityDescriptor);
-			ResultSet resultSet = marshaller.unmarshal(mDiscriminatorKey, FieldCategoryFilter.DISCRIMINATORS);
+			ResultSet resultSet = marshaller.unmarshalDiscriminators(new ByteArrayBuffer(mDiscriminatorKey));
 
 			for (FieldType fieldType : mEntityDescriptor.getTypes())
 			{
