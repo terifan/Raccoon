@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -14,7 +13,6 @@ import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.BlockAccessor;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.Streams;
-import org.terifan.raccoon.serialization.FieldCategory;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
