@@ -25,6 +25,8 @@ public class Sample2
 //					.put("array", new int[]{1,2,3})
 //				);
 
+//				db.save("test._Fruit1K", new EntityMap().put("_name", "text").put("calories", 52.12));
+
 //				db.save(new _Fruit1K("apple", 52.12));
 //				db.save(new _Fruit1K("orange", 47.78));
 //				db.save(new _Fruit1K("banana", 89.45));
