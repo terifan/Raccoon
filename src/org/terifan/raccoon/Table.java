@@ -25,7 +25,6 @@ public class Table<T> implements Iterable<T>
 	private Database mDatabase;
 	private TableMetadata mTableMetadata;
 	private BlockAccessor mBlockAccessor;
-	private IManagedBlockDevice mBlockDevice;
 	private HashSet<BlobOutputStream> mOpenOutputStreams;
 	private HashTable mTableImplementation;
 	private byte[] mPointer;
@@ -41,10 +40,9 @@ public class Table<T> implements Iterable<T>
 			mTableMetadata = aTableMetadata;
 			mPointer = aPointer;
 
-			mBlockDevice = mDatabase.getBlockDevice();
-			mTableImplementation = new HashTable(mBlockDevice, mPointer, mDatabase.getTransactionId(), false, mDatabase.getParameter(CompressionParam.class, null));
+			mTableImplementation = new HashTable(mDatabase.getBlockDevice(), mPointer, mDatabase.getTransactionId(), false, mDatabase.getParameter(CompressionParam.class, null));
 
-			mBlockAccessor = new BlockAccessor(mBlockDevice);
+			mBlockAccessor = new BlockAccessor(mDatabase.getBlockDevice());
 
 			CompressionParam parameter = mDatabase.getParameter(CompressionParam.class, null);
 			if (parameter != null)
