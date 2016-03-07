@@ -31,14 +31,16 @@ public class Sample
 
 			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.OPEN, accessCredentials))
 			{
-				db.getTables().stream().forEach(e->Log.out.println(e));
+//				db.getTables().stream().forEach(e->Log.out.println(e));
+//
+//				db.list(_Fruit1K.class).stream().forEach(System.out::println);
+//				db.list(_Fruit2K.class).stream().forEach(System.out::println);
+//				db.list(_Person1K.class).stream().forEach(System.out::println);
+//				db.list(_Object1K.class).stream().forEach(System.out::println);
+//
+//				Log.out.println(db.get(new _Fruit1K("apple")));
 
-				db.list(_Fruit1K.class).stream().forEach(System.out::println);
-				db.list(_Fruit2K.class).stream().forEach(System.out::println);
-				db.list(_Person1K.class).stream().forEach(System.out::println);
-				db.list(_Object1K.class).stream().forEach(System.out::println);
-
-				Log.out.println(db.get(new _Fruit1K("apple")));
+				db.stream(_Fruit1K.class).forEach(System.out::println);
 			}
 		}
 		catch (Throwable e)

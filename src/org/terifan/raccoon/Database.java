@@ -8,8 +8,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators.AbstractSpliterator;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
@@ -745,39 +750,6 @@ public class Database implements AutoCloseable
 	}
 
 
-//	public Iterator<Entry> iteratorRaw(Table aTable)
-//	{
-//		mReadLock.lock();
-//		try
-//		{
-//			return aTable.iteratorRaw();
-//		}
-//		finally
-//		{
-//			mReadLock.unlock();
-//		}
-//	}
-
-
-//	public <T> Stream<? extends T> stream(Class<T> aType)
-//	{
-//		return stream(aType, null);
-//	}
-//
-//
-//	public <T> Stream<? extends T> stream(Class<T> aType, T aDiscriminator)
-//	{
-//		Table table = openTable(aType, aDiscriminator, OpenOption.OPEN);
-//
-//		if (table == null)
-//		{
-//			throw new Error();
-//		}
-//
-//		return StreamSupport.stream(Spliterators.spliterator(table.iterator(), table.size(), Spliterator.IMMUTABLE), true);
-//	}
-
-
 	public <T> List<T> list(Class<T> aType)
 	{
 		return list(aType, null);
@@ -803,23 +775,84 @@ public class Database implements AutoCloseable
 	}
 
 
-	/**
-	 * Sets the Initializer associated with the specified type. The Initializer is called for each entity created by the database of specified type.
-	 */
-//	public <T> void setInitializer(Class<T> aType, Initializer<T> aInitializer)
+	public <T> Stream<T> stream(Class<T> aType)
+	{
+		return stream(aType, null);
+	}
+
+
+	public <T> Stream<T> stream(Class<T> aType, T aEntity)
+	{
+		mReadLock.lock();
+		try
+		{
+			Table table = openTable(aType, aEntity, OpenOption.OPEN);
+			if (table == null)
+			{
+				return StreamSupport.stream(new AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+				{
+					@Override
+					public boolean tryAdvance(Consumer<? super T> aConsumer)
+					{
+						return false;
+					}
+				}, false);
+			}
+
+			ArrayList<T> list = new ArrayList<>();
+			table.iterator().forEachRemaining(e->list.add((T)e));
+
+			return StreamSupport.stream(new AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+			{
+				int i;
+				@Override
+				public boolean tryAdvance(Consumer<? super T> aConsumer)
+				{
+					Log.out.println(i);
+					if (i == list.size())
+					{
+						return false;
+					}
+					aConsumer.accept(list.get(i++));
+					return true;
+				}
+			}, false);
+		}
+		finally
+		{
+			mReadLock.unlock();
+		}
+	}
+
+
+//	public ResultSet list(String aType)
 //	{
-//		mInitializers.put(aType, aInitializer);
+//		return list(aType, null);
 //	}
 //
 //
-//	<T> Initializer<T> getInitializer(Class<T> aType)
+//	public ResultSet list(String aType, EntityMap aEntity)
 //	{
-//		return mInitializers.get(aType);
+//		mReadLock.lock();
+//		try
+//		{
+////			Table table = openTable(aType, aEntity, OpenOption.OPEN);
+////			if (table == null)
+////			{
+////				return new ResultSet();
+////			}
+////			return table.list(aType);
+//			return null;
+//		}
+//		finally
+//		{
+//			mReadLock.unlock();
+//		}
 //	}
 
 
 	/**
-	 * Sets the Initializer associated with the specified type. The Initializer is called for each entity created by the database of specified type.
+	 * Sets a Factory associated with the specified type. The Factory is used to create instances of specified types.
 	 *
 	 * E.g:
 	 * 	 mDatabase.setFactory(Photo.class, ()->new Photo(PhotoAlbum.this));
