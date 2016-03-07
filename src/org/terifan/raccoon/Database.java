@@ -789,7 +789,7 @@ public class Database implements AutoCloseable
 			Table table = openTable(aType, aEntity, OpenOption.OPEN);
 			if (table == null)
 			{
-				return StreamSupport.stream(new AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+				return StreamSupport.stream(new AbstractSpliterator<T>(0, Spliterator.SIZED)
 				{
 					@Override
 					public boolean tryAdvance(Consumer<? super T> aConsumer)
