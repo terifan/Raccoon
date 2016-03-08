@@ -25,6 +25,7 @@ import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.io.Streams;
+import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.security.messagedigest.MurmurHash3;
@@ -537,14 +538,22 @@ public class Database implements AutoCloseable
 	 */
 	public <T> T get(T aEntity) throws DatabaseException
 	{
+		Assert.notNull(aEntity, "Argument is null");
+
 		mReadLock.lock();
 		try
 		{
 			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.OPEN);
-			if (table == null || !table.get(aEntity))
+
+			if (table == null)
 			{
-				throw new NoSuchEntityException("No entity found");
+				throw new NoSuchEntityException("No table exists matching type " + aEntity.getClass());
 			}
+			if (!table.get(aEntity))
+			{
+				throw new NoSuchEntityException("No entity exists matching key");
+			}
+
 			return aEntity;
 		}
 		finally

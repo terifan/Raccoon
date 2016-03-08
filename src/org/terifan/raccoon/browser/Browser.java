@@ -49,7 +49,8 @@ public class Browser
 //			AccessCredentials ac = new AccessCredentials(password);
 
 			AccessCredentials ac = new AccessCredentials("test");
-			File file = new File("d:/testdata/out/sample.alb");
+//			File file = new File("d:/testdata/out/sample.alb");
+			File file = new File("d:/photos.db");
 
 //			try (Database db = Database.open(file, OpenOption.CREATE_NEW, ac))
 //			{
