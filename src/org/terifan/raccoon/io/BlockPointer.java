@@ -32,14 +32,14 @@ public class BlockPointer implements Serializable
 
 	public final static int SIZE = 32;
 
-	public interface Types
+	public enum BlockType
 	{
-		public final static int NODE_FREE = 0;
-		public final static int NODE_HOLE = 1;
-		public final static int NODE_LEAF = 2;
-		public final static int NODE_INDIRECT = 3;
-		public final static int BLOB_DATA = 4;
-		public final static int BLOB_INDIRECT = 5;
+		NODE_FREE,
+		NODE_HOLE,
+		NODE_LEAF,
+		NODE_INDX,
+		BLOB_DATA,
+		BLOB_INDX
 	}
 
 	private int mType;
@@ -66,15 +66,15 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public int getType()
+	public BlockType getType()
 	{
-		return mType;
+		return BlockType.values()[mType];
 	}
 
 
-	public BlockPointer setType(int aType)
+	public BlockPointer setType(BlockType aType)
 	{
-		mType = aType;
+		mType = aType.ordinal();
 		return this;
 	}
 
@@ -247,9 +247,9 @@ public class BlockPointer implements Serializable
 	 * @return
 	 *   the 'type' field
 	 */
-	public static int getType(byte[] aBuffer, int aOffset)
+	public static BlockType getType(byte[] aBuffer, int aOffset)
 	{
-		return 0xFF & aBuffer[aOffset];
+		return BlockType.values()[0xFF & aBuffer[aOffset]];
 	}
 
 
@@ -274,6 +274,6 @@ public class BlockPointer implements Serializable
 	@Override
 	public String toString()
 	{
-		return "{type=" + mType + ", offset=" + mOffset + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRange + ", tx=" + mTransactionId + ")";
+		return "{type=" + getType() + ", offset=" + mOffset + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRange + ", tx=" + mTransactionId + ")";
 	}
 }

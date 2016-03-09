@@ -3,7 +3,7 @@ package org.terifan.raccoon.io;
 import java.io.IOException;
 import java.io.InputStream;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import static org.terifan.raccoon.io.BlockPointer.Types.*;
+import org.terifan.raccoon.io.BlockPointer.BlockType;
 
 
 public class BlobInputStream extends InputStream implements AutoCloseable
@@ -32,7 +32,7 @@ public class BlobInputStream extends InputStream implements AutoCloseable
 		{
 			BlockPointer bp = loadBlock();
 
-			if (bp.getType() == BLOB_INDIRECT)
+			if (bp.getType() == BlockType.BLOB_INDX)
 			{
 				mPointerBuffer = mBuffer;
 

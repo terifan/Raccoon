@@ -6,11 +6,12 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
+import static org.terifan.raccoon.Table.PTR_BLOB;
+import org.terifan.raccoon.io.BlockPointer.BlockType;
 import org.terifan.raccoon.util.ByteBufferMap;
 import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.util.Log;
-import static org.terifan.raccoon.io.BlockPointer.Types.*;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
@@ -128,7 +129,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 	{
 		Log.i("load root %s", mRootBlockPointer);
 
-		if (mRootBlockPointer.getType() == NODE_LEAF)
+		if (mRootBlockPointer.getType() == BlockPointer.BlockType.NODE_LEAF)
 		{
 			mRootMap = readLeaf(mRootBlockPointer);
 		}
@@ -344,7 +345,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 		}
 		else
 		{
-			Log.v("rollback %s", mRootBlockPointer.getType() == NODE_LEAF ? "root map" : "root node");
+			Log.v("rollback %s", mRootBlockPointer.getType() == BlockPointer.BlockType.NODE_LEAF ? "root map" : "root node");
 
 			loadRoot();
 		}
@@ -368,7 +369,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			visit((aPointerIndex, aBlockPointer) ->
 			{
-				if (aPointerIndex != Visitor.ROOT_POINTER && aBlockPointer != null && (aBlockPointer.getType() == NODE_INDIRECT || aBlockPointer.getType() == NODE_LEAF))
+				if (aPointerIndex != Visitor.ROOT_POINTER && aBlockPointer != null && (aBlockPointer.getType() == BlockType.NODE_INDX || aBlockPointer.getType() == BlockType.NODE_LEAF))
 				{
 					freeBlock(aBlockPointer);
 				}
@@ -405,7 +406,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		visit((aPointerIndex, aBlockPointer)->
 		{
-			if (aBlockPointer != null && aBlockPointer.getType() == NODE_LEAF)
+			if (aBlockPointer != null && aBlockPointer.getType() == BlockType.NODE_LEAF)
 			{
 				result.set(result.get() + readLeaf(aBlockPointer).size());
 			}
@@ -425,7 +426,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		switch (blockPointer.getType())
 		{
-			case NODE_INDIRECT:
+			case NODE_INDX:
 				return getValue(aHash, aLevel + 1, aKey, readNode(blockPointer));
 			case NODE_LEAF:
 				return readLeaf(blockPointer).get(aKey);
@@ -450,7 +451,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		switch (blockPointer.getType())
 		{
-			case NODE_INDIRECT:
+			case NODE_INDX:
 				IndexNode node = readNode(blockPointer);
 				oldValue = putValue(aKey, aValue, aHash, aLevel + 1, node);
 				freeBlock(blockPointer);
@@ -610,7 +611,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 	{
 		if (aLeaf.isEmpty())
 		{
-			return new BlockPointer().setType(NODE_HOLE).setRange(aRange);
+			return new BlockPointer().setType(BlockType.NODE_HOLE).setRange(aRange);
 		}
 
 		return writeBlock(aLeaf, aRange);
@@ -628,7 +629,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		switch (blockPointer.getType())
 		{
-			case NODE_INDIRECT:
+			case NODE_INDX:
 				IndexNode node = readNode(blockPointer);
 				oldValue = removeValue(aHash, aLevel + 1, aKey, node);
 				if (oldValue != null)
@@ -659,7 +660,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 	LeafNode readLeaf(BlockPointer aBlockPointer)
 	{
-		assert aBlockPointer.getType() == NODE_LEAF;
+		assert aBlockPointer.getType() == BlockType.NODE_LEAF;
 
 		if (aBlockPointer.getOffset() == mRootBlockPointer.getOffset() && mRootMap != null)
 		{
@@ -672,7 +673,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 	IndexNode readNode(BlockPointer aBlockPointer)
 	{
-		assert aBlockPointer.getType() == NODE_INDIRECT;
+		assert aBlockPointer.getType() == BlockType.NODE_INDX;
 
 		if (aBlockPointer.getOffset() == mRootBlockPointer.getOffset() && mRootNode != null)
 		{
@@ -733,7 +734,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			BlockPointer next = node.getPointer(i);
 
-			if (next != null && next.getType() == NODE_INDIRECT)
+			if (next != null && next.getType() == BlockType.NODE_INDX)
 			{
 				visitNode(aVisitor, next);
 			}
@@ -773,5 +774,65 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 	public BlockAccessor getBlockAccessor()
 	{
 		return mBlockAccessor;
+	}
+
+
+	void scan()
+	{
+		scan(mRootBlockPointer);
+	}
+
+
+	void scan(BlockPointer aBlockPointer)
+	{
+		Log.out.println(aBlockPointer);
+
+		byte[] buffer = mBlockAccessor.readBlock(aBlockPointer);
+
+		switch (aBlockPointer.getType())
+		{
+			case NODE_INDX:
+				IndexNode indexNode = new IndexNode(buffer);
+				for (int i = 0; i < indexNode.getPointerCount(); i++)
+				{
+					BlockPointer pointer = indexNode.getPointer(i);
+					if (pointer != null)
+					{
+						scan(pointer);
+					}
+				}
+				break;
+			case NODE_LEAF:
+				LeafNode leafNode = new LeafNode(buffer);
+				for (int i = 0; i < leafNode.size(); i++)
+				{
+					byte[] value = leafNode.getValue(i);
+					if (value[0] == Table.PTR_BLOB)
+					{
+						ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(value);
+						byteArrayBuffer.read();
+						long len = byteArrayBuffer.readVar64();
+
+						while (byteArrayBuffer.remaining() > 0)
+						{
+							scan(new BlockPointer().unmarshal(byteArrayBuffer));
+						}
+					}
+				}
+				break;
+			case BLOB_INDX:
+				ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(buffer);
+				while (byteArrayBuffer.remaining() > 0)
+				{
+					BlockPointer blockPointer = new BlockPointer();
+					blockPointer.unmarshal(byteArrayBuffer);
+					scan(blockPointer);
+				}
+				break;
+			case BLOB_DATA:
+				break;
+			default:
+				throw new IllegalStateException();
+		}
 	}
 }

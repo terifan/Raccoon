@@ -2,7 +2,7 @@ package org.terifan.raccoon.io;
 
 import java.io.IOException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import static org.terifan.raccoon.io.BlockPointer.Types.*;
+import org.terifan.raccoon.io.BlockPointer.BlockType;
 import org.terifan.raccoon.util.Log;
 
 
@@ -29,7 +29,7 @@ public final class Blob
 			BlockPointer bp = new BlockPointer();
 			bp.unmarshal(aBuffer);
 
-			if (bp.getType() == BLOB_INDIRECT)
+			if (bp.getType() == BlockType.BLOB_INDX)
 			{
 				freeBlocks(aBlockAccessor, new ByteArrayBuffer(aBlockAccessor.readBlock(bp)).limit(bp.getLogicalSize()));
 			}

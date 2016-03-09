@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.io.BlockPointer;
-import static org.terifan.raccoon.io.BlockPointer.Types.*;
+import org.terifan.raccoon.io.BlockPointer.BlockType;
 
 
 class IndexNode implements Node
@@ -29,9 +29,9 @@ class IndexNode implements Node
 
 
 	@Override
-	public int getType()
+	public BlockType getType()
 	{
-		return NODE_INDIRECT;
+		return BlockType.NODE_INDX;
 	}
 
 
@@ -43,7 +43,7 @@ class IndexNode implements Node
 
 	void setPointer(int aIndex, BlockPointer aBlockPointer)
 	{
-		assert get(aIndex).getType() == NODE_FREE || get(aIndex).getRange() == aBlockPointer.getRange() : get(aIndex).getType() + " " + get(aIndex).getRange() +"=="+ aBlockPointer.getRange();
+		assert get(aIndex).getType() == BlockType.NODE_FREE || get(aIndex).getRange() == aBlockPointer.getRange() : get(aIndex).getType() + " " + get(aIndex).getRange() +"=="+ aBlockPointer.getRange();
 
 		set(aIndex, aBlockPointer);
 	}
@@ -51,7 +51,7 @@ class IndexNode implements Node
 
 	BlockPointer getPointer(int aIndex)
 	{
-		if (getPointerType(aIndex) == NODE_FREE)
+		if (getPointerType(aIndex) == BlockType.NODE_FREE)
 		{
 			return null;
 		}
@@ -66,7 +66,7 @@ class IndexNode implements Node
 
 	int findPointer(int aIndex)
 	{
-		for (; getPointerType(aIndex) == NODE_FREE; aIndex--)
+		for (; getPointerType(aIndex) == BlockType.NODE_FREE; aIndex--)
 		{
 		}
 
@@ -114,7 +114,7 @@ class IndexNode implements Node
 	}
 
 
-	private int getPointerType(int aIndex)
+	private BlockType getPointerType(int aIndex)
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 

@@ -23,6 +23,7 @@ import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
+import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.Assert;
@@ -976,5 +977,18 @@ public class Database implements AutoCloseable
 		}
 
 		return result;
+	}
+
+
+	public void scan()
+	{
+		Log.out.println(mSystemTable);
+		mSystemTable.scan();
+
+		for (Table table : getTables())
+		{
+			Log.out.println(table);
+			table.scan();
+		}
 	}
 }

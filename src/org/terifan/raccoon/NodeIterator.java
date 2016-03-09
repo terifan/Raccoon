@@ -4,7 +4,7 @@ import org.terifan.raccoon.io.BlockPointer;
 import java.util.ArrayDeque;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import static org.terifan.raccoon.io.BlockPointer.Types.*;
+import org.terifan.raccoon.io.BlockPointer.BlockType;
 
 
 class NodeIterator implements Iterator<Entry>
@@ -74,7 +74,7 @@ class NodeIterator implements Iterator<Entry>
 
 		BlockPointer pointer = mNodes.pop();
 
-		if (pointer.getType() == NODE_LEAF)
+		if (pointer.getType() == BlockType.NODE_LEAF)
 		{
 			mMap = mHashTable.readLeaf(pointer);
 
@@ -92,7 +92,7 @@ class NodeIterator implements Iterator<Entry>
 		{
 			BlockPointer next = node.getPointer(i);
 
-			if (next != null && (next.getType() == NODE_INDIRECT || next.getType() == NODE_LEAF))
+			if (next != null && (next.getType() == BlockType.NODE_INDX || next.getType() == BlockType.NODE_LEAF))
 			{
 				mNodes.addLast(next);
 			}

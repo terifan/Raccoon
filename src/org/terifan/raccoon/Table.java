@@ -390,6 +390,12 @@ public class Table<T> implements Iterable<T>
 	}
 
 
+	void scan()
+	{
+		mTableImplementation.scan();
+	}
+
+
 	public class TypeResult
 	{
 		public byte type;

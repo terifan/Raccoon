@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.BlockPointer.BlockType;
 import org.terifan.raccoon.util.ByteBufferMap;
-import static org.terifan.raccoon.io.BlockPointer.Types.*;
 
 
 public class LeafNode extends ByteBufferMap implements Node
@@ -21,8 +21,8 @@ public class LeafNode extends ByteBufferMap implements Node
 
 
 	@Override
-	public int getType()
+	public BlockType getType()
 	{
-		return NODE_LEAF;
+		return BlockType.NODE_LEAF;
 	}
 }

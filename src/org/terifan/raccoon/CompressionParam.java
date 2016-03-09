@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import static org.terifan.raccoon.io.BlockPointer.Types.*;
+import org.terifan.raccoon.io.BlockPointer.BlockType;
 
 
 public class CompressionParam
@@ -53,14 +53,14 @@ public class CompressionParam
 	}
 
 
-	public int getCompressorId(int aType)
+	public int getCompressorId(BlockType aType)
 	{
 		switch (aType)
 		{
 			case NODE_LEAF:
 				return mLeaf;
-			case NODE_INDIRECT:
-			case BLOB_INDIRECT:
+			case NODE_INDX:
+			case BLOB_INDX:
 				return mNode;
 			case BLOB_DATA:
 				return mBlob;

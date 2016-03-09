@@ -8,6 +8,7 @@ import java.util.zip.Deflater;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Stats;
+import org.terifan.raccoon.io.BlockPointer.BlockType;
 import org.terifan.security.random.ISAAC;
 import org.terifan.raccoon.util.Log;
 
@@ -110,6 +111,10 @@ public class BlockAccessor
 				getCompressor(aBlockPointer.getCompression()).decompress(buffer, 0, aBlockPointer.getPhysicalSize(), tmp, 0, tmp.length);
 				buffer = tmp;
 			}
+			else if (aBlockPointer.getLogicalSize() < buffer.length)
+			{
+				buffer = Arrays.copyOfRange(buffer, 0, aBlockPointer.getLogicalSize());
+			}
 
 			Log.dec();
 
@@ -122,7 +127,7 @@ public class BlockAccessor
 	}
 
 
-	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, int aType, int aRange)
+	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType, int aRange)
 	{
 		try
 		{
