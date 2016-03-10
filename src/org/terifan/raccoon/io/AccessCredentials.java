@@ -78,7 +78,7 @@ public final class AccessCredentials
 	}
 
 
-	synchronized byte[] generateKeyPool(byte[] aSalt, int aIterationCount, int aPoolSize)
+	byte[] generateKeyPool(byte[] aSalt, int aIterationCount, int aPoolSize)
 	{
 		ensurePasswordExtended();
 
@@ -91,7 +91,7 @@ public final class AccessCredentials
 	/**
 	 * Password extension is intended to slow down the creation of key material. This method doesn't depend on the key generator or file being protected.
 	 */
-	private synchronized void ensurePasswordExtended()
+	private void ensurePasswordExtended()
 	{
 		if (!mPasswordExtended)
 		{

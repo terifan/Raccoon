@@ -42,72 +42,72 @@ public class BlockAccessorNGTest
 	}
 
 
-	@Test(dataProvider = "deviceType")
-	public void testConcurrency(boolean aSecure) throws IOException
-	{
-//for(int test=0; test<100; test++)
-{
-
-		int iterations = 1000;
-		int size = 100;
-		int offset = 100;
-		int length = size * 512;
-
-		byte[][] in = new byte[iterations][offset + length + 100];
-		Random rnd = new Random(1);
-		for (int i = 0; i < iterations; i++)
-		{
-			rnd.nextBytes(in[i]);
-		}
-
-		MemoryBlockDevice memoryBlockDevice = new MemoryBlockDevice(512);
-
-		IPhysicalBlockDevice secureBlockDevice = !aSecure ? memoryBlockDevice : new SecureBlockDevice(memoryBlockDevice, new AccessCredentials("password"));
-
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(secureBlockDevice);
-		BlockAccessor blockAccessor = new BlockAccessor(managedBlockDevice);
-
-		BlockPointer[] blockPointer = new BlockPointer[iterations];
-
-		try (__FixedThreadExecutor executor = new __FixedThreadExecutor(1f))
-		{
-			for (int j = 0; j < iterations; j++)
-			{
-				int i = j;
-				executor.submit(new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						blockPointer[i] = blockAccessor.writeBlock(in[i], offset, length, 0L, BlockType.NODE_FREE, 0);
-					}
-				});
-			}
-		}
-
-		managedBlockDevice.commit();
-
-		try (__FixedThreadExecutor executor = new __FixedThreadExecutor(1f))
-		{
-			for (int j = 0; j < iterations; j++)
-			{
-				int i = j;
-				executor.submit(new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						byte[] out = blockAccessor.readBlock(blockPointer[i]);
-						byte[] expected = Arrays.copyOfRange(in[i], offset, 100 + length);
-
-						assertEquals(expected, out);
-					}
-				});
-			}
-		}
-
-}
-	}
+//	@Test(dataProvider = "deviceType")
+//	public void testConcurrency(boolean aSecure) throws IOException
+//	{
+////for(int test=0; test<100; test++)
+//{
+//
+//		int iterations = 1000;
+//		int size = 100;
+//		int offset = 100;
+//		int length = size * 512;
+//
+//		byte[][] in = new byte[iterations][offset + length + 100];
+//		Random rnd = new Random(1);
+//		for (int i = 0; i < iterations; i++)
+//		{
+//			rnd.nextBytes(in[i]);
+//		}
+//
+//		MemoryBlockDevice memoryBlockDevice = new MemoryBlockDevice(512);
+//
+//		IPhysicalBlockDevice secureBlockDevice = !aSecure ? memoryBlockDevice : new SecureBlockDevice(memoryBlockDevice, new AccessCredentials("password"));
+//
+//		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(secureBlockDevice);
+//		BlockAccessor blockAccessor = new BlockAccessor(managedBlockDevice);
+//
+//		BlockPointer[] blockPointer = new BlockPointer[iterations];
+//
+//		try (__FixedThreadExecutor executor = new __FixedThreadExecutor(1f))
+//		{
+//			for (int j = 0; j < iterations; j++)
+//			{
+//				int i = j;
+//				executor.submit(new Runnable()
+//				{
+//					@Override
+//					public void run()
+//					{
+//						blockPointer[i] = blockAccessor.writeBlock(in[i], offset, length, 0L, BlockType.NODE_FREE, 0);
+//					}
+//				});
+//			}
+//		}
+//
+//		managedBlockDevice.commit();
+//
+//		try (__FixedThreadExecutor executor = new __FixedThreadExecutor(1f))
+//		{
+//			for (int j = 0; j < iterations; j++)
+//			{
+//				int i = j;
+//				executor.submit(new Runnable()
+//				{
+//					@Override
+//					public void run()
+//					{
+//						byte[] out = blockAccessor.readBlock(blockPointer[i]);
+//						byte[] expected = Arrays.copyOfRange(in[i], offset, 100 + length);
+//
+//						assertEquals(expected, out);
+//					}
+//				});
+//			}
+//		}
+//
+//}
+//	}
 
 
 	@DataProvider

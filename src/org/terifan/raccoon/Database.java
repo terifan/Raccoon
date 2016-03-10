@@ -948,31 +948,49 @@ public class Database implements AutoCloseable
 	}
 
 
-	public synchronized List<Table> getTables()
+	public List<Table> getTables()
 	{
-		ArrayList<Table> tables = new ArrayList<>();
-		mSystemTable.list(TableMetadata.class).stream().forEach(e->tables.add(openTable((TableMetadata)e, OpenOption.OPEN)));
-		return tables;
+		mReadLock.lock();
+
+		try
+		{
+			ArrayList<Table> tables = new ArrayList<>();
+			mSystemTable.list(TableMetadata.class).stream().forEach(e->tables.add(openTable((TableMetadata)e, OpenOption.OPEN)));
+			return tables;
+		}
+		finally
+		{
+			mReadLock.unlock();
+		}
 	}
 
 
 	public synchronized <T> List<T> getDiscriminators(Factory<T> aFactory)
 	{
-		ArrayList<T> result = new ArrayList<>();
+		mReadLock.lock();
 
-		String name = aFactory.newInstance().getClass().getName();
-
-		for (TableMetadata tableMetadata : (List<TableMetadata>)mSystemTable.list(TableMetadata.class))
+		try
 		{
-			if (name.equals(tableMetadata.getTypeName()))
-			{
-				T instance = aFactory.newInstance();
-				tableMetadata.getMarshaller().unmarshalDiscriminators(new ByteArrayBuffer(tableMetadata.getDiscriminatorKey()), instance);
-				result.add(instance);
-			}
-		}
+			ArrayList<T> result = new ArrayList<>();
 
-		return result;
+			String name = aFactory.newInstance().getClass().getName();
+
+			for (TableMetadata tableMetadata : (List<TableMetadata>)mSystemTable.list(TableMetadata.class))
+			{
+				if (name.equals(tableMetadata.getTypeName()))
+				{
+					T instance = aFactory.newInstance();
+					tableMetadata.getMarshaller().unmarshalDiscriminators(new ByteArrayBuffer(tableMetadata.getDiscriminatorKey()), instance);
+					result.add(instance);
+				}
+			}
+
+			return result;
+		}
+		finally
+		{
+			mReadLock.unlock();
+		}
 	}
 
 

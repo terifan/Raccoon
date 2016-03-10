@@ -307,7 +307,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private synchronized void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;

@@ -118,10 +118,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	{
 		Log.v("commit");
 
-		synchronized (this)
-		{
-			mFile.force(aMetadata);
-		}
+		mFile.force(aMetadata);
 	}
 
 

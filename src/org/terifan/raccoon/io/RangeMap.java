@@ -189,19 +189,16 @@ class RangeMap implements Cloneable
 	@Override
 	public RangeMap clone()
 	{
-		RangeMap map;
 		try
 		{
-			map = (RangeMap)super.clone();
+			RangeMap map = (RangeMap)super.clone();
+			map.mMap = (TreeMap<Integer,Integer>)this.mMap.clone();
+			return map;
 		}
 		catch (CloneNotSupportedException e)
 		{
-			map = new RangeMap();
-			map.mSpace = this.mSpace;
-			map.mMap = (TreeMap<Integer,Integer>)this.mMap.clone();
+			throw new RuntimeException(e);
 		}
-
-		return map;
 	}
 
 

@@ -5,6 +5,7 @@ import java.io.File;
 import java.util.GregorianCalendar;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.OpenOption;
+import org.terifan.raccoon.Stats;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.util.Log;
 
