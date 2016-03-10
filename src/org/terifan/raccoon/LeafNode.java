@@ -9,14 +9,14 @@ public class LeafNode extends ByteBufferMap implements Node
 	public LeafNode(byte[] aBuffer)
 	{
 		super(aBuffer);
-		Stats.leafNodeCreation++;
+		Stats.leafNodeCreation.incrementAndGet();
 	}
 
 
 	public LeafNode(int aCapacity)
 	{
 		super(aCapacity);
-		Stats.leafNodeCreation++;
+		Stats.leafNodeCreation.incrementAndGet();
 	}
 
 

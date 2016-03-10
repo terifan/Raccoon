@@ -171,6 +171,35 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 
 
 	@Override
+	public int hashCode()
+	{
+		return mName.hashCode() ^ mIndex ^ mContentType.ordinal() ^ mTypeName.hashCode() ^ mCategory.ordinal() ^ mDepth ^ (mArray ? 1 : 0) ^ (mNullable ? 2 : 0);
+	}
+
+
+	@Override
+	public boolean equals(Object aOther)
+	{
+		if (aOther instanceof FieldType)
+		{
+			FieldType other = (FieldType)aOther;
+
+			return mName.equals(other.mName) 
+				&& mTypeName.equals(other.mTypeName) 
+				&& mArray == other.mArray 
+				&& mDepth == other.mDepth 
+				&& mIndex == other.mIndex 
+				&& mField == other.mField 
+				&& mNullable == other.mNullable 
+				&& mContentType == other.mContentType
+				&& mCategory == other.mCategory;
+		}
+
+		return false;
+	}
+
+
+	@Override
 	public int compareTo(FieldType aOther)
 	{
 		return mName.compareTo(aOther.mName);

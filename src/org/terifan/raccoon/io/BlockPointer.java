@@ -195,7 +195,7 @@ public class BlockPointer implements Serializable
 		aBuffer.writeInt32(mChecksum);
 		aBuffer.writeInt64(mBlockKey);
 
-		Stats.pointerEncode++;
+		Stats.pointerEncode.incrementAndGet();
 
 		return aBuffer;
 	}
@@ -213,7 +213,7 @@ public class BlockPointer implements Serializable
 		mChecksum = ByteArrayBuffer.readInt32(aBuffer, aOffset + 20);
 		mBlockKey = ByteArrayBuffer.readInt64(aBuffer, aOffset + 24);
 
-		Stats.pointerDecode++;
+		Stats.pointerDecode.incrementAndGet();
 
 		return this;
 	}
@@ -231,7 +231,7 @@ public class BlockPointer implements Serializable
 		mChecksum = aBuffer.readInt32();
 		mBlockKey = aBuffer.readInt64();
 
-		Stats.pointerDecode++;
+		Stats.pointerDecode.incrementAndGet();
 
 		return this;
 	}

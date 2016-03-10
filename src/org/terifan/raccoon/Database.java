@@ -23,7 +23,6 @@ import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
-import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.Assert;
@@ -448,12 +447,12 @@ public class Database implements AutoCloseable
 	@Override
 	public void close() throws IOException
 	{
-		mWriteLock.lock();
-
 		if (mBlockDevice == null)
 		{
 			return;
 		}
+
+		mWriteLock.lock();
 
 		try
 		{
@@ -905,9 +904,6 @@ public class Database implements AutoCloseable
 
 	public String integrityCheck()
 	{
-		// this exists to ensure MemoryBlockDevice is included in distributions
-		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-
 		mWriteLock.lock();
 		try
 		{
@@ -990,5 +986,12 @@ public class Database implements AutoCloseable
 			Log.out.println(table);
 			table.scan();
 		}
+	}
+
+
+	private static void dummy()
+	{
+		// this exists to ensure MemoryBlockDevice is included in distributions
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 	}
 }

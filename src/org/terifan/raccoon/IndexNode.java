@@ -17,7 +17,7 @@ class IndexNode implements Node
 		mPointerCount = aBuffer.length / BlockPointer.SIZE;
 		mBuffer = aBuffer;
 
-		Stats.indexNodeCreation++;
+		Stats.indexNodeCreation.incrementAndGet();
 	}
 
 

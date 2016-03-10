@@ -78,7 +78,7 @@ public final class AccessCredentials
 	}
 
 
-	byte[] generateKeyPool(byte[] aSalt, int aIterationCount, int aPoolSize)
+	synchronized byte[] generateKeyPool(byte[] aSalt, int aIterationCount, int aPoolSize)
 	{
 		ensurePasswordExtended();
 

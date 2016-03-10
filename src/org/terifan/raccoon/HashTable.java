@@ -418,7 +418,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 	private byte[] getValue(long aHash, int aLevel, byte[] aKey, IndexNode aNode)
 	{
-		Stats.getValue++;
+		Stats.getValue.incrementAndGet();
 		Log.i("get value");
 
 		int index = aNode.findPointer(computeIndex(aHash, aLevel));
@@ -441,7 +441,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 	private byte[] putValue(byte[] aKey, byte[] aValue, long aHash, int aLevel, IndexNode aNode)
 	{
-		Stats.putValue++;
+		Stats.putValue.incrementAndGet();
 		Log.v("put value");
 		Log.inc();
 
@@ -476,7 +476,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, byte[] aKey, byte[] aValue, int aLevel, IndexNode aNode, long aHash)
 	{
-		Stats.putValueLeaf++;
+		Stats.putValueLeaf.incrementAndGet();
 
 		LeafNode map = readLeaf(aBlockPointer);
 
@@ -507,7 +507,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 	private byte[] upgradeHoleToLeaf(byte[] aKey, byte[] aValue, IndexNode aNode, BlockPointer aBlockPointer, int aIndex)
 	{
-		Stats.upgradeHoleToLeaf++;
+		Stats.upgradeHoleToLeaf.incrementAndGet();
 		Log.v("upgrade hole to leaf");
 		Log.inc();
 
@@ -529,7 +529,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 		Log.v("split leaf");
 		Log.inc();
 
-		Stats.splitLeaf++;
+		Stats.splitLeaf.incrementAndGet();
 
 		freeBlock(aBlockPointer);
 
@@ -563,7 +563,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		assert aBlockPointer.getRange() >= 2;
 
-		Stats.splitLeaf++;
+		Stats.splitLeaf.incrementAndGet();
 		Log.inc();
 		Log.v("split leaf");
 		Log.inc();
@@ -620,7 +620,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 	private byte[] removeValue(long aHash, int aLevel, byte[] aKey, IndexNode aNode)
 	{
-		Stats.removeValue++;
+		Stats.removeValue.incrementAndGet();
 
 		int index = aNode.findPointer(computeIndex(aHash, aLevel));
 		BlockPointer blockPointer = aNode.getPointer(index);

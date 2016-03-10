@@ -12,12 +12,10 @@ import org.terifan.raccoon.util.Log;
 public class DeflateCompressor implements Compressor
 {
 	private int mLevel;
-	private int mPageSize;
 
 
-	public DeflateCompressor(int aPageSize, int aLevel)
+	public DeflateCompressor(int aLevel)
 	{
-		mPageSize = aPageSize;
 		mLevel = aLevel;
 	}
 
@@ -60,11 +58,5 @@ public class DeflateCompressor implements Compressor
 				position += len;
 			}
 		}
-	}
-
-
-	private int roundUp(int aSize)
-	{
-		return aSize + ((mPageSize - (aSize % mPageSize)) % mPageSize);
 	}
 }

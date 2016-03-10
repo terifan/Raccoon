@@ -194,7 +194,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private synchronized long allocBlockInternal(int aBlockCount) throws IOException
+	private long allocBlockInternal(int aBlockCount) throws IOException
 	{
 		int blockIndex = mRangeMap.next(aBlockCount);
 
@@ -230,7 +230,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private synchronized void freeBlockInternal(long aBlockIndex, int aBlockCount) throws IOException
+	private void freeBlockInternal(long aBlockIndex, int aBlockCount) throws IOException
 	{
 		Log.v("free block %d +%d", aBlockIndex, aBlockCount);
 
@@ -270,7 +270,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private synchronized void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	private void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;
@@ -334,7 +334,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public synchronized void commit() throws IOException
+	public void commit() throws IOException
 	{
 		if (mModified)
 		{
@@ -367,7 +367,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public synchronized void rollback() throws IOException
+	public void rollback() throws IOException
 	{
 		if (mModified)
 		{
@@ -439,7 +439,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private synchronized void writeSuperBlock() throws IOException
+	private void writeSuperBlock() throws IOException
 	{
 		mSuperBlock.mWriteCounter++;
 		mSuperBlock.mUpdated = new Date();

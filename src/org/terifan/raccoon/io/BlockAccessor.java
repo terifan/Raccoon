@@ -60,7 +60,7 @@ public class BlockAccessor
 			Log.inc();
 
 			mBlockDevice.freeBlock(aBlockPointer.getOffset(), roundUp(aBlockPointer.getPhysicalSize()) / mBlockDevice.getBlockSize());
-			Stats.blockFree++;
+			Stats.blockFree.incrementAndGet();
 
 			if (mCacheEnabled)
 			{
@@ -98,7 +98,7 @@ public class BlockAccessor
 			byte[] buffer = new byte[roundUp(aBlockPointer.getPhysicalSize())];
 
 			mBlockDevice.readBlock(aBlockPointer.getOffset(), buffer, 0, buffer.length, aBlockPointer.getBlockKey());
-			Stats.blockRead++;
+			Stats.blockRead.incrementAndGet();
 
 			if (digest(buffer, 0, aBlockPointer.getPhysicalSize(), (int)aBlockPointer.getOffset()) != aBlockPointer.getChecksum())
 			{
@@ -165,7 +165,7 @@ public class BlockAccessor
 
 			int blockCount = aBuffer.length / mPageSize;
 			long blockIndex = mBlockDevice.allocBlock(blockCount);
-			Stats.blockAlloc++;
+			Stats.blockAlloc.incrementAndGet();
 
 			BlockPointer blockPointer = new BlockPointer();
 			blockPointer.setCompression(compressorId);
@@ -182,7 +182,7 @@ public class BlockAccessor
 			Log.inc();
 
 			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getBlockKey());
-			Stats.blockWrite++;
+			Stats.blockWrite.incrementAndGet();
 
 			Log.dec();
 
@@ -193,7 +193,7 @@ public class BlockAccessor
 
 			return blockPointer;
 		}
-		catch (Exception e)
+		catch (IOException e)
 		{
 			throw new DatabaseException("Error writing block", e);
 		}
@@ -220,13 +220,13 @@ public class BlockAccessor
 				compressor = new ZeroCompressor(mPageSize);
 				break;
 			case CompressionParam.DEFLATE_FAST:
-				compressor = new DeflateCompressor(mPageSize, Deflater.BEST_SPEED);
+				compressor = new DeflateCompressor(Deflater.BEST_SPEED);
 				break;
 			case CompressionParam.DEFLATE_DEFAULT:
-				compressor = new DeflateCompressor(mPageSize, Deflater.DEFAULT_COMPRESSION);
+				compressor = new DeflateCompressor(Deflater.DEFAULT_COMPRESSION);
 				break;
 			case CompressionParam.DEFLATE_BEST:
-				compressor = new DeflateCompressor(mPageSize, Deflater.BEST_COMPRESSION);
+				compressor = new DeflateCompressor(Deflater.BEST_COMPRESSION);
 				break;
 			default:
 				throw new IllegalStateException("Illegal compressor: " + aCompressorId);

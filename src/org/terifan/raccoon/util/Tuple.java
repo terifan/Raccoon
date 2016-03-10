@@ -15,6 +15,8 @@ import java.util.Objects;
  */
 public class Tuple<T, U> implements Serializable, Comparable<Tuple<T, U>>
 {
+	private final static long serialVersionUID = 1L;
+
 	private T mFirst;
 	private U mSecond;
 

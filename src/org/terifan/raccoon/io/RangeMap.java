@@ -6,7 +6,7 @@ import java.util.TreeMap;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-class RangeMap
+class RangeMap implements Cloneable
 {
 	private TreeMap<Integer,Integer> mMap;
 	private int mSpace;
@@ -19,7 +19,7 @@ class RangeMap
 	}
 
 
-	public /*synchronized*/ void add(int aOffset, int aSize)
+	public void add(int aOffset, int aSize)
 	{
 		if (aOffset < 0 || aSize <= 0)
 		{
@@ -70,7 +70,7 @@ class RangeMap
 	}
 
 
-	public /*synchronized*/ void remove(int aOffset, int aSize)
+	public void remove(int aOffset, int aSize)
 	{
 		if (aSize <= 0)
 		{
@@ -124,7 +124,7 @@ class RangeMap
 	}
 
 
-	public /*synchronized*/ int next(int aSize)
+	public int next(int aSize)
 	{
 		Entry<Integer, Integer> entry = mMap.firstEntry();
 
@@ -149,19 +149,19 @@ class RangeMap
 	}
 
 
-	public /*synchronized*/ int getFreeSpace()
+	public int getFreeSpace()
 	{
 		return mSpace;
 	}
 
 
-	public /*synchronized*/ int getUsedSpace()
+	public int getUsedSpace()
 	{
 		return mMap.lastEntry().getValue() - mSpace;
 	}
 
 
-	public /*synchronized*/ boolean isFree(int aOffset, int aSize)
+	public boolean isFree(int aOffset, int aSize)
 	{
 		Integer blockStart = mMap.floorKey(aOffset);
 
@@ -179,7 +179,7 @@ class RangeMap
 	}
 
 
-	public /*synchronized*/ void clear()
+	public void clear()
 	{
 		mMap.clear();
 		mSpace = 0;
@@ -187,7 +187,7 @@ class RangeMap
 
 
 	@Override
-	public /*synchronized*/ RangeMap clone()
+	public RangeMap clone()
 	{
 		RangeMap map;
 		try
@@ -197,16 +197,15 @@ class RangeMap
 		catch (CloneNotSupportedException e)
 		{
 			map = new RangeMap();
+			map.mSpace = this.mSpace;
+			map.mMap = (TreeMap<Integer,Integer>)this.mMap.clone();
 		}
-
-		map.mSpace = this.mSpace;
-		map.mMap = (TreeMap<Integer,Integer>)this.mMap.clone();
 
 		return map;
 	}
 
 
-	public /*synchronized*/ void read(ByteArrayBuffer aDataInput) throws IOException
+	public void read(ByteArrayBuffer aDataInput) throws IOException
 	{
 		int size = aDataInput.readVar32();
 
@@ -221,7 +220,7 @@ class RangeMap
 	}
 
 
-	public /*synchronized*/ void write(ByteArrayBuffer aDataOutput) throws IOException
+	public void write(ByteArrayBuffer aDataOutput) throws IOException
 	{
 		int prev = 0;
 
@@ -240,7 +239,7 @@ class RangeMap
 
 
 	@Override
-	public /*synchronized*/ String toString()
+	public String toString()
 	{
 		StringBuilder sb = new StringBuilder("{");
 		for (Integer key : mMap.keySet())

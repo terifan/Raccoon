@@ -9,7 +9,7 @@ import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
 
 
-public class BlobOutputStream extends OutputStream implements AutoCloseable
+public class BlobOutputStream extends OutputStream
 {
 	private final static int FRAGMENT_SIZE = 1024 * 1024;
 	private final static int POINTER_MAX_LENGTH = 4 * BlockPointer.SIZE;

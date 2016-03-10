@@ -6,7 +6,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
 
 
-public class BlobInputStream extends InputStream implements AutoCloseable
+public class BlobInputStream extends InputStream
 {
 	private final static String TAG = BlobInputStream.class.getName();
 

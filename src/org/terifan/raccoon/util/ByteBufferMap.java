@@ -1,8 +1,11 @@
 package org.terifan.raccoon.util;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -717,15 +720,22 @@ public class ByteBufferMap implements Iterable<byte[]>
 	@Override
 	public String toString()
 	{
-		StringBuilder sb = new StringBuilder();
-		for (byte[] k : this)
+		try
 		{
-			if (sb.length() > 0)
+			StringBuilder sb = new StringBuilder();
+			for (byte[] k : this)
 			{
-				sb.append(", ");
+				if (sb.length() > 0)
+				{
+					sb.append(", ");
+				}
+				sb.append(new String(k, "utf-8"));
 			}
-			sb.append(new String(k));
+			return "[" + sb.toString() + "]";
 		}
-		return "[" + sb.toString() + "]";
+		catch (UnsupportedEncodingException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 }
