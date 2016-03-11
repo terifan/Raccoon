@@ -796,6 +796,8 @@ public class Database implements AutoCloseable
 		try
 		{
 			Table table = openTable(aType, aEntity, OpenOption.OPEN);
+
+			// return empty stream when table not found
 			if (table == null)
 			{
 				return StreamSupport.stream(new AbstractSpliterator<T>(0, Spliterator.SIZED)
@@ -817,7 +819,6 @@ public class Database implements AutoCloseable
 				@Override
 				public boolean tryAdvance(Consumer<? super T> aConsumer)
 				{
-					Log.out.println(i);
 					if (i == list.size())
 					{
 						return false;
