@@ -35,6 +35,8 @@ public class EntityIterator<T> implements Iterator<T>
 		mTable.unmarshalToObjectKeys(outputEntity, entry.getKey());
 		mTable.unmarshalToObjectValues(outputEntity, entry.getValue());
 
+		initializeNewEntity(outputEntity);
+		
 		return outputEntity;
 	}
 
@@ -65,10 +67,23 @@ public class EntityIterator<T> implements Iterator<T>
 		}
 	}
 
+	private void initializeNewEntity(T aEntity)
+	{
+		Class type = mTable.getTableMetadata().getType();
+
+		Initializer initializer = mTable.getDatabase().getInitializer(type);
+
+		if (initializer != null)
+		{
+			initializer.initialize(aEntity);
+		}
+	}
+
 
 	@Override
 	public void remove()
 	{
 		mIterator.remove();
 	}
+
 }

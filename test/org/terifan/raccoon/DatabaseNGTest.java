@@ -27,6 +27,7 @@ import org.testng.annotations.DataProvider;
 import tests._Fruit1K;
 import static tests.__TestUtils.createBuffer;
 import static tests.__TestUtils.t;
+import static tests.__TestUtils.t;
 
 
 public class DatabaseNGTest
@@ -348,7 +349,7 @@ public class DatabaseNGTest
 			try (InputStream in = database.read(new _BlobKey1K("my blob")))
 			{
 				assertNotNull(in);
-				assertEquals(Streams.fetch(in), content);
+				assertEquals(Streams.readAll(in), content);
 			}
 		}
 	}
@@ -371,7 +372,7 @@ public class DatabaseNGTest
 			try (InputStream in = database.read(new _BlobKey1K("my blob")))
 			{
 				assertNotNull(in);
-				assertEquals(Streams.fetch(in), content);
+				assertEquals(Streams.readAll(in), content);
 			}
 		}
 	}
@@ -399,7 +400,7 @@ public class DatabaseNGTest
 			try (InputStream in = database.read(new _BlobKey1K("my blob")))
 			{
 				assertNotNull(in);
-				assertEquals(Streams.fetch(in), content);
+				assertEquals(Streams.readAll(in), content);
 			}
 		}
 	}

@@ -3,7 +3,6 @@ package org.terifan.raccoon.io;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import org.terifan.raccoon.util.Log;
 
 
 public final class Streams
@@ -13,23 +12,30 @@ public final class Streams
 	}
 
 
-	public static byte[] fetch(InputStream aInputStream) throws IOException
+	public static byte[] readAll(InputStream aInputStream) throws IOException
 	{
-		byte [] buffer = new byte[4096];
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-		for (;;)
+		try
 		{
-			int len = aInputStream.read(buffer);
+			byte [] buffer = new byte[4096];
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-			if (len <= 0)
+			for (;;)
 			{
-				break;
+				int len = aInputStream.read(buffer);
+
+				if (len <= 0)
+				{
+					break;
+				}
+
+				baos.write(buffer, 0, len);
 			}
 
-			baos.write(buffer, 0, len);
+			return baos.toByteArray();
 		}
-
-		return baos.toByteArray();
+		finally 
+		{
+			aInputStream.close();
+		}
 	}
 }

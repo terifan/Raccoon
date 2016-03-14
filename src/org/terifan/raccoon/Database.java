@@ -44,6 +44,7 @@ public class Database implements AutoCloseable
 
 	private IManagedBlockDevice mBlockDevice;
 	private final HashMap<Class,Factory> mFactories;
+	private final HashMap<Class,Initializer> mInitializers;
 	private final HashMap<TableMetadata,Table> mOpenTables;
 	private final TableMetadataMap mTableMetadatas;
 	private final TransactionCounter mTransactionId;
@@ -60,6 +61,7 @@ public class Database implements AutoCloseable
 		mTableMetadatas = new TableMetadataMap();
 		mFactories = new HashMap<>();
 		mTransactionId = new TransactionCounter();
+		mInitializers = new HashMap<>();
 	}
 
 
@@ -698,7 +700,7 @@ public class Database implements AutoCloseable
 					return null;
 				}
 
-				buffer = Streams.fetch(in);
+				buffer = Streams.readAll(in);
 			}
 
 			return new ByteArrayInputStream(buffer);
@@ -876,6 +878,18 @@ public class Database implements AutoCloseable
 	<T> Factory<T> getFactory(Class<T> aType)
 	{
 		return mFactories.get(aType);
+	}
+
+
+	public <T> void setInitializer(Class<T> aType, Initializer<T> aFactory)
+	{
+		mInitializers.put(aType, aFactory);
+	}
+
+
+	<T> Initializer<T> getInitializer(Class<T> aType)
+	{
+		return mInitializers.get(aType);
 	}
 
 

@@ -52,7 +52,7 @@ public class Entry
 		{
 			try
 			{
-				buffer.wrap(Streams.fetch(new BlobInputStream(mHashTable.getBlockAccessor(), buffer)));
+				buffer.wrap(Streams.readAll(new BlobInputStream(mHashTable.getBlockAccessor(), buffer)));
 				buffer.position(0);
 			}
 			catch (Exception e)

@@ -228,7 +228,7 @@ public class Table<T> implements Iterable<T>
 	{
 		try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId()))
 		{
-			bos.write(Streams.fetch(aInputStream));
+			bos.write(Streams.readAll(aInputStream));
 
 			byte[] oldValue = putWrap(getKeys(aEntity), bos.finish(), PTR_BLOB);
 
@@ -350,7 +350,7 @@ public class Table<T> implements Iterable<T>
 		{
 			try
 			{
-				buffer.wrap(Streams.fetch(new BlobInputStream(mBlockAccessor, buffer)));
+				buffer.wrap(Streams.readAll(new BlobInputStream(mBlockAccessor, buffer)));
 				buffer.position(0);
 			}
 			catch (Exception e)
