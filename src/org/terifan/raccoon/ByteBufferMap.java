@@ -40,7 +40,7 @@ class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 	private final static int HEADER_SIZE = 2 + 3;
 	private final static int ENTRY_POINTER_SIZE = 3;
 	private final static int ENTRY_HEADER_SIZE = 2 + 2;
-	private final static int MAX_VALUE_SIZE = 65535;
+	private final static int MAX_VALUE_SIZE = (1 << 16) - 1;
 
 	private final static int ENTRY_OVERHEAD = ENTRY_POINTER_SIZE + ENTRY_HEADER_SIZE;
 	public final static int OVERHEAD = HEADER_SIZE + ENTRY_OVERHEAD + ENTRY_POINTER_SIZE;
@@ -157,15 +157,15 @@ class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 //		System.arraycopy(aEntry.value, 0, tmp, 1, aEntry.value.length);
 //		aEntry.oldValue = put(aEntry.key, tmp);
 
-		byte[] aKey = aEntry.mKey;
-		byte[] aValue = aEntry.mValue;
+		byte[] key = aEntry.mKey;
+		byte[] value = aEntry.mValue;
 
-		if (aKey.length > MAX_VALUE_SIZE || aValue.length > MAX_VALUE_SIZE || aKey.length + aValue.length > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
+		if (key.length > MAX_VALUE_SIZE || value.length > MAX_VALUE_SIZE || key.length + value.length > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
 		{
-			throw new IllegalArgumentException("Entry length exceeds capacity of this map: " + (aKey.length + aValue.length) + " > " + (mCapacity - ENTRY_HEADER_SIZE - HEADER_SIZE - ENTRY_POINTER_SIZE));
+			throw new IllegalArgumentException("Entry length exceeds capacity of this map: " + (key.length + value.length) + " > " + (mCapacity - ENTRY_HEADER_SIZE - HEADER_SIZE - ENTRY_POINTER_SIZE));
 		}
 
-		int index = indexOf(aKey);
+		int index = indexOf(key);
 
 		// if key already exists
 		if (index >= 0)
@@ -173,33 +173,33 @@ class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 			int oldValueLength = readValueLength(index);
 
 			// fast put
-			if (oldValueLength == aValue.length)
+			if (oldValueLength == value.length)
 			{
 				int entryOffset = readEntryOffset(index);
 				int valueOffset = entryOffset + ENTRY_HEADER_SIZE + readKeyLength(index);
 				aEntry.mValue = Arrays.copyOfRange(mBuffer, mStartOffset + valueOffset, mStartOffset + valueOffset + oldValueLength);
 
-				System.arraycopy(aValue, 0, mBuffer, mStartOffset + valueOffset, aValue.length);
+				System.arraycopy(value, 0, mBuffer, mStartOffset + valueOffset, value.length);
 
 				assert integrityCheck() == null : integrityCheck();
 
 				return true;
 			}
 
-			if (aValue.length - oldValueLength > getFreeSpace())
+			if (value.length - oldValueLength > getFreeSpace())
 			{
 				return false;
 			}
 
-			aEntry.mValue = getValue(index); // todo: skip when copying the map?
+			aEntry.mValue = getValue(index);
 
 			remove(index);
 
-			assert indexOf(aKey) == (-index) - 1;
+			assert indexOf(key) == (-index) - 1;
 		}
 		else
 		{
-			if (getFreeSpace() < ENTRY_HEADER_SIZE + aKey.length + aValue.length + ENTRY_POINTER_SIZE)
+			if (getFreeSpace() < ENTRY_HEADER_SIZE + key.length + value.length + ENTRY_POINTER_SIZE)
 			{
 				return false;
 			}
@@ -218,11 +218,11 @@ class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 
 		// write entry
 		writeEntryOffset(index, mFreeSpaceOffset);
-		writeEntryHeader(index, aKey.length, aValue.length);
-		System.arraycopy(aKey, 0, mBuffer, mStartOffset + readKeyOffset(index), aKey.length);
-		System.arraycopy(aValue, 0, mBuffer, mStartOffset + readValueOffset(index), aValue.length);
+		writeEntryHeader(index, key.length, value.length);
+		System.arraycopy(key, 0, mBuffer, mStartOffset + readKeyOffset(index), key.length);
+		System.arraycopy(value, 0, mBuffer, mStartOffset + readValueOffset(index), value.length);
 
-		mFreeSpaceOffset += ENTRY_HEADER_SIZE + aKey.length + aValue.length;
+		mFreeSpaceOffset += ENTRY_HEADER_SIZE + key.length + value.length;
 
 		writeBufferHeader();
 
@@ -245,25 +245,6 @@ class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 		aEntry.mValue = getValue(index);
 
 		return true;
-	}
-	
-	
-	private Entry getEntry(int aIndex)
-	{
-		Entry entry = new Entry();
-
-		int modCount = mModCount;
-
-		int entryOffset = readEntryOffset(aIndex);
-		int keyLength = readInt16(entryOffset);
-		int offset = mStartOffset + entryOffset + ENTRY_HEADER_SIZE;
-
-		entry.mKey = Arrays.copyOfRange(mBuffer, offset, offset + keyLength);
-		entry.mValue = getValue(aIndex);
-
-		assert mModCount == modCount : mModCount + " == " + modCount;
-
-		return entry;
 	}
 
 
@@ -582,13 +563,13 @@ class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 		try
 		{
 			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < mEntryCount; i++)
+			for (Entry entry : this)
 			{
 				if (sb.length() > 0)
 				{
 					sb.append(", ");
 				}
-				sb.append(new String(getEntry(i).getKey(), "utf-8"));
+				sb.append(new String(entry.getKey(), "utf-8"));
 			}
 			return "[" + sb.toString() + "]";
 		}
@@ -602,44 +583,52 @@ class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 	@Override
 	public Iterator<Entry> iterator()
 	{
-		return new Iterator<Entry>()
-		{
-			private int mExpectedModCount = mModCount;
-			private int mIndex;
-
-
-			@Override
-			public boolean hasNext()
-			{
-				if (mExpectedModCount != mModCount)
-				{
-					throw new ConcurrentModificationException();
-				}
-
-				return mIndex < mEntryCount;
-			}
-
-
-			@Override
-			public Entry next()
-			{
-				if (mExpectedModCount != mModCount)
-				{
-					throw new ConcurrentModificationException();
-				}
-
-				return getEntry(mIndex++);
-			}
-
-
-			@Override
-			public void remove()
-			{
-				throw new UnsupportedOperationException();
-			}
-		};
+		return new EntryIterator();
 	}
-	
+
+
+	public class EntryIterator implements Iterator<Entry>
+	{
+		private final int mExpectedModCount = mModCount;
+		private int mIndex;
+
+
+		@Override
+		public boolean hasNext()
+		{
+			return mIndex < mEntryCount;
+		}
+
+
+		@Override
+		public Entry next()
+		{
+			if (mExpectedModCount != mModCount)
+			{
+				throw new ConcurrentModificationException();
+			}
+
+			int entryOffset = readEntryOffset(mIndex);
+			int keyLength = readInt16(entryOffset);
+			int offset = mStartOffset + entryOffset + ENTRY_HEADER_SIZE;
+
+			Entry entry = new Entry();
+			entry.mKey = Arrays.copyOfRange(mBuffer, offset, offset + keyLength);
+			entry.mValue = getValue(mIndex);
+
+			mIndex++;
+			
+			return entry;
+		}
+
+
+		@Override
+		public void remove()
+		{
+			throw new UnsupportedOperationException();
+		}
+	}
+
 
 	public static class Entry
 	{
