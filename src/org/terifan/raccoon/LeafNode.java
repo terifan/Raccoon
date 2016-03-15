@@ -4,7 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import org.terifan.raccoon.io.BlockPointer;
+import org.terifan.raccoon.io.BlockPointer.BlockType;
 
 
 /**
@@ -148,9 +148,9 @@ class LeafNode implements Iterable<LeafEntry>, Node
 	
 
 	@Override
-	public BlockPointer.BlockType getType()
+	public BlockType getType()
 	{
-		return BlockPointer.BlockType.NODE_LEAF;
+		return BlockType.NODE_LEAF;
 	}
 
 	
