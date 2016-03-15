@@ -4,8 +4,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /**
@@ -15,9 +13,9 @@ import java.util.logging.Logger;
  *
  * implementation notes:
  * - an empty map will always consist of only zero value bytes
- * - the map does not record the capacity hence this must be provided when an instance is created
- * - the map has a six byte overhead
- * - each entry has a seven byte overhead
+ * - the map does not record the capacity, this must be provided when an instance is created
+ * - the map have a six byte overhead
+ * - each entry have a seven byte overhead
  *
  * Data layout:
  *
@@ -121,12 +119,7 @@ public class ByteBufferMap implements Iterable<byte[]>
 		mBuffer = aBuffer;
 		mStartOffset = aOffset;
 		mCapacity = aCapacity;
-//		update();
-//	}
-//
-//
-//	public ByteBufferMap update()
-//	{
+
 		mEntryCount = readTriple(0);
 		mFreeSpaceOffset = readTriple(3) + HEADER_SIZE;
 		mPointerListOffset = mCapacity - ENTRY_POINTER_SIZE * mEntryCount;
@@ -139,8 +132,6 @@ public class ByteBufferMap implements Iterable<byte[]>
 		}
 
 		assert integrityCheck() == null : integrityCheck();
-
-//		return this;
 	}
 
 
@@ -154,6 +145,17 @@ public class ByteBufferMap implements Iterable<byte[]>
 
 		return this;
 	}
+
+
+//	public static class Entry
+//	{
+//		byte type;
+//		byte[] key;
+//		byte[] value;
+//		byte[] oldValue;
+//	}
+//
+//	public boolean put(Entry aEntry)
 
 
 	public byte[] put(byte[] aKey, byte[] aValue)
