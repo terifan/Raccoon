@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.ByteBufferMap;
+import org.terifan.raccoon.LeafNode;
 import java.util.HashMap;
 import java.util.Map;
 import org.testng.annotations.Test;
@@ -13,14 +13,14 @@ public class ByteBufferMapNGTest
 	@Test
 	public void testSinglePutGet()
 	{
-		ByteBufferMap map = new ByteBufferMap(4096);
+		LeafNode map = new LeafNode(4096);
 
 		byte[] key = tb();
 		byte[] value = tb();
 
-		map.put(new ByteBufferMap.Entry(key, value, 0));
+		map.put(new LeafEntry(key, value, 0));
 		
-		ByteBufferMap.Entry entry = new ByteBufferMap.Entry(key);
+		LeafEntry entry = new LeafEntry(key);
 
 		assertTrue(map.get(entry));
 		assertEquals(entry.getValue(), value);
@@ -30,7 +30,7 @@ public class ByteBufferMapNGTest
 	@Test
 	public void testFillBuffer()
 	{
-		ByteBufferMap map = new ByteBufferMap(4096);
+		LeafNode map = new LeafNode(4096);
 
 		HashMap<byte[],byte[]> values = new HashMap<>();
 
@@ -39,7 +39,7 @@ public class ByteBufferMapNGTest
 			byte[] key = tb();
 			byte[] value = tb();
 
-			if (!map.put(new ByteBufferMap.Entry(key, value, 0)))
+			if (!map.put(new LeafEntry(key, value, 0)))
 			{
 				break;
 			}
@@ -49,7 +49,7 @@ public class ByteBufferMapNGTest
 
 		for (Map.Entry<byte[],byte[]> entry : values.entrySet())
 		{
-			ByteBufferMap.Entry entry1 = new ByteBufferMap.Entry(entry.getKey());
+			LeafEntry entry1 = new LeafEntry(entry.getKey());
 			assertTrue(map.get(entry1));
 			assertEquals(entry1.getValue(), entry.getValue());
 		}

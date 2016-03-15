@@ -8,13 +8,13 @@ import org.terifan.raccoon.io.BlockPointer.BlockType;
 import org.terifan.raccoon.util.Log;
 
 
-class NodeIterator implements Iterator<Entry>
+class NodeIterator implements Iterator<LeafEntry>
 {
 	private long mModCount;
 	private int mEntryIndex;
 	private ArrayDeque<BlockPointer> mNodes;
-	private Iterator<ByteBufferMap.Entry> mMap;
-	private Entry mNextEntry;
+	private Iterator<LeafEntry> mMap;
+	private LeafEntry mNextEntry;
 	private HashTable mHashTable;
 	private boolean mHasEntry;
 
@@ -24,7 +24,7 @@ class NodeIterator implements Iterator<Entry>
 		mNodes = new ArrayDeque<>();
 
 		mHashTable = aHashTable;
-		mNextEntry = new Entry(aHashTable);
+		mNextEntry = new LeafEntry();
 		mModCount = mHashTable.mModCount;
 
 		mNodes.add(aBlockPointer);
@@ -36,7 +36,7 @@ class NodeIterator implements Iterator<Entry>
 		mNodes = new ArrayDeque<>();
 
 		mHashTable = aHashTable;
-		mNextEntry = new Entry(aHashTable);
+		mNextEntry = new LeafEntry();
 		mModCount = mHashTable.mModCount;
 
 		mMap = aDataPage.iterator();
@@ -60,7 +60,7 @@ class NodeIterator implements Iterator<Entry>
 		{
 			if (mMap.hasNext())
 			{
-				ByteBufferMap.Entry entry = mMap.next();
+				LeafEntry entry = mMap.next();
 
 				mNextEntry.setKey(entry.getKey());
 				mNextEntry.setValue(entry.getValue());
@@ -108,7 +108,7 @@ class NodeIterator implements Iterator<Entry>
 
 
 	@Override
-	public Entry next()
+	public LeafEntry next()
 	{
 		if (mModCount != mHashTable.mModCount)
 		{

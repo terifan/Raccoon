@@ -7,11 +7,11 @@ import java.util.Iterator;
 
 public class EntityIterator<T> implements Iterator<T>
 {
-	private final Iterator<Entry> mIterator;
+	private final Iterator<LeafEntry> mIterator;
 	private final Table mTable;
 
 
-	EntityIterator(Table aTable, Iterator<Entry> aIterator)
+	EntityIterator(Table aTable, Iterator<LeafEntry> aIterator)
 	{
 		mIterator = aIterator;
 		mTable = aTable;
@@ -30,7 +30,7 @@ public class EntityIterator<T> implements Iterator<T>
 	{
 		T outputEntity = (T)newEntityInstance();
 
-		Entry entry = mIterator.next();
+		LeafEntry entry = mIterator.next();
 
 		mTable.unmarshalToObjectKeys(outputEntity, entry.getKey());
 		mTable.unmarshalToObjectValues(outputEntity, entry.getValue());

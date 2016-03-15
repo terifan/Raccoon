@@ -1,22 +1,41 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.io.BlobInputStream;
-import org.terifan.raccoon.io.Streams;
-import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.util.Log;
 
-
-public class Entry
+public class LeafEntry
 {
-	private HashTable mHashTable;
+	byte mHeader;
+	byte[] mKey;
+	byte[] mValue;
 
-	protected byte[] mKey;
-	protected byte[] mValue;
 
-
-	public Entry(HashTable aHashTable)
+	public LeafEntry()
 	{
-		mHashTable = aHashTable;
+	}
+
+
+	public LeafEntry(byte[] aKey)
+	{
+		mKey = aKey;
+	}
+
+
+	public LeafEntry(byte[] aKey, byte[] aValue, int aHeader)
+	{
+		mKey = aKey;
+		mValue = aValue;
+		mHeader = (byte)aHeader;
+	}
+
+
+	public byte getHeader()
+	{
+		return mHeader;
+	}
+
+
+	public void setHeader(byte aHeader)
+	{
+		this.mHeader = aHeader;
 	}
 
 
@@ -28,19 +47,13 @@ public class Entry
 
 	public void setKey(byte[] aKey)
 	{
-		mKey = aKey;
+		this.mKey = aKey;
 	}
 
 
 	public byte[] getValue()
 	{
 		return mValue;
-	}
-
-
-	public void setValue(byte[] aValue)
-	{
-		mValue = aValue;
 	}
 
 
@@ -65,4 +78,10 @@ public class Entry
 //
 //		return buffer;
 //	}
+
+
+	public void setValue(byte[] aValue)
+	{
+		this.mValue = aValue;
+	}
 }

@@ -14,7 +14,7 @@ import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-class HashTable implements AutoCloseable, Iterable<Entry>
+class HashTable implements AutoCloseable, Iterable<LeafEntry>
 {
 	private BlockAccessor mBlockAccessor;
 	private BlockPointer mRootBlockPointer;
@@ -144,7 +144,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		if (mRootMap != null)
 		{
-			ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey);
+			LeafEntry entry = new LeafEntry(aKey);
 			if (mRootMap.get(entry))
 			{
 				return entry.getValue();
@@ -184,7 +184,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			Log.v("put root value");
 
-			ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey, aValue, 0);
+			LeafEntry entry = new LeafEntry(aKey, aValue, 0);
 
 			if (mRootMap.put(entry))
 			{
@@ -224,7 +224,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		if (mRootMap != null)
 		{
-			ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey);
+			LeafEntry entry = new LeafEntry(aKey);
 			mRootMap.remove(entry);
 			oldValue = entry.getValue();
 		}
@@ -240,7 +240,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 
 	@Override
-	public Iterator<Entry> iterator()
+	public Iterator<LeafEntry> iterator()
 	{
 		checkOpen();
 
@@ -254,18 +254,18 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 		}
 		else
 		{
-			return new ArrayList<Entry>().iterator();
+			return new ArrayList<LeafEntry>().iterator();
 		}
 	}
 
 
-	public ArrayList<Entry> list()
+	public ArrayList<LeafEntry> list()
 	{
 		checkOpen();
 
-		ArrayList<Entry> list = new ArrayList<>();
+		ArrayList<LeafEntry> list = new ArrayList<>();
 
-		for (Iterator<Entry> it = iterator(); it.hasNext(); )
+		for (Iterator<LeafEntry> it = iterator(); it.hasNext(); )
 		{
 			list.add(it.next());
 		}
@@ -438,7 +438,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 			case NODE_INDX:
 				return getValue(aHash, aLevel + 1, aKey, readNode(blockPointer));
 			case NODE_LEAF:
-				ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey);
+				LeafEntry entry = new LeafEntry(aKey);
 				if (readLeaf(blockPointer).get(entry))
 				{
 					return entry.getValue();
@@ -496,7 +496,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		byte[] oldValue;
 
-		ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey, aValue, 0);
+		LeafEntry entry = new LeafEntry(aKey, aValue, 0);
 
 		if (map.put(entry))
 		{
@@ -531,7 +531,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		LeafNode map = new LeafNode(mLeafSize);
 
-		ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey, aValue, 0);
+		LeafEntry entry = new LeafEntry(aKey, aValue, 0);
 
 		if (!map.put(entry))
 		{
@@ -617,7 +617,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 	private void divideLeafEntries(LeafNode aMap, int aLevel, int aHalfRange, LeafNode aLowLeaf, LeafNode aHighLeaf)
 	{
-		for (ByteBufferMap.Entry entry : aMap)
+		for (LeafEntry entry : aMap)
 		{
 			if (computeIndex(computeHash(entry.getKey()), aLevel) < aHalfRange)
 			{
@@ -679,7 +679,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 				return oldValue;
 			case NODE_LEAF:
 				LeafNode map = readLeaf(blockPointer);
-				ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey);
+				LeafEntry entry = new LeafEntry(aKey);
 				if (map.remove(entry))
 				{
 					freeBlock(blockPointer);
@@ -842,7 +842,7 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 				break;
 			case NODE_LEAF:
 				LeafNode leafNode = new LeafNode(buffer);
-				for (ByteBufferMap.Entry entry : leafNode)
+				for (LeafEntry entry : leafNode)
 				{
 					if (entry.getValue()[0] == Table.PTR_BLOB)
 					{

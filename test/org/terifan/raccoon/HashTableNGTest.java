@@ -1,16 +1,12 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.HashTable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.terifan.raccoon.Entry;
-import org.terifan.raccoon.TransactionCounter;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import static tests.__TestUtils.*;
-import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
@@ -195,7 +191,7 @@ public class HashTableNGTest
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
-			for (Entry entry : hashTable)
+			for (LeafEntry entry : hashTable)
 			{
 				String key = Log.toString(entry.getKey());
 				String value = Log.toString(entry.getValue());
@@ -234,7 +230,7 @@ public class HashTableNGTest
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
-			for (Entry entry : hashTable.list())
+			for (LeafEntry entry : hashTable.list())
 			{
 				String key = Log.toString(entry.getKey());
 				String value = Log.toString(entry.getValue());

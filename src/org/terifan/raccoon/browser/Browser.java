@@ -16,7 +16,7 @@ import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import org.terifan.raccoon.Database;
-import org.terifan.raccoon.Entry;
+import org.terifan.raccoon.LeafEntry;
 import org.terifan.raccoon.OpenOption;
 import org.terifan.raccoon.Table;
 import org.terifan.raccoon.io.AccessCredentials;
@@ -169,9 +169,9 @@ public class Browser
 							});
 						}
 
-						for (Iterator<Entry> it = table.iteratorRaw(); it.hasNext(); )
+						for (Iterator<LeafEntry> it = table.iteratorRaw(); it.hasNext(); )
 						{
-							Entry entry = it.next();
+							LeafEntry entry = it.next();
 
 							Object[] values = new Object[2];
 							values[0] = new String(entry.getKey());

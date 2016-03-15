@@ -260,7 +260,7 @@ public class Table<T> implements Iterable<T>
 	}
 
 
-	public Iterator<Entry> iteratorRaw()
+	public Iterator<LeafEntry> iteratorRaw()
 	{
 		return mTableImplementation.iterator();
 	}
