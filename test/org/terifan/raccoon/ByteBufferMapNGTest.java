@@ -1,4 +1,4 @@
-package org.terifan.raccoon.util;
+package org.terifan.raccoon;
 
 import org.terifan.raccoon.ByteBufferMap;
 import java.util.HashMap;

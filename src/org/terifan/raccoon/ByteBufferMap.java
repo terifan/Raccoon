@@ -34,7 +34,7 @@ import java.util.Iterator;
  *   (pointer 1..n)
  *     3 bytes - offset
  */
-public class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
+class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 {
 	private final static int MAX_CAPACITY = 1 << 24;
 	private final static int HEADER_SIZE = 2 + 3;
