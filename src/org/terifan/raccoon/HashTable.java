@@ -6,9 +6,7 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
-import static org.terifan.raccoon.Table.PTR_BLOB;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
-import org.terifan.raccoon.util.ByteBufferMap;
 import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.util.Log;
@@ -146,7 +144,12 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		if (mRootMap != null)
 		{
-			return mRootMap.get(aKey);
+			ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey);
+			if (mRootMap.get(entry))
+			{
+				return entry.getValue();
+			}
+			return null;
 		}
 		else
 		{
@@ -181,11 +184,11 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			Log.v("put root value");
 
-			ByteBufferMap.Entry entry = new ByteBufferMap.Entry(0, aKey, aValue);
+			ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey, aValue, 0);
 
 			if (mRootMap.put(entry))
 			{
-				oldValue = entry.getReplacedValue();
+				oldValue = entry.getValue();
 			}
 			else
 			{
@@ -221,7 +224,9 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		if (mRootMap != null)
 		{
-			oldValue = mRootMap.remove(aKey);
+			ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey);
+			mRootMap.remove(entry);
+			oldValue = entry.getValue();
 		}
 		else
 		{
@@ -433,7 +438,12 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 			case NODE_INDX:
 				return getValue(aHash, aLevel + 1, aKey, readNode(blockPointer));
 			case NODE_LEAF:
-				return readLeaf(blockPointer).get(aKey);
+				ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey);
+				if (readLeaf(blockPointer).get(entry))
+				{
+					return entry.getValue();
+				}
+				return null;
 			case NODE_HOLE:
 				return null;
 			case NODE_FREE:
@@ -486,11 +496,11 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		byte[] oldValue;
 
-		ByteBufferMap.Entry entry = new ByteBufferMap.Entry(0, aKey, aValue);
+		ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey, aValue, 0);
 
 		if (map.put(entry))
 		{
-			oldValue = entry.getReplacedValue();
+			oldValue = entry.getValue();
 
 			freeBlock(aBlockPointer);
 
@@ -521,14 +531,14 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		LeafNode map = new LeafNode(mLeafSize);
 
-		ByteBufferMap.Entry entry = new ByteBufferMap.Entry(0, aKey, aValue);
+		ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey, aValue, 0);
 
 		if (!map.put(entry))
 		{
 			throw new DatabaseException("Failed to upgrade hole to leaf");
 		}
 
-		byte[] oldValue = entry.getReplacedValue();
+		byte[] oldValue = entry.getValue();
 
 		BlockPointer blockPointer = writeBlock(map, aBlockPointer.getRange());
 		aNode.setPointer(aIndex, blockPointer);
@@ -607,19 +617,31 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 	private void divideLeafEntries(LeafNode aMap, int aLevel, int aHalfRange, LeafNode aLowLeaf, LeafNode aHighLeaf)
 	{
-		for (int i = 0, sz = aMap.size(); i < sz; i++)
+		for (ByteBufferMap.Entry entry : aMap)
 		{
-			byte[] key = aMap.getKey(i);
-
-			if (computeIndex(computeHash(key), aLevel) < aHalfRange)
+			if (computeIndex(computeHash(entry.getKey()), aLevel) < aHalfRange)
 			{
-				aMap.copy(i, aLowLeaf);
+				aLowLeaf.put(entry);
 			}
 			else
 			{
-				aMap.copy(i, aHighLeaf);
+				aHighLeaf.put(entry);
 			}
 		}
+
+//		for (int i = 0, sz = aMap.size(); i < sz; i++)
+//		{
+//			ByteBufferMap.Entry entry = aMap.getEntry(i);
+//
+//			if (computeIndex(computeHash(entry.getKey()), aLevel) < aHalfRange)
+//			{
+//				aLowLeaf.put(entry);
+//			}
+//			else
+//			{
+//				aHighLeaf.put(entry);
+//			}
+//		}
 	}
 
 
@@ -657,14 +679,14 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 				return oldValue;
 			case NODE_LEAF:
 				LeafNode map = readLeaf(blockPointer);
-				oldValue = map.remove(aKey);
-				if (oldValue != null)
+				ByteBufferMap.Entry entry = new ByteBufferMap.Entry(aKey);
+				if (map.remove(entry))
 				{
 					freeBlock(blockPointer);
 					BlockPointer newBlockPointer = writeBlock(map, blockPointer.getRange());
 					aNode.setPointer(index, newBlockPointer);
 				}
-				return oldValue;
+				return entry.getValue();
 			case NODE_HOLE:
 				return null;
 			case NODE_FREE:
@@ -820,12 +842,11 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 				break;
 			case NODE_LEAF:
 				LeafNode leafNode = new LeafNode(buffer);
-				for (int i = 0; i < leafNode.size(); i++)
+				for (ByteBufferMap.Entry entry : leafNode)
 				{
-					byte[] value = leafNode.getValue(i);
-					if (value[0] == Table.PTR_BLOB)
+					if (entry.getValue()[0] == Table.PTR_BLOB)
 					{
-						ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(value);
+						ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(entry.getValue());
 						byteArrayBuffer.read();
 						long len = byteArrayBuffer.readVar64();
 

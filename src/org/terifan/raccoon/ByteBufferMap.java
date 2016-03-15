@@ -1,4 +1,4 @@
-package org.terifan.raccoon.util;
+package org.terifan.raccoon;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
@@ -20,7 +20,7 @@ import java.util.Iterator;
  * Data layout:
  *
  * [header]
- *   3 bytes - entry count
+ *   2 bytes - entry count
  *   3 bytes - free space offset (minus HEADER_SIZE)
  * [list of entries]
  *   (entry 1..n)
@@ -34,18 +34,16 @@ import java.util.Iterator;
  *   (pointer 1..n)
  *     3 bytes - offset
  */
-public class ByteBufferMap implements Iterable<byte[]>
+public class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 {
 	private final static int MAX_CAPACITY = 1 << 24;
-	private final static int HEADER_SIZE = 3 + 3;
+	private final static int HEADER_SIZE = 2 + 3;
 	private final static int ENTRY_POINTER_SIZE = 3;
 	private final static int ENTRY_HEADER_SIZE = 2 + 2;
 	private final static int MAX_VALUE_SIZE = 65535;
 
 	private final static int ENTRY_OVERHEAD = ENTRY_POINTER_SIZE + ENTRY_HEADER_SIZE;
 	public final static int OVERHEAD = HEADER_SIZE + ENTRY_OVERHEAD + ENTRY_POINTER_SIZE;
-
-	public final static byte[] OVERFLOW = new byte[MAX_VALUE_SIZE + 1];
 
 	private byte[] mBuffer;
 	private int mStartOffset;
@@ -120,8 +118,8 @@ public class ByteBufferMap implements Iterable<byte[]>
 		mStartOffset = aOffset;
 		mCapacity = aCapacity;
 
-		mEntryCount = readTriple(0);
-		mFreeSpaceOffset = readTriple(3) + HEADER_SIZE;
+		mEntryCount = readInt16(0);
+		mFreeSpaceOffset = readInt24(2) + HEADER_SIZE;
 		mPointerListOffset = mCapacity - ENTRY_POINTER_SIZE * mEntryCount;
 
 		int limit = (mCapacity - HEADER_SIZE) / (ENTRY_HEADER_SIZE + ENTRY_POINTER_SIZE + 1);
@@ -133,8 +131,14 @@ public class ByteBufferMap implements Iterable<byte[]>
 
 		assert integrityCheck() == null : integrityCheck();
 	}
-
-
+	
+	
+	public byte[] array()
+	{
+		return mBuffer;
+	}
+	
+	
 	public ByteBufferMap clear()
 	{
 		Arrays.fill(mBuffer, mStartOffset, mStartOffset + mCapacity, (byte)0);
@@ -147,73 +151,21 @@ public class ByteBufferMap implements Iterable<byte[]>
 	}
 
 
-	public static class Entry
-	{
-		private byte mHeader;
-		private byte[] mKey;
-		private byte[] mValue;
-		private byte[] mReplacedValue;
-
-
-		public Entry()
-		{
-		}
-
-
-		public Entry(int aHeader, byte[] aKey, byte[] aValue)
-		{
-			mHeader = (byte)aHeader;
-			mKey = aKey;
-			mValue = aValue;
-		}
-
-
-		public byte getHeader()
-		{
-			return mHeader;
-		}
-
-
-		public byte[] getKey()
-		{
-			return mKey;
-		}
-
-
-		public byte[] getValue()
-		{
-			return mValue;
-		}
-
-
-		public byte[] getReplacedValue()
-		{
-			return mReplacedValue;
-		}
-	}
-
-
 	public boolean put(Entry aEntry)
 	{
 //		byte[] tmp = new byte[1 + aEntry.value.length];
 //		System.arraycopy(aEntry.value, 0, tmp, 1, aEntry.value.length);
 //		aEntry.oldValue = put(aEntry.key, tmp);
 
-		aEntry.mReplacedValue = put(aEntry.mKey, aEntry.mValue);
+		byte[] aKey = aEntry.mKey;
+		byte[] aValue = aEntry.mValue;
 
-		return aEntry.mReplacedValue != OVERFLOW;
-	}
-
-
-	private byte[] put(byte[] aKey, byte[] aValue)
-	{
 		if (aKey.length > MAX_VALUE_SIZE || aValue.length > MAX_VALUE_SIZE || aKey.length + aValue.length > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
 		{
 			throw new IllegalArgumentException("Entry length exceeds capacity of this map: " + (aKey.length + aValue.length) + " > " + (mCapacity - ENTRY_HEADER_SIZE - HEADER_SIZE - ENTRY_POINTER_SIZE));
 		}
 
 		int index = indexOf(aKey);
-		byte[] oldValue;
 
 		// if key already exists
 		if (index >= 0)
@@ -225,21 +177,21 @@ public class ByteBufferMap implements Iterable<byte[]>
 			{
 				int entryOffset = readEntryOffset(index);
 				int valueOffset = entryOffset + ENTRY_HEADER_SIZE + readKeyLength(index);
-				oldValue = Arrays.copyOfRange(mBuffer, mStartOffset + valueOffset, mStartOffset + valueOffset + oldValueLength);
+				aEntry.mValue = Arrays.copyOfRange(mBuffer, mStartOffset + valueOffset, mStartOffset + valueOffset + oldValueLength);
 
 				System.arraycopy(aValue, 0, mBuffer, mStartOffset + valueOffset, aValue.length);
 
 				assert integrityCheck() == null : integrityCheck();
 
-				return oldValue;
+				return true;
 			}
 
 			if (aValue.length - oldValueLength > getFreeSpace())
 			{
-				return OVERFLOW;
+				return false;
 			}
 
-			oldValue = getValue(index); // todo: skip when copying the map?
+			aEntry.mValue = getValue(index); // todo: skip when copying the map?
 
 			remove(index);
 
@@ -249,12 +201,12 @@ public class ByteBufferMap implements Iterable<byte[]>
 		{
 			if (getFreeSpace() < ENTRY_HEADER_SIZE + aKey.length + aValue.length + ENTRY_POINTER_SIZE)
 			{
-				return OVERFLOW;
+				return false;
 			}
 
 			index = (-index) - 1;
 
-			oldValue = null;
+			aEntry.mValue = null;
 		}
 
 		int modCount = ++mModCount;
@@ -277,32 +229,45 @@ public class ByteBufferMap implements Iterable<byte[]>
 		assert integrityCheck() == null : integrityCheck();
 		assert mModCount == modCount : mModCount + " == " + modCount;
 
-		return oldValue;
+		return true;
 	}
 
 
 	public boolean get(Entry aEntry)
 	{
-		int i = indexOf(aEntry.mKey);
+		int index = indexOf(aEntry.mKey);
 
-		if (i == -1)
+		if (index == -1)
 		{
 			return false;
 		}
 
-		aEntry.mValue = getValue(i);
+		aEntry.mValue = getValue(index);
 
 		return true;
 	}
-
-
-	public byte[] get(byte[] aKey)
+	
+	
+	private Entry getEntry(int aIndex)
 	{
-		return getValue(indexOf(aKey));
+		Entry entry = new Entry();
+
+		int modCount = mModCount;
+
+		int entryOffset = readEntryOffset(aIndex);
+		int keyLength = readInt16(entryOffset);
+		int offset = mStartOffset + entryOffset + ENTRY_HEADER_SIZE;
+
+		entry.mKey = Arrays.copyOfRange(mBuffer, offset, offset + keyLength);
+		entry.mValue = getValue(aIndex);
+
+		assert mModCount == modCount : mModCount + " == " + modCount;
+
+		return entry;
 	}
 
 
-	public byte[] getValue(int aIndex)
+	private byte[] getValue(int aIndex)
 	{
 		if (aIndex < 0)
 		{
@@ -320,99 +285,26 @@ public class ByteBufferMap implements Iterable<byte[]>
 	}
 
 
-	public byte[] getKey(int aIndex)
+	public boolean remove(Entry aEntry)
 	{
-		int modCount = mModCount;
-
-		int entryOffset = readEntryOffset(aIndex);
-		int keyLength = readShort(entryOffset);
-		int offset = mStartOffset + entryOffset + ENTRY_HEADER_SIZE;
-
-		byte[] key = Arrays.copyOfRange(mBuffer, offset, offset + keyLength);
-
-		assert mModCount == modCount : mModCount + " == " + modCount;
-
-		return key;
-	}
-
-
-	public byte[] floorKey(byte[] aKey)
-	{
-		int index = indexOf(aKey);
-
-		if (index >= 0)
-		{
-			return aKey;
-		}
-
-		index = (-index) - 1 - 1;
+		int index = indexOf(aEntry.getKey());
 
 		if (index < 0)
 		{
-			return null;
-		}
-
-		return getKey(index);
-	}
-
-
-	public byte[] ceilingKey(byte[] aKey)
-	{
-		int index = indexOf(aKey);
-
-		if (index >= 0)
-		{
-			return aKey;
-		}
-
-		index = (-index) - 1;
-
-		if (index == mEntryCount)
-		{
-			return null;
-		}
-
-		return getKey(index);
-	}
-
-
-	public byte[] firstKey()
-	{
-		return getKey(0);
-	}
-
-
-	public byte[] lastKey()
-	{
-		return getKey(mEntryCount - 1);
-	}
-
-
-	public byte[] remove(byte[] aKey)
-	{
-		int index = indexOf(aKey);
-
-		if (index < 0)
-		{
-			return null;
+			aEntry.mValue = null;
+			return false;
 		}
 
 		int modCount = mModCount;
 
 		int offset = mStartOffset + readValueOffset(index);
-		byte[] value = Arrays.copyOfRange(mBuffer, offset, offset + readValueLength(index));
+		aEntry.mValue = Arrays.copyOfRange(mBuffer, offset, offset + readValueLength(index));
 
 		assert mModCount == modCount : mModCount + " == " + modCount;
 
 		remove(index);
 
-		return value;
-	}
-
-
-	public boolean containsKey(byte[] aKey)
-	{
-		return indexOf(aKey) >= 0;
+		return true;
 	}
 
 
@@ -460,21 +352,9 @@ public class ByteBufferMap implements Iterable<byte[]>
 	}
 
 
-	public byte[] array()
-	{
-		return mBuffer;
-	}
-
-
 	public int size()
 	{
 		return mEntryCount;
-	}
-
-
-	public int capacity()
-	{
-		return mCapacity;
 	}
 
 
@@ -489,39 +369,6 @@ public class ByteBufferMap implements Iterable<byte[]>
 		assert mPointerListOffset - mFreeSpaceOffset >= 0 : mPointerListOffset + " " + mFreeSpaceOffset;
 
 		return mPointerListOffset - mFreeSpaceOffset;
-	}
-
-
-	public int getStartOffset()
-	{
-		return mStartOffset;
-	}
-
-
-	/**
-	 * Optimized method for copying an entry from this map to another map. Equivalent of calling:
-	 *
-	 * <pre>
-	 *	to.put(key, from.getValue(key));
-	 * </pre>
-	 */
-	public void copy(int aIndex, ByteBufferMap aDestinationMap)
-	{
-		int modCount = mModCount;
-
-		int entryOffset = readEntryOffset(aIndex);
-		int keyLength = readShort(entryOffset);
-		int valueLength = readShort(entryOffset + 2);
-		int offset = mStartOffset + entryOffset + ENTRY_HEADER_SIZE;
-
-		byte[] key = Arrays.copyOfRange(mBuffer, offset, offset + keyLength);
-		byte[] value = Arrays.copyOfRange(mBuffer, offset + keyLength, offset + keyLength + valueLength);
-
-		assert mModCount == modCount : mModCount + " == " + modCount;
-
-		byte[] oldValue = aDestinationMap.put(key, value);
-
-		assert oldValue != OVERFLOW;
 	}
 
 
@@ -581,8 +428,8 @@ public class ByteBufferMap implements Iterable<byte[]>
 
 	private void writeBufferHeader()
 	{
-		writeTriple(0, mEntryCount);
-		writeTriple(3, mFreeSpaceOffset - HEADER_SIZE);
+		writeInt16(0, mEntryCount);
+		writeInt24(2, mFreeSpaceOffset - HEADER_SIZE);
 	}
 
 
@@ -590,8 +437,8 @@ public class ByteBufferMap implements Iterable<byte[]>
 	{
 		int i = readEntryOffset(aIndex);
 
-		writeShort(i + 0, aKeyLength);
-		writeShort(i + 2, aValueLength);
+		writeInt16(i + 0, aKeyLength);
+		writeInt16(i + 2, aValueLength);
 	}
 
 
@@ -606,7 +453,7 @@ public class ByteBufferMap implements Iterable<byte[]>
 		assert aIndex >= 0 && aIndex < mEntryCount;
 		assert aOffset > 0 && aOffset < mCapacity;
 
-		writeTriple(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE, aOffset);
+		writeInt24(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE, aOffset);
 	}
 
 
@@ -614,7 +461,7 @@ public class ByteBufferMap implements Iterable<byte[]>
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount;
 
-		return readTriple(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE);
+		return readInt24(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE);
 	}
 
 
@@ -626,7 +473,7 @@ public class ByteBufferMap implements Iterable<byte[]>
 
 	protected int readKeyLength(int aIndex)
 	{
-		return readShort(readEntryOffset(aIndex));
+		return readInt16(readEntryOffset(aIndex));
 	}
 
 
@@ -638,86 +485,34 @@ public class ByteBufferMap implements Iterable<byte[]>
 
 	protected int readValueLength(int aIndex)
 	{
-		return readShort(readEntryOffset(aIndex) + 2);
+		return readInt16(readEntryOffset(aIndex) + 2);
 	}
 
 
-	private int readShort(int aOffset)
+	private int readInt16(int aOffset)
 	{
 		return ((0xff & mBuffer[mStartOffset + aOffset]) << 8) + (0xff & mBuffer[mStartOffset + aOffset + 1]);
 	}
 
 
-	private void writeShort(int aOffset, int aValue)
+	private void writeInt16(int aOffset, int aValue)
 	{
 		mBuffer[mStartOffset + aOffset + 0] = (byte)(aValue >> 8);
 		mBuffer[mStartOffset + aOffset + 1] = (byte)aValue;
 	}
 
 
-	private int readTriple(int aOffset)
+	private int readInt24(int aOffset)
 	{
 		return ((0xff & mBuffer[mStartOffset + aOffset]) << 16) + ((0xff & mBuffer[mStartOffset + aOffset + 1]) << 8) + (0xff & mBuffer[mStartOffset + aOffset + 2]);
 	}
 
 
-	private void writeTriple(int aOffset, int aValue)
+	private void writeInt24(int aOffset, int aValue)
 	{
 		mBuffer[mStartOffset + aOffset + 0] = (byte)(aValue >> 16);
 		mBuffer[mStartOffset + aOffset + 1] = (byte)(aValue >> 8);
 		mBuffer[mStartOffset + aOffset + 2] = (byte)aValue;
-	}
-
-
-	@Override
-	public Iterator<byte[]> iterator()
-	{
-		return new Iterator<byte[]>()
-		{
-			private int mExpectedModCount = mModCount;
-			private int mIndex;
-
-
-			@Override
-			public boolean hasNext()
-			{
-				if (mExpectedModCount != mModCount)
-				{
-					throw new ConcurrentModificationException();
-				}
-
-				return mIndex < mEntryCount;
-			}
-
-
-			@Override
-			public byte[] next()
-			{
-				if (mExpectedModCount != mModCount)
-				{
-					throw new ConcurrentModificationException();
-				}
-
-				return getKey(mIndex++);
-			}
-
-
-			@Override
-			public void remove()
-			{
-				if (mExpectedModCount != mModCount)
-				{
-					throw new ConcurrentModificationException();
-				}
-				if (mIndex == 0 || mIndex > mEntryCount)
-				{
-					throw new IllegalStateException();
-				}
-
-				ByteBufferMap.this.remove(mIndex - 1);
-				mExpectedModCount = mModCount;
-			}
-		};
 	}
 
 
@@ -787,19 +582,106 @@ public class ByteBufferMap implements Iterable<byte[]>
 		try
 		{
 			StringBuilder sb = new StringBuilder();
-			for (byte[] k : this)
+			for (int i = 0; i < mEntryCount; i++)
 			{
 				if (sb.length() > 0)
 				{
 					sb.append(", ");
 				}
-				sb.append(new String(k, "utf-8"));
+				sb.append(new String(getEntry(i).getKey(), "utf-8"));
 			}
 			return "[" + sb.toString() + "]";
 		}
 		catch (UnsupportedEncodingException e)
 		{
 			throw new RuntimeException(e);
+		}
+	}
+
+	
+	@Override
+	public Iterator<Entry> iterator()
+	{
+		return new Iterator<Entry>()
+		{
+			private int mExpectedModCount = mModCount;
+			private int mIndex;
+
+
+			@Override
+			public boolean hasNext()
+			{
+				if (mExpectedModCount != mModCount)
+				{
+					throw new ConcurrentModificationException();
+				}
+
+				return mIndex < mEntryCount;
+			}
+
+
+			@Override
+			public Entry next()
+			{
+				if (mExpectedModCount != mModCount)
+				{
+					throw new ConcurrentModificationException();
+				}
+
+				return getEntry(mIndex++);
+			}
+
+
+			@Override
+			public void remove()
+			{
+				throw new UnsupportedOperationException();
+			}
+		};
+	}
+	
+
+	public static class Entry
+	{
+		private byte mHeader;
+		private byte[] mKey;
+		private byte[] mValue;
+
+
+		public Entry()
+		{
+		}
+
+
+		public Entry(byte[] aKey)
+		{
+			mKey = aKey;
+		}
+
+
+		public Entry(byte[] aKey, byte[] aValue, int aHeader)
+		{
+			mKey = aKey;
+			mValue = aValue;
+			mHeader = (byte)aHeader;
+		}
+
+
+		public byte getHeader()
+		{
+			return mHeader;
+		}
+
+
+		public byte[] getKey()
+		{
+			return mKey;
+		}
+
+
+		public byte[] getValue()
+		{
+			return mValue;
 		}
 	}
 }

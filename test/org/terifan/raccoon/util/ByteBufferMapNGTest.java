@@ -1,5 +1,6 @@
 package org.terifan.raccoon.util;
 
+import org.terifan.raccoon.ByteBufferMap;
 import java.util.HashMap;
 import java.util.Map;
 import org.testng.annotations.Test;
@@ -17,9 +18,12 @@ public class ByteBufferMapNGTest
 		byte[] key = tb();
 		byte[] value = tb();
 
-		map.put(new ByteBufferMap.Entry(0, key, value));
+		map.put(new ByteBufferMap.Entry(key, value, 0));
+		
+		ByteBufferMap.Entry entry = new ByteBufferMap.Entry(key);
 
-		assertEquals(map.get(key), value);
+		assertTrue(map.get(entry));
+		assertEquals(entry.getValue(), value);
 	}
 
 
@@ -35,7 +39,7 @@ public class ByteBufferMapNGTest
 			byte[] key = tb();
 			byte[] value = tb();
 
-			if (!map.put(new ByteBufferMap.Entry(0, key, value)))
+			if (!map.put(new ByteBufferMap.Entry(key, value, 0)))
 			{
 				break;
 			}
@@ -45,7 +49,9 @@ public class ByteBufferMapNGTest
 
 		for (Map.Entry<byte[],byte[]> entry : values.entrySet())
 		{
-			assertEquals(map.get(entry.getKey()), entry.getValue());
+			ByteBufferMap.Entry entry1 = new ByteBufferMap.Entry(entry.getKey());
+			assertTrue(map.get(entry1));
+			assertEquals(entry1.getValue(), entry.getValue());
 		}
 	}
 }

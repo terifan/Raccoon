@@ -44,25 +44,25 @@ public class Entry
 	}
 
 
-	public ByteArrayBuffer x()
-	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(mValue);
-
-		if (buffer.read() == Table.PTR_BLOB)
-		{
-			try
-			{
-				buffer.wrap(Streams.readAll(new BlobInputStream(mHashTable.getBlockAccessor(), buffer)));
-				buffer.position(0);
-			}
-			catch (Exception e)
-			{
-				Log.dec();
-
-				throw new DatabaseException(e);
-			}
-		}
-
-		return buffer;
-	}
+//	public ByteArrayBuffer x()
+//	{
+//		ByteArrayBuffer buffer = new ByteArrayBuffer(mValue);
+//
+//		if (buffer.read() == Table.PTR_BLOB)
+//		{
+//			try
+//			{
+//				buffer.wrap(Streams.readAll(new BlobInputStream(mHashTable.getBlockAccessor(), buffer)));
+//				buffer.position(0);
+//			}
+//			catch (Exception e)
+//			{
+//				Log.dec();
+//
+//				throw new DatabaseException(e);
+//			}
+//		}
+//
+//		return buffer;
+//	}
 }

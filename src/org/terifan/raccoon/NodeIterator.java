@@ -5,6 +5,7 @@ import java.util.ArrayDeque;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
+import org.terifan.raccoon.util.Log;
 
 
 class NodeIterator implements Iterator<Entry>
@@ -12,7 +13,7 @@ class NodeIterator implements Iterator<Entry>
 	private long mModCount;
 	private int mEntryIndex;
 	private ArrayDeque<BlockPointer> mNodes;
-	private LeafNode mMap;
+	private Iterator<ByteBufferMap.Entry> mMap;
 	private Entry mNextEntry;
 	private HashTable mHashTable;
 	private boolean mHasEntry;
@@ -38,7 +39,7 @@ class NodeIterator implements Iterator<Entry>
 		mNextEntry = new Entry(aHashTable);
 		mModCount = mHashTable.mModCount;
 
-		mMap = aDataPage;
+		mMap = aDataPage.iterator();
 	}
 
 
@@ -57,14 +58,18 @@ class NodeIterator implements Iterator<Entry>
 
 		if (mMap != null)
 		{
-			byte[] key = mMap.getKey(mEntryIndex);
-			byte[] value = mMap.get(key);
+			if (mMap.hasNext())
+			{
+				ByteBufferMap.Entry entry = mMap.next();
 
-			mNextEntry.setKey(key);
-			mNextEntry.setValue(value);
-			mHasEntry = true;
+				mNextEntry.setKey(entry.getKey());
+				mNextEntry.setValue(entry.getValue());
+				mHasEntry = true;
 
-			return true;
+				return true;
+			}
+
+			mMap = null;
 		}
 
 		if (mNodes.isEmpty())
@@ -76,9 +81,9 @@ class NodeIterator implements Iterator<Entry>
 
 		if (pointer.getType() == BlockType.NODE_LEAF)
 		{
-			mMap = mHashTable.readLeaf(pointer);
+			mMap = mHashTable.readLeaf(pointer).iterator();
 
-			if (mMap.isEmpty()) // should never happend
+			if (!mMap.hasNext()) // should never happend
 			{
 				mMap = null;
 			}
@@ -120,7 +125,7 @@ class NodeIterator implements Iterator<Entry>
 		mEntryIndex++;
 		mHasEntry = false;
 
-		if (mMap.size() == mEntryIndex)
+		if (!mMap.hasNext())
 		{
 			mMap = null;
 			mEntryIndex = 0;
