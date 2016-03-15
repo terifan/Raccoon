@@ -177,6 +177,8 @@ class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 			{
 				int entryOffset = readEntryOffset(index);
 				int valueOffset = entryOffset + ENTRY_HEADER_SIZE + readKeyLength(index);
+
+				aEntry.mHeader = 0; // TODO
 				aEntry.mValue = Arrays.copyOfRange(mBuffer, mStartOffset + valueOffset, mStartOffset + valueOffset + oldValueLength);
 
 				System.arraycopy(value, 0, mBuffer, mStartOffset + valueOffset, value.length);
@@ -191,9 +193,7 @@ class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 				return false;
 			}
 
-			aEntry.mValue = getValue(index);
-
-			remove(index);
+			remove(index, aEntry); // old entry value is loaded here
 
 			assert indexOf(key) == (-index) - 1;
 		}
@@ -206,6 +206,7 @@ class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 
 			index = (-index) - 1;
 
+			aEntry.mHeader = 0; // TODO
 			aEntry.mValue = null;
 		}
 
@@ -242,27 +243,25 @@ class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 			return false;
 		}
 
-		aEntry.mValue = getValue(index);
+		loadValue(index, aEntry);
 
 		return true;
 	}
 
 
-	private byte[] getValue(int aIndex)
+	private void loadValue(int aIndex, Entry aEntry)
 	{
-		if (aIndex < 0)
+		if (aIndex >= 0)
 		{
-			return null;
+			int modCount = mModCount;
+
+			int offset = mStartOffset + readValueOffset(aIndex);
+
+			aEntry.mHeader = 0; // TODO
+			aEntry.mValue = Arrays.copyOfRange(mBuffer, offset, offset + readValueLength(aIndex));
+
+			assert mModCount == modCount : mModCount + " == " + modCount;
 		}
-
-		int modCount = mModCount;
-
-		int offset = mStartOffset + readValueOffset(aIndex);
-		byte[] value = Arrays.copyOfRange(mBuffer, offset, offset + readValueLength(aIndex));
-
-		assert mModCount == modCount : mModCount + " == " + modCount;
-
-		return value;
 	}
 
 
@@ -272,28 +271,28 @@ class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 
 		if (index < 0)
 		{
+			aEntry.mHeader = 0; // TODO
 			aEntry.mValue = null;
+
 			return false;
 		}
 
-		int modCount = mModCount;
-
-		int offset = mStartOffset + readValueOffset(index);
-		aEntry.mValue = Arrays.copyOfRange(mBuffer, offset, offset + readValueLength(index));
-
-		assert mModCount == modCount : mModCount + " == " + modCount;
-
-		remove(index);
+		remove(index, aEntry);
 
 		return true;
 	}
 
 
-	private void remove(int aIndex)
+	private void remove(int aIndex, Entry aEntry)
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount;
+		assert aEntry.getKey().length == readKeyLength(aIndex);
 
 		int modCount = ++mModCount;
+
+		int offsetX = mStartOffset + readValueOffset(aIndex);
+		aEntry.mHeader = 0; // TODO
+		aEntry.mValue = Arrays.copyOfRange(mBuffer, offsetX, offsetX + readValueLength(aIndex));
 
 		int offset = readEntryOffset(aIndex);
 		int length = readEntryLength(aIndex);
@@ -614,7 +613,7 @@ class ByteBufferMap implements Iterable<ByteBufferMap.Entry>
 
 			Entry entry = new Entry();
 			entry.mKey = Arrays.copyOfRange(mBuffer, offset, offset + keyLength);
-			entry.mValue = getValue(mIndex);
+			loadValue(mIndex, entry);
 
 			mIndex++;
 			
