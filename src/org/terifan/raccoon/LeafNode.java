@@ -9,7 +9,7 @@ import org.terifan.raccoon.io.BlockPointer.BlockType;
 
 /**
  * This is a fixed size buffer for key/value storage suitable for persistence on external media.
- * The ByteBufferMap wraps an array and reads and writes entries directly to the array
+ * The LeafNode wraps an array and reads and writes entries directly to the array
  * maintaining all necessary structural information inside the array at all time.
  *
  * implementation notes:
@@ -56,7 +56,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 
 	/**
-	 * Create a new ByteBufferMap with specified capacity.
+	 * Create a new LeafNode with specified capacity.
 	 *
 	 * @param aCapacity
 	 *   the capacity (length) of the buffer. Maximum 65536 bytes.
@@ -81,7 +81,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 
 	/**
-	 * Create a new ByteBufferMap wrapping the provided array.
+	 * Create a new LeafNode wrapping the provided array.
 	 *
 	 * @param aBuffer
 	 *   the byte array to wrap
@@ -97,7 +97,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 
 	/**
-	 * Create a new ByteBufferMap wrapping the provided array reading the actual map at the specified offset.
+	 * Create a new LeafNode wrapping the provided array reading the actual map at the specified offset.
 	 *
 	 * @param aBuffer
 	 *   the byte array to wrap
