@@ -194,7 +194,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 				int valueOffset = entryOffset + ENTRY_HEADER_SIZE + readKeyLength(index);
 				int offset = mStartOffset + valueOffset;
 
-				aEntry.mHeader = 0; // TODO
+				aEntry.mFormat = 0; // TODO
 				aEntry.mValue = Arrays.copyOfRange(mBuffer, offset, offset + oldValueLength);
 
 				System.arraycopy(value, 0, mBuffer, offset, value.length);
@@ -222,7 +222,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 			index = (-index) - 1;
 
-			aEntry.mHeader = 0; // TODO
+			aEntry.mFormat = 0; // TODO
 			aEntry.mValue = null;
 		}
 
@@ -273,7 +273,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 			int offset = mStartOffset + readValueOffset(aIndex);
 
-			aEntry.mHeader = 0; // TODO
+			aEntry.mFormat = 0; // TODO
 			aEntry.mValue = Arrays.copyOfRange(mBuffer, offset, offset + readValueLength(aIndex));
 
 			assert mModCount == modCount : mModCount + " == " + modCount;
@@ -287,7 +287,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 		if (index < 0)
 		{
-			aEntry.mHeader = 0; // TODO
+			aEntry.mFormat = 0; // TODO
 			aEntry.mValue = null;
 
 			return false;
@@ -307,7 +307,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 		int modCount = ++mModCount;
 
 		int offsetX = mStartOffset + readValueOffset(aIndex);
-		aEntry.mHeader = 0; // TODO
+		aEntry.mFormat = 0; // TODO
 		aEntry.mValue = Arrays.copyOfRange(mBuffer, offsetX, offsetX + readValueLength(aIndex));
 
 		int offset = readEntryOffset(aIndex);

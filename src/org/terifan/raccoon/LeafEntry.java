@@ -3,7 +3,7 @@ package org.terifan.raccoon;
 
 public class LeafEntry
 {
-	byte mHeader;
+	byte mFormat;
 	byte[] mKey;
 	byte[] mValue;
 
@@ -19,23 +19,23 @@ public class LeafEntry
 	}
 
 
-	public LeafEntry(byte[] aKey, byte[] aValue, int aHeader)
+	public LeafEntry(byte[] aKey, byte[] aValue, int aFormat)
 	{
 		mKey = aKey;
 		mValue = aValue;
-		mHeader = (byte)aHeader;
+		mFormat = (byte)aFormat;
 	}
 
 
-	public byte getHeader()
+	public byte getFormat()
 	{
-		return mHeader;
+		return mFormat;
 	}
 
 
-	public void setHeader(byte aHeader)
+	public void setFormat(byte aFormat)
 	{
-		this.mHeader = aHeader;
+		mFormat = aFormat;
 	}
 
 
@@ -47,7 +47,7 @@ public class LeafEntry
 
 	public void setKey(byte[] aKey)
 	{
-		this.mKey = aKey;
+		mKey = aKey;
 	}
 
 
