@@ -181,9 +181,13 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 		{
 			Log.v("put root value");
 
-			oldValue = mRootMap.put(aKey, aValue);
+			ByteBufferMap.Entry entry = new ByteBufferMap.Entry(0, aKey, aValue);
 
-			if (oldValue == ByteBufferMap.OVERFLOW)
+			if (mRootMap.put(entry))
+			{
+				oldValue = entry.getReplacedValue();
+			}
+			else
 			{
 				Log.v("upgrade root leaf to node");
 
@@ -480,10 +484,14 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 
 		LeafNode map = readLeaf(aBlockPointer);
 
-		byte[] oldValue = map.put(aKey, aValue);
+		byte[] oldValue;
 
-		if (oldValue != ByteBufferMap.OVERFLOW)
+		ByteBufferMap.Entry entry = new ByteBufferMap.Entry(0, aKey, aValue);
+
+		if (map.put(entry))
 		{
+			oldValue = entry.getReplacedValue();
+
 			freeBlock(aBlockPointer);
 
 			aNode.setPointer(aIndex, writeBlock(map, aBlockPointer.getRange()));
@@ -512,7 +520,15 @@ class HashTable implements AutoCloseable, Iterable<Entry>
 		Log.inc();
 
 		LeafNode map = new LeafNode(mLeafSize);
-		byte[] oldValue = map.put(aKey, aValue);
+
+		ByteBufferMap.Entry entry = new ByteBufferMap.Entry(0, aKey, aValue);
+
+		if (!map.put(entry))
+		{
+			throw new DatabaseException("Failed to upgrade hole to leaf");
+		}
+
+		byte[] oldValue = entry.getReplacedValue();
 
 		BlockPointer blockPointer = writeBlock(map, aBlockPointer.getRange());
 		aNode.setPointer(aIndex, blockPointer);

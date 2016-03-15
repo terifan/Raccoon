@@ -147,18 +147,65 @@ public class ByteBufferMap implements Iterable<byte[]>
 	}
 
 
-//	public static class Entry
-//	{
-//		byte type;
-//		byte[] key;
-//		byte[] value;
-//		byte[] oldValue;
-//	}
-//
-//	public boolean put(Entry aEntry)
+	public static class Entry
+	{
+		private byte mHeader;
+		private byte[] mKey;
+		private byte[] mValue;
+		private byte[] mReplacedValue;
 
 
-	public byte[] put(byte[] aKey, byte[] aValue)
+		public Entry()
+		{
+		}
+
+
+		public Entry(int aHeader, byte[] aKey, byte[] aValue)
+		{
+			mHeader = (byte)aHeader;
+			mKey = aKey;
+			mValue = aValue;
+		}
+
+
+		public byte getHeader()
+		{
+			return mHeader;
+		}
+
+
+		public byte[] getKey()
+		{
+			return mKey;
+		}
+
+
+		public byte[] getValue()
+		{
+			return mValue;
+		}
+
+
+		public byte[] getReplacedValue()
+		{
+			return mReplacedValue;
+		}
+	}
+
+
+	public boolean put(Entry aEntry)
+	{
+//		byte[] tmp = new byte[1 + aEntry.value.length];
+//		System.arraycopy(aEntry.value, 0, tmp, 1, aEntry.value.length);
+//		aEntry.oldValue = put(aEntry.key, tmp);
+
+		aEntry.mReplacedValue = put(aEntry.mKey, aEntry.mValue);
+
+		return aEntry.mReplacedValue != OVERFLOW;
+	}
+
+
+	private byte[] put(byte[] aKey, byte[] aValue)
 	{
 		if (aKey.length > MAX_VALUE_SIZE || aValue.length > MAX_VALUE_SIZE || aKey.length + aValue.length > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
 		{
@@ -231,6 +278,21 @@ public class ByteBufferMap implements Iterable<byte[]>
 		assert mModCount == modCount : mModCount + " == " + modCount;
 
 		return oldValue;
+	}
+
+
+	public boolean get(Entry aEntry)
+	{
+		int i = indexOf(aEntry.mKey);
+
+		if (i == -1)
+		{
+			return false;
+		}
+
+		aEntry.mValue = getValue(i);
+
+		return true;
 	}
 
 

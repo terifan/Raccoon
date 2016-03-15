@@ -13,11 +13,11 @@ public class ByteBufferMapNGTest
 	public void testSinglePutGet()
 	{
 		ByteBufferMap map = new ByteBufferMap(4096);
-		
+
 		byte[] key = tb();
 		byte[] value = tb();
 
-		map.put(key, value);
+		map.put(new ByteBufferMap.Entry(0, key, value));
 
 		assertEquals(map.get(key), value);
 	}
@@ -27,7 +27,7 @@ public class ByteBufferMapNGTest
 	public void testFillBuffer()
 	{
 		ByteBufferMap map = new ByteBufferMap(4096);
-		
+
 		HashMap<byte[],byte[]> values = new HashMap<>();
 
 		for (int i = 0; i < 1000; i++)
@@ -35,9 +35,7 @@ public class ByteBufferMapNGTest
 			byte[] key = tb();
 			byte[] value = tb();
 
-			byte[] old = map.put(key, value);
-
-			if (old == ByteBufferMap.OVERFLOW)
+			if (!map.put(new ByteBufferMap.Entry(0, key, value)))
 			{
 				break;
 			}
