@@ -11,7 +11,6 @@ import org.terifan.raccoon.io.Blob;
 import org.terifan.raccoon.io.BlobInputStream;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.BlockAccessor;
-import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 

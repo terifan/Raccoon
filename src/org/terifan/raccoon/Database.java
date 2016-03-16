@@ -24,7 +24,6 @@ import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.FileBlockDevice;
-import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;

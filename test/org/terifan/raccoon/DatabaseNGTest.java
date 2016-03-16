@@ -17,7 +17,6 @@ import org.terifan.raccoon.io.FileAlreadyOpenException;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
-import org.terifan.raccoon.io.Streams;
 import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.terifan.raccoon.util.Log;
 import org.terifan.security.cryptography.InvalidKeyException;

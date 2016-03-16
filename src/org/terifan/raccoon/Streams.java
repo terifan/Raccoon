@@ -1,11 +1,11 @@
-package org.terifan.raccoon.io;
+package org.terifan.raccoon;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 
-public final class Streams
+final class Streams
 {
 	private Streams()
 	{
