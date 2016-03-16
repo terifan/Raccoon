@@ -18,7 +18,6 @@ import org.terifan.raccoon.util.Log;
 
 public class Table<T> implements Iterable<T>
 {
-	static final byte PTR_RECORD = 0;
 	static final byte PTR_BLOB = 1;
 
 	private Database mDatabase;
@@ -126,7 +125,7 @@ public class Table<T> implements Iterable<T>
 
 		byte[] key = getKeys(aEntity);
 		byte[] value = getNonKeys(aEntity);
-		byte type = PTR_RECORD;
+		byte type = 0;
 
 		if (key.length + value.length > mTableImplementation.getEntryMaximumLength() / 4)
 		{

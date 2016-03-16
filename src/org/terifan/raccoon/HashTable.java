@@ -205,14 +205,20 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	{
 		checkOpen();
 
+		boolean modified;
+
 		if (mRootMap != null)
 		{
-			return mRootMap.remove(aEntry);
+			modified = mRootMap.remove(aEntry);
 		}
 		else
 		{
-			return removeValue(computeHash(aEntry.getKey()), 0, aEntry, mRootNode);
+			modified = removeValue(computeHash(aEntry.getKey()), 0, aEntry, mRootNode);
 		}
+		
+		mModified |= modified;
+
+		return modified;
 	}
 
 
@@ -810,7 +816,7 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 				LeafNode leafNode = new LeafNode(buffer);
 				for (LeafEntry entry : leafNode)
 				{
-					if (entry.getValue()[0] == Table.PTR_BLOB)
+					if (entry.getFormat() == Table.PTR_BLOB)
 					{
 						ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(entry.getValue());
 						byteArrayBuffer.read();

@@ -342,7 +342,7 @@ public class Database implements AutoCloseable
 	/**
 	 * Persists all pending changes. It's necessary to commit changes on a regular basis to avoid data loss.
 	 */
-	public void commit()
+	public boolean commit()
 	{
 		checkOpen();
 
@@ -364,6 +364,8 @@ public class Database implements AutoCloseable
 					mChanged = true;
 				}
 			}
+			
+			boolean changed = mChanged;
 
 			if (mChanged)
 			{
@@ -386,6 +388,8 @@ public class Database implements AutoCloseable
 			}
 
 			Log.dec();
+
+			return changed;
 		}
 		finally
 		{

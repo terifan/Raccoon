@@ -242,11 +242,9 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		for (int i = 0; i < aBlockCount; i++)
 		{
-			Integer bi = blockIndex + i;
-
-			if (mUncommitedAllocations.remove(bi))
+			if (mUncommitedAllocations.remove(blockIndex + i))
 			{
-				mRangeMap.add(bi, 1);
+				mRangeMap.add(blockIndex + i, 1);
 			}
 		}
 

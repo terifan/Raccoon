@@ -28,6 +28,8 @@ import tests._Fruit1K;
 import static tests.__TestUtils.createBuffer;
 import static tests.__TestUtils.t;
 import static tests.__TestUtils.t;
+import static tests.__TestUtils.t;
+import static tests.__TestUtils.t;
 
 
 public class DatabaseNGTest
@@ -443,7 +445,7 @@ public class DatabaseNGTest
 		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
 		{
 			db.tryGet(out);
-
+			
 			db.remove(out);
 			db.commit();
 		}
@@ -451,6 +453,22 @@ public class DatabaseNGTest
 		assertEquals(in.content, out.content);
 		assertEquals(managedBlockDevice.getUsedSpace(), 5);
 		assertTrue(managedBlockDevice.getFreeSpace() > 1000_000 / 512);
+	}
+
+
+	@Test
+	public void testDatabaseNotChangedWhenZeroItemsDeleted() throws IOException
+	{
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+
+		_Animal1K item = new _Animal1K("banana");
+
+		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
+		{
+			assertFalse(db.remove(item));
+			assertFalse(db.commit());
+		}
 	}
 
 
