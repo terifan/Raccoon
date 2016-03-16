@@ -293,6 +293,9 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		public CipherImplementation(final EncryptionFunction aCiphers, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitSize)
 		{
+			mCipher = new CBCCipherMode();
+			mUnitSize = aUnitSize;
+
 			switch (aCiphers)
 			{
 				case AES:
@@ -359,9 +362,6 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			{
 				throw new IllegalArgumentException("Bad offset: " + offset);
 			}
-
-			mCipher = new CBCCipherMode();
-			mUnitSize = aUnitSize;
 		}
 
 
