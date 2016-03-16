@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
 
-public class BlockSizeParam
+public final class BlockSizeParam
 {
 	private int mValue;
 

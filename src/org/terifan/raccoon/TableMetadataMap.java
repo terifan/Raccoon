@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 
-class TableMetadataMap
+final class TableMetadataMap
 {
 	private ArrayList<TableMetadata> mTableMetadatas;
 

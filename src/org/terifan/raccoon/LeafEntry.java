@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
 
-public class LeafEntry
+public final class LeafEntry
 {
 	static final byte FLAG_BLOB = 1;
 
@@ -10,18 +10,18 @@ public class LeafEntry
 	byte[] mValue;
 
 
-	public LeafEntry()
+	LeafEntry()
 	{
 	}
 
 
-	public LeafEntry(byte[] aKey)
+	LeafEntry(byte[] aKey)
 	{
 		mKey = aKey;
 	}
 
 
-	public LeafEntry(byte[] aKey, byte[] aValue, byte aFlags)
+	LeafEntry(byte[] aKey, byte[] aValue, byte aFlags)
 	{
 		mKey = aKey;
 		mValue = aValue;

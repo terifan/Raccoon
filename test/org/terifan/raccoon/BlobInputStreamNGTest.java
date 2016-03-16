@@ -1,13 +1,23 @@
-package org.terifan.raccoon.io;
+package org.terifan.raccoon;
 
 import java.io.IOException;
 import java.util.Random;
 import org.terifan.raccoon.TransactionCounter;
+import org.terifan.raccoon.io.AccessCredentials;
+import org.terifan.raccoon.io.BlobInputStream;
+import org.terifan.raccoon.io.BlobOutputStream;
+import org.terifan.raccoon.io.BlockAccessor;
+import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.testng.annotations.DataProvider;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
+import org.terifan.raccoon.io.IManagedBlockDevice;
+import org.terifan.raccoon.io.IPhysicalBlockDevice;
+import org.terifan.raccoon.io.ManagedBlockDevice;
+import org.terifan.raccoon.io.MemoryBlockDevice;
+import org.terifan.raccoon.io.SecureBlockDevice;
 
 
 public class BlobInputStreamNGTest

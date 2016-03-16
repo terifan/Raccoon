@@ -15,7 +15,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public class Table<T> implements Iterable<T>
+public final class Table<T> implements Iterable<T>
 {
 	private Database mDatabase;
 	private TableMetadata mTableMetadata;

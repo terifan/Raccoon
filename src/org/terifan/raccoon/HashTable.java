@@ -14,7 +14,7 @@ import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-class HashTable implements AutoCloseable, Iterable<LeafEntry>
+final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 {
 	private BlockAccessor mBlockAccessor;
 	private BlockPointer mRootBlockPointer;

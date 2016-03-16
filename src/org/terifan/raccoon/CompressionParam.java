@@ -3,7 +3,7 @@ package org.terifan.raccoon;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
 
 
-public class CompressionParam
+public final class CompressionParam
 {
 	public final static int NONE = 0;
 	public final static int ZLE = 1;

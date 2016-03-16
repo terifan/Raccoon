@@ -36,7 +36,7 @@ import org.terifan.raccoon.util.Log;
  *   (pointer 1..n)
  *     3 bytes - offset
  */
-class LeafNode implements Iterable<LeafEntry>, Node
+final class LeafNode implements Iterable<LeafEntry>, Node
 {
 	private final static int MAX_CAPACITY = 1 << 24;
 	private final static int HEADER_SIZE = 2 + 3;

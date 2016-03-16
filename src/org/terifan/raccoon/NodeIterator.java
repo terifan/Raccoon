@@ -8,7 +8,7 @@ import org.terifan.raccoon.io.BlockPointer.BlockType;
 import org.terifan.raccoon.util.Log;
 
 
-class NodeIterator implements Iterator<LeafEntry>
+final class NodeIterator implements Iterator<LeafEntry>
 {
 	private long mModCount;
 	private int mEntryIndex;

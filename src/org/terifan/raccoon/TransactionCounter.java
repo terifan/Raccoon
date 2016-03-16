@@ -3,7 +3,7 @@ package org.terifan.raccoon;
 import java.util.concurrent.atomic.AtomicLong;
 
 
-public class TransactionCounter
+public final class TransactionCounter
 {
 	private AtomicLong mCounter;
 
@@ -14,7 +14,7 @@ public class TransactionCounter
 	}
 
 
-	public TransactionCounter(long aCounter)
+	TransactionCounter(long aCounter)
 	{
 		mCounter = new AtomicLong(aCounter);
 	}

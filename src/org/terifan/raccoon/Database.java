@@ -30,7 +30,7 @@ import org.terifan.raccoon.util.Log;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-public class Database implements AutoCloseable
+public final class Database implements AutoCloseable
 {
 	private final static int EXTRA_DATA_CHECKSUM_SEED = 0xf49209b1;
 	private final static long RACCOON_DB_IDENTITY = 0x726163636f6f6e00L; // 'raccoon\0'

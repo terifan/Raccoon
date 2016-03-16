@@ -5,7 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 
 
-public class EntityIterator<T> implements Iterator<T>
+public final class EntityIterator<T> implements Iterator<T>
 {
 	private final Iterator<LeafEntry> mIterator;
 	private final Table mTable;
