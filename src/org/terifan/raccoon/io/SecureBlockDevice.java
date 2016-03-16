@@ -33,7 +33,7 @@ import static java.util.Arrays.fill;
  * contain a boot block which store the secret encryption key used to encrypt all other blocks. All read and write operations
  * offset the index to ensure the boot block can never be read/written.
  */
-public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
+public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 {
 	private final static int RESERVED_BLOCKS = 1;
 	private final static int SALT_SIZE = 256;
@@ -84,44 +84,40 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 
 
 	@Override
-	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, final long aBlockKey) throws IOException
+	public void writeBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long aBlockKey) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
 			throw new IOException("Illegal offset: " + aBlockIndex);
 		}
-
-		aBlockIndex += RESERVED_BLOCKS;
 
 		Log.v("write block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
 		Log.inc();
 
 		byte[] workBuffer = aBuffer.clone();
 
-		mCipher.encrypt(aBlockIndex, workBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mCipher.encrypt(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, aBlockKey);
 
-		mBlockDevice.writeBlock(aBlockIndex, workBuffer, aBufferOffset, aBufferLength, 0L); // block key is used by this blockdevice and not passed to lower levels
+		mBlockDevice.writeBlock(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, 0L); // block key is used by this blockdevice and not passed to lower levels
 
 		Log.dec();
 	}
 
 
 	@Override
-	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, final long aBlockKey) throws IOException
+	public void readBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long aBlockKey) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
 			throw new IOException("Illegal offset: " + aBlockIndex);
 		}
 
-		aBlockIndex += RESERVED_BLOCKS;
-
 		Log.v("read block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
 		Log.inc();
 
-		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L); // block key is used by this blockdevice and not passed to lower levels
+		mBlockDevice.readBlock(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L); // block key is used by this blockdevice and not passed to lower levels
 
-		mCipher.decrypt(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mCipher.decrypt(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 
 		Log.dec();
 	}
@@ -292,7 +288,7 @@ public class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 		private transient final BlockCipher[] mCiphers;
 		private transient final BlockCipher mTweakCipher;
 		private transient final CBCCipherMode mCipher;
-		private int mUnitSize;
+		private transient final int mUnitSize;
 
 
 		public CipherImplementation(final EncryptionFunction aCiphers, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitSize)
