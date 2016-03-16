@@ -833,9 +833,7 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 				ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(buffer);
 				while (byteArrayBuffer.remaining() > 0)
 				{
-					BlockPointer blockPointer = new BlockPointer();
-					blockPointer.unmarshal(byteArrayBuffer);
-					scan(blockPointer);
+					scan(new BlockPointer().unmarshal(byteArrayBuffer));
 				}
 				break;
 			case BLOB_DATA:

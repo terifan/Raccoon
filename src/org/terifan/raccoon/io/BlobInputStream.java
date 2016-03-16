@@ -113,8 +113,8 @@ public class BlobInputStream extends InputStream
 			throw new IOException();
 		}
 
-		BlockPointer bp = new BlockPointer();
-		bp.unmarshal(mPointerBuffer);
+		BlockPointer bp = new BlockPointer().unmarshal(mPointerBuffer);
+
 		mBuffer = new ByteArrayBuffer(mBlockAccessor.readBlock(bp));
 
 		return bp;

@@ -2,6 +2,7 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
 class IndexNode implements Node
@@ -126,7 +127,7 @@ class IndexNode implements Node
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 
-		return new BlockPointer().unmarshal(mBuffer, aIndex * BlockPointer.SIZE);
+		return new BlockPointer().unmarshal(new ByteArrayBuffer(mBuffer).position(aIndex * BlockPointer.SIZE));
 	}
 
 
@@ -134,7 +135,7 @@ class IndexNode implements Node
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 
-		aBlockPointer.marshal(mBuffer, aIndex * BlockPointer.SIZE);
+		aBlockPointer.marshal(new ByteArrayBuffer(mBuffer).position(aIndex * BlockPointer.SIZE));
 	}
 
 

@@ -26,8 +26,7 @@ public final class Blob
 	{
 		while (aBuffer.remaining() > 0)
 		{
-			BlockPointer bp = new BlockPointer();
-			bp.unmarshal(aBuffer);
+			BlockPointer bp = new BlockPointer().unmarshal(aBuffer);
 
 			if (bp.getType() == BlockType.BLOB_INDX)
 			{

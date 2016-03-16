@@ -41,6 +41,12 @@ public class LeafEntry
 	}
 
 
+	boolean hasFlag(byte aFlag)
+	{
+		return (mFlags & aFlag) == aFlag;
+	}
+
+
 	public byte[] getKey()
 	{
 		return mKey;
@@ -56,6 +62,12 @@ public class LeafEntry
 	public byte[] getValue()
 	{
 		return mValue;
+	}
+
+
+	public void setValue(byte[] aValue)
+	{
+		mValue = aValue;
 	}
 
 
@@ -80,16 +92,4 @@ public class LeafEntry
 //
 //		return buffer;
 //	}
-
-
-	public void setValue(byte[] aValue)
-	{
-		this.mValue = aValue;
-	}
-
-
-	boolean hasFlag(byte aFlag)
-	{
-		return (mFlags & aFlag) != 0;
-	}
 }
