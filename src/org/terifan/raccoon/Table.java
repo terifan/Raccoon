@@ -84,12 +84,6 @@ public class Table<T> implements Iterable<T>
 	}
 
 
-	public boolean contains(T aEntity)
-	{
-		return mTableImplementation.containsKey(new LeafEntry(getKeys(aEntity)));
-	}
-
-
 	public <T> List<T> list(Class<T> aType)
 	{
 		ArrayList<T> list = new ArrayList<>();
@@ -109,19 +103,19 @@ public class Table<T> implements Iterable<T>
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(entry.getValue());
 
-		if (entry.getFormat() == PTR_RECORD)
+		if (entry.getFormat() == PTR_BLOB)
 		{
-			return buffer;
+			try
+			{
+				return new BlobInputStream(mBlockAccessor, buffer);
+			}
+			catch (Exception e)
+			{
+				throw new DatabaseException(e);
+			}
 		}
 
-		try
-		{
-			return new BlobInputStream(mBlockAccessor, buffer);
-		}
-		catch (Exception e)
-		{
-			throw new DatabaseException(e);
-		}
+		return buffer;
 	}
 
 

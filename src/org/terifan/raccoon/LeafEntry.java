@@ -19,11 +19,11 @@ public class LeafEntry
 	}
 
 
-	public LeafEntry(byte[] aKey, byte[] aValue, int aFormat)
+	public LeafEntry(byte[] aKey, byte[] aValue, byte aFormat)
 	{
 		mKey = aKey;
 		mValue = aValue;
-		mFormat = (byte)aFormat;
+		mFormat = aFormat;
 	}
 
 

@@ -171,6 +171,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 	{
 		byte[] key = aEntry.mKey;
 		byte[] value = aEntry.mValue;
+		byte format = aEntry.mFormat;
 		int newValueLengthPlus1 = 1 + value.length;
 
 		if (key.length > MAX_VALUE_SIZE || newValueLengthPlus1 > MAX_VALUE_SIZE || key.length + newValueLengthPlus1 > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
@@ -196,7 +197,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 				aEntry.mValue = Arrays.copyOfRange(mBuffer, offset+1, offset + oldValueLengthPlus1);
 
 				System.arraycopy(value, 0, mBuffer, offset+1, value.length);
-				mBuffer[offset] = aEntry.mFormat;
+				mBuffer[offset] = format;
 
 				assert integrityCheck() == null : integrityCheck();
 
@@ -221,6 +222,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 			index = (-index) - 1;
 
+			aEntry.mFormat = 0;
 			aEntry.mValue = null;
 		}
 
@@ -237,7 +239,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 		int valueOffset = mStartOffset + readValueOffset(index);
 		System.arraycopy(key, 0, mBuffer, mStartOffset + readKeyOffset(index), key.length);
 		System.arraycopy(value, 0, mBuffer, valueOffset + 1, value.length);
-		mBuffer[valueOffset] = aEntry.mFormat;
+		mBuffer[valueOffset] = format;
 
 		mFreeSpaceOffset += ENTRY_HEADER_SIZE + key.length + newValueLengthPlus1;
 
@@ -254,7 +256,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 	{
 		int index = indexOf(aEntry.mKey);
 
-		if (index == -1)
+		if (index < 0)
 		{
 			return false;
 		}
@@ -267,17 +269,10 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 	private void loadValue(int aIndex, LeafEntry aEntry)
 	{
-		if (aIndex >= 0)
-		{
-			int modCount = mModCount;
+		int valueOffset = mStartOffset + readValueOffset(aIndex);
 
-			int offset = mStartOffset + readValueOffset(aIndex);
-
-			aEntry.mFormat = mBuffer[offset];
-			aEntry.mValue = Arrays.copyOfRange(mBuffer, offset + 1, offset + readValueLength(aIndex));
-
-			assert mModCount == modCount : mModCount + " == " + modCount;
-		}
+		aEntry.mFormat = mBuffer[valueOffset];
+		aEntry.mValue = Arrays.copyOfRange(mBuffer, valueOffset + 1, valueOffset + readValueLength(aIndex));
 	}
 
 
@@ -303,9 +298,9 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 		int modCount = ++mModCount;
 
-		int offsetX = mStartOffset + readValueOffset(aIndex);
-		aEntry.mFormat = mBuffer[offsetX];
-		aEntry.mValue = Arrays.copyOfRange(mBuffer, offsetX+1, offsetX + readValueLength(aIndex));
+		int valueOffset = mStartOffset + readValueOffset(aIndex);
+		aEntry.mFormat = mBuffer[valueOffset];
+		aEntry.mValue = Arrays.copyOfRange(mBuffer, valueOffset+1, valueOffset + readValueLength(aIndex));
 
 		int offset = readEntryOffset(aIndex);
 		int length = readEntryLength(aIndex);

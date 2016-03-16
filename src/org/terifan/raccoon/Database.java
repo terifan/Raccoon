@@ -566,31 +566,6 @@ public class Database implements AutoCloseable
 
 
 	/**
-	 * Retrieves an entity.
-	 *
-	 * @return
-	 *   true if the entity was found.
-	 */
-	public boolean contains(Object aEntity)
-	{
-		mReadLock.lock();
-		try
-		{
-			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.OPEN);
-			if (table == null)
-			{
-				return false;
-			}
-			return table.contains(aEntity);
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
-	}
-
-
-	/**
 	 * Removes the entity.
 	 *
 	 * @return

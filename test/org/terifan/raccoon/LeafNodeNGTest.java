@@ -17,13 +17,13 @@ public class LeafNodeNGTest
 		byte[] key = tb();
 		byte[] value = tb();
 
-		map.put(new LeafEntry(key, value, 77));
+		map.put(new LeafEntry(key, value, (byte)77));
 
 		LeafEntry entry = new LeafEntry(key);
 
 		assertTrue(map.get(entry));
 		assertEquals(entry.getValue(), value);
-		assertEquals(entry.getFormat(), 77);
+		assertEquals(entry.getFormat(), (byte)77);
 	}
 
 
@@ -39,7 +39,7 @@ public class LeafNodeNGTest
 			byte[] key = tb();
 			byte[] value = tb();
 
-			if (!map.put(new LeafEntry(key, value, 0)))
+			if (!map.put(new LeafEntry(key, value, (byte)0)))
 			{
 				break;
 			}
