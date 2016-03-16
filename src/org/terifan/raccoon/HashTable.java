@@ -138,39 +138,34 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	public byte[] get(byte[] aKey)
+	public boolean get(LeafEntry aEntry)
 	{
 		checkOpen();
 
 		if (mRootMap != null)
 		{
-			LeafEntry entry = new LeafEntry(aKey);
-			if (mRootMap.get(entry))
-			{
-				return entry.getValue();
-			}
-			return null;
+			return mRootMap.get(aEntry);
 		}
 		else
 		{
-			return getValue(computeHash(aKey), 0, aKey, mRootNode);
+			return getValue(computeHash(aEntry.getKey()), 0, aEntry, mRootNode);
 		}
 	}
 
 
-	public boolean containsKey(byte[] aKey)
+	public boolean containsKey(LeafEntry aEntry)
 	{
-		return get(aKey) != null;
+		return get(aEntry);
 	}
 
 
-	public byte[] put(byte[] aKey, byte[] aValue)
+	public boolean put(LeafEntry aEntry)
 	{
 		checkOpen();
 
-		if (aKey.length + aValue.length > getEntryMaximumLength())
+		if (aEntry.getKey().length + aEntry.getValue().length > getEntryMaximumLength())
 		{
-			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aKey.length + ", value: " + aValue.length + ", maximum: " + getEntryMaximumLength());
+			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().length + ", value: " + aEntry.getValue().length + ", maximum: " + getEntryMaximumLength());
 		}
 
 		int modCount = ++mModCount;
@@ -178,19 +173,12 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		Log.inc();
 
 		mModified = true;
-		byte[] oldValue = null;
 
 		if (mRootMap != null)
 		{
 			Log.v("put root value");
 
-			LeafEntry entry = new LeafEntry(aKey, aValue, 0);
-
-			if (mRootMap.put(entry))
-			{
-				oldValue = entry.getValue();
-			}
-			else
+			if (!mRootMap.put(aEntry))
 			{
 				Log.v("upgrade root leaf to node");
 
@@ -203,39 +191,28 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		if (mRootMap == null)
 		{
-			oldValue = putValue(aKey, aValue, computeHash(aKey), 0, mRootNode);
+			putValue(aEntry, computeHash(aEntry.getKey()), 0, mRootNode);
 		}
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
-		return oldValue;
+		return aEntry.getValue() != null;
 	}
 
 
-	public byte[] remove(byte[] aKey)
+	public boolean remove(LeafEntry aEntry)
 	{
 		checkOpen();
 
-		int modCount = ++mModCount;
-		mModified = true;
-
-		byte[] oldValue;
-
 		if (mRootMap != null)
 		{
-			LeafEntry entry = new LeafEntry(aKey);
-			mRootMap.remove(entry);
-			oldValue = entry.getValue();
+			return mRootMap.remove(aEntry);
 		}
 		else
 		{
-			oldValue = removeValue(computeHash(aKey), 0, aKey, mRootNode);
+			return removeValue(computeHash(aEntry.getKey()), 0, aEntry, mRootNode);
 		}
-
-		assert mModCount == modCount : "concurrent modification";
-
-		return oldValue;
 	}
 
 
@@ -425,7 +402,7 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	private byte[] getValue(long aHash, int aLevel, byte[] aKey, IndexNode aNode)
+	private boolean getValue(long aHash, int aLevel, LeafEntry aEntry, IndexNode aNode)
 	{
 		Stats.getValue.incrementAndGet();
 		Log.i("get value");
@@ -436,16 +413,11 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		switch (blockPointer.getType())
 		{
 			case NODE_INDX:
-				return getValue(aHash, aLevel + 1, aKey, readNode(blockPointer));
+				return getValue(aHash, aLevel + 1, aEntry, readNode(blockPointer));
 			case NODE_LEAF:
-				LeafEntry entry = new LeafEntry(aKey);
-				if (readLeaf(blockPointer).get(entry))
-				{
-					return entry.getValue();
-				}
-				return null;
+				return readLeaf(blockPointer).get(aEntry);
 			case NODE_HOLE:
-				return null;
+				return false;
 			case NODE_FREE:
 			default:
 				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
@@ -453,7 +425,7 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	private byte[] putValue(byte[] aKey, byte[] aValue, long aHash, int aLevel, IndexNode aNode)
+	private byte[] putValue(LeafEntry aEntry, long aHash, int aLevel, IndexNode aNode)
 	{
 		Stats.putValue.incrementAndGet();
 		Log.v("put value");
@@ -467,15 +439,15 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		{
 			case NODE_INDX:
 				IndexNode node = readNode(blockPointer);
-				oldValue = putValue(aKey, aValue, aHash, aLevel + 1, node);
+				oldValue = putValue(aEntry, aHash, aLevel + 1, node);
 				freeBlock(blockPointer);
 				aNode.setPointer(index, writeBlock(node, blockPointer.getRange()));
 				break;
 			case NODE_LEAF:
-				oldValue = putValueLeaf(blockPointer, index, aKey, aValue, aLevel, aNode, aHash);
+				oldValue = putValueLeaf(blockPointer, index, aEntry, aLevel, aNode, aHash);
 				break;
 			case NODE_HOLE:
-				oldValue = upgradeHoleToLeaf(aKey, aValue, aNode, blockPointer, index);
+				oldValue = upgradeHoleToLeaf(aEntry, aNode, blockPointer, index);
 				break;
 			case NODE_FREE:
 			default:
@@ -488,7 +460,7 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, byte[] aKey, byte[] aValue, int aLevel, IndexNode aNode, long aHash)
+	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, LeafEntry aEntry, int aLevel, IndexNode aNode, long aHash)
 	{
 		Stats.putValueLeaf.incrementAndGet();
 
@@ -496,11 +468,9 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		byte[] oldValue;
 
-		LeafEntry entry = new LeafEntry(aKey, aValue, 0);
-
-		if (map.put(entry))
+		if (map.put(aEntry))
 		{
-			oldValue = entry.getValue();
+			oldValue = aEntry.getValue();
 
 			freeBlock(aBlockPointer);
 
@@ -508,13 +478,13 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		}
 		else if (splitLeaf(map, aBlockPointer, aIndex, aLevel, aNode))
 		{
-			oldValue = putValue(aKey, aValue, aHash, aLevel, aNode); // recursive put
+			oldValue = putValue(aEntry, aHash, aLevel, aNode); // recursive put
 		}
 		else
 		{
 			IndexNode node = splitLeaf(aBlockPointer, map, aLevel + 1);
 
-			oldValue = putValue(aKey, aValue, aHash, aLevel + 1, node); // recursive put
+			oldValue = putValue(aEntry, aHash, aLevel + 1, node); // recursive put
 
 			aNode.setPointer(aIndex, writeBlock(node, aBlockPointer.getRange()));
 		}
@@ -523,7 +493,7 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	private byte[] upgradeHoleToLeaf(byte[] aKey, byte[] aValue, IndexNode aNode, BlockPointer aBlockPointer, int aIndex)
+	private byte[] upgradeHoleToLeaf(LeafEntry aEntry, IndexNode aNode, BlockPointer aBlockPointer, int aIndex)
 	{
 		Stats.upgradeHoleToLeaf.incrementAndGet();
 		Log.v("upgrade hole to leaf");
@@ -531,14 +501,12 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		LeafNode map = new LeafNode(mLeafSize);
 
-		LeafEntry entry = new LeafEntry(aKey, aValue, 0);
-
-		if (!map.put(entry))
+		if (!map.put(aEntry))
 		{
 			throw new DatabaseException("Failed to upgrade hole to leaf");
 		}
 
-		byte[] oldValue = entry.getValue();
+		byte[] oldValue = aEntry.getValue();
 
 		BlockPointer blockPointer = writeBlock(map, aBlockPointer.getRange());
 		aNode.setPointer(aIndex, blockPointer);
@@ -656,39 +624,37 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	private byte[] removeValue(long aHash, int aLevel, byte[] aKey, IndexNode aNode)
+	private boolean removeValue(long aHash, int aLevel, LeafEntry aEntry, IndexNode aNode)
 	{
 		Stats.removeValue.incrementAndGet();
 
 		int index = aNode.findPointer(computeIndex(aHash, aLevel));
 		BlockPointer blockPointer = aNode.getPointer(index);
 
-		byte[] oldValue;
-
 		switch (blockPointer.getType())
 		{
 			case NODE_INDX:
 				IndexNode node = readNode(blockPointer);
-				oldValue = removeValue(aHash, aLevel + 1, aKey, node);
-				if (oldValue != null)
+				if (removeValue(aHash, aLevel + 1, aEntry, node))
 				{
 					freeBlock(blockPointer);
 					BlockPointer newBlockPointer = writeBlock(node, blockPointer.getRange());
 					aNode.setPointer(index, newBlockPointer);
+					return true;
 				}
-				return oldValue;
+				return false;
 			case NODE_LEAF:
 				LeafNode map = readLeaf(blockPointer);
-				LeafEntry entry = new LeafEntry(aKey);
-				if (map.remove(entry))
+				if (map.remove(aEntry))
 				{
 					freeBlock(blockPointer);
 					BlockPointer newBlockPointer = writeBlock(map, blockPointer.getRange());
 					aNode.setPointer(index, newBlockPointer);
+					return true;
 				}
-				return entry.getValue();
+				return false;
 			case NODE_HOLE:
-				return null;
+				return false;
 			case NODE_FREE:
 			default:
 				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");

@@ -1,6 +1,5 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.LeafNode;
 import java.util.HashMap;
 import java.util.Map;
 import org.testng.annotations.Test;
@@ -8,7 +7,7 @@ import static org.testng.Assert.*;
 import static tests.__TestUtils.*;
 
 
-public class ByteBufferMapNGTest
+public class LeafNodeNGTest
 {
 	@Test
 	public void testSinglePutGet()
@@ -18,12 +17,13 @@ public class ByteBufferMapNGTest
 		byte[] key = tb();
 		byte[] value = tb();
 
-		map.put(new LeafEntry(key, value, 0));
-		
+		map.put(new LeafEntry(key, value, 77));
+
 		LeafEntry entry = new LeafEntry(key);
 
 		assertTrue(map.get(entry));
 		assertEquals(entry.getValue(), value);
+		assertEquals(entry.getFormat(), 77);
 	}
 
 

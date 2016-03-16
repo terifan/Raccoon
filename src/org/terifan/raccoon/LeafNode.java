@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
+import org.terifan.raccoon.util.Log;
 
 
 /**
@@ -138,14 +139,14 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 		assert integrityCheck() == null : integrityCheck();
 	}
-	
-	
+
+
 	@Override
 	public byte[] array()
 	{
 		return mBuffer;
 	}
-	
+
 
 	@Override
 	public BlockType getType()
@@ -153,7 +154,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 		return BlockType.NODE_LEAF;
 	}
 
-	
+
 	public LeafNode clear()
 	{
 		Arrays.fill(mBuffer, mStartOffset, mStartOffset + mCapacity, (byte)0);
@@ -168,16 +169,13 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 	public boolean put(LeafEntry aEntry)
 	{
-//		byte[] tmp = new byte[1 + aEntry.value.length];
-//		System.arraycopy(aEntry.value, 0, tmp, 1, aEntry.value.length);
-//		aEntry.oldValue = put(aEntry.key, tmp);
-
 		byte[] key = aEntry.mKey;
 		byte[] value = aEntry.mValue;
+		int newValueLengthPlus1 = 1 + value.length;
 
-		if (key.length > MAX_VALUE_SIZE || value.length > MAX_VALUE_SIZE || key.length + value.length > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
+		if (key.length > MAX_VALUE_SIZE || newValueLengthPlus1 > MAX_VALUE_SIZE || key.length + newValueLengthPlus1 > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
 		{
-			throw new IllegalArgumentException("Entry length exceeds capacity of this map: " + (key.length + value.length) + " > " + (mCapacity - ENTRY_HEADER_SIZE - HEADER_SIZE - ENTRY_POINTER_SIZE));
+			throw new IllegalArgumentException("Entry length exceeds capacity of this map: " + (key.length + newValueLengthPlus1) + " > " + (mCapacity - ENTRY_HEADER_SIZE - HEADER_SIZE - ENTRY_POINTER_SIZE));
 		}
 
 		int index = indexOf(key);
@@ -185,26 +183,27 @@ class LeafNode implements Iterable<LeafEntry>, Node
 		// if key already exists
 		if (index >= 0)
 		{
-			int oldValueLength = readValueLength(index);
+			int oldValueLengthPlus1 = readValueLength(index);
 
 			// fast put
-			if (oldValueLength == value.length)
+			if (oldValueLengthPlus1 == newValueLengthPlus1)
 			{
 				int entryOffset = readEntryOffset(index);
 				int valueOffset = entryOffset + ENTRY_HEADER_SIZE + readKeyLength(index);
 				int offset = mStartOffset + valueOffset;
 
-				aEntry.mFormat = 0; // TODO
-				aEntry.mValue = Arrays.copyOfRange(mBuffer, offset, offset + oldValueLength);
+				aEntry.mFormat = mBuffer[offset];
+				aEntry.mValue = Arrays.copyOfRange(mBuffer, offset+1, offset + oldValueLengthPlus1);
 
-				System.arraycopy(value, 0, mBuffer, offset, value.length);
+				System.arraycopy(value, 0, mBuffer, offset+1, value.length);
+				mBuffer[offset] = aEntry.mFormat;
 
 				assert integrityCheck() == null : integrityCheck();
 
 				return true;
 			}
 
-			if (value.length - oldValueLength > getFreeSpace())
+			if (newValueLengthPlus1 - oldValueLengthPlus1 > getFreeSpace())
 			{
 				return false;
 			}
@@ -215,14 +214,13 @@ class LeafNode implements Iterable<LeafEntry>, Node
 		}
 		else
 		{
-			if (getFreeSpace() < ENTRY_HEADER_SIZE + key.length + value.length + ENTRY_POINTER_SIZE)
+			if (getFreeSpace() < ENTRY_HEADER_SIZE + key.length + newValueLengthPlus1 + ENTRY_POINTER_SIZE)
 			{
 				return false;
 			}
 
 			index = (-index) - 1;
 
-			aEntry.mFormat = 0; // TODO
 			aEntry.mValue = null;
 		}
 
@@ -235,11 +233,13 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 		// write entry
 		writeEntryOffset(index, mFreeSpaceOffset);
-		writeEntryHeader(index, key.length, value.length);
+		writeEntryHeader(index, key.length, newValueLengthPlus1);
+		int valueOffset = mStartOffset + readValueOffset(index);
 		System.arraycopy(key, 0, mBuffer, mStartOffset + readKeyOffset(index), key.length);
-		System.arraycopy(value, 0, mBuffer, mStartOffset + readValueOffset(index), value.length);
+		System.arraycopy(value, 0, mBuffer, valueOffset + 1, value.length);
+		mBuffer[valueOffset] = aEntry.mFormat;
 
-		mFreeSpaceOffset += ENTRY_HEADER_SIZE + key.length + value.length;
+		mFreeSpaceOffset += ENTRY_HEADER_SIZE + key.length + newValueLengthPlus1;
 
 		writeBufferHeader();
 
@@ -273,8 +273,8 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 			int offset = mStartOffset + readValueOffset(aIndex);
 
-			aEntry.mFormat = 0; // TODO
-			aEntry.mValue = Arrays.copyOfRange(mBuffer, offset, offset + readValueLength(aIndex));
+			aEntry.mFormat = mBuffer[offset];
+			aEntry.mValue = Arrays.copyOfRange(mBuffer, offset + 1, offset + readValueLength(aIndex));
 
 			assert mModCount == modCount : mModCount + " == " + modCount;
 		}
@@ -287,9 +287,6 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 		if (index < 0)
 		{
-			aEntry.mFormat = 0; // TODO
-			aEntry.mValue = null;
-
 			return false;
 		}
 
@@ -307,8 +304,8 @@ class LeafNode implements Iterable<LeafEntry>, Node
 		int modCount = ++mModCount;
 
 		int offsetX = mStartOffset + readValueOffset(aIndex);
-		aEntry.mFormat = 0; // TODO
-		aEntry.mValue = Arrays.copyOfRange(mBuffer, offsetX, offsetX + readValueLength(aIndex));
+		aEntry.mFormat = mBuffer[offsetX];
+		aEntry.mValue = Arrays.copyOfRange(mBuffer, offsetX+1, offsetX + readValueLength(aIndex));
 
 		int offset = readEntryOffset(aIndex);
 		int length = readEntryLength(aIndex);
@@ -551,7 +548,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 			}
 			if (offset + length > mStartOffset + mFreeSpaceOffset)
 			{
-				return "Entry offset after free space";
+				return "Entry offset after free space ("+(offset+" + "+length)+">"+(mStartOffset + mFreeSpaceOffset)+")";
 			}
 
 			if (i > 0 && compare(mBuffer, prevKeyOffset, prevKeyLength, mBuffer, keyOffset, keyLength) >= 0)
@@ -594,7 +591,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 		}
 	}
 
-	
+
 	@Override
 	public Iterator<LeafEntry> iterator()
 	{
@@ -632,7 +629,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 			loadValue(mIndex, entry);
 
 			mIndex++;
-			
+
 			return entry;
 		}
 

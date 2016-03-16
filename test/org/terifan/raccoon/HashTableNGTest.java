@@ -31,7 +31,7 @@ public class HashTableNGTest
 			{
 				byte[] key = tb();
 				byte[] value = tb();
-				hashTable.put(key, value);
+				hashTable.put(new LeafEntry(key, value, 0));
 				map.put(key, value);
 			}
 
@@ -43,9 +43,7 @@ public class HashTableNGTest
 		{
 			for (byte[] key : map.keySet())
 			{
-				assertTrue(hashTable.containsKey(key));
-
-				assertEquals(hashTable.get(key), map.get(key));
+				assertEquals(get(hashTable, key), map.get(key));
 			}
 		}
 	}
@@ -69,32 +67,32 @@ public class HashTableNGTest
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				hashTable.put(entry.getKey().getBytes(), entry.getValue().getBytes());
+				hashTable.put(new LeafEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), 0));
 			}
 			hashTable.commit();
 
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				hashTable.put(entry.getKey().getBytes(), "err".getBytes());
+				hashTable.put(new LeafEntry(entry.getKey().getBytes(), "err".getBytes(), 0));
 			}
-			assertEquals(Log.toString(hashTable.get(map.keySet().iterator().next().getBytes())), "err");
+			assertEquals(Log.toString(get(hashTable, map.keySet().iterator().next().getBytes())), "err");
 			hashTable.rollback();
 
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				assertEquals(Log.toString(hashTable.get(entry.getKey().getBytes())), entry.getValue());
+				assertEquals(Log.toString(get(hashTable, entry.getKey().getBytes())), entry.getValue());
 			}
 
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				hashTable.remove(entry.getKey().getBytes());
+				hashTable.remove(new LeafEntry(entry.getKey().getBytes()));
 			}
-			assertEquals(hashTable.get(map.keySet().iterator().next().getBytes()), null);
+			assertEquals(get(hashTable, map.keySet().iterator().next().getBytes()), null);
 			hashTable.rollback();
 
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				assertEquals(Log.toString(hashTable.get(entry.getKey().getBytes())), entry.getValue());
+				assertEquals(Log.toString(get(hashTable, entry.getKey().getBytes())), entry.getValue());
 			}
 		}
 	}
@@ -119,11 +117,11 @@ public class HashTableNGTest
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
-			hashTable.put(k0, v0);
+			hashTable.put(new LeafEntry(k0, v0, 0));
 
 			assertEquals(hashTable.size(), 1);
 
-			hashTable.put(k1, v1);
+			hashTable.put(new LeafEntry(k1, v1, 0));
 
 			hashTable.commit();
 
@@ -136,17 +134,17 @@ public class HashTableNGTest
 		{
 			assertEquals(hashTable.size(), 2);
 
-			hashTable.put(k2, v2);
+			hashTable.put(new LeafEntry(k2, v2, 0));
 
 			assertEquals(hashTable.size(), 3);
 
 			hashTable.commit();
 
-			hashTable.put(k1, v1); // replace value
+			hashTable.put(new LeafEntry(k1, v1, 0)); // replace value
 
 			assertEquals(hashTable.size(), 3);
 
-			hashTable.put(k3, v3);
+			hashTable.put(new LeafEntry(k3, v3, 0));
 
 			hashTable.rollback();
 
@@ -154,7 +152,7 @@ public class HashTableNGTest
 
 			for (int i = 0; i < aSize; i++)
 			{
-				hashTable.put(tb(), tb());
+				hashTable.put(new LeafEntry(tb(), tb(), 0));
 			}
 			hashTable.commit();
 
@@ -182,7 +180,7 @@ public class HashTableNGTest
 
 				map.put(key, value);
 
-				hashTable.put(key.getBytes(), value.getBytes());
+				hashTable.put(new LeafEntry(key.getBytes(), value.getBytes(), 0));
 			}
 
 			hashTable.commit();
@@ -221,7 +219,7 @@ public class HashTableNGTest
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				hashTable.put(entry.getKey().getBytes(), entry.getValue().getBytes());
+				hashTable.put(new LeafEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), 0));
 			}
 
 			hashTable.commit();
@@ -260,7 +258,7 @@ public class HashTableNGTest
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				hashTable.put(entry.getKey().getBytes(), entry.getValue().getBytes());
+				hashTable.put(new LeafEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), 0));
 			}
 
 			hashTable.commit();
@@ -295,7 +293,7 @@ public class HashTableNGTest
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				hashTable.put(entry.getKey().getBytes(), entry.getValue().getBytes());
+				hashTable.put(new LeafEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), 0));
 			}
 
 			hashTable.commit();
@@ -306,7 +304,9 @@ public class HashTableNGTest
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
-				assertEquals(hashTable.remove(entry.getKey().getBytes()), entry.getValue().getBytes());
+				LeafEntry leafEntry = new LeafEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), 0);
+				assertTrue(hashTable.remove(leafEntry));
+				assertEquals(leafEntry.getValue(), entry.getValue().getBytes());
 			}
 			hashTable.commit();
 
@@ -324,9 +324,9 @@ public class HashTableNGTest
 		byte[] key = new byte[hashTable.getEntryMaximumLength() - 1];
 		byte[] value = {85};
 
-		hashTable.put(key, value);
+		hashTable.put(new LeafEntry(key, value, 0));
 
-		assertEquals(hashTable.get(key), value);
+		assertEquals(get(hashTable, key), value);
 	}
 
 
@@ -335,7 +335,7 @@ public class HashTableNGTest
 	{
 		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
 		HashTable hashTable = new HashTable(blockDevice, new TransactionCounter(0), true, 0, 512, 512, null);
-		hashTable.put(new byte[hashTable.getEntryMaximumLength()], new byte[1]);
+		hashTable.put(new LeafEntry(new byte[hashTable.getEntryMaximumLength()], new byte[1], 0));
 	}
 
 
@@ -363,5 +363,13 @@ public class HashTableNGTest
 	private HashTable newHashTable(byte[] aRoot, TransactionCounter aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
 	{
 		return new HashTable(new ManagedBlockDevice(aBlockDevice), aRoot, aTransactionId, true, null);
+	}
+
+
+	private byte[] get(HashTable aHashTable, byte[] aKey)
+	{
+		LeafEntry leafEntry = new LeafEntry(aKey);
+		assertTrue(aHashTable.get(leafEntry));
+		return leafEntry.getValue();
 	}
 }
