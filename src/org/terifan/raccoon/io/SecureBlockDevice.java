@@ -385,20 +385,20 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		private void reset()
 		{
-			if (mTweakCipher != null)
+			for (BlockCipher cipher : mCiphers)
 			{
-				for (BlockCipher cipher : mCiphers)
+				if (cipher != null)
 				{
 					cipher.engineReset();
 				}
-
-				mTweakCipher.engineReset();
-
-				fill(mIV[0], (byte)0);
-				fill(mIV[1], (byte)0);
-				fill(mIV[2], (byte)0);
-				fill(mCiphers, null);
 			}
+
+			mTweakCipher.engineReset();
+
+			fill(mIV[0], (byte)0);
+			fill(mIV[1], (byte)0);
+			fill(mIV[2], (byte)0);
+			fill(mCiphers, null);
 		}
 	};
 
