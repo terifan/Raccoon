@@ -3,7 +3,9 @@ package org.terifan.raccoon;
 
 public class LeafEntry
 {
-	byte mFormat;
+	static final byte FLAG_BLOB = 1;
+
+	byte mFlags;
 	byte[] mKey;
 	byte[] mValue;
 
@@ -19,23 +21,23 @@ public class LeafEntry
 	}
 
 
-	public LeafEntry(byte[] aKey, byte[] aValue, byte aFormat)
+	public LeafEntry(byte[] aKey, byte[] aValue, byte aFlags)
 	{
 		mKey = aKey;
 		mValue = aValue;
-		mFormat = aFormat;
+		mFlags = aFlags;
 	}
 
 
-	public byte getFormat()
+	public byte getFlags()
 	{
-		return mFormat;
+		return mFlags;
 	}
 
 
-	public void setFormat(byte aFormat)
+	public void setFlags(byte aFlags)
 	{
-		mFormat = aFormat;
+		mFlags = aFlags;
 	}
 
 
@@ -83,5 +85,11 @@ public class LeafEntry
 	public void setValue(byte[] aValue)
 	{
 		this.mValue = aValue;
+	}
+
+
+	boolean hasFlag(byte aFlag)
+	{
+		return (mFlags & aFlag) != 0;
 	}
 }

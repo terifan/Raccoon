@@ -32,8 +32,8 @@ public class EntityIterator<T> implements Iterator<T>
 
 		LeafEntry entry = mIterator.next();
 
-		mTable.unmarshalToObjectKeys(outputEntity, entry);
-		mTable.unmarshalToObjectValues(outputEntity, entry);
+		mTable.unmarshalToObjectKeys(entry, outputEntity);
+		mTable.unmarshalToObjectValues(entry, outputEntity);
 
 		initializeNewEntity(outputEntity);
 

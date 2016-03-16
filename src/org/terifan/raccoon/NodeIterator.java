@@ -24,7 +24,6 @@ class NodeIterator implements Iterator<LeafEntry>
 		mNodes = new ArrayDeque<>();
 
 		mHashTable = aHashTable;
-		mNextEntry = new LeafEntry();
 		mModCount = mHashTable.mModCount;
 
 		mNodes.add(aBlockPointer);
@@ -36,7 +35,6 @@ class NodeIterator implements Iterator<LeafEntry>
 		mNodes = new ArrayDeque<>();
 
 		mHashTable = aHashTable;
-		mNextEntry = new LeafEntry();
 		mModCount = mHashTable.mModCount;
 
 		mMap = aDataPage.iterator();
@@ -46,11 +44,6 @@ class NodeIterator implements Iterator<LeafEntry>
 	@Override
 	public boolean hasNext()
 	{
-		if (mModCount != mHashTable.mModCount)
-		{
-			throw new ConcurrentModificationException();
-		}
-
 		if (mHasEntry)
 		{
 			return true;
@@ -60,10 +53,7 @@ class NodeIterator implements Iterator<LeafEntry>
 		{
 			if (mMap.hasNext())
 			{
-				LeafEntry entry = mMap.next();
-
-				mNextEntry.setKey(entry.getKey());
-				mNextEntry.setValue(entry.getValue());
+				mNextEntry = mMap.next();
 				mHasEntry = true;
 
 				return true;

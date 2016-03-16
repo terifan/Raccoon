@@ -171,7 +171,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 	{
 		byte[] key = aEntry.mKey;
 		byte[] value = aEntry.mValue;
-		byte format = aEntry.mFormat;
+		byte format = aEntry.mFlags;
 		int newValueLengthPlus1 = 1 + value.length;
 
 		if (key.length > MAX_VALUE_SIZE || newValueLengthPlus1 > MAX_VALUE_SIZE || key.length + newValueLengthPlus1 > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
@@ -193,7 +193,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 				int valueOffset = entryOffset + ENTRY_HEADER_SIZE + readKeyLength(index);
 				int offset = mStartOffset + valueOffset;
 
-				aEntry.mFormat = mBuffer[offset];
+				aEntry.mFlags = mBuffer[offset];
 				aEntry.mValue = Arrays.copyOfRange(mBuffer, offset+1, offset + oldValueLengthPlus1);
 
 				System.arraycopy(value, 0, mBuffer, offset+1, value.length);
@@ -222,7 +222,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 
 			index = (-index) - 1;
 
-			aEntry.mFormat = 0;
+			aEntry.mFlags = 0;
 			aEntry.mValue = null;
 		}
 
@@ -271,14 +271,14 @@ class LeafNode implements Iterable<LeafEntry>, Node
 	{
 		int valueOffset = mStartOffset + readValueOffset(aIndex);
 
-		aEntry.mFormat = mBuffer[valueOffset];
+		aEntry.mFlags = mBuffer[valueOffset];
 		aEntry.mValue = Arrays.copyOfRange(mBuffer, valueOffset + 1, valueOffset + readValueLength(aIndex));
 	}
 
 
 	public boolean remove(LeafEntry aEntry)
 	{
-		int index = indexOf(aEntry.getKey());
+		int index = indexOf(aEntry.mKey);
 
 		if (index < 0)
 		{
@@ -294,12 +294,12 @@ class LeafNode implements Iterable<LeafEntry>, Node
 	private void remove(int aIndex, LeafEntry aEntry)
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount;
-		assert aEntry.getKey().length == readKeyLength(aIndex);
+		assert aEntry.mKey.length == readKeyLength(aIndex);
 
 		int modCount = ++mModCount;
 
 		int valueOffset = mStartOffset + readValueOffset(aIndex);
-		aEntry.mFormat = mBuffer[valueOffset];
+		aEntry.mFlags = mBuffer[valueOffset];
 		aEntry.mValue = Arrays.copyOfRange(mBuffer, valueOffset+1, valueOffset + readValueLength(aIndex));
 
 		int offset = readEntryOffset(aIndex);
@@ -576,7 +576,7 @@ class LeafNode implements Iterable<LeafEntry>, Node
 				{
 					sb.append(", ");
 				}
-				sb.append(new String(entry.getKey(), "utf-8"));
+				sb.append(new String(entry.mKey, "utf-8"));
 			}
 			return "[" + sb.toString() + "]";
 		}

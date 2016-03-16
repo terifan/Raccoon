@@ -18,8 +18,6 @@ import org.terifan.raccoon.util.Log;
 
 public class Table<T> implements Iterable<T>
 {
-	static final byte PTR_BLOB = 1;
-
 	private Database mDatabase;
 	private TableMetadata mTableMetadata;
 	private BlockAccessor mBlockAccessor;
@@ -70,7 +68,7 @@ public class Table<T> implements Iterable<T>
 
 		if (mTableImplementation.get(entry))
 		{
-			unmarshalToObjectValues(aEntity, entry);
+			unmarshalToObjectValues(entry, aEntity);
 
 			Log.dec();
 
@@ -100,9 +98,9 @@ public class Table<T> implements Iterable<T>
 			return null;
 		}
 
-		ByteArrayBuffer buffer = new ByteArrayBuffer(entry.getValue());
+		ByteArrayBuffer buffer = new ByteArrayBuffer(entry.mValue);
 
-		if (entry.getFormat() == PTR_BLOB)
+		if (entry.hasFlag(LeafEntry.FLAG_BLOB))
 		{
 			try
 			{
@@ -129,7 +127,7 @@ public class Table<T> implements Iterable<T>
 
 		if (key.length + value.length > mTableImplementation.getEntryMaximumLength() / 4)
 		{
-			type = PTR_BLOB;
+			type = LeafEntry.FLAG_BLOB;
 
 			try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId()))
 			{
@@ -151,17 +149,17 @@ public class Table<T> implements Iterable<T>
 
 		Log.dec();
 
-		return entry.getValue() != null;
+		return entry.mValue != null;
 	}
 
 
 	private void deleteIfBlob(LeafEntry aEntry) throws DatabaseException
 	{
-		if (aEntry.getFormat() == PTR_BLOB)
+		if (aEntry.hasFlag(LeafEntry.FLAG_BLOB))
 		{
 			try
 			{
-				Blob.deleteBlob(mBlockAccessor, aEntry.getValue());
+				Blob.deleteBlob(mBlockAccessor, aEntry.mValue);
 			}
 			catch (IOException e)
 			{
@@ -188,7 +186,7 @@ public class Table<T> implements Iterable<T>
 
 				byte[] key = getKeys(aEntityKey);
 
-				LeafEntry entry = new LeafEntry(key, aHeader, PTR_BLOB);
+				LeafEntry entry = new LeafEntry(key, aHeader, LeafEntry.FLAG_BLOB);
 
 				if (mTableImplementation.put(entry))
 				{
@@ -218,14 +216,14 @@ public class Table<T> implements Iterable<T>
 
 			byte[] key = getKeys(aEntity);
 
-			LeafEntry entry = new LeafEntry(key, bos.finish(), PTR_BLOB);
+			LeafEntry entry = new LeafEntry(key, bos.finish(), LeafEntry.FLAG_BLOB);
 
 			if (mTableImplementation.put(entry))
 			{
 				deleteIfBlob(entry);
 			}
 
-			return entry.getValue() == null;
+			return entry.mValue == null;
 		}
 		catch (IOException e)
 		{
@@ -330,19 +328,19 @@ public class Table<T> implements Iterable<T>
 	}
 
 
-	void unmarshalToObjectKeys(Object aOutput, LeafEntry aMarshalledData)
+	void unmarshalToObjectKeys(LeafEntry aBuffer, Object aOutput)
 	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(aMarshalledData.getKey());
+		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.mKey);
 
 		mTableMetadata.getMarshaller().unmarshalKeys(buffer, aOutput);
 	}
 
 
-	void unmarshalToObjectValues(Object aOutput, LeafEntry aMarshalledData)
+	void unmarshalToObjectValues(LeafEntry aBuffer, Object aOutput)
 	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(aMarshalledData.getValue());
+		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.mValue);
 
-		if (aMarshalledData.getFormat() == PTR_BLOB)
+		if (aBuffer.hasFlag(LeafEntry.FLAG_BLOB))
 		{
 			try
 			{
@@ -351,8 +349,6 @@ public class Table<T> implements Iterable<T>
 			}
 			catch (Exception e)
 			{
-				Log.dec();
-
 				throw new DatabaseException(e);
 			}
 		}
@@ -361,13 +357,13 @@ public class Table<T> implements Iterable<T>
 	}
 
 
-	byte[] getKeys(Object aInput)
+	private byte[] getKeys(Object aInput)
 	{
 		return mTableMetadata.getMarshaller().marshalKeys(new ByteArrayBuffer(16), aInput).trim().array();
 	}
 
 
-	byte[] getNonKeys(Object aInput)
+	private byte[] getNonKeys(Object aInput)
 	{
 		return mTableMetadata.getMarshaller().marshalValues(new ByteArrayBuffer(16), aInput).trim().array();
 	}

@@ -148,7 +148,7 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		}
 		else
 		{
-			return getValue(computeHash(aEntry.getKey()), 0, aEntry, mRootNode);
+			return getValue(computeHash(aEntry.mKey), 0, aEntry, mRootNode);
 		}
 	}
 
@@ -163,9 +163,9 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	{
 		checkOpen();
 
-		if (aEntry.getKey().length + aEntry.getValue().length > getEntryMaximumLength())
+		if (aEntry.mKey.length + aEntry.mValue.length > getEntryMaximumLength())
 		{
-			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().length + ", value: " + aEntry.getValue().length + ", maximum: " + getEntryMaximumLength());
+			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.mKey.length + ", value: " + aEntry.mValue.length + ", maximum: " + getEntryMaximumLength());
 		}
 
 		int modCount = ++mModCount;
@@ -191,13 +191,13 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		if (mRootMap == null)
 		{
-			putValue(aEntry, computeHash(aEntry.getKey()), 0, mRootNode);
+			putValue(aEntry, computeHash(aEntry.mKey), 0, mRootNode);
 		}
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
-		return aEntry.getValue() != null;
+		return aEntry.mValue != null;
 	}
 
 
@@ -213,7 +213,7 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		}
 		else
 		{
-			modified = removeValue(computeHash(aEntry.getKey()), 0, aEntry, mRootNode);
+			modified = removeValue(computeHash(aEntry.mKey), 0, aEntry, mRootNode);
 		}
 		
 		mModified |= modified;
@@ -476,7 +476,7 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		if (map.put(aEntry))
 		{
-			oldValue = aEntry.getValue();
+			oldValue = aEntry.mValue;
 
 			freeBlock(aBlockPointer);
 
@@ -512,7 +512,7 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 			throw new DatabaseException("Failed to upgrade hole to leaf");
 		}
 
-		byte[] oldValue = aEntry.getValue();
+		byte[] oldValue = aEntry.mValue;
 
 		BlockPointer blockPointer = writeBlock(map, aBlockPointer.getRange());
 		aNode.setPointer(aIndex, blockPointer);
@@ -593,7 +593,7 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	{
 		for (LeafEntry entry : aMap)
 		{
-			if (computeIndex(computeHash(entry.getKey()), aLevel) < aHalfRange)
+			if (computeIndex(computeHash(entry.mKey), aLevel) < aHalfRange)
 			{
 				aLowLeaf.put(entry);
 			}
@@ -607,7 +607,7 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 //		{
 //			ByteBufferMap.Entry entry = aMap.getEntry(i);
 //
-//			if (computeIndex(computeHash(entry.getKey()), aLevel) < aHalfRange)
+//			if (computeIndex(computeHash(entry.mKey), aLevel) < aHalfRange)
 //			{
 //				aLowLeaf.put(entry);
 //			}
@@ -816,9 +816,9 @@ class HashTable implements AutoCloseable, Iterable<LeafEntry>
 				LeafNode leafNode = new LeafNode(buffer);
 				for (LeafEntry entry : leafNode)
 				{
-					if (entry.getFormat() == Table.PTR_BLOB)
+					if (entry.hasFlag(LeafEntry.FLAG_BLOB))
 					{
-						ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(entry.getValue());
+						ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(entry.mValue);
 						byteArrayBuffer.read();
 						long len = byteArrayBuffer.readVar64();
 

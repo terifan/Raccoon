@@ -22,8 +22,8 @@ public class LeafNodeNGTest
 		LeafEntry entry = new LeafEntry(key);
 
 		assertTrue(map.get(entry));
-		assertEquals(entry.getValue(), value);
-		assertEquals(entry.getFormat(), (byte)77);
+		assertEquals(entry.mValue, value);
+		assertEquals(entry.mFlags, (byte)77);
 	}
 
 
@@ -51,7 +51,7 @@ public class LeafNodeNGTest
 		{
 			LeafEntry entry1 = new LeafEntry(entry.getKey());
 			assertTrue(map.get(entry1));
-			assertEquals(entry1.getValue(), entry.getValue());
+			assertEquals(entry1.mValue, entry.getValue());
 		}
 	}
 }
