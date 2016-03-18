@@ -318,24 +318,19 @@ public class HashTableNGTest
 	@Test
 	public void testPut() throws Exception
 	{
-		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
-		HashTable hashTable = new HashTable(blockDevice, new TransactionCounter(0), true, 0, 512, 512, null);
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+		TransactionCounter tx = new TransactionCounter(0);
+		byte[] root = null;
 
-		byte[] key = new byte[hashTable.getEntryMaximumLength() - 1];
-		byte[] value = {85};
+		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		{
+			byte[] key = new byte[hashTable.getEntryMaximumLength() - 1];
+			byte[] value = {85};
 
-		hashTable.put(new LeafEntry(key, value, (byte)0));
+			hashTable.put(new LeafEntry(key, value, (byte)0));
 
-		assertEquals(get(hashTable, key), value);
-	}
-
-
-	@Test(expectedExceptions = IllegalArgumentException.class)
-	public void testPutTooBig() throws Exception
-	{
-		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
-		HashTable hashTable = new HashTable(blockDevice, new TransactionCounter(0), true, 0, 512, 512, null);
-		hashTable.put(new LeafEntry(new byte[hashTable.getEntryMaximumLength()], new byte[1], (byte)0));
+			assertEquals(get(hashTable, key), value);
+		}
 	}
 
 

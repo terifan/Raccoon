@@ -28,22 +28,8 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mModified;
-	private boolean mStandAlone;
+	private boolean mForwardCommits;
 	private TransactionCounter mTransactionId;
-
-
-	/**
-	 * Create a new HashTable with custom settings.
-	 */
-	HashTable(IManagedBlockDevice aBlockDevice, TransactionCounter aTransactionId, boolean aStandAlone, long aHashSeed, int aNodeSize, int aLeafSize, CompressionParam aCompressionParam) throws IOException
-	{
-		mTransactionId = aTransactionId;
-		mNodeSize = aNodeSize;
-		mLeafSize = aLeafSize;
-		mHashSeed = aHashSeed;
-
-		init(aBlockDevice, null, aStandAlone, aCompressionParam);
-	}
 
 
 	/**
@@ -67,7 +53,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	private void init(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, boolean aStandAlone, CompressionParam aCompressionParam) throws IOException
 	{
 		mBlockAccessor = new BlockAccessor(aBlockDevice);
-		mStandAlone = aStandAlone;
+		mForwardCommits = aStandAlone;
 
 		if (aCompressionParam != null)
 		{
@@ -215,7 +201,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		{
 			modified = removeValue(computeHash(aEntry.mKey), 0, aEntry, mRootNode);
 		}
-		
+
 		mModified |= modified;
 
 		return modified;
@@ -288,7 +274,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 					mRootBlockPointer = writeBlock(mRootNode, mPointersPerNode);
 				}
 
-				if (mStandAlone)
+				if (mForwardCommits)
 				{
 					mBlockAccessor.getBlockDevice().commit();
 				}
@@ -300,7 +286,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 				return true;
 			}
-			else if (mWasEmptyInstance && mStandAlone)
+			else if (mWasEmptyInstance && mForwardCommits)
 			{
 				mBlockAccessor.getBlockDevice().commit();
 			}
@@ -320,7 +306,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		Log.i("rollback");
 
-		if (mStandAlone)
+		if (mForwardCommits)
 		{
 			mBlockAccessor.getBlockDevice().rollback();
 		}

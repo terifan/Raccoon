@@ -1,5 +1,8 @@
 package org.terifan.raccoon.util;
 
+import org.terifan.raccoon.TableMetadata;
+
+
 
 public class Assert
 {
@@ -102,6 +105,21 @@ public class Assert
 	public static void matches(Object aValue, String aPattern, String aErrorMessage, Object... aArguments)
 	{
 		if (aValue == null || !aValue.toString().matches(aPattern))
+		{
+			throw new IllegalArgumentException(String.format(aErrorMessage, aArguments));
+		}
+	}
+
+
+	public static void notEquals(Object aA, Object aB)
+	{
+		notEquals(aA, aB, null);
+	}
+
+
+	public static void notEquals(Object aA, Object aB, String aErrorMessage, Object... aArguments)
+	{
+		if (aA == aB)
 		{
 			throw new IllegalArgumentException(String.format(aErrorMessage, aArguments));
 		}

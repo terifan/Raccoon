@@ -5,9 +5,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators.AbstractSpliterator;
 import java.util.concurrent.locks.Lock;
@@ -44,8 +46,8 @@ public final class Database implements AutoCloseable
 	private IManagedBlockDevice mBlockDevice;
 	private final HashMap<Class,Factory> mFactories;
 	private final HashMap<Class,Initializer> mInitializers;
-	private final HashMap<TableMetadata,Table> mOpenTables;
-	private final TableMetadataMap mTableMetadatas;
+	private final Map<TableMetadata,Table> mOpenTables;
+	private final TableMetadataProvider mTableMetadatas;
 	private final TransactionCounter mTransactionId;
 	private Table mSystemTable;
 	private boolean mChanged;
@@ -56,8 +58,8 @@ public final class Database implements AutoCloseable
 
 	private Database()
 	{
-		mOpenTables = new HashMap<>();
-		mTableMetadatas = new TableMetadataMap();
+		mOpenTables = Collections.synchronizedMap(new HashMap<>());
+		mTableMetadatas = new TableMetadataProvider();
 		mFactories = new HashMap<>();
 		mTransactionId = new TransactionCounter();
 		mInitializers = new HashMap<>();
@@ -194,7 +196,7 @@ public final class Database implements AutoCloseable
 
 		db.mProperties = aParameters;
 		db.mBlockDevice = aBlockDevice;
-		db.mSystemTableMetadata = new TableMetadata().create(TableMetadata.class, null);
+		db.mSystemTableMetadata = new TableMetadata(TableMetadata.class, null);
 		db.mSystemTable = new Table(db, db.mSystemTableMetadata, null);
 		db.mChanged = true;
 
@@ -245,7 +247,7 @@ public final class Database implements AutoCloseable
 
 		db.mProperties = aParameters;
 		db.mBlockDevice = aBlockDevice;
-		db.mSystemTableMetadata = new TableMetadata().create(TableMetadata.class, null);
+		db.mSystemTableMetadata = new TableMetadata(TableMetadata.class, null);
 		db.mSystemTable = new Table(db, db.mSystemTableMetadata, buffer.crop().array());
 
 		Log.dec();
@@ -256,21 +258,9 @@ public final class Database implements AutoCloseable
 
 	private Table openTable(Class aType, Object aDiscriminator, OpenOption aOptions)
 	{
-		checkOpen();
+		Assert.notEquals(aType.getName(), TableMetadata.class.getName());
 
-		synchronized (this)
-		{
-			TableMetadata tableMetadata = mTableMetadatas.get(aType, aDiscriminator);
-
-			if (tableMetadata == null)
-			{
-				tableMetadata = new TableMetadata().create(aType, aDiscriminator);
-
-				mTableMetadatas.add(tableMetadata);
-			}
-
-			return openTable(tableMetadata, aOptions);
-		}
+		return openTable(mTableMetadatas.getOrCreate(aType, aDiscriminator), aOptions);
 	}
 
 
@@ -315,10 +305,7 @@ public final class Database implements AutoCloseable
 
 	private void checkOpen() throws IllegalStateException
 	{
-		if (mSystemTable == null)
-		{
-			throw new IllegalStateException("Database is closed");
-		}
+		Assert.notNull(mSystemTable, "Database is closed");
 	}
 
 
@@ -363,7 +350,7 @@ public final class Database implements AutoCloseable
 					mChanged = true;
 				}
 			}
-			
+
 			boolean changed = mChanged;
 
 			if (mChanged)

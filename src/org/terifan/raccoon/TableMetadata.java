@@ -26,7 +26,7 @@ public final class TableMetadata
 	}
 
 
-	TableMetadata create(Class aClass, Object aDiscriminator)
+	TableMetadata(Class aClass, Object aDiscriminator)
 	{
 		mClass = aClass;
 		mTypeName = mClass.getName();
@@ -34,8 +34,6 @@ public final class TableMetadata
 		mMarshaller = new Marshaller(mEntityDescriptor);
 
 		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);
-
-		return this;
 	}
 
 
