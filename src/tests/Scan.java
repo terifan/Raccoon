@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.OpenOption;
-import org.terifan.raccoon.TableMetadata;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.util.Log;
 
