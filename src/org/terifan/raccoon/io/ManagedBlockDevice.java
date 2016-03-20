@@ -404,7 +404,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		}
 		catch (IOException e)
 		{
-			throw new UnsupportedVersionException("Failed to decode SuperBlock");
+			throw new UnsupportedVersionException("Invalid or corrupt data or data may be encrypted.");
 		}
 
 		if (superBlockOne.mFormatVersion != FORMAT_VERSION)
