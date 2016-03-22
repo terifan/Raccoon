@@ -11,6 +11,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.FileAlreadyOpenException;
@@ -25,9 +28,6 @@ import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
 import tests._Fruit1K;
 import static tests.__TestUtils.createBuffer;
-import static tests.__TestUtils.t;
-import static tests.__TestUtils.t;
-import static tests.__TestUtils.t;
 import static tests.__TestUtils.t;
 
 
@@ -672,28 +672,75 @@ public class DatabaseNGTest
 
 
 	@Test
-	public void testX() throws Exception
+	public void testGetTables() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Fruit2K("red", "apple", 123));
-			database.save(new _Fruit2K("green", "apple", 456));
+			database.save(new _Animal1K("dog"));
+			database.save(new _Fruit1K("banana"));
 			database.commit();
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			_Fruit2K redApple = new _Fruit2K("red", "apple");
-			assertTrue(database.tryGet(redApple));
-			assertEquals("apple", redApple._name);
-			assertEquals(123, redApple.value);
+			List<Table> tables = database.getTables();
 
-			_Fruit2K greenApple = new _Fruit2K("green", "apple");
-			assertTrue(database.tryGet(greenApple));
-			assertEquals("apple", greenApple._name);
-			assertEquals(456, greenApple.value);
+			assertEquals(tables.size(), 3);
+
+			HashSet<Class> set = new HashSet<>(Arrays.asList(_Fruit1K.class, _Fruit2K.class, _Animal1K.class));
+			assertTrue(set.contains(tables.get(0).getTableMetadata().getType()));
+			assertTrue(set.contains(tables.get(1).getTableMetadata().getType()));
+			assertTrue(set.contains(tables.get(2).getTableMetadata().getType()));
+		}
+	}
+
+
+	@Test
+	public void testGetDiscriminators() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _Number1K1D("a", 1));
+			database.save(new _Number1K1D("b", 2));
+			database.save(new _Number1K1D("c", 3));
+			database.save(new _Number1K1D("d", 4));
+			database.save(new _Number1K1D("e", 5));
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			List<_Number1K1D> list = database.getDiscriminators(()->new _Number1K1D());
+
+			assertEquals(list.size(), 2);
+		}
+	}
+
+
+	@Test
+	public void testSizeDiscriminator() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _Number1K1D("a", 1));
+			database.save(new _Number1K1D("b", 2));
+			database.save(new _Number1K1D("c", 3));
+			database.save(new _Number1K1D("d", 4));
+			database.save(new _Number1K1D("e", 5));
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			assertEquals(database.size(new _Number1K1D(true)), 3);
+			assertEquals(database.size(new _Number1K1D(false)), 2);
 		}
 	}
 }

@@ -23,6 +23,12 @@ public class _Number1K1D
 	}
 
 
+	public _Number1K1D(boolean aOdd)
+	{
+		_odd = aOdd;
+	}
+
+
 	public _Number1K1D(String aName, int aNumber)
 	{
 		name = aName;

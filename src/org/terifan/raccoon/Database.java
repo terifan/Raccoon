@@ -954,6 +954,8 @@ public final class Database implements AutoCloseable
 
 			for (TableMetadata tableMetadata : (List<TableMetadata>)mSystemTable.list(TableMetadata.class))
 			{
+				tableMetadata.initialize(); // TODO: refactor??
+
 				if (name.equals(tableMetadata.getTypeName()))
 				{
 					T instance = aFactory.newInstance();
