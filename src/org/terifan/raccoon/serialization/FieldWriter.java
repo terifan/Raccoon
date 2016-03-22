@@ -11,7 +11,7 @@ import org.terifan.raccoon.util.Log;
 
 class FieldWriter
 {
-	static void writeField(FieldType aFieldType, Object aValue, ByteArrayBuffer aOutput)
+	static void writeField(FieldType aFieldType, Object aValue, ByteArrayBuffer aOutput) throws IOException
 	{
 		if (aFieldType.isArray())
 		{
@@ -26,7 +26,7 @@ class FieldWriter
 	}
 
 
-	private static void writeArray(Object aValue, ByteArrayBuffer aOutput, FieldType aFieldType, int aLevel) throws ArrayIndexOutOfBoundsException, IllegalArgumentException
+	private static void writeArray(Object aValue, ByteArrayBuffer aOutput, FieldType aFieldType, int aLevel) throws IOException
 	{
 		int len = Array.getLength(aValue);
 
@@ -80,7 +80,7 @@ class FieldWriter
 	}
 
 
-	private static void writeValue(FieldType aFieldType, Object aValue, ByteArrayBuffer aOutput)
+	private static void writeValue(FieldType aFieldType, Object aValue, ByteArrayBuffer aOutput) throws IOException
 	{
 		switch (aFieldType.getContentType())
 		{
@@ -123,15 +123,11 @@ class FieldWriter
 				{
 					oos.writeObject(aValue);
 				}
-				catch (IOException e)
-				{
-					throw new IllegalArgumentException(e);
-				}
 				aOutput.writeVar32(baos.size());
 				aOutput.write(baos.toByteArray());
 				break;
 			default:
-				throw new IllegalArgumentException("Unsupported: " + aFieldType.getContentType());
+				throw new Error("Content type not implemented: " + aFieldType.getContentType());
 		}
 	}
 }

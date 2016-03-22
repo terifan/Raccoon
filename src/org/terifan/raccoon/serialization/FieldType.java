@@ -184,13 +184,13 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 		{
 			FieldType other = (FieldType)aOther;
 
-			return mName.equals(other.mName) 
-				&& mTypeName.equals(other.mTypeName) 
-				&& mArray == other.mArray 
-				&& mDepth == other.mDepth 
-				&& mIndex == other.mIndex 
-				&& mField == other.mField 
-				&& mNullable == other.mNullable 
+			return mName.equals(other.mName)
+				&& mTypeName.equals(other.mTypeName)
+				&& mArray == other.mArray
+				&& mDepth == other.mDepth
+				&& mIndex == other.mIndex
+				&& (mField == null && other.mField == null || mField != null && mField.equals(other.mField))
+				&& mNullable == other.mNullable
 				&& mContentType == other.mContentType
 				&& mCategory == other.mCategory;
 		}
@@ -209,7 +209,20 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	@Override
 	public String toString()
 	{
-		return mTypeName + (mArray ? "[]" : " ") + mName;
+		String s = mContentType.toString().toLowerCase();
+		if (mNullable)
+		{
+			s = s.substring(0, 1).toUpperCase() + s.substring(1);
+		}
+		s = s.replace("Int", "Integer");
+		s = s.replace("Char", "Character");
+		for (int i = 0; i < mDepth; i++)
+		{
+			s += "[]";
+		}
+		s += " " + mName;
+
+		return s;
 	}
 
 

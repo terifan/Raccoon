@@ -1,6 +1,7 @@
 package org.terifan.raccoon.serialization;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.lang.reflect.Array;
 import java.util.Date;
@@ -9,7 +10,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 class FieldReader
 {
-	static Object readField(FieldType aFieldType, ByteArrayBuffer aInput)
+	static Object readField(FieldType aFieldType, ByteArrayBuffer aInput) throws IOException, ClassNotFoundException
 	{
 		Object value;
 
@@ -30,7 +31,7 @@ class FieldReader
 	}
 
 
-	private static Object readArray(ByteArrayBuffer aInput, FieldType aFieldType, int aLevel, Class<?> aComponentType)
+	private static Object readArray(ByteArrayBuffer aInput, FieldType aFieldType, int aLevel, Class<?> aComponentType) throws IOException, ClassNotFoundException
 	{
 		int len = aInput.readVar32();
 
@@ -91,7 +92,7 @@ class FieldReader
 	}
 
 
-	private static Object readValue(FieldType aFieldType, ByteArrayBuffer aInput)
+	private static Object readValue(FieldType aFieldType, ByteArrayBuffer aInput) throws IOException, ClassNotFoundException
 	{
 		switch (aFieldType.getContentType())
 		{
@@ -124,12 +125,8 @@ class FieldReader
 				{
 					return oos.readObject();
 				}
-				catch (Exception e)
-				{
-					throw new IllegalArgumentException(e);
-				}
+			default:
+				throw new Error("Content type not implemented: " + aFieldType.getContentType());
 		}
-
-		throw new IllegalArgumentException("Unsupported type: " + aFieldType);
 	}
 }

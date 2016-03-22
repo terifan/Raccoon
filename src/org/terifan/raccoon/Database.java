@@ -124,7 +124,7 @@ public final class Database implements AutoCloseable
 	 */
 	public static Database open(IPhysicalBlockDevice aBlockDevice, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
-		Assert.verify((aOpenOptions == OpenOption.READ_ONLY || aOpenOptions == OpenOption.OPEN) && aBlockDevice.length() == 0, "Block device is empty.");
+		Assert.fail((aOpenOptions == OpenOption.READ_ONLY || aOpenOptions == OpenOption.OPEN) && aBlockDevice.length() == 0, "Block device is empty.");
 
 		boolean create = aBlockDevice.length() == 0 || aOpenOptions == OpenOption.CREATE_NEW;
 

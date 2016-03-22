@@ -1,5 +1,6 @@
 package org.terifan.raccoon.serialization;
 
+import java.io.IOException;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -65,7 +66,7 @@ public class Marshaller
 
 			return aBuffer;
 		}
-		catch (IllegalAccessException e)
+		catch (IllegalAccessException | IOException e)
 		{
 			throw new DatabaseException(e);
 		}
@@ -125,7 +126,7 @@ public class Marshaller
 
 			Log.dec();
 		}
-		catch (IllegalAccessException e)
+		catch (IllegalAccessException | IOException | ClassNotFoundException e)
 		{
 			throw new DatabaseException(e);
 		}
@@ -152,33 +153,40 @@ public class Marshaller
 
 	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, FieldType[] types)
 	{
-		Log.v("unmarshal entity fields");
-		Log.inc();
-
-		ResultSet resultSet = new ResultSet();
-
-		boolean[] isNull = new boolean[types.length];
-
-			for (int i = 0; i < types.length; i++)
-			{
-				isNull[i] = aBuffer.readBit() == 1;
-			}
-
-		aBuffer.align();
-
-		int i = 0;
-		for (FieldType fieldType : types)
+		try
 		{
-			if (!isNull[i++])
+			Log.v("unmarshal entity fields");
+			Log.inc();
+
+			ResultSet resultSet = new ResultSet();
+
+			boolean[] isNull = new boolean[types.length];
+
+				for (int i = 0; i < types.length; i++)
+				{
+					isNull[i] = aBuffer.readBit() == 1;
+				}
+
+			aBuffer.align();
+
+			int i = 0;
+			for (FieldType fieldType : types)
 			{
-				Object value = FieldReader.readField(fieldType, aBuffer);
+				if (!isNull[i++])
+				{
+					Object value = FieldReader.readField(fieldType, aBuffer);
 
-				resultSet.add(fieldType, value);
+					resultSet.add(fieldType, value);
+				}
 			}
+
+			Log.dec();
+
+			return resultSet;
 		}
-
-		Log.dec();
-
-		return resultSet;
+		catch (IOException | ClassNotFoundException e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 }

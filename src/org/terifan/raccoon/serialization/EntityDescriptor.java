@@ -7,7 +7,9 @@ import java.io.ObjectOutput;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.Objects;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.util.Log;
@@ -82,6 +84,7 @@ public class EntityDescriptor implements Externalizable
 
 			if (fieldType.getField() == null)
 			{
+				// TODO: report error
 				Log.out.println("Entity field missing: " + fieldType);
 			}
 		}
@@ -115,6 +118,28 @@ public class EntityDescriptor implements Externalizable
 	{
 		aOut.writeUTF(mName);
 		aOut.writeObject(mFieldTypes);
+	}
+
+
+	@Override
+	public boolean equals(Object aObj)
+	{
+		if (aObj instanceof EntityDescriptor)
+		{
+			EntityDescriptor other = (EntityDescriptor)aObj;
+
+			return mName.equals(other.mName)
+				&& Arrays.equals(mFieldTypes, other.mFieldTypes);
+		}
+
+		return false;
+	}
+
+
+	@Override
+	public int hashCode()
+	{
+		return Objects.hashCode(mName) ^ Arrays.deepHashCode(mFieldTypes);
 	}
 
 
