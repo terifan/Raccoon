@@ -444,7 +444,7 @@ public class DatabaseNGTest
 		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
 		{
 			db.tryGet(out);
-			
+
 			db.remove(out);
 			db.commit();
 		}
@@ -669,4 +669,31 @@ public class DatabaseNGTest
 //
 //		fail();
 //	}
+
+
+	@Test
+	public void testX() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _Fruit2K("red", "apple", 123));
+			database.save(new _Fruit2K("green", "apple", 456));
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			_Fruit2K redApple = new _Fruit2K("red", "apple");
+			assertTrue(database.tryGet(redApple));
+			assertEquals("apple", redApple._name);
+			assertEquals(123, redApple.value);
+
+			_Fruit2K greenApple = new _Fruit2K("green", "apple");
+			assertTrue(database.tryGet(greenApple));
+			assertEquals("apple", greenApple._name);
+			assertEquals(456, greenApple.value);
+		}
+	}
 }
