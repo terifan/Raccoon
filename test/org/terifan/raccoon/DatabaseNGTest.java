@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.FileAlreadyOpenException;
@@ -21,7 +22,6 @@ import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.UnsupportedVersionException;
-import org.terifan.raccoon.util.Log;
 import org.terifan.security.cryptography.InvalidKeyException;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
@@ -895,6 +895,33 @@ public class DatabaseNGTest
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
 			assertEquals(database.size(_Animal1K.class), 0);
+		}
+	}
+
+
+	@Test
+	public void testStream() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		TreeSet<String> keys = new TreeSet<>();
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			for (int i = 0; i < 10000; i++)
+			{
+				keys.add("dog_"+i);
+				database.save(new _Animal1K("dog_"+i));
+			}
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			TreeSet<String> found = new TreeSet<>();
+			database.stream(_Animal1K.class).forEach(e->found.add(e._name));
+
+			assertEquals(found, keys);
 		}
 	}
 }
