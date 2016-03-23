@@ -6,6 +6,11 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Spliterator;
+import java.util.Spliterators.AbstractSpliterator;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
 import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.raccoon.util.Result;
@@ -588,20 +593,6 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 				aHighLeaf.put(entry);
 			}
 		}
-
-//		for (int i = 0, sz = aMap.size(); i < sz; i++)
-//		{
-//			ByteBufferMap.Entry entry = aMap.getEntry(i);
-//
-//			if (computeIndex(computeHash(entry.mKey), aLevel) < aHalfRange)
-//			{
-//				aLowLeaf.put(entry);
-//			}
-//			else
-//			{
-//				aHighLeaf.put(entry);
-//			}
-//		}
 	}
 
 
@@ -828,4 +819,39 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 				throw new IllegalStateException();
 		}
 	}
+
+//	<T> Stream<T> stream()
+//	{
+//		checkOpen();
+//
+//		final NodeIterator nodeIterator;
+//
+//		if (mRootNode != null)
+//		{
+//			nodeIterator = new NodeIterator(this, mRootBlockPointer);
+//		}
+//		else if (!mRootMap.isEmpty())
+//		{
+//			nodeIterator = new NodeIterator(this, mRootMap);
+//		}
+//		else
+//		{
+//			return new ArrayList<T>().stream();
+//		}
+//
+//		return StreamSupport.stream(new AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+//		{
+//			int i;
+//			@Override
+//			public boolean tryAdvance(Consumer<? super T> aConsumer)
+//			{
+//				if (!nodeIterator.hasNext())
+//				{
+//					return false;
+//				}
+//				aConsumer.accept(nodeIterator.next());
+//				return true;
+//			}
+//		}, false);
+//	}
 }

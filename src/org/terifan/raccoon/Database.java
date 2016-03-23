@@ -774,23 +774,25 @@ public final class Database implements AutoCloseable
 				}, false);
 			}
 
-			ArrayList<T> list = new ArrayList<>();
-			table.iterator().forEachRemaining(e->list.add((T)e));
+			return table.stream();
 
-			return StreamSupport.stream(new AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
-			{
-				int i;
-				@Override
-				public boolean tryAdvance(Consumer<? super T> aConsumer)
-				{
-					if (i == list.size())
-					{
-						return false;
-					}
-					aConsumer.accept(list.get(i++));
-					return true;
-				}
-			}, false);
+//			ArrayList<T> list = new ArrayList<>();
+//			table.iterator().forEachRemaining(e->list.add((T)e));
+//
+//			return StreamSupport.stream(new AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+//			{
+//				int i;
+//				@Override
+//				public boolean tryAdvance(Consumer<? super T> aConsumer)
+//				{
+//					if (i == list.size())
+//					{
+//						return false;
+//					}
+//					aConsumer.accept(list.get(i++));
+//					return true;
+//				}
+//			}, false);
 		}
 		finally
 		{

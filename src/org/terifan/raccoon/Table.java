@@ -7,6 +7,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.terifan.raccoon.io.Blob;
 import org.terifan.raccoon.io.BlobInputStream;
 import org.terifan.raccoon.io.BlobOutputStream;
@@ -384,6 +389,29 @@ public final class Table<T> implements Iterable<T>
 	void scan()
 	{
 		mTableImplementation.scan();
+	}
+
+
+	<T> Stream<T> stream()
+	{
+		EntityIterator entityIterator = new EntityIterator(this, mTableImplementation.iterator());
+
+		return StreamSupport.stream(new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+		{
+			int i;
+			@Override
+			public boolean tryAdvance(Consumer<? super T> aConsumer)
+			{
+				if (!entityIterator.hasNext())
+				{
+					return false;
+				}
+				aConsumer.accept((T)entityIterator.next());
+				return true;
+			}
+		}, false);
+
+//		return mTableImplementation.stream();
 	}
 
 
