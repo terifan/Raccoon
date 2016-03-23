@@ -743,4 +743,158 @@ public class DatabaseNGTest
 			assertEquals(database.size(new _Number1K1D(false)), 2);
 		}
 	}
+
+
+	@Test
+	public void testGet() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _Animal1K("dog"));
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			database.get(new _Animal1K("dog"));
+		}
+	}
+
+
+	@Test(expectedExceptions = NoSuchEntityException.class)
+	public void testGetFail() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _Animal1K("dog"));
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			database.get(new _Animal1K("cat"));
+		}
+	}
+
+
+	@Test
+	public void testClear() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			for (int i = 0; i < 10000; i++)
+			{
+				database.save(new _Animal1K("dog_" + i));
+			}
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			for (int i = 0; i < 10000; i++)
+			{
+				assertTrue(database.tryGet(new _Animal1K("dog_" + i)));
+			}
+
+			database.clear(_Animal1K.class);
+
+			for (int i = 0; i < 10000; i++)
+			{
+				assertFalse(database.tryGet(new _Animal1K("dog_" + i)));
+			}
+
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			assertEquals(database.size(_Animal1K.class), 0);
+		}
+	}
+
+
+	@Test
+	public void testClearDiscriminator() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			for (int i = 0; i < 10000; i++)
+			{
+				database.save(new _Number1K1D(i));
+			}
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			for (int i = 0; i < 10000; i++)
+			{
+				assertTrue(database.tryGet(new _Number1K1D(i)));
+			}
+
+			database.clear(new _Number1K1D(false));
+
+			for (int i = 0; i < 10000; i++)
+			{
+				assertEquals(database.tryGet(new _Number1K1D(i)), (i & 1) == 1);
+			}
+
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			assertEquals(database.size(new _Number1K1D(false)), 0);
+			assertEquals(database.size(new _Number1K1D(true)), 5000);
+
+			// TODO:
+//			database.getTables().stream().forEach(e->Log.out.println(e));
+		}
+	}
+
+
+	@Test
+	public void testRemove() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			for (int i = 0; i < 10000; i++)
+			{
+				database.save(new _Animal1K("dog_"+i));
+			}
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			for (int i = 0; i < 10000; i++)
+			{
+				assertTrue(database.tryGet(new _Animal1K("dog_"+i)));
+			}
+
+			assertFalse(database.remove(new _Animal1K("cat")));
+
+			for (int i = 0; i < 10000; i++)
+			{
+				assertTrue(database.remove(new _Animal1K("dog_"+i)));
+			}
+
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			assertEquals(database.size(_Animal1K.class), 0);
+		}
+	}
 }
