@@ -255,6 +255,8 @@ public final class Database implements AutoCloseable
 
 	private Table openTable(Class aType, Object aDiscriminator, OpenOption aOptions)
 	{
+		checkOpen();
+
 		Assert.notEquals(aType.getName(), TableMetadata.class.getName());
 
 		return openTable(mTableMetadatas.getOrCreate(aType, aDiscriminator), aOptions);
@@ -871,7 +873,12 @@ public final class Database implements AutoCloseable
 
 	public int size(Class aType)
 	{
-		return openTable(aType, null, OpenOption.OPEN).size();
+		Table table = openTable(aType, null, OpenOption.OPEN);
+		if (table == null)
+		{
+			return 0;
+		}
+		return table.size();
 	}
 
 
@@ -929,6 +936,8 @@ public final class Database implements AutoCloseable
 
 	public List<Table> getTables()
 	{
+		checkOpen();
+
 		mReadLock.lock();
 
 		try
