@@ -37,7 +37,7 @@ public class BlobInputStreamNGTest
 		IManagedBlockDevice blockDevice = new ManagedBlockDevice(secureBlockDevice);
 
 		byte[] header;
-		try (BlobOutputStream bos = new BlobOutputStream(new BlockAccessor(blockDevice), new TransactionCounter(0)))
+		try (BlobOutputStream bos = new BlobOutputStream(new BlockAccessor(blockDevice), new TransactionCounter(0), null))
 		{
 			bos.write(out);
 			header = bos.finish();

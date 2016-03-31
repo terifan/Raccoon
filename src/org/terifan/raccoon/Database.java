@@ -620,7 +620,8 @@ public final class Database implements AutoCloseable
 	 */
 	public BlobOutputStream saveBlob(Object aEntity)
 	{
-		return openTable(aEntity.getClass(), aEntity, OpenOption.CREATE).saveBlob(aEntity);
+		Table table = openTable(aEntity.getClass(), aEntity, OpenOption.CREATE);
+		return table.saveBlob(aEntity);
 	}
 
 

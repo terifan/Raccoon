@@ -15,8 +15,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.terifan.raccoon.io.AccessCredentials;
+import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.FileAlreadyOpenException;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
@@ -1015,6 +1017,23 @@ public class DatabaseNGTest
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
 			assertEquals(new byte[1000_000], Streams.readAll(database.read(new _BlobKey1K("good"))));
+		}
+	}
+
+
+	@Test
+	public void testSaveBlob() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			try (BlobOutputStream bos = database.saveBlob(new _BlobKey1K("test")))
+			{
+				bos.write(new byte[1000_000]);
+			}
+
+			database.commit();
 		}
 	}
 }

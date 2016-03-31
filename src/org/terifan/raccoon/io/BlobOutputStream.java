@@ -24,17 +24,12 @@ public class BlobOutputStream extends OutputStream
 	private OnCloseListener mOnCloseListener;
 
 
-	public BlobOutputStream(BlockAccessor aBlockAccessor, TransactionCounter aTransactionId) throws IOException
+	public BlobOutputStream(BlockAccessor aBlockAccessor, TransactionCounter aTransactionId, OnCloseListener aOnCloseListener) throws IOException
 	{
 		mBlockAccessor = aBlockAccessor;
 		mTransactionId = aTransactionId;
 		mBuffer = new ByteArrayBuffer(FRAGMENT_SIZE);
 		mPointerBuffer = new ByteArrayBuffer(mBlockAccessor.getBlockDevice().getBlockSize());
-	}
-
-
-	public void setOnCloseListener(OnCloseListener aOnCloseListener)
-	{
 		mOnCloseListener = aOnCloseListener;
 	}
 
@@ -92,7 +87,7 @@ public class BlobOutputStream extends OutputStream
 
 		if (mOnCloseListener != null)
 		{
-			mOnCloseListener.onClose(mHeader);
+			mOnCloseListener.onClose(this, mHeader);
 		}
 
 		Log.dec();
@@ -119,6 +114,6 @@ public class BlobOutputStream extends OutputStream
 
 	public interface OnCloseListener
 	{
-		void onClose(byte[] aHeader);
+		void onClose(BlobOutputStream aBlobOutputStream, byte[] aHeader);
 	}
 }

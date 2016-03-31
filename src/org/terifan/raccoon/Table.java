@@ -133,7 +133,7 @@ public final class Table<T> implements Iterable<T>
 		{
 			type = LeafEntry.FLAG_BLOB;
 
-			try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId()))
+			try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId(), null))
 			{
 				bos.write(value);
 				value = bos.finish();
@@ -177,31 +177,35 @@ public final class Table<T> implements Iterable<T>
 	{
 		try
 		{
-			BlobOutputStream out = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId());
+			BlobOutputStream.OnCloseListener onCloseListener = new BlobOutputStream.OnCloseListener()
+			{
+				@Override
+				public void onClose(BlobOutputStream aBlobOutputStream, byte[] aHeader)
+				{
+					Log.v("write blob entry");
+
+					byte[] key = getKeys(aEntityKey);
+
+					LeafEntry entry = new LeafEntry(key, aHeader, LeafEntry.FLAG_BLOB);
+
+					if (mTableImplementation.put(entry))
+					{
+						deleteIfBlob(entry);
+					}
+
+					synchronized (this)
+					{
+						mOpenOutputStreams.remove(aBlobOutputStream);
+					}
+				}
+			};
+
+			BlobOutputStream out = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId(), onCloseListener);
 
 			synchronized (this)
 			{
 				mOpenOutputStreams.add(out);
 			}
-
-			out.setOnCloseListener((aHeader)->
-			{
-				Log.v("write blob entry");
-
-				byte[] key = getKeys(aEntityKey);
-
-				LeafEntry entry = new LeafEntry(key, aHeader, LeafEntry.FLAG_BLOB);
-
-				if (mTableImplementation.put(entry))
-				{
-					deleteIfBlob(entry);
-				}
-
-				synchronized (this)
-				{
-					mOpenOutputStreams.remove(out);
-				}
-			});
 
 			return out;
 		}
@@ -214,7 +218,7 @@ public final class Table<T> implements Iterable<T>
 
 	public boolean save(T aEntity, InputStream aInputStream)
 	{
-		try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId()))
+		try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId(), null))
 		{
 			bos.write(Streams.readAll(aInputStream));
 
