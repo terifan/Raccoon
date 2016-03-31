@@ -884,7 +884,12 @@ public final class Database implements AutoCloseable
 
 	public int size(Object aDiscriminator)
 	{
-		return openTable(aDiscriminator.getClass(), aDiscriminator, OpenOption.OPEN).size();
+		Table table = openTable(aDiscriminator.getClass(), aDiscriminator, OpenOption.OPEN);
+		if (table == null)
+		{
+			return 0;
+		}
+		return table.size();
 	}
 
 

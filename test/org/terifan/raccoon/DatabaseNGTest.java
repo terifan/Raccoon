@@ -939,6 +939,48 @@ public class DatabaseNGTest
 	}
 
 
+	@Test(expectedExceptions = NoSuchEntityException.class)
+	public void testGetNonExistingTable() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			assertEquals(null, database.get(new _Fruit1K("test")));
+			database.commit();
+		}
+	}
+
+
+	@Test
+	public void testTryGetNonExistingTable() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			assertEquals(database.list(_Fruit1K.class).size(), 0);
+			assertEquals(database.size(_Fruit1K.class), 0);
+			assertFalse(database.tryGet(new _Fruit1K("test")));
+		}
+	}
+
+
+	@Test
+	public void testTableChange() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _Fruit1K("test"));
+			assertTrue(database.isChanged());
+			database.rollback();
+			assertFalse(database.isChanged());
+		}
+	}
+
+
 	@Test
 	public void testReadNonExistingEntity() throws Exception
 	{
@@ -946,6 +988,7 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
+			assertEquals(database.size(new _BlobKey1K("apple")), 0);
 			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
 			assertEquals(null, database.read(new _BlobKey1K("bad")));
 			database.commit();
@@ -953,8 +996,8 @@ public class DatabaseNGTest
 	}
 
 
-	@Test
-	public void testReadNonExistingEntityX() throws Exception
+	@Test(expectedExceptions = DatabaseException.class)
+	public void testDataCorruption() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
@@ -964,9 +1007,14 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
+		byte[] buffer = new byte[512];
+		device.readBlock(10, buffer, 0, buffer.length, 0L);
+		buffer[0] ^= 1;
+		device.writeBlock(10, buffer, 0, buffer.length, 0L);
+
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			assertEquals(null, database.read(new _BlobKey1K("good")));
+			assertEquals(new byte[1000_000], Streams.readAll(database.read(new _BlobKey1K("good"))));
 		}
 	}
 }

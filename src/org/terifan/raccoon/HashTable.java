@@ -311,6 +311,8 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		Log.i("rollback");
 
+		// if (!mModified) return; // TODO abort not changed
+
 		if (mForwardCommits)
 		{
 			mBlockAccessor.getBlockDevice().rollback();
@@ -318,6 +320,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		mRootNode = null;
 		mRootMap = null;
+		mModified = false;
 
 		if (mWasEmptyInstance)
 		{
