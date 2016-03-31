@@ -924,4 +924,49 @@ public class DatabaseNGTest
 			assertEquals(found, keys);
 		}
 	}
+
+
+	@Test
+	public void testReadNonExistingTable() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			assertEquals(null, database.read(new _BlobKey1K("test")));
+			database.commit();
+		}
+	}
+
+
+	@Test
+	public void testReadNonExistingEntity() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
+			assertEquals(null, database.read(new _BlobKey1K("bad")));
+			database.commit();
+		}
+	}
+
+
+	@Test
+	public void testReadNonExistingEntityX() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			assertEquals(null, database.read(new _BlobKey1K("good")));
+		}
+	}
 }
