@@ -15,6 +15,7 @@ import java.util.Spliterators.AbstractSpliterator;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.terifan.raccoon.io.IManagedBlockDevice;
@@ -44,7 +45,7 @@ public final class Database implements AutoCloseable
     private final Lock mWriteLock = mReadWriteLock.writeLock();
 
 	private IManagedBlockDevice mBlockDevice;
-	private final HashMap<Class,Factory> mFactories;
+	private final HashMap<Class,Supplier> mFactories;
 	private final HashMap<Class,Initializer> mInitializers;
 	private final Map<TableMetadata,Table> mOpenTables;
 	private final TableMetadataProvider mTableMetadatas;
@@ -831,26 +832,26 @@ public final class Database implements AutoCloseable
 
 
 	/**
-	 * Sets a Factory associated with the specified type. The Factory is used to create instances of specified types.
+	 * Sets a Supplier associated with the specified type. The Supplier is used to create instances of specified types.
 	 *
 	 * E.g:
-	 * 	 mDatabase.setFactory(Photo.class, ()->new Photo(PhotoAlbum.this));
+	 * 	 mDatabase.setSupplier(Photo.class, ()->new Photo(PhotoAlbum.this));
 	 */
-	public <T> void setFactory(Class<T> aType, Factory<T> aFactory)
+	public <T> void setSupplier(Class<T> aType, Supplier<T> aSupplier)
 	{
-		mFactories.put(aType, aFactory);
+		mFactories.put(aType, aSupplier);
 	}
 
 
-	<T> Factory<T> getFactory(Class<T> aType)
+	<T> Supplier<T> getSupplier(Class<T> aType)
 	{
 		return mFactories.get(aType);
 	}
 
 
-	public <T> void setInitializer(Class<T> aType, Initializer<T> aFactory)
+	public <T> void setInitializer(Class<T> aType, Initializer<T> aSupplier)
 	{
-		mInitializers.put(aType, aFactory);
+		mInitializers.put(aType, aSupplier);
 	}
 
 
@@ -959,7 +960,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public synchronized <T> List<T> getDiscriminators(Factory<T> aFactory)
+	public synchronized <T> List<T> getDiscriminators(Supplier<T> aSupplier)
 	{
 		mReadLock.lock();
 
@@ -967,7 +968,7 @@ public final class Database implements AutoCloseable
 		{
 			ArrayList<T> result = new ArrayList<>();
 
-			String name = aFactory.newInstance().getClass().getName();
+			String name = aSupplier.get().getClass().getName();
 
 			for (TableMetadata tableMetadata : (List<TableMetadata>)mSystemTable.list(TableMetadata.class))
 			{
@@ -975,7 +976,7 @@ public final class Database implements AutoCloseable
 
 				if (name.equals(tableMetadata.getTypeName()))
 				{
-					T instance = aFactory.newInstance();
+					T instance = aSupplier.get();
 					tableMetadata.getMarshaller().unmarshalDiscriminators(new ByteArrayBuffer(tableMetadata.getDiscriminatorKey()), instance);
 					result.add(instance);
 				}

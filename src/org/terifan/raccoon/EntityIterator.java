@@ -3,6 +3,7 @@ package org.terifan.raccoon;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
+import java.util.function.Supplier;
 import org.terifan.raccoon.util.Log;
 
 
@@ -48,11 +49,11 @@ public final class EntityIterator<T> implements Iterator<T>
 		{
 			Class type = mTable.getTableMetadata().getType();
 
-			Factory factory = mTable.getDatabase().getFactory(type);
+			Supplier supplier = mTable.getDatabase().getSupplier(type);
 
-			if (factory != null)
+			if (supplier != null)
 			{
-				return factory.newInstance();
+				return supplier.get();
 			}
 			else
 			{
@@ -77,6 +78,10 @@ public final class EntityIterator<T> implements Iterator<T>
 		if (initializer != null)
 		{
 			initializer.initialize(aEntity);
+		}
+		if (aEntity instanceof Initializable)
+		{
+			((Initializable)aEntity).initialize();
 		}
 	}
 

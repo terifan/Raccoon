@@ -31,6 +31,9 @@ import org.testng.annotations.DataProvider;
 import tests._Fruit1K;
 import static tests.__TestUtils.createBuffer;
 import static tests.__TestUtils.t;
+import static tests.__TestUtils.t;
+import static tests.__TestUtils.t;
+import static tests.__TestUtils.t;
 
 
 public class DatabaseNGTest
