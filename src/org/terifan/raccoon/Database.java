@@ -875,12 +875,20 @@ public final class Database implements AutoCloseable
 
 	public int size(Class aType)
 	{
-		Table table = openTable(aType, null, OpenOption.OPEN);
-		if (table == null)
+		mReadLock.lock();
+		try
 		{
-			return 0;
+			Table table = openTable(aType, null, OpenOption.OPEN);
+			if (table == null)
+			{
+				return 0;
+			}
+			return table.size();
 		}
-		return table.size();
+		finally
+		{
+			mReadLock.unlock();
+		}
 	}
 
 
