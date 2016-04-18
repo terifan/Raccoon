@@ -621,8 +621,16 @@ public final class Database implements AutoCloseable
 	 */
 	public BlobOutputStream saveBlob(Object aEntity)
 	{
-		Table table = openTable(aEntity.getClass(), aEntity, OpenOption.CREATE);
-		return table.saveBlob(aEntity);
+		mWriteLock.lock();
+		try
+		{
+			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.CREATE);
+			return table.saveBlob(aEntity);
+		}
+		finally
+		{
+			mWriteLock.unlock();
+		}
 	}
 
 
@@ -658,7 +666,6 @@ public final class Database implements AutoCloseable
 				return null;
 			}
 
-			byte[] buffer;
 			try (InputStream in = table.read(aEntity))
 			{
 				if (in == null)
@@ -666,10 +673,8 @@ public final class Database implements AutoCloseable
 					return null;
 				}
 
-				buffer = Streams.readAll(in);
+				return new ByteArrayInputStream(Streams.readAll(in));
 			}
-
-			return new ByteArrayInputStream(buffer);
 		}
 		catch (IOException e)
 		{
@@ -690,13 +695,21 @@ public final class Database implements AutoCloseable
 
 	public <T> Iterable<T> iterable(Class<T> aType, T aDiscriminator)
 	{
-		Table table = openTable(aType, aDiscriminator, OpenOption.OPEN);
-		if (table == null)
+		mReadLock.lock();
+		try
 		{
-			return null;
-		}
+			Table table = openTable(aType, aDiscriminator, OpenOption.OPEN);
+			if (table == null)
+			{
+				return null;
+			}
 
-		return ()->table.iterator();
+			return ()->table.iterator();
+		}
+		finally
+		{
+			mReadLock.unlock();
+		}
 	}
 
 
@@ -894,12 +907,20 @@ public final class Database implements AutoCloseable
 
 	public int size(Object aDiscriminator)
 	{
-		Table table = openTable(aDiscriminator.getClass(), aDiscriminator, OpenOption.OPEN);
-		if (table == null)
+		mReadLock.lock();
+		try
 		{
-			return 0;
+			Table table = openTable(aDiscriminator.getClass(), aDiscriminator, OpenOption.OPEN);
+			if (table == null)
+			{
+				return 0;
+			}
+			return table.size();
 		}
-		return table.size();
+		finally
+		{
+			mReadLock.unlock();
+		}
 	}
 
 
