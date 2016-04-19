@@ -27,10 +27,12 @@ import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.FileBlockDevice;
+import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.security.messagedigest.MurmurHash3;
+import tests._Fruit1K;
 
 
 public final class Database implements AutoCloseable
@@ -1037,5 +1039,28 @@ public final class Database implements AutoCloseable
 	{
 		// this exists to ensure MemoryBlockDevice is included in distributions
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+	}
+
+
+	public EntityDescriptor getEntityDescriptor(String aTypeName)
+	{
+		mReadLock.lock();
+
+		try
+		{
+			for (Table table : getTables())
+			{
+				if (table.getTableMetadata().getTypeName().equals(aTypeName))
+				{
+					return table.getTableMetadata().getEntityDescriptor();
+				}
+			}
+
+			return null;
+		}
+		finally
+		{
+			mReadLock.unlock();
+		}
 	}
 }
