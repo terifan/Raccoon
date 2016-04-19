@@ -143,20 +143,33 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	@Override
-	public String toString()
+	/**
+	 * Return an entity as a Java class declaration.
+	 */
+	public String getJavaDeclaration()
 	{
 		StringBuilder sb = new StringBuilder();
+		sb.append("package " + mName.substring(0, mName.lastIndexOf(".")) + ";\n\n");
+		sb.append("class " + mName.substring(mName.lastIndexOf(".")+1) + "\n{\n");
 		for (FieldType fieldType : mFieldTypes)
 		{
-			if (sb.length() > 0)
+			String annotation;
+			switch (fieldType.getCategory())
 			{
-				sb.append("\n");
+				case KEY:
+					annotation = "@Key ";
+					break;
+				case DISCRIMINATOR:
+					annotation = "@Discriminator ";
+					break;
+				default:
+					annotation = "";
+					break;
 			}
-			sb.append("\t" + fieldType + ";");
+
+			sb.append("\t" + annotation + fieldType + ";\n");
 		}
-		sb.insert(0, "package " + mName.substring(0, mName.lastIndexOf(".")) + ";\n\nclass " + mName.substring(mName.lastIndexOf(".")+1) + "\n{\n");
-		sb.append("\n}");
+		sb.append("}");
 		return sb.toString();
 	}
 
