@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
@@ -30,9 +29,6 @@ import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
 import tests._Fruit1K;
 import static tests.__TestUtils.createBuffer;
-import static tests.__TestUtils.t;
-import static tests.__TestUtils.t;
-import static tests.__TestUtils.t;
 import static tests.__TestUtils.t;
 
 

@@ -26,6 +26,7 @@ import org.terifan.raccoon.io.UnsupportedVersionException;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
+import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.io.FileBlockDevice;
 import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.raccoon.util.Assert;
@@ -423,16 +424,18 @@ public final class Database implements AutoCloseable
 
 		mTransactionId.increment();
 
-		ByteArrayBuffer buffer = new ByteArrayBuffer(100);
+		ByteArrayBuffer buffer = new ByteArrayBuffer(4 + 8 + 4 + 8 + BlockPointer.SIZE);
 		buffer.writeInt32(0); // leave space for checksum
 		buffer.writeInt64(RACCOON_DB_IDENTITY);
 		buffer.writeInt32(RACCOON_DB_VERSION);
 		buffer.writeInt64(mTransactionId.get());
-		if (mSystemTableMetadata.getPointer()!=null) buffer.write(mSystemTableMetadata.getPointer());
+		if (mSystemTableMetadata.getPointer() != null)
+		{
+			buffer.write(mSystemTableMetadata.getPointer());
+		}
 		buffer.trim();
 
-		int checksum = MurmurHash3.hash_x86_32(buffer.array(), 4, buffer.position() - 4, EXTRA_DATA_CHECKSUM_SEED);
-		buffer.position(0).writeInt32(checksum);
+		buffer.position(0).writeInt32(MurmurHash3.hash_x86_32(buffer.array(), 4, buffer.capacity() - 4, EXTRA_DATA_CHECKSUM_SEED));
 
 		mBlockDevice.setExtraData(buffer.array());
 	}
