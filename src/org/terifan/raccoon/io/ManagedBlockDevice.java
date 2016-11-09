@@ -312,7 +312,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		if (!mRangeMap.isFree((int)aBlockIndex, aBufferLength / mBlockSize))
 		{
-			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
+			Log.out.println("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
+//			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
 		}
 
 		Log.v("read block %d +%d", aBlockIndex, aBufferLength/mBlockSize);

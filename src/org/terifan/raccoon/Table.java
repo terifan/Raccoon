@@ -20,7 +20,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public final class Table<T> implements Iterable<T>
+public final class Table<T> implements Iterable<T>, AutoCloseable
 {
 	private Database mDatabase;
 	private TableMetadata mTableMetadata;
@@ -274,7 +274,8 @@ public final class Table<T> implements Iterable<T>
 	}
 
 
-	void close() throws IOException
+	@Override
+	public void close() throws IOException
 	{
 		mTableImplementation.close();
 	}

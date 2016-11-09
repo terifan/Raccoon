@@ -30,6 +30,13 @@ import org.testng.annotations.DataProvider;
 import tests._Fruit1K;
 import static tests.__TestUtils.createBuffer;
 import static tests.__TestUtils.t;
+import static tests.__TestUtils.t;
+import static tests.__TestUtils.t;
+import static tests.__TestUtils.t;
+import static tests.__TestUtils.t;
+import static tests.__TestUtils.t;
+import static tests.__TestUtils.t;
+import static tests.__TestUtils.t;
 
 
 public class DatabaseNGTest
@@ -687,14 +694,14 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			List<Table> tables = database.getTables();
+			List<TableMetadata> tableMetadatas = database.getTableMetadatas();
 
-			assertEquals(tables.size(), 3);
+			assertEquals(tableMetadatas.size(), 3);
 
 			HashSet<Class> set = new HashSet<>(Arrays.asList(_Fruit1K.class, _Fruit2K.class, _Animal1K.class));
-			assertTrue(set.contains(tables.get(0).getTableMetadata().getType()));
-			assertTrue(set.contains(tables.get(1).getTableMetadata().getType()));
-			assertTrue(set.contains(tables.get(2).getTableMetadata().getType()));
+			assertTrue(set.contains(tableMetadatas.get(0).getType()));
+			assertTrue(set.contains(tableMetadatas.get(1).getType()));
+			assertTrue(set.contains(tableMetadatas.get(2).getType()));
 		}
 	}
 
