@@ -18,7 +18,7 @@ public class Sample
 
 			AccessCredentials accessCredentials = new AccessCredentials("password");
 
-			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.CREATE_NEW, accessCredentials))
+			try (Database db = Database.open(new File("c:/temp/sample.db"), OpenOption.CREATE_NEW, accessCredentials))
 			{
 				db.save(new _Fruit1K("apple", 52.12));
 				db.save(new _Fruit1K("orange", 47.78));
@@ -29,7 +29,7 @@ public class Sample
 				db.commit();
 			}
 
-			try (Database db = Database.open(new File("d:/sample.db"), OpenOption.OPEN, accessCredentials))
+			try (Database db = Database.open(new File("c:/temp/sample.db"), OpenOption.OPEN, accessCredentials))
 			{
 //				db.getTables().stream().forEach(e->Log.out.println(e));
 //
