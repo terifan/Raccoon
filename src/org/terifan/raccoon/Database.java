@@ -58,6 +58,7 @@ public final class Database implements AutoCloseable
 	private Object[] mProperties;
 	private TableMetadata mSystemTableMetadata;
 	private boolean mCloseDeviceOnCloseDatabase;
+	private Thread mShutdownHook;
 
 
 	private Database()
@@ -176,6 +177,24 @@ public final class Database implements AutoCloseable
 		}
 
 		db.mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
+
+		db.mShutdownHook = new Thread()
+		{
+			@Override
+			public void run()
+			{
+				try
+				{
+					db.close();
+				}
+				catch (IOException e)
+				{
+					throw new RuntimeException(e);
+				}
+			}
+		};
+
+		Runtime.getRuntime().addShutdownHook(db.mShutdownHook);
 
 		return db;
 	}
@@ -467,6 +486,8 @@ public final class Database implements AutoCloseable
 				mSystemTable.close();
 				mSystemTable = null;
 			}
+
+			mBlockDevice.commit(true);
 
 			if (mCloseDeviceOnCloseDatabase)
 			{

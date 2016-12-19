@@ -327,13 +327,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public void commit(boolean aMetadata) throws IOException
 	{
-		commit();
-	}
-
-
-	@Override
-	public void commit() throws IOException
-	{
 		if (mModified)
 		{
 			mCachingBlockDevice.flush();
@@ -352,7 +345,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			writeSuperBlock();
 
-			mBlockDevice.commit(true);
+			mBlockDevice.commit(aMetadata);
 
 			mUncommitedAllocations.clear();
 			mRangeMap = mPendingRangeMap.clone();
@@ -361,6 +354,13 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			Log.dec();
 		}
+	}
+
+
+	@Override
+	public void commit() throws IOException
+	{
+		commit(false);
 	}
 
 

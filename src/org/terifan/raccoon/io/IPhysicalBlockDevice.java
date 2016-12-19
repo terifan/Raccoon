@@ -41,6 +41,9 @@ public interface IPhysicalBlockDevice extends AutoCloseable
 
 	/**
 	 * Attempt to flush any changes made to blocks
+	 *
+	 * @param aMetadata
+	 *   force update of metadata
 	 */
 	void commit(boolean aMetadata) throws IOException;
 
@@ -63,12 +66,12 @@ public interface IPhysicalBlockDevice extends AutoCloseable
 	 *   the size of each block on this device.
 	 */
 	int getBlockSize() throws IOException;
-	
-	
+
+
 	/**
 	 * Truncates this block device to the number of blocks specified.
-	 * 
-	 * @param aNewLength 
+	 *
+	 * @param aNewLength
 	 *   number of blocks
 	 */
 	void setLength(long aNewLength) throws IOException;
