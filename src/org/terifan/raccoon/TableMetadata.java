@@ -136,7 +136,14 @@ public final class TableMetadata
 	@Override
 	public String toString()
 	{
-		return mTypeName + "[" + getDiscriminatorDescription() + "]";
+		String s = getDiscriminatorDescription();
+
+		if (s == null)
+		{
+			return mTypeName;
+		}
+
+		return mTypeName + "[" + s + "]";
 	}
 
 
@@ -158,7 +165,7 @@ public final class TableMetadata
 			{
 				if (fieldType.getCategory() == FieldCategory.DISCRIMINATOR)
 				{
-					if (result.length() == 0)
+					if (result.length() > 0)
 					{
 						result.append(", ");
 					}

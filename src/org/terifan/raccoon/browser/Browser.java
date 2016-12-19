@@ -19,6 +19,7 @@ import org.terifan.raccoon.Database;
 import org.terifan.raccoon.LeafEntry;
 import org.terifan.raccoon.OpenOption;
 import org.terifan.raccoon.Table;
+import org.terifan.raccoon.TableMetadata;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.serialization.FieldType;
 import org.terifan.raccoon.serialization.EntityDescriptor;
@@ -83,11 +84,11 @@ public class Browser
 
 			DefaultMutableTreeNode root = new DefaultMutableTreeNode();
 			HashMap<String,DefaultMutableTreeNode> groups = new HashMap<>();
-			for (Table table : database.getTables())
+			for (TableMetadata tableMetadata : database.getTableMetadatas())
 			{
-				if (table.getTableMetadata().hasDiscriminatorFields())
+				if (tableMetadata.hasDiscriminatorFields())
 				{
-					String typeName = table.getTableMetadata().getTypeName();
+					String typeName = tableMetadata.getTypeName();
 					DefaultMutableTreeNode group = groups.get(typeName);
 
 					if (group == null)
@@ -97,7 +98,7 @@ public class Browser
 						groups.put(typeName, group);
 					}
 
-					DefaultMutableTreeNode node = new DefaultMutableTreeNode(table)
+					DefaultMutableTreeNode node = new DefaultMutableTreeNode(tableMetadata)
 					{
 						@Override
 						public String toString()
@@ -110,7 +111,7 @@ public class Browser
 				}
 				else
 				{
-					DefaultMutableTreeNode node = new DefaultMutableTreeNode(table);
+					DefaultMutableTreeNode node = new DefaultMutableTreeNode(tableMetadata);
 					root.add(node);
 				}
 			}

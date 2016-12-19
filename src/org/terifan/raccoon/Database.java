@@ -286,7 +286,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private Table openTable(TableMetadata aTableMetadata, OpenOption aOptions)
+	public Table openTable(TableMetadata aTableMetadata, OpenOption aOptions)
 	{
 		Table table = mOpenTables.get(aTableMetadata);
 
@@ -996,7 +996,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public List<Table> getTables()
+	public List<TableMetadata> getTableMetadatas()
 	{
 		checkOpen();
 
@@ -1004,9 +1004,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			ArrayList<Table> tables = new ArrayList<>();
-			mSystemTable.list(TableMetadata.class).stream().forEach(e->tables.add(openTable((TableMetadata)e, OpenOption.OPEN)));
-			return tables;
+			return mSystemTable.list(TableMetadata.class);
 		}
 		finally
 		{
@@ -1046,15 +1044,19 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public void scan()
+	public void scan() throws IOException
 	{
 		Log.out.println(mSystemTable);
 		mSystemTable.scan();
 
-		for (Table table : getTables())
+		for (TableMetadata tableMetadata : getTableMetadatas())
 		{
-			Log.out.println(table);
-			table.scan();
+			Log.out.println(tableMetadata);
+
+			try (Table table = openTable(tableMetadata, OpenOption.OPEN))
+			{
+				table.scan();
+			}
 		}
 	}
 
@@ -1072,11 +1074,11 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			for (Table table : getTables())
+			for (TableMetadata tableMetadata : getTableMetadatas())
 			{
-				if (table.getTableMetadata().getTypeName().equals(aTypeName))
+				if (tableMetadata.getTypeName().equals(aTypeName))
 				{
-					return table.getTableMetadata().getEntityDescriptor();
+					return tableMetadata.getEntityDescriptor();
 				}
 			}
 
