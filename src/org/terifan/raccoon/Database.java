@@ -327,7 +327,10 @@ public final class Database implements AutoCloseable
 
 	private void checkOpen() throws IllegalStateException
 	{
-		Assert.notNull(mSystemTable, "Database is closed");
+		if (mSystemTable == null)
+		{
+			throw new DatabaseClosedException("Database is closed");
+		}
 	}
 
 
@@ -683,6 +686,11 @@ public final class Database implements AutoCloseable
 	 */
 	public InputStream read(Object aEntity)
 	{
+		if ((aEntity instanceof String) || (aEntity instanceof Number))
+		{
+			throw new IllegalArgumentException("Provided object must be an Entity instance!");
+		}
+		
 		mReadLock.lock();
 		try
 		{
