@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.StandardOpenOption;
 import org.terifan.raccoon.util.Log;
 
@@ -24,7 +25,14 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 		}
 		else
 		{
-			mFile = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+			try
+			{
+				mFile = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+			}
+			catch (AccessDeniedException e)
+			{
+				throw new FileAlreadyOpenException("Failed to open file: " + aFile, e);
+			}
 
 			try
 			{
