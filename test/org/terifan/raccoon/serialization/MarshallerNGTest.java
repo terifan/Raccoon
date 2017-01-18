@@ -13,18 +13,18 @@ public class MarshallerNGTest
 	{
 		_BigObject2K1D in = new _BigObject2K1D().random();
 
-		EntityDescriptor tableDescriptor = new EntityDescriptor(_BigObject2K1D.class);
+		EntityDescriptor tableDescriptor = EntityDescriptor.getInstance(_BigObject2K1D.class);
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 
-		Marshaller marshaller = new Marshaller(tableDescriptor);
+		Marshaller marshaller = Marshaller.getInstance(tableDescriptor);
 		marshaller.marshalKeys(buffer, in);
 
 		_BigObject2K1D out = new _BigObject2K1D();
 
 		buffer.position(0);
 
-		new Marshaller(tableDescriptor).unmarshalKeys(buffer, out);
+		Marshaller.getInstance(tableDescriptor).unmarshalKeys(buffer, out);
 
 		assertEquals(out._key1, in._key1);
 		assertEquals(out._key2, in._key2);
@@ -37,18 +37,18 @@ public class MarshallerNGTest
 	{
 		_BigObject2K1D in = new _BigObject2K1D().random();
 
-		EntityDescriptor tableDescriptor = new EntityDescriptor(_BigObject2K1D.class);
+		EntityDescriptor tableDescriptor = EntityDescriptor.getInstance(_BigObject2K1D.class);
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 
-		Marshaller marshaller = new Marshaller(tableDescriptor);
+		Marshaller marshaller = Marshaller.getInstance(tableDescriptor);
 		marshaller.marshalValues(buffer, in);
 
 		_BigObject2K1D out = new _BigObject2K1D();
 
 		buffer.position(0);
 
-		new Marshaller(tableDescriptor).unmarshalValues(buffer, out);
+		Marshaller.getInstance(tableDescriptor).unmarshalValues(buffer, out);
 
 		assertEquals(out._discriminator, in._discriminator);
 		assertEquals(out.mString, in.mString);

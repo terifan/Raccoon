@@ -1,6 +1,7 @@
 package org.terifan.raccoon.serialization;
 
 import java.io.IOException;
+import java.util.HashMap;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -9,12 +10,28 @@ import org.terifan.raccoon.util.ResultSet;
 
 public class Marshaller
 {
+	private final static HashMap<EntityDescriptor,Marshaller> mMarshallers = new HashMap<>();
+
 	private EntityDescriptor mEntityDescriptor;
 
 
-	public Marshaller(EntityDescriptor aTypeDeclarations)
+	private Marshaller(EntityDescriptor aTypeDeclarations)
 	{
 		mEntityDescriptor = aTypeDeclarations;
+	}
+
+
+	public static synchronized Marshaller getInstance(EntityDescriptor aTypeDeclarations)
+	{
+		Marshaller instance = mMarshallers.get(aTypeDeclarations);
+
+		if (instance == null)
+		{
+			instance = new Marshaller(aTypeDeclarations);
+			mMarshallers.put(aTypeDeclarations, instance);
+		}
+
+		return instance;
 	}
 
 

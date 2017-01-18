@@ -33,9 +33,9 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	{
 		if (mField == null)
 		{
-			throw new Error("mField not initialized: " + toString());
+			throw new Error("Internal error: mField not initialized: " + toString());
 		}
-		
+
 		return mField;
 	}
 

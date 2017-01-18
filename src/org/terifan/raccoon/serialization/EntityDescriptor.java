@@ -9,6 +9,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Objects;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
@@ -20,6 +21,8 @@ public class EntityDescriptor implements Externalizable
 {
 	private static final long serialVersionUID = 1L;
 
+	private final static HashMap<Class,EntityDescriptor> mEntityDescriptors = new HashMap<>();
+
 	private String mName;
 	private FieldType[] mFieldTypes;
 
@@ -30,11 +33,14 @@ public class EntityDescriptor implements Externalizable
 
 	public EntityDescriptor()
 	{
+		System.out.println("*********");
 	}
 
 
-	public EntityDescriptor(Class aType)
+	private EntityDescriptor(Class aType)
 	{
+		System.out.println("######"+aType);
+
 		Log.v("create type declarations for %s", aType);
 		Log.inc();
 
@@ -46,10 +52,10 @@ public class EntityDescriptor implements Externalizable
 		for (Field field : fields)
 		{
 			FieldType fieldType = new FieldType();
-			fieldType.setIndex(tmp.size());
 			fieldType.setField(field);
 			fieldType.setName(field.getName());
 			fieldType.setTypeName(field.getType().getName());
+			fieldType.setIndex(tmp.size());
 
 			categorize(field, fieldType);
 			classify(field, fieldType);
@@ -64,6 +70,20 @@ public class EntityDescriptor implements Externalizable
 		updateLookupTables();
 
 		Log.dec();
+	}
+
+
+	public static synchronized EntityDescriptor getInstance(Class aType)
+	{
+		EntityDescriptor instance = mEntityDescriptors.get(aType);
+
+		if (instance == null)
+		{
+			instance = new EntityDescriptor(aType);
+			mEntityDescriptors.put(aType, instance);
+		}
+
+		return instance;
 	}
 
 
@@ -285,5 +305,12 @@ public class EntityDescriptor implements Externalizable
 		mKeyFields = tmpK.toArray(new FieldType[tmpK.size()]);
 		mDiscriminatorFields = tmpD.toArray(new FieldType[tmpD.size()]);
 		mValueFields = tmpV.toArray(new FieldType[tmpV.size()]);
+	}
+
+
+	@Override
+	public String toString()
+	{
+		return "EntityDescriptor{" + "mName=" + mName + ", mFieldTypes=" + Arrays.toString(mFieldTypes) + ", mKeyFields=" + Arrays.toString(mKeyFields) + ", mDiscriminatorFields=" + Arrays.toString(mDiscriminatorFields) + ", mValueFields=" + Arrays.toString(mValueFields) + '}';
 	}
 }

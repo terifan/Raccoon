@@ -393,7 +393,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.v("read super block");
 		Log.inc();
 
-		mSuperBlockMarshaller = new Marshaller(new EntityDescriptor(SuperBlock.class));
+		mSuperBlockMarshaller = Marshaller.getInstance(EntityDescriptor.getInstance(SuperBlock.class));
 
 		SuperBlock superBlockOne = new SuperBlock();
 		SuperBlock superBlockTwo = new SuperBlock();
@@ -449,7 +449,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[mBlockSize]);
 		buffer.position(CHECKSUM_SIZE); // leave space for checksum
 
-		Marshaller m = new Marshaller(new EntityDescriptor(SuperBlock.class));
+		Marshaller m = Marshaller.getInstance(EntityDescriptor.getInstance(SuperBlock.class));
 		ByteArrayBuffer buf = m.marshalValues(buffer, mSuperBlock);
 
 		if (mBlockDevice instanceof SecureBlockDevice)

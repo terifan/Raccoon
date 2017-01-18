@@ -30,16 +30,16 @@ public final class TableMetadata
 	{
 		mClass = aClass;
 		mTypeName = mClass.getName();
-		mEntityDescriptor = new EntityDescriptor(mClass);
-		mMarshaller = new Marshaller(mEntityDescriptor);
+		mEntityDescriptor = EntityDescriptor.getInstance(mClass);
+		mMarshaller = Marshaller.getInstance(mEntityDescriptor);
 
 		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);
 	}
 
 
-	TableMetadata initialize()
+	synchronized TableMetadata initialize()
 	{
-		mMarshaller = new Marshaller(mEntityDescriptor);
+		mMarshaller = Marshaller.getInstance(mEntityDescriptor);
 
 		try
 		{
@@ -158,7 +158,7 @@ public final class TableMetadata
 
 		try
 		{
-			Marshaller marshaller = new Marshaller(mEntityDescriptor);
+			Marshaller marshaller = Marshaller.getInstance(mEntityDescriptor);
 			ResultSet resultSet = marshaller.unmarshalDiscriminators(new ByteArrayBuffer(mDiscriminatorKey));
 
 			for (FieldType fieldType : mEntityDescriptor.getTypes())
