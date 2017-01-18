@@ -8,7 +8,7 @@ import java.util.LinkedList;
 
 class CachingBlockDevice
 {
-	private final static int LIMIT = 1024;
+	private final static int LIMIT = 128;
 
 	private IPhysicalBlockDevice mBlockDevice;
 	private HashMap<Long, CacheEntry> mCache;
