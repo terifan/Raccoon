@@ -109,12 +109,6 @@ public final class AccessCredentials
 	}
 
 
-	public void add(AccessCredentials aAccessCredentials)
-	{
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-
 	private static byte [] join(byte[] aBufferA, byte[] aBufferB)
 	{
 		byte [] output = new byte[aBufferA.length + aBufferB.length];

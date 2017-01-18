@@ -26,6 +26,7 @@ public class EntityDescriptor implements Externalizable
 	private String mName;
 	private FieldType[] mFieldTypes;
 
+	private transient Class mType;
 	private transient FieldType[] mKeyFields;
 	private transient FieldType[] mDiscriminatorFields;
 	private transient FieldType[] mValueFields;
@@ -33,19 +34,17 @@ public class EntityDescriptor implements Externalizable
 
 	public EntityDescriptor()
 	{
-		System.out.println("*********");
 	}
 
 
 	private EntityDescriptor(Class aType)
 	{
-		System.out.println("######"+aType);
-
 		Log.v("create type declarations for %s", aType);
 		Log.inc();
 
 		ArrayList<Field> fields = loadFields(aType);
 
+		mType = aType;
 		mName = aType.getName();
 		ArrayList<FieldType> tmp = new ArrayList<>();
 
@@ -87,27 +86,15 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	public void mapFields(Class aType)
+	public Class getType()
 	{
-		ArrayList<Field> fields = loadFields(aType);
+		return mType;
+	}
 
-		for (FieldType fieldType : mFieldTypes)
-		{
-			for (Field field : fields)
-			{
-				if (fieldType.getName().equals(field.getName()) && fieldType.getTypeName().equals(field.getType().getName()))
-				{
-					fieldType.setField(field);
-					break;
-				}
-			}
 
-			if (fieldType.getField() == null)
-			{
-				// TODO: report error
-				Log.out.println("Entity field missing: " + fieldType);
-			}
-		}
+	public void setType(Class aType)
+	{
+		this.mType = aType;
 	}
 
 
@@ -312,5 +299,33 @@ public class EntityDescriptor implements Externalizable
 	public String toString()
 	{
 		return "EntityDescriptor{" + "mName=" + mName + ", mFieldTypes=" + Arrays.toString(mFieldTypes) + ", mKeyFields=" + Arrays.toString(mKeyFields) + ", mDiscriminatorFields=" + Arrays.toString(mDiscriminatorFields) + ", mValueFields=" + Arrays.toString(mValueFields) + '}';
+	}
+
+
+	Field getField(FieldType aFieldType)
+	{
+		Field field = aFieldType.getField();
+
+		if (field == null)
+		{
+			if (mType == null)
+			{
+				throw new IllegalStateException("Internal Error: Type not bound!");
+			}
+
+			for (Field f : mType.getDeclaredFields())
+			{
+				// (field.getModifiers() & (Modifier.TRANSIENT | Modifier.STATIC | Modifier.FINAL)) == 0 &&
+				if (aFieldType.getName().equals(f.getName()) && aFieldType.getTypeName().equals(f.getType().getName()))
+				{
+					field = f;
+					aFieldType.setField(field);
+					field.setAccessible(true);
+					break;
+				}
+			}
+		}
+
+		return field;
 	}
 }

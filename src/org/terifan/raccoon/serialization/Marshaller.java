@@ -1,6 +1,7 @@
 package org.terifan.raccoon.serialization;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -62,14 +63,14 @@ public class Marshaller
 
 			for (FieldType fieldType : types)
 			{
-				aBuffer.writeBit(fieldType.getField().get(aObject) == null);
+				aBuffer.writeBit(mEntityDescriptor.getField(fieldType).get(aObject) == null);
 			}
 
 			aBuffer.align();
 
 			for (FieldType fieldType : types)
 			{
-				Object value = fieldType.getField().get(aObject);
+				Object value = mEntityDescriptor.getField(fieldType).get(aObject);
 
 				if (value != null)
 				{
@@ -133,9 +134,11 @@ public class Marshaller
 
 					if (aObject != null)
 					{
-						if (fieldType.getField() != null)
+						Field field = mEntityDescriptor.getField(fieldType);
+
+						if (field != null)
 						{
-							fieldType.getField().set(aObject, value);
+							field.set(aObject, value);
 						}
 					}
 				}
@@ -205,5 +208,12 @@ public class Marshaller
 		{
 			throw new DatabaseException(e);
 		}
+	}
+
+
+	public Marshaller xxxxxxxxxxxxx(Class aType)
+	{
+		if (aType != null) mEntityDescriptor.setType(aType);
+		return this;
 	}
 }

@@ -17,7 +17,7 @@ public final class TableMetadata
 	private byte[] mPointer;
 	private EntityDescriptor mEntityDescriptor;
 
-	private transient Class mClass;
+	private transient Class mType;
 	private transient Marshaller mMarshaller;
 
 
@@ -28,9 +28,9 @@ public final class TableMetadata
 
 	TableMetadata(Class aClass, Object aDiscriminator)
 	{
-		mClass = aClass;
-		mTypeName = mClass.getName();
-		mEntityDescriptor = EntityDescriptor.getInstance(mClass);
+		mType = aClass;
+		mTypeName = mType.getName();
+		mEntityDescriptor = EntityDescriptor.getInstance(mType);
 		mMarshaller = Marshaller.getInstance(mEntityDescriptor);
 
 		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);
@@ -43,16 +43,16 @@ public final class TableMetadata
 
 		try
 		{
-			mClass = Class.forName(mTypeName);
+			mType = Class.forName(mTypeName);
 		}
 		catch (Exception e)
 		{
 			Log.e("Error loading entity class: %s", e.toString());
 		}
 
-		if (mClass != null)
+		if (mType != null)
 		{
-			mEntityDescriptor.mapFields(mClass);
+			mEntityDescriptor.setType(mType);
 		}
 
 		return this;
@@ -72,7 +72,7 @@ public final class TableMetadata
 
 	public Class getType()
 	{
-		return mClass;
+		return mType;
 	}
 
 
@@ -90,7 +90,7 @@ public final class TableMetadata
 
 	public Marshaller getMarshaller()
 	{
-		return mMarshaller;
+		return mMarshaller.xxxxxxxxxxxxx(mType);
 	}
 
 

@@ -46,7 +46,7 @@ public class ConcurrencyTest
 				reader.start();
 			}
 
-			try (__FixedThreadExecutor executor = new __FixedThreadExecutor(2))
+			try (__FixedThreadExecutor executor = new __FixedThreadExecutor(8))
 			{
 				for (int k = 0; k < 10; k++)
 				{

@@ -163,7 +163,7 @@ public class Browser
 								field.getContentType(),
 								field.getTypeName(),
 								field.getIndex(),
-								field.getField(),
+								null, //field.getField(),
 								field.isNullable(),
 								field.isArray(),
 								field.getDepth()

@@ -71,6 +71,11 @@ public final class Database implements AutoCloseable
 	}
 
 
+	/**
+	 *
+	 * @param aParameters
+	 *   supports: AccessCredentials, DeviceLabel
+	 */
 	public static Database open(File aFile, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
 		FileBlockDevice fileBlockDevice = null;
@@ -125,7 +130,7 @@ public final class Database implements AutoCloseable
 	/**
 	 *
 	 * @param aParameters
-	 *   AccessCredentials
+	 *   supports: AccessCredentials, DeviceLabel
 	 */
 	public static Database open(IPhysicalBlockDevice aBlockDevice, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
@@ -142,6 +147,15 @@ public final class Database implements AutoCloseable
 		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aParameters, null);
 
 		ManagedBlockDevice device;
+		String label = null;
+
+		for (Object o : aParameters)
+		{
+			if (o instanceof DeviceLabel)
+			{
+				label = o.toString();
+			}
+		}
 
 		if (aBlockDevice instanceof IManagedBlockDevice)
 		{
@@ -156,13 +170,13 @@ public final class Database implements AutoCloseable
 		{
 			Log.d("creating a managed block device");
 
-			device = new ManagedBlockDevice(aBlockDevice);
+			device = new ManagedBlockDevice(aBlockDevice, label);
 		}
 		else
 		{
 			Log.d("creating a secure block device");
 
-			device = new ManagedBlockDevice(new SecureBlockDevice(aBlockDevice, accessCredentials));
+			device = new ManagedBlockDevice(new SecureBlockDevice(aBlockDevice, accessCredentials), label);
 		}
 
 		Database db;
@@ -290,6 +304,8 @@ public final class Database implements AutoCloseable
 	{
 		Table table = mOpenTables.get(aTableMetadata);
 
+			aTableMetadata.initialize();
+
 		if (table == null)
 		{
 			Log.i("open table '%s' with option %s", aTableMetadata.getTypeName(), aOptions);
@@ -301,8 +317,6 @@ public final class Database implements AutoCloseable
 			{
 				return null;
 			}
-
-			aTableMetadata.initialize();
 
 			table = new Table(this, aTableMetadata, aTableMetadata.getPointer());
 
@@ -690,7 +704,7 @@ public final class Database implements AutoCloseable
 		{
 			throw new IllegalArgumentException("Provided object must be an Entity instance!");
 		}
-		
+
 		mReadLock.lock();
 		try
 		{
