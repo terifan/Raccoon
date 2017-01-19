@@ -52,8 +52,8 @@ class CachingBlockDevice
 
 		if (entry != null)
 		{
-			assert entry.mBuffer.length == aBufferLength;
-			assert entry.mBlockKey == aBlockKey;
+			assert entry.mBuffer.length == aBufferLength : entry.mBuffer.length+" == "+aBufferLength;
+			assert entry.mBlockKey == aBlockKey : entry.mBlockKey+" == "+aBlockKey;
 
 			System.arraycopy(entry.mBuffer, 0, aBuffer, aBufferOffset, aBufferLength);
 		}
