@@ -42,7 +42,7 @@ public class ConcurrencyTest
 
 			File file = new File("e:/test.dat");
 
-			for (int n = 0; n < 5; n++)
+			for (int n = 0; n < 50; n++)
 			{
 				MemoryBlockDevice _blockDevice = new MemoryBlockDevice(1024);
 //				FileBlockDevice _blockDevice = new FileBlockDevice(file, 4096, false);
@@ -60,7 +60,6 @@ public class ConcurrencyTest
 							{
 								for (int i = 0; i < names.length; i++)
 								{
-									executor.submit(new GetEntry(rnd.nextInt(names.length)));
 									executor.submit(new GetEntry(rnd.nextInt(names.length)));
 									executor.submit(new GetEntry(rnd.nextInt(names.length)));
 									executor.submit(new PutEntry(i));
