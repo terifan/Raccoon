@@ -64,9 +64,7 @@ public class EntityDescriptor implements Externalizable
 			Log.v("type found: %s", fieldType);
 		}
 
-		mFieldTypes = tmp.toArray(new FieldType[tmp.size()]);
-
-		updateLookupTables();
+		initializeFieldTypeLists(tmp.toArray(new FieldType[tmp.size()]));
 
 		Log.dec();
 	}
@@ -114,9 +112,8 @@ public class EntityDescriptor implements Externalizable
 	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
 	{
 		mName = aIn.readUTF();
-		mFieldTypes = (FieldType[])aIn.readObject();
 
-		updateLookupTables();
+		initializeFieldTypeLists((FieldType[])aIn.readObject());
 	}
 
 
@@ -276,22 +273,28 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	private void updateLookupTables()
+	private void initializeFieldTypeLists(FieldType[] aFieldTypes)
 	{
 		ArrayList<FieldType> tmpK = new ArrayList<>();
 		ArrayList<FieldType> tmpD = new ArrayList<>();
 		ArrayList<FieldType> tmpV = new ArrayList<>();
 
-		for (FieldType fieldType : mFieldTypes)
+		for (FieldType fieldType : aFieldTypes)
 		{
 			if (fieldType.getCategory() == FieldCategory.KEY) tmpK.add(fieldType);
 			if (fieldType.getCategory() == FieldCategory.DISCRIMINATOR) tmpD.add(fieldType);
 			if (fieldType.getCategory() != FieldCategory.KEY) tmpV.add(fieldType);
 		}
 
+		mFieldTypes = aFieldTypes;
 		mKeyFields = tmpK.toArray(new FieldType[tmpK.size()]);
 		mDiscriminatorFields = tmpD.toArray(new FieldType[tmpD.size()]);
 		mValueFields = tmpV.toArray(new FieldType[tmpV.size()]);
+
+		if (mKeyFields.length == 0)
+		{
+			throw new IllegalArgumentException("Entity has no keys: " + mName + Arrays.toString(mFieldTypes));
+		}
 	}
 
 

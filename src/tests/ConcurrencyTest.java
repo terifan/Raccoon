@@ -1,92 +1,73 @@
 package tests;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
 import org.terifan.raccoon.Database;
+import org.terifan.raccoon.Key;
 import org.terifan.raccoon.OpenOption;
-import org.terifan.raccoon.io.FileBlockDevice;
+import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.util.Log;
 
-// 1:10
 
 public class ConcurrencyTest
 {
 	private static Database db;
-	private static String[] keys;
-
+	private static Random rnd = new Random();
+	private static String[] names = new String[1000];
+	private static byte[][] datas = new byte[names.length][];
 
 	public static void main(String... args)
 	{
 		try
 		{
-			Random rnd = new Random();
-
-			keys = new String[10000];
-			char[] buf = new char[40];
-			for (int i = 0; i < keys.length; i++)
+			HashSet<String> unique = new HashSet<>();
+			for (int i = 0; i < names.length; i++)
 			{
-				for (int j = 0; j < 40; j++)
+				do
 				{
-					buf[j] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-/".charAt(rnd.nextInt(64));
-				}
-				keys[i] = new String(buf, 0, 5 + rnd.nextInt(35));
-			}
-
-//			MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
-			FileBlockDevice blockDevice = new FileBlockDevice(new File("d:/test.dat"), 4096, false);
-
-			db = Database.open(blockDevice, OpenOption.CREATE_NEW);
-
-			ArrayList<Reader> readers = new ArrayList<>();
-			for (int i = 0; i < 6; i++)
-			{
-				Reader reader = new Reader();
-				readers.add(reader);
-				reader.start();
-			}
-
-			try (__FixedThreadExecutor executor = new __FixedThreadExecutor(8))
-			{
-				for (int k = 0; k < 10; k++)
-				{
-					for (String key : keys)
+					names[i] = "";
+					for (int j = 6 + rnd.nextInt(10); --j >= 0;)
 					{
-						executor.submit(()->
+						names[i] += (char)(97 + rnd.nextInt(26));
+					}
+				} while (!unique.add(names[i]));
+
+				datas[i] = new byte[8192 + rnd.nextInt(8192)];
+				rnd.nextBytes(datas[i]);
+			}
+
+			new File("e:/test.dat").delete();
+
+			MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
+//			FileBlockDevice blockDevice = new FileBlockDevice(new File("e:/test.dat"), 4096, false);
+
+			for (int k = 0; k < 5; k++)
+			{
+				try (Database tmp = Database.open(blockDevice, OpenOption.CREATE))
+				{
+					db = tmp;
+
+					try (__FixedThreadExecutor executor = new __FixedThreadExecutor(50))
+					{
+						for (int i = 0; i < names.length; i++)
 						{
-							try
-							{
-								db.save(new _Fruit1K(key, 52.12));
-							}
-							catch (Exception e)
-							{
-								synchronized (ConcurrencyTest.class)
-								{
-									e.printStackTrace(Log.out);
-								}
-							}
-						});
+							executor.submit(new Reader(rnd.nextInt(names.length)));
+							executor.submit(new Reader(rnd.nextInt(names.length)));
+							executor.submit(new Reader(rnd.nextInt(names.length)));
+							executor.submit(new Reader(rnd.nextInt(names.length)));
+							executor.submit(new Reader(rnd.nextInt(names.length)));
+							executor.submit(new Reader(rnd.nextInt(names.length)));
+							executor.submit(new Reader(rnd.nextInt(names.length)));
+							executor.submit(new Creator(i));
+						}
 					}
+
+					db.commit();
 				}
-			}
 
-			for (String key : keys)
-			{
-				if (!db.tryGet(new _Fruit1K(key)))
-				{
-					synchronized (ConcurrencyTest.class)
-					{
-						Log.out.println("err");
-					}
-				}
-			}
-
-			Log.out.println("#");
-
-			for (Reader reader : readers)
-			{
-				reader.stop = true;
-				Log.out.println(reader.count);
+				System.out.println();
 			}
 		}
 		catch (Throwable e)
@@ -96,31 +77,103 @@ public class ConcurrencyTest
 	}
 
 
-	private static class Reader extends Thread
+	private static class Creator implements Runnable
 	{
-		boolean stop;
-		int count;
+		private int mIndex;
+
+
+		public Creator(int aIndex)
+		{
+			mIndex = aIndex;
+		}
+
 
 		@Override
 		public void run()
 		{
-			Random rnd = new Random();
-
-			while (!stop)
+			try
 			{
-				try
+				db.save(new Entry(names[mIndex], datas[mIndex], mIndex));
+			}
+			catch (Exception e)
+			{
+				synchronized (ConcurrencyTest.class)
 				{
-					db.tryGet(new _Fruit1K(keys[rnd.nextInt(keys.length)]));
-					count++;
-				}
-				catch (Exception e)
-				{
-					synchronized (ConcurrencyTest.class)
-					{
-						e.printStackTrace(Log.out);
-					}
+					e.printStackTrace(Log.out);
 				}
 			}
+		}
+	}
+
+
+	private static class Reader implements Runnable
+	{
+		private int mIndex;
+
+
+		public Reader(int aIndex)
+		{
+			mIndex = aIndex;
+		}
+
+
+		@Override
+		public void run()
+		{
+			try
+			{
+				Entry entry = new Entry(names[mIndex]);
+				if (db.tryGet(entry))
+				{
+					if (entry.mIndex != mIndex)
+					{
+//						System.out.print("("+entry.mIndex+"/"+mIndex+")");
+						System.out.print("*");
+					}
+					else if (!Arrays.equals(entry.mBuffer, datas[mIndex]))
+					{
+//						System.out.print("["+entry.mIndex+"/"+mIndex+"]");
+						System.out.print("#");
+					}
+					else
+					{
+						System.out.print("+");
+					}
+				}
+				else
+				{
+					System.out.print(".");
+				}
+			}
+			catch (Exception e)
+			{
+				synchronized (ConcurrencyTest.class)
+				{
+					e.printStackTrace(Log.out);
+				}
+			}
+		}
+	}
+
+
+	public static class Entry
+	{
+		public int mIndex;
+		@Key public String mName;
+		public byte[] mBuffer;
+
+
+		public Entry(String aName)
+		{
+			mName = aName;
+		}
+
+
+		public Entry(String aName, byte[] aBuffer, int aIndex)
+		{
+			mName = aName;
+			mBuffer = aBuffer;
+			mIndex = aIndex;
 		}
 	}
 }

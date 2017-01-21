@@ -31,6 +31,8 @@ public class Sample
 
 			try (Database db = Database.open(new File("c:/temp/sample.db"), OpenOption.OPEN, accessCredentials))
 			{
+				System.out.println(db.tryGet(new _Fruit1K("apple")));
+				
 //				db.getTables().stream().forEach(e->Log.out.println(e));
 //
 //				db.list(_Fruit1K.class).stream().forEach(System.out::println);

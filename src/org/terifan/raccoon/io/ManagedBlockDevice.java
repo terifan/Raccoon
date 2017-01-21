@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import org.terifan.raccoon.DatabaseException;
+import org.terifan.raccoon.Key;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.security.random.ISAAC;
@@ -688,6 +689,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	class SuperBlock
 	{
+		@Key long mDummy; // a Key field is needed to entity serialization and is never used
 		byte mFormatVersion;
 		Date mCreated;
 		Date mUpdated;
