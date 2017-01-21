@@ -7,6 +7,7 @@ import java.util.Random;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.OpenOption;
+import org.terifan.raccoon.io.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.util.Log;
 
@@ -16,7 +17,8 @@ public class ConcurrencyTest
 	private static Database db;
 	private static Random rnd = new Random();
 	private static String[] names = new String[1000];
-	private static byte[][] datas = new byte[names.length][];
+	private static byte[][] buffers = new byte[names.length][];
+
 
 	public static void main(String... args)
 	{
@@ -34,37 +36,42 @@ public class ConcurrencyTest
 					}
 				} while (!unique.add(names[i]));
 
-				datas[i] = new byte[8192 + rnd.nextInt(8192)];
-				rnd.nextBytes(datas[i]);
+				buffers[i] = new byte[8192 + rnd.nextInt(8192)];
+				rnd.nextBytes(buffers[i]);
 			}
 
-			new File("e:/test.dat").delete();
+			File file = new File("e:/test.dat");
 
-			MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
-//			FileBlockDevice blockDevice = new FileBlockDevice(new File("e:/test.dat"), 4096, false);
-
-			for (int k = 0; k < 5; k++)
+			for (int n = 0; n < 5; n++)
 			{
-				try (Database tmp = Database.open(blockDevice, OpenOption.CREATE))
+				MemoryBlockDevice _blockDevice = new MemoryBlockDevice(1024);
+//				FileBlockDevice _blockDevice = new FileBlockDevice(file, 4096, false);
+//				file.delete();
+
+				try (IPhysicalBlockDevice blockDevice = _blockDevice)
 				{
-					db = tmp;
-
-					try (__FixedThreadExecutor executor = new __FixedThreadExecutor(50))
+					for (int k = 0; k < 2; k++)
 					{
-						for (int i = 0; i < names.length; i++)
+						try (Database tmp = Database.open(blockDevice, OpenOption.CREATE))
 						{
-							executor.submit(new Reader(rnd.nextInt(names.length)));
-							executor.submit(new Reader(rnd.nextInt(names.length)));
-							executor.submit(new Reader(rnd.nextInt(names.length)));
-							executor.submit(new Reader(rnd.nextInt(names.length)));
-							executor.submit(new Reader(rnd.nextInt(names.length)));
-							executor.submit(new Reader(rnd.nextInt(names.length)));
-							executor.submit(new Reader(rnd.nextInt(names.length)));
-							executor.submit(new Creator(i));
-						}
-					}
+							db = tmp;
 
-					db.commit();
+							try (__FixedThreadExecutor executor = new __FixedThreadExecutor(8))
+							{
+								for (int i = 0; i < names.length; i++)
+								{
+									executor.submit(new GetEntry(rnd.nextInt(names.length)));
+									executor.submit(new GetEntry(rnd.nextInt(names.length)));
+									executor.submit(new GetEntry(rnd.nextInt(names.length)));
+									executor.submit(new PutEntry(i));
+								}
+							}
+
+							db.commit();
+						}
+
+						System.out.println();
+					}
 				}
 
 				System.out.println();
@@ -77,12 +84,12 @@ public class ConcurrencyTest
 	}
 
 
-	private static class Creator implements Runnable
+	private static class PutEntry implements Runnable
 	{
 		private int mIndex;
 
 
-		public Creator(int aIndex)
+		public PutEntry(int aIndex)
 		{
 			mIndex = aIndex;
 		}
@@ -93,7 +100,7 @@ public class ConcurrencyTest
 		{
 			try
 			{
-				db.save(new Entry(names[mIndex], datas[mIndex], mIndex));
+				db.save(new Entry(names[mIndex], buffers[mIndex], mIndex));
 			}
 			catch (Exception e)
 			{
@@ -106,12 +113,12 @@ public class ConcurrencyTest
 	}
 
 
-	private static class Reader implements Runnable
+	private static class GetEntry implements Runnable
 	{
 		private int mIndex;
 
 
-		public Reader(int aIndex)
+		public GetEntry(int aIndex)
 		{
 			mIndex = aIndex;
 		}
@@ -127,12 +134,10 @@ public class ConcurrencyTest
 				{
 					if (entry.mIndex != mIndex)
 					{
-//						System.out.print("("+entry.mIndex+"/"+mIndex+")");
 						System.out.print("*");
 					}
-					else if (!Arrays.equals(entry.mBuffer, datas[mIndex]))
+					else if (!Arrays.equals(entry.mBuffer, buffers[mIndex]))
 					{
-//						System.out.print("["+entry.mIndex+"/"+mIndex+"]");
 						System.out.print("#");
 					}
 					else

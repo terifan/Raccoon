@@ -98,8 +98,6 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 					mFileLock.release();
 					mFileLock.close();
 					mFileLock = null;
-
-					System.out.println("Database file released");
 				}
 				catch (Throwable e)
 				{
@@ -111,8 +109,6 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 			{
 				mFile.close();
 				mFile = null;
-
-				System.out.println("Database file closed");
 			}
 		}
 	}
@@ -131,8 +127,6 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 		Log.v("commit");
 
 		mFile.force(aMetadata);
-
-		System.out.println("Database file flushed " + aMetadata);
 	}
 
 
