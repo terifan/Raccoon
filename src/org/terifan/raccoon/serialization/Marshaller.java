@@ -2,6 +2,7 @@ package org.terifan.raccoon.serialization;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.HashMap;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -58,7 +59,7 @@ public class Marshaller
 	{
 		try
 		{
-			Log.v("marshal entity fields");
+			Log.v("marshal entity fields %s", Arrays.toString(types));
 			Log.inc();
 
 			for (FieldType fieldType : types)

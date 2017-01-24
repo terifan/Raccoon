@@ -32,7 +32,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	private long mHashSeed;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
-	private boolean mModified;
+	private boolean mChanged;
 	private boolean mForwardCommits;
 	private TransactionCounter mTransactionId;
 
@@ -74,7 +74,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 			mWasEmptyInstance = true;
 			mRootMap = new LeafNode(mLeafSize);
 			mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode);
-			mModified = true;
+			mChanged = true;
 		}
 		else
 		{
@@ -163,7 +163,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		Log.i("put");
 		Log.inc();
 
-		mModified = true;
+		mChanged = true;
 
 		if (mRootMap != null)
 		{
@@ -207,7 +207,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 			modified = removeValue(computeHash(aEntry.mKey), 0, aEntry, mRootNode);
 		}
 
-		mModified |= modified;
+		mChanged |= modified;
 
 		return modified;
 	}
@@ -252,7 +252,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	{
 		checkOpen();
 
-		return mModified;
+		return mChanged;
 	}
 
 
@@ -262,7 +262,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		try
 		{
-			if (mModified)
+			if (mChanged)
 			{
 				int modCount = mModCount; // no increment
 				Log.i("commit hash table");
@@ -283,6 +283,8 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 				{
 					mBlockAccessor.getBlockDevice().commit();
 				}
+				
+				mChanged = false;
 
 				Log.i("commit finished; new root %s", mRootBlockPointer);
 
@@ -320,7 +322,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		mRootNode = null;
 		mRootMap = null;
-		mModified = false;
+		mChanged = false;
 
 		if (mWasEmptyInstance)
 		{
@@ -345,7 +347,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		Log.i("clear");
 
 		int modCount = ++mModCount;
-		mModified = true;
+		mChanged = true;
 
 		if (mRootMap != null)
 		{
@@ -373,6 +375,9 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
+	/**
+	 * Clean-up resources only
+	 */
 	@Override
 	public void close()
 	{

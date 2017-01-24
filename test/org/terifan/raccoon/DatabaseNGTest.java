@@ -982,9 +982,9 @@ public class DatabaseNGTest
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Fruit1K("test"));
-			assertTrue(database.isChanged());
+			assertTrue(database.isModified());
 			database.rollback();
-			assertFalse(database.isChanged());
+			assertFalse(database.isModified());
 		}
 	}
 

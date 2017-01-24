@@ -16,6 +16,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.terifan.raccoon.io.IManagedBlockDevice;
@@ -54,11 +56,12 @@ public final class Database implements AutoCloseable
 	private final TableMetadataProvider mTableMetadatas;
 	private final TransactionCounter mTransactionId;
 	private Table mSystemTable;
-	private boolean mChanged;
+	private boolean mModified;
 	private Object[] mProperties;
 	private TableMetadata mSystemTableMetadata;
 	private boolean mCloseDeviceOnCloseDatabase;
 	private Thread mShutdownHook;
+	private boolean mIsOpeningTable;
 
 
 	private Database()
@@ -232,7 +235,7 @@ public final class Database implements AutoCloseable
 		db.mBlockDevice = aBlockDevice;
 		db.mSystemTableMetadata = new TableMetadata(TableMetadata.class, null);
 		db.mSystemTable = new Table(db, db.mSystemTableMetadata, null);
-		db.mChanged = true;
+		db.mModified = true;
 
 		db.updateSuperBlock();
 
@@ -304,38 +307,62 @@ public final class Database implements AutoCloseable
 	{
 		Table table = mOpenTables.get(aTableMetadata);
 
-			aTableMetadata.initialize();
-
-		if (table == null)
+		if (table != null)
 		{
-			Log.i("open table '%s' with option %s", aTableMetadata.getTypeName(), aOptions);
-			Log.inc();
-
-			boolean tableExists = mSystemTable.get(aTableMetadata);
-
-			if (!tableExists && (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY))
-			{
-				return null;
-			}
-
-			table = new Table(this, aTableMetadata, aTableMetadata.getPointer());
-
-			if (!tableExists)
-			{
-				mSystemTable.save(aTableMetadata);
-			}
-
-			mOpenTables.put(aTableMetadata, table);
-
-			Log.dec();
+			return table;
 		}
 
-		if (aOptions == OpenOption.CREATE_NEW)
+		synchronized (this)
 		{
-			table.clear();
-		}
+			checkOpen();
 
-		return table;
+//			assert !mIsOpeningTable : "RACCOON FATAL ERROR: opening table recursively: " + aTableMetadata.getTypeName();
+			if (mIsOpeningTable)
+			{
+				System.out.println("RACCOON FATAL ERROR: opening table recursively: " + aTableMetadata.getTypeName());
+				Thread.dumpStack();
+				System.exit(-1);
+			}
+
+			try
+			{
+				mIsOpeningTable = true;
+
+				aTableMetadata.initialize();
+
+				Log.i("open table '%s' with option %s", aTableMetadata.getTypeName(), aOptions);
+				Log.inc();
+
+				boolean tableExists = mSystemTable.get(aTableMetadata);
+
+				if (!tableExists && (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY))
+				{
+					return null;
+				}
+
+				table = new Table(this, aTableMetadata, aTableMetadata.getPointer());
+
+				if (!tableExists)
+				{
+					mSystemTable.save(aTableMetadata);
+				}
+
+				mOpenTables.put(aTableMetadata, table);
+
+				Log.dec();
+
+				if (aOptions == OpenOption.CREATE_NEW)
+				{
+					table.clear();
+				}
+
+				return table;
+			}
+			finally
+			{
+				mIsOpeningTable = false;
+			}
+		}
 	}
 
 
@@ -348,7 +375,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public boolean isChanged()
+	public boolean isModified()
 	{
 		checkOpen();
 
@@ -386,13 +413,13 @@ public final class Database implements AutoCloseable
 
 					mSystemTable.save(entry.getKey());
 
-					mChanged = true;
+					mModified = true;
 				}
 			}
 
-			boolean changed = mChanged;
+			boolean returnModified = mModified;
 
-			if (mChanged)
+			if (mModified)
 			{
 				mSystemTable.commit();
 
@@ -407,14 +434,14 @@ public final class Database implements AutoCloseable
 					throw new DatabaseIOException(e);
 				}
 
-				mChanged = false;
+				mModified = false;
 
 				assert integrityCheck() == null : integrityCheck();
 			}
 
 			Log.dec();
 
-			return changed;
+			return returnModified;
 		}
 		finally
 		{
@@ -489,22 +516,47 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			if (mSystemTable != null)
+			Log.i("close database");
+
+			if (!mModified)
 			{
-				Log.i("close database");
+				for (java.util.Map.Entry<TableMetadata,Table> entry : mOpenTables.entrySet())
+				{
+					mModified |= entry.getValue().isChanged();
+				}
+			}
+
+			if (mModified)
+			{
+				Log.w("rollback on close");
+				Log.inc();
 
 				for (Table table : mOpenTables.values())
 				{
-					table.close();
+					table.rollback();
 				}
 
-				mOpenTables.clear();
+				mSystemTable.rollback();
 
-				mSystemTable.close();
-				mSystemTable = null;
+				mBlockDevice.rollback();
+
+				Log.dec();
 			}
+			else
+			{
+				if (mSystemTable != null)
+				{
+					for (Table table : mOpenTables.values())
+					{
+						table.close();
+					}
 
-			mBlockDevice.commit(true);
+					mOpenTables.clear();
+
+					mSystemTable.close();
+					mSystemTable = null;
+				}
+			}
 
 			if (mCloseDeviceOnCloseDatabase)
 			{
@@ -534,6 +586,11 @@ public final class Database implements AutoCloseable
 			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.CREATE);
 			return table.save(aEntity);
 		}
+		catch (DatabaseException e)
+		{
+			forceClose(e);
+			throw e;
+		}
 		finally
 		{
 			mWriteLock.unlock();
@@ -558,6 +615,11 @@ public final class Database implements AutoCloseable
 				return false;
 			}
 			return table.get(aEntity);
+		}
+		catch (DatabaseException e)
+		{
+			forceClose(e);
+			throw e;
 		}
 		finally
 		{
@@ -591,6 +653,11 @@ public final class Database implements AutoCloseable
 
 			return aEntity;
 		}
+		catch (DatabaseException e)
+		{
+			forceClose(e);
+			throw e;
+		}
 		finally
 		{
 			mReadLock.unlock();
@@ -615,6 +682,11 @@ public final class Database implements AutoCloseable
 				return false;
 			}
 			return table.remove(aEntity);
+		}
+		catch (DatabaseException e)
+		{
+			forceClose(e);
+			throw e;
 		}
 		finally
 		{
@@ -652,6 +724,11 @@ public final class Database implements AutoCloseable
 				table.clear();
 			}
 		}
+		catch (DatabaseException e)
+		{
+			forceClose(e);
+			throw e;
+		}
 		finally
 		{
 			mWriteLock.unlock();
@@ -670,6 +747,11 @@ public final class Database implements AutoCloseable
 			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.CREATE);
 			return table.saveBlob(aEntity);
 		}
+		catch (DatabaseException e)
+		{
+			forceClose(e);
+			throw e;
+		}
 		finally
 		{
 			mWriteLock.unlock();
@@ -687,6 +769,11 @@ public final class Database implements AutoCloseable
 		{
 			Table table = openTable(aKeyEntity.getClass(), aKeyEntity, OpenOption.CREATE);
 			return table.save(aKeyEntity, aInputStream);
+		}
+		catch (DatabaseException e)
+		{
+			forceClose(e);
+			throw e;
 		}
 		finally
 		{
@@ -724,8 +811,14 @@ public final class Database implements AutoCloseable
 				return new ByteArrayInputStream(Streams.readAll(in));
 			}
 		}
+		catch (DatabaseException e)
+		{
+			forceClose(e);
+			throw e;
+		}
 		catch (IOException e)
 		{
+			forceClose(new DatabaseException(e)); // ????????
 			throw new DatabaseIOException(e);
 		}
 		finally
@@ -754,6 +847,11 @@ public final class Database implements AutoCloseable
 
 			return ()->table.iterator();
 		}
+		catch (DatabaseException e)
+		{
+			forceClose(e);
+			throw e;
+		}
 		finally
 		{
 			mReadLock.unlock();
@@ -781,6 +879,11 @@ public final class Database implements AutoCloseable
 
 			return table.iterator();
 		}
+		catch (DatabaseException e)
+		{
+			forceClose(e);
+			throw e;
+		}
 		finally
 		{
 			mReadLock.unlock();
@@ -805,6 +908,11 @@ public final class Database implements AutoCloseable
 				return new ArrayList<>();
 			}
 			return table.list(aType);
+		}
+		catch (DatabaseException e)
+		{
+			forceClose(e);
+			throw e;
 		}
 		finally
 		{
@@ -858,6 +966,11 @@ public final class Database implements AutoCloseable
 //					return true;
 //				}
 //			}, false);
+		}
+		catch (DatabaseException e)
+		{
+			forceClose(e);
+			throw e;
 		}
 		finally
 		{
@@ -1109,6 +1222,29 @@ public final class Database implements AutoCloseable
 		finally
 		{
 			mReadLock.unlock();
+		}
+	}
+	
+	
+	protected synchronized void forceClose(DatabaseException aException)
+	{
+		if (mSystemTable == null)
+		{
+			return;
+		}
+
+		System.err.println("RACCOON FATAL ERROR: an error was detected, forcefully closing block device to prevent damage, uncommited changes were lost.");
+
+//		aException.printStackTrace(System.err);
+
+		try
+		{
+			mBlockDevice.forceClose();
+			mSystemTable = null;
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseException(e);
 		}
 	}
 }

@@ -24,15 +24,14 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private IPhysicalBlockDevice mBlockDevice;
 	private RangeMap mRangeMap;
 	private RangeMap mPendingRangeMap;
-	private boolean mModified;
-	private boolean mWasCreated;
 	private SuperBlock mSuperBlock;
-	private int mBlockSize;
 	private HashSet<Integer> mUncommitedAllocations;
-	private boolean mDoubleCommit;
 	private Marshaller mSuperBlockMarshaller;
 	private String mBlockDeviceLabel;
-
+	private int mBlockSize;
+	private boolean mModified;
+	private boolean mWasCreated;
+	private boolean mDoubleCommit;
 	private CachingBlockDevice mCachingBlockDevice;
 
 
@@ -161,14 +160,27 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		if (mModified)
 		{
-			mCachingBlockDevice.clear();
-
 			rollback();
 		}
 
 		if (mBlockDevice != null)
 		{
 			mBlockDevice.close();
+			mBlockDevice = null;
+		}
+	}
+
+
+	@Override
+	public void forceClose() throws IOException
+	{
+		mCachingBlockDevice.clear();
+
+		mUncommitedAllocations.clear();
+
+		if (mBlockDevice != null)
+		{
+			mBlockDevice.forceClose();
 			mBlockDevice = null;
 		}
 	}
@@ -313,8 +325,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		if (!mRangeMap.isFree((int)aBlockIndex, aBufferLength / mBlockSize))
 		{
-			Log.out.println("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
-//			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
+			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
 		}
 
 		Log.v("read block %d +%d", aBlockIndex, aBufferLength/mBlockSize);
@@ -331,6 +342,12 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		if (mModified)
 		{
+			// TODO: non raccoon implementations might not need this
+			if (!mSuperBlock.mExtraDataModified)
+			{
+				throw new IOException("ExtraData not modified!");
+			}
+			
 			mCachingBlockDevice.flush();
 
 			Log.i("committing managed block device");
@@ -353,6 +370,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			mRangeMap = mPendingRangeMap.clone();
 			mWasCreated = false;
 			mModified = false;
+			mSuperBlock.mExtraDataModified = false;
 
 			Log.dec();
 		}
@@ -607,6 +625,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mModified = true;
 
 		mSuperBlock.mExtraData = aExtraData == null ? null : aExtraData.clone();
+		
+		mSuperBlock.mExtraDataModified = true;
 	}
 
 
@@ -700,6 +720,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		long mSpaceMapBlockKey;
 		String mBlockDeviceLabel;
 		byte[] mExtraData;
+
+		transient boolean mExtraDataModified;
 
 
 		void unmarshal(long aPageIndex) throws IOException

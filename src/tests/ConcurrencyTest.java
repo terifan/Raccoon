@@ -22,6 +22,8 @@ public class ConcurrencyTest
 
 	public static void main(String... args)
 	{
+		System.setErr(System.out);
+		
 		try
 		{
 			HashSet<String> unique = new HashSet<>();
@@ -42,7 +44,7 @@ public class ConcurrencyTest
 
 			File file = new File("e:/test.dat");
 
-			for (int n = 0; n < 50; n++)
+			for (int n = 0; n < 5; n++)
 			{
 				MemoryBlockDevice _blockDevice = new MemoryBlockDevice(1024);
 //				FileBlockDevice _blockDevice = new FileBlockDevice(file, 4096, false);
@@ -50,7 +52,7 @@ public class ConcurrencyTest
 
 				try (IPhysicalBlockDevice blockDevice = _blockDevice)
 				{
-					for (int k = 0; k < 2; k++)
+					for (int k = 0; k < 5; k++)
 					{
 						try (Database tmp = Database.open(blockDevice, OpenOption.CREATE))
 						{
@@ -62,11 +64,13 @@ public class ConcurrencyTest
 								{
 									executor.submit(new GetEntry(rnd.nextInt(names.length)));
 									executor.submit(new GetEntry(rnd.nextInt(names.length)));
+									executor.submit(new RemoveEntry(rnd.nextInt(names.length)));
 									executor.submit(new PutEntry(i));
 								}
 							}
 
-							db.commit();
+							if (k==2) System.out.print("\nrollback");
+							else db.commit();
 						}
 
 						System.out.println();
@@ -79,6 +83,35 @@ public class ConcurrencyTest
 		catch (Throwable e)
 		{
 			e.printStackTrace(System.out);
+		}
+	}
+
+
+	private static class RemoveEntry implements Runnable
+	{
+		private int mIndex;
+
+
+		public RemoveEntry(int aIndex)
+		{
+			mIndex = aIndex;
+		}
+
+
+		@Override
+		public void run()
+		{
+			try
+			{
+				db.remove(new Entry(names[mIndex]));
+			}
+			catch (Exception e)
+			{
+				synchronized (ConcurrencyTest.class)
+				{
+					e.printStackTrace(Log.out);
+				}
+			}
 		}
 	}
 
@@ -141,7 +174,7 @@ public class ConcurrencyTest
 					}
 					else
 					{
-						System.out.print("+");
+						System.out.print("o");
 					}
 				}
 				else

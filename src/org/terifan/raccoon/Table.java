@@ -274,6 +274,9 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 	}
 
 
+	/**
+	 * Clean-up resources only
+	 */
 	@Override
 	public void close() throws IOException
 	{

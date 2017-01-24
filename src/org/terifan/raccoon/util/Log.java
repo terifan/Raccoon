@@ -7,9 +7,9 @@ public class Log
 {
 	public final static PrintStream out = System.out;
 
-	public static int LEVEL = 0;
+	public static int LEVEL = 2;
 
-	private final static String INDENT = "... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ";
+	private final static String INDENT = "... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ";
 
 	private static int mIndent;
 
