@@ -9,8 +9,6 @@ public class Log
 
 	public static int LEVEL = 2;
 
-	private final static String INDENT = "... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ";
-
 	private static int mIndent;
 
 
@@ -23,6 +21,12 @@ public class Log
 	public static void dec()
 	{
 		mIndent--;
+	}
+
+
+	public static void x(String aMessage, Object... aParams)
+	{
+		logImpl(2, aMessage, aParams);
 	}
 
 
@@ -66,7 +70,12 @@ public class Log
 	{
 		if (aLevel <= LEVEL && aMessage != null)
 		{
-			String message = INDENT.substring(0, 4 * Math.min(mIndent, 20)) + String.format(aMessage, aParams);
+			StringBuilder message = new StringBuilder();
+			for (int i = 0; i < mIndent; i++)
+			{
+				message.append("... ");
+			}
+			message.append(String.format(aMessage, aParams));
 
 			StackTraceElement[] trace = Thread.currentThread().getStackTrace();
 			String className = trace[3].getClassName();
@@ -86,7 +95,7 @@ public class Log
 				default: type = ""; break;
 			}
 
-			System.out.printf("%-30s%-30s%-30s%-7s %s\n", loggerName, className, methodName, type, message);
+			System.out.printf("%-30s%-30s%-30s%-7s %s\n", loggerName, className, methodName, type, message.toString());
 		}
 	}
 

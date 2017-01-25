@@ -196,6 +196,9 @@ public final class Database implements AutoCloseable
 			@Override
 			public void run()
 			{
+				Log.x("shutdown hook executing");
+				Log.inc();
+				
 				try
 				{
 					db.close();
@@ -204,6 +207,8 @@ public final class Database implements AutoCloseable
 				{
 					throw new RuntimeException(e);
 				}
+
+				Log.dec();
 			}
 		};
 
@@ -375,12 +380,21 @@ public final class Database implements AutoCloseable
 	{
 		checkOpen();
 
-		for (Table table : mOpenTables.values())
+		mReadLock.lock();
+		
+		try
 		{
-			if (table.isModified())
+			for (Table table : mOpenTables.values())
 			{
-				return true;
+				if (table.isModified())
+				{
+					return true;
+				}
 			}
+		}
+		finally
+		{
+			mReadLock.unlock();
 		}
 
 		return false;
@@ -398,7 +412,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			Log.i("commit database");
+			Log.x("commit database");
 			Log.inc();
 
 			for (java.util.Map.Entry<TableMetadata,Table> entry : mOpenTables.entrySet())
@@ -456,7 +470,7 @@ public final class Database implements AutoCloseable
 		mWriteLock.lock();
 		try
 		{
-			Log.i("rollback");
+			Log.x("rollback");
 			Log.inc();
 
 			for (Table table : mOpenTables.values())
@@ -479,7 +493,8 @@ public final class Database implements AutoCloseable
 
 	private void updateSuperBlock()
 	{
-		Log.i("update SuperBlock");
+		Log.x("updating super block");
+		Log.inc();
 
 		mTransactionId.increment();
 
@@ -497,6 +512,8 @@ public final class Database implements AutoCloseable
 		buffer.position(0).writeInt32(MurmurHash3.hash_x86_32(buffer.array(), 4, buffer.capacity() - 4, EXTRA_DATA_CHECKSUM_SEED));
 
 		mBlockDevice.setExtraData(buffer.array());
+
+		Log.dec();
 	}
 
 
@@ -505,6 +522,8 @@ public final class Database implements AutoCloseable
 	{
 		if (mBlockDevice == null)
 		{
+			Log.w("database already closed");
+
 			return;
 		}
 
@@ -512,7 +531,8 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			Log.i("close database");
+			Log.v("begin closing database");
+			Log.inc();
 
 			if (!mModified)
 			{
@@ -558,6 +578,9 @@ public final class Database implements AutoCloseable
 			}
 
 			mBlockDevice = null;
+
+			Log.x("database finished closing");
+			Log.dec();
 		}
 		finally
 		{

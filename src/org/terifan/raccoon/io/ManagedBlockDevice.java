@@ -347,10 +347,10 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 //			{
 //				throw new IOException("ExtraData not modified!");
 //			}
-
+			
 			mCachingBlockDevice.flush();
 
-			Log.i("committing managed block device");
+			Log.x("committing managed block device");
 			Log.inc();
 
 			writeSpaceMap();
@@ -389,7 +389,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		if (mModified)
 		{
-			Log.i("rollbacking block device");
+			Log.x("rollbacking block device");
 			Log.inc();
 
 			mCachingBlockDevice.clear();
@@ -462,7 +462,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mSuperBlock.mWriteCounter++;
 		mSuperBlock.mUpdated = new Date();
 
-		Log.v("write super block %d", mSuperBlock.mWriteCounter & 1L);
+		Log.x("write super block %d", mSuperBlock.mWriteCounter & 1L);
 		Log.inc();
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[mBlockSize]);
@@ -615,7 +615,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public void setExtraData(byte[] aExtraData)
 	{
-		Log.v("set extra data");
+		Log.x("set extra data");
 
 		if (aExtraData != null && aExtraData.length > EXTRA_DATA_LIMIT)
 		{
