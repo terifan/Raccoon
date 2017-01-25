@@ -1224,8 +1224,8 @@ public final class Database implements AutoCloseable
 			mReadLock.unlock();
 		}
 	}
-	
-	
+
+
 	protected synchronized void forceClose(DatabaseException aException)
 	{
 		if (mSystemTable == null)

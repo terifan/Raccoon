@@ -343,11 +343,11 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		if (mModified)
 		{
 			// TODO: non raccoon implementations might not need this
-			if (!mSuperBlock.mExtraDataModified)
-			{
-				throw new IOException("ExtraData not modified!");
-			}
-			
+//			if (!mSuperBlock.mExtraDataModified)
+//			{
+//				throw new IOException("ExtraData not modified!");
+//			}
+
 			mCachingBlockDevice.flush();
 
 			Log.i("committing managed block device");
@@ -625,7 +625,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mModified = true;
 
 		mSuperBlock.mExtraData = aExtraData == null ? null : aExtraData.clone();
-		
+
 		mSuperBlock.mExtraDataModified = true;
 	}
 

@@ -12,10 +12,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.FileAlreadyOpenException;
@@ -1040,6 +1042,41 @@ public class DatabaseNGTest
 			}
 
 			database.commit();
+		}
+	}
+
+
+	@Test
+	public void testRollbackOnUncommit() throws Exception
+	{
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+
+		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
+		{
+			db.save(new _Fruit1K("a"));
+			db.save(new _Fruit1K("b"));
+			db.save(new _Fruit1K("c"));
+			db.commit();
+		}
+
+		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+		{
+			db.save(new _Fruit1K("d"));
+			db.save(new _Fruit1K("e"));
+			db.save(new _Fruit1K("f"));
+			// changes will rollback on close because missing commit
+		}
+
+		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+		{
+			List<String> items = db.stream(_Fruit1K.class).map(e->e._name).collect(Collectors.toList());
+
+			assertEquals(items.size(), 3);
+			assertTrue(items.contains("a"));
+			assertTrue(items.contains("b"));
+			assertTrue(items.contains("c"));
 		}
 	}
 }
