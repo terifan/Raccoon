@@ -284,7 +284,7 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 	}
 
 
-	boolean isChanged()
+	boolean isModified()
 	{
 		return mTableImplementation.isChanged();
 	}

@@ -16,8 +16,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.terifan.raccoon.io.IManagedBlockDevice;
@@ -25,7 +23,6 @@ import org.terifan.raccoon.io.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.SecureBlockDevice;
 import org.terifan.raccoon.io.UnsupportedVersionException;
-import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.BlockPointer;
@@ -35,7 +32,6 @@ import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.security.messagedigest.MurmurHash3;
-import tests._Fruit1K;
 
 
 public final class Database implements AutoCloseable
@@ -381,7 +377,7 @@ public final class Database implements AutoCloseable
 
 		for (Table table : mOpenTables.values())
 		{
-			if (table.isChanged())
+			if (table.isModified())
 			{
 				return true;
 			}
@@ -522,7 +518,7 @@ public final class Database implements AutoCloseable
 			{
 				for (java.util.Map.Entry<TableMetadata,Table> entry : mOpenTables.entrySet())
 				{
-					mModified |= entry.getValue().isChanged();
+					mModified |= entry.getValue().isModified();
 				}
 			}
 
@@ -542,23 +538,21 @@ public final class Database implements AutoCloseable
 
 				Log.dec();
 			}
-			else
+
+			if (mSystemTable != null)
 			{
-				if (mSystemTable != null)
+				for (Table table : mOpenTables.values())
 				{
-					for (Table table : mOpenTables.values())
-					{
-						table.close();
-					}
-
-					mOpenTables.clear();
-
-					mSystemTable.close();
-					mSystemTable = null;
+					table.close();
 				}
+
+				mOpenTables.clear();
+
+				mSystemTable.close();
+				mSystemTable = null;
 			}
 
-			if (mCloseDeviceOnCloseDatabase)
+			if (mBlockDevice != null && mCloseDeviceOnCloseDatabase)
 			{
 				mBlockDevice.close();
 			}
@@ -1193,13 +1187,6 @@ public final class Database implements AutoCloseable
 				table.scan();
 			}
 		}
-	}
-
-
-	private static void dummy()
-	{
-		// this exists to ensure MemoryBlockDevice is included in distributions
-		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 	}
 
 
