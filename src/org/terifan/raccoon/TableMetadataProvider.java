@@ -52,6 +52,25 @@ final class TableMetadataProvider
 		{
 			mWriteLock.lock();
 
+			// TODO: uggly!!
+			for (TableMetadata tableMetadata : mTableMetadatas)
+			{
+				if (tableMetadata.getType() == aType)
+				{
+					if (aDiscriminator == null)
+					{
+						return tableMetadata;
+					}
+
+					byte[] discriminator = tableMetadata.createDiscriminatorKey(aDiscriminator); // TODO: use same discriminator on all tables?
+
+					if (Arrays.equals(discriminator, tableMetadata.getDiscriminatorKey()))
+					{
+						return tableMetadata;
+					}
+				}
+			}
+			
 			TableMetadata tableMetadata = new TableMetadata(aType, aDiscriminator);
 			mTableMetadatas.add(tableMetadata);
 
