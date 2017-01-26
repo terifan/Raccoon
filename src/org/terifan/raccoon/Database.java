@@ -308,37 +308,51 @@ public final class Database implements AutoCloseable
 	private Table openTable(TableMetadata aTableMetadata, OpenOption aOptions)
 	{
 		checkOpen();
-
-		return mOpenTables.computeIfAbsent(aTableMetadata, tm->
+		
+		Table table = mOpenTables.get(aTableMetadata);
+		
+		if (table != null)
 		{
-			checkOpen();
+			return table;
+		}
+		
+		synchronized (this)
+		{
+			assert !mIsOpeningTable : "RACCOON FATAL ERROR: opening table recursively: " + aTableMetadata.getTypeName();
 
-			assert !mIsOpeningTable : "RACCOON FATAL ERROR: opening table recursively: " + tm.getTypeName();
+			checkOpen();
+			
+			table = mOpenTables.get(aTableMetadata);
+
+			if (table != null)
+			{
+				return table;
+			}
 
 			try
 			{
 				mIsOpeningTable = true;
 
-				tm.initialize();
+				aTableMetadata.initialize();
 
-				Log.i("open table '%s' with option %s", tm.getTypeName(), aOptions);
+				Log.i("open table '%s' with option %s", aTableMetadata.getTypeName(), aOptions);
 				Log.inc();
 
-				boolean tableExists = mSystemTable.get(tm);
+				boolean tableExists = mSystemTable.get(aTableMetadata);
 
 				if (!tableExists && (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY))
 				{
 					return null;
 				}
 
-				Table table = new Table(this, tm, tm.getPointer());
+				table = new Table(this, aTableMetadata, aTableMetadata.getPointer());
 
 				if (!tableExists)
 				{
-					mSystemTable.save(tm);
+					mSystemTable.save(aTableMetadata);
 				}
 
-				mOpenTables.put(tm, table);
+				mOpenTables.put(aTableMetadata, table);
 
 				Log.dec();
 
@@ -353,7 +367,53 @@ public final class Database implements AutoCloseable
 			{
 				mIsOpeningTable = false;
 			}
-		});
+		}
+		
+//		return mOpenTables.computeIfAbsent(aTableMetadata, tm->
+//		{
+//			checkOpen();
+//
+//			assert !mIsOpeningTable : "RACCOON FATAL ERROR: opening table recursively: " + tm.getTypeName();
+//
+//			try
+//			{
+//				mIsOpeningTable = true;
+//
+//				tm.initialize();
+//
+//				Log.i("open table '%s' with option %s", tm.getTypeName(), aOptions);
+//				Log.inc();
+//
+//				boolean tableExists = mSystemTable.get(tm);
+//
+//				if (!tableExists && (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY))
+//				{
+//					return null;
+//				}
+//
+//				Table table = new Table(this, tm, tm.getPointer());
+//
+//				if (!tableExists)
+//				{
+//					mSystemTable.save(tm);
+//				}
+//
+//				mOpenTables.put(tm, table);
+//
+//				Log.dec();
+//
+//				if (aOptions == OpenOption.CREATE_NEW)
+//				{
+//					table.clear();
+//				}
+//
+//				return table;
+//			}
+//			finally
+//			{
+//				mIsOpeningTable = false;
+//			}
+//		});
 	}
 
 

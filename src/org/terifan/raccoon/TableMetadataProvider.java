@@ -9,6 +9,8 @@ final class TableMetadataProvider
 {
 	private final ArrayList<TableMetadata> mTableMetadatas;
 	private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
+	private final ReentrantReadWriteLock.ReadLock mReadLock = mReadWriteLock.readLock();
+	private final ReentrantReadWriteLock.WriteLock mWriteLock = mReadWriteLock.writeLock();
 
 
 	TableMetadataProvider()
@@ -19,7 +21,7 @@ final class TableMetadataProvider
 
 	TableMetadata getOrCreate(Class aType, Object aDiscriminator)
 	{
-		mReadWriteLock.readLock().lock();
+		mReadLock.lock();
 
 		try
 		{
@@ -43,12 +45,12 @@ final class TableMetadataProvider
 		}
 		finally
 		{
-			mReadWriteLock.readLock().unlock();
+			mReadLock.unlock();
 		}
 
 		try
 		{
-			mReadWriteLock.writeLock().lock();
+			mWriteLock.lock();
 
 			TableMetadata tableMetadata = new TableMetadata(aType, aDiscriminator);
 			mTableMetadatas.add(tableMetadata);
@@ -57,7 +59,7 @@ final class TableMetadataProvider
 		}
 		finally
 		{
-			mReadWriteLock.writeLock().unlock();
+			mWriteLock.unlock();
 		}
 	}
 }
