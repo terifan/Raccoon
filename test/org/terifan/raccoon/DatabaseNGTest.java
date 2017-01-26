@@ -12,9 +12,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -31,13 +31,6 @@ import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
 import tests._Fruit1K;
 import static tests.__TestUtils.createBuffer;
-import static tests.__TestUtils.t;
-import static tests.__TestUtils.t;
-import static tests.__TestUtils.t;
-import static tests.__TestUtils.t;
-import static tests.__TestUtils.t;
-import static tests.__TestUtils.t;
-import static tests.__TestUtils.t;
 import static tests.__TestUtils.t;
 
 
@@ -1047,7 +1040,7 @@ public class DatabaseNGTest
 
 
 	@Test
-	public void testRollbackOnUncommit() throws Exception
+	public void testMultiThreadInsertUpdateDeleteAndRollbackOnUncommit() throws Exception
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
@@ -1055,17 +1048,51 @@ public class DatabaseNGTest
 
 		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
 		{
-			db.save(new _Fruit1K("a"));
-			db.save(new _Fruit1K("b"));
-			db.save(new _Fruit1K("c"));
+			try (__FixedThreadExecutor executor = new __FixedThreadExecutor(8))
+			{
+				for (int i = 0; i < 10000; i++)
+				{
+					int j = i;
+					executor.submit(()->db.save(new _Fruit1K("apple_" + j)));
+					executor.submit(()->db.save(new _Fruit1K("carrot_" + j)));
+					if ((i % 1000) == 0) executor.submit(()->db.commit());
+				}
+			}
+			db.commit();
+		}
+
+		Random r = new Random();
+
+		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
+		{
+			try (__FixedThreadExecutor executor = new __FixedThreadExecutor(8))
+			{
+				for (int i = 0; i < 10000; i++)
+				{
+					int j = i;
+					executor.submit(()->db.save(new _Fruit1K("banana_" + j)));
+					executor.submit(()->db.save(new _Fruit1K("apple_" + r.nextInt(10000))));
+					executor.submit(()->db.get(new _Fruit1K("apple_" + j)));
+					executor.submit(()->db.remove(new _Fruit1K("carrot_" + j)));
+					if ((i % 1000) == 0) executor.submit(()->db.commit());
+				}
+			}
 			db.commit();
 		}
 
 		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
 		{
-			db.save(new _Fruit1K("d"));
-			db.save(new _Fruit1K("e"));
-			db.save(new _Fruit1K("f"));
+			try (__FixedThreadExecutor executor = new __FixedThreadExecutor(8))
+			{
+				for (int i = 0; i < 10000; i++)
+				{
+					int j = i;
+					executor.submit(()->db.save(new _Fruit1K("cocoa_" + j)));
+					executor.submit(()->db.get(new _Fruit1K("apple_" + r.nextInt(10000))));
+					executor.submit(()->db.get(new _Fruit1K("banana_" + r.nextInt(10000))));
+					executor.submit(()->db.remove(new _Fruit1K("apple_" + r.nextInt(10000))));
+				}
+			}
 			// changes will rollback on close because missing commit
 		}
 
@@ -1073,10 +1100,15 @@ public class DatabaseNGTest
 		{
 			List<String> items = db.stream(_Fruit1K.class).map(e->e._name).collect(Collectors.toList());
 
-			assertEquals(items.size(), 3);
-			assertTrue(items.contains("a"));
-			assertTrue(items.contains("b"));
-			assertTrue(items.contains("c"));
+			assertEquals(items.size(), 20000);
+
+			for (int i = 0; i < 10000; i++)
+			{
+				assertTrue(db.tryGet(new _Fruit1K("apple_" + i)));
+				assertTrue(db.tryGet(new _Fruit1K("banana_" + i)));
+				assertFalse(db.tryGet(new _Fruit1K("cocoa_" + i)));
+				assertFalse(db.tryGet(new _Fruit1K("carrot_" + i)));
+			}
 		}
 	}
 }
