@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators.AbstractSpliterator;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
@@ -36,10 +37,10 @@ import org.terifan.security.messagedigest.MurmurHash3;
 
 public final class Database implements AutoCloseable
 {
+	private final static int RACCOON_DB_VERSION = 1;
 	private final static int EXTRA_DATA_CHECKSUM_SEED = 0xf49209b1;
 	private final static long RACCOON_DB_IDENTITY = 0x726163636f6f6e00L; // 'raccoon\0'
 	private final static BlockSizeParam DEFAULT_BLOCK_SIZE = new BlockSizeParam(4096);
-	private final static int RACCOON_DB_VERSION = 1;
 
     private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
     private final Lock mReadLock = mReadWriteLock.readLock();
@@ -48,7 +49,7 @@ public final class Database implements AutoCloseable
 	private IManagedBlockDevice mBlockDevice;
 	private final HashMap<Class,Supplier> mFactories;
 	private final HashMap<Class,Initializer> mInitializers;
-	private final Map<TableMetadata,Table> mOpenTables;
+	private final ConcurrentHashMap<TableMetadata,Table> mOpenTables;
 	private final TableMetadataProvider mTableMetadatas;
 	private final TransactionCounter mTransactionId;
 	private Table mSystemTable;
@@ -62,7 +63,7 @@ public final class Database implements AutoCloseable
 
 	private Database()
 	{
-		mOpenTables = Collections.synchronizedMap(new HashMap<>());
+		mOpenTables = new ConcurrentHashMap<>();
 		mTableMetadatas = new TableMetadataProvider();
 		mFactories = new HashMap<>();
 		mTransactionId = new TransactionCounter();
@@ -198,7 +199,7 @@ public final class Database implements AutoCloseable
 			{
 				Log.x("shutdown hook executing");
 				Log.inc();
-				
+
 				try
 				{
 					db.close();
@@ -304,51 +305,40 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public Table openTable(TableMetadata aTableMetadata, OpenOption aOptions)
+	private Table openTable(TableMetadata aTableMetadata, OpenOption aOptions)
 	{
-		Table table = mOpenTables.get(aTableMetadata);
+		checkOpen();
 
-		if (table != null)
-		{
-			return table;
-		}
-
-		synchronized (this)
+		return mOpenTables.computeIfAbsent(aTableMetadata, tm->
 		{
 			checkOpen();
 
-//			assert !mIsOpeningTable : "RACCOON FATAL ERROR: opening table recursively: " + aTableMetadata.getTypeName();
-			if (mIsOpeningTable)
-			{
-				System.out.println("RACCOON FATAL ERROR: opening table recursively: " + aTableMetadata.getTypeName());
-				Thread.dumpStack();
-				System.exit(-1);
-			}
+			assert !mIsOpeningTable : "RACCOON FATAL ERROR: opening table recursively: " + tm.getTypeName();
 
 			try
 			{
 				mIsOpeningTable = true;
 
-				aTableMetadata.initialize();
+				tm.initialize();
 
-				Log.i("open table '%s' with option %s", aTableMetadata.getTypeName(), aOptions);
+				Log.i("open table '%s' with option %s", tm.getTypeName(), aOptions);
 				Log.inc();
 
-				boolean tableExists = mSystemTable.get(aTableMetadata);
+				boolean tableExists = mSystemTable.get(tm);
 
 				if (!tableExists && (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY))
 				{
 					return null;
 				}
 
-				table = new Table(this, aTableMetadata, aTableMetadata.getPointer());
+				Table table = new Table(this, tm, tm.getPointer());
 
 				if (!tableExists)
 				{
-					mSystemTable.save(aTableMetadata);
+					mSystemTable.save(tm);
 				}
 
-				mOpenTables.put(aTableMetadata, table);
+				mOpenTables.put(tm, table);
 
 				Log.dec();
 
@@ -363,7 +353,7 @@ public final class Database implements AutoCloseable
 			{
 				mIsOpeningTable = false;
 			}
-		}
+		});
 	}
 
 
@@ -381,7 +371,7 @@ public final class Database implements AutoCloseable
 		checkOpen();
 
 		mReadLock.lock();
-		
+
 		try
 		{
 			for (Table table : mOpenTables.values())
