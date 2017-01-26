@@ -2,15 +2,11 @@ package org.terifan.raccoon;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 final class TableMetadataProvider
 {
 	private final ArrayList<TableMetadata> mTableMetadatas;
-	private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
-	private final ReentrantReadWriteLock.ReadLock mReadLock = mReadWriteLock.readLock();
-	private final ReentrantReadWriteLock.WriteLock mWriteLock = mReadWriteLock.writeLock();
 
 
 	TableMetadataProvider()
@@ -21,64 +17,53 @@ final class TableMetadataProvider
 
 	TableMetadata getOrCreate(Class aType, Object aDiscriminator)
 	{
-		mReadLock.lock();
-
-		try
+		TableMetadata tableMetadata = getImpl(aType, aDiscriminator);
+		
+		if (tableMetadata != null)
 		{
-			for (TableMetadata tableMetadata : mTableMetadatas)
-			{
-				if (tableMetadata.getType() == aType)
-				{
-					if (aDiscriminator == null)
-					{
-						return tableMetadata;
-					}
-
-					byte[] discriminator = tableMetadata.createDiscriminatorKey(aDiscriminator); // TODO: use same discriminator on all tables?
-
-					if (Arrays.equals(discriminator, tableMetadata.getDiscriminatorKey()))
-					{
-						return tableMetadata;
-					}
-				}
-			}
-		}
-		finally
-		{
-			mReadLock.unlock();
+			return tableMetadata;
 		}
 
-		try
+		synchronized (aType)
 		{
-			mWriteLock.lock();
+			tableMetadata = getImpl(aType, aDiscriminator);
 
-			// TODO: uggly!!
-			for (TableMetadata tableMetadata : mTableMetadatas)
+			if (tableMetadata != null)
 			{
-				if (tableMetadata.getType() == aType)
-				{
-					if (aDiscriminator == null)
-					{
-						return tableMetadata;
-					}
-
-					byte[] discriminator = tableMetadata.createDiscriminatorKey(aDiscriminator); // TODO: use same discriminator on all tables?
-
-					if (Arrays.equals(discriminator, tableMetadata.getDiscriminatorKey()))
-					{
-						return tableMetadata;
-					}
-				}
+				return tableMetadata;
 			}
-			
-			TableMetadata tableMetadata = new TableMetadata(aType, aDiscriminator);
+
+			tableMetadata = new TableMetadata(aType, aDiscriminator);
+
 			mTableMetadatas.add(tableMetadata);
 
 			return tableMetadata;
 		}
-		finally
+	}
+
+
+	private TableMetadata getImpl(Class aType, Object aDiscriminator)
+	{
+		for (int i = 0; i < mTableMetadatas.size(); i++)
 		{
-			mWriteLock.unlock();
+			TableMetadata tableMetadata = mTableMetadatas.get(i);
+
+			if (tableMetadata.getType() == aType)
+			{
+				if (aDiscriminator == null)
+				{
+					return tableMetadata;
+				}
+
+				byte[] discriminator = tableMetadata.createDiscriminatorKey(aDiscriminator); // TODO: use same discriminator on all tables?
+
+				if (Arrays.equals(discriminator, tableMetadata.getDiscriminatorKey()))
+				{
+					return tableMetadata;
+				}
+			}
 		}
+
+		return null;
 	}
 }
