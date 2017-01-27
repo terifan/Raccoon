@@ -5,20 +5,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Spliterator;
-import java.util.Spliterators.AbstractSpliterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
@@ -308,9 +302,9 @@ public final class Database implements AutoCloseable
 	private Table openTable(TableMetadata aTableMetadata, OpenOption aOptions)
 	{
 		checkOpen();
-		
+
 		Table table = mOpenTables.get(aTableMetadata);
-		
+
 		if (table != null)
 		{
 			return table;
@@ -319,7 +313,7 @@ public final class Database implements AutoCloseable
 		synchronized (aTableMetadata)
 		{
 			checkOpen();
-			
+
 			table = mOpenTables.get(aTableMetadata);
 
 			if (table != null)
@@ -828,7 +822,7 @@ public final class Database implements AutoCloseable
 		}
 		catch (IOException e)
 		{
-			forceClose(new DatabaseException(e)); // ????????
+			forceClose(e);
 			throw new DatabaseIOException(e);
 		}
 		finally
@@ -937,6 +931,15 @@ public final class Database implements AutoCloseable
 	}
 
 
+	/**
+	 * Streams entities from the database.
+	 *
+	 * Note: It's necessary to finish the stream to properly release locks on the database!
+	 *
+	 * @param aType
+	 * @param aEntity
+	 * @return
+	 */
 	public <T> Stream<T> stream(Class<T> aType, T aEntity)
 	{
 		mReadLock.lock();
@@ -944,47 +947,19 @@ public final class Database implements AutoCloseable
 		{
 			Table table = openTable(aType, aEntity, OpenOption.OPEN);
 
-			// return empty stream when table not found
 			if (table == null)
 			{
-				return StreamSupport.stream(new AbstractSpliterator<T>(0, Spliterator.SIZED)
-				{
-					@Override
-					public boolean tryAdvance(Consumer<? super T> aConsumer)
-					{
-						return false;
-					}
-				}, false);
+				return new ArrayList<T>().stream();
 			}
 
-			return table.stream();
-
-//			ArrayList<T> list = new ArrayList<>();
-//			table.iterator().forEachRemaining(e->list.add((T)e));
-//
-//			return StreamSupport.stream(new AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
-//			{
-//				int i;
-//				@Override
-//				public boolean tryAdvance(Consumer<? super T> aConsumer)
-//				{
-//					if (i == list.size())
-//					{
-//						return false;
-//					}
-//					aConsumer.accept(list.get(i++));
-//					return true;
-//				}
-//			}, false);
+			return table.stream(mReadLock);
 		}
-		catch (DatabaseException e)
-		{
-			forceClose(e);
-			throw e;
-		}
-		finally
+		catch (Throwable e)
 		{
 			mReadLock.unlock();
+
+			forceClose(e);
+			throw e;
 		}
 	}
 
@@ -1229,7 +1204,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	protected synchronized void forceClose(DatabaseException aException)
+	protected synchronized void forceClose(Throwable aException)
 	{
 		if (mSystemTable == null)
 		{
@@ -1249,5 +1224,23 @@ public final class Database implements AutoCloseable
 		{
 			throw new DatabaseException(e);
 		}
+	}
+
+
+	/**
+	 * Return true if the database is being read by a thread at this time.
+	 */
+	public boolean isReadLocked()
+	{
+		return mReadWriteLock.getReadHoldCount() > 0;
+	}
+
+
+	/**
+	 * Return true if the database is being written to a thread at this time.
+	 */
+	public boolean isWriteLocked()
+	{
+		return mReadWriteLock.isWriteLocked();
 	}
 }

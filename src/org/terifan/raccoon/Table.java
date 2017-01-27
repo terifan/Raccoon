@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -400,26 +401,37 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 	}
 
 
-	<T> Stream<T> stream()
+	<T> Stream<T> stream(Lock aReadLock)
 	{
-		EntityIterator entityIterator = new EntityIterator(this, mTableImplementation.iterator());
-
-		return StreamSupport.stream(new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+		try
 		{
-			int i;
-			@Override
-			public boolean tryAdvance(Consumer<? super T> aConsumer)
+			Stream<T> tmp = StreamSupport.stream(new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
 			{
-				if (!entityIterator.hasNext())
-				{
-					return false;
-				}
-				aConsumer.accept((T)entityIterator.next());
-				return true;
-			}
-		}, false);
+				EntityIterator entityIterator = new EntityIterator(Table.this, mTableImplementation.iterator());
 
-//		return mTableImplementation.stream();
+				int i;
+				@Override
+				public boolean tryAdvance(Consumer<? super T> aConsumer)
+				{
+					if (!entityIterator.hasNext())
+					{
+						aReadLock.unlock();
+
+						return false;
+					}
+					aConsumer.accept((T)entityIterator.next());
+					return true;
+				}
+			}, false);
+
+			return tmp;
+		}
+		catch (Throwable e)
+		{
+			aReadLock.unlock();
+
+			throw e;
+		}
 	}
 
 
