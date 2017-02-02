@@ -24,12 +24,6 @@ public class Log
 	}
 
 
-	public static void x(String aMessage, Object... aParams)
-	{
-		logImpl(2, aMessage, aParams);
-	}
-
-
 	public static void s(String aMessage, Object... aParams)
 	{
 		logImpl(0, aMessage, aParams);

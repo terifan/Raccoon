@@ -191,7 +191,7 @@ public final class Database implements AutoCloseable
 			@Override
 			public void run()
 			{
-				Log.x("shutdown hook executing");
+				Log.i("shutdown hook executing");
 				Log.inc();
 
 				try
@@ -399,7 +399,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			Log.x("commit database");
+			Log.i("commit database");
 			Log.inc();
 
 			for (java.util.Map.Entry<TableMetadata,Table> entry : mOpenTables.entrySet())
@@ -457,7 +457,7 @@ public final class Database implements AutoCloseable
 		mWriteLock.lock();
 		try
 		{
-			Log.x("rollback");
+			Log.i("rollback");
 			Log.inc();
 
 			for (Table table : mOpenTables.values())
@@ -480,7 +480,7 @@ public final class Database implements AutoCloseable
 
 	private void updateSuperBlock()
 	{
-		Log.x("updating super block");
+		Log.i("updating super block");
 		Log.inc();
 
 		mTransactionId.increment();
@@ -566,7 +566,7 @@ public final class Database implements AutoCloseable
 
 			mBlockDevice = null;
 
-			Log.x("database finished closing");
+			Log.i("database finished closing");
 			Log.dec();
 		}
 		finally
