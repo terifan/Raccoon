@@ -17,12 +17,12 @@ public class RangeMapNGTest
 		RangeMap inMap = new RangeMap();
 		inMap.add(0, Integer.MAX_VALUE);
 		inMap.remove(0, 10);
-		inMap.write(buffer);
+		inMap.marshal(buffer);
 
 //		Log.hexDump(baos.toByteArray());
 
 		RangeMap outMap = new RangeMap();
-		outMap.read(new ByteArrayBuffer(buffer.array()));
+		outMap.unmarshal(new ByteArrayBuffer(buffer.array()));
 
 		assertEquals(inMap.toString(), outMap.toString());
 	}
@@ -46,10 +46,10 @@ public class RangeMapNGTest
 			i += j * 2;
 		}
 
-		inMap.write(buffer);
+		inMap.marshal(buffer);
 
 		RangeMap outMap = new RangeMap();
-		outMap.read(new ByteArrayBuffer(buffer.array()));
+		outMap.unmarshal(new ByteArrayBuffer(buffer.array()));
 
 		assertEquals(inMap.toString(), outMap.toString());
 	}

@@ -509,7 +509,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			buffer.position(16);
 			buffer.limit(mSuperBlock.mSpaceMapLength);
 
-			mRangeMap.read(buffer);
+			mRangeMap.unmarshal(buffer);
 
 			mRangeMap.remove((int)mSuperBlock.mSpaceMapBlockIndex, mSuperBlock.mSpaceMapBlockCount);
 		}
@@ -533,7 +533,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		ByteArrayBuffer buffer = new ByteArrayBuffer(mBlockSize);
 		buffer.position(CHECKSUM_SIZE); // leave space for checksum
 
-		mPendingRangeMap.write(buffer);
+		mPendingRangeMap.marshal(buffer);
 
 		// Allocate space for the new space map block
 		mSuperBlock.mSpaceMapBlockCount = (buffer.position() + mBlockSize - 1) / mBlockSize;
