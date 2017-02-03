@@ -98,21 +98,21 @@ public class ManagedBlockDeviceNGTest
 	}
 
 
-	@Test(expectedExceptions = UnsupportedVersionException.class)
-	public void testBadLabel() throws Exception
-	{
-		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "AnimalFarm");
-
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
-		{
-		}
-
-		try (Database db = Database.open(blockDevice, OpenOption.CREATE)) // default empty label won't match the "AnimalFarm" label causing an exception
-		{
-		}
-
-		fail();
-	}
+//	@Test(expectedExceptions = UnsupportedVersionException.class)
+//	public void testBadLabel() throws Exception
+//	{
+//		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+//
+//		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "AnimalFarm");
+//
+//		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
+//		{
+//		}
+//
+//		try (Database db = Database.open(blockDevice, OpenOption.CREATE)) // default empty label won't match the "AnimalFarm" label causing an exception
+//		{
+//		}
+//
+//		fail();
+//	}
 }

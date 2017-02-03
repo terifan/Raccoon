@@ -53,6 +53,7 @@ public final class Database implements AutoCloseable
 	private boolean mCloseDeviceOnCloseDatabase;
 	private Thread mShutdownHook;
 	private boolean mIsOpeningTable;
+	private ErrorReportListener mErrorReportListener;
 
 
 	private Database()
@@ -1211,9 +1212,7 @@ public final class Database implements AutoCloseable
 			return;
 		}
 
-		System.err.println("RACCOON FATAL ERROR: an error was detected, forcefully closing block device to prevent damage, uncommited changes were lost.");
-
-//		aException.printStackTrace(System.err);
+		fireErrorReport("RACCOON FATAL ERROR: an error was detected, forcefully closing block device to prevent damage, uncommited changes were lost.", aException);
 
 		try
 		{
@@ -1242,5 +1241,32 @@ public final class Database implements AutoCloseable
 	public boolean isWriteLocked()
 	{
 		return mReadWriteLock.isWriteLocked();
+	}
+
+
+	private void fireErrorReport(String aMessage, Throwable aThrowable)
+	{
+		if (mErrorReportListener != null)
+		{
+			mErrorReportListener.receiveErrorReport(aMessage, aThrowable);
+		}
+		else
+		{
+			System.err.println(aMessage);
+
+//			aThrowable.printStackTrace(System.err);
+		}
+	}
+
+
+	public ErrorReportListener getErrorReportListener()
+	{
+		return mErrorReportListener;
+	}
+
+
+	public void setErrorReportListener(ErrorReportListener aErrorReportListener)
+	{
+		mErrorReportListener = aErrorReportListener;
 	}
 }
