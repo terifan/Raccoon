@@ -204,7 +204,7 @@ public class DatabaseNGTest
 						}
 						catch (Throwable e)
 						{
-							throw new RuntimeException(e);
+							throw new IllegalStateException(e);
 						}
 					});
 				}

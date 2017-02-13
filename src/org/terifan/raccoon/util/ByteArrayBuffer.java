@@ -422,7 +422,7 @@ public final class ByteArrayBuffer extends InputStream
 			}
 			else
 			{
-				throw new RuntimeException("This decoder only handles 16-bit characters: c = " + c);
+				throw new IllegalStateException("This decoder only handles 16-bit characters: c = " + c);
 			}
 		}
 

@@ -582,7 +582,7 @@ final class LeafNode implements Iterable<LeafEntry>, Node
 		}
 		catch (UnsupportedEncodingException e)
 		{
-			throw new RuntimeException(e);
+			throw new IllegalStateException(e);
 		}
 	}
 

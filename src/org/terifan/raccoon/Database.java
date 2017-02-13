@@ -201,7 +201,7 @@ public final class Database implements AutoCloseable
 				}
 				catch (IOException e)
 				{
-					throw new RuntimeException(e);
+					throw new IllegalStateException(e);
 				}
 
 				Log.dec();

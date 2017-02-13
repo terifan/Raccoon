@@ -197,7 +197,7 @@ class RangeMap implements Cloneable
 		}
 		catch (CloneNotSupportedException e)
 		{
-			throw new RuntimeException(e);
+			throw new IllegalStateException(e);
 		}
 	}
 
