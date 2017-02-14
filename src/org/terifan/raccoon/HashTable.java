@@ -144,12 +144,6 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	public boolean containsKey(LeafEntry aEntry)
-	{
-		return get(aEntry);
-	}
-
-
 	public boolean put(LeafEntry aEntry)
 	{
 		checkOpen();

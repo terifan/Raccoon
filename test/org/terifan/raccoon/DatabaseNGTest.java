@@ -929,6 +929,18 @@ public class DatabaseNGTest
 	}
 
 
+	@Test(timeOut = 1000)
+	public void testStreamMissingTable() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.stream(_Fruit1K.class).forEach(e->fail());
+		}
+	}
+
+
 	@Test
 	public void testReadNonExistingTable() throws Exception
 	{

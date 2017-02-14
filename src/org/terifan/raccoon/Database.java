@@ -950,6 +950,8 @@ public final class Database implements AutoCloseable
 
 			if (table == null)
 			{
+				mReadLock.unlock();
+
 				return new ArrayList<T>().stream();
 			}
 
