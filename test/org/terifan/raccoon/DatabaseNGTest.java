@@ -1029,7 +1029,7 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			database.setErrorReportListener((m,e)->{}); // avoid message printed to console
+			database.addErrorReportListener((m,e)->{}); // avoid message printed to console
 
 			assertEquals(new byte[1000_000], Streams.readAll(database.read(new _BlobKey1K("good"))));
 		}

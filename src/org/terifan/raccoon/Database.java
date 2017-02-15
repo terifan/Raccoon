@@ -46,6 +46,7 @@ public final class Database implements AutoCloseable
 	private final ConcurrentHashMap<TableMetadata,Table> mOpenTables;
 	private final TableMetadataProvider mTableMetadatas;
 	private final TransactionCounter mTransactionId;
+	private final ArrayList<ErrorReportListener> mErrorReportListeners;
 	private Table mSystemTable;
 	private boolean mModified;
 	private Object[] mProperties;
@@ -53,7 +54,6 @@ public final class Database implements AutoCloseable
 	private boolean mCloseDeviceOnCloseDatabase;
 	private Thread mShutdownHook;
 	private boolean mIsOpeningTable;
-	private ErrorReportListener mErrorReportListener;
 
 
 	private Database()
@@ -63,6 +63,7 @@ public final class Database implements AutoCloseable
 		mFactories = new HashMap<>();
 		mTransactionId = new TransactionCounter();
 		mInitializers = new HashMap<>();
+		mErrorReportListeners = new ArrayList<>();
 	}
 
 
@@ -1248,27 +1249,19 @@ public final class Database implements AutoCloseable
 
 	private void fireErrorReport(String aMessage, Throwable aThrowable)
 	{
-		if (mErrorReportListener != null)
+		for (ErrorReportListener listener : mErrorReportListeners)
 		{
-			mErrorReportListener.receiveErrorReport(aMessage, aThrowable);
+			listener.receiveErrorReport(aMessage, aThrowable);
 		}
-		else
-		{
-			System.err.println(aMessage);
 
-//			aThrowable.printStackTrace(System.err);
-		}
+		System.err.println(aMessage);
+
+//		aThrowable.printStackTrace(System.err);
 	}
 
 
-	public ErrorReportListener getErrorReportListener()
+	public void addErrorReportListener(ErrorReportListener aErrorReportListener)
 	{
-		return mErrorReportListener;
-	}
-
-
-	public void setErrorReportListener(ErrorReportListener aErrorReportListener)
-	{
-		mErrorReportListener = aErrorReportListener;
+		mErrorReportListeners.add(aErrorReportListener);
 	}
 }
