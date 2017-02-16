@@ -21,15 +21,15 @@ public class EntityDescriptor implements Externalizable
 {
 	private static final long serialVersionUID = 1L;
 
-	private final static HashMap<Class,EntityDescriptor> mEntityDescriptors = new HashMap<>();
+	private final static HashMap<Class, EntityDescriptor> mEntityDescriptors = new HashMap<>();
 
 	private String mName;
-	private FieldType[] mFieldTypes;
+	private FieldDescriptor[] mFieldDescriptors;
 
 	private transient Class mType;
-	private transient FieldType[] mKeyFields;
-	private transient FieldType[] mDiscriminatorFields;
-	private transient FieldType[] mValueFields;
+	private transient FieldDescriptor[] mKeyFields;
+	private transient FieldDescriptor[] mDiscriminatorFields;
+	private transient FieldDescriptor[] mValueFields;
 
 
 	public EntityDescriptor()
@@ -46,11 +46,12 @@ public class EntityDescriptor implements Externalizable
 
 		mType = aType;
 		mName = aType.getName();
-		ArrayList<FieldType> tmp = new ArrayList<>();
+
+		ArrayList<FieldDescriptor> tmp = new ArrayList<>();
 
 		for (Field field : fields)
 		{
-			FieldType fieldType = new FieldType();
+			FieldDescriptor fieldType = new FieldDescriptor();
 			fieldType.setField(field);
 			fieldType.setName(field.getName());
 			fieldType.setTypeName(field.getType().getName());
@@ -64,7 +65,7 @@ public class EntityDescriptor implements Externalizable
 			Log.v("type found: %s", fieldType);
 		}
 
-		initializeFieldTypeLists(tmp.toArray(new FieldType[tmp.size()]));
+		initializeFieldTypeLists(tmp.toArray(new FieldDescriptor[tmp.size()]));
 
 		Log.dec();
 	}
@@ -96,9 +97,9 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	public FieldType[] getTypes()
+	public FieldDescriptor[] getTypes()
 	{
-		return mFieldTypes;
+		return mFieldDescriptors;
 	}
 
 
@@ -113,7 +114,7 @@ public class EntityDescriptor implements Externalizable
 	{
 		mName = aIn.readUTF();
 
-		initializeFieldTypeLists((FieldType[])aIn.readObject());
+		initializeFieldTypeLists((FieldDescriptor[])aIn.readObject());
 	}
 
 
@@ -121,7 +122,7 @@ public class EntityDescriptor implements Externalizable
 	public void writeExternal(ObjectOutput aOut) throws IOException
 	{
 		aOut.writeUTF(mName);
-		aOut.writeObject(mFieldTypes);
+		aOut.writeObject(mFieldDescriptors);
 	}
 
 
@@ -133,7 +134,7 @@ public class EntityDescriptor implements Externalizable
 			EntityDescriptor other = (EntityDescriptor)aObj;
 
 			return mName.equals(other.mName)
-				&& Arrays.equals(mFieldTypes, other.mFieldTypes);
+				&& Arrays.equals(mFieldDescriptors, other.mFieldDescriptors);
 		}
 
 		return false;
@@ -143,7 +144,7 @@ public class EntityDescriptor implements Externalizable
 	@Override
 	public int hashCode()
 	{
-		return Objects.hashCode(mName) ^ Arrays.deepHashCode(mFieldTypes);
+		return Objects.hashCode(mName) ^ Arrays.deepHashCode(mFieldDescriptors);
 	}
 
 
@@ -154,10 +155,12 @@ public class EntityDescriptor implements Externalizable
 	{
 		StringBuilder sb = new StringBuilder();
 		sb.append("package " + mName.substring(0, mName.lastIndexOf(".")) + ";\n\n");
-		sb.append("class " + mName.substring(mName.lastIndexOf(".")+1) + "\n{\n");
-		for (FieldType fieldType : mFieldTypes)
+		sb.append("class " + mName.substring(mName.lastIndexOf(".") + 1) + "\n{\n");
+
+		for (FieldDescriptor fieldType : mFieldDescriptors)
 		{
 			String annotation;
+
 			switch (fieldType.getCategory())
 			{
 				case KEY:
@@ -173,24 +176,26 @@ public class EntityDescriptor implements Externalizable
 
 			sb.append("\t" + annotation + fieldType + ";\n");
 		}
+
 		sb.append("}");
+
 		return sb.toString();
 	}
 
 
-	FieldType[] getKeyFields()
+	FieldDescriptor[] getKeyFields()
 	{
 		return mKeyFields;
 	}
 
 
-	FieldType[] getDiscriminatorFields()
+	FieldDescriptor[] getDiscriminatorFields()
 	{
 		return mDiscriminatorFields;
 	}
 
 
-	FieldType[] getValueFields()
+	FieldDescriptor[] getValueFields()
 	{
 		return mValueFields;
 	}
@@ -213,7 +218,7 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	private void categorize(Field aField, FieldType aFieldType)
+	private void categorize(Field aField, FieldDescriptor aFieldType)
 	{
 		if (aField.getAnnotation(Discriminator.class) != null)
 		{
@@ -230,7 +235,7 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	private void classify(Field aField, FieldType aFieldType)
+	private void classify(Field aField, FieldDescriptor aFieldType)
 	{
 		Class<?> type = aField.getType();
 
@@ -273,52 +278,50 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	private void initializeFieldTypeLists(FieldType[] aFieldTypes)
+	private void initializeFieldTypeLists(FieldDescriptor[] aFieldTypes)
 	{
-		ArrayList<FieldType> tmpK = new ArrayList<>();
-		ArrayList<FieldType> tmpD = new ArrayList<>();
-		ArrayList<FieldType> tmpV = new ArrayList<>();
+		ArrayList<FieldDescriptor> keys = new ArrayList<>();
+		ArrayList<FieldDescriptor> disc = new ArrayList<>();
+		ArrayList<FieldDescriptor> values = new ArrayList<>();
 
-		for (FieldType fieldType : aFieldTypes)
+		for (FieldDescriptor fieldType : aFieldTypes)
 		{
-			if (fieldType.getCategory() == FieldCategory.KEY) tmpK.add(fieldType);
-			if (fieldType.getCategory() == FieldCategory.DISCRIMINATOR) tmpD.add(fieldType);
-			if (fieldType.getCategory() != FieldCategory.KEY) tmpV.add(fieldType);
+			if (fieldType.getCategory() == FieldCategory.KEY)
+			{
+				keys.add(fieldType);
+			}
+			if (fieldType.getCategory() == FieldCategory.DISCRIMINATOR)
+			{
+				disc.add(fieldType);
+			}
+			if (fieldType.getCategory() != FieldCategory.KEY)
+			{
+				values.add(fieldType);
+			}
 		}
 
-		mFieldTypes = aFieldTypes;
-		mKeyFields = tmpK.toArray(new FieldType[tmpK.size()]);
-		mDiscriminatorFields = tmpD.toArray(new FieldType[tmpD.size()]);
-		mValueFields = tmpV.toArray(new FieldType[tmpV.size()]);
-
-		if (mKeyFields.length == 0)
+		if (keys.isEmpty())
 		{
-			throw new IllegalArgumentException("Entity has no keys: " + mName + Arrays.toString(mFieldTypes));
+			throw new IllegalArgumentException("Entity has no keys: " + mName + Arrays.toString(mFieldDescriptors));
 		}
+
+		mFieldDescriptors = aFieldTypes;
+		mKeyFields = keys.toArray(new FieldDescriptor[keys.size()]);
+		mDiscriminatorFields = disc.toArray(new FieldDescriptor[disc.size()]);
+		mValueFields = values.toArray(new FieldDescriptor[values.size()]);
 	}
 
 
-	@Override
-	public String toString()
+	Field getField(FieldDescriptor aFieldType)
 	{
-		return "EntityDescriptor{" + "mName=" + mName + ", mFieldTypes=" + Arrays.toString(mFieldTypes) + ", mKeyFields=" + Arrays.toString(mKeyFields) + ", mDiscriminatorFields=" + Arrays.toString(mDiscriminatorFields) + ", mValueFields=" + Arrays.toString(mValueFields) + '}';
-	}
+		assert mType != null : "Internal Error: Type not bound!";
 
-
-	Field getField(FieldType aFieldType)
-	{
 		Field field = aFieldType.getField();
 
 		if (field == null)
 		{
-			if (mType == null)
-			{
-				throw new IllegalStateException("Internal Error: Type not bound!");
-			}
-
 			for (Field f : mType.getDeclaredFields())
 			{
-				// (field.getModifiers() & (Modifier.TRANSIENT | Modifier.STATIC | Modifier.FINAL)) == 0 &&
 				if (aFieldType.getName().equals(f.getName()) && aFieldType.getTypeName().equals(f.getType().getName()))
 				{
 					field = f;
@@ -330,5 +333,12 @@ public class EntityDescriptor implements Externalizable
 		}
 
 		return field;
+	}
+
+
+	@Override
+	public String toString()
+	{
+		return "EntityDescriptor{" + "mName=" + mName + ", mFieldTypes=" + Arrays.toString(mFieldDescriptors) + ", mKeyFields=" + Arrays.toString(mKeyFields) + ", mDiscriminatorFields=" + Arrays.toString(mDiscriminatorFields) + ", mValueFields=" + Arrays.toString(mValueFields) + '}';
 	}
 }

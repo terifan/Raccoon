@@ -2,7 +2,7 @@ package org.terifan.raccoon.util;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.terifan.raccoon.serialization.FieldType;
+import org.terifan.raccoon.serialization.FieldDescriptor;
 
 
 public class ResultSet
@@ -10,7 +10,7 @@ public class ResultSet
 	private final static long serialVersionUID = 1L;
 
 	private final Map<Integer, Object> mValues;
-	private final Map<String, FieldType> mTypes;
+	private final Map<String, FieldDescriptor> mTypes;
 
 
 	public ResultSet()
@@ -38,19 +38,19 @@ public class ResultSet
 	}
 
 
-	public FieldType getType(String aKey)
+	public FieldDescriptor getType(String aKey)
 	{
 		return mTypes.get(aKey);
 	}
 
 
-	public FieldType[] getFields()
+	public FieldDescriptor[] getFields()
 	{
-		return mTypes.values().toArray(new FieldType[mTypes.size()]);
+		return mTypes.values().toArray(new FieldDescriptor[mTypes.size()]);
 	}
 
 
-	public void add(FieldType aFieldType, Object aValue)
+	public void add(FieldDescriptor aFieldType, Object aValue)
 	{
 		mTypes.put(aFieldType.getName(), aFieldType);
 		mValues.put(aFieldType.getIndex(), aValue);

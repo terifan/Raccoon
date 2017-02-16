@@ -6,10 +6,11 @@ import java.util.HashMap;
 
 class TypeMappings
 {
-	protected final static HashMap<ContentType,Class> TYPE_VALUES = new HashMap<>();
-	protected final static HashMap<ContentType,Class> TYPE_CLASSES = new HashMap<>();
-	protected final static HashMap<Class,ContentType> VALUE_TYPES = new HashMap<>();
-	protected final static HashMap<Class,ContentType> CLASS_TYPES = new HashMap<>();
+	protected final static HashMap<ContentType, Class> TYPE_VALUES = new HashMap<>();
+	protected final static HashMap<ContentType, Class> TYPE_CLASSES = new HashMap<>();
+	protected final static HashMap<Class, ContentType> VALUE_TYPES = new HashMap<>();
+	protected final static HashMap<Class, ContentType> CLASS_TYPES = new HashMap<>();
+
 
 	static
 	{

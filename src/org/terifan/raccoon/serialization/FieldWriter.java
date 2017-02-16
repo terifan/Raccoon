@@ -10,7 +10,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 class FieldWriter
 {
-	static void writeField(FieldType aFieldType, Object aValue, ByteArrayBuffer aOutput) throws IOException
+	static void writeField(FieldDescriptor aFieldType, Object aValue, ByteArrayBuffer aOutput) throws IOException
 	{
 		if (aFieldType.isArray())
 		{
@@ -25,7 +25,7 @@ class FieldWriter
 	}
 
 
-	private static void writeArray(Object aValue, ByteArrayBuffer aOutput, FieldType aFieldType, int aLevel) throws IOException
+	private static void writeArray(Object aValue, ByteArrayBuffer aOutput, FieldDescriptor aFieldType, int aLevel) throws IOException
 	{
 		int len = Array.getLength(aValue);
 
@@ -79,7 +79,7 @@ class FieldWriter
 	}
 
 
-	private static void writeValue(FieldType aFieldType, Object aValue, ByteArrayBuffer aOutput) throws IOException
+	private static void writeValue(FieldDescriptor aFieldType, Object aValue, ByteArrayBuffer aOutput) throws IOException
 	{
 		switch (aFieldType.getContentType())
 		{

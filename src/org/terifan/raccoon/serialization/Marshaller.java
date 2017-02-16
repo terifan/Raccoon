@@ -12,7 +12,7 @@ import org.terifan.raccoon.util.ResultSet;
 
 public class Marshaller
 {
-	private final static HashMap<EntityDescriptor,Marshaller> mMarshallers = new HashMap<>();
+	private final static HashMap<EntityDescriptor, Marshaller> mMarshallers = new HashMap<>();
 
 	private EntityDescriptor mEntityDescriptor;
 
@@ -55,21 +55,21 @@ public class Marshaller
 	}
 
 
-	private ByteArrayBuffer marshalImpl(ByteArrayBuffer aBuffer, Object aObject, FieldType[] types)
+	private ByteArrayBuffer marshalImpl(ByteArrayBuffer aBuffer, Object aObject, FieldDescriptor[] types)
 	{
 		try
 		{
 			Log.v("marshal entity fields %s", Arrays.toString(types));
 			Log.inc();
 
-			for (FieldType fieldType : types)
+			for (FieldDescriptor fieldType : types)
 			{
 				aBuffer.writeBit(mEntityDescriptor.getField(fieldType).get(aObject) == null);
 			}
 
 			aBuffer.align();
 
-			for (FieldType fieldType : types)
+			for (FieldDescriptor fieldType : types)
 			{
 				Object value = mEntityDescriptor.getField(fieldType).get(aObject);
 
@@ -80,7 +80,6 @@ public class Marshaller
 			}
 
 //			Log.hexDump(new ByteArrayBuffer(aBuffer.array()).capacity(aBuffer.position()).crop().array());
-
 			Log.dec();
 
 			return aBuffer;
@@ -110,7 +109,7 @@ public class Marshaller
 	}
 
 
-	private void unmarshalImpl(ByteArrayBuffer aBuffer, Object aObject, FieldType[] types)
+	private void unmarshalImpl(ByteArrayBuffer aBuffer, Object aObject, FieldDescriptor[] types)
 	{
 		try
 		{
@@ -127,7 +126,7 @@ public class Marshaller
 			aBuffer.align();
 
 			int i = 0;
-			for (FieldType fieldType : types)
+			for (FieldDescriptor fieldType : types)
 			{
 				if (!isNull[i++])
 				{
@@ -172,7 +171,7 @@ public class Marshaller
 	}
 
 
-	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, FieldType[] types)
+	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, FieldDescriptor[] types)
 	{
 		try
 		{
@@ -183,15 +182,15 @@ public class Marshaller
 
 			boolean[] isNull = new boolean[types.length];
 
-				for (int i = 0; i < types.length; i++)
-				{
-					isNull[i] = aBuffer.readBit() == 1;
-				}
+			for (int i = 0; i < types.length; i++)
+			{
+				isNull[i] = aBuffer.readBit() == 1;
+			}
 
 			aBuffer.align();
 
 			int i = 0;
-			for (FieldType fieldType : types)
+			for (FieldDescriptor fieldType : types)
 			{
 				if (!isNull[i++])
 				{
@@ -214,7 +213,10 @@ public class Marshaller
 
 	public Marshaller xxxxxxxxxxxxx(Class aType)
 	{
-		if (aType != null) mEntityDescriptor.setType(aType);
+		if (aType != null)
+		{
+			mEntityDescriptor.setType(aType);
+		}
 		return this;
 	}
 }

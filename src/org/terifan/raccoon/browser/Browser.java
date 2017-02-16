@@ -21,7 +21,7 @@ import org.terifan.raccoon.OpenOption;
 import org.terifan.raccoon.Table;
 import org.terifan.raccoon.TableMetadata;
 import org.terifan.raccoon.io.AccessCredentials;
-import org.terifan.raccoon.serialization.FieldType;
+import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.raccoon.util.Log;
 
@@ -148,14 +148,14 @@ public class Browser
 						Table table = (Table)userObject;
 						EntityDescriptor metadata = table.getTableMetadata().getEntityDescriptor();
 
-						for (FieldType field : metadata.getTypes())
+						for (FieldDescriptor field : metadata.getTypes())
 						{
 							tableContentmodel.addColumn(field.getName());
 						}
 
 						frame.setTitle(table.getTableMetadata().toString());
 
-						for (FieldType field : metadata.getTypes())
+						for (FieldDescriptor field : metadata.getTypes())
 						{
 							tableFormatModel.addRow(new Object[]{
 								field.getCategory(),

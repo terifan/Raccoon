@@ -8,7 +8,7 @@ import java.lang.reflect.Field;
 import static org.terifan.raccoon.serialization.TypeMappings.*;
 
 
-public class FieldType implements Comparable<FieldType>, Externalizable
+public class FieldDescriptor implements Comparable<FieldDescriptor>, Externalizable
 {
 	private static final long serialVersionUID = 1L;
 
@@ -24,7 +24,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	private transient Field mField;
 
 
-	public FieldType()
+	public FieldDescriptor()
 	{
 	}
 
@@ -140,8 +140,8 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	@Override
 	public void writeExternal(ObjectOutput aOutput) throws IOException
 	{
-		int flags =
-			  (mNullable ? 1 : 0)
+		int flags
+			= (mNullable ? 1 : 0)
 			+ (mArray ? 2 : 0);
 		aOutput.write(flags);
 
@@ -180,9 +180,9 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 	@Override
 	public boolean equals(Object aOther)
 	{
-		if (aOther instanceof FieldType)
+		if (aOther instanceof FieldDescriptor)
 		{
-			FieldType other = (FieldType)aOther;
+			FieldDescriptor other = (FieldDescriptor)aOther;
 
 			return mName.equals(other.mName)
 				&& mTypeName.equals(other.mTypeName)
@@ -200,7 +200,7 @@ public class FieldType implements Comparable<FieldType>, Externalizable
 
 
 	@Override
-	public int compareTo(FieldType aOther)
+	public int compareTo(FieldDescriptor aOther)
 	{
 		return mName.compareTo(aOther.mName);
 	}

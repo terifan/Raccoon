@@ -10,7 +10,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 class FieldReader
 {
-	static Object readField(FieldType aFieldType, ByteArrayBuffer aInput) throws IOException, ClassNotFoundException
+	static Object readField(FieldDescriptor aFieldType, ByteArrayBuffer aInput) throws IOException, ClassNotFoundException
 	{
 		Object value;
 
@@ -31,7 +31,7 @@ class FieldReader
 	}
 
 
-	private static Object readArray(ByteArrayBuffer aInput, FieldType aFieldType, int aLevel, Class<?> aComponentType) throws IOException, ClassNotFoundException
+	private static Object readArray(ByteArrayBuffer aInput, FieldDescriptor aFieldType, int aLevel, Class<?> aComponentType) throws IOException, ClassNotFoundException
 	{
 		int len = aInput.readVar32();
 
@@ -92,7 +92,7 @@ class FieldReader
 	}
 
 
-	private static Object readValue(FieldType aFieldType, ByteArrayBuffer aInput) throws IOException, ClassNotFoundException
+	private static Object readValue(FieldDescriptor aFieldType, ByteArrayBuffer aInput) throws IOException, ClassNotFoundException
 	{
 		switch (aFieldType.getContentType())
 		{
