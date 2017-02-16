@@ -21,6 +21,19 @@ public class Marshaller
 	}
 
 
+	public Marshaller xxxxxxxxxxxxx(Class aType)
+	{
+		if (aType != null && mEntityDescriptor.getType() != aType)
+		{
+			System.out.println("Possible bug: Marshaller setType called!");
+
+			mEntityDescriptor.setType(aType);
+		}
+
+		return this;
+	}
+
+
 	public ByteArrayBuffer marshalKeys(ByteArrayBuffer aBuffer, Object aObject)
 	{
 		return marshalImpl(aBuffer, aObject, mEntityDescriptor.getKeyFields());
@@ -36,6 +49,42 @@ public class Marshaller
 	public ByteArrayBuffer marshalValues(ByteArrayBuffer aBuffer, Object aObject)
 	{
 		return marshalImpl(aBuffer, aObject, mEntityDescriptor.getValueFields());
+	}
+
+
+	public void unmarshalKeys(ByteArrayBuffer aBuffer, Object aObject)
+	{
+		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getKeyFields());
+	}
+
+
+	public void unmarshalDiscriminators(ByteArrayBuffer aBuffer, Object aObject)
+	{
+		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getDiscriminatorFields());
+	}
+
+
+	public void unmarshalValues(ByteArrayBuffer aBuffer, Object aObject)
+	{
+		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getValueFields());
+	}
+
+
+	public ResultSet unmarshalKeys(ByteArrayBuffer aBuffer)
+	{
+		return unmarshalImpl(aBuffer, mEntityDescriptor.getKeyFields());
+	}
+
+
+	public ResultSet unmarshalDiscriminators(ByteArrayBuffer aBuffer)
+	{
+		return unmarshalImpl(aBuffer, mEntityDescriptor.getDiscriminatorFields());
+	}
+
+
+	public ResultSet unmarshalValues(ByteArrayBuffer aBuffer)
+	{
+		return unmarshalImpl(aBuffer, mEntityDescriptor.getValueFields());
 	}
 
 
@@ -72,24 +121,6 @@ public class Marshaller
 		{
 			throw new DatabaseException(e);
 		}
-	}
-
-
-	public void unmarshalKeys(ByteArrayBuffer aBuffer, Object aObject)
-	{
-		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getKeyFields());
-	}
-
-
-	public void unmarshalDiscriminators(ByteArrayBuffer aBuffer, Object aObject)
-	{
-		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getDiscriminatorFields());
-	}
-
-
-	public void unmarshalValues(ByteArrayBuffer aBuffer, Object aObject)
-	{
-		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getValueFields());
 	}
 
 
@@ -137,24 +168,6 @@ public class Marshaller
 	}
 
 
-	public ResultSet unmarshalKeys(ByteArrayBuffer aBuffer)
-	{
-		return unmarshalImpl(aBuffer, mEntityDescriptor.getKeyFields());
-	}
-
-
-	public ResultSet unmarshalDiscriminators(ByteArrayBuffer aBuffer)
-	{
-		return unmarshalImpl(aBuffer, mEntityDescriptor.getDiscriminatorFields());
-	}
-
-
-	public ResultSet unmarshalValues(ByteArrayBuffer aBuffer)
-	{
-		return unmarshalImpl(aBuffer, mEntityDescriptor.getValueFields());
-	}
-
-
 	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, FieldDescriptor[] types)
 	{
 		try
@@ -192,15 +205,5 @@ public class Marshaller
 		{
 			throw new DatabaseException(e);
 		}
-	}
-
-
-	public Marshaller xxxxxxxxxxxxx(Class aType)
-	{
-		if (aType != null)
-		{
-			mEntityDescriptor.setType(aType);
-		}
-		return this;
 	}
 }
