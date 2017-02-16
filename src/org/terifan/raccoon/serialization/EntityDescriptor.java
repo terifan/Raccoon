@@ -248,7 +248,7 @@ public class EntityDescriptor implements Externalizable
 
 		if (type.isPrimitive())
 		{
-			ContentType primitiveType = VALUE_TYPES.get(type);
+			FieldType primitiveType = VALUE_TYPES.get(type);
 			if (primitiveType != null)
 			{
 				aFieldType.setContentType(primitiveType);
@@ -258,22 +258,22 @@ public class EntityDescriptor implements Externalizable
 
 		aFieldType.setNullable(true);
 
-		ContentType contentType = CLASS_TYPES.get(type);
+		FieldType contentType = CLASS_TYPES.get(type);
 		if (contentType != null)
 		{
 			aFieldType.setContentType(contentType);
 		}
 		else if (type == String.class)
 		{
-			aFieldType.setContentType(ContentType.STRING);
+			aFieldType.setContentType(FieldType.STRING);
 		}
 		else if (Date.class.isAssignableFrom(type))
 		{
-			aFieldType.setContentType(ContentType.DATE);
+			aFieldType.setContentType(FieldType.DATE);
 		}
 		else
 		{
-			aFieldType.setContentType(ContentType.OBJECT);
+			aFieldType.setContentType(FieldType.OBJECT);
 		}
 	}
 

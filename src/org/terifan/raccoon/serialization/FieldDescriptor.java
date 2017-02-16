@@ -16,7 +16,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	private String mName;
 	private boolean mNullable;
 	private boolean mArray;
-	private ContentType mContentType;
+	private FieldType mContentType;
 	private FieldCategory mCategory;
 	private String mTypeName;
 	private int mDepth;
@@ -77,13 +77,13 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	}
 
 
-	public ContentType getContentType()
+	public FieldType getContentType()
 	{
 		return mContentType;
 	}
 
 
-	void setContentType(ContentType aContentType)
+	void setContentType(FieldType aContentType)
 	{
 		mContentType = aContentType;
 	}
@@ -163,7 +163,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 
 		mName = aInput.readUTF();
 		mIndex = aInput.readShort();
-		mContentType = ContentType.values()[aInput.read()];
+		mContentType = FieldType.values()[aInput.read()];
 		mTypeName = aInput.readUTF();
 		mCategory = FieldCategory.values()[aInput.read()];
 		mDepth = aInput.read();

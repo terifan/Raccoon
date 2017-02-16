@@ -1,7 +1,7 @@
 package org.terifan.raccoon.serialization;
 
 
-public enum ContentType
+public enum FieldType
 {
 	BOOLEAN,
 	BYTE,

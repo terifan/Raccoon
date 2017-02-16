@@ -12,28 +12,12 @@ import org.terifan.raccoon.util.ResultSet;
 
 public class Marshaller
 {
-	private final static HashMap<EntityDescriptor, Marshaller> mMarshallers = new HashMap<>();
-
 	private EntityDescriptor mEntityDescriptor;
 
 
-	private Marshaller(EntityDescriptor aTypeDeclarations)
+	Marshaller(EntityDescriptor aTypeDeclarations)
 	{
 		mEntityDescriptor = aTypeDeclarations;
-	}
-
-
-	public static synchronized Marshaller getInstance(EntityDescriptor aTypeDeclarations)
-	{
-		Marshaller instance = mMarshallers.get(aTypeDeclarations);
-
-		if (instance == null)
-		{
-			instance = new Marshaller(aTypeDeclarations);
-			mMarshallers.put(aTypeDeclarations, instance);
-		}
-
-		return instance;
 	}
 
 

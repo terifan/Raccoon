@@ -72,7 +72,7 @@ class FieldReader
 				aInput.align();
 			}
 		}
-		else if (aFieldType.getContentType() == ContentType.BYTE)
+		else if (aFieldType.getContentType() == FieldType.BYTE)
 		{
 			aInput.read((byte[])array);
 		}
