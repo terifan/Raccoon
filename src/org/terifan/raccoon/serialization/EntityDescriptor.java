@@ -136,8 +136,8 @@ public class EntityDescriptor implements Externalizable
 	public String getJavaDeclaration()
 	{
 		StringBuilder sb = new StringBuilder();
-		sb.append("package " + mName.substring(0, mName.lastIndexOf(".")) + ";\n\n");
-		sb.append("class " + mName.substring(mName.lastIndexOf(".") + 1) + "\n{\n");
+		sb.append("package " + mName.substring(0, mName.lastIndexOf('.')) + ";\n\n");
+		sb.append("class " + mName.substring(mName.lastIndexOf('.') + 1) + "\n{\n");
 
 		for (FieldDescriptor fieldType : mFieldDescriptors)
 		{
