@@ -2,8 +2,8 @@ package org.terifan.raccoon.serialization;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -88,31 +88,37 @@ public class Marshaller
 	}
 
 
-	private ByteArrayBuffer marshalImpl(ByteArrayBuffer aBuffer, Object aObject, FieldDescriptor[] types)
+	private ByteArrayBuffer marshalImpl(ByteArrayBuffer aBuffer, Object aObject, FieldDescriptor[] aTypes)
 	{
 		try
 		{
-			Log.v("marshal entity fields %s", Arrays.toString(types));
+			Log.v("marshal entity fields %s", Arrays.toString(aTypes));
 			Log.inc();
+			
+			ArrayList<Object> values = new ArrayList<>();
 
-			for (FieldDescriptor fieldType : types)
+			// write null-bitmap
+			for (FieldDescriptor fieldType : aTypes)
 			{
-				aBuffer.writeBit(mEntityDescriptor.getField(fieldType).get(aObject) == null);
+				Object value = fieldType.getField().get(aObject);
+
+				aBuffer.writeBit(value == null);
+
+				values.add(value);
 			}
 
 			aBuffer.align();
 
-			for (FieldDescriptor fieldType : types)
+			for (int i = 0; i < aTypes.length; i++)
 			{
-				Object value = mEntityDescriptor.getField(fieldType).get(aObject);
+				Object value = values.get(i);
 
 				if (value != null)
 				{
-					FieldWriter.writeField(fieldType, value, aBuffer);
+					FieldWriter.writeField(aTypes[i], value, aBuffer);
 				}
 			}
 
-//			Log.hexDump(new ByteArrayBuffer(aBuffer.array()).capacity(aBuffer.position()).crop().array());
 			Log.dec();
 
 			return aBuffer;
@@ -124,37 +130,36 @@ public class Marshaller
 	}
 
 
-	private void unmarshalImpl(ByteArrayBuffer aBuffer, Object aObject, FieldDescriptor[] types)
+	private void unmarshalImpl(ByteArrayBuffer aBuffer, Object aObject, FieldDescriptor[] aTypes)
 	{
 		try
 		{
 			Log.v("unmarshal entity fields");
 			Log.inc();
 
-			boolean[] isNull = new boolean[types.length];
+			ArrayList<FieldDescriptor> readFields = new ArrayList<>();
 
-			for (int i = 0; i < types.length; i++)
+			for (int i = 0; i < aTypes.length; i++)
 			{
-				isNull[i] = aBuffer.readBit() == 1;
+				if (aBuffer.readBit() == 0)
+				{
+					readFields.add(aTypes[i]);
+				}
 			}
 
 			aBuffer.align();
 
-			int i = 0;
-			for (FieldDescriptor fieldType : types)
+			for (FieldDescriptor fieldType : readFields)
 			{
-				if (!isNull[i++])
+				Object value = FieldReader.readField(fieldType, aBuffer);
+
+				if (aObject != null)
 				{
-					Object value = FieldReader.readField(fieldType, aBuffer);
+					Field field = fieldType.getField();
 
-					if (aObject != null)
+					if (field != null)
 					{
-						Field field = mEntityDescriptor.getField(fieldType);
-
-						if (field != null)
-						{
-							field.set(aObject, value);
-						}
+						field.set(aObject, value);
 					}
 				}
 			}

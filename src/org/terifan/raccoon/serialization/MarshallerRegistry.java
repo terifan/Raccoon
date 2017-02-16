@@ -5,7 +5,7 @@ import java.util.HashMap;
 
 public class MarshallerRegistry
 {
-	private final static HashMap<EntityDescriptor, Marshaller> mMarshallers = new HashMap<>();
+	private final static HashMap<EntityDescriptor, Marshaller> INSTANCES = new HashMap<>();
 
 	
 	private MarshallerRegistry()
@@ -13,15 +13,23 @@ public class MarshallerRegistry
 	}
 	
 
-	public static synchronized Marshaller getInstance(EntityDescriptor aTypeDeclarations)
+	public static Marshaller getInstance(EntityDescriptor aTypeDeclarations)
 	{
-		Marshaller instance = mMarshallers.get(aTypeDeclarations);
+		Marshaller instance = INSTANCES.get(aTypeDeclarations);
 
 		if (instance == null)
 		{
-			instance = new Marshaller(aTypeDeclarations);
+			synchronized (MarshallerRegistry.class)
+			{
+				instance = INSTANCES.get(aTypeDeclarations);
 
-			mMarshallers.put(aTypeDeclarations, instance);
+				if (instance == null)
+				{
+					instance = new Marshaller(aTypeDeclarations);
+
+					INSTANCES.put(aTypeDeclarations, instance);
+				}
+			}
 		}
 
 		return instance;

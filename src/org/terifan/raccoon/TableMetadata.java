@@ -5,6 +5,7 @@ import org.terifan.raccoon.serialization.FieldCategory;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.EntityDescriptor;
+import org.terifan.raccoon.serialization.EntityDescriptorRegistry;
 import org.terifan.raccoon.serialization.MarshallerRegistry;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -31,7 +32,7 @@ public final class TableMetadata
 	{
 		mType = aClass;
 		mTypeName = mType.getName();
-		mEntityDescriptor = EntityDescriptor.getInstance(mType);
+		mEntityDescriptor = EntityDescriptorRegistry.getInstance(mType);
 		mMarshaller = MarshallerRegistry.getInstance(mEntityDescriptor);
 
 		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);

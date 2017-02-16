@@ -9,7 +9,6 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Objects;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
@@ -20,8 +19,6 @@ import static org.terifan.raccoon.serialization.TypeMappings.*;
 public class EntityDescriptor implements Externalizable
 {
 	private static final long serialVersionUID = 1L;
-
-	private final static HashMap<Class, EntityDescriptor> mEntityDescriptors = new HashMap<>();
 
 	private String mName;
 	private FieldDescriptor[] mFieldDescriptors;
@@ -37,7 +34,7 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	private EntityDescriptor(Class aType)
+	EntityDescriptor(Class aType)
 	{
 		Log.v("create type declarations for %s", aType);
 		Log.inc();
@@ -68,20 +65,6 @@ public class EntityDescriptor implements Externalizable
 		initializeFieldTypeLists(tmp.toArray(new FieldDescriptor[tmp.size()]));
 
 		Log.dec();
-	}
-
-
-	public static synchronized EntityDescriptor getInstance(Class aType)
-	{
-		EntityDescriptor instance = mEntityDescriptors.get(aType);
-
-		if (instance == null)
-		{
-			instance = new EntityDescriptor(aType);
-			mEntityDescriptors.put(aType, instance);
-		}
-
-		return instance;
 	}
 
 
@@ -133,8 +116,7 @@ public class EntityDescriptor implements Externalizable
 		{
 			EntityDescriptor other = (EntityDescriptor)aObj;
 
-			return mName.equals(other.mName)
-				&& Arrays.equals(mFieldDescriptors, other.mFieldDescriptors);
+			return mName.equals(other.mName) && Arrays.equals(mFieldDescriptors, other.mFieldDescriptors);
 		}
 
 		return false;
@@ -309,10 +291,15 @@ public class EntityDescriptor implements Externalizable
 		mKeyFields = keys.toArray(new FieldDescriptor[keys.size()]);
 		mDiscriminatorFields = disc.toArray(new FieldDescriptor[disc.size()]);
 		mValueFields = values.toArray(new FieldDescriptor[values.size()]);
+
+		if (mType != null)
+		{
+			loadFields();
+		}
 	}
 
 
-	Field getField(FieldDescriptor aFieldType)
+	private Field getField(FieldDescriptor aFieldType)
 	{
 		assert mType != null : "Internal Error: Type not bound!";
 
@@ -333,6 +320,27 @@ public class EntityDescriptor implements Externalizable
 		}
 
 		return field;
+	}
+
+
+	private void loadFields()
+	{
+		for (FieldDescriptor field : mFieldDescriptors)
+		{
+			getField(field);
+		}
+		for (FieldDescriptor field : mKeyFields)
+		{
+			getField(field);
+		}
+		for (FieldDescriptor field : mDiscriminatorFields)
+		{
+			getField(field);
+		}
+		for (FieldDescriptor field : mValueFields)
+		{
+			getField(field);
+		}
 	}
 
 

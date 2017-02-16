@@ -13,7 +13,7 @@ public class MarshallerNGTest
 	{
 		_BigObject2K1D in = new _BigObject2K1D().random();
 
-		EntityDescriptor tableDescriptor = EntityDescriptor.getInstance(_BigObject2K1D.class);
+		EntityDescriptor tableDescriptor = EntityDescriptorRegistry.getInstance(_BigObject2K1D.class);
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 
@@ -37,7 +37,7 @@ public class MarshallerNGTest
 	{
 		_BigObject2K1D in = new _BigObject2K1D().random();
 
-		EntityDescriptor tableDescriptor = EntityDescriptor.getInstance(_BigObject2K1D.class);
+		EntityDescriptor tableDescriptor = EntityDescriptorRegistry.getInstance(_BigObject2K1D.class);
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 
