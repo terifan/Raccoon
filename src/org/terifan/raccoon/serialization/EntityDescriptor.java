@@ -187,7 +187,7 @@ public class EntityDescriptor implements Externalizable
 	{
 		ArrayList<Field> fields = new ArrayList<>();
 
-		for (Field field : aType.getDeclaredFields())
+		for (Field field : getDeclaredFields(aType))
 		{
 			if ((field.getModifiers() & (Modifier.TRANSIENT | Modifier.STATIC | Modifier.FINAL)) == 0)
 			{
@@ -307,7 +307,7 @@ public class EntityDescriptor implements Externalizable
 
 		if (field == null)
 		{
-			for (Field f : mType.getDeclaredFields())
+			for (Field f : getDeclaredFields(mType))
 			{
 				if (aFieldType.getName().equals(f.getName()) && aFieldType.getTypeName().equals(f.getType().getName()))
 				{
@@ -341,6 +341,27 @@ public class EntityDescriptor implements Externalizable
 		{
 			getField(field);
 		}
+	}
+
+
+	private static ArrayList<Field> getDeclaredFields(Class<?> aType)
+	{
+		return getDeclaredFields(aType, new ArrayList<>());
+	}
+
+
+	private static ArrayList<Field> getDeclaredFields(Class<?> aType, ArrayList<Field> aOutput)
+	{
+		aOutput.addAll(Arrays.asList(aType.getDeclaredFields()));
+
+		Class<?> sup = aType.getSuperclass();
+
+		if (sup != Object.class)
+		{
+			getDeclaredFields(sup, aOutput);
+		}
+
+		return aOutput;
 	}
 
 
