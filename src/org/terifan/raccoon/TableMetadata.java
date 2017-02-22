@@ -5,8 +5,8 @@ import org.terifan.raccoon.serialization.FieldCategory;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.EntityDescriptor;
-import org.terifan.raccoon.serialization.EntityDescriptorRegistry;
-import org.terifan.raccoon.serialization.MarshallerRegistry;
+import org.terifan.raccoon.serialization.EntityDescriptorFactory;
+import org.terifan.raccoon.serialization.MarshallerFactory;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.ResultSet;
@@ -32,8 +32,8 @@ public final class TableMetadata
 	{
 		mType = aClass;
 		mTypeName = mType.getName();
-		mEntityDescriptor = EntityDescriptorRegistry.getInstance(mType);
-		mMarshaller = MarshallerRegistry.getInstance(mEntityDescriptor);
+		mEntityDescriptor = EntityDescriptorFactory.getInstance(mType);
+		mMarshaller = MarshallerFactory.getInstance(mEntityDescriptor);
 
 		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);
 	}
@@ -41,7 +41,7 @@ public final class TableMetadata
 
 	synchronized TableMetadata initialize()
 	{
-		mMarshaller = MarshallerRegistry.getInstance(mEntityDescriptor);
+		mMarshaller = MarshallerFactory.getInstance(mEntityDescriptor);
 
 		try
 		{
@@ -160,19 +160,16 @@ public final class TableMetadata
 
 		try
 		{
-			Marshaller marshaller = MarshallerRegistry.getInstance(mEntityDescriptor);
+			Marshaller marshaller = MarshallerFactory.getInstance(mEntityDescriptor);
 			ResultSet resultSet = marshaller.unmarshalDiscriminators(new ByteArrayBuffer(mDiscriminatorKey));
 
-			for (FieldDescriptor fieldType : mEntityDescriptor.getTypes())
+			for (FieldDescriptor fieldType : mEntityDescriptor.getDiscriminatorFields())
 			{
-				if (fieldType.getCategory() == FieldCategory.DISCRIMINATOR)
+				if (result.length() > 0)
 				{
-					if (result.length() > 0)
-					{
-						result.append(", ");
-					}
-					result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType.getIndex()));
+					result.append(", ");
 				}
+				result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType.getIndex()));
 			}
 		}
 		catch (Exception e)
@@ -186,14 +183,6 @@ public final class TableMetadata
 
 	public boolean hasDiscriminatorFields()
 	{
-		for (FieldDescriptor fieldType : mEntityDescriptor.getTypes())
-		{
-			if (fieldType.getCategory() == FieldCategory.DISCRIMINATOR)
-			{
-				return true;
-			}
-		}
-
-		return false;
+		return mEntityDescriptor.getDiscriminatorFields().length > 0;
 	}
 }

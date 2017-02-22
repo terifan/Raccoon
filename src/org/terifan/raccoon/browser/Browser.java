@@ -148,14 +148,16 @@ public class Browser
 						Table table = (Table)userObject;
 						EntityDescriptor metadata = table.getTableMetadata().getEntityDescriptor();
 
-						for (FieldDescriptor field : metadata.getTypes())
+						if(true)throw new IllegalStateException("getFields()");
+						for (FieldDescriptor field : metadata.getValueFields())
 						{
 							tableContentmodel.addColumn(field.getName());
 						}
 
 						frame.setTitle(table.getTableMetadata().toString());
 
-						for (FieldDescriptor field : metadata.getTypes())
+						if(true)throw new IllegalStateException("getFields()");
+						for (FieldDescriptor field : metadata.getValueFields())
 						{
 							tableFormatModel.addRow(new Object[]{
 								field.getCategory(),

@@ -10,8 +10,8 @@ import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.EntityDescriptor;
-import org.terifan.raccoon.serialization.EntityDescriptorRegistry;
-import org.terifan.raccoon.serialization.MarshallerRegistry;
+import org.terifan.raccoon.serialization.EntityDescriptorFactory;
+import org.terifan.raccoon.serialization.MarshallerFactory;
 import org.terifan.security.random.ISAAC;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -414,7 +414,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.v("read super block");
 		Log.inc();
 
-		mSuperBlockMarshaller = MarshallerRegistry.getInstance(EntityDescriptorRegistry.getInstance(SuperBlock.class));
+		mSuperBlockMarshaller = MarshallerFactory.getInstance(EntityDescriptorFactory.getInstance(SuperBlock.class));
 
 		SuperBlock superBlockOne = new SuperBlock();
 		SuperBlock superBlockTwo = new SuperBlock();
@@ -470,7 +470,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[mBlockSize]);
 		buffer.position(CHECKSUM_SIZE); // leave space for checksum
 
-		Marshaller m = MarshallerRegistry.getInstance(EntityDescriptorRegistry.getInstance(SuperBlock.class));
+		Marshaller m = MarshallerFactory.getInstance(EntityDescriptorFactory.getInstance(SuperBlock.class));
 		ByteArrayBuffer buf = m.marshalValues(buffer, mSuperBlock);
 
 		if (mBlockDevice instanceof SecureBlockDevice)

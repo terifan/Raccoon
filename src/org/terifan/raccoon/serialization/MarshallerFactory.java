@@ -3,12 +3,12 @@ package org.terifan.raccoon.serialization;
 import java.util.HashMap;
 
 
-public class MarshallerRegistry
+public class MarshallerFactory
 {
 	private final static HashMap<EntityDescriptor, Marshaller> INSTANCES = new HashMap<>();
 
 	
-	private MarshallerRegistry()
+	private MarshallerFactory()
 	{
 	}
 	
@@ -19,7 +19,7 @@ public class MarshallerRegistry
 
 		if (instance == null)
 		{
-			synchronized (MarshallerRegistry.class)
+			synchronized (MarshallerFactory.class)
 			{
 				instance = INSTANCES.get(aTypeDeclarations);
 
