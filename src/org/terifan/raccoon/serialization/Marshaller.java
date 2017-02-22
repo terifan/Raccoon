@@ -21,19 +21,6 @@ public class Marshaller
 	}
 
 
-	public Marshaller xxxxxxxxxxxxx(Class aType)
-	{
-		if (aType != null && mEntityDescriptor.getType() != aType)
-		{
-			System.out.println("Possible bug: Marshaller setType called!");
-
-			mEntityDescriptor.setType(aType);
-		}
-
-		return this;
-	}
-
-
 	public ByteArrayBuffer marshalKeys(ByteArrayBuffer aBuffer, Object aObject)
 	{
 		return marshalImpl(aBuffer, aObject, mEntityDescriptor.getKeyFields());

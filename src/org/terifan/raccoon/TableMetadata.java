@@ -92,7 +92,7 @@ public final class TableMetadata
 
 	public Marshaller getMarshaller()
 	{
-		return mMarshaller.xxxxxxxxxxxxx(mType);
+		return mMarshaller;
 	}
 
 

@@ -17,6 +17,7 @@ import org.terifan.raccoon.io.Blob;
 import org.terifan.raccoon.io.BlobInputStream;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.BlockAccessor;
+import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
@@ -366,7 +367,9 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 			}
 		}
 
-		mTableMetadata.getMarshaller().unmarshalValues(buffer, aOutput);
+		Marshaller marshaller = mTableMetadata.getMarshaller();
+		marshaller.unmarshalDiscriminators(buffer, aOutput);
+		marshaller.unmarshalValues(buffer, aOutput);
 	}
 
 
@@ -378,7 +381,13 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 
 	private byte[] getNonKeys(Object aInput)
 	{
-		return mTableMetadata.getMarshaller().marshalValues(new ByteArrayBuffer(16), aInput).trim().array();
+		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
+
+		Marshaller marshaller = mTableMetadata.getMarshaller();
+		marshaller.marshalDiscriminators(buffer, aInput);
+		marshaller.marshalValues(buffer, aInput);
+
+		return buffer.trim().array();
 	}
 
 
