@@ -10,20 +10,22 @@ import java.util.GregorianCalendar;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.OpenOption;
 import org.terifan.raccoon.io.AccessCredentials;
+import org.terifan.raccoon.io.MemoryBlockDevice;
 import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 
 
 public class Sample
 {
-	@Test(enabled = false)
+	@Test
 	public void test() throws IOException
 	{
 		Log.LEVEL = 0;
 
 		AccessCredentials accessCredentials = new AccessCredentials("password");
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
 
-		try (Database db = Database.open(new File("c:/temp/sample.db"), OpenOption.CREATE_NEW, accessCredentials))
+		try (Database db = Database.open(blockDevice, OpenOption.CREATE_NEW, accessCredentials))
 		{
 			db.save(new _Fruit1K("apple", 52.12));
 			db.save(new _Fruit1K("orange", 47.78));
@@ -36,13 +38,6 @@ public class Sample
 
 		try (Database db = Database.open(new File("c:/temp/sample.db"), OpenOption.OPEN, accessCredentials))
 		{
-//			db.list(_Fruit1K.class).stream().forEach(System.out::println);
-//			db.list(_Fruit2K.class).stream().forEach(System.out::println);
-//			db.list(_Person1K.class).stream().forEach(System.out::println);
-//			db.list(_Object1K.class).stream().forEach(System.out::println);
-//
-//			Log.out.println(db.get(new _Fruit1K("apple")));
-
 			db.list(_Fruit1K.class).forEach(System.out::println);
 		}
 	}
