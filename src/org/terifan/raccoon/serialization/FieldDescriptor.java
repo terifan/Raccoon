@@ -216,11 +216,12 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 		}
 		s = s.replace("Int", "Integer");
 		s = s.replace("Char", "Character");
+		StringBuilder t = new StringBuilder();
 		for (int i = 0; i < mDepth; i++)
 		{
-			s += "[]";
+			t.append("[]");
 		}
-		s += " " + mName;
+		s += t + " " + mName;
 
 		return s;
 	}

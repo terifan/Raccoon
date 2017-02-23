@@ -39,8 +39,6 @@ public class Sample
 //				Log.out.println(db.get(new _Fruit1K("apple")));
 
 				db.list(_Fruit1K.class).forEach(System.out::println);
-
-				db.stream(_Fruit1K.class).forEach(System.out::println);
 			}
 		}
 		catch (Throwable e)

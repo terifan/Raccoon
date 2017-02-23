@@ -2,3 +2,4 @@
 /build/
 /dist/
 /.jacocoverage/
+/sonar_build.xml

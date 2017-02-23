@@ -239,13 +239,13 @@ class RangeMap implements Cloneable
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder("{");
-		for (Integer key : mMap.keySet())
+		for (Entry<Integer, Integer> entry : mMap.entrySet())
 		{
 			if (sb.length() > 1)
 			{
 				sb.append(", ");
 			}
-			sb.append(key + "-" + (mMap.get(key) - 1));
+			sb.append(entry.getKey() + "-" + (entry.getValue() - 1));
 		}
 		sb.append("}");
 		return sb.toString();

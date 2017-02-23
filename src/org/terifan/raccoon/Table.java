@@ -195,7 +195,7 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 						deleteIfBlob(entry);
 					}
 
-					synchronized (this)
+					synchronized (Table.this)
 					{
 						mOpenOutputStreams.remove(aBlobOutputStream);
 					}

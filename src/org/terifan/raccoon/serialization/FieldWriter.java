@@ -126,7 +126,7 @@ class FieldWriter
 				aOutput.write(baos.toByteArray());
 				break;
 			default:
-				throw new Error("Content type not implemented: " + aFieldType.getContentType());
+				throw new IllegalStateException("Content type not implemented: " + aFieldType.getContentType());
 		}
 	}
 }

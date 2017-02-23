@@ -902,43 +902,43 @@ public class DatabaseNGTest
 	}
 
 
-	@Test
-	public void testStream() throws Exception
-	{
-		MemoryBlockDevice device = new MemoryBlockDevice(512);
-
-		TreeSet<String> keys = new TreeSet<>();
-
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
-		{
-			for (int i = 0; i < 10000; i++)
-			{
-				keys.add("dog_"+i);
-				database.save(new _Animal1K("dog_"+i));
-			}
-			database.commit();
-		}
-
-		try (Database database = Database.open(device, OpenOption.OPEN))
-		{
-			TreeSet<String> found = new TreeSet<>();
-			database.stream(_Animal1K.class).forEach(e->found.add(e._name));
-
-			assertEquals(found, keys);
-		}
-	}
-
-
-	@Test(timeOut = 1000)
-	public void testStreamMissingTable() throws Exception
-	{
-		MemoryBlockDevice device = new MemoryBlockDevice(512);
-
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
-		{
-			database.stream(_Fruit1K.class).forEach(e->fail());
-		}
-	}
+//	@Test
+//	public void testStream() throws Exception
+//	{
+//		MemoryBlockDevice device = new MemoryBlockDevice(512);
+//
+//		TreeSet<String> keys = new TreeSet<>();
+//
+//		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+//		{
+//			for (int i = 0; i < 10000; i++)
+//			{
+//				keys.add("dog_"+i);
+//				database.save(new _Animal1K("dog_"+i));
+//			}
+//			database.commit();
+//		}
+//
+//		try (Database database = Database.open(device, OpenOption.OPEN))
+//		{
+//			TreeSet<String> found = new TreeSet<>();
+//			database.stream(_Animal1K.class).forEach(e->found.add(e._name));
+//
+//			assertEquals(found, keys);
+//		}
+//	}
+//
+//
+//	@Test(timeOut = 1000)
+//	public void testStreamMissingTable() throws Exception
+//	{
+//		MemoryBlockDevice device = new MemoryBlockDevice(512);
+//
+//		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+//		{
+//			database.stream(_Fruit1K.class).forEach(e->fail());
+//		}
+//	}
 
 
 	@Test
@@ -1112,7 +1112,7 @@ public class DatabaseNGTest
 
 		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
 		{
-			List<String> items = db.stream(_Fruit1K.class).map(e->e._name).collect(Collectors.toList());
+			List<String> items = db.list(_Fruit1K.class).stream().map(e->e._name).collect(Collectors.toList());
 
 			assertEquals(items.size(), 20000);
 

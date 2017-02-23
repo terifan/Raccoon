@@ -927,10 +927,10 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public <T> Stream<T> stream(Class<T> aType)
-	{
-		return stream(aType, null);
-	}
+//	public <T> Stream<T> stream(Class<T> aType)
+//	{
+//		return stream(aType, null);
+//	}
 
 
 	/**
@@ -942,30 +942,30 @@ public final class Database implements AutoCloseable
 	 * @param aEntity
 	 * @return
 	 */
-	public <T> Stream<T> stream(Class<T> aType, T aEntity)
-	{
-		mReadLock.lock();
-		try
-		{
-			Table table = openTable(aType, aEntity, OpenOption.OPEN);
-
-			if (table == null)
-			{
-				mReadLock.unlock();
-
-				return new ArrayList<T>().stream();
-			}
-
-			return table.stream(mReadLock);
-		}
-		catch (Throwable e)
-		{
-			mReadLock.unlock();
-
-			forceClose(e);
-			throw e;
-		}
-	}
+//	public <T> Stream<T> stream(Class<T> aType, T aEntity)
+//	{
+//		mReadLock.lock();
+//		try
+//		{
+//			Table table = openTable(aType, aEntity, OpenOption.OPEN);
+//
+//			if (table == null)
+//			{
+//				mReadLock.unlock();
+//
+//				return new ArrayList<T>().stream();
+//			}
+//
+//			return table.stream(mReadLock);
+//		}
+//		catch (Throwable e)
+//		{
+//			mReadLock.unlock();
+//
+//			forceClose(e);
+//			throw e;
+//		}
+//	}
 
 
 //	public ResultSet list(String aType)
