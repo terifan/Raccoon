@@ -1,4 +1,4 @@
-package tests;
+package resources;
 
 import java.lang.management.ManagementFactory;
 import java.util.concurrent.ExecutorService;

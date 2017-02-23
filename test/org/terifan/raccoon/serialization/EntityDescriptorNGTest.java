@@ -8,7 +8,7 @@ import java.io.ObjectOutputStream;
 import org.terifan.raccoon.util.Log;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import tests._BigObject2K1D;
+import resources.entities._BigObject2K1D;
 
 
 public class EntityDescriptorNGTest
@@ -99,8 +99,8 @@ public class EntityDescriptorNGTest
 	{
 		EntityDescriptorFactory.getInstance(String.class);
 	}
-	
-	
+
+
 	@Test
 	public void testGetJavaDeclaration()
 	{
@@ -108,7 +108,7 @@ public class EntityDescriptorNGTest
 
 		String str = ed.getJavaDeclaration().replace("\r\n","\n").replace("\n\n","\n");
 
-		assertEquals(str, "package tests;\n" +
+		assertEquals(str, "package resources.entities;\n" +
 			"class _BigObject2K1D\n" +
 			"{\n" +
 			"	@Key Long _key1;\n" +

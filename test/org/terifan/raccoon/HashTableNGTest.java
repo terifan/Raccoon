@@ -6,7 +6,7 @@ import java.util.Map;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
-import static tests.__TestUtils.*;
+import static resources.__TestUtils.*;
 import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;

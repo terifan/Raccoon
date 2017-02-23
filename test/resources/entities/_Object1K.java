@@ -1,4 +1,4 @@
-package tests;
+package resources.entities;
 
 import java.util.Calendar;
 import org.terifan.raccoon.Key;

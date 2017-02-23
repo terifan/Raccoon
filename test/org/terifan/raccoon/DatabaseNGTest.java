@@ -1,11 +1,11 @@
 package org.terifan.raccoon;
 
-import tests._BlobKey1K;
-import tests.__FixedThreadExecutor;
-import tests._Fruit2K;
-import tests._KeyValue1K;
-import tests._Number1K1D;
-import tests._Animal1K;
+import resources.entities._BlobKey1K;
+import resources.__FixedThreadExecutor;
+import resources.entities._Fruit2K;
+import resources.entities._KeyValue1K;
+import resources.entities._Number1K1D;
+import resources.entities._Animal1K;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -29,9 +29,9 @@ import org.terifan.security.cryptography.InvalidKeyException;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
-import tests._Fruit1K;
-import static tests.__TestUtils.createBuffer;
-import static tests.__TestUtils.t;
+import resources.entities._Fruit1K;
+import static resources.__TestUtils.createBuffer;
+import static resources.__TestUtils.t;
 
 
 public class DatabaseNGTest

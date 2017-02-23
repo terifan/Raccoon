@@ -5,7 +5,7 @@ import org.terifan.raccoon.Database;
 import org.terifan.raccoon.OpenOption;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
-import static tests.__TestUtils.*;
+import static resources.__TestUtils.*;
 
 
 public class ManagedBlockDeviceNGTest

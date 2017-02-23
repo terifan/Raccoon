@@ -7,7 +7,7 @@ import org.terifan.raccoon.io.BlockPointer.BlockType;
 import org.testng.annotations.Test;
 import static org.testng.AssertJUnit.*;
 import org.testng.annotations.DataProvider;
-import tests.__FixedThreadExecutor;
+import resources.__FixedThreadExecutor;
 
 
 public class BlockAccessorNGTest

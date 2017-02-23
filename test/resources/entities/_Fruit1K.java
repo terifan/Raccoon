@@ -1,4 +1,4 @@
-package tests;
+package resources.entities;
 
 import org.terifan.raccoon.Key;
 

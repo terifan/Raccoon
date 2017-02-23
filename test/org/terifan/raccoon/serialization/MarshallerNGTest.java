@@ -3,7 +3,7 @@ package org.terifan.raccoon.serialization;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import tests._BigObject2K1D;
+import resources.entities._BigObject2K1D;
 
 
 public class MarshallerNGTest

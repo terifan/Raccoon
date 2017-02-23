@@ -1,4 +1,4 @@
-package tests;
+package resources.entities;
 
 import java.io.Serializable;
 import org.terifan.raccoon.Key;

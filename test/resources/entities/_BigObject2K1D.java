@@ -1,4 +1,4 @@
-package tests;
+package resources.entities;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
-import static tests.__TestUtils.*;
+import static resources.__TestUtils.*;
 
 
 public class _BigObject2K1D implements Serializable
