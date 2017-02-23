@@ -1,7 +1,6 @@
 package org.terifan.raccoon.serialization;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -12,7 +11,7 @@ import org.terifan.raccoon.util.Log;
 import static org.terifan.raccoon.serialization.TypeMappings.*;
 
 
-public class EntityDescriptorFactory 
+public class EntityDescriptorFactory
 {
 	private final static HashMap<Class, EntityDescriptor> INSTANCES = new HashMap<>();
 
@@ -22,23 +21,14 @@ public class EntityDescriptorFactory
 	}
 
 
-	public static EntityDescriptor getInstance(Class aType)
+	public static synchronized EntityDescriptor getInstance(Class aType)
 	{
 		EntityDescriptor instance = INSTANCES.get(aType);
 
 		if (instance == null)
 		{
-			synchronized (EntityDescriptorFactory.class)
-			{
-				instance = INSTANCES.get(aType);
-
-				if (instance == null)
-				{
-					instance = createEntityDescriptor(aType);
-
-					INSTANCES.put(aType, instance);
-				}
-			}
+			instance = createEntityDescriptor(aType);
+			INSTANCES.put(aType, instance);
 		}
 
 		return instance;
@@ -87,11 +77,11 @@ public class EntityDescriptorFactory
 
 			Log.v("type found: %s", fieldDescriptor);
 		}
-		
+
 		if (keys.isEmpty())
 		{
 			throw new IllegalArgumentException("Entity has no keys: " + aType);
-		}	
+		}
 
 		return new EntityDescriptor(aType, keys.toArray(new FieldDescriptor[keys.size()]), discriminators.toArray(new FieldDescriptor[discriminators.size()]), values.toArray(new FieldDescriptor[values.size()]));
 	}

@@ -57,21 +57,21 @@ public class Marshaller
 	}
 
 
-	public ResultSet unmarshalKeys(ByteArrayBuffer aBuffer)
+	public ResultSet unmarshalKeys(ByteArrayBuffer aBuffer, ResultSet aResultSet)
 	{
-		return unmarshalImpl(aBuffer, mEntityDescriptor.getKeyFields());
+		return unmarshalImpl(aBuffer, aResultSet, mEntityDescriptor.getKeyFields());
 	}
 
 
-	public ResultSet unmarshalDiscriminators(ByteArrayBuffer aBuffer)
+	public ResultSet unmarshalDiscriminators(ByteArrayBuffer aBuffer, ResultSet aResultSet)
 	{
-		return unmarshalImpl(aBuffer, mEntityDescriptor.getDiscriminatorFields());
+		return unmarshalImpl(aBuffer, aResultSet, mEntityDescriptor.getDiscriminatorFields());
 	}
 
 
-	public ResultSet unmarshalValues(ByteArrayBuffer aBuffer)
+	public ResultSet unmarshalValues(ByteArrayBuffer aBuffer, ResultSet aResultSet)
 	{
-		return unmarshalImpl(aBuffer, mEntityDescriptor.getValueFields());
+		return unmarshalImpl(aBuffer, aResultSet, mEntityDescriptor.getValueFields());
 	}
 
 
@@ -81,7 +81,7 @@ public class Marshaller
 		{
 			Log.v("marshal entity fields %s", Arrays.toString(aTypes));
 			Log.inc();
-			
+
 			ArrayList<Object> values = new ArrayList<>();
 
 			// write null-bitmap
@@ -160,18 +160,16 @@ public class Marshaller
 	}
 
 
-	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, FieldDescriptor[] types)
+	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, ResultSet aResultSet, FieldDescriptor[] aTypes)
 	{
 		try
 		{
 			Log.v("unmarshal entity fields");
 			Log.inc();
 
-			ResultSet resultSet = new ResultSet();
+			boolean[] isNull = new boolean[aTypes.length];
 
-			boolean[] isNull = new boolean[types.length];
-
-			for (int i = 0; i < types.length; i++)
+			for (int i = 0; i < aTypes.length; i++)
 			{
 				isNull[i] = aBuffer.readBit() == 1;
 			}
@@ -179,19 +177,19 @@ public class Marshaller
 			aBuffer.align();
 
 			int i = 0;
-			for (FieldDescriptor fieldType : types)
+			for (FieldDescriptor fieldType : aTypes)
 			{
 				if (!isNull[i++])
 				{
 					Object value = FieldReader.readField(fieldType, aBuffer);
 
-					resultSet.add(fieldType, value);
+					aResultSet.add(fieldType, value);
 				}
 			}
 
 			Log.dec();
 
-			return resultSet;
+			return aResultSet;
 		}
 		catch (IOException | ClassNotFoundException e)
 		{

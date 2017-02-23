@@ -7,10 +7,8 @@ import org.terifan.raccoon.serialization.FieldDescriptor;
 
 public class ResultSet
 {
-	private final static long serialVersionUID = 1L;
-
-	private final Map<Integer, Object> mValues;
 	private final Map<String, FieldDescriptor> mTypes;
+	private final Map<Integer, Object> mValues;
 
 
 	public ResultSet()
@@ -54,5 +52,12 @@ public class ResultSet
 	{
 		mTypes.put(aFieldType.getName(), aFieldType);
 		mValues.put(aFieldType.getIndex(), aValue);
+	}
+
+
+	@Override
+	public String toString()
+	{
+		return "ResultSet{" + "mValues=" + mValues + ", mTypes=" + mTypes + '}';
 	}
 }

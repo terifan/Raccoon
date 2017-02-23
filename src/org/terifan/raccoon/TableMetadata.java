@@ -161,7 +161,7 @@ public final class TableMetadata
 		try
 		{
 			Marshaller marshaller = MarshallerFactory.getInstance(mEntityDescriptor);
-			ResultSet resultSet = marshaller.unmarshalDiscriminators(new ByteArrayBuffer(mDiscriminatorKey));
+			ResultSet resultSet = marshaller.unmarshalDiscriminators(new ByteArrayBuffer(mDiscriminatorKey), new ResultSet());
 
 			for (FieldDescriptor fieldType : mEntityDescriptor.getDiscriminatorFields())
 			{
