@@ -998,7 +998,7 @@ public final class Database implements AutoCloseable
 	 * Sets a Supplier associated with the specified type. The Supplier is used to create instances of specified types.
 	 *
 	 * E.g:
-	 * 	 mDatabase.setSupplier(Photo.class, ()->new Photo(PhotoAlbum.this));
+	 * 	 mDatabase.setSupplier(Photo.class, ()-&gt;new Photo(PhotoAlbum.this));
 	 */
 	public <T> void setSupplier(Class<T> aType, Supplier<T> aSupplier)
 	{

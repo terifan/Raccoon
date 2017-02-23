@@ -418,7 +418,6 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 			{
 				EntityIterator entityIterator = new EntityIterator(Table.this, mTableImplementation.iterator());
 
-				int i;
 				@Override
 				public boolean tryAdvance(Consumer<? super T> aConsumer)
 				{
