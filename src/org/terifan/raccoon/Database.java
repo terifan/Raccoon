@@ -31,7 +31,7 @@ import org.terifan.security.messagedigest.MurmurHash3;
 
 public final class Database implements AutoCloseable
 {
-	private final static int RACCOON_DB_VERSION = 1;
+	private final static int RACCOON_DB_VERSION = 2;
 	private final static int EXTRA_DATA_CHECKSUM_SEED = 0xf49209b1;
 	private final static long RACCOON_DB_IDENTITY = 0x726163636f6f6e00L; // 'raccoon\0'
 	private final static BlockSizeParam DEFAULT_BLOCK_SIZE = new BlockSizeParam(4096);
