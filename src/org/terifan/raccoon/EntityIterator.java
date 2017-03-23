@@ -4,7 +4,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 import java.util.function.Supplier;
-import org.terifan.raccoon.util.Log;
 
 
 public final class EntityIterator<T> implements Iterator<T>
@@ -31,7 +30,7 @@ public final class EntityIterator<T> implements Iterator<T>
 	public T next()
 	{
 		T outputEntity = (T)newEntityInstance();
-		
+
 		LeafEntry entry = mIterator.next();
 
 		mTable.unmarshalToObjectKeys(entry, outputEntity);
@@ -51,7 +50,11 @@ public final class EntityIterator<T> implements Iterator<T>
 
 			Supplier supplier = mTable.getDatabase().getSupplier(type);
 
-			if (supplier != null)
+			if (type == TableMetadata.class)
+			{
+				return new TableMetadata(type, null);
+			}
+			else if (supplier != null)
 			{
 				return supplier.get();
 			}
@@ -68,6 +71,7 @@ public final class EntityIterator<T> implements Iterator<T>
 			throw new DatabaseException(e);
 		}
 	}
+
 
 	private void initializeNewEntity(T aEntity)
 	{

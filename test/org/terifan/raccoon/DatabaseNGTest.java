@@ -688,7 +688,7 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			List<TableMetadata> tableMetadatas = database.getTableMetadatas();
+			List<TableMetadata> tableMetadatas = database.getTableMetadataList();
 
 			assertEquals(tableMetadatas.size(), 3);
 

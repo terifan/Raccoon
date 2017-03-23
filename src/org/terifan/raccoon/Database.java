@@ -1120,7 +1120,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public List<TableMetadata> getTableMetadatas()
+	public List<TableMetadata> getTableMetadataList()
 	{
 		checkOpen();
 
@@ -1173,7 +1173,7 @@ public final class Database implements AutoCloseable
 		Log.out.println(mSystemTable);
 		mSystemTable.scan();
 
-		for (TableMetadata tableMetadata : getTableMetadatas())
+		for (TableMetadata tableMetadata : getTableMetadataList())
 		{
 			Log.out.println(tableMetadata);
 
@@ -1191,7 +1191,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			for (TableMetadata tableMetadata : getTableMetadatas())
+			for (TableMetadata tableMetadata : getTableMetadataList())
 			{
 				if (tableMetadata.getTypeName().equals(aTypeName))
 				{

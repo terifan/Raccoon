@@ -75,15 +75,6 @@ public class EntityDescriptorNGTest
 
 
 	@Test
-	public void testGetType() throws IOException, ClassNotFoundException
-	{
-		EntityDescriptor a = EntityDescriptorFactory.getInstance(_BigObject2K1D.class);
-
-		assertEquals(a.getType(), _BigObject2K1D.class);
-	}
-
-
-	@Test
 	public void testHashCode() throws IOException, ClassNotFoundException
 	{
 		EntityDescriptor a = EntityDescriptorFactory.getInstance(_BigObject2K1D.class);

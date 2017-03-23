@@ -84,7 +84,7 @@ public class Browser
 
 			DefaultMutableTreeNode root = new DefaultMutableTreeNode();
 			HashMap<String,DefaultMutableTreeNode> groups = new HashMap<>();
-			for (TableMetadata tableMetadata : database.getTableMetadatas())
+			for (TableMetadata tableMetadata : database.getTableMetadataList())
 			{
 				if (tableMetadata.hasDiscriminatorFields())
 				{

@@ -22,8 +22,6 @@ public class EntityDescriptor implements Externalizable
 	private FieldDescriptor[] mDiscriminatorFields;
 	private FieldDescriptor[] mValueFields;
 
-	private transient Class mType;
-
 
 	public EntityDescriptor()
 	{
@@ -35,7 +33,6 @@ public class EntityDescriptor implements Externalizable
 		Log.v("create type declarations for %s", aType);
 		Log.inc();
 
-		mType = aType;
 		mName = aType.getName();
 		mKeyFields = aKeyFields;
 		mDiscriminatorFields = aDiscriminatorFields;
@@ -45,17 +42,9 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	public Class getType()
-	{
-		return mType;
-	}
-
-
 	public void setType(Class aType)
 	{
-		mType = aType;
-
-		for (Field field : ObjectReflection.getDeclaredFields(mType))
+		for (Field field : ObjectReflection.getDeclaredFields(aType))
 		{
 			for (FieldDescriptor[] fieldDescriptors : new FieldDescriptor[][]{mKeyFields, mDiscriminatorFields,mValueFields})
 			{

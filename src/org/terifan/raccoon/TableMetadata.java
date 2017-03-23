@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
 import java.util.Arrays;
-import org.terifan.raccoon.serialization.FieldCategory;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.EntityDescriptor;
@@ -21,11 +20,6 @@ public final class TableMetadata
 
 	private transient Class mType;
 	private transient Marshaller mMarshaller;
-
-
-	TableMetadata()
-	{
-	}
 
 
 	TableMetadata(Class aClass, Object aDiscriminator)
@@ -156,25 +150,18 @@ public final class TableMetadata
 			return null;
 		}
 
+		Marshaller marshaller = MarshallerFactory.getInstance(mEntityDescriptor);
+		ResultSet resultSet = marshaller.unmarshalDiscriminators(new ByteArrayBuffer(mDiscriminatorKey), new ResultSet());
 		StringBuilder result = new StringBuilder();
 
-		try
+		for (FieldDescriptor fieldType : mEntityDescriptor.getDiscriminatorFields())
 		{
-			Marshaller marshaller = MarshallerFactory.getInstance(mEntityDescriptor);
-			ResultSet resultSet = marshaller.unmarshalDiscriminators(new ByteArrayBuffer(mDiscriminatorKey), new ResultSet());
-
-			for (FieldDescriptor fieldType : mEntityDescriptor.getDiscriminatorFields())
+			if (result.length() > 0)
 			{
-				if (result.length() > 0)
-				{
-					result.append(", ");
-				}
-				result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType.getIndex()));
+				result.append(", ");
 			}
-		}
-		catch (Exception e)
-		{
-			Log.e("Error: %s", e.getMessage());
+
+			result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType.getIndex()));
 		}
 
 		return result.toString();
