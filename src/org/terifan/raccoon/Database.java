@@ -292,7 +292,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private Table openTable(Class aType, Object aDiscriminator, OpenOption aOptions)
+	private Table openTable(Class aType, DiscriminatorType aDiscriminator, OpenOption aOptions)
 	{
 		checkOpen();
 
@@ -590,7 +590,7 @@ public final class Database implements AutoCloseable
 		mWriteLock.lock();
 		try
 		{
-			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.CREATE);
+			Table table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.CREATE);
 			return table.save(aEntity);
 		}
 		catch (DatabaseException e)
@@ -616,7 +616,7 @@ public final class Database implements AutoCloseable
 		mReadLock.lock();
 		try
 		{
-			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.OPEN);
+			Table table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.OPEN);
 			if (table == null)
 			{
 				return false;
@@ -647,7 +647,7 @@ public final class Database implements AutoCloseable
 		mReadLock.lock();
 		try
 		{
-			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.OPEN);
+			Table table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.OPEN);
 
 			if (table == null)
 			{
@@ -683,7 +683,7 @@ public final class Database implements AutoCloseable
 		mWriteLock.lock();
 		try
 		{
-			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.OPEN);
+			Table table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.OPEN);
 			if (table == null)
 			{
 				return false;
@@ -725,7 +725,7 @@ public final class Database implements AutoCloseable
 		mWriteLock.lock();
 		try
 		{
-			Table table = openTable(aType, aEntity, OpenOption.OPEN);
+			Table table = openTable(aType, new DiscriminatorType(aEntity), OpenOption.OPEN);
 			if (table != null)
 			{
 				table.clear();
@@ -751,7 +751,7 @@ public final class Database implements AutoCloseable
 		mWriteLock.lock();
 		try
 		{
-			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.CREATE);
+			Table table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.CREATE);
 			return table.saveBlob(aEntity);
 		}
 		catch (DatabaseException e)
@@ -774,7 +774,7 @@ public final class Database implements AutoCloseable
 		mWriteLock.lock();
 		try
 		{
-			Table table = openTable(aKeyEntity.getClass(), aKeyEntity, OpenOption.CREATE);
+			Table table = openTable(aKeyEntity.getClass(), new DiscriminatorType(aKeyEntity), OpenOption.CREATE);
 			return table.save(aKeyEntity, aInputStream);
 		}
 		catch (DatabaseException e)
@@ -802,7 +802,7 @@ public final class Database implements AutoCloseable
 		mReadLock.lock();
 		try
 		{
-			Table table = openTable(aEntity.getClass(), aEntity, OpenOption.OPEN);
+			Table table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.OPEN);
 			if (table == null)
 			{
 				return null;
@@ -841,7 +841,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public <T> Iterable<T> iterable(Class<T> aType, T aDiscriminator)
+	public <T> Iterable<T> iterable(Class<T> aType, DiscriminatorType<T> aDiscriminator)
 	{
 		mReadLock.lock();
 		try
@@ -872,7 +872,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public <T> Iterator<T> iterator(Class<T> aType, T aDiscriminator)
+	public <T> Iterator<T> iterator(Class<T> aType, DiscriminatorType<T> aDiscriminator)
 	{
 		mReadLock.lock();
 		try
@@ -915,7 +915,7 @@ public final class Database implements AutoCloseable
 		mReadLock.lock();
 		try
 		{
-			Table table = openTable(aType, aEntity, OpenOption.OPEN);
+			Table table = openTable(aType, new DiscriminatorType(aEntity), OpenOption.OPEN);
 			if (table == null)
 			{
 				return new ArrayList<>();
@@ -1062,12 +1062,12 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public int size(Object aDiscriminator)
+	public int size(DiscriminatorType aDiscriminator)
 	{
 		mReadLock.lock();
 		try
 		{
-			Table table = openTable(aDiscriminator.getClass(), aDiscriminator, OpenOption.OPEN);
+			Table table = openTable(aDiscriminator.getType(), aDiscriminator, OpenOption.OPEN);
 			if (table == null)
 			{
 				return 0;
@@ -1198,29 +1198,6 @@ public final class Database implements AutoCloseable
 			{
 				table.scan();
 			}
-		}
-	}
-
-
-	public EntityDescriptor getEntityDescriptor(String aTypeName)
-	{
-		mReadLock.lock();
-
-		try
-		{
-			for (TableMetadata tableMetadata : getTableMetadataList())
-			{
-				if (tableMetadata.getTypeName().equals(aTypeName))
-				{
-					return tableMetadata.getEntityDescriptor();
-				}
-			}
-
-			return null;
-		}
-		finally
-		{
-			mReadLock.unlock();
 		}
 	}
 

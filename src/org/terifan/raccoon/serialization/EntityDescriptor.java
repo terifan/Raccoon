@@ -46,7 +46,7 @@ public class EntityDescriptor implements Externalizable
 	{
 		for (Field field : ObjectReflection.getDeclaredFields(aType))
 		{
-			for (FieldDescriptor[] fieldDescriptors : new FieldDescriptor[][]{mKeyFields, mDiscriminatorFields,mValueFields})
+			for (FieldDescriptor[] fieldDescriptors : new FieldDescriptor[][]{mKeyFields, mDiscriminatorFields, mValueFields})
 			{
 				for (FieldDescriptor fieldDescriptor : fieldDescriptors)
 				{

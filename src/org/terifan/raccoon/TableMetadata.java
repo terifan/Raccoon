@@ -27,7 +27,7 @@ public final class TableMetadata
 	}
 
 
-	TableMetadata(Class aClass, Object aDiscriminator)
+	TableMetadata(Class aClass, DiscriminatorType aDiscriminator)
 	{
 		mType = aClass;
 		mTypeName = mType.getName();
@@ -60,14 +60,26 @@ public final class TableMetadata
 	}
 
 
-	byte[] createDiscriminatorKey(Object aDiscriminator)
+	byte[] createDiscriminatorKey(DiscriminatorType aDiscriminator)
 	{
 		if (aDiscriminator != null)
 		{
-			return mMarshaller.marshalDiscriminators(new ByteArrayBuffer(16), aDiscriminator).trim().array();
+			return mMarshaller.marshalDiscriminators(new ByteArrayBuffer(16), aDiscriminator.newInstance()).trim().array();
 		}
 
 		return new byte[0];
+	}
+
+
+	Marshaller getMarshaller()
+	{
+		return mMarshaller;
+	}
+
+
+	EntityDescriptor getEntityDescriptor()
+	{
+		return mEntityDescriptor;
 	}
 
 
@@ -80,18 +92,6 @@ public final class TableMetadata
 	public String getTypeName()
 	{
 		return mTypeName;
-	}
-
-
-	public EntityDescriptor getEntityDescriptor()
-	{
-		return mEntityDescriptor;
-	}
-
-
-	public Marshaller getMarshaller()
-	{
-		return mMarshaller;
 	}
 
 

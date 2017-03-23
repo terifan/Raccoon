@@ -15,7 +15,7 @@ final class TableMetadataProvider
 	}
 
 
-	TableMetadata getOrCreate(Class aType, Object aDiscriminator)
+	TableMetadata getOrCreate(Class aType, DiscriminatorType aDiscriminator)
 	{
 		TableMetadata tableMetadata = getImpl(aType, aDiscriminator);
 		
@@ -42,7 +42,7 @@ final class TableMetadataProvider
 	}
 
 
-	private TableMetadata getImpl(Class aType, Object aDiscriminator)
+	private TableMetadata getImpl(Class aType, DiscriminatorType aDiscriminator)
 	{
 		for (int i = 0; i < mTableMetadatas.size(); i++)
 		{

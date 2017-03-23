@@ -743,8 +743,8 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			assertEquals(database.size(new _Number1K1D(true)), 3);
-			assertEquals(database.size(new _Number1K1D(false)), 2);
+			assertEquals(database.size(new DiscriminatorType(new _Number1K1D(true))), 3);
+			assertEquals(database.size(new DiscriminatorType(new _Number1K1D(false))), 2);
 		}
 	}
 
@@ -856,8 +856,8 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			assertEquals(database.size(new _Number1K1D(false)), 0);
-			assertEquals(database.size(new _Number1K1D(true)), 5000);
+			assertEquals(database.size(new DiscriminatorType(new _Number1K1D(false))), 0);
+			assertEquals(database.size(new DiscriminatorType(new _Number1K1D(true))), 5000);
 
 			// TODO:
 //			database.getTables().stream().forEach(e->Log.out.println(e));
@@ -1004,7 +1004,7 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
-			assertEquals(database.size(new _BlobKey1K("apple")), 0);
+			assertEquals(database.size(new DiscriminatorType(new _BlobKey1K("apple"))), 0);
 			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
 			assertEquals(null, database.read(new _BlobKey1K("bad")));
 			database.commit();

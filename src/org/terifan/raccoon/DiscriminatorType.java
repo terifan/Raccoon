@@ -10,6 +10,12 @@ public class DiscriminatorType<T>
 	{
 		this.instance = aInstance;
 	}
+	
+	
+	Class getType()
+	{
+		return instance.getClass();
+	}
 
 
 	T newInstance()
