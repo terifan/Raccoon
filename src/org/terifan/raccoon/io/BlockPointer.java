@@ -179,8 +179,8 @@ public class BlockPointer implements Serializable
 		assert mOffset >= 0 && mOffset < Integer.MAX_VALUE;
 		assert mTransactionId >= 0 && mTransactionId < Integer.MAX_VALUE;
 
-		aBuffer.write((byte)mType);
-		aBuffer.write((byte)mCompression);
+		aBuffer.writeInt8(mType);
+		aBuffer.writeInt8(mCompression);
 		aBuffer.writeInt16((short)mRange);
 		aBuffer.writeInt32(mLogicalSize);
 		aBuffer.writeInt32(mPhysicalSize);
@@ -197,8 +197,8 @@ public class BlockPointer implements Serializable
 
 	public BlockPointer unmarshal(ByteArrayBuffer aBuffer)
 	{
-		mType = aBuffer.read();
-		mCompression = aBuffer.read();
+		mType = aBuffer.readInt8();
+		mCompression = aBuffer.readInt8();
 		mRange = 0xFFFF & aBuffer.readInt16();
 		mLogicalSize = aBuffer.readInt32();
 		mPhysicalSize = aBuffer.readInt32();

@@ -31,6 +31,7 @@ import org.testng.annotations.DataProvider;
 import resources.entities._Fruit1K;
 import static resources.__TestUtils.createBuffer;
 import static resources.__TestUtils.t;
+import resources.entities._Fruit1K1D;
 
 
 public class DatabaseNGTest
@@ -707,19 +708,20 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
-			database.save(new _Number1K1D("a", 1));
-			database.save(new _Number1K1D("b", 2));
-			database.save(new _Number1K1D("c", 3));
-			database.save(new _Number1K1D("d", 4));
-			database.save(new _Number1K1D("e", 5));
+			database.save(new _Fruit1K1D("red", "a", 1));
+			database.save(new _Fruit1K1D("green", "b", 2));
+			database.save(new _Fruit1K1D("yellow", "c", 3));
+			database.save(new _Fruit1K1D("red", "d", 4));
+			database.save(new _Fruit1K1D("red", "e", 5));
+			database.save(new _Fruit1K1D("yellow", "f", 6));
 			database.commit();
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			List<_Number1K1D> list = database.getDiscriminators(()->new _Number1K1D());
+			List<DiscriminatorType<_Fruit1K1D>> list = database.getDiscriminators(_Fruit1K1D.class);
 
-			assertEquals(list.size(), 2);
+			assertEquals(list.size(), 3);
 		}
 	}
 

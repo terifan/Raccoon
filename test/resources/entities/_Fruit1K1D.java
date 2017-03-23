@@ -16,17 +16,16 @@ public class _Fruit1K1D
 	}
 
 
-	public _Fruit1K1D(String aColor, String aName)
+	public _Fruit1K1D(String aColor)
 	{
-		_name = aName;
 		_color = aColor;
 	}
 
 
 	public _Fruit1K1D(String aColor, String aName, double aCalories)
 	{
-		_name = aName;
 		_color = aColor;
+		_name = aName;
 		calories = aCalories;
 	}
 

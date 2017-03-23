@@ -22,6 +22,11 @@ public final class TableMetadata
 	private transient Marshaller mMarshaller;
 
 
+	public TableMetadata()
+	{
+	}
+
+
 	TableMetadata(Class aClass, Object aDiscriminator)
 	{
 		mType = aClass;
@@ -171,5 +176,29 @@ public final class TableMetadata
 	public boolean hasDiscriminatorFields()
 	{
 		return mEntityDescriptor.getDiscriminatorFields().length > 0;
+	}
+
+
+	public FieldDescriptor[] getKeyFields()
+	{
+		return mEntityDescriptor.getKeyFields().clone();
+	}
+
+
+	public FieldDescriptor[] getDiscriminatorFields()
+	{
+		return mEntityDescriptor.getDiscriminatorFields().clone();
+	}
+
+
+	public FieldDescriptor[] getValueFields()
+	{
+		return mEntityDescriptor.getValueFields().clone();
+	}
+	
+	
+	public String getJavaDeclaration()
+	{
+		return mEntityDescriptor.getJavaDeclaration();
 	}
 }

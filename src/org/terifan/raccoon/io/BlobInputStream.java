@@ -63,7 +63,7 @@ public class BlobInputStream extends InputStream
 		}
 
 		mRemaining--;
-		return mBuffer.read();
+		return mBuffer.readInt8();
 	}
 
 

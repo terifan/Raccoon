@@ -6,8 +6,8 @@ import java.util.Date;
 import java.util.HashMap;
 import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
-import static org.terifan.raccoon.serialization.TypeMappings.VALUE_TYPES;
 import org.terifan.raccoon.util.Log;
+import static org.terifan.raccoon.serialization.TypeMappings.VALUE_TYPES;
 import static org.terifan.raccoon.serialization.TypeMappings.*;
 
 

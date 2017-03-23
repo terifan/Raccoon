@@ -798,7 +798,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 					if (entry.hasFlag(LeafEntry.FLAG_BLOB))
 					{
 						ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(entry.mValue);
-						byteArrayBuffer.read();
+						byteArrayBuffer.readInt8();
 						long len = byteArrayBuffer.readVar64();
 
 						while (byteArrayBuffer.remaining() > 0)

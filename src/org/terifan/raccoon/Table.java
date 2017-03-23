@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -104,12 +105,12 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 			return null;
 		}
 
-		ByteArrayBuffer buffer = new ByteArrayBuffer(entry.mValue);
-
 		if (entry.hasFlag(LeafEntry.FLAG_BLOB))
 		{
 			try
 			{
+				ByteArrayBuffer buffer = new ByteArrayBuffer(entry.mValue);
+
 				return new BlobInputStream(mBlockAccessor, buffer);
 			}
 			catch (Exception e)
@@ -118,7 +119,7 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 			}
 		}
 
-		return buffer;
+		return new ByteArrayInputStream(entry.mValue);
 	}
 
 

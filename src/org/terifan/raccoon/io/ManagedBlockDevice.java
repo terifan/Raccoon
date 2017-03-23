@@ -7,11 +7,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import org.terifan.raccoon.DatabaseException;
-import org.terifan.raccoon.Key;
-import org.terifan.raccoon.serialization.Marshaller;
-import org.terifan.raccoon.serialization.EntityDescriptor;
-import org.terifan.raccoon.serialization.EntityDescriptorFactory;
-import org.terifan.raccoon.serialization.MarshallerFactory;
 import org.terifan.security.random.ISAAC;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -28,7 +23,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private RangeMap mPendingRangeMap;
 	private SuperBlock mSuperBlock;
 	private HashSet<Integer> mUncommitedAllocations;
-	private Marshaller mSuperBlockMarshaller;
 	private String mBlockDeviceLabel;
 	private int mBlockSize;
 	private boolean mModified;
@@ -414,7 +408,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.v("read super block");
 		Log.inc();
 
-		mSuperBlockMarshaller = MarshallerFactory.getInstance(EntityDescriptorFactory.getInstance(SuperBlock.class));
+//		mSuperBlockMarshaller = MarshallerFactory.getInstance(EntityDescriptorFactory.getInstance(SuperBlock.class));
 
 		SuperBlock superBlockOne = new SuperBlock();
 		SuperBlock superBlockTwo = new SuperBlock();
@@ -470,19 +464,18 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[mBlockSize]);
 		buffer.position(CHECKSUM_SIZE); // leave space for checksum
 
-		Marshaller m = MarshallerFactory.getInstance(EntityDescriptorFactory.getInstance(SuperBlock.class));
-		ByteArrayBuffer buf = m.marshalValues(buffer, mSuperBlock);
+		mSuperBlock.marshal(buffer);
 
 		if (mBlockDevice instanceof SecureBlockDevice)
 		{
-			byte[] padding = new byte[buf.capacity() - buf.position()];
+			byte[] padding = new byte[buffer.capacity() - buffer.position()];
 			ISAAC.PRNG.nextBytes(padding);
-			buf.write(padding);
+			buffer.write(padding);
 		}
 
 		long pageIndex = mSuperBlock.mWriteCounter & 1L;
 
-		writeCheckedBlock(pageIndex, buf, -pageIndex);
+		writeCheckedBlock(pageIndex, buffer, -pageIndex);
 
 		Log.dec();
 	}
@@ -584,10 +577,11 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		MessageDigest messageDigest = getMessageDigest();
 		messageDigest.update((byte)aBlockIndex);
 		messageDigest.update(aBuffer.array(), CHECKSUM_SIZE, aBuffer.capacity() - CHECKSUM_SIZE);
+		
+		aBuffer.position(0);
 
 		byte[] actualDigest = messageDigest.digest();
-		byte[] expectedDigest = new byte[CHECKSUM_SIZE];
-		aBuffer.position(0).read(expectedDigest);
+		byte[] expectedDigest = aBuffer.read(new byte[CHECKSUM_SIZE]);
 
 		if (!Arrays.equals(expectedDigest, actualDigest))
 		{
@@ -711,7 +705,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	class SuperBlock
 	{
-		@Key long mDummy; // a Key field is needed to entity serialization and is never used
 		byte mFormatVersion;
 		Date mCreated;
 		Date mUpdated;
@@ -726,13 +719,54 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		transient boolean mExtraDataModified;
 
 
+		void marshal(ByteArrayBuffer buffer) throws IOException
+		{
+			buffer.writeInt8(mFormatVersion);
+			buffer.writeInt64(mCreated.getTime());
+			buffer.writeInt64(mUpdated.getTime());
+			buffer.writeInt64(mWriteCounter);
+			buffer.writeInt64(mSpaceMapBlockIndex);
+			buffer.writeInt32(mSpaceMapBlockCount);
+			buffer.writeInt32(mSpaceMapLength);
+			buffer.writeInt64(mSpaceMapBlockKey);
+			buffer.writeInt8(mBlockDeviceLabel.length());
+			buffer.writeString(mBlockDeviceLabel);
+			if (mExtraData == null)
+			{
+				buffer.writeInt16((short)-1);
+			}
+			else
+			{
+				buffer.writeInt16((short)mExtraData.length);
+				buffer.write(mExtraData);
+			}
+		}
+
+
 		void unmarshal(long aPageIndex) throws IOException
 		{
 			assert aPageIndex == 0 || aPageIndex == 1;
 
 			ByteArrayBuffer buffer = readCheckedBlock(aPageIndex, -aPageIndex, mBlockSize);
 
-			mSuperBlockMarshaller.unmarshalValues(buffer, this);
+			mFormatVersion = (byte)buffer.readInt8();
+			mCreated = new Date(buffer.readInt64());
+			mUpdated = new Date(buffer.readInt64());
+			mWriteCounter = buffer.readInt64();
+			mSpaceMapBlockIndex = buffer.readInt64();
+			mSpaceMapBlockCount = buffer.readInt32();
+			mSpaceMapLength = buffer.readInt32();
+			mSpaceMapBlockKey = buffer.readInt64();
+			mBlockDeviceLabel = buffer.readString(buffer.readInt8());
+			int len = buffer.readInt16();
+			if (len == -1)
+			{
+				mExtraData = null;
+			}
+			else
+			{
+				mExtraData = buffer.read(new byte[len]);
+			}
 		}
 	}
 }

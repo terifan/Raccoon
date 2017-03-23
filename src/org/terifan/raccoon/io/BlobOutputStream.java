@@ -42,7 +42,7 @@ public class BlobOutputStream extends OutputStream
 			throw new IOException("Stream closed");
 		}
 
-		mBuffer.write(b);
+		mBuffer.writeInt8(b);
 		mTotalLength++;
 
 		if (mBuffer.remaining() == 0)

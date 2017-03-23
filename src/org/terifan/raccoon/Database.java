@@ -12,7 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
@@ -899,7 +900,13 @@ public final class Database implements AutoCloseable
 
 	public <T> List<T> list(Class<T> aType)
 	{
-		return list(aType, null);
+		return list(aType, (T)null);
+	}
+
+
+	public <T> List<T> list(Class<T> aType, DiscriminatorType<T> aDiscriminator)
+	{
+		return list(aType, aDiscriminator.newInstance());
 	}
 
 
@@ -1137,25 +1144,35 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public synchronized <T> List<T> getDiscriminators(Supplier<T> aSupplier)
+	public DiscriminatorType getDiscriminator(Object aType)
+	{
+		return new DiscriminatorType(aType);
+	}
+
+
+	public synchronized <T> List<DiscriminatorType<T>> getDiscriminators(Class<T> aType)
 	{
 		mReadLock.lock();
 
 		try
 		{
-			ArrayList<T> result = new ArrayList<>();
+			ArrayList<DiscriminatorType<T>> result = new ArrayList<>();
 
-			String name = aSupplier.get().getClass().getName();
+			String name = aType.getName();
 
 			for (TableMetadata tableMetadata : (List<TableMetadata>)mSystemTable.list(TableMetadata.class))
 			{
-				tableMetadata.initialize(); // TODO: refactor??
-
 				if (name.equals(tableMetadata.getTypeName()))
 				{
-					T instance = aSupplier.get();
-					tableMetadata.getMarshaller().unmarshalDiscriminators(new ByteArrayBuffer(tableMetadata.getDiscriminatorKey()), instance);
-					result.add(instance);
+					try 
+					{
+						T instance = (T)aType.newInstance();
+						tableMetadata.getMarshaller().unmarshalDiscriminators(new ByteArrayBuffer(tableMetadata.getDiscriminatorKey()), instance);
+						result.add(new DiscriminatorType<>(instance));
+					}
+					catch (InstantiationException | IllegalAccessException e) 
+					{
+					}
 				}
 			}
 

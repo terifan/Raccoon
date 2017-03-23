@@ -146,7 +146,8 @@ public class Browser
 						tableContentmodel.setColumnCount(0);
 
 						Table table = (Table)userObject;
-						EntityDescriptor metadata = table.getTableMetadata().getEntityDescriptor();
+//						EntityDescriptor metadata = table.getTableMetadata().getEntityDescriptor();
+						TableMetadata metadata = table.getTableMetadata();
 
 						if(true)throw new IllegalStateException("getFields()");
 						for (FieldDescriptor field : metadata.getValueFields())

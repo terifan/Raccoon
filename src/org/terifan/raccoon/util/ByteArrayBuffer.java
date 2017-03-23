@@ -1,12 +1,11 @@
 package org.terifan.raccoon.util;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
 
-public final class ByteArrayBuffer extends InputStream
+public final class ByteArrayBuffer
 {
 	private final static boolean FORCE_FIXED = false;
 	private final static int NO_LIMIT = Integer.MAX_VALUE;
@@ -155,8 +154,7 @@ public final class ByteArrayBuffer extends InputStream
 	}
 
 
-	@Override
-	public int read()
+	public int readInt8()
 	{
 		if (mOffset >= mBuffer.length || mOffset >= mLimit)
 		{
@@ -168,7 +166,7 @@ public final class ByteArrayBuffer extends InputStream
 	}
 
 
-	public ByteArrayBuffer write(int aByte)
+	public ByteArrayBuffer writeInt8(int aByte)
 	{
 		if (mOffset >= mBuffer.length)
 		{
@@ -189,7 +187,7 @@ public final class ByteArrayBuffer extends InputStream
 
 		for (int n = 0, value = 0; n < 32; n += 7)
 		{
-			int b = read();
+			int b = readInt8();
 			value |= (b & 127) << n;
 			if (b < 128)
 			{
@@ -215,12 +213,12 @@ public final class ByteArrayBuffer extends InputStream
 		{
 			if ((aValue & ~127) == 0)
 			{
-				write(aValue);
+				writeInt8(aValue);
 				return this;
 			}
 			else
 			{
-				write(128 | (aValue & 127));
+				writeInt8(128 | (aValue & 127));
 				aValue >>>= 7;
 			}
 		}
@@ -236,7 +234,7 @@ public final class ByteArrayBuffer extends InputStream
 
 		for (long n = 0, value = 0; n < 64; n += 7)
 		{
-			int b = read();
+			int b = readInt8();
 			value |= (long)(b & 127) << n;
 			if ((b & 128) == 0)
 			{
@@ -262,26 +260,25 @@ public final class ByteArrayBuffer extends InputStream
 		{
 			if ((aValue & ~127L) == 0)
 			{
-				write((int)aValue);
+				writeInt8((int)aValue);
 				return this;
 			}
 			else
 			{
-				write((int)(128 | ((int)aValue & 127L)));
+				writeInt8((int)(128 | ((int)aValue & 127L)));
 				aValue >>>= 7;
 			}
 		}
 	}
 
 
-	@Override
-	public int read(byte[] aBuffer)
+	public byte[] read(byte[] aBuffer)
 	{
-		return read(aBuffer, 0, aBuffer.length);
+		read(aBuffer, 0, aBuffer.length);
+		return aBuffer;
 	}
 
 
-	@Override
 	public int read(byte[] aBuffer, int aOffset, int aLength)
 	{
 		int len = Math.min(aLength, remaining());
@@ -311,8 +308,8 @@ public final class ByteArrayBuffer extends InputStream
 
 	public short readInt16()
 	{
-		int ch1 = read();
-		int ch2 = read();
+		int ch1 = readInt8();
+		int ch2 = readInt8();
 		return (short)((ch1 << 8) + ch2);
 	}
 
@@ -328,10 +325,10 @@ public final class ByteArrayBuffer extends InputStream
 
 	public int readInt32()
 	{
-		int ch1 = read();
-		int ch2 = read();
-		int ch3 = read();
-		int ch4 = read();
+		int ch1 = readInt8();
+		int ch2 = readInt8();
+		int ch3 = readInt8();
+		int ch4 = readInt8();
 		return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + ch4);
 	}
 
@@ -406,7 +403,7 @@ public final class ByteArrayBuffer extends InputStream
 
 		for (int i = 0, j = 0; i < aLength; i++)
 		{
-			int c = read();
+			int c = readInt8();
 
 			if (c < 128) // 0xxxxxxx
 			{
@@ -414,11 +411,11 @@ public final class ByteArrayBuffer extends InputStream
 			}
 			else if ((c & 0xE0) == 0xC0) // 110xxxxx
 			{
-				array[j++] = (char)(((c & 0x1F) << 6) | (read() & 0x3F));
+				array[j++] = (char)(((c & 0x1F) << 6) | (readInt8() & 0x3F));
 			}
 			else if ((c & 0xF0) == 0xE0) // 1110xxxx
 			{
-				array[j++] = (char)(((c & 0x0F) << 12) | ((read() & 0x3F) << 6) | (read() & 0x3F));
+				array[j++] = (char)(((c & 0x0F) << 12) | ((readInt8() & 0x3F) << 6) | (readInt8() & 0x3F));
 			}
 			else
 			{
@@ -440,18 +437,18 @@ public final class ByteArrayBuffer extends InputStream
 
 			if ((c >= 0x0000) && (c <= 0x007F))
 			{
-				write(c);
+				writeInt8(c);
 			}
 			else if (c > 0x07FF)
 			{
-				write(0xE0 | ((c >> 12) & 0x0F));
-				write(0x80 | ((c >> 6) & 0x3F));
-				write(0x80 | ((c) & 0x3F));
+				writeInt8(0xE0 | ((c >> 12) & 0x0F));
+				writeInt8(0x80 | ((c >> 6) & 0x3F));
+				writeInt8(0x80 | ((c) & 0x3F));
 			}
 			else
 			{
-				write(0xC0 | ((c >> 6) & 0x1F));
-				write(0x80 | ((c) & 0x3F));
+				writeInt8(0xC0 | ((c >> 6) & 0x1F));
+				writeInt8(0x80 | ((c) & 0x3F));
 			}
 		}
 		return this;
@@ -462,7 +459,7 @@ public final class ByteArrayBuffer extends InputStream
 	{
 		if (mReadBitCount == 0)
 		{
-			mBitBuffer = read();
+			mBitBuffer = readInt8();
 
 			mReadBitCount = 8;
 		}
@@ -507,7 +504,7 @@ public final class ByteArrayBuffer extends InputStream
 		{
 			aCount -= mReadBitCount;
 			output |= mBitBuffer << aCount;
-			mBitBuffer = read();
+			mBitBuffer = readInt8();
 			mReadBitCount = 8;
 
 			if (mBitBuffer == -1)

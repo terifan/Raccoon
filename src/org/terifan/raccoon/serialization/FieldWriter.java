@@ -88,7 +88,7 @@ class FieldWriter
 //				aOutput.write((Boolean)aValue ? 1 : 0);
 				break;
 			case BYTE:
-				aOutput.write((Byte)aValue);
+				aOutput.writeInt8((Byte)aValue);
 				break;
 			case SHORT:
 				aOutput.writeVar32((Short)aValue);

@@ -23,7 +23,7 @@ public class ByteArrayBufferNGTest
 		{
 			for (int i = rnd.nextInt(100); --i >= 0; )
 			{
-				out.write(rnd.nextInt() & 0xff);
+				out.writeInt8(rnd.nextInt() & 0xff);
 			}
 			out.writeInt32(rnd.nextInt());
 			out.writeInt32(Integer.MIN_VALUE);
@@ -50,7 +50,7 @@ public class ByteArrayBufferNGTest
 		{
 			for (int i = rnd.nextInt(100); --i >= 0; )
 			{
-				assertEquals(in.read(), rnd.nextInt() & 0xff);
+				assertEquals(in.readInt8(), rnd.nextInt() & 0xff);
 			}
 			assertEquals(in.readInt32(), rnd.nextInt());
 			assertEquals(in.readInt32(), Integer.MIN_VALUE);
@@ -67,8 +67,7 @@ public class ByteArrayBufferNGTest
 			assertEquals(in.readFloat(), rnd.nextFloat());
 			assertEquals(in.readDouble(), rnd.nextDouble());
 			assertEquals(in.readString(11), "hello world");
-			byte[] readBuf = new byte[100];
-			in.read(readBuf);
+			byte[] readBuf = in.read(new byte[100]);
 			assertEquals(readBuf, buf);
 		}
 	}
@@ -86,12 +85,12 @@ public class ByteArrayBufferNGTest
 	public void testWriteOverflow2() throws IOException
 	{
 		ByteArrayBuffer out = new ByteArrayBuffer(new byte[5]);
-		out.write(1);
-		out.write(2);
-		out.write(3);
-		out.write(4);
-		out.write(5);
-		out.write(6);
+		out.writeInt8(1);
+		out.writeInt8(2);
+		out.writeInt8(3);
+		out.writeInt8(4);
+		out.writeInt8(5);
+		out.writeInt8(6);
 	}
 
 
@@ -127,7 +126,7 @@ public class ByteArrayBufferNGTest
 		out.writeBit(1);
 		out.writeBit(1);
 		out.align();
-		out.write(0b10101010);
+		out.writeInt8(0b10101010);
 
 		byte[] buf = out.array();
 
@@ -136,7 +135,7 @@ public class ByteArrayBufferNGTest
 		ByteArrayBuffer in = new ByteArrayBuffer(buf);
 		assertEquals(in.readBits(4), 0b1011);
 		out.align();
-		assertEquals(in.read(), 0b10101010);
+		assertEquals(in.readInt8(), 0b10101010);
 	}
 
 
@@ -146,11 +145,11 @@ public class ByteArrayBufferNGTest
 		ByteArrayBuffer out = new ByteArrayBuffer(4);
 		out.writeBit(1);
 		out.align();
-		out.write(0b10101010);
+		out.writeInt8(0b10101010);
 		out.position(1);
 		out.writeBit(1);
 		out.align();
-		out.write(0b10101010);
+		out.writeInt8(0b10101010);
 
 		out.position(0);
 		assertEquals(out.readBit(), 1);
@@ -158,6 +157,6 @@ public class ByteArrayBufferNGTest
 		out.position(1);
 		assertEquals(out.readBit(), 1);
 		out.align();
-		assertEquals(out.read(), 0b10101010);
+		assertEquals(out.readInt8(), 0b10101010);
 	}
 }

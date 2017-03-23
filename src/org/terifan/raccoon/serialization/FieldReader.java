@@ -100,7 +100,7 @@ class FieldReader
 //				return aInput.read() != 0;
 				return aInput.readBit() == 1;
 			case BYTE:
-				return (byte)aInput.read();
+				return (byte)aInput.readInt8();
 			case SHORT:
 				return (short)aInput.readVar32();
 			case CHAR:
@@ -118,8 +118,7 @@ class FieldReader
 			case DATE:
 				return new Date(aInput.readVar64());
 			case OBJECT:
-				byte[] buffer = new byte[aInput.readVar32()];
-				aInput.read(buffer);
+				byte[] buffer = aInput.read(new byte[aInput.readVar32()]);
 
 				try (ObjectInputStream oos = new ObjectInputStream(new ByteArrayInputStream(buffer)))
 				{

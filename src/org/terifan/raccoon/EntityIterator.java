@@ -50,11 +50,7 @@ public final class EntityIterator<T> implements Iterator<T>
 
 			Supplier supplier = mTable.getDatabase().getSupplier(type);
 
-			if (type == TableMetadata.class)
-			{
-				return new TableMetadata(type, null);
-			}
-			else if (supplier != null)
+			if (supplier != null)
 			{
 				return supplier.get();
 			}
@@ -77,15 +73,22 @@ public final class EntityIterator<T> implements Iterator<T>
 	{
 		Class type = mTable.getTableMetadata().getType();
 
-		Initializer initializer = mTable.getDatabase().getInitializer(type);
-
-		if (initializer != null)
+		if (type == TableMetadata.class)
 		{
-			initializer.initialize(aEntity);
+			((TableMetadata)aEntity).initialize();
 		}
-		if (aEntity instanceof Initializable)
+		else
 		{
-			((Initializable)aEntity).initialize();
+			Initializer initializer = mTable.getDatabase().getInitializer(type);
+
+			if (initializer != null)
+			{
+				initializer.initialize(aEntity);
+			}
+			if (aEntity instanceof Initializable)
+			{
+				((Initializable)aEntity).initialize();
+			}
 		}
 	}
 
