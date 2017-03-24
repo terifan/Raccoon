@@ -3,6 +3,9 @@ package org.terifan.raccoon;
 
 public class DatabaseClosedException extends IllegalStateException
 {
+	private static final long serialVersionUID = 1L;
+
+
 	public DatabaseClosedException()
 	{
 	}

@@ -3,6 +3,9 @@ package org.terifan.raccoon;
 
 public class DatabaseException extends RuntimeException
 {
+	private static final long serialVersionUID = 1L;
+
+
 	public DatabaseException(String aMessage)
 	{
 		super(aMessage);

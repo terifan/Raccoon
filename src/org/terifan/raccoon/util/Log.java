@@ -5,10 +5,11 @@ import java.io.PrintStream;
 
 public class Log
 {
-	public final static PrintStream out = System.out;
+	private final static String[] LEVELS = {"SEVERE","ERROR","WARN","INFO","VERBOSE","DEBUG"};
 
-	public static int LEVEL = 1;
+	public static PrintStream out = System.out;
 
+	private static int mLevel = 1;
 	private static int mIndent;
 
 
@@ -62,7 +63,7 @@ public class Log
 
 	private static void logImpl(int aLevel, String aMessage, Object... aParams)
 	{
-		if (aLevel <= LEVEL && aMessage != null)
+		if (aLevel <= mLevel && aMessage != null)
 		{
 			StringBuilder message = new StringBuilder();
 			for (int i = 0; i < mIndent; i++)
@@ -77,19 +78,7 @@ public class Log
 			String methodName = trace[3].getMethodName();
 			String loggerName = trace[3].getFileName() + ":" + trace[3].getLineNumber();
 
-			String type;
-			switch (aLevel)
-			{
-				case 0: type = "SEVERE"; break;
-				case 1: type = "ERROR"; break;
-				case 2: type = "WARN"; break;
-				case 3: type = "INFO"; break;
-				case 4: type = "VERBOSE"; break;
-				case 5: type = "DEBUG"; break;
-				default: type = ""; break;
-			}
-
-			System.out.printf("%-30s%-30s%-30s%-7s %s\n", loggerName, className, methodName, type, message.toString());
+			System.out.printf("%-30s%-30s%-30s%-7s %s%n", loggerName, className, methodName, aLevel < LEVELS.length ? LEVELS[aLevel] : "", message.toString());
 		}
 	}
 
@@ -107,19 +96,19 @@ public class Log
 			return;
 		}
 
-		int LW = 56;
-		int MR = 100;
+		int lw = 56;
+		int mr = 100;
 
 		StringBuilder binText = new StringBuilder("");
 		StringBuilder hexText = new StringBuilder("");
 
-		for (int row = 0, offset = 0; offset < aBuffer.length && row < MR; row++)
+		for (int row = 0, offset = 0; row < mr && offset < aBuffer.length; row++)
 		{
-			hexText.append(String.format("%04d: ", row * LW));
+			hexText.append(String.format("%04d: ", row * lw));
 
-			int padding = 3 * LW + LW / 8;
+			int padding = 3 * lw + lw / 8;
 
-			for (int i = 0; offset < aBuffer.length && i < LW; i++)
+			for (int i = 0; offset < aBuffer.length && i < lw; i++)
 			{
 				int c = 0xff & aBuffer[offset++];
 

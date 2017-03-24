@@ -338,12 +338,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		if (mModified)
 		{
-			// TODO: non raccoon implementations might not need this
-//			if (!mSuperBlock.mExtraDataModified)
-//			{
-//				throw new IOException("ExtraData not modified!");
-//			}
-			
 			mCachingBlockDevice.flush();
 
 			Log.i("committing managed block device");
@@ -366,7 +360,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			mRangeMap = mPendingRangeMap.clone();
 			mWasCreated = false;
 			mModified = false;
-			mSuperBlock.mExtraDataModified = false;
+//			mSuperBlock.mExtraDataModified = false;
 
 			Log.dec();
 		}
@@ -407,8 +401,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		Log.v("read super block");
 		Log.inc();
-
-//		mSuperBlockMarshaller = MarshallerFactory.getInstance(EntityDescriptorFactory.getInstance(SuperBlock.class));
 
 		SuperBlock superBlockOne = new SuperBlock();
 		SuperBlock superBlockTwo = new SuperBlock();
@@ -577,7 +569,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		MessageDigest messageDigest = getMessageDigest();
 		messageDigest.update((byte)aBlockIndex);
 		messageDigest.update(aBuffer.array(), CHECKSUM_SIZE, aBuffer.capacity() - CHECKSUM_SIZE);
-		
+
 		aBuffer.position(0);
 
 		byte[] actualDigest = messageDigest.digest();
@@ -622,7 +614,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		mSuperBlock.mExtraData = aExtraData == null ? null : aExtraData.clone();
 
-		mSuperBlock.mExtraDataModified = true;
+//		mSuperBlock.mExtraDataModified = true;
 	}
 
 
@@ -705,7 +697,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	class SuperBlock
 	{
-		byte mFormatVersion;
+		int mFormatVersion;
 		Date mCreated;
 		Date mUpdated;
 		long mWriteCounter;
@@ -715,8 +707,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		long mSpaceMapBlockKey;
 		String mBlockDeviceLabel;
 		byte[] mExtraData;
-
-		transient boolean mExtraDataModified;
 
 
 		void marshal(ByteArrayBuffer buffer) throws IOException
@@ -733,11 +723,11 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			buffer.writeString(mBlockDeviceLabel);
 			if (mExtraData == null)
 			{
-				buffer.writeInt16((short)-1);
+				buffer.writeInt16(-1);
 			}
 			else
 			{
-				buffer.writeInt16((short)mExtraData.length);
+				buffer.writeInt16(mExtraData.length);
 				buffer.write(mExtraData);
 			}
 		}
@@ -749,7 +739,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			ByteArrayBuffer buffer = readCheckedBlock(aPageIndex, -aPageIndex, mBlockSize);
 
-			mFormatVersion = (byte)buffer.readInt8();
+			mFormatVersion = buffer.readInt8();
 			mCreated = new Date(buffer.readInt64());
 			mUpdated = new Date(buffer.readInt64());
 			mWriteCounter = buffer.readInt64();

@@ -3,7 +3,6 @@ package org.terifan.raccoon.io;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
@@ -11,6 +10,7 @@ import org.terifan.raccoon.Stats;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
 import org.terifan.security.random.ISAAC;
 import org.terifan.raccoon.util.Log;
+import org.terifan.security.messagedigest.MurmurHash3;
 
 
 public class BlockAccessor
@@ -69,7 +69,7 @@ public class BlockAccessor
 
 			Log.dec();
 		}
-		catch (Exception e)
+		catch (Exception | Error e)
 		{
 			throw new DatabaseException(aBlockPointer.toString(), e);
 		}
@@ -120,7 +120,7 @@ public class BlockAccessor
 
 			return buffer;
 		}
-		catch (Exception e)
+		catch (Exception | Error e)
 		{
 			throw new DatabaseException("Error reading block", e);
 		}
@@ -193,7 +193,7 @@ public class BlockAccessor
 
 			return blockPointer;
 		}
-		catch (IOException e)
+		catch (Exception | Error e)
 		{
 			throw new DatabaseException("Error writing block", e);
 		}
@@ -202,12 +202,7 @@ public class BlockAccessor
 
 	private int digest(byte[] aBuffer, int aOffset, int aLength, long aBlockIndex)
 	{
-//		return MurmurHash3.hash_x86_32(aBuffer, aOffset, aLength, (int)aBlockIndex);
-
-		CRC32 crc = new CRC32();
-		crc.update((int)aBlockIndex);
-		crc.update(aBuffer, aOffset, aLength);
-		return (int)(crc.getValue() ^ aBlockIndex);
+		return MurmurHash3.hash_x86_32(aBuffer, aOffset, aLength, (int)aBlockIndex) ^ (int)(aBlockIndex >>> 32);
 	}
 
 

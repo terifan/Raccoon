@@ -8,6 +8,7 @@ import resources.entities._Number1K1D;
 import resources.entities._Animal1K;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.terifan.raccoon.io.AccessCredentials;
@@ -1124,6 +1126,60 @@ public class DatabaseNGTest
 				assertFalse(db.tryGet(new _Fruit1K("cocoa_" + i)));
 				assertFalse(db.tryGet(new _Fruit1K("carrot_" + i)));
 			}
+		}
+	}
+
+
+	@Test(expectedExceptions = FileNotFoundException.class)
+	public void testWriteReadOnly() throws Exception
+	{
+		File file = new File(UUID.randomUUID().toString());
+		file.deleteOnExit();
+
+		try (Database db = Database.open(file, OpenOption.READ_ONLY))
+		{
+		}
+	}
+
+
+	@Test(expectedExceptions = FileAlreadyOpenException.class)
+	public void testWriteLockedFile() throws Exception
+	{
+		File file = new File(UUID.randomUUID().toString());
+		file.deleteOnExit();
+
+		try (Database db = Database.open(file, OpenOption.CREATE))
+		{
+			try (Database db2 = Database.open(file, OpenOption.CREATE))
+			{
+			}
+		}
+	}
+
+
+	@Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = ".*Block device is empty.*")
+	public void testReadEmptyFile() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database db = Database.open(device, OpenOption.READ_ONLY))
+		{
+		}
+	}
+
+
+	@Test(expectedExceptions = UnsupportedVersionException.class, expectedExceptionsMessageRegExp = ".*Block device label don't match.*")
+	public void testWriteLockedFile2() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database db = Database.open(device, OpenOption.CREATE, new DeviceLabel("test")))
+		{
+			db.commit();
+		}
+
+		try (Database db = Database.open(device, OpenOption.READ_ONLY, new DeviceLabel("test2")))
+		{
 		}
 	}
 }

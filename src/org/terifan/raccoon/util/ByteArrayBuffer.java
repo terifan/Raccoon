@@ -323,6 +323,15 @@ public final class ByteArrayBuffer
 	}
 
 
+	public ByteArrayBuffer writeInt16(int aValue)
+	{
+		ensureCapacity(2);
+		mBuffer[mOffset++] = (byte)(aValue >> 8);
+		mBuffer[mOffset++] = (byte)(aValue);
+		return this;
+	}
+
+
 	public int readInt32()
 	{
 		int ch1 = readInt8();

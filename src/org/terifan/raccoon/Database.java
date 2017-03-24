@@ -2,6 +2,7 @@ package org.terifan.raccoon;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -12,8 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.io.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.ManagedBlockDevice;
@@ -23,7 +22,6 @@ import org.terifan.raccoon.io.AccessCredentials;
 import org.terifan.raccoon.io.BlobOutputStream;
 import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.io.FileBlockDevice;
-import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -95,7 +93,7 @@ public final class Database implements AutoCloseable
 			}
 			else if (aOpenOptions == OpenOption.OPEN || aOpenOptions == OpenOption.READ_ONLY)
 			{
-				throw new IOException("File not found: " + aFile);
+				throw new FileNotFoundException("File not found: " + aFile);
 			}
 
 			boolean newFile = !aFile.exists();
@@ -1164,14 +1162,15 @@ public final class Database implements AutoCloseable
 			{
 				if (name.equals(tableMetadata.getTypeName()))
 				{
-					try 
+					try
 					{
 						T instance = (T)aType.newInstance();
 						tableMetadata.getMarshaller().unmarshalDiscriminators(new ByteArrayBuffer(tableMetadata.getDiscriminatorKey()), instance);
 						result.add(new DiscriminatorType<>(instance));
 					}
-					catch (InstantiationException | IllegalAccessException e) 
+					catch (InstantiationException | IllegalAccessException e)
 					{
+						throw new IllegalArgumentException("Failed to instantiate object: " + aType, e);
 					}
 				}
 			}
