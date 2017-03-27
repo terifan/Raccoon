@@ -56,23 +56,21 @@ public class EntityDescriptorFactory
 			fieldDescriptor.setName(field.getName());
 			fieldDescriptor.setTypeName(field.getType().getName());
 			fieldDescriptor.setIndex(index++);
+			fieldDescriptor.setCategory(getCategory(field));
 
 			classify(field, fieldDescriptor);
 
-			if (field.getAnnotation(Discriminator.class) != null)
+			switch (fieldDescriptor.getCategory())
 			{
-				fieldDescriptor.setCategory(FieldCategory.DISCRIMINATOR);
-				discriminators.add(fieldDescriptor);
-			}
-			else if (field.getAnnotation(Key.class) != null)
-			{
-				fieldDescriptor.setCategory(FieldCategory.KEY);
-				keys.add(fieldDescriptor);
-			}
-			else
-			{
-				fieldDescriptor.setCategory(FieldCategory.VALUE);
-				values.add(fieldDescriptor);
+				case DISCRIMINATOR:
+					discriminators.add(fieldDescriptor);
+					break;
+				case KEY:
+					keys.add(fieldDescriptor);
+					break;
+				default:
+					values.add(fieldDescriptor);
+					break;
 			}
 
 			Log.v("type found: %s", fieldDescriptor);
@@ -87,45 +85,59 @@ public class EntityDescriptorFactory
 	}
 
 
-	private static void classify(Field aField, FieldDescriptor aFieldType)
+	private static FieldCategory getCategory(Field aField)
+	{
+		if (aField.getAnnotation(Discriminator.class) != null)
+		{
+			return FieldCategory.DISCRIMINATOR;
+		}
+		else if (aField.getAnnotation(Key.class) != null)
+		{
+			return FieldCategory.KEY;
+		}
+		return FieldCategory.VALUE;
+	}
+
+
+	private static void classify(Field aField, FieldDescriptor aFieldDescriptor)
 	{
 		Class<?> type = aField.getType();
 
 		while (type.isArray())
 		{
-			aFieldType.setArray(true);
-			aFieldType.setDepth(aFieldType.getDepth() + 1);
+			aFieldDescriptor.setArray(true);
+			aFieldDescriptor.setDepth(aFieldDescriptor.getDepth() + 1);
 			type = type.getComponentType();
 		}
 
 		if (type.isPrimitive())
 		{
-			FieldType primitiveType = VALUE_TYPES.get(type);
+			ValueType primitiveType = VALUE_TYPES.get(type);
 			if (primitiveType != null)
 			{
-				aFieldType.setContentType(primitiveType);
+				aFieldDescriptor.setValueType(primitiveType);
 				return;
 			}
 		}
 
-		aFieldType.setNullable(true);
+		aFieldDescriptor.setNullable(true);
 
-		FieldType contentType = CLASS_TYPES.get(type);
-		if (contentType != null)
+		ValueType valueType = CLASS_TYPES.get(type);
+		if (valueType != null)
 		{
-			aFieldType.setContentType(contentType);
+			aFieldDescriptor.setValueType(valueType);
 		}
 		else if (type == String.class)
 		{
-			aFieldType.setContentType(FieldType.STRING);
+			aFieldDescriptor.setValueType(ValueType.STRING);
 		}
 		else if (Date.class.isAssignableFrom(type))
 		{
-			aFieldType.setContentType(FieldType.DATE);
+			aFieldDescriptor.setValueType(ValueType.DATE);
 		}
 		else
 		{
-			aFieldType.setContentType(FieldType.OBJECT);
+			aFieldDescriptor.setValueType(ValueType.OBJECT);
 		}
 	}
 }

@@ -904,7 +904,7 @@ public final class Database implements AutoCloseable
 
 	public <T> List<T> list(Class<T> aType, DiscriminatorType<T> aDiscriminator)
 	{
-		return list(aType, aDiscriminator.newInstance());
+		return list(aType, aDiscriminator.getInstance());
 	}
 
 

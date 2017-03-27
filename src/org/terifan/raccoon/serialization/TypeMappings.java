@@ -6,52 +6,52 @@ import java.util.HashMap;
 
 class TypeMappings
 {
-	protected final static HashMap<FieldType, Class> TYPE_VALUES = new HashMap<>();
-	protected final static HashMap<FieldType, Class> TYPE_CLASSES = new HashMap<>();
-	protected final static HashMap<Class, FieldType> VALUE_TYPES = new HashMap<>();
-	protected final static HashMap<Class, FieldType> CLASS_TYPES = new HashMap<>();
+	protected final static HashMap<ValueType, Class> TYPE_VALUES = new HashMap<>();
+	protected final static HashMap<ValueType, Class> TYPE_CLASSES = new HashMap<>();
+	protected final static HashMap<Class, ValueType> VALUE_TYPES = new HashMap<>();
+	protected final static HashMap<Class, ValueType> CLASS_TYPES = new HashMap<>();
 
 
 	static
 	{
-		TYPE_VALUES.put(FieldType.BOOLEAN, Boolean.TYPE);
-		TYPE_VALUES.put(FieldType.BYTE, Byte.TYPE);
-		TYPE_VALUES.put(FieldType.SHORT, Short.TYPE);
-		TYPE_VALUES.put(FieldType.CHAR, Character.TYPE);
-		TYPE_VALUES.put(FieldType.INT, Integer.TYPE);
-		TYPE_VALUES.put(FieldType.LONG, Long.TYPE);
-		TYPE_VALUES.put(FieldType.FLOAT, Float.TYPE);
-		TYPE_VALUES.put(FieldType.DOUBLE, Double.TYPE);
-		TYPE_VALUES.put(FieldType.STRING, String.class);
-		TYPE_VALUES.put(FieldType.DATE, Date.class);
+		TYPE_VALUES.put(ValueType.BOOLEAN, Boolean.TYPE);
+		TYPE_VALUES.put(ValueType.BYTE, Byte.TYPE);
+		TYPE_VALUES.put(ValueType.SHORT, Short.TYPE);
+		TYPE_VALUES.put(ValueType.CHAR, Character.TYPE);
+		TYPE_VALUES.put(ValueType.INT, Integer.TYPE);
+		TYPE_VALUES.put(ValueType.LONG, Long.TYPE);
+		TYPE_VALUES.put(ValueType.FLOAT, Float.TYPE);
+		TYPE_VALUES.put(ValueType.DOUBLE, Double.TYPE);
+		TYPE_VALUES.put(ValueType.STRING, String.class);
+		TYPE_VALUES.put(ValueType.DATE, Date.class);
 
-		TYPE_CLASSES.put(FieldType.BOOLEAN, Boolean.class);
-		TYPE_CLASSES.put(FieldType.BYTE, Byte.class);
-		TYPE_CLASSES.put(FieldType.SHORT, Short.class);
-		TYPE_CLASSES.put(FieldType.CHAR, Character.class);
-		TYPE_CLASSES.put(FieldType.INT, Integer.class);
-		TYPE_CLASSES.put(FieldType.LONG, Long.class);
-		TYPE_CLASSES.put(FieldType.FLOAT, Float.class);
-		TYPE_CLASSES.put(FieldType.DOUBLE, Double.class);
-		TYPE_CLASSES.put(FieldType.STRING, String.class);
-		TYPE_CLASSES.put(FieldType.DATE, Date.class);
+		TYPE_CLASSES.put(ValueType.BOOLEAN, Boolean.class);
+		TYPE_CLASSES.put(ValueType.BYTE, Byte.class);
+		TYPE_CLASSES.put(ValueType.SHORT, Short.class);
+		TYPE_CLASSES.put(ValueType.CHAR, Character.class);
+		TYPE_CLASSES.put(ValueType.INT, Integer.class);
+		TYPE_CLASSES.put(ValueType.LONG, Long.class);
+		TYPE_CLASSES.put(ValueType.FLOAT, Float.class);
+		TYPE_CLASSES.put(ValueType.DOUBLE, Double.class);
+		TYPE_CLASSES.put(ValueType.STRING, String.class);
+		TYPE_CLASSES.put(ValueType.DATE, Date.class);
 
-		VALUE_TYPES.put(Boolean.TYPE, FieldType.BOOLEAN);
-		VALUE_TYPES.put(Byte.TYPE, FieldType.BYTE);
-		VALUE_TYPES.put(Short.TYPE, FieldType.SHORT);
-		VALUE_TYPES.put(Character.TYPE, FieldType.CHAR);
-		VALUE_TYPES.put(Integer.TYPE, FieldType.INT);
-		VALUE_TYPES.put(Long.TYPE, FieldType.LONG);
-		VALUE_TYPES.put(Float.TYPE, FieldType.FLOAT);
-		VALUE_TYPES.put(Double.TYPE, FieldType.DOUBLE);
+		VALUE_TYPES.put(Boolean.TYPE, ValueType.BOOLEAN);
+		VALUE_TYPES.put(Byte.TYPE, ValueType.BYTE);
+		VALUE_TYPES.put(Short.TYPE, ValueType.SHORT);
+		VALUE_TYPES.put(Character.TYPE, ValueType.CHAR);
+		VALUE_TYPES.put(Integer.TYPE, ValueType.INT);
+		VALUE_TYPES.put(Long.TYPE, ValueType.LONG);
+		VALUE_TYPES.put(Float.TYPE, ValueType.FLOAT);
+		VALUE_TYPES.put(Double.TYPE, ValueType.DOUBLE);
 
-		CLASS_TYPES.put(Boolean.class, FieldType.BOOLEAN);
-		CLASS_TYPES.put(Byte.class, FieldType.BYTE);
-		CLASS_TYPES.put(Short.class, FieldType.SHORT);
-		CLASS_TYPES.put(Character.class, FieldType.CHAR);
-		CLASS_TYPES.put(Integer.class, FieldType.INT);
-		CLASS_TYPES.put(Long.class, FieldType.LONG);
-		CLASS_TYPES.put(Float.class, FieldType.FLOAT);
-		CLASS_TYPES.put(Double.class, FieldType.DOUBLE);
+		CLASS_TYPES.put(Boolean.class, ValueType.BOOLEAN);
+		CLASS_TYPES.put(Byte.class, ValueType.BYTE);
+		CLASS_TYPES.put(Short.class, ValueType.SHORT);
+		CLASS_TYPES.put(Character.class, ValueType.CHAR);
+		CLASS_TYPES.put(Integer.class, ValueType.INT);
+		CLASS_TYPES.put(Long.class, ValueType.LONG);
+		CLASS_TYPES.put(Float.class, ValueType.FLOAT);
+		CLASS_TYPES.put(Double.class, ValueType.DOUBLE);
 	}
 }

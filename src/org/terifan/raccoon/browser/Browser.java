@@ -163,7 +163,7 @@ public class Browser
 							tableFormatModel.addRow(new Object[]{
 								field.getCategory(),
 								field.getName(),
-								field.getContentType(),
+								field.getValueType(),
 								field.getTypeName(),
 								field.getIndex(),
 								null, //field.getField(),

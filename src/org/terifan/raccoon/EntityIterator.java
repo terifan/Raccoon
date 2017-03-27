@@ -85,7 +85,7 @@ public final class EntityIterator<T> implements Iterator<T>
 			{
 				initializer.initialize(aEntity);
 			}
-			if (aEntity instanceof Initializable)
+			else if (aEntity instanceof Initializable)
 			{
 				((Initializable)aEntity).initialize();
 			}

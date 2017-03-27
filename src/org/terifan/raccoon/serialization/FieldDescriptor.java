@@ -16,7 +16,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	private String mName;
 	private boolean mNullable;
 	private boolean mArray;
-	private FieldType mContentType;
+	private ValueType mValueType;
 	private FieldCategory mCategory;
 	private String mTypeName;
 	private int mDepth;
@@ -77,15 +77,15 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	}
 
 
-	public FieldType getContentType()
+	public ValueType getValueType()
 	{
-		return mContentType;
+		return mValueType;
 	}
 
 
-	void setContentType(FieldType aContentType)
+	void setValueType(ValueType aValueType)
 	{
-		mContentType = aContentType;
+		mValueType = aValueType;
 	}
 
 
@@ -147,7 +147,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 
 		aOutput.writeUTF(mName);
 		aOutput.writeShort(mIndex);
-		aOutput.write(mContentType.ordinal());
+		aOutput.write(mValueType.ordinal());
 		aOutput.writeUTF(mTypeName);
 		aOutput.write(mCategory.ordinal());
 		aOutput.write(mDepth);
@@ -163,7 +163,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 
 		mName = aInput.readUTF();
 		mIndex = aInput.readShort();
-		mContentType = FieldType.values()[aInput.read()];
+		mValueType = ValueType.values()[aInput.read()];
 		mTypeName = aInput.readUTF();
 		mCategory = FieldCategory.values()[aInput.read()];
 		mDepth = aInput.read();
@@ -173,7 +173,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	@Override
 	public int hashCode()
 	{
-		return mName.hashCode() ^ mIndex ^ mContentType.ordinal() ^ mTypeName.hashCode() ^ mCategory.ordinal() ^ mDepth ^ (mArray ? 1 : 0) ^ (mNullable ? 2 : 0);
+		return mName.hashCode() ^ mIndex ^ mValueType.ordinal() ^ mTypeName.hashCode() ^ mCategory.ordinal() ^ mDepth ^ (mArray ? 1 : 0) ^ (mNullable ? 2 : 0);
 	}
 
 
@@ -191,7 +191,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 				&& mIndex == other.mIndex
 				&& (mField == null && other.mField == null || mField != null && mField.equals(other.mField))
 				&& mNullable == other.mNullable
-				&& mContentType == other.mContentType
+				&& mValueType == other.mValueType
 				&& mCategory == other.mCategory;
 		}
 
@@ -209,7 +209,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	@Override
 	public String toString()
 	{
-		String s = mContentType.toString().toLowerCase();
+		String s = mValueType.toString().toLowerCase();
 		if (mNullable)
 		{
 			s = s.substring(0, 1).toUpperCase() + s.substring(1);
@@ -229,6 +229,6 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 
 	Class getTypeClass()
 	{
-		return mNullable ? TYPE_CLASSES.get(mContentType) : TYPE_VALUES.get(mContentType);
+		return mNullable ? TYPE_CLASSES.get(mValueType) : TYPE_VALUES.get(mValueType);
 	}
 }

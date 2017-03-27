@@ -72,7 +72,7 @@ class FieldReader
 				aInput.align();
 			}
 		}
-		else if (aFieldType.getContentType() == FieldType.BYTE)
+		else if (aFieldType.getValueType() == ValueType.BYTE)
 		{
 			aInput.read((byte[])array);
 		}
@@ -94,7 +94,7 @@ class FieldReader
 
 	private static Object readValue(FieldDescriptor aFieldType, ByteArrayBuffer aInput) throws IOException, ClassNotFoundException
 	{
-		switch (aFieldType.getContentType())
+		switch (aFieldType.getValueType())
 		{
 			case BOOLEAN:
 //				return aInput.read() != 0;
@@ -125,7 +125,7 @@ class FieldReader
 					return oos.readObject();
 				}
 			default:
-				throw new IllegalStateException("Content type not implemented: " + aFieldType.getContentType());
+				throw new IllegalStateException("Content type not implemented: " + aFieldType.getValueType());
 		}
 	}
 }

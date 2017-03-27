@@ -62,9 +62,9 @@ public final class TableMetadata
 
 	byte[] createDiscriminatorKey(DiscriminatorType aDiscriminator)
 	{
-		if (aDiscriminator != null)
+		if (aDiscriminator != null && aDiscriminator.getInstance() != null)
 		{
-			return mMarshaller.marshalDiscriminators(new ByteArrayBuffer(16), aDiscriminator.newInstance()).trim().array();
+			return mMarshaller.marshalDiscriminators(new ByteArrayBuffer(16), aDiscriminator.getInstance()).trim().array();
 		}
 
 		return new byte[0];
@@ -74,12 +74,6 @@ public final class TableMetadata
 	Marshaller getMarshaller()
 	{
 		return mMarshaller;
-	}
-
-
-	EntityDescriptor getEntityDescriptor()
-	{
-		return mEntityDescriptor;
 	}
 
 
@@ -195,8 +189,8 @@ public final class TableMetadata
 	{
 		return mEntityDescriptor.getValueFields().clone();
 	}
-	
-	
+
+
 	public String getJavaDeclaration()
 	{
 		return mEntityDescriptor.getJavaDeclaration();

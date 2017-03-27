@@ -18,7 +18,7 @@ public class DiscriminatorType<T>
 	}
 
 
-	T newInstance()
+	T getInstance()
 	{
 		return instance;
 	}

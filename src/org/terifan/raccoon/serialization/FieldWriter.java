@@ -81,7 +81,7 @@ class FieldWriter
 
 	private static void writeValue(FieldDescriptor aFieldType, Object aValue, ByteArrayBuffer aOutput) throws IOException
 	{
-		switch (aFieldType.getContentType())
+		switch (aFieldType.getValueType())
 		{
 			case BOOLEAN:
 				aOutput.writeBit((Boolean)aValue);
@@ -126,7 +126,7 @@ class FieldWriter
 				aOutput.write(baos.toByteArray());
 				break;
 			default:
-				throw new IllegalStateException("Content type not implemented: " + aFieldType.getContentType());
+				throw new IllegalStateException("Content type not implemented: " + aFieldType.getValueType());
 		}
 	}
 }
