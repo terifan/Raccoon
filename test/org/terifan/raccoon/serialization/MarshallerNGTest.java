@@ -1,5 +1,8 @@
 package org.terifan.raccoon.serialization;
 
+import java.lang.reflect.Field;
+import org.terifan.raccoon.Discriminator;
+import org.terifan.raccoon.Key;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.ResultSet;
 import static org.testng.Assert.*;
@@ -14,7 +17,7 @@ public class MarshallerNGTest
 	{
 		_BigObject2K1D in = new _BigObject2K1D().random();
 
-		EntityDescriptor entityDescriptor = EntityDescriptorFactory.getInstance(_BigObject2K1D.class);
+		EntityDescriptor entityDescriptor = EntityDescriptorFactory.getInstance(_BigObject2K1D.class, mCategorizer);
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 
@@ -38,7 +41,7 @@ public class MarshallerNGTest
 	{
 		_BigObject2K1D in = new _BigObject2K1D().random();
 
-		EntityDescriptor entityDescriptor = EntityDescriptorFactory.getInstance(_BigObject2K1D.class);
+		EntityDescriptor entityDescriptor = EntityDescriptorFactory.getInstance(_BigObject2K1D.class, mCategorizer);
 
 		System.out.println(entityDescriptor);
 
@@ -68,7 +71,7 @@ public class MarshallerNGTest
 	{
 		_BigObject2K1D in = new _BigObject2K1D().random();
 
-		EntityDescriptor entityDescriptor = EntityDescriptorFactory.getInstance(_BigObject2K1D.class);
+		EntityDescriptor entityDescriptor = EntityDescriptorFactory.getInstance(_BigObject2K1D.class, mCategorizer);
 
 		System.out.println(entityDescriptor);
 
@@ -82,4 +85,22 @@ public class MarshallerNGTest
 
 		System.out.println(resultSet);
 	}
+
+
+	static FieldTypeCategorizer mCategorizer = new FieldTypeCategorizer()
+	{
+		@Override
+		public int categorize(Field aField)
+		{
+			if (aField.getAnnotation(Discriminator.class) != null)
+			{
+				return 2;
+			}
+			else if (aField.getAnnotation(Key.class) != null)
+			{
+				return 1;
+			}
+			return 4;
+		}
+	};
 }

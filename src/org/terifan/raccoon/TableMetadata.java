@@ -1,11 +1,13 @@
 package org.terifan.raccoon;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.raccoon.serialization.EntityDescriptorFactory;
+import org.terifan.raccoon.serialization.FieldTypeCategorizer;
 import org.terifan.raccoon.serialization.MarshallerFactory;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -36,7 +38,7 @@ public final class TableMetadata
 	{
 		mType = aClass;
 		mTypeName = mType.getName();
-		mEntityDescriptor = EntityDescriptorFactory.getInstance(mType);
+		mEntityDescriptor = EntityDescriptorFactory.getInstance(mType, mCategorizer);
 		mMarshaller = MarshallerFactory.getInstance(mEntityDescriptor);
 
 		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);
@@ -237,4 +239,22 @@ public final class TableMetadata
 
 		return sb.toString();
 	}
+
+
+	private transient FieldTypeCategorizer mCategorizer = new FieldTypeCategorizer()
+	{
+		@Override
+		public int categorize(Field aField)
+		{
+			if (aField.getAnnotation(Key.class) != null)
+			{
+				return FIELD_CATEGORY_KEY;
+			}
+			if (aField.getAnnotation(Discriminator.class) != null)
+			{
+				return FIELD_CATEGORY_DISCRIMINATOR;
+			}
+			return FIELD_CATEGORY_VALUE;
+		}
+	};
 }

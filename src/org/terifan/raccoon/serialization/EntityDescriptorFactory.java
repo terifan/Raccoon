@@ -21,13 +21,13 @@ public class EntityDescriptorFactory
 	}
 
 
-	public static synchronized EntityDescriptor getInstance(Class aType)
+	public static synchronized EntityDescriptor getInstance(Class aType, FieldTypeCategorizer aCategorizer)
 	{
 		EntityDescriptor instance = INSTANCES.get(aType);
 
 		if (instance == null)
 		{
-			instance = createEntityDescriptor(aType);
+			instance = createEntityDescriptor(aType, aCategorizer);
 			INSTANCES.put(aType, instance);
 		}
 
@@ -35,7 +35,7 @@ public class EntityDescriptorFactory
 	}
 
 
-	private static EntityDescriptor createEntityDescriptor(Class aType)
+	private static EntityDescriptor createEntityDescriptor(Class aType, FieldTypeCategorizer aCategorizer)
 	{
 		ArrayList<Field> fields = new ArrayList<>();
 
@@ -54,7 +54,7 @@ public class EntityDescriptorFactory
 			fieldDescriptor.setName(field.getName());
 			fieldDescriptor.setTypeName(field.getType().getName());
 			fieldDescriptor.setIndex(index++);
-			fieldDescriptor.setCategory(getCategory(field));
+			fieldDescriptor.setCategory(aCategorizer.categorize(field));
 
 			classify(field, fieldDescriptor);
 
@@ -64,20 +64,6 @@ public class EntityDescriptorFactory
 		}
 
 		return new EntityDescriptor(aType, fieldDescriptors.toArray(new FieldDescriptor[fieldDescriptors.size()]));
-	}
-
-
-	private static int getCategory(Field aField)
-	{
-		if (aField.getAnnotation(Discriminator.class) != null)
-		{
-			return 2;
-		}
-		else if (aField.getAnnotation(Key.class) != null)
-		{
-			return 1;
-		}
-		return 4;
 	}
 
 
