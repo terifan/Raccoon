@@ -34,6 +34,7 @@ import resources.entities._Fruit1K;
 import static resources.__TestUtils.createBuffer;
 import static resources.__TestUtils.t;
 import resources.entities._Fruit1K1D;
+import resources.entities._Number1K2D;
 
 
 public class DatabaseNGTest
@@ -87,32 +88,22 @@ public class DatabaseNGTest
 	}
 
 
-	@Test(dataProvider = "itemSizes")
-	public void testSingleTableMultiInsert(int aSize) throws Exception
+	@Test
+	public void testCreateNew() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
-			for (int i = 0; i < aSize; i++)
-			{
-				database.save(new _Fruit2K("red", "apple-" + i, i));
-			}
-
+			database.save(new _Fruit1K("apple"));
 			database.commit();
+
+			assertEquals(1, database.list(_Fruit1K.class).size());
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
-			assertEquals(aSize, database.size(_Fruit2K.class));
-
-			for (int i = 0; i < aSize; i++)
-			{
-				_Fruit2K apple = new _Fruit2K("red", "apple-"+i);
-				assertTrue(database.tryGet(apple));
-				assertEquals(apple._name, "apple-"+i);
-				assertEquals(apple.value, i);
-			}
+			assertEquals(0, database.list(_Fruit1K.class).size());
 		}
 	}
 
@@ -286,10 +277,39 @@ public class DatabaseNGTest
 			_Number1K1D disc = new _Number1K1D();
 			disc._odd = true;
 
-//todo:
+
 			for (_Number1K1D item : database.list(_Number1K1D.class, disc))
 			{
 //				Log.out.println(item);
+			}
+		}
+	}
+
+
+	@Test
+	public void testDiscriminatorList2() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		String[] numberNames = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			for (int i = 0; i < numberNames.length; i++)
+			{
+				database.save(new _Number1K1D(numberNames[i], i));
+			}
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			_Number1K1D d = new _Number1K1D();
+			d._odd = true;
+			
+			for (_Number1K1D item : database.list(_Number1K1D.class, new DiscriminatorType<>(d)))
+			{
+				assertTrue(item._odd);
 			}
 		}
 	}
@@ -1180,6 +1200,42 @@ public class DatabaseNGTest
 
 		try (Database db = Database.open(device, OpenOption.READ_ONLY, new DeviceLabel("test2")))
 		{
+		}
+	}
+	
+	
+	@Test
+	public void testScan() throws IOException
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database db = Database.open(device, OpenOption.CREATE))
+		{
+			for (int i = 0; i < 10_000; i++)
+			{
+				db.save(new _Fruit1K("fruits-" + i));
+			}
+			for (int i = 0; i < 10_000; i++)
+			{
+				db.save(new _Animal1K("animals-" + i));
+			}
+			for (int i = 0; i < 10_000; i++)
+			{
+				db.save(new _Number1K2D(i % 5, i % 7, i, "numbers-" + i));
+			}
+			db.commit();
+		}
+
+		try (Database db = Database.open(device, OpenOption.OPEN))
+		{
+			ScanResult scan = db.scan();
+
+			assertEquals(scan.tables, 38);
+			assertEquals(scan.records, 1+1+5*7+10000+10000+10000);
+//			assertEquals(scan.indexBlocks, 156);
+			assertEquals(scan.blobs, 0);
+			assertEquals(scan.blobIndices, 0);
+			assertEquals(scan.blobData, 0);
 		}
 	}
 }

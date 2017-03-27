@@ -244,8 +244,6 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 	public boolean isChanged()
 	{
-		checkOpen();
-
 		return mChanged;
 	}
 
@@ -766,28 +764,30 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	void scan()
+	void scan(ScanResult aScanResult)
 	{
-		scan(mRootBlockPointer);
+		aScanResult.tables++;
+		
+		scan(aScanResult, mRootBlockPointer);
 	}
 
 
-	void scan(BlockPointer aBlockPointer)
+	void scan(ScanResult aScanResult, BlockPointer aBlockPointer)
 	{
-		Log.out.println(aBlockPointer);
-
 		byte[] buffer = mBlockAccessor.readBlock(aBlockPointer);
 
 		switch (aBlockPointer.getType())
 		{
 			case NODE_INDX:
+				aScanResult.indexBlocks++;
+
 				IndexNode indexNode = new IndexNode(buffer);
 				for (int i = 0; i < indexNode.getPointerCount(); i++)
 				{
 					BlockPointer pointer = indexNode.getPointer(i);
 					if (pointer != null)
 					{
-						scan(pointer);
+						scan(aScanResult, pointer);
 					}
 				}
 				break;
@@ -797,30 +797,41 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 				{
 					if (entry.hasFlag(LeafEntry.FLAG_BLOB))
 					{
+						aScanResult.blobs++;
+
 						ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(entry.mValue);
 						byteArrayBuffer.readInt8();
 						long len = byteArrayBuffer.readVar64();
 
 						while (byteArrayBuffer.remaining() > 0)
 						{
-							scan(new BlockPointer().unmarshal(byteArrayBuffer));
+							scan(aScanResult, new BlockPointer().unmarshal(byteArrayBuffer));
 						}
+					}
+					else
+					{
+						aScanResult.records++;
 					}
 				}
 				break;
 			case BLOB_INDX:
+				aScanResult.blobIndices++;
+
 				ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(buffer);
 				while (byteArrayBuffer.remaining() > 0)
 				{
-					scan(new BlockPointer().unmarshal(byteArrayBuffer));
+					scan(aScanResult, new BlockPointer().unmarshal(byteArrayBuffer));
 				}
 				break;
 			case BLOB_DATA:
+				aScanResult.blobData++;
+
 				break;
 			default:
 				throw new IllegalStateException();
 		}
 	}
+	
 
 //	<T> Stream<T> stream()
 //	{

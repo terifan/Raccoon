@@ -833,67 +833,67 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public <T> Iterable<T> iterable(Class<T> aType)
-	{
-		return iterable(aType, null);
-	}
-
-
-	public <T> Iterable<T> iterable(Class<T> aType, DiscriminatorType<T> aDiscriminator)
-	{
-		mReadLock.lock();
-		try
-		{
-			Table table = openTable(aType, aDiscriminator, OpenOption.OPEN);
-			if (table == null)
-			{
-				return null;
-			}
-
-			return ()->table.iterator();
-		}
-		catch (DatabaseException e)
-		{
-			forceClose(e);
-			throw e;
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
-	}
-
-
-	public <T> Iterator<T> iterator(Class<T> aType)
-	{
-		return iterator(aType, null);
-	}
-
-
-	public <T> Iterator<T> iterator(Class<T> aType, DiscriminatorType<T> aDiscriminator)
-	{
-		mReadLock.lock();
-		try
-		{
-			Table table = openTable(aType, aDiscriminator, OpenOption.OPEN);
-
-			if (table == null)
-			{
-				return null;
-			}
-
-			return table.iterator();
-		}
-		catch (DatabaseException e)
-		{
-			forceClose(e);
-			throw e;
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
-	}
+//	public <T> Iterable<T> iterable(Class<T> aType)
+//	{
+//		return iterable(aType, null);
+//	}
+//
+//
+//	public <T> Iterable<T> iterable(Class<T> aType, DiscriminatorType<T> aDiscriminator)
+//	{
+//		mReadLock.lock();
+//		try
+//		{
+//			Table table = openTable(aType, aDiscriminator, OpenOption.OPEN);
+//			if (table == null)
+//			{
+//				return null;
+//			}
+//
+//			return ()->table.iterator();
+//		}
+//		catch (DatabaseException e)
+//		{
+//			forceClose(e);
+//			throw e;
+//		}
+//		finally
+//		{
+//			mReadLock.unlock();
+//		}
+//	}
+//
+//
+//	public <T> Iterator<T> iterator(Class<T> aType)
+//	{
+//		return iterator(aType, null);
+//	}
+//
+//
+//	public <T> Iterator<T> iterator(Class<T> aType, DiscriminatorType<T> aDiscriminator)
+//	{
+//		mReadLock.lock();
+//		try
+//		{
+//			Table table = openTable(aType, aDiscriminator, OpenOption.OPEN);
+//
+//			if (table == null)
+//			{
+//				return null;
+//			}
+//
+//			return table.iterator();
+//		}
+//		catch (DatabaseException e)
+//		{
+//			forceClose(e);
+//			throw e;
+//		}
+//		finally
+//		{
+//			mReadLock.unlock();
+//		}
+//	}
 
 
 	public <T> List<T> list(Class<T> aType)
@@ -1184,20 +1184,21 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public void scan() throws IOException
+	public ScanResult scan() throws IOException
 	{
-		Log.out.println(mSystemTable);
-		mSystemTable.scan();
+		ScanResult scanResult = new ScanResult();
+		
+		mSystemTable.scan(scanResult);
 
 		for (TableMetadata tableMetadata : getTableMetadataList())
 		{
-			Log.out.println(tableMetadata);
-
 			try (Table table = openTable(tableMetadata, OpenOption.OPEN))
 			{
-				table.scan();
+				table.scan(scanResult);
 			}
 		}
+		
+		return scanResult;
 	}
 
 

@@ -405,9 +405,9 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 	}
 
 
-	void scan()
+	void scan(ScanResult aScanResult)
 	{
-		mTableImplementation.scan();
+		mTableImplementation.scan(aScanResult);
 	}
 
 

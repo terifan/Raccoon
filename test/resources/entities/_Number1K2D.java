@@ -7,8 +7,8 @@ import org.terifan.raccoon.Key;
 
 public class _Number1K2D implements Serializable
 {
-	@Discriminator public int _number;
-	@Discriminator public String _color;
+	@Discriminator public int _disc1;
+	@Discriminator public int _disc2;
 	@Key public int _id;
 	public String name;
 
@@ -18,10 +18,10 @@ public class _Number1K2D implements Serializable
 	}
 
 
-	public _Number1K2D(int aNumber, String aColor, int aId, String aName)
+	public _Number1K2D(int aDisc1, int aDisc2, int aId, String aName)
 	{
-		_number = aNumber;
-		_color = aColor;
+		_disc1 = aDisc1;
+		_disc2 = aDisc2;
 		_id = aId;
 		name = aName;
 	}
@@ -30,6 +30,6 @@ public class _Number1K2D implements Serializable
 	@Override
 	public String toString()
 	{
-		return "number="+_number+", name="+name+", id=" + _id + ", color=" + _color;
+		return "_Number1K2D{" + "_disc1=" + _disc1 + ", _disc2=" + _disc2 + ", _id=" + _id + ", name=" + name + '}';
 	}
 }
