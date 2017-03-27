@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import org.terifan.raccoon.util.Log;
@@ -15,12 +16,8 @@ import org.terifan.raccoon.util.Log;
  */
 public class EntityDescriptor implements Externalizable
 {
-	private static final long serialVersionUID = 1L;
-
 	private String mName;
-	private FieldDescriptor[] mKeyFields;
-	private FieldDescriptor[] mDiscriminatorFields;
-	private FieldDescriptor[] mValueFields;
+	private FieldDescriptor[] mFields;
 
 
 	public EntityDescriptor()
@@ -28,15 +25,13 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	EntityDescriptor(Class aType, FieldDescriptor[] aKeyFields, FieldDescriptor[] aDiscriminatorFields, FieldDescriptor[] aValueFields)
+	EntityDescriptor(Class aType, FieldDescriptor[] aFields)
 	{
 		Log.v("create type declarations for %s", aType);
 		Log.inc();
 
 		mName = aType.getName();
-		mKeyFields = aKeyFields;
-		mDiscriminatorFields = aDiscriminatorFields;
-		mValueFields = aValueFields;
+		mFields = aFields;
 
 		Log.dec();
 	}
@@ -46,14 +41,11 @@ public class EntityDescriptor implements Externalizable
 	{
 		for (Field field : ObjectReflection.getDeclaredFields(aType))
 		{
-			for (FieldDescriptor[] fieldDescriptors : new FieldDescriptor[][]{mKeyFields, mDiscriminatorFields, mValueFields})
+			for (FieldDescriptor fieldDescriptor : mFields)
 			{
-				for (FieldDescriptor fieldDescriptor : fieldDescriptors)
+				if (fieldDescriptor.getName().equals(field.getName()) && fieldDescriptor.getTypeName().equals(field.getType().getName()))
 				{
-					if (fieldDescriptor.getName().equals(field.getName()) && fieldDescriptor.getTypeName().equals(field.getType().getName()))
-					{
-						fieldDescriptor.setField(field);
-					}
+					fieldDescriptor.setField(field);
 				}
 			}
 		}
@@ -66,21 +58,29 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	public FieldDescriptor[] getKeyFields()
+	public FieldDescriptor[] getFields()
 	{
-		return mKeyFields;
+		return mFields;
 	}
 
 
-	public FieldDescriptor[] getDiscriminatorFields()
+	/**
+	 * Return fields of one or more categories
+	 * 
+	 * @param aCategory
+	 *   bit field for category
+	 */
+	public ArrayList<FieldDescriptor> getFields(int aCategory)
 	{
-		return mDiscriminatorFields;
-	}
-
-
-	public FieldDescriptor[] getValueFields()
-	{
-		return mValueFields;
+		ArrayList<FieldDescriptor> fd = new ArrayList<>();
+		for (FieldDescriptor field : mFields)
+		{
+			if ((field.getCategory() & aCategory) != 0)
+			{
+				fd.add(field);
+			}
+		}
+		return fd;
 	}
 
 
@@ -88,9 +88,7 @@ public class EntityDescriptor implements Externalizable
 	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
 	{
 		mName = aIn.readUTF();
-		mKeyFields = (FieldDescriptor[])aIn.readObject();
-		mDiscriminatorFields = (FieldDescriptor[])aIn.readObject();
-		mValueFields = (FieldDescriptor[])aIn.readObject();
+		mFields = (FieldDescriptor[])aIn.readObject();
 	}
 
 
@@ -98,9 +96,7 @@ public class EntityDescriptor implements Externalizable
 	public void writeExternal(ObjectOutput aOut) throws IOException
 	{
 		aOut.writeUTF(mName);
-		aOut.writeObject(mKeyFields);
-		aOut.writeObject(mDiscriminatorFields);
-		aOut.writeObject(mValueFields);
+		aOut.writeObject(mFields);
 	}
 
 
@@ -111,7 +107,7 @@ public class EntityDescriptor implements Externalizable
 		{
 			EntityDescriptor other = (EntityDescriptor)aObj;
 
-			return mName.equals(other.mName) && Arrays.equals(mKeyFields, other.mKeyFields) && Arrays.equals(mDiscriminatorFields, other.mDiscriminatorFields) && Arrays.equals(mValueFields, other.mValueFields);
+			return mName.equals(other.mName) && Arrays.equals(mFields, other.mFields);
 		}
 
 		return false;
@@ -121,41 +117,13 @@ public class EntityDescriptor implements Externalizable
 	@Override
 	public int hashCode()
 	{
-		return Objects.hashCode(mName) ^ Arrays.deepHashCode(mKeyFields) ^ Arrays.deepHashCode(mDiscriminatorFields) ^ Arrays.deepHashCode(mValueFields);
-	}
-
-
-	/**
-	 * Return an entity as a Java class declaration.
-	 */
-	public String getJavaDeclaration()
-	{
-		StringBuilder sb = new StringBuilder();
-		sb.append("package " + mName.substring(0, mName.lastIndexOf('.')) + ";\n\n");
-		sb.append("class " + mName.substring(mName.lastIndexOf('.') + 1) + "\n{\n");
-
-		for (FieldDescriptor fieldType : mKeyFields)
-		{
-			sb.append("\t" + "@Key " + fieldType + ";\n");
-		}
-		for (FieldDescriptor fieldType : mDiscriminatorFields)
-		{
-			sb.append("\t" + "@Discriminator " + fieldType + ";\n");
-		}
-		for (FieldDescriptor fieldType : mValueFields)
-		{
-			sb.append("\t" + "" + fieldType + ";\n");
-		}
-
-		sb.append("}");
-
-		return sb.toString();
+		return Objects.hashCode(mName) ^ Arrays.deepHashCode(mFields);
 	}
 
 
 	@Override
 	public String toString()
 	{
-		return "EntityDescriptor{" + "mName=" + mName + ", mKeyFields=" + Arrays.toString(mKeyFields) + ", mDiscriminatorFields=" + Arrays.toString(mDiscriminatorFields) + ", mValueFields=" + Arrays.toString(mValueFields) + '}';
+		return "EntityDescriptor{" + "mName=" + mName + ", mFields=" + Arrays.toString(mFields) + '}';
 	}
 }

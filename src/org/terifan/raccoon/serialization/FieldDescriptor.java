@@ -13,13 +13,13 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	private static final long serialVersionUID = 1L;
 
 	private int mIndex;
-	private String mName;
+	private int mCategory;
+	private int mDepth;
+	private ValueType mValueType;
 	private boolean mNullable;
 	private boolean mArray;
-	private ValueType mValueType;
-	private FieldCategory mCategory;
+	private String mName;
 	private String mTypeName;
-	private int mDepth;
 
 	private transient Field mField;
 
@@ -53,13 +53,13 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	}
 
 
-	public FieldCategory getCategory()
+	public int getCategory()
 	{
 		return mCategory;
 	}
 
 
-	void setCategory(FieldCategory aCategory)
+	void setCategory(int aCategory)
 	{
 		mCategory = aCategory;
 	}
@@ -149,7 +149,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 		aOutput.writeShort(mIndex);
 		aOutput.write(mValueType.ordinal());
 		aOutput.writeUTF(mTypeName);
-		aOutput.write(mCategory.ordinal());
+		aOutput.writeShort(mCategory);
 		aOutput.write(mDepth);
 	}
 
@@ -165,7 +165,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 		mIndex = aInput.readShort();
 		mValueType = ValueType.values()[aInput.read()];
 		mTypeName = aInput.readUTF();
-		mCategory = FieldCategory.values()[aInput.read()];
+		mCategory = aInput.readShort();
 		mDepth = aInput.read();
 	}
 
@@ -173,7 +173,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	@Override
 	public int hashCode()
 	{
-		return mName.hashCode() ^ mIndex ^ mValueType.ordinal() ^ mTypeName.hashCode() ^ mCategory.ordinal() ^ mDepth ^ (mArray ? 1 : 0) ^ (mNullable ? 2 : 0);
+		return mName.hashCode() ^ mIndex ^ mValueType.ordinal() ^ mTypeName.hashCode() ^ mCategory ^ mDepth ^ (mArray ? 1 : 0) ^ (mNullable ? 2 : 0);
 	}
 
 

@@ -44,9 +44,7 @@ public class EntityDescriptorFactory
 			fields.add(field);
 		}
 
-		ArrayList<FieldDescriptor> keys = new ArrayList<>();
-		ArrayList<FieldDescriptor> discriminators = new ArrayList<>();
-		ArrayList<FieldDescriptor> values = new ArrayList<>();
+		ArrayList<FieldDescriptor> fieldDescriptors = new ArrayList<>();
 		int index = 0;
 
 		for (Field field : fields)
@@ -60,42 +58,26 @@ public class EntityDescriptorFactory
 
 			classify(field, fieldDescriptor);
 
-			switch (fieldDescriptor.getCategory())
-			{
-				case DISCRIMINATOR:
-					discriminators.add(fieldDescriptor);
-					break;
-				case KEY:
-					keys.add(fieldDescriptor);
-					break;
-				default:
-					values.add(fieldDescriptor);
-					break;
-			}
+			fieldDescriptors.add(fieldDescriptor);
 
 			Log.v("type found: %s", fieldDescriptor);
 		}
 
-		if (keys.isEmpty())
-		{
-			throw new IllegalArgumentException("Entity has no keys: " + aType);
-		}
-
-		return new EntityDescriptor(aType, keys.toArray(new FieldDescriptor[keys.size()]), discriminators.toArray(new FieldDescriptor[discriminators.size()]), values.toArray(new FieldDescriptor[values.size()]));
+		return new EntityDescriptor(aType, fieldDescriptors.toArray(new FieldDescriptor[fieldDescriptors.size()]));
 	}
 
 
-	private static FieldCategory getCategory(Field aField)
+	private static int getCategory(Field aField)
 	{
 		if (aField.getAnnotation(Discriminator.class) != null)
 		{
-			return FieldCategory.DISCRIMINATOR;
+			return 2;
 		}
 		else if (aField.getAnnotation(Key.class) != null)
 		{
-			return FieldCategory.KEY;
+			return 1;
 		}
-		return FieldCategory.VALUE;
+		return 4;
 	}
 
 

@@ -1165,7 +1165,7 @@ public final class Database implements AutoCloseable
 					try
 					{
 						T instance = (T)aType.newInstance();
-						tableMetadata.getMarshaller().unmarshalDiscriminators(new ByteArrayBuffer(tableMetadata.getDiscriminatorKey()), instance);
+						tableMetadata.getMarshaller().unmarshal(new ByteArrayBuffer(tableMetadata.getDiscriminatorKey()), instance, TableMetadata.FIELD_CATEGORY_DISCRIMINATOR);
 						result.add(new DiscriminatorType<>(instance));
 					}
 					catch (InstantiationException | IllegalAccessException e)

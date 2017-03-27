@@ -19,13 +19,13 @@ public class MarshallerNGTest
 		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 
 		Marshaller marshaller = MarshallerFactory.getInstance(entityDescriptor);
-		marshaller.marshalKeys(buffer, in);
+		marshaller.marshal(buffer, in, 1);
 
 		_BigObject2K1D out = new _BigObject2K1D();
 
 		buffer.position(0);
 
-		MarshallerFactory.getInstance(entityDescriptor).unmarshalKeys(buffer, out);
+		MarshallerFactory.getInstance(entityDescriptor).unmarshal(buffer, out, 1);
 
 		assertEquals(out._key1, in._key1);
 		assertEquals(out._key2, in._key2);
@@ -45,14 +45,12 @@ public class MarshallerNGTest
 		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 
 		Marshaller marshaller = MarshallerFactory.getInstance(entityDescriptor);
-		marshaller.marshalDiscriminators(buffer, in);
-		marshaller.marshalValues(buffer, in);
+		marshaller.marshal(buffer, in, 2 + 4);
 
 		_BigObject2K1D out = new _BigObject2K1D();
 
 		buffer.position(0);
-		marshaller.unmarshalDiscriminators(buffer, out);
-		marshaller.unmarshalValues(buffer, out);
+		marshaller.unmarshal(buffer, out, 2 + 4);
 
 		assertEquals(out._discriminator, in._discriminator);
 		assertEquals(out.mString, in.mString);
@@ -77,11 +75,10 @@ public class MarshallerNGTest
 		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 
 		Marshaller marshaller = MarshallerFactory.getInstance(entityDescriptor);
-		marshaller.marshalDiscriminators(buffer, in);
-		marshaller.marshalValues(buffer, in);
+		marshaller.marshal(buffer, in, 2 + 4);
 
 		buffer.position(0);
-		ResultSet resultSet = marshaller.unmarshalDiscriminators(buffer, new ResultSet());
+		ResultSet resultSet = marshaller.unmarshal(buffer, new ResultSet(), 2 + 4);
 
 		System.out.println(resultSet);
 	}

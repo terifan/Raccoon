@@ -347,7 +347,7 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.mKey);
 
-		mTableMetadata.getMarshaller().unmarshalKeys(buffer, aOutput);
+		mTableMetadata.getMarshaller().unmarshal(buffer, aOutput, TableMetadata.FIELD_CATEGORY_KEY);
 	}
 
 
@@ -369,14 +369,13 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 		}
 
 		Marshaller marshaller = mTableMetadata.getMarshaller();
-		marshaller.unmarshalDiscriminators(buffer, aOutput);
-		marshaller.unmarshalValues(buffer, aOutput);
+		marshaller.unmarshal(buffer, aOutput, TableMetadata.FIELD_CATEGORY_DISCRIMINATOR | TableMetadata.FIELD_CATEGORY_VALUE);
 	}
 
 
 	private byte[] getKeys(Object aInput)
 	{
-		return mTableMetadata.getMarshaller().marshalKeys(new ByteArrayBuffer(16), aInput).trim().array();
+		return mTableMetadata.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, TableMetadata.FIELD_CATEGORY_KEY).trim().array();
 	}
 
 
@@ -385,8 +384,7 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 
 		Marshaller marshaller = mTableMetadata.getMarshaller();
-		marshaller.marshalDiscriminators(buffer, aInput);
-		marshaller.marshalValues(buffer, aInput);
+		marshaller.marshal(buffer, aInput, TableMetadata.FIELD_CATEGORY_DISCRIMINATOR | TableMetadata.FIELD_CATEGORY_VALUE);
 
 		return buffer.trim().array();
 	}

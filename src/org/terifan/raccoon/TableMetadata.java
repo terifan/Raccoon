@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
@@ -13,6 +14,10 @@ import org.terifan.raccoon.util.ResultSet;
 
 public final class TableMetadata
 {
+	protected final static int FIELD_CATEGORY_KEY = 1;
+	protected final static int FIELD_CATEGORY_DISCRIMINATOR = 2;
+	protected final static int FIELD_CATEGORY_VALUE = 4;
+
 	@Key private String mTypeName;
 	@Key private byte[] mDiscriminatorKey;
 	private byte[] mPointer;
@@ -35,6 +40,11 @@ public final class TableMetadata
 		mMarshaller = MarshallerFactory.getInstance(mEntityDescriptor);
 
 		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);
+		
+		if (getKeyFields().isEmpty())
+		{
+			throw new IllegalArgumentException("Entity has no keys: " + aClass);
+		}
 	}
 
 
@@ -64,7 +74,7 @@ public final class TableMetadata
 	{
 		if (aDiscriminator != null && aDiscriminator.getInstance() != null)
 		{
-			return mMarshaller.marshalDiscriminators(new ByteArrayBuffer(16), aDiscriminator.getInstance()).trim().array();
+			return mMarshaller.marshal(new ByteArrayBuffer(16), aDiscriminator.getInstance(), TableMetadata.FIELD_CATEGORY_DISCRIMINATOR).trim().array();
 		}
 
 		return new byte[0];
@@ -150,17 +160,20 @@ public final class TableMetadata
 		}
 
 		Marshaller marshaller = MarshallerFactory.getInstance(mEntityDescriptor);
-		ResultSet resultSet = marshaller.unmarshalDiscriminators(new ByteArrayBuffer(mDiscriminatorKey), new ResultSet());
+		ResultSet resultSet = marshaller.unmarshal(new ByteArrayBuffer(mDiscriminatorKey), new ResultSet(), TableMetadata.FIELD_CATEGORY_DISCRIMINATOR);
 		StringBuilder result = new StringBuilder();
 
-		for (FieldDescriptor fieldType : mEntityDescriptor.getDiscriminatorFields())
+		for (FieldDescriptor fieldType : mEntityDescriptor.getFields())
 		{
-			if (result.length() > 0)
+			if (fieldType.getCategory() == FIELD_CATEGORY_DISCRIMINATOR)
 			{
-				result.append(", ");
-			}
+				if (result.length() > 0)
+				{
+					result.append(", ");
+				}
 
-			result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType.getIndex()));
+				result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType.getIndex()));
+			}
 		}
 
 		return result.toString();
@@ -169,30 +182,59 @@ public final class TableMetadata
 
 	public boolean hasDiscriminatorFields()
 	{
-		return mEntityDescriptor.getDiscriminatorFields().length > 0;
+		for (FieldDescriptor fieldType : mEntityDescriptor.getFields())
+		{
+			if (fieldType.getCategory() == FIELD_CATEGORY_DISCRIMINATOR)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 
-	public FieldDescriptor[] getKeyFields()
+	public ArrayList<FieldDescriptor> getKeyFields()
 	{
-		return mEntityDescriptor.getKeyFields().clone();
+		return mEntityDescriptor.getFields(FIELD_CATEGORY_KEY);
 	}
 
 
-	public FieldDescriptor[] getDiscriminatorFields()
+	public ArrayList<FieldDescriptor> getDiscriminatorFields()
 	{
-		return mEntityDescriptor.getDiscriminatorFields().clone();
+		return mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR);
 	}
 
 
-	public FieldDescriptor[] getValueFields()
+	public ArrayList<FieldDescriptor> getValueFields()
 	{
-		return mEntityDescriptor.getValueFields().clone();
+		return mEntityDescriptor.getFields(FIELD_CATEGORY_VALUE);
 	}
 
 
+	/**
+	 * Return an entity as a Java class declaration.
+	 */
 	public String getJavaDeclaration()
 	{
-		return mEntityDescriptor.getJavaDeclaration();
+		StringBuilder sb = new StringBuilder();
+		sb.append("package " + mEntityDescriptor.getName().substring(0, mEntityDescriptor.getName().lastIndexOf('.')) + ";\n\n");
+		sb.append("class " + mEntityDescriptor.getName().substring(mEntityDescriptor.getName().lastIndexOf('.') + 1) + "\n{\n");
+
+		for (FieldDescriptor fieldType : getKeyFields())
+		{
+			sb.append("\t" + "@Key " + fieldType + ";\n");
+		}
+		for (FieldDescriptor fieldType : getDiscriminatorFields())
+		{
+			sb.append("\t" + "@Discriminator " + fieldType + ";\n");
+		}
+		for (FieldDescriptor fieldType : getValueFields())
+		{
+			sb.append("\t" + "" + fieldType + ";\n");
+		}
+
+		sb.append("}");
+
+		return sb.toString();
 	}
 }

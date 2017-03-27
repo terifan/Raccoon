@@ -3,7 +3,6 @@ package org.terifan.raccoon.serialization;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -21,65 +20,29 @@ public class Marshaller
 	}
 
 
-	public ByteArrayBuffer marshalKeys(ByteArrayBuffer aBuffer, Object aObject)
+	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer, Object aObject, int aCategory)
 	{
-		return marshalImpl(aBuffer, aObject, mEntityDescriptor.getKeyFields());
+		return marshalImpl(aBuffer, aObject, mEntityDescriptor.getFields(aCategory));
 	}
 
 
-	public ByteArrayBuffer marshalDiscriminators(ByteArrayBuffer aBuffer, Object aObject)
+	public void unmarshal(ByteArrayBuffer aBuffer, Object aObject, int aCategory)
 	{
-		return marshalImpl(aBuffer, aObject, mEntityDescriptor.getDiscriminatorFields());
+		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getFields(aCategory));
 	}
 
 
-	public ByteArrayBuffer marshalValues(ByteArrayBuffer aBuffer, Object aObject)
+	public ResultSet unmarshal(ByteArrayBuffer aBuffer, ResultSet aResultSet, int aCategory)
 	{
-		return marshalImpl(aBuffer, aObject, mEntityDescriptor.getValueFields());
+		return unmarshalImpl(aBuffer, aResultSet, mEntityDescriptor.getFields(aCategory));
 	}
 
 
-	public void unmarshalKeys(ByteArrayBuffer aBuffer, Object aObject)
-	{
-		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getKeyFields());
-	}
-
-
-	public void unmarshalDiscriminators(ByteArrayBuffer aBuffer, Object aObject)
-	{
-		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getDiscriminatorFields());
-	}
-
-
-	public void unmarshalValues(ByteArrayBuffer aBuffer, Object aObject)
-	{
-		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getValueFields());
-	}
-
-
-	public ResultSet unmarshalKeys(ByteArrayBuffer aBuffer, ResultSet aResultSet)
-	{
-		return unmarshalImpl(aBuffer, aResultSet, mEntityDescriptor.getKeyFields());
-	}
-
-
-	public ResultSet unmarshalDiscriminators(ByteArrayBuffer aBuffer, ResultSet aResultSet)
-	{
-		return unmarshalImpl(aBuffer, aResultSet, mEntityDescriptor.getDiscriminatorFields());
-	}
-
-
-	public ResultSet unmarshalValues(ByteArrayBuffer aBuffer, ResultSet aResultSet)
-	{
-		return unmarshalImpl(aBuffer, aResultSet, mEntityDescriptor.getValueFields());
-	}
-
-
-	private ByteArrayBuffer marshalImpl(ByteArrayBuffer aBuffer, Object aObject, FieldDescriptor[] aTypes)
+	private ByteArrayBuffer marshalImpl(ByteArrayBuffer aBuffer, Object aObject, ArrayList<FieldDescriptor> aTypes)
 	{
 		try
 		{
-			Log.v("marshal entity fields %s", Arrays.toString(aTypes));
+			Log.v("marshal entity fields %s", aTypes);
 			Log.inc();
 
 			ArrayList<Object> values = new ArrayList<>();
@@ -96,13 +59,13 @@ public class Marshaller
 
 			aBuffer.align();
 
-			for (int i = 0; i < aTypes.length; i++)
+			for (int i = 0; i < aTypes.size(); i++)
 			{
 				Object value = values.get(i);
 
 				if (value != null)
 				{
-					FieldWriter.writeField(aTypes[i], value, aBuffer);
+					FieldWriter.writeField(aTypes.get(i), value, aBuffer);
 				}
 			}
 
@@ -117,7 +80,7 @@ public class Marshaller
 	}
 
 
-	private void unmarshalImpl(ByteArrayBuffer aBuffer, Object aObject, FieldDescriptor[] aTypes)
+	private void unmarshalImpl(ByteArrayBuffer aBuffer, Object aObject, ArrayList<FieldDescriptor> aTypes)
 	{
 		try
 		{
@@ -126,11 +89,11 @@ public class Marshaller
 
 			ArrayList<FieldDescriptor> readFields = new ArrayList<>();
 
-			for (int i = 0; i < aTypes.length; i++)
+			for (int i = 0; i < aTypes.size(); i++)
 			{
 				if (aBuffer.readBit() == 0)
 				{
-					readFields.add(aTypes[i]);
+					readFields.add(aTypes.get(i));
 				}
 			}
 
@@ -160,16 +123,16 @@ public class Marshaller
 	}
 
 
-	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, ResultSet aResultSet, FieldDescriptor[] aTypes)
+	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, ResultSet aResultSet, ArrayList<FieldDescriptor> aTypes)
 	{
 		try
 		{
 			Log.v("unmarshal entity fields");
 			Log.inc();
 
-			boolean[] isNull = new boolean[aTypes.length];
+			boolean[] isNull = new boolean[aTypes.size()];
 
-			for (int i = 0; i < aTypes.length; i++)
+			for (int i = 0; i < aTypes.size(); i++)
 			{
 				isNull[i] = aBuffer.readBit() == 1;
 			}
