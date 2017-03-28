@@ -8,8 +8,8 @@ import java.io.IOException;
 import java.util.GregorianCalendar;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.OpenOption;
-import org.terifan.raccoon.io.AccessCredentials;
-import org.terifan.raccoon.io.MemoryBlockDevice;
+import org.terifan.raccoon.io.secure.AccessCredentials;
+import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.testng.annotations.Test;
 
 

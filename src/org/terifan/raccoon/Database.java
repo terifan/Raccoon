@@ -13,15 +13,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
-import org.terifan.raccoon.io.IManagedBlockDevice;
-import org.terifan.raccoon.io.IPhysicalBlockDevice;
-import org.terifan.raccoon.io.ManagedBlockDevice;
-import org.terifan.raccoon.io.SecureBlockDevice;
-import org.terifan.raccoon.io.UnsupportedVersionException;
-import org.terifan.raccoon.io.AccessCredentials;
-import org.terifan.raccoon.io.BlobOutputStream;
-import org.terifan.raccoon.io.BlockPointer;
-import org.terifan.raccoon.io.FileBlockDevice;
+import org.terifan.raccoon.io.managed.IManagedBlockDevice;
+import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
+import org.terifan.raccoon.io.managed.ManagedBlockDevice;
+import org.terifan.raccoon.io.secure.SecureBlockDevice;
+import org.terifan.raccoon.io.managed.UnsupportedVersionException;
+import org.terifan.raccoon.io.secure.AccessCredentials;
+import org.terifan.raccoon.storage.BlobOutputStream;
+import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.io.physical.FileBlockDevice;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -137,11 +137,26 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private static Database init(IPhysicalBlockDevice aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, Object[] aParameters) throws IOException
+	/**
+	 *
+	 * @param aParameters
+	 *   supports: AccessCredentials, DeviceLabel
+	 */
+	public static Database open(IManagedBlockDevice aBlockDevice, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
+	{
+		Assert.fail((aOpenOptions == OpenOption.READ_ONLY || aOpenOptions == OpenOption.OPEN) && aBlockDevice.length() == 0, "Block device is empty.");
+
+		boolean create = aBlockDevice.length() == 0 || aOpenOptions == OpenOption.CREATE_NEW;
+
+		return init(aBlockDevice, create, false, aParameters);
+	}
+
+
+	private static Database init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, Object[] aParameters) throws IOException
 	{
 		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aParameters, null);
 
-		ManagedBlockDevice device;
+		IManagedBlockDevice device;
 		String label = null;
 
 		for (Object o : aParameters)
@@ -159,19 +174,19 @@ public final class Database implements AutoCloseable
 				throw new IllegalArgumentException("The BlockDevice provided cannot be secured, ensure that the BlockDevice it writes to is a secure BlockDevice.");
 			}
 
-			device = (ManagedBlockDevice)aBlockDevice;
+			device = (IManagedBlockDevice)aBlockDevice;
 		}
 		else if (accessCredentials == null)
 		{
 			Log.d("creating a managed block device");
 
-			device = new ManagedBlockDevice(aBlockDevice, label);
+			device = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice, label);
 		}
 		else
 		{
 			Log.d("creating a secure block device");
 
-			device = new ManagedBlockDevice(new SecureBlockDevice(aBlockDevice, accessCredentials), label);
+			device = new ManagedBlockDevice(new SecureBlockDevice((IPhysicalBlockDevice)aBlockDevice, accessCredentials), label);
 		}
 
 		Database db;

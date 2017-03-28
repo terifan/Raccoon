@@ -2,7 +2,7 @@ package org.terifan.raccoon;
 
 import java.io.IOException;
 import java.util.List;
-import org.terifan.raccoon.io.MemoryBlockDevice;
+import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import resources.entities._Fruit1K;

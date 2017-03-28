@@ -20,7 +20,7 @@ import org.terifan.raccoon.hashtable.LeafEntry;
 import org.terifan.raccoon.OpenOption;
 import org.terifan.raccoon.Table;
 import org.terifan.raccoon.TableMetadata;
-import org.terifan.raccoon.io.AccessCredentials;
+import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.raccoon.util.Log;

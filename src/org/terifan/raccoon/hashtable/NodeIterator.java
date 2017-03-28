@@ -1,10 +1,10 @@
 package org.terifan.raccoon.hashtable;
 
-import org.terifan.raccoon.io.BlockPointer;
+import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayDeque;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import org.terifan.raccoon.io.BlockType;
+import org.terifan.raccoon.storage.BlockType;
 
 
 final class NodeIterator implements Iterator<LeafEntry>

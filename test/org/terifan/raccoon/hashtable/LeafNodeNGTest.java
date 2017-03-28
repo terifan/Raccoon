@@ -1,7 +1,5 @@
 package org.terifan.raccoon.hashtable;
 
-import org.terifan.raccoon.hashtable.LeafEntry;
-import org.terifan.raccoon.hashtable.LeafNode;
 import java.util.HashMap;
 import java.util.Map;
 import org.testng.annotations.Test;

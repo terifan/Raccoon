@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.OpenOption;
-import org.terifan.raccoon.io.MemoryBlockDevice;
+import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.testng.annotations.Test;
 
 
