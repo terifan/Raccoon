@@ -3,12 +3,12 @@ package org.terifan.raccoon;
 
 public class ScanResult
 {
-	int tables;
-	int records;
-	int indexBlocks;
-	int blobs;
-	int blobIndices;
-	int blobData;
+	public int tables;
+	public int records;
+	public int indexBlocks;
+	public int blobs;
+	public int blobIndices;
+	public int blobData;
 
 
 	@Override

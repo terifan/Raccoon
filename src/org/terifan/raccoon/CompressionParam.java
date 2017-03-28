@@ -59,8 +59,8 @@ public final class CompressionParam
 		{
 			case NODE_LEAF:
 				return mLeaf;
-			case NODE_INDX:
-			case BLOB_INDX:
+			case NODE_INDEX:
+			case BLOB_INDEX:
 				return mNode;
 			case BLOB_DATA:
 				return mBlob;

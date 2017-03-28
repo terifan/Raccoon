@@ -31,7 +31,7 @@ class FieldWriter
 
 		aOutput.writeVar32(len);
 
-		if (aLevel < aFieldType.getDepth() || aFieldType.isNullable())
+		if (aLevel < aFieldType.getDepth() || !aFieldType.isPrimitive())
 		{
 			for (int i = 0; i < len; i++)
 			{
@@ -53,7 +53,7 @@ class FieldWriter
 				}
 			}
 		}
-		else if (aFieldType.isNullable())
+		else if (!aFieldType.isPrimitive())
 		{
 			for (int i = 0; i < len; i++)
 			{
@@ -85,7 +85,6 @@ class FieldWriter
 		{
 			case BOOLEAN:
 				aOutput.writeBit((Boolean)aValue);
-//				aOutput.write((Boolean)aValue ? 1 : 0);
 				break;
 			case BYTE:
 				aOutput.writeInt8((Byte)aValue);

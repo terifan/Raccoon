@@ -1,5 +1,7 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.hashtable.HashTable;
+import org.terifan.raccoon.hashtable.LeafEntry;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +27,8 @@ import org.terifan.raccoon.util.Log;
 
 public final class Table<T> implements Iterable<T>, AutoCloseable
 {
+	public static final byte FLAG_BLOB = 1;
+
 	private Database mDatabase;
 	private TableMetadata mTableMetadata;
 	private BlockAccessor mBlockAccessor;
@@ -105,11 +109,11 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 			return null;
 		}
 
-		if (entry.hasFlag(LeafEntry.FLAG_BLOB))
+		if (entry.hasFlag(FLAG_BLOB))
 		{
 			try
 			{
-				ByteArrayBuffer buffer = new ByteArrayBuffer(entry.mValue);
+				ByteArrayBuffer buffer = new ByteArrayBuffer(entry.getValue());
 
 				return new BlobInputStream(mBlockAccessor, buffer);
 			}
@@ -119,7 +123,7 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 			}
 		}
 
-		return new ByteArrayInputStream(entry.mValue);
+		return new ByteArrayInputStream(entry.getValue());
 	}
 
 
@@ -134,7 +138,7 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 
 		if (key.length + value.length > mTableImplementation.getEntryMaximumLength() / 4)
 		{
-			type = LeafEntry.FLAG_BLOB;
+			type = FLAG_BLOB;
 
 			try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId(), null))
 			{
@@ -156,17 +160,17 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 
 		Log.dec();
 
-		return entry.mValue != null;
+		return entry.getValue() != null;
 	}
 
 
 	private void deleteIfBlob(LeafEntry aEntry) throws DatabaseException
 	{
-		if (aEntry.hasFlag(LeafEntry.FLAG_BLOB))
+		if (aEntry.hasFlag(FLAG_BLOB))
 		{
 			try
 			{
-				Blob.deleteBlob(mBlockAccessor, aEntry.mValue);
+				Blob.deleteBlob(mBlockAccessor, aEntry.getValue());
 			}
 			catch (IOException e)
 			{
@@ -189,7 +193,7 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 
 					byte[] key = getKeys(aEntityKey);
 
-					LeafEntry entry = new LeafEntry(key, aHeader, LeafEntry.FLAG_BLOB);
+					LeafEntry entry = new LeafEntry(key, aHeader, FLAG_BLOB);
 
 					if (mTableImplementation.put(entry))
 					{
@@ -227,14 +231,14 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 
 			byte[] key = getKeys(aEntity);
 
-			LeafEntry entry = new LeafEntry(key, bos.finish(), LeafEntry.FLAG_BLOB);
+			LeafEntry entry = new LeafEntry(key, bos.finish(), FLAG_BLOB);
 
 			if (mTableImplementation.put(entry))
 			{
 				deleteIfBlob(entry);
 			}
 
-			return entry.mValue == null;
+			return entry.getValue() == null;
 		}
 		catch (IOException e)
 		{
@@ -345,7 +349,7 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 
 	void unmarshalToObjectKeys(LeafEntry aBuffer, Object aOutput)
 	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.mKey);
+		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getKey());
 
 		mTableMetadata.getMarshaller().unmarshal(buffer, aOutput, TableMetadata.FIELD_CATEGORY_KEY);
 	}
@@ -353,9 +357,9 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 
 	void unmarshalToObjectValues(LeafEntry aBuffer, Object aOutput)
 	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.mValue);
+		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getValue());
 
-		if (aBuffer.hasFlag(LeafEntry.FLAG_BLOB))
+		if (aBuffer.hasFlag(FLAG_BLOB))
 		{
 			try
 			{

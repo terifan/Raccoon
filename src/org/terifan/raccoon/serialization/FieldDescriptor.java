@@ -18,6 +18,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	private ValueType mValueType;
 	private boolean mNullable;
 	private boolean mArray;
+	private boolean mPrimitive;
 	private String mName;
 	private String mTypeName;
 
@@ -113,6 +114,18 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	}
 
 
+	public boolean isPrimitive()
+	{
+		return mPrimitive;
+	}
+
+
+	void setPrimitive(boolean aPrimitive)
+	{
+		mPrimitive = aPrimitive;
+	}
+
+
 	public String getTypeName()
 	{
 		return mTypeName;
@@ -142,7 +155,8 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	{
 		int flags
 			= (mNullable ? 1 : 0)
-			+ (mArray ? 2 : 0);
+			+ (mArray ? 2 : 0)
+			+ (mPrimitive ? 4 : 0);
 		aOutput.write(flags);
 
 		aOutput.writeUTF(mName);
@@ -160,6 +174,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 		int flags = aInput.read();
 		mNullable = (flags & 1) != 0;
 		mArray = (flags & 2) != 0;
+		mPrimitive = (flags & 4) != 0;
 
 		mName = aInput.readUTF();
 		mIndex = aInput.readShort();
@@ -191,6 +206,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 				&& mIndex == other.mIndex
 				&& (mField == null && other.mField == null || mField != null && mField.equals(other.mField))
 				&& mNullable == other.mNullable
+				&& mPrimitive == other.mPrimitive
 				&& mValueType == other.mValueType
 				&& mCategory == other.mCategory;
 		}
@@ -210,7 +226,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	public String toString()
 	{
 		String s = mValueType.toString().toLowerCase();
-		if (mNullable)
+		if (!mPrimitive)
 		{
 			s = s.substring(0, 1).toUpperCase() + s.substring(1);
 		}
@@ -229,6 +245,6 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 
 	Class getTypeClass()
 	{
-		return mNullable ? TYPE_CLASSES.get(mValueType) : TYPE_VALUES.get(mValueType);
+		return mPrimitive ? TYPE_VALUES.get(mValueType) : TYPE_CLASSES.get(mValueType);
 	}
 }

@@ -1,4 +1,4 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.hashtable;
 
 import org.terifan.raccoon.io.BlockPointer.BlockType;
 

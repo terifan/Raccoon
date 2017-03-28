@@ -1,17 +1,15 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.hashtable;
 
 import org.terifan.raccoon.io.BlockPointer;
 import java.util.ArrayDeque;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
-import org.terifan.raccoon.util.Log;
 
 
 final class NodeIterator implements Iterator<LeafEntry>
 {
 	private long mModCount;
-	private int mEntryIndex;
 	private ArrayDeque<BlockPointer> mNodes;
 	private Iterator<LeafEntry> mMap;
 	private LeafEntry mNextEntry;
@@ -87,7 +85,7 @@ final class NodeIterator implements Iterator<LeafEntry>
 		{
 			BlockPointer next = node.getPointer(i);
 
-			if (next != null && (next.getType() == BlockType.NODE_INDX || next.getType() == BlockType.NODE_LEAF))
+			if (next != null && (next.getType() == BlockType.NODE_INDEX || next.getType() == BlockType.NODE_LEAF))
 			{
 				mNodes.addLast(next);
 			}
@@ -112,13 +110,11 @@ final class NodeIterator implements Iterator<LeafEntry>
 			}
 		}
 
-		mEntryIndex++;
 		mHasEntry = false;
 
 		if (!mMap.hasNext())
 		{
 			mMap = null;
-			mEntryIndex = 0;
 		}
 
 		return mNextEntry;

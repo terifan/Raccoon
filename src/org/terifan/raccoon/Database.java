@@ -60,7 +60,7 @@ public final class Database implements AutoCloseable
 		mOpenTables = new ConcurrentHashMap<>();
 		mTableMetadatas = new TableMetadataProvider();
 		mFactories = new HashMap<>();
-		mTransactionId = new TransactionCounter();
+		mTransactionId = new TransactionCounter(0);
 		mInitializers = new HashMap<>();
 		mErrorReportListeners = new ArrayList<>();
 	}
@@ -1187,7 +1187,7 @@ public final class Database implements AutoCloseable
 	public ScanResult scan() throws IOException
 	{
 		ScanResult scanResult = new ScanResult();
-		
+
 		mSystemTable.scan(scanResult);
 
 		for (TableMetadata tableMetadata : getTableMetadataList())
@@ -1197,7 +1197,7 @@ public final class Database implements AutoCloseable
 				table.scan(scanResult);
 			}
 		}
-		
+
 		return scanResult;
 	}
 

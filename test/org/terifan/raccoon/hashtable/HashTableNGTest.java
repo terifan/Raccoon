@@ -1,9 +1,9 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.hashtable;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.terifan.raccoon.io.IManagedBlockDevice;
+import org.terifan.raccoon.TransactionCounter;
 import org.terifan.raccoon.io.ManagedBlockDevice;
 import org.terifan.raccoon.io.MemoryBlockDevice;
 import static resources.__TestUtils.*;

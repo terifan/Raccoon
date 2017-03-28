@@ -40,7 +40,7 @@ class FieldReader
 
 		Object array = Array.newInstance(aComponentType, dims);
 
-		if (aLevel < aFieldType.getDepth() || aFieldType.isNullable())
+		if (aLevel < aFieldType.getDepth() || !aFieldType.isPrimitive())
 		{
 			boolean[] isNull = new boolean[len];
 
@@ -72,7 +72,7 @@ class FieldReader
 				aInput.align();
 			}
 		}
-		else if (aFieldType.getValueType() == ValueType.BYTE)
+		else if (aFieldType.getValueType() == ValueType.BYTE && aFieldType.isPrimitive())
 		{
 			aInput.read((byte[])array);
 		}

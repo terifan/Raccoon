@@ -1,4 +1,4 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.hashtable;
 
 import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.io.BlockAccessor;
@@ -6,11 +6,11 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Spliterator;
-import java.util.Spliterators.AbstractSpliterator;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import org.terifan.raccoon.CompressionParam;
+import org.terifan.raccoon.DatabaseException;
+import org.terifan.raccoon.ScanResult;
+import org.terifan.raccoon.Stats;
+import org.terifan.raccoon.TransactionCounter;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
 import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.raccoon.util.Result;
@@ -19,7 +19,7 @@ import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-final class HashTable implements AutoCloseable, Iterable<LeafEntry>
+public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 {
 	private BlockAccessor mBlockAccessor;
 	private BlockPointer mRootBlockPointer;
@@ -40,7 +40,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	/**
 	 * Open an existing HashTable or create a new HashTable with default settings.
 	 */
-	HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionCounter aTransactionId, boolean aStandAlone, CompressionParam aCompressionParam) throws IOException
+	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionCounter aTransactionId, boolean aStandAlone, CompressionParam aCompressionParam) throws IOException
 	{
 		mTransactionId = aTransactionId;
 
@@ -275,7 +275,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 				{
 					mBlockAccessor.getBlockDevice().commit();
 				}
-				
+
 				mChanged = false;
 
 				Log.i("commit finished; new root %s", mRootBlockPointer);
@@ -304,8 +304,6 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		checkOpen();
 
 		Log.i("rollback");
-
-		// if (!mModified) return; // TODO abort not changed
 
 		if (mForwardCommits)
 		{
@@ -349,7 +347,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		{
 			visit((aPointerIndex, aBlockPointer) ->
 			{
-				if (aPointerIndex != Visitor.ROOT_POINTER && aBlockPointer != null && (aBlockPointer.getType() == BlockType.NODE_INDX || aBlockPointer.getType() == BlockType.NODE_LEAF))
+				if (aPointerIndex != Visitor.ROOT_POINTER && aBlockPointer != null && (aBlockPointer.getType() == BlockType.NODE_INDEX || aBlockPointer.getType() == BlockType.NODE_LEAF))
 				{
 					freeBlock(aBlockPointer);
 				}
@@ -409,7 +407,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		switch (blockPointer.getType())
 		{
-			case NODE_INDX:
+			case NODE_INDEX:
 				return getValue(aHash, aLevel + 1, aEntry, readNode(blockPointer));
 			case NODE_LEAF:
 				return readLeaf(blockPointer).get(aEntry);
@@ -434,7 +432,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		switch (blockPointer.getType())
 		{
-			case NODE_INDX:
+			case NODE_INDEX:
 				IndexNode node = readNode(blockPointer);
 				oldValue = putValue(aEntry, aHash, aLevel + 1, node);
 				freeBlock(blockPointer);
@@ -616,7 +614,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		switch (blockPointer.getType())
 		{
-			case NODE_INDX:
+			case NODE_INDEX:
 				IndexNode node = readNode(blockPointer);
 				if (removeValue(aHash, aLevel + 1, aEntry, node))
 				{
@@ -660,7 +658,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 	IndexNode readNode(BlockPointer aBlockPointer)
 	{
-		assert aBlockPointer.getType() == BlockType.NODE_INDX;
+		assert aBlockPointer.getType() == BlockType.NODE_INDEX;
 
 		if (aBlockPointer.getOffset() == mRootBlockPointer.getOffset() && mRootNode != null)
 		{
@@ -721,7 +719,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		{
 			BlockPointer next = node.getPointer(i);
 
-			if (next != null && next.getType() == BlockType.NODE_INDX)
+			if (next != null && next.getType() == BlockType.NODE_INDEX)
 			{
 				visitNode(aVisitor, next);
 			}
@@ -764,10 +762,10 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	void scan(ScanResult aScanResult)
+	public void scan(ScanResult aScanResult)
 	{
 		aScanResult.tables++;
-		
+
 		scan(aScanResult, mRootBlockPointer);
 	}
 
@@ -778,7 +776,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		switch (aBlockPointer.getType())
 		{
-			case NODE_INDX:
+			case NODE_INDEX:
 				aScanResult.indexBlocks++;
 
 				IndexNode indexNode = new IndexNode(buffer);
@@ -795,26 +793,26 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 				LeafNode leafNode = new LeafNode(buffer);
 				for (LeafEntry entry : leafNode)
 				{
-					if (entry.hasFlag(LeafEntry.FLAG_BLOB))
-					{
-						aScanResult.blobs++;
-
-						ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(entry.mValue);
-						byteArrayBuffer.readInt8();
-						long len = byteArrayBuffer.readVar64();
-
-						while (byteArrayBuffer.remaining() > 0)
-						{
-							scan(aScanResult, new BlockPointer().unmarshal(byteArrayBuffer));
-						}
-					}
-					else
-					{
+//					if (entry.hasFlag(LeafEntry.FLAG_BLOB))
+//					{
+//						aScanResult.blobs++;
+//
+//						ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(entry.mValue);
+//						byteArrayBuffer.readInt8();
+//						long len = byteArrayBuffer.readVar64();
+//
+//						while (byteArrayBuffer.remaining() > 0)
+//						{
+//							scan(aScanResult, new BlockPointer().unmarshal(byteArrayBuffer));
+//						}
+//					}
+//					else
+//					{
 						aScanResult.records++;
-					}
+//					}
 				}
 				break;
-			case BLOB_INDX:
+			case BLOB_INDEX:
 				aScanResult.blobIndices++;
 
 				ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(buffer);
@@ -831,7 +829,7 @@ final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 				throw new IllegalStateException();
 		}
 	}
-	
+
 
 //	<T> Stream<T> stream()
 //	{

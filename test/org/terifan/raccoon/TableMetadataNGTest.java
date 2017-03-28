@@ -1,8 +1,6 @@
 package org.terifan.raccoon;
 
 import java.io.IOException;
-import org.terifan.raccoon.serialization.EntityDescriptor;
-import org.terifan.raccoon.serialization.EntityDescriptorFactory;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import resources.entities._BigObject2K1D;

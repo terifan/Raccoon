@@ -16,7 +16,7 @@ import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import org.terifan.raccoon.Database;
-import org.terifan.raccoon.LeafEntry;
+import org.terifan.raccoon.hashtable.LeafEntry;
 import org.terifan.raccoon.OpenOption;
 import org.terifan.raccoon.Table;
 import org.terifan.raccoon.TableMetadata;

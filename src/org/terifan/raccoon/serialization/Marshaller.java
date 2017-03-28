@@ -14,7 +14,7 @@ public class Marshaller
 	private EntityDescriptor mEntityDescriptor;
 
 
-	Marshaller(EntityDescriptor aTypeDeclarations)
+	public Marshaller(EntityDescriptor aTypeDeclarations)
 	{
 		mEntityDescriptor = aTypeDeclarations;
 	}
@@ -52,7 +52,14 @@ public class Marshaller
 			{
 				Object value = fieldType.getField().get(aObject);
 
-				aBuffer.writeBit(value == null);
+				if (fieldType.isNullable())
+				{
+					aBuffer.writeBit(value == null);
+				}
+				else if (value == null)
+				{
+					throw new IllegalStateException("Field is null when it cannot be: " + fieldType);
+				}
 
 				values.add(value);
 			}
@@ -91,9 +98,11 @@ public class Marshaller
 
 			for (int i = 0; i < aTypes.size(); i++)
 			{
-				if (aBuffer.readBit() == 0)
+				FieldDescriptor fieldType = aTypes.get(i);
+
+				if (!fieldType.isNullable() || aBuffer.readBit() == 0)
 				{
-					readFields.add(aTypes.get(i));
+					readFields.add(fieldType);
 				}
 			}
 
@@ -130,24 +139,25 @@ public class Marshaller
 			Log.v("unmarshal entity fields");
 			Log.inc();
 
-			boolean[] isNull = new boolean[aTypes.size()];
+			ArrayList<FieldDescriptor> readFields = new ArrayList<>();
 
 			for (int i = 0; i < aTypes.size(); i++)
 			{
-				isNull[i] = aBuffer.readBit() == 1;
+				FieldDescriptor fieldType = aTypes.get(i);
+
+				if (!fieldType.isNullable() || aBuffer.readBit() == 0)
+				{
+					readFields.add(fieldType);
+				}
 			}
 
 			aBuffer.align();
 
-			int i = 0;
-			for (FieldDescriptor fieldType : aTypes)
+			for (FieldDescriptor fieldType : readFields)
 			{
-				if (!isNull[i++])
-				{
-					Object value = FieldReader.readField(fieldType, aBuffer);
+				Object value = FieldReader.readField(fieldType, aBuffer);
 
-					aResultSet.add(fieldType, value);
-				}
+				aResultSet.add(fieldType, value);
 			}
 
 			Log.dec();

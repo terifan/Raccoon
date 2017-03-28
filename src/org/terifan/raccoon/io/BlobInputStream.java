@@ -32,7 +32,7 @@ public class BlobInputStream extends InputStream
 		{
 			BlockPointer bp = loadBlock();
 
-			if (bp.getType() == BlockType.BLOB_INDX)
+			if (bp.getType() == BlockType.BLOB_INDEX)
 			{
 				mPointerBuffer = mBuffer;
 

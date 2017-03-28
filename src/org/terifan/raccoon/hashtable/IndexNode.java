@@ -1,11 +1,12 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.hashtable;
 
+import org.terifan.raccoon.Stats;
 import org.terifan.raccoon.io.BlockPointer;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-final class IndexNode implements Node
+public final class IndexNode implements Node
 {
 	private final static BlockPointer EMPTY_POINTER = new BlockPointer();
 
@@ -32,7 +33,7 @@ final class IndexNode implements Node
 	@Override
 	public BlockType getType()
 	{
-		return BlockType.NODE_INDX;
+		return BlockType.NODE_INDEX;
 	}
 
 
@@ -167,34 +168,4 @@ final class IndexNode implements Node
 
 		return null;
 	}
-
-
-//	public void dump()
-//	{
-//		StringBuilder sb = new StringBuilder();
-//
-//		for (int i = 0; i < mBuffer.length / BlockPointer.SIZE;)
-//		{
-//			BlockPointer bp = decodePointer(i);
-//
-//			if (bp.getRange() == 0)
-//			{
-//				throw new IllegalArgumentException();
-//			}
-//
-//			sb.append(String.format("%3d: ", i));
-//			sb.append(bp);
-//			sb.append("\n");
-//
-//			for (int j = 0; j < bp.getRange()-1; j++)
-//			{
-//				sb.append(String.format("%3d: ", i+1+j));
-//				sb.append("------------\n");
-//			}
-//
-//			i += bp.getRange();
-//		}
-//
-//		System.out.println(sb.toString());
-//	}
 }

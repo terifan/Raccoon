@@ -1,11 +1,11 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.hashtable;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import org.terifan.raccoon.Stats;
 import org.terifan.raccoon.io.BlockPointer.BlockType;
-import org.terifan.raccoon.util.Log;
 
 
 /**
@@ -36,7 +36,7 @@ import org.terifan.raccoon.util.Log;
  *   (pointer 1..n)
  *     3 bytes - offset
  */
-final class LeafNode implements Iterable<LeafEntry>, Node
+final class LeafNode implements Node, Iterable<LeafEntry>
 {
 	private final static int MAX_CAPACITY = 1 << 24;
 	private final static int HEADER_SIZE = 2 + 3;

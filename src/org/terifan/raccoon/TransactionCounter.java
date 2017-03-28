@@ -8,13 +8,7 @@ public final class TransactionCounter
 	private AtomicLong mCounter;
 
 
-	TransactionCounter()
-	{
-		mCounter = new AtomicLong(0);
-	}
-
-
-	TransactionCounter(long aCounter)
+	public TransactionCounter(long aCounter)
 	{
 		mCounter = new AtomicLong(aCounter);
 	}

@@ -37,9 +37,9 @@ public class BlockPointer implements Serializable
 		NODE_FREE,
 		NODE_HOLE,
 		NODE_LEAF,
-		NODE_INDX,
+		NODE_INDEX,
 		BLOB_DATA,
-		BLOB_INDX
+		BLOB_INDEX
 	}
 
 	private int mType;
