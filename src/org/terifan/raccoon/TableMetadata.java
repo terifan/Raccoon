@@ -40,7 +40,7 @@ public final class TableMetadata
 
 		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);
 
-		if (getKeyFields().isEmpty())
+		if (mEntityDescriptor.getFields(FIELD_CATEGORY_KEY).isEmpty())
 		{
 			throw new IllegalArgumentException("Entity has no keys: " + aClass);
 		}
@@ -62,10 +62,34 @@ public final class TableMetadata
 
 		if (mType != null)
 		{
-			mEntityDescriptor.setType(mType);
+			mEntityDescriptor.bind(mType);
 		}
 
 		return this;
+	}
+
+	
+	public ArrayList<FieldDescriptor> getFields()
+	{
+		return mEntityDescriptor.getFields(FIELD_CATEGORY_KEY + FIELD_CATEGORY_DISCRIMINATOR + FIELD_CATEGORY_VALUE);
+	}
+
+	
+	public ArrayList<FieldDescriptor> getKeyFields()
+	{
+		return mEntityDescriptor.getFields(FIELD_CATEGORY_KEY);
+	}
+	
+	
+	public ArrayList<FieldDescriptor> getDiscriminatorFields()
+	{
+		return mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR);
+	}
+	
+	
+	public ArrayList<FieldDescriptor> getValueFields()
+	{
+		return mEntityDescriptor.getFields(FIELD_CATEGORY_VALUE);
 	}
 
 
@@ -162,7 +186,7 @@ public final class TableMetadata
 		ResultSet resultSet = marshaller.unmarshal(new ByteArrayBuffer(mDiscriminatorKey), new ResultSet(), TableMetadata.FIELD_CATEGORY_DISCRIMINATOR);
 		StringBuilder result = new StringBuilder();
 
-		for (FieldDescriptor fieldType : getDiscriminatorFields())
+		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR))
 		{
 			if (result.length() > 0)
 			{
@@ -176,30 +200,6 @@ public final class TableMetadata
 	}
 
 
-	public boolean hasDiscriminatorFields()
-	{
-		return !getDiscriminatorFields().isEmpty();
-	}
-
-
-	public ArrayList<FieldDescriptor> getKeyFields()
-	{
-		return mEntityDescriptor.getFields(FIELD_CATEGORY_KEY);
-	}
-
-
-	public ArrayList<FieldDescriptor> getDiscriminatorFields()
-	{
-		return mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR);
-	}
-
-
-	public ArrayList<FieldDescriptor> getValueFields()
-	{
-		return mEntityDescriptor.getFields(FIELD_CATEGORY_VALUE);
-	}
-
-
 	/**
 	 * Return an entity as a Java class declaration.
 	 */
@@ -209,15 +209,15 @@ public final class TableMetadata
 		sb.append("package " + mEntityDescriptor.getName().substring(0, mEntityDescriptor.getName().lastIndexOf('.')) + ";\n\n");
 		sb.append("class " + mEntityDescriptor.getName().substring(mEntityDescriptor.getName().lastIndexOf('.') + 1) + "\n{\n");
 
-		for (FieldDescriptor fieldType : getKeyFields())
+		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_KEY))
 		{
 			sb.append("\t" + "@Key " + fieldType + ";\n");
 		}
-		for (FieldDescriptor fieldType : getDiscriminatorFields())
+		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR))
 		{
 			sb.append("\t" + "@Discriminator " + fieldType + ";\n");
 		}
-		for (FieldDescriptor fieldType : getValueFields())
+		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_VALUE))
 		{
 			sb.append("\t" + "" + fieldType + ";\n");
 		}
@@ -240,4 +240,18 @@ public final class TableMetadata
 		}
 		return FIELD_CATEGORY_VALUE;
 	};
+
+
+	public String getCategoryName(int aCategory)
+	{
+		if ((aCategory & FIELD_CATEGORY_KEY) != 0)
+		{
+			return "Key";
+		}
+		if ((aCategory & FIELD_CATEGORY_DISCRIMINATOR) != 0)
+		{
+			return "Discriminator";
+		}
+		return "Value";
+	}
 }

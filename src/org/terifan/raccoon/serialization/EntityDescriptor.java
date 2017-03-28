@@ -23,7 +23,7 @@ public class EntityDescriptor implements Externalizable
 
 
 	/**
-	 * Use only for serialisation.
+	 * Use only for serialization.
 	 */
 	public EntityDescriptor()
 	{
@@ -42,7 +42,7 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	public void setType(Class aType)
+	public void bind(Class aType)
 	{
 		for (Field field : ObjectReflection.getDeclaredFields(aType))
 		{

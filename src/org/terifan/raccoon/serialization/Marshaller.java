@@ -22,58 +22,60 @@ public class Marshaller
 
 	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer, Object aObject, int aCategory)
 	{
-		return marshalImpl(aBuffer, aObject, mEntityDescriptor.getFields(aCategory));
+		return marshalImpl(aBuffer, aObject, aCategory);
 	}
 
 
 	public void unmarshal(ByteArrayBuffer aBuffer, Object aObject, int aCategory)
 	{
-		unmarshalImpl(aBuffer, aObject, mEntityDescriptor.getFields(aCategory));
+		unmarshalImpl(aBuffer, aObject, aCategory);
 	}
 
 
 	public ResultSet unmarshal(ByteArrayBuffer aBuffer, ResultSet aResultSet, int aCategory)
 	{
-		return unmarshalImpl(aBuffer, aResultSet, mEntityDescriptor.getFields(aCategory));
+		return unmarshalImpl(aBuffer, aResultSet, aCategory);
 	}
 
 
-	private ByteArrayBuffer marshalImpl(ByteArrayBuffer aBuffer, Object aObject, ArrayList<FieldDescriptor> aTypes)
+	private ByteArrayBuffer marshalImpl(ByteArrayBuffer aBuffer, Object aObject, int aCategory)
 	{
 		try
 		{
-			Log.v("marshal entity fields %s", aTypes);
+			Log.v("marshal entity fields %s", aCategory);
 			Log.inc();
 
 			ArrayList<Object> values = new ArrayList<>();
+			ArrayList<FieldDescriptor> types = new ArrayList<>();
 
-			// write null-bitmap
-			for (FieldDescriptor fieldType : aTypes)
+			for (FieldDescriptor fieldType : mEntityDescriptor.getFields())
 			{
-				Object value = fieldType.getField().get(aObject);
-
-				if (fieldType.isNullable())
+				if (isSelected(fieldType, aCategory))
 				{
-					aBuffer.writeBit(value == null);
-				}
-				else if (value == null)
-				{
-					throw new IllegalStateException("Field is null when it cannot be: " + fieldType);
-				}
+					Object value = fieldType.getField().get(aObject);
 
-				values.add(value);
+					if (fieldType.isNullable())
+					{
+						aBuffer.writeBit(value == null);
+					}
+					else if (value == null)
+					{
+						throw new IllegalStateException("Field is null when it cannot be: " + fieldType);
+					}
+
+					if (value != null)
+					{
+						types.add(fieldType);
+						values.add(value);
+					}
+				}
 			}
 
 			aBuffer.align();
 
-			for (int i = 0; i < aTypes.size(); i++)
+			for (int i = 0; i < values.size(); i++)
 			{
-				Object value = values.get(i);
-
-				if (value != null)
-				{
-					FieldWriter.writeField(aTypes.get(i), value, aBuffer);
-				}
+				FieldWriter.writeField(types.get(i), values.get(i), aBuffer);
 			}
 
 			Log.dec();
@@ -87,34 +89,34 @@ public class Marshaller
 	}
 
 
-	private void unmarshalImpl(ByteArrayBuffer aBuffer, Object aObject, ArrayList<FieldDescriptor> aTypes)
+	private void unmarshalImpl(ByteArrayBuffer aBuffer, Object aObject, int aCategory)
 	{
 		try
 		{
 			Log.v("unmarshal entity fields");
 			Log.inc();
 
-			ArrayList<FieldDescriptor> readFields = new ArrayList<>();
+			ArrayList<FieldDescriptor> fields = new ArrayList<>();
 
-			for (int i = 0; i < aTypes.size(); i++)
+			for (int i = 0; i < mEntityDescriptor.getFields().length; i++)
 			{
-				FieldDescriptor fieldType = aTypes.get(i);
+				FieldDescriptor fieldType = mEntityDescriptor.getFields()[i];
 
-				if (!fieldType.isNullable() || aBuffer.readBit() == 0)
+				if (isSelected(fieldType, aCategory) && (!fieldType.isNullable() || aBuffer.readBit() == 0))
 				{
-					readFields.add(fieldType);
+					fields.add(fieldType);
 				}
 			}
 
 			aBuffer.align();
 
-			for (FieldDescriptor fieldType : readFields)
+			for (FieldDescriptor fieldDescriptor : fields)
 			{
-				Object value = FieldReader.readField(fieldType, aBuffer);
+				Object value = FieldReader.readField(fieldDescriptor, aBuffer);
 
 				if (aObject != null)
 				{
-					Field field = fieldType.getField();
+					Field field = fieldDescriptor.getField();
 
 					if (field != null)
 					{
@@ -132,7 +134,7 @@ public class Marshaller
 	}
 
 
-	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, ResultSet aResultSet, ArrayList<FieldDescriptor> aTypes)
+	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, ResultSet aResultSet, int aCategory)
 	{
 		try
 		{
@@ -141,11 +143,11 @@ public class Marshaller
 
 			ArrayList<FieldDescriptor> readFields = new ArrayList<>();
 
-			for (int i = 0; i < aTypes.size(); i++)
+			for (int i = 0; i < mEntityDescriptor.getFields().length; i++)
 			{
-				FieldDescriptor fieldType = aTypes.get(i);
+				FieldDescriptor fieldType = mEntityDescriptor.getFields()[i];
 
-				if (!fieldType.isNullable() || aBuffer.readBit() == 0)
+				if (isSelected(fieldType, aCategory) && (!fieldType.isNullable() || aBuffer.readBit() == 0))
 				{
 					readFields.add(fieldType);
 				}
@@ -168,5 +170,11 @@ public class Marshaller
 		{
 			throw new DatabaseException(e);
 		}
+	}
+
+
+	protected static boolean isSelected(FieldDescriptor aFieldType, int aCategory)
+	{
+		return (aFieldType.getCategory() & aCategory) != 0;
 	}
 }
