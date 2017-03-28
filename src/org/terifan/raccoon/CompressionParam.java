@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.io.BlockPointer.BlockType;
+import org.terifan.raccoon.io.BlockType;
 
 
 public final class CompressionParam

@@ -2,8 +2,6 @@ package org.terifan.raccoon.io;
 
 import java.io.IOException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.io.BlockPointer.BlockType;
-import org.terifan.raccoon.util.Log;
 
 
 public final class Blob

@@ -2,7 +2,7 @@ package org.terifan.raccoon.hashtable;
 
 import org.terifan.raccoon.Stats;
 import org.terifan.raccoon.io.BlockPointer;
-import org.terifan.raccoon.io.BlockPointer.BlockType;
+import org.terifan.raccoon.io.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 

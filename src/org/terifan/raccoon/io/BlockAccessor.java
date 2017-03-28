@@ -7,7 +7,6 @@ import java.util.zip.Deflater;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.Stats;
-import org.terifan.raccoon.io.BlockPointer.BlockType;
 import org.terifan.security.random.ISAAC;
 import org.terifan.raccoon.util.Log;
 import org.terifan.security.messagedigest.MurmurHash3;

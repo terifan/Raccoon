@@ -3,13 +3,10 @@ package org.terifan.raccoon.io;
 import java.io.IOException;
 import java.io.InputStream;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.io.BlockPointer.BlockType;
 
 
 public class BlobInputStream extends InputStream
 {
-	private final static String TAG = BlobInputStream.class.getName();
-
 	private BlockAccessor mBlockAccessor;
 	private ByteArrayBuffer mPointerBuffer;
 	private ByteArrayBuffer mBuffer;

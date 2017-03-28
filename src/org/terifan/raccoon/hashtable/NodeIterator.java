@@ -4,7 +4,7 @@ import org.terifan.raccoon.io.BlockPointer;
 import java.util.ArrayDeque;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import org.terifan.raccoon.io.BlockPointer.BlockType;
+import org.terifan.raccoon.io.BlockType;
 
 
 final class NodeIterator implements Iterator<LeafEntry>

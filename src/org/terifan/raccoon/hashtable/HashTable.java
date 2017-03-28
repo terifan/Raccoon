@@ -1,7 +1,5 @@
 package org.terifan.raccoon.hashtable;
 
-import org.terifan.raccoon.io.BlockPointer;
-import org.terifan.raccoon.io.BlockAccessor;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -11,12 +9,14 @@ import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.Stats;
 import org.terifan.raccoon.TransactionCounter;
-import org.terifan.raccoon.io.BlockPointer.BlockType;
-import org.terifan.security.messagedigest.MurmurHash3;
-import org.terifan.raccoon.util.Result;
-import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.io.BlockAccessor;
+import org.terifan.raccoon.io.BlockPointer;
+import org.terifan.raccoon.io.BlockType;
 import org.terifan.raccoon.io.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.util.Result;
+import org.terifan.security.messagedigest.MurmurHash3;
 
 
 public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
@@ -118,7 +118,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	{
 		Log.i("load root %s", mRootBlockPointer);
 
-		if (mRootBlockPointer.getType() == BlockPointer.BlockType.NODE_LEAF)
+		if (mRootBlockPointer.getType() == BlockType.NODE_LEAF)
 		{
 			mRootMap = readLeaf(mRootBlockPointer);
 		}
@@ -323,7 +323,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		}
 		else
 		{
-			Log.v("rollback %s", mRootBlockPointer.getType() == BlockPointer.BlockType.NODE_LEAF ? "root map" : "root node");
+			Log.v("rollback %s", mRootBlockPointer.getType() == BlockType.NODE_LEAF ? "root map" : "root node");
 
 			loadRoot();
 		}

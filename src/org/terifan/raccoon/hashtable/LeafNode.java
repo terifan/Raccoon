@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import org.terifan.raccoon.Stats;
-import org.terifan.raccoon.io.BlockPointer.BlockType;
+import org.terifan.raccoon.io.BlockType;
 
 
 /**

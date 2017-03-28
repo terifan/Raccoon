@@ -3,11 +3,9 @@ package org.terifan.raccoon.io;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
-import org.terifan.raccoon.io.BlockPointer.BlockType;
 import org.testng.annotations.Test;
 import static org.testng.AssertJUnit.*;
 import org.testng.annotations.DataProvider;
-import resources.__FixedThreadExecutor;
 
 
 public class BlockAccessorNGTest

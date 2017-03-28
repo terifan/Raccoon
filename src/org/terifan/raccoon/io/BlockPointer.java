@@ -32,16 +32,6 @@ public class BlockPointer implements Serializable
 
 	public final static int SIZE = 32;
 
-	public enum BlockType
-	{
-		NODE_FREE,
-		NODE_HOLE,
-		NODE_LEAF,
-		NODE_INDEX,
-		BLOB_DATA,
-		BLOB_INDEX
-	}
-
 	private int mType;
 	private int mCompression;
 	private int mRange;

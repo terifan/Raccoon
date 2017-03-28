@@ -6,7 +6,6 @@ import java.util.Arrays;
 import org.terifan.raccoon.TransactionCounter;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
-import org.terifan.raccoon.io.BlockPointer.BlockType;
 
 
 public class BlobOutputStream extends OutputStream
