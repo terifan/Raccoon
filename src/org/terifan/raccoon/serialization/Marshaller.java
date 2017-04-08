@@ -28,13 +28,13 @@ public class Marshaller
 
 	public void unmarshal(ByteArrayBuffer aBuffer, Object aObject, int aCategory)
 	{
-		unmarshalImpl(aBuffer, aObject, aCategory);
+		unmarshalImpl(aBuffer, aObject, aCategory, false);
 	}
 
 
 	public ResultSet unmarshal(ByteArrayBuffer aBuffer, ResultSet aResultSet, int aCategory)
 	{
-		return unmarshalImpl(aBuffer, aResultSet, aCategory);
+		return unmarshalImpl(aBuffer, aResultSet, aCategory, true);
 	}
 
 
@@ -89,7 +89,7 @@ public class Marshaller
 	}
 
 
-	private void unmarshalImpl(ByteArrayBuffer aBuffer, Object aObject, int aCategory)
+	private void unmarshalImpl(ByteArrayBuffer aBuffer, Object aObject, int aCategory, boolean aIgnoreMissingClasses)
 	{
 		try
 		{
@@ -112,7 +112,7 @@ public class Marshaller
 
 			for (FieldDescriptor fieldDescriptor : fields)
 			{
-				Object value = FieldReader.readField(fieldDescriptor, aBuffer);
+				Object value = FieldReader.readField(fieldDescriptor, aBuffer, aIgnoreMissingClasses);
 
 				if (aObject != null)
 				{
@@ -134,7 +134,7 @@ public class Marshaller
 	}
 
 
-	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, ResultSet aResultSet, int aCategory)
+	private ResultSet unmarshalImpl(ByteArrayBuffer aBuffer, ResultSet aResultSet, int aCategory, boolean aIgnoreMissingClasses)
 	{
 		try
 		{
@@ -157,7 +157,7 @@ public class Marshaller
 
 			for (FieldDescriptor fieldType : readFields)
 			{
-				Object value = FieldReader.readField(fieldType, aBuffer);
+				Object value = FieldReader.readField(fieldType, aBuffer, aIgnoreMissingClasses);
 
 				aResultSet.add(fieldType, value);
 			}

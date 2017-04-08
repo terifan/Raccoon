@@ -10,7 +10,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 class FieldReader
 {
-	static Object readField(FieldDescriptor aFieldType, ByteArrayBuffer aInput) throws IOException, ClassNotFoundException
+	static Object readField(FieldDescriptor aFieldType, ByteArrayBuffer aInput, boolean aIgnoreMissingClasses) throws IOException, ClassNotFoundException
 	{
 		Object value;
 
@@ -18,11 +18,11 @@ class FieldReader
 		{
 			Class type = aFieldType.getTypeClass();
 
-			value = readArray(aInput, aFieldType, 1, type);
+			value = readArray(aInput, aFieldType, 1, type, aIgnoreMissingClasses);
 		}
 		else
 		{
-			value = readValue(aFieldType, aInput);
+			value = readValue(aFieldType, aInput, aIgnoreMissingClasses);
 		}
 
 		aInput.align();
@@ -31,7 +31,7 @@ class FieldReader
 	}
 
 
-	private static Object readArray(ByteArrayBuffer aInput, FieldDescriptor aFieldType, int aLevel, Class<?> aComponentType) throws IOException, ClassNotFoundException
+	private static Object readArray(ByteArrayBuffer aInput, FieldDescriptor aFieldType, int aLevel, Class<?> aComponentType, boolean aIgnoreMissingClasses) throws IOException, ClassNotFoundException
 	{
 		int len = aInput.readVar32();
 
@@ -55,7 +55,7 @@ class FieldReader
 			{
 				for (int i = 0; i < len; i++)
 				{
-					Object value = isNull[i] ? null : readArray(aInput, aFieldType, aLevel + 1, aComponentType);
+					Object value = isNull[i] ? null : readArray(aInput, aFieldType, aLevel + 1, aComponentType, aIgnoreMissingClasses);
 
 					Array.set(array, i, value);
 				}
@@ -64,7 +64,7 @@ class FieldReader
 			{
 				for (int i = 0; i < len; i++)
 				{
-					Object value = isNull[i] ? null : readValue(aFieldType, aInput);
+					Object value = isNull[i] ? null : readValue(aFieldType, aInput, aIgnoreMissingClasses);
 
 					Array.set(array, i, value);
 				}
@@ -80,7 +80,7 @@ class FieldReader
 		{
 			for (int i = 0; i < len; i++)
 			{
-				Object value = readValue(aFieldType, aInput);
+				Object value = readValue(aFieldType, aInput, aIgnoreMissingClasses);
 
 				Array.set(array, i, value);
 			}
@@ -92,12 +92,11 @@ class FieldReader
 	}
 
 
-	private static Object readValue(FieldDescriptor aFieldType, ByteArrayBuffer aInput) throws IOException, ClassNotFoundException
+	private static Object readValue(FieldDescriptor aFieldType, ByteArrayBuffer aInput, boolean aIgnoreMissingClasses) throws IOException, ClassNotFoundException
 	{
 		switch (aFieldType.getValueType())
 		{
 			case BOOLEAN:
-//				return aInput.read() != 0;
 				return aInput.readBit() == 1;
 			case BYTE:
 				return (byte)aInput.readInt8();
@@ -118,11 +117,22 @@ class FieldReader
 			case DATE:
 				return new Date(aInput.readVar64());
 			case OBJECT:
-				byte[] buffer = aInput.read(new byte[aInput.readVar32()]);
-
-				try (ObjectInputStream oos = new ObjectInputStream(new ByteArrayInputStream(buffer)))
+				try
 				{
-					return oos.readObject();
+					byte[] buffer = aInput.read(new byte[aInput.readVar32()]);
+
+					try (ObjectInputStream oos = new ObjectInputStream(new ByteArrayInputStream(buffer)))
+					{
+						return oos.readObject();
+					}
+				}
+				catch (ClassNotFoundException e)
+				{
+					if (aIgnoreMissingClasses)
+					{
+						return null;
+					}
+					throw e;
 				}
 			default:
 				throw new IllegalStateException("Content type not implemented: " + aFieldType.getValueType());

@@ -242,7 +242,13 @@ public final class TableMetadata
 	};
 
 
-	public String getCategoryName(int aCategory)
+	protected EntityDescriptor getEntityDescriptor()
+	{
+		return mEntityDescriptor;
+	}
+
+
+	public static String getCategoryName(int aCategory)
 	{
 		if ((aCategory & FIELD_CATEGORY_KEY) != 0)
 		{

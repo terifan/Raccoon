@@ -305,7 +305,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private Table openTable(Class aType, DiscriminatorType aDiscriminator, OpenOption aOptions)
+	public Table openTable(Class aType, DiscriminatorType aDiscriminator, OpenOption aOptions)
 	{
 		checkOpen();
 
@@ -315,7 +315,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private Table openTable(TableMetadata aTableMetadata, OpenOption aOptions)
+	public Table openTable(TableMetadata aTableMetadata, OpenOption aOptions)
 	{
 		checkOpen();
 

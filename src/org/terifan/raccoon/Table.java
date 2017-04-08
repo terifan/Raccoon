@@ -23,6 +23,7 @@ import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.util.ResultSet;
 
 
 public final class Table<T> implements Iterable<T>, AutoCloseable
@@ -262,6 +263,9 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 	}
 
 
+	/**
+	 * Creates an iterator over all items in this table. This iterator will reconstruct entities.
+	 */
 	@Override
 	public Iterator<T> iterator()
 	{
@@ -269,9 +273,12 @@ public final class Table<T> implements Iterable<T>, AutoCloseable
 	}
 
 
-	public Iterator<LeafEntry> iteratorRaw()
+	/**
+	 * Creates an iterator over all items in this table.
+	 */
+	public Iterator<ResultSet> resultSetIterator()
 	{
-		return mTableImplementation.iterator();
+		return new ResultSetIterator(this, mTableImplementation.iterator());
 	}
 
 
