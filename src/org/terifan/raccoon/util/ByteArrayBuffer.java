@@ -306,20 +306,11 @@ public final class ByteArrayBuffer
 	}
 
 
-	public short readInt16()
+	public int readInt16()
 	{
 		int ch1 = readInt8();
 		int ch2 = readInt8();
-		return (short)((ch1 << 8) + ch2);
-	}
-
-
-	public ByteArrayBuffer writeInt16(short aValue)
-	{
-		ensureCapacity(2);
-		mBuffer[mOffset++] = (byte)(aValue >> 8);
-		mBuffer[mOffset++] = (byte)(aValue);
-		return this;
+		return (ch1 << 8) + ch2;
 	}
 
 
@@ -594,11 +585,11 @@ public final class ByteArrayBuffer
 	}
 
 
-	public static short readInt16(byte[] aBuffer, int aOffset)
+	public static int readInt16(byte[] aBuffer, int aOffset)
 	{
 		int ch1 = 0xFF & aBuffer[aOffset];
 		int ch2 = 0xFF & aBuffer[aOffset + 1];
-		return (short)((ch1 << 8) + ch2);
+		return (ch1 << 8) + ch2;
 	}
 
 

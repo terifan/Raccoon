@@ -20,6 +20,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private final static int CHECKSUM_SIZE = 16;
 	private final static int RESERVED_BLOCKS = 2;
 
+	private final static int NULL_CODE = 65535;
+	
 	private IPhysicalBlockDevice mBlockDevice;
 	private RangeMap mRangeMap;
 	private RangeMap mPendingRangeMap;
@@ -725,7 +727,11 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			buffer.writeString(mBlockDeviceLabel);
 			if (mExtraData == null)
 			{
-				buffer.writeInt16(-1);
+				buffer.writeInt16(NULL_CODE);
+			}
+			else if (mExtraData.length == NULL_CODE)
+			{
+				throw new IllegalStateException("Illegal length: " + mExtraData.length);
 			}
 			else
 			{
@@ -751,7 +757,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			mSpaceMapBlockKey = buffer.readInt64();
 			mBlockDeviceLabel = buffer.readString(buffer.readInt8());
 			int len = buffer.readInt16();
-			if (len == -1)
+			if (len == NULL_CODE)
 			{
 				mExtraData = null;
 			}
