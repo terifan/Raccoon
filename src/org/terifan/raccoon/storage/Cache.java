@@ -21,7 +21,23 @@ class Cache<K,V>
 
 	public V get(K aKey)
 	{
-		return mCache.get(aKey);
+		return getOrDefault(aKey, null);
+	}
+
+
+	public V getOrDefault(K aKey, V aValue)
+	{
+		V value = mCache.get(aKey);
+
+		if (value == null)
+		{
+			return aValue;
+		}
+
+		mCacheOrder.remove(aKey);
+		mCacheOrder.addFirst(aKey);
+
+		return value;
 	}
 
 
