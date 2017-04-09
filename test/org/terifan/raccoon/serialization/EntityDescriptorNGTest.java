@@ -5,7 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import org.terifan.raccoon.TableMetadata;
+import org.terifan.raccoon.Table;
 import org.terifan.raccoon.util.Log;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;

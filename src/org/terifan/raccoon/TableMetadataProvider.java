@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 final class TableMetadataProvider
 {
-	private final ArrayList<TableMetadata> mTableMetadatas;
+	private final ArrayList<Table> mTableMetadatas;
 
 
 	TableMetadataProvider()
@@ -15,9 +15,9 @@ final class TableMetadataProvider
 	}
 
 
-	TableMetadata getOrCreate(Class aType, DiscriminatorType aDiscriminator)
+	Table getOrCreate(Database aDatabase, Class aType, DiscriminatorType aDiscriminator)
 	{
-		TableMetadata tableMetadata = getImpl(aType, aDiscriminator);
+		Table tableMetadata = getImpl(aType, aDiscriminator);
 		
 		if (tableMetadata != null)
 		{
@@ -33,7 +33,7 @@ final class TableMetadataProvider
 				return tableMetadata;
 			}
 
-			tableMetadata = new TableMetadata(aType, aDiscriminator);
+			tableMetadata = new Table(aDatabase, aType, aDiscriminator);
 
 			mTableMetadatas.add(tableMetadata);
 
@@ -42,11 +42,11 @@ final class TableMetadataProvider
 	}
 
 
-	private TableMetadata getImpl(Class aType, DiscriminatorType aDiscriminator)
+	private Table getImpl(Class aType, DiscriminatorType aDiscriminator)
 	{
 		for (int i = 0; i < mTableMetadatas.size(); i++)
 		{
-			TableMetadata tableMetadata = mTableMetadatas.get(i);
+			Table tableMetadata = mTableMetadatas.get(i);
 
 			if (tableMetadata.getType() == aType)
 			{

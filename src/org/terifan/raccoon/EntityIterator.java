@@ -10,10 +10,10 @@ import java.util.function.Supplier;
 public final class EntityIterator<T> implements Iterator<T>
 {
 	private final Iterator<LeafEntry> mIterator;
-	private final Table mTable;
+	private final TableType mTable;
 
 
-	EntityIterator(Table aTable, Iterator<LeafEntry> aIterator)
+	EntityIterator(TableType aTable, Iterator<LeafEntry> aIterator)
 	{
 		mIterator = aIterator;
 		mTable = aTable;
@@ -47,7 +47,7 @@ public final class EntityIterator<T> implements Iterator<T>
 	{
 		try
 		{
-			Class type = mTable.getTableMetadata().getType();
+			Class type = mTable.getTable().getType();
 
 			Supplier supplier = mTable.getDatabase().getSupplier(type);
 
@@ -72,11 +72,11 @@ public final class EntityIterator<T> implements Iterator<T>
 
 	private void initializeNewEntity(T aEntity)
 	{
-		Class type = mTable.getTableMetadata().getType();
+		Class type = mTable.getTable().getType();
 
-		if (type == TableMetadata.class)
+		if (type == Table.class)
 		{
-			((TableMetadata)aEntity).initialize();
+			((Table)aEntity).initialize(mTable.getDatabase());
 		}
 		else
 		{

@@ -1,460 +1,283 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.hashtable.HashTable;
-import org.terifan.raccoon.hashtable.LeafEntry;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.concurrent.locks.Lock;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-import org.terifan.raccoon.storage.Blob;
-import org.terifan.raccoon.storage.BlobInputStream;
-import org.terifan.raccoon.storage.BlobOutputStream;
-import org.terifan.raccoon.storage.BlockAccessor;
+import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
+import org.terifan.raccoon.serialization.EntityDescriptor;
+import org.terifan.raccoon.serialization.FieldTypeCategorizer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
-import org.terifan.raccoon.util.ResultSet;
 
 
-public final class Table<T> implements Iterable<T>, AutoCloseable
+public final class Table
 {
-	public static final byte FLAG_BLOB = 1;
+	protected final static int FIELD_CATEGORY_KEY = 1;
+	protected final static int FIELD_CATEGORY_DISCRIMINATOR = 2;
+	protected final static int FIELD_CATEGORY_VALUE = 4;
 
-	private Database mDatabase;
-	private TableMetadata mTableMetadata;
-	private BlockAccessor mBlockAccessor;
-	private HashSet<BlobOutputStream> mOpenOutputStreams;
-	private HashTable mTableImplementation;
+	@Key private String mTypeName;
+	@Key private byte[] mDiscriminatorKey;
 	private byte[] mPointer;
+	private EntityDescriptor mEntityDescriptor;
+
+	private transient Class mType;
+	private transient Marshaller mMarshaller;
+	private transient Database mDatabase;
 
 
-	Table(Database aDatabase, TableMetadata aTableMetadata, byte[] aPointer)
+	Table()
 	{
+	}
+
+
+	Table(Database aDatabase, Class aClass, DiscriminatorType aDiscriminator)
+	{
+		mType = aClass;
+		mTypeName = mType.getName();
+		mEntityDescriptor = new EntityDescriptor(mType, mCategorizer);
+		mMarshaller = new Marshaller(mEntityDescriptor);
+
+		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);
+
+		if (mEntityDescriptor.getFields(FIELD_CATEGORY_KEY).isEmpty())
+		{
+			throw new IllegalArgumentException("Entity has no keys: " + aClass);
+		}
+	}
+
+
+	synchronized Table initialize(Database aDatabase)
+	{
+		mDatabase = aDatabase;
+		mMarshaller = new Marshaller(mEntityDescriptor);
+
 		try
 		{
-			mOpenOutputStreams = new HashSet<>();
-
-			mDatabase = aDatabase;
-			mTableMetadata = aTableMetadata;
-			mPointer = aPointer;
-
-			mTableImplementation = new HashTable(mDatabase.getBlockDevice(), mPointer, mDatabase.getTransactionId(), false, mDatabase.getParameter(CompressionParam.class, null));
-
-			mBlockAccessor = new BlockAccessor(mDatabase.getBlockDevice());
-
-			CompressionParam parameter = mDatabase.getParameter(CompressionParam.class, null);
-			if (parameter != null)
-			{
-				mBlockAccessor.setCompressionParam(parameter);
-			}
+			mType = Class.forName(mTypeName);
 		}
-		catch (IOException e)
+		catch (Exception | Error e)
 		{
-			throw new DatabaseIOException(e);
+			Log.w("Warning: entity class not accessible: %s", e.toString());
 		}
+
+		if (mType != null)
+		{
+			mEntityDescriptor.bind(mType);
+		}
+
+		return this;
+	}
+
+	
+	public ArrayList<FieldDescriptor> getFields()
+	{
+		return mEntityDescriptor.getFields(FIELD_CATEGORY_KEY + FIELD_CATEGORY_DISCRIMINATOR + FIELD_CATEGORY_VALUE);
+	}
+
+	
+	public ArrayList<FieldDescriptor> getKeyFields()
+	{
+		return mEntityDescriptor.getFields(FIELD_CATEGORY_KEY);
+	}
+	
+	
+	public ArrayList<FieldDescriptor> getDiscriminatorFields()
+	{
+		return mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR);
+	}
+	
+	
+	public ArrayList<FieldDescriptor> getValueFields()
+	{
+		return mEntityDescriptor.getFields(FIELD_CATEGORY_VALUE);
 	}
 
 
-	public Database getDatabase()
+	byte[] createDiscriminatorKey(DiscriminatorType aDiscriminator)
 	{
-		return mDatabase;
+		if (aDiscriminator != null && aDiscriminator.getInstance() != null)
+		{
+			return mMarshaller.marshal(new ByteArrayBuffer(16), aDiscriminator.getInstance(), Table.FIELD_CATEGORY_DISCRIMINATOR).trim().array();
+		}
+
+		return new byte[0];
 	}
 
 
-	public boolean get(T aEntity)
+	Marshaller getMarshaller()
 	{
-		Log.i("get entity");
-		Log.inc();
-
-		LeafEntry entry = new LeafEntry(getKeys(aEntity));
-
-		if (mTableImplementation.get(entry))
-		{
-			unmarshalToObjectValues(entry, aEntity);
-
-			Log.dec();
-
-			return true;
-		}
-
-		Log.dec();
-
-		return false;
+		return mMarshaller;
 	}
 
 
-	public <T> List<T> list(Class<T> aType)
+	public Class getType()
 	{
-		ArrayList<T> list = new ArrayList<>();
-		iterator().forEachRemaining(e -> list.add((T)e));
-		return list;
+		return mType;
 	}
 
 
-	public synchronized InputStream read(T aEntity)
+	public String getTypeName()
 	{
-		LeafEntry entry = new LeafEntry(getKeys(aEntity));
-
-		if (!mTableImplementation.get(entry))
-		{
-			return null;
-		}
-
-		if (entry.hasFlag(FLAG_BLOB))
-		{
-			try
-			{
-				ByteArrayBuffer buffer = new ByteArrayBuffer(entry.getValue());
-
-				return new BlobInputStream(mBlockAccessor, buffer);
-			}
-			catch (Exception e)
-			{
-				throw new DatabaseException(e);
-			}
-		}
-
-		return new ByteArrayInputStream(entry.getValue());
+		return mTypeName;
 	}
 
 
-	public boolean save(T aEntity)
+	byte[] getDiscriminatorKey()
 	{
-		Log.i("save entity");
-		Log.inc();
-
-		byte[] key = getKeys(aEntity);
-		byte[] value = getNonKeys(aEntity);
-		byte type = 0;
-
-		if (key.length + value.length > mTableImplementation.getEntryMaximumLength() / 4)
-		{
-			type = FLAG_BLOB;
-
-			try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId(), null))
-			{
-				bos.write(value);
-				value = bos.finish();
-			}
-			catch (IOException e)
-			{
-				throw new DatabaseException(e);
-			}
-		}
-
-		LeafEntry entry = new LeafEntry(key, value, type);
-
-		if (mTableImplementation.put(entry))
-		{
-			deleteIfBlob(entry);
-		}
-
-		Log.dec();
-
-		return entry.getValue() != null;
+		return mDiscriminatorKey;
 	}
 
 
-	private void deleteIfBlob(LeafEntry aEntry) throws DatabaseException
+	byte[] getPointer()
 	{
-		if (aEntry.hasFlag(FLAG_BLOB))
-		{
-			try
-			{
-				Blob.deleteBlob(mBlockAccessor, aEntry.getValue());
-			}
-			catch (IOException e)
-			{
-				throw new DatabaseException(e);
-			}
-		}
+		return mPointer;
 	}
 
 
-	public BlobOutputStream saveBlob(T aEntityKey)
+	void setPointer(byte[] aPointer)
 	{
-		try
-		{
-			BlobOutputStream.OnCloseListener onCloseListener = new BlobOutputStream.OnCloseListener()
-			{
-				@Override
-				public void onClose(BlobOutputStream aBlobOutputStream, byte[] aHeader)
-				{
-					Log.v("write blob entry");
-
-					byte[] key = getKeys(aEntityKey);
-
-					LeafEntry entry = new LeafEntry(key, aHeader, FLAG_BLOB);
-
-					if (mTableImplementation.put(entry))
-					{
-						deleteIfBlob(entry);
-					}
-
-					synchronized (Table.this)
-					{
-						mOpenOutputStreams.remove(aBlobOutputStream);
-					}
-				}
-			};
-
-			BlobOutputStream out = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId(), onCloseListener);
-
-			synchronized (this)
-			{
-				mOpenOutputStreams.add(out);
-			}
-
-			return out;
-		}
-		catch (IOException e)
-		{
-			throw new DatabaseIOException(e);
-		}
+		mPointer = aPointer;
 	}
 
 
-	public boolean save(T aEntity, InputStream aInputStream)
+	@Override
+	public boolean equals(Object aOther)
 	{
-		try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId(), null))
+		if (aOther instanceof Table)
 		{
-			bos.write(Streams.readAll(aInputStream));
+			Table other = (Table)aOther;
 
-			byte[] key = getKeys(aEntity);
-
-			LeafEntry entry = new LeafEntry(key, bos.finish(), FLAG_BLOB);
-
-			if (mTableImplementation.put(entry))
-			{
-				deleteIfBlob(entry);
-			}
-
-			return entry.getValue() == null;
-		}
-		catch (IOException e)
-		{
-			throw new DatabaseException(e);
-		}
-	}
-
-
-	public boolean remove(T aEntity)
-	{
-		LeafEntry entry = new LeafEntry(getKeys(aEntity));
-
-		if (mTableImplementation.remove(entry))
-		{
-			deleteIfBlob(entry);
-
-			return true;
+			return mTypeName.equals(other.mTypeName) && Arrays.equals(mDiscriminatorKey, other.mDiscriminatorKey);
 		}
 
 		return false;
 	}
 
 
-	/**
-	 * Creates an iterator over all items in this table. This iterator will reconstruct entities.
-	 */
 	@Override
-	public Iterator<T> iterator()
+	public int hashCode()
 	{
-		return new EntityIterator(this, mTableImplementation.iterator());
-	}
-
-
-	/**
-	 * Creates an iterator over all items in this table.
-	 */
-	public Iterator<ResultSet> resultSetIterator()
-	{
-		return new ResultSetIterator(this, mTableImplementation.iterator());
-	}
-
-
-	public void clear()
-	{
-		mTableImplementation.clear();
-	}
-
-
-	/**
-	 * Clean-up resources only
-	 */
-	@Override
-	public void close() throws IOException
-	{
-		mTableImplementation.close();
-	}
-
-
-	boolean isModified()
-	{
-		return mTableImplementation.isChanged();
-	}
-
-
-	boolean commit()
-	{
-		synchronized (this)
-		{
-			if (!mOpenOutputStreams.isEmpty())
-			{
-				throw new DatabaseException("A table cannot be commited while a stream is open.");
-			}
-		}
-
-		try
-		{
-			if (!mTableImplementation.commit())
-			{
-				return false;
-			}
-		}
-		catch (IOException e)
-		{
-			throw new DatabaseIOException(e);
-		}
-
-		byte[] newPointer = mTableImplementation.getTableHeader();
-
-		boolean wasUpdated = !Arrays.equals(newPointer, mPointer);
-
-		mTableMetadata.setPointer(newPointer);
-
-		return wasUpdated;
-	}
-
-
-	void rollback() throws IOException
-	{
-		mTableImplementation.rollback();
-	}
-
-
-	int size()
-	{
-		return mTableImplementation.size();
-	}
-
-
-	String integrityCheck()
-	{
-		return mTableImplementation.integrityCheck();
-	}
-
-
-	void unmarshalToObjectKeys(LeafEntry aBuffer, Object aOutput)
-	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getKey());
-
-		mTableMetadata.getMarshaller().unmarshal(buffer, aOutput, TableMetadata.FIELD_CATEGORY_KEY);
-	}
-
-
-	void unmarshalToObjectValues(LeafEntry aBuffer, Object aOutput)
-	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getValue());
-
-		if (aBuffer.hasFlag(FLAG_BLOB))
-		{
-			try
-			{
-				buffer.wrap(Streams.readAll(new BlobInputStream(mBlockAccessor, buffer)));
-				buffer.position(0);
-			}
-			catch (Exception e)
-			{
-				throw new DatabaseException(e);
-			}
-		}
-
-		Marshaller marshaller = mTableMetadata.getMarshaller();
-		marshaller.unmarshal(buffer, aOutput, TableMetadata.FIELD_CATEGORY_DISCRIMINATOR | TableMetadata.FIELD_CATEGORY_VALUE);
-	}
-
-
-	private byte[] getKeys(Object aInput)
-	{
-		return mTableMetadata.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, TableMetadata.FIELD_CATEGORY_KEY).trim().array();
-	}
-
-
-	private byte[] getNonKeys(Object aInput)
-	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
-
-		Marshaller marshaller = mTableMetadata.getMarshaller();
-		marshaller.marshal(buffer, aInput, TableMetadata.FIELD_CATEGORY_DISCRIMINATOR | TableMetadata.FIELD_CATEGORY_VALUE);
-
-		return buffer.trim().array();
-	}
-
-
-	public TableMetadata getTableMetadata()
-	{
-		return mTableMetadata;
+		return mTypeName.hashCode() ^ Arrays.hashCode(mDiscriminatorKey);
 	}
 
 
 	@Override
 	public String toString()
 	{
-		return mTableMetadata.toString();
-	}
+		String s = getDiscriminatorDescription();
 
-
-	void scan(ScanResult aScanResult)
-	{
-		mTableImplementation.scan(aScanResult);
-	}
-
-
-	<T> Stream<T> stream(Lock aReadLock)
-	{
-		try
+		if (s == null)
 		{
-			Stream<T> tmp = StreamSupport.stream(new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+			return mTypeName;
+		}
+
+		return mTypeName + "[" + s + "]";
+	}
+
+
+	public String getDiscriminatorDescription()
+	{
+		if (mDiscriminatorKey.length == 0)
+		{
+			return null;
+		}
+
+		Marshaller marshaller = new Marshaller(mEntityDescriptor);
+		ResultSet resultSet = marshaller.unmarshal(new ByteArrayBuffer(mDiscriminatorKey), new ResultSet(),Table.FIELD_CATEGORY_DISCRIMINATOR);
+		StringBuilder result = new StringBuilder();
+
+		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR))
+		{
+			if (result.length() > 0)
 			{
-				EntityIterator entityIterator = new EntityIterator(Table.this, mTableImplementation.iterator());
+				result.append(", ");
+			}
 
-				@Override
-				public boolean tryAdvance(Consumer<? super T> aConsumer)
-				{
-					if (!entityIterator.hasNext())
-					{
-						aReadLock.unlock();
-
-						return false;
-					}
-					aConsumer.accept((T)entityIterator.next());
-					return true;
-				}
-			}, false);
-
-			return tmp;
+			result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType.getIndex()));
 		}
-		catch (Throwable e)
-		{
-			aReadLock.unlock();
 
-			throw e;
-		}
+		return result.toString();
 	}
 
 
-	public class TypeResult
+	/**
+	 * Return an entity as a Java class declaration.
+	 */
+	public String getJavaDeclaration()
 	{
-		public byte type;
+		StringBuilder sb = new StringBuilder();
+		sb.append("package " + mEntityDescriptor.getName().substring(0, mEntityDescriptor.getName().lastIndexOf('.')) + ";\n\n");
+		sb.append("class " + mEntityDescriptor.getName().substring(mEntityDescriptor.getName().lastIndexOf('.') + 1) + "\n{\n");
+
+		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_KEY))
+		{
+			sb.append("\t" + "@Key " + fieldType + ";\n");
+		}
+		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR))
+		{
+			sb.append("\t" + "@Discriminator " + fieldType + ";\n");
+		}
+		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_VALUE))
+		{
+			sb.append("\t" + "" + fieldType + ";\n");
+		}
+
+		sb.append("}");
+
+		return sb.toString();
+	}
+
+
+	private transient FieldTypeCategorizer mCategorizer = aField ->
+	{
+		if (aField.getAnnotation(Key.class) != null)
+		{
+			return FIELD_CATEGORY_KEY;
+		}
+		if (aField.getAnnotation(Discriminator.class) != null)
+		{
+			return FIELD_CATEGORY_DISCRIMINATOR;
+		}
+		return FIELD_CATEGORY_VALUE;
+	};
+
+
+	protected EntityDescriptor getEntityDescriptor()
+	{
+		return mEntityDescriptor;
+	}
+
+
+	public static String getCategoryName(int aCategory)
+	{
+		if ((aCategory & FIELD_CATEGORY_KEY) != 0)
+		{
+			return "Key";
+		}
+		if ((aCategory & FIELD_CATEGORY_DISCRIMINATOR) != 0)
+		{
+			return "Discriminator";
+		}
+		return "Value";
+	}
+
+
+	public int size()
+	{
+		return getTableType().size();
+	}
+
+
+	public ResultSet list()
+	{
+		return new ResultSet(getTableType(), getTableType().getLeafIterator());
+	}
+	
+	
+	private TableType getTableType()
+	{
+		return mDatabase.openTable(this, OpenOption.OPEN);
 	}
 }

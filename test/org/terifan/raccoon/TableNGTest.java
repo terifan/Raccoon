@@ -7,9 +7,9 @@ import resources.entities._BigObject2K1D;
 import resources.entities._Fruit1K1D;
 
 
-public class TableMetadataNGTest
+public class TableNGTest
 {
-	public TableMetadataNGTest()
+	public TableNGTest()
 	{
 	}
 
@@ -17,26 +17,27 @@ public class TableMetadataNGTest
 	@Test
 	public void testEquals()
 	{
-		TableMetadata metadata1 = new TableMetadata(_Fruit1K1D.class, new DiscriminatorType(new _Fruit1K1D("red")));
+		Table table1 = new Table(null, _Fruit1K1D.class, new DiscriminatorType(new _Fruit1K1D("red")));
 
-		TableMetadata metadata2 = new TableMetadata(_Fruit1K1D.class, new DiscriminatorType(new _Fruit1K1D("red")));
+		Table table2 = new Table(null, _Fruit1K1D.class, new DiscriminatorType(new _Fruit1K1D("red")));
 
-		assertEquals(metadata1, metadata2);
+		assertEquals(table1, table2);
 	}
 
 
 	@Test
 	public void testNotEquals()
 	{
-		TableMetadata metadata1 = new TableMetadata(_Fruit1K1D.class, new DiscriminatorType(new _Fruit1K1D("red")));
-		assertNotEquals(metadata1, null);
+		Table table = new Table(null, _Fruit1K1D.class, new DiscriminatorType(new _Fruit1K1D("red")));
+
+		assertNotEquals(table, null);
 	}
 
 
 	@Test
 	public void testToString()
 	{
-		TableMetadata metadata = new TableMetadata(_Fruit1K1D.class, new DiscriminatorType(new _Fruit1K1D("red")));
+		Table metadata = new Table(null, _Fruit1K1D.class, new DiscriminatorType(new _Fruit1K1D("red")));
 
 		assertEquals("resources.entities._Fruit1K1D[_color=red]", metadata.toString());
 	}
@@ -45,7 +46,7 @@ public class TableMetadataNGTest
 	@Test
 	public void testDiscriminatorDescription()
 	{
-		TableMetadata metadata = new TableMetadata(_Fruit1K1D.class, new DiscriminatorType(new _Fruit1K1D("red")));
+		Table metadata = new Table(null, _Fruit1K1D.class, new DiscriminatorType(new _Fruit1K1D("red")));
 
 		assertEquals("_color=red", metadata.getDiscriminatorDescription());
 	}
@@ -54,7 +55,7 @@ public class TableMetadataNGTest
 	@Test
 	public void testGetJavaDeclaration()
 	{
-		TableMetadata metadata = new TableMetadata(_BigObject2K1D.class, null);
+		Table metadata = new Table(null, _BigObject2K1D.class, null);
 
 		String str = metadata.getJavaDeclaration().replace("\r\n","\n").replace("\n\n","\n");
 
@@ -126,6 +127,6 @@ public class TableMetadataNGTest
 	@Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Entity has no keys.*")
 	public void testNoKeys() throws IOException, ClassNotFoundException
 	{
-		new TableMetadata(String.class, null);
+		new Table(null, String.class, null);
 	}
 }

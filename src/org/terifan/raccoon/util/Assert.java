@@ -1,6 +1,6 @@
 package org.terifan.raccoon.util;
 
-import org.terifan.raccoon.TableMetadata;
+import org.terifan.raccoon.Table;
 
 
 

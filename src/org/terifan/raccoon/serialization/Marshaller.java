@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
-import org.terifan.raccoon.util.ResultSet;
+import org.terifan.raccoon.ResultSet;
 
 
 public class Marshaller

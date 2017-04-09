@@ -4,7 +4,7 @@ import org.terifan.raccoon.Discriminator;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
-import org.terifan.raccoon.util.ResultSet;
+import org.terifan.raccoon.ResultSet;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import resources.entities._BigObject2K1D;
@@ -79,27 +79,6 @@ public class MarshallerNGTest
 //
 //		Log.hexDump(buffer.trim().array());
 //	}
-
-
-	@Test
-	public void unmarshallResultSet() throws Exception
-	{
-		_BigObject2K1D in = new _BigObject2K1D().random();
-
-		EntityDescriptor entityDescriptor = new EntityDescriptor(_BigObject2K1D.class, mCategorizer);
-
-		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
-
-		Marshaller marshaller = new Marshaller(entityDescriptor);
-		marshaller.marshal(buffer, in, 2 + 4);
-
-		buffer.position(0);
-		ResultSet resultSet = marshaller.unmarshal(buffer, new ResultSet(), 2 + 4);
-
-		assertEquals(resultSet.get("mFloatB"), in.mFloatB);
-		assertEquals(resultSet.get("mStrings2"), in.mStrings2);
-		assertEquals(resultSet.get("mChars"), in.mChars);
-	}
 
 
 	static FieldTypeCategorizer mCategorizer = aField ->
