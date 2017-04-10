@@ -71,9 +71,9 @@ public final class Table
 	}
 
 
-	public ArrayList<FieldDescriptor> getFields()
+	public FieldDescriptor[] getFields()
 	{
-		return mEntityDescriptor.getFields(FIELD_CATEGORY_KEY + FIELD_CATEGORY_DISCRIMINATOR + FIELD_CATEGORY_VALUE);
+		return mEntityDescriptor.getFields().clone();
 	}
 
 
@@ -185,7 +185,7 @@ public final class Table
 		}
 
 		Marshaller marshaller = new Marshaller(mEntityDescriptor);
-		ResultSet resultSet = marshaller.unmarshal(new ByteArrayBuffer(mDiscriminatorKey), new ResultSet(),Table.FIELD_CATEGORY_DISCRIMINATOR);
+		ResultSet resultSet = marshaller.unmarshal(new ByteArrayBuffer(mDiscriminatorKey), new ResultSet(mEntityDescriptor.getFields()),Table.FIELD_CATEGORY_DISCRIMINATOR);
 		StringBuilder result = new StringBuilder();
 
 		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR))

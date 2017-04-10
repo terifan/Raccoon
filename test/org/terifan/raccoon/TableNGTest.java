@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.serialization.FieldDescriptor;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import resources.entities._Animal1K;
@@ -140,14 +141,15 @@ public class TableNGTest
 			database.commit();
 
 			Table table = database.getTable(_Animal1K.class);
+			FieldDescriptor[] fields = table.getFields();
 
 			try (ResultSet resultSet = table.list())
 			{
 				while (resultSet.next())
 				{
-					for (int i = 0; i < table.getFields().size(); i++)
+					for (int i = 0; i < fields.length; i++)
 					{
-						assertEquals(resultSet.getField(i), table.getFields().get(i));
+						assertEquals(resultSet.getField(i), fields[i]);
 					}
 				}
 			}

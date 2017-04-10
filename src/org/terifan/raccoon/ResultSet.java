@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -20,19 +20,21 @@ public class ResultSet implements AutoCloseable
 	private final TableType mTable;
 	private final Iterator<LeafEntry> mIterator;
 	private final Marshaller mMarshaller;
-	private final ArrayList<FieldDescriptor> mTypes;
+	private final FieldDescriptor[] mTypes;
 	private final Map<FieldDescriptor, Object> mValues;
 	private final HashMap<String,FieldDescriptor> mTypeNames;
 
 
-	ResultSet()
+	ResultSet(FieldDescriptor[] aTypes)
 	{
 		mValues = new HashMap<>();
-		mTypes = null;
-		mTypeNames = null;
+		mTypes = aTypes;
 		mIterator = null;
 		mTable = null;
 		mMarshaller = null;
+
+		mTypeNames = new HashMap<>();
+		Arrays.stream(mTypes).forEach(e->mTypeNames.put(e.getName(), e));
 	}
 
 
@@ -46,7 +48,7 @@ public class ResultSet implements AutoCloseable
 		mMarshaller = new Marshaller(mTable.getTable().getEntityDescriptor());
 
 		mTypeNames = new HashMap<>();
-		mTypes.forEach(e->mTypeNames.put(e.getName(), e));
+		Arrays.stream(mTypes).forEach(e->mTypeNames.put(e.getName(), e));
 
 		mTable.getDatabase().getReadLock().lock();
 	}
@@ -60,7 +62,7 @@ public class ResultSet implements AutoCloseable
 
 	public Object get(int aFieldIndex)
 	{
-		return mValues.get(mTypes.get(aFieldIndex));
+		return mValues.get(mTypes[aFieldIndex]);
 	}
 
 
@@ -78,13 +80,13 @@ public class ResultSet implements AutoCloseable
 
 	public FieldDescriptor getField(int aFieldIndex)
 	{
-		return mTypes.get(aFieldIndex);
+		return mTypes[aFieldIndex];
 	}
 
 
 	public FieldDescriptor[] getFields()
 	{
-		return mTypes.toArray(new FieldDescriptor[mTypes.size()]);
+		return mTypes.clone();
 	}
 
 
