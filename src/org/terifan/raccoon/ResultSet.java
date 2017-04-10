@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -9,20 +10,26 @@ import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
+/**
+ * ResultSet iterates items in a table.
+ *
+ * Note: ResultSet instances open a read lock on the database and must always be closed. Concurrent write operations may cause dead locks!
+ */
 public class ResultSet implements AutoCloseable
 {
-	private final Map<String, FieldDescriptor> mTypes;
-	private final Map<Integer, Object> mValues;
-	private final Iterator<LeafEntry> mIterator;
 	private final TableType mTable;
+	private final Iterator<LeafEntry> mIterator;
 	private final Marshaller mMarshaller;
+	private final ArrayList<FieldDescriptor> mTypes;
+	private final Map<FieldDescriptor, Object> mValues;
+	private final HashMap<String,FieldDescriptor> mTypeNames;
 
 
 	ResultSet()
 	{
 		mValues = new HashMap<>();
-		mTypes = new HashMap<>();
-
+		mTypes = null;
+		mTypeNames = null;
 		mIterator = null;
 		mTable = null;
 		mMarshaller = null;
@@ -32,51 +39,59 @@ public class ResultSet implements AutoCloseable
 	ResultSet(TableType aTable, Iterator<LeafEntry> aIterator)
 	{
 		mValues = new HashMap<>();
-		mTypes = new HashMap<>();
 
 		mTable = aTable;
+		mTypes = mTable.getTable().getFields();
 		mIterator = aIterator;
 		mMarshaller = new Marshaller(mTable.getTable().getEntityDescriptor());
+
+		mTypeNames = new HashMap<>();
+		mTypes.forEach(e->mTypeNames.put(e.getName(), e));
 
 		mTable.getDatabase().getReadLock().lock();
 	}
 
 
-	public boolean containsKey(String aFieldName)
-	{
-		return mTypes.containsKey(aFieldName);
-	}
-
-
 	public Object get(String aFieldName)
 	{
-		return get(mTypes.get(aFieldName).getIndex());
+		return get(mTypeNames.get(aFieldName));
 	}
 
 
 	public Object get(int aFieldIndex)
 	{
-		return mValues.get(aFieldIndex);
+		return mValues.get(mTypes.get(aFieldIndex));
+	}
+
+
+	public Object get(FieldDescriptor aFieldType)
+	{
+		return mValues.get(aFieldType);
 	}
 
 
 	public FieldDescriptor getField(String aFieldName)
 	{
-		return mTypes.get(aFieldName);
+		return mTypeNames.get(aFieldName);
+	}
+
+
+	public FieldDescriptor getField(int aFieldIndex)
+	{
+		return mTypes.get(aFieldIndex);
 	}
 
 
 	public FieldDescriptor[] getFields()
 	{
-		return mTypes.values().toArray(new FieldDescriptor[mTypes.size()]);
+		return mTypes.toArray(new FieldDescriptor[mTypes.size()]);
 	}
 
 
-	// TODO: hide
-	public void add(FieldDescriptor aField, Object aValue)
+	// TODO: protect
+	public void set(FieldDescriptor aField, Object aValue)
 	{
-		mTypes.put(aField.getName(), aField);
-		mValues.put(aField.getIndex(), aValue);
+		mValues.put(aField, aValue);
 	}
 
 

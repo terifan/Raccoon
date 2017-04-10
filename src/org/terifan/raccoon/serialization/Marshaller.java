@@ -159,7 +159,7 @@ public class Marshaller
 			{
 				Object value = FieldReader.readField(fieldType, aBuffer, aIgnoreMissingClasses);
 
-				aResultSet.add(fieldType, value);
+				aResultSet.set(fieldType, value);
 			}
 
 			Log.dec();

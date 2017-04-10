@@ -1,8 +1,12 @@
 package org.terifan.raccoon;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import resources.entities._Animal1K;
 import resources.entities._BigObject2K1D;
 import resources.entities._Fruit1K1D;
 
@@ -22,15 +26,6 @@ public class TableNGTest
 		Table table2 = new Table(null, _Fruit1K1D.class, new DiscriminatorType(new _Fruit1K1D("red")));
 
 		assertEquals(table1, table2);
-	}
-
-
-	@Test
-	public void testNotEquals()
-	{
-		Table table = new Table(null, _Fruit1K1D.class, new DiscriminatorType(new _Fruit1K1D("red")));
-
-		assertNotEquals(table, null);
 	}
 
 
@@ -128,5 +123,66 @@ public class TableNGTest
 	public void testNoKeys() throws IOException, ClassNotFoundException
 	{
 		new Table(null, String.class, null);
+	}
+
+
+	@Test
+	public void testResultSetFields() throws IOException
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE))
+		{
+			database.save(new _Animal1K("cat", 1));
+			database.save(new _Animal1K("dog", 2));
+			database.save(new _Animal1K("horse", 3));
+			database.save(new _Animal1K("cow", 4));
+			database.commit();
+
+			Table table = database.getTable(_Animal1K.class);
+
+			try (ResultSet resultSet = table.list())
+			{
+				while (resultSet.next())
+				{
+					for (int i = 0; i < table.getFields().size(); i++)
+					{
+						assertEquals(resultSet.getField(i), table.getFields().get(i));
+					}
+				}
+			}
+		}
+	}
+
+
+	@Test
+	public void testList() throws IOException
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE))
+		{
+			database.save(new _Animal1K("cat", 1));
+			database.save(new _Animal1K("dog", 2));
+			database.save(new _Animal1K("horse", 3));
+			database.save(new _Animal1K("cow", 4));
+			database.commit();
+
+			HashSet<String> nameLookup = new HashSet<>(Arrays.asList("cat","dog","horse","cow"));
+			HashSet<Integer> numberLookup = new HashSet<>(Arrays.asList(1,2,3,4));
+
+			Table table = database.getTable(_Animal1K.class);
+
+			try (ResultSet resultSet = table.list())
+			{
+				while (resultSet.next())
+				{
+					assertTrue(nameLookup.remove((String)resultSet.get("_name")));
+					assertTrue(numberLookup.remove((int)resultSet.get("number")));
+				}
+
+				assertEquals(nameLookup.size(), 0);
+			}
+		}
 	}
 }

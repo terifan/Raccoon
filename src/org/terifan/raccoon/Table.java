@@ -70,25 +70,25 @@ public final class Table
 		return this;
 	}
 
-	
+
 	public ArrayList<FieldDescriptor> getFields()
 	{
 		return mEntityDescriptor.getFields(FIELD_CATEGORY_KEY + FIELD_CATEGORY_DISCRIMINATOR + FIELD_CATEGORY_VALUE);
 	}
 
-	
+
 	public ArrayList<FieldDescriptor> getKeyFields()
 	{
 		return mEntityDescriptor.getFields(FIELD_CATEGORY_KEY);
 	}
-	
-	
+
+
 	public ArrayList<FieldDescriptor> getDiscriminatorFields()
 	{
 		return mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR);
 	}
-	
-	
+
+
 	public ArrayList<FieldDescriptor> getValueFields()
 	{
 		return mEntityDescriptor.getFields(FIELD_CATEGORY_VALUE);
@@ -195,7 +195,7 @@ public final class Table
 				result.append(", ");
 			}
 
-			result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType.getIndex()));
+			result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType));
 		}
 
 		return result.toString();
@@ -274,8 +274,8 @@ public final class Table
 	{
 		return new ResultSet(getTableType(), getTableType().getLeafIterator());
 	}
-	
-	
+
+
 	private TableType getTableType()
 	{
 		return mDatabase.openTable(this, OpenOption.OPEN);
