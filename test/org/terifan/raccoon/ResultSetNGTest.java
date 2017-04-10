@@ -21,10 +21,11 @@ public class ResultSetNGTest
 		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 
 		Marshaller marshaller = new Marshaller(entityDescriptor);
-		marshaller.marshal(buffer, in, 2 + 4);
+		marshaller.marshal(buffer, in, 1 + 2 + 4);
 
 		buffer.position(0);
-		ResultSet resultSet = marshaller.unmarshal(buffer, new ResultSet(entityDescriptor.getFields()), 2 + 4);
+
+		ResultSet resultSet = new ResultSet(entityDescriptor).unmarshal(buffer, 1 + 2 + 4);
 
 		assertEquals(resultSet.get("mFloatB"), in.mFloatB);
 		assertEquals(resultSet.get("mStrings2"), in.mStrings2);
