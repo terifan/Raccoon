@@ -16,7 +16,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
  *
  * Note: ResultSet instances open a read lock on the database and must always be closed. Concurrent write operations may cause dead locks!
  */
-public class ResultSet implements AutoCloseable
+public class ResultSet
 {
 	private final TableType mTable;
 	private final Iterator<LeafEntry> mIterator;
@@ -38,14 +38,6 @@ public class ResultSet implements AutoCloseable
 		Arrays.stream(mTypes).forEach(e->mTypeNameLookup.put(e.getName(), e));
 	}
 
-	// TODO: protect
-	public ResultSet unmarshal(ByteArrayBuffer aFieldData, int aFieldCategories)
-	{
-		mMarshaller.unmarshal(aFieldData, this, aFieldCategories);
-
-		return this;
-	}
-
 
 	ResultSet(TableType aTable, Iterator<LeafEntry> aIterator)
 	{
@@ -58,8 +50,14 @@ public class ResultSet implements AutoCloseable
 
 		mTypeNameLookup = new HashMap<>();
 		Arrays.stream(mTypes).forEach(e->mTypeNameLookup.put(e.getName(), e));
+	}
 
-		mTable.getDatabase().getReadLock().lock();
+
+	ResultSet unmarshal(ByteArrayBuffer aFieldData, int aFieldCategories)
+	{
+		mMarshaller.unmarshal(aFieldData, this, aFieldCategories);
+
+		return this;
 	}
 
 
@@ -106,21 +104,7 @@ public class ResultSet implements AutoCloseable
 	}
 
 
-	@Override
-	public String toString()
-	{
-		return "ResultSet{" + "mTypes=" + Arrays.toString(mTypes) + ", mValues=" + mValues + '}';
-	}
-
-
-	@Override
-	public void close()
-	{
-		mTable.getDatabase().getReadLock().unlock();
-	}
-
-
-	public boolean next()
+	boolean next()
 	{
 		if (!mIterator.hasNext())
 		{
@@ -133,5 +117,12 @@ public class ResultSet implements AutoCloseable
 		mMarshaller.unmarshal(new ByteArrayBuffer(entry.getValue()), this, Table.FIELD_CATEGORY_DISCRIMINATOR + Table.FIELD_CATEGORY_VALUE);
 
 		return true;
+	}
+
+
+	@Override
+	public String toString()
+	{
+		return "ResultSet{" + "mTypes=" + Arrays.toString(mTypes) + ", mValues=" + mValues + '}';
 	}
 }

@@ -143,16 +143,12 @@ public class TableNGTest
 			Table table = database.getTable(_Animal1K.class);
 			FieldDescriptor[] fields = table.getFields();
 
-			try (ResultSet resultSet = table.list())
-			{
-				while (resultSet.next())
+			table.forEachResultSet(e->{
+				for (int i = 0; i < fields.length; i++)
 				{
-					for (int i = 0; i < fields.length; i++)
-					{
-						assertEquals(resultSet.getField(i), fields[i]);
-					}
+					assertEquals(e.getField(i), fields[i]);
 				}
-			}
+			});
 		}
 	}
 
@@ -175,16 +171,12 @@ public class TableNGTest
 
 			Table table = database.getTable(_Animal1K.class);
 
-			try (ResultSet resultSet = table.list())
-			{
-				while (resultSet.next())
-				{
-					assertTrue(nameLookup.remove((String)resultSet.get("_name")));
-					assertTrue(numberLookup.remove((int)resultSet.get("number")));
-				}
+			table.forEachResultSet(e->{
+				assertTrue(nameLookup.remove((String)e.get("_name")));
+				assertTrue(numberLookup.remove((int)e.get("number")));
+			});
 
-				assertEquals(nameLookup.size(), 0);
-			}
+			assertEquals(nameLookup.size(), 0);
 		}
 	}
 }

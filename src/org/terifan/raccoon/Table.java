@@ -2,6 +2,10 @@ package org.terifan.raccoon;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.concurrent.locks.Lock;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.EntityDescriptor;
@@ -269,38 +273,54 @@ public final class Table<T> //implements Iterable<T>
 	}
 
 
-	/**
-	 * Return a ResultSet over all items in this table.
-	 *
-	 * Note: ResultSets open read locks in the database and must always be closed.
-	 *
-	 * @return
-	 *   a ResultSet over all items in this table.
-	 */
-	public ResultSet list()
-	{
-		return new ResultSet(getTableType(), getTableType().getLeafIterator());
-	}
-
-
 	private TableType getTableType()
 	{
 		return mDatabase.openTable(this, OpenOption.OPEN);
 	}
 
 
-//	@Override
-//	public Iterator<T> iterator()
-//	{
-//		mDatabase.getReadLock().lock();
-//
-//		return new EntityIterator(getTableType(), getTableType().getLeafIterator())
-//		{
-//			@Override
-//			protected void onClose()
-//			{
-//				mDatabase.getReadLock().unlock();
-//			}
-//		};
-//	}
+	public void forEach(Consumer aConsumer)
+	{
+		Lock readLock = mDatabase.getReadLock();
+		readLock.lock();
+
+		try
+		{
+			for (Iterator<T> it = new EntityIterator(getTableType(), getTableType().getLeafIterator()); it.hasNext();)
+			{
+				aConsumer.accept(it.next());
+			}
+		}
+		finally
+		{
+			readLock.unlock();
+		}
+	}
+
+
+	public interface ResultSetConsumer
+	{
+		void handle(ResultSet aResultSet);
+	}
+
+
+	public void forEachResultSet(ResultSetConsumer aConsumer)
+	{
+		Lock readLock = mDatabase.getReadLock();
+		readLock.lock();
+
+		try
+		{
+			ResultSet resultSet = new ResultSet(getTableType(), getTableType().getLeafIterator());
+
+			while (resultSet.next())
+			{
+				aConsumer.handle(resultSet);
+			}
+		}
+		finally
+		{
+			readLock.unlock();
+		}
+	}
 }
