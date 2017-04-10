@@ -1158,13 +1158,13 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public Table getTable(Class aType)
+	public <T> Table<T> getTable(Class<T> aType)
 	{
 		return openTable(aType, null, OpenOption.OPEN).getTable();
 	}
 
 
-	public Table getTable(Class aType, DiscriminatorType aDiscriminator)
+	public <T> Table<T> getTable(Class<T> aType, DiscriminatorType aDiscriminator)
 	{
 		return openTable(aDiscriminator.getType(), aDiscriminator, OpenOption.OPEN).getTable();
 	}

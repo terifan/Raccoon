@@ -10,7 +10,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public final class Table
+public final class Table<T> //implements Iterable<T>
 {
 	protected final static int FIELD_CATEGORY_KEY = 1;
 	protected final static int FIELD_CATEGORY_DISCRIMINATOR = 2;
@@ -269,6 +269,14 @@ public final class Table
 	}
 
 
+	/**
+	 * Return a ResultSet over all items in this table.
+	 *
+	 * Note: ResultSets open read locks in the database and must always be closed.
+	 *
+	 * @return
+	 *   a ResultSet over all items in this table.
+	 */
 	public ResultSet list()
 	{
 		return new ResultSet(getTableType(), getTableType().getLeafIterator());
@@ -279,4 +287,20 @@ public final class Table
 	{
 		return mDatabase.openTable(this, OpenOption.OPEN);
 	}
+
+
+//	@Override
+//	public Iterator<T> iterator()
+//	{
+//		mDatabase.getReadLock().lock();
+//
+//		return new EntityIterator(getTableType(), getTableType().getLeafIterator())
+//		{
+//			@Override
+//			protected void onClose()
+//			{
+//				mDatabase.getReadLock().unlock();
+//			}
+//		};
+//	}
 }

@@ -7,10 +7,11 @@ import java.util.Iterator;
 import java.util.function.Supplier;
 
 
-public final class EntityIterator<T> implements Iterator<T>
+public class EntityIterator<T> implements Iterator<T>
 {
 	private final Iterator<LeafEntry> mIterator;
 	private final TableType mTable;
+	private boolean mClosed;
 
 
 	EntityIterator(TableType aTable, Iterator<LeafEntry> aIterator)
@@ -20,10 +21,23 @@ public final class EntityIterator<T> implements Iterator<T>
 	}
 
 
+	protected void onClose()
+	{
+	}
+
+
 	@Override
 	public boolean hasNext()
 	{
-		return mIterator.hasNext();
+		boolean b = !mClosed && mIterator.hasNext();
+
+		if (b)
+		{
+			mClosed = true;
+			onClose();
+		}
+
+		return b;
 	}
 
 
@@ -99,5 +113,4 @@ public final class EntityIterator<T> implements Iterator<T>
 	{
 		mIterator.remove();
 	}
-
 }

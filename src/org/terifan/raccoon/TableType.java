@@ -25,7 +25,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public final class TableType<T> implements Iterable<T>, AutoCloseable
+public final class TableType<T> implements AutoCloseable
 {
 	public static final byte FLAG_BLOB = 1;
 
@@ -92,10 +92,10 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 	}
 
 
-	public <T> List<T> list(Class<T> aType)
+	<T> List<T> list(Class<T> aType)
 	{
 		ArrayList<T> list = new ArrayList<>();
-		iterator().forEachRemaining(e -> list.add((T)e));
+		new EntityIterator<T>(this, getLeafIterator()).forEachRemaining(e -> list.add(e));
 		return list;
 	}
 
@@ -117,7 +117,7 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 
 				return new BlobInputStream(mBlockAccessor, buffer);
 			}
-			catch (Exception e)
+			catch (Exception | Error e)
 			{
 				throw new DatabaseException(e);
 			}
@@ -262,29 +262,10 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 	}
 
 
-	/**
-	 * Creates an iterator over all items in this table. This iterator will reconstruct entities.
-	 */
-	@Override
-	public Iterator<T> iterator()
-	{
-		return new EntityIterator(this, getLeafIterator());
-	}
-
-
 	Iterator<LeafEntry> getLeafIterator()
 	{
 		return mTableImplementation.iterator();
 	}
-
-
-	/**
-	 * Creates an iterator over all items in this table.
-	 */
-//	public Iterator<ResultSet> resultSetIterator()
-//	{
-//		return new ResultSetIterator(this, mTableImplementation.iterator());
-//	}
 
 
 	public void clear()
