@@ -2,7 +2,6 @@ package org.terifan.raccoon;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.EntityDescriptor;
@@ -184,8 +183,8 @@ public final class Table
 			return null;
 		}
 
-		Marshaller marshaller = new Marshaller(mEntityDescriptor);
-		ResultSet resultSet = marshaller.unmarshal(new ByteArrayBuffer(mDiscriminatorKey), new ResultSet(mEntityDescriptor.getFields()),Table.FIELD_CATEGORY_DISCRIMINATOR);
+		ResultSet resultSet = new ResultSet(mEntityDescriptor).unmarshal(new ByteArrayBuffer(mDiscriminatorKey), FIELD_CATEGORY_DISCRIMINATOR);
+
 		StringBuilder result = new StringBuilder();
 
 		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR))

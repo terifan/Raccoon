@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.terifan.raccoon.hashtable.LeafEntry;
+import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -22,19 +23,27 @@ public class ResultSet implements AutoCloseable
 	private final Marshaller mMarshaller;
 	private final FieldDescriptor[] mTypes;
 	private final Map<FieldDescriptor, Object> mValues;
-	private final HashMap<String,FieldDescriptor> mTypeNames;
+	private final HashMap<String,FieldDescriptor> mTypeNameLookup;
 
 
-	ResultSet(FieldDescriptor[] aTypes)
+	ResultSet(EntityDescriptor aEntityDescriptor)
 	{
 		mValues = new HashMap<>();
-		mTypes = aTypes;
+		mTypes = aEntityDescriptor.getFields();
 		mIterator = null;
 		mTable = null;
-		mMarshaller = null;
+		mMarshaller = new Marshaller(aEntityDescriptor);
 
-		mTypeNames = new HashMap<>();
-		Arrays.stream(mTypes).forEach(e->mTypeNames.put(e.getName(), e));
+		mTypeNameLookup = new HashMap<>();
+		Arrays.stream(mTypes).forEach(e->mTypeNameLookup.put(e.getName(), e));
+	}
+
+	// TODO: protect
+	public ResultSet unmarshal(ByteArrayBuffer aFieldData, int aFieldCategories)
+	{
+		mMarshaller.unmarshal(aFieldData, this, aFieldCategories);
+
+		return this;
 	}
 
 
@@ -47,8 +56,8 @@ public class ResultSet implements AutoCloseable
 		mIterator = aIterator;
 		mMarshaller = new Marshaller(mTable.getTable().getEntityDescriptor());
 
-		mTypeNames = new HashMap<>();
-		Arrays.stream(mTypes).forEach(e->mTypeNames.put(e.getName(), e));
+		mTypeNameLookup = new HashMap<>();
+		Arrays.stream(mTypes).forEach(e->mTypeNameLookup.put(e.getName(), e));
 
 		mTable.getDatabase().getReadLock().lock();
 	}
@@ -56,7 +65,7 @@ public class ResultSet implements AutoCloseable
 
 	public Object get(String aFieldName)
 	{
-		return get(mTypeNames.get(aFieldName));
+		return get(mTypeNameLookup.get(aFieldName));
 	}
 
 
@@ -74,7 +83,7 @@ public class ResultSet implements AutoCloseable
 
 	public FieldDescriptor getField(String aFieldName)
 	{
-		return mTypeNames.get(aFieldName);
+		return mTypeNameLookup.get(aFieldName);
 	}
 
 
@@ -100,7 +109,7 @@ public class ResultSet implements AutoCloseable
 	@Override
 	public String toString()
 	{
-		return "ResultSet{" + "mValues=" + mValues + ", mTypes=" + mTypes + '}';
+		return "ResultSet{" + "mTypes=" + Arrays.toString(mTypes) + ", mValues=" + mValues + '}';
 	}
 
 
