@@ -3,7 +3,6 @@ package org.terifan.raccoon;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import org.terifan.raccoon.hashtable.LeafEntry;
 import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.raccoon.serialization.FieldDescriptor;
@@ -22,18 +21,18 @@ public class ResultSet
 	private final Iterator<LeafEntry> mIterator;
 	private final Marshaller mMarshaller;
 	private final FieldDescriptor[] mTypes;
-	private final Map<FieldDescriptor, Object> mValues;
+	private final Object[] mValues;
 	private final HashMap<String,FieldDescriptor> mTypeNameLookup;
 
 
 	ResultSet(EntityDescriptor aEntityDescriptor)
 	{
-		mValues = new HashMap<>();
 		mTypes = aEntityDescriptor.getFields();
+		mMarshaller = new Marshaller(aEntityDescriptor);
 		mIterator = null;
 		mTable = null;
-		mMarshaller = new Marshaller(aEntityDescriptor);
 
+		mValues = new Object[mTypes.length];
 		mTypeNameLookup = new HashMap<>();
 		Arrays.stream(mTypes).forEach(e->mTypeNameLookup.put(e.getName(), e));
 	}
@@ -41,13 +40,12 @@ public class ResultSet
 
 	ResultSet(TableType aTable, Iterator<LeafEntry> aIterator)
 	{
-		mValues = new HashMap<>();
-
 		mTable = aTable;
-		mTypes = mTable.getTable().getFields();
 		mIterator = aIterator;
 		mMarshaller = new Marshaller(mTable.getTable().getEntityDescriptor());
 
+		mTypes = mTable.getTable().getFields();
+		mValues = new Object[mTypes.length];
 		mTypeNameLookup = new HashMap<>();
 		Arrays.stream(mTypes).forEach(e->mTypeNameLookup.put(e.getName(), e));
 	}
@@ -61,27 +59,21 @@ public class ResultSet
 	}
 
 
+	public Object get(int aFieldIndex)
+	{
+		return mValues[aFieldIndex];
+	}
+
+
 	public Object get(String aFieldName)
 	{
 		return get(mTypeNameLookup.get(aFieldName));
 	}
 
 
-	public Object get(int aFieldIndex)
-	{
-		return mValues.get(mTypes[aFieldIndex]);
-	}
-
-
 	public Object get(FieldDescriptor aFieldType)
 	{
-		return mValues.get(aFieldType);
-	}
-
-
-	public FieldDescriptor getField(String aFieldName)
-	{
-		return mTypeNameLookup.get(aFieldName);
+		return mValues[aFieldType.getIndex()];
 	}
 
 
@@ -91,16 +83,21 @@ public class ResultSet
 	}
 
 
-	public FieldDescriptor[] getFields()
+	public FieldDescriptor getField(String aFieldName)
 	{
-		return mTypes.clone();
+		return mTypeNameLookup.get(aFieldName);
 	}
 
 
-	// TODO: protect
-	public void set(FieldDescriptor aField, Object aValue)
+	public FieldDescriptor[] getFields()
 	{
-		mValues.put(aField, aValue);
+		return mTypes;
+	}
+
+
+	public void set(int aIndex, Object aValue)
+	{
+		mValues[aIndex] = aValue;
 	}
 
 

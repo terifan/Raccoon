@@ -849,69 +849,6 @@ public final class Database implements AutoCloseable
 	}
 
 
-//	public <T> Iterable<T> iterable(Class<T> aType)
-//	{
-//		return iterable(aType, null);
-//	}
-//
-//
-//	public <T> Iterable<T> iterable(Class<T> aType, DiscriminatorType<T> aDiscriminator)
-//	{
-//		mReadLock.lock();
-//		try
-//		{
-//			Table table = openTable(aType, aDiscriminator, OpenOption.OPEN);
-//			if (table == null)
-//			{
-//				return null;
-//			}
-//
-//			return ()->table.iterator();
-//		}
-//		catch (DatabaseException e)
-//		{
-//			forceClose(e);
-//			throw e;
-//		}
-//		finally
-//		{
-//			mReadLock.unlock();
-//		}
-//	}
-//
-//
-//	public <T> Iterator<T> iterator(Class<T> aType)
-//	{
-//		return iterator(aType, null);
-//	}
-//
-//
-//	public <T> Iterator<T> iterator(Class<T> aType, DiscriminatorType<T> aDiscriminator)
-//	{
-//		mReadLock.lock();
-//		try
-//		{
-//			Table table = openTable(aType, aDiscriminator, OpenOption.OPEN);
-//
-//			if (table == null)
-//			{
-//				return null;
-//			}
-//
-//			return table.iterator();
-//		}
-//		catch (DatabaseException e)
-//		{
-//			forceClose(e);
-//			throw e;
-//		}
-//		finally
-//		{
-//			mReadLock.unlock();
-//		}
-//	}
-
-
 	public <T> List<T> list(Class<T> aType)
 	{
 		return list(aType, (T)null);
@@ -948,21 +885,6 @@ public final class Database implements AutoCloseable
 	}
 
 
-//	public <T> Stream<T> stream(Class<T> aType)
-//	{
-//		return stream(aType, null);
-//	}
-
-
-	/**
-	 * Streams entities from the database.
-	 *
-	 * Note: It's necessary to finish the stream to properly release locks on the database!
-	 *
-	 * @param aType
-	 * @param aEntity
-	 * @return
-	 */
 //	public <T> Stream<T> stream(Class<T> aType, T aEntity)
 //	{
 //		mReadLock.lock();
@@ -985,32 +907,6 @@ public final class Database implements AutoCloseable
 //
 //			forceClose(e);
 //			throw e;
-//		}
-//	}
-
-
-//	public ResultSet list(String aType)
-//	{
-//		return list(aType, null);
-//	}
-//
-//
-//	public ResultSet list(String aType, EntityMap aEntity)
-//	{
-//		mReadLock.lock();
-//		try
-//		{
-////			Table table = openTable(aType, aEntity, OpenOption.OPEN);
-////			if (table == null)
-////			{
-////				return new ResultSet();
-////			}
-////			return table.list(aType);
-//			return null;
-//		}
-//		finally
-//		{
-//			mReadLock.unlock();
 //		}
 //	}
 
@@ -1158,13 +1054,13 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public Table getTable(Class aType)
+	public <T> Table<T> getTable(Class<T> aType)
 	{
 		return openTable(aType, null, OpenOption.OPEN).getTable();
 	}
 
 
-	public Table getTable(Class aType, DiscriminatorType aDiscriminator)
+	public <T> Table<T> getTable(Class<T> aType, DiscriminatorType aDiscriminator)
 	{
 		return openTable(aDiscriminator.getType(), aDiscriminator, OpenOption.OPEN).getTable();
 	}
@@ -1212,7 +1108,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public List<Table> getTables(Class aType)
+	public <T> List<Table<T>> getTables(Class<T> aType)
 	{
 		checkOpen();
 
@@ -1220,7 +1116,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return (List<Table>)mSystemTable.list(Table.class).stream().filter(e->e == aType).collect(Collectors.toList());
+			return (List<Table<T>>)mSystemTable.list(Table.class).stream().filter(e->e == aType).collect(Collectors.toList());
 		}
 		finally
 		{

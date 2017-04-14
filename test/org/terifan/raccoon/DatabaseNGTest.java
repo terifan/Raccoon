@@ -77,13 +77,35 @@ public class DatabaseNGTest
 		{
 			_Fruit2K redApple = new _Fruit2K("red", "apple");
 			assertTrue(database.tryGet(redApple));
-			assertEquals("apple", redApple._name);
-			assertEquals(123, redApple.value);
+			assertEquals(redApple._name, "apple");
+			assertEquals(redApple.value, 123);
 
 			_Fruit2K greenApple = new _Fruit2K("green", "apple");
 			assertTrue(database.tryGet(greenApple));
-			assertEquals("apple", greenApple._name);
-			assertEquals(456, greenApple.value);
+			assertEquals(greenApple._name, "apple");
+			assertEquals(greenApple.value, 456);
+		}
+	}
+
+
+	@Test
+	public void testSingleTableInsertDuplicateEntity() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _Fruit1K("apple", 123));
+			database.commit();
+
+			database.save(new _Fruit1K("apple", 456));
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			assertEquals(database.size(_Fruit1K.class), 1);
+			assertEquals((int)database.get(new _Fruit1K("apple")).calories, 456);
 		}
 	}
 
@@ -96,14 +118,18 @@ public class DatabaseNGTest
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Fruit1K("apple"));
+			database.save(new _Fruit1K("banana"));
+			database.save(new _Fruit1K("carrot"));
 			database.commit();
 
-			assertEquals(1, database.list(_Fruit1K.class).size());
+			assertEquals(database.list(_Fruit1K.class).size(), 3);
+			assertEquals(database.size(_Fruit1K.class), 3);
 		}
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
-			assertEquals(0, database.list(_Fruit1K.class).size());
+			assertEquals(database.list(_Fruit1K.class).size(), 0);
+			assertEquals(database.size(_Fruit1K.class), 0);
 		}
 	}
 
@@ -280,7 +306,8 @@ public class DatabaseNGTest
 
 			for (_Number1K1D item : database.list(_Number1K1D.class, disc))
 			{
-//				Log.out.println(item);
+				assertTrue(item._odd);
+				assertTrue((item._number % 2) == 1);
 			}
 		}
 	}

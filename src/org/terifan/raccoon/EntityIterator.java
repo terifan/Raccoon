@@ -1,4 +1,4 @@
-package org.terifan.raccoon;
+	package org.terifan.raccoon;
 
 import org.terifan.raccoon.hashtable.LeafEntry;
 import java.lang.reflect.Constructor;
@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.function.Supplier;
 
 
-public final class EntityIterator<T> implements Iterator<T>
+final class EntityIterator<T> implements Iterator<T>
 {
 	private final Iterator<LeafEntry> mIterator;
 	private final TableType mTable;
@@ -99,5 +99,4 @@ public final class EntityIterator<T> implements Iterator<T>
 	{
 		mIterator.remove();
 	}
-
 }

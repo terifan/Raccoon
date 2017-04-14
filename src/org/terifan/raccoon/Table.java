@@ -197,7 +197,7 @@ public final class Table<T>
 				result.append(", ");
 			}
 
-			result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType.getIndex()));
+			result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType));
 		}
 
 		return result.toString();
