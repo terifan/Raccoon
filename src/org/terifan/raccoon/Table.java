@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.EntityDescriptor;
@@ -14,7 +13,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public final class Table<T> //implements Iterable<T>
+public final class Table<T>
 {
 	protected final static int FIELD_CATEGORY_KEY = 1;
 	protected final static int FIELD_CATEGORY_DISCRIMINATOR = 2;
@@ -73,25 +72,25 @@ public final class Table<T> //implements Iterable<T>
 		return this;
 	}
 
-
+	
 	public FieldDescriptor[] getFields()
 	{
-		return mEntityDescriptor.getFields().clone();
+		return mEntityDescriptor.getFields();
 	}
 
-
+	
 	public ArrayList<FieldDescriptor> getKeyFields()
 	{
 		return mEntityDescriptor.getFields(FIELD_CATEGORY_KEY);
 	}
-
-
+	
+	
 	public ArrayList<FieldDescriptor> getDiscriminatorFields()
 	{
 		return mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR);
 	}
-
-
+	
+	
 	public ArrayList<FieldDescriptor> getValueFields()
 	{
 		return mEntityDescriptor.getFields(FIELD_CATEGORY_VALUE);
@@ -188,7 +187,7 @@ public final class Table<T> //implements Iterable<T>
 		}
 
 		ResultSet resultSet = new ResultSet(mEntityDescriptor).unmarshal(new ByteArrayBuffer(mDiscriminatorKey), FIELD_CATEGORY_DISCRIMINATOR);
-
+		
 		StringBuilder result = new StringBuilder();
 
 		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR))
@@ -198,7 +197,7 @@ public final class Table<T> //implements Iterable<T>
 				result.append(", ");
 			}
 
-			result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType));
+			result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType.getIndex()));
 		}
 
 		return result.toString();

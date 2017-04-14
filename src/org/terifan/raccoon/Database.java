@@ -1158,13 +1158,13 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public <T> Table<T> getTable(Class<T> aType)
+	public Table getTable(Class aType)
 	{
 		return openTable(aType, null, OpenOption.OPEN).getTable();
 	}
 
 
-	public <T> Table<T> getTable(Class<T> aType, DiscriminatorType aDiscriminator)
+	public Table getTable(Class aType, DiscriminatorType aDiscriminator)
 	{
 		return openTable(aDiscriminator.getType(), aDiscriminator, OpenOption.OPEN).getTable();
 	}
@@ -1247,16 +1247,12 @@ public final class Database implements AutoCloseable
 
 			for (Table tableMetadata : (List<Table>)mSystemTable.list(Table.class))
 			{
-				System.out.println(name);
-
 				if (name.equals(tableMetadata.getTypeName()))
 				{
 					try
 					{
 						T instance = (T)aType.newInstance();
-
 						tableMetadata.getMarshaller().unmarshal(new ByteArrayBuffer(tableMetadata.getDiscriminatorKey()), instance, Table.FIELD_CATEGORY_DISCRIMINATOR);
-
 						result.add(new DiscriminatorType<>(instance));
 					}
 					catch (InstantiationException | IllegalAccessException e)
