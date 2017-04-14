@@ -1247,12 +1247,16 @@ public final class Database implements AutoCloseable
 
 			for (Table tableMetadata : (List<Table>)mSystemTable.list(Table.class))
 			{
+				System.out.println(name);
+
 				if (name.equals(tableMetadata.getTypeName()))
 				{
 					try
 					{
 						T instance = (T)aType.newInstance();
+
 						tableMetadata.getMarshaller().unmarshal(new ByteArrayBuffer(tableMetadata.getDiscriminatorKey()), instance, Table.FIELD_CATEGORY_DISCRIMINATOR);
+
 						result.add(new DiscriminatorType<>(instance));
 					}
 					catch (InstantiationException | IllegalAccessException e)
