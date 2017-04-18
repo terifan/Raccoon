@@ -33,8 +33,6 @@ public class Serpent implements BlockCipher
 	// The fractional part of the golden ratio, (sqrt(5)+1)/2.
 	private static final int PHI = 0x9e3779b9;
 
-	private transient int mKeySize;
-
 	private transient int x0, x1, x2, x3, x4;
 
 	private transient int k0, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12, k13,
@@ -70,8 +68,6 @@ public class Serpent implements BlockCipher
 		{
 			throw new IllegalArgumentException("Invalid k: " + (kb==null?"null":kb.length+" bytes != {16,24,32}"));
 		}
-
-		mKeySize = kb.length;
 
 		// Here w is our "pre-key".
 		int[] w = new int[4 * (ROUNDS + 1)];
@@ -1336,7 +1332,6 @@ public class Serpent implements BlockCipher
 	@Override
 	public void engineReset()
 	{
-		mKeySize = 0;
 		x0 = x1 = x2 = x3 = x4 = 0;
 		k0 = k1 = k2 = k3 = k4 = k5 = k6 = k7 = k8 = k9 = k10 = k11 = k12 = k13 =
 		k14 = k15 = k16 = k17 = k18 = k19 = k20 = k21 = k22 = k23 = k24 = k25 = k26 =

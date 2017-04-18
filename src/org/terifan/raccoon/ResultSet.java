@@ -23,15 +23,16 @@ public class ResultSet
 	private final FieldDescriptor[] mTypes;
 	private final Object[] mValues;
 	private final HashMap<String,FieldDescriptor> mTypeNameLookup;
+	private final EntityDescriptor mEntityDescriptor;
 
 
 	ResultSet(EntityDescriptor aEntityDescriptor)
 	{
+		mTable = null;
+		mIterator = null;
+		mEntityDescriptor = aEntityDescriptor;
 		mTypes = aEntityDescriptor.getFields();
 		mMarshaller = new Marshaller(aEntityDescriptor);
-		mIterator = null;
-		mTable = null;
-
 		mValues = new Object[mTypes.length];
 		mTypeNameLookup = new HashMap<>();
 		Arrays.stream(mTypes).forEach(e->mTypeNameLookup.put(e.getName(), e));
@@ -42,9 +43,9 @@ public class ResultSet
 	{
 		mTable = aTable;
 		mIterator = aIterator;
-		mMarshaller = new Marshaller(mTable.getTable().getEntityDescriptor());
-
+		mEntityDescriptor = mTable.getTable().getEntityDescriptor();
 		mTypes = mTable.getTable().getFields();
+		mMarshaller = new Marshaller(mEntityDescriptor);
 		mValues = new Object[mTypes.length];
 		mTypeNameLookup = new HashMap<>();
 		Arrays.stream(mTypes).forEach(e->mTypeNameLookup.put(e.getName(), e));
@@ -120,6 +121,6 @@ public class ResultSet
 	@Override
 	public String toString()
 	{
-		return "ResultSet{" + "mTypes=" + Arrays.toString(mTypes) + ", mValues=" + mValues + '}';
+		return "ResultSet{" + "mEntityDescriptor=" + mEntityDescriptor.getName() + "mTypes=" + Arrays.toString(mTypes) + '}';
 	}
 }

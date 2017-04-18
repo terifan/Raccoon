@@ -110,7 +110,6 @@ public final class Twofish implements BlockCipher
 
 	private transient int [] mSBox;
 	private transient int [] mSubKeys;
-	private transient int mKeySize;
 	private transient int mSubKey0, mSubKey1, mSubKey2, mSubKey3, mSubKey4, mSubKey5, mSubKey6, mSubKey7;
 
 
@@ -137,7 +136,6 @@ public final class Twofish implements BlockCipher
 		}
 
 		int length = k.length;
-		mKeySize = k.length;
 
 		int k64Cnt = length / 8;
 		int subkeyCnt = 8 + 2*16;
@@ -957,7 +955,6 @@ public final class Twofish implements BlockCipher
 	@Override
 	public void engineReset()
 	{
-		mKeySize = 0;
 		if (mSBox != null) Arrays.fill(mSBox, -1);
 		if (mSBox != null) Arrays.fill(mSBox, 0);
 		if (mSubKeys != null) Arrays.fill(mSubKeys, -1);

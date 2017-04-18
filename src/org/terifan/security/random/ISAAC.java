@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class ISAAC
 {
-	private final static AtomicLong seedUniquifier = new AtomicLong(8682522807148012L); // constants from java.util.Random
+	private final static AtomicLong SEED_UNIQUIFIER = new AtomicLong(8682522807148012L); // constants from java.util.Random
 
 	private transient int[] set;
 	private transient int[] mem;
@@ -59,9 +59,9 @@ public final class ISAAC
 	{
 		for (;;)
 		{
-			long current = seedUniquifier.get();
+			long current = SEED_UNIQUIFIER.get();
 			long next = current * 181783497276652981L;
-			if (seedUniquifier.compareAndSet(current, next))
+			if (SEED_UNIQUIFIER.compareAndSet(current, next))
 			{
 				return next;
 			}
@@ -340,7 +340,7 @@ public final class ISAAC
 	 *
 	 * @param aProbabilties
 	 *    an array of probabilities, any positive values can be provided as
-	 *    these are normalized by the implementation.
+	 *    these are normalised by the implementation.
 	 * @return
 	 *    an integer value ranging from 0 to the length of the provided probabilities array.
 	 */
@@ -373,112 +373,81 @@ public final class ISAAC
 	 */
 	public static class PRNG
 	{
-		private final static ISAAC instance = new ISAAC();
+		private final static ISAAC INSTANCE = new ISAAC();
 
 
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextBoolean
-		 */
 		public static boolean nextBoolean()
 		{
-			return instance.nextBoolean();
+			return INSTANCE.nextBoolean();
 		}
 
 
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextByte
-		 */
 		public static byte nextByte()
 		{
-			return instance.nextByte();
+			return INSTANCE.nextByte();
 		}
 
 
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextInt
-		 */
 		public static int nextInt()
 		{
-			return instance.nextInt();
+			return INSTANCE.nextInt();
 		}
 
 
-		/**
-		 * @param aMaxValue the bound on the random number to be returned. Must be positive.
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextInt
-		 */
 		public static int nextInt(int aMaxValue)
 		{
-			return instance.nextInt(aMaxValue);
+			return INSTANCE.nextInt(aMaxValue);
 		}
 
 
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextLong
-		 */
 		public static long nextLong()
 		{
-			return instance.nextLong();
+			return INSTANCE.nextLong();
 		}
 
 
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextFloat
-		 */
 		public static float nextFloat()
 		{
-			return instance.nextFloat();
+			return INSTANCE.nextFloat();
 		}
 
 
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextDouble
-		 */
 		public static double nextDouble()
 		{
-			return instance.nextDouble();
+			return INSTANCE.nextDouble();
 		}
 
 
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextBytes
-		 */
 		public static byte[] nextBytes(byte[] aBuffer)
 		{
-			instance.nextBytes(aBuffer);
+			INSTANCE.nextBytes(aBuffer);
 			return aBuffer;
 		}
 
 
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextBytes
-		 */
 		public static byte[] nextBytes(byte[] aBuffer, int aOffset, int aLength)
 		{
-			instance.nextBytes(aBuffer, aOffset, aLength);
+			INSTANCE.nextBytes(aBuffer, aOffset, aLength);
 			return aBuffer;
 		}
 
 
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextProb
-		 */
 		public static int nextProb(double ... aProbabilities)
 		{
-			return instance.nextProb(aProbabilities);
+			return INSTANCE.nextProb(aProbabilities);
 		}
 
 
 		public static int [] nextInts(int[] aBuffer)
 		{
-			instance.nextInts(aBuffer);
+			INSTANCE.nextInts(aBuffer);
 			return aBuffer;
 		}
 
 
 		public static int [] nextInts(int[] aBuffer, int aOffset, int aLength)
 		{
-			instance.nextInts(aBuffer, aOffset, aLength);
+			INSTANCE.nextInts(aBuffer, aOffset, aLength);
 			return aBuffer;
 		}
 	}
