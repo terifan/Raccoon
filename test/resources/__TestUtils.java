@@ -92,7 +92,7 @@ public class __TestUtils
 
 
 
-	public static byte[] createBuffer(long aSeed, int aLength)
+	public static byte[] createRandomBuffer(long aSeed, int aLength)
 	{
 		Random r = new Random(aSeed);
 		byte[] buf = new byte[aLength];
@@ -101,15 +101,12 @@ public class __TestUtils
 	}
 
 
-	public static void verifyBuffer(long aSeed, byte[] aBuffer)
+	public static boolean verifyRandomBuffer(long aSeed, byte[] aBuffer)
 	{
 		Random r = new Random(aSeed);
 		byte[] buf = new byte[aBuffer.length];
 		r.nextBytes(buf);
-		if (!Arrays.equals(aBuffer, buf))
-		{
-			throw new IllegalArgumentException("Data missmatch");
-		}
+		return Arrays.equals(aBuffer, buf);
 	}
 
 	

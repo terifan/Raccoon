@@ -25,37 +25,26 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public final class TableType<T> implements Iterable<T>, AutoCloseable
+public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 {
 	public static final byte FLAG_BLOB = 1;
 
-	private Database mDatabase;
-	private Table mTableMetadata;
-	private BlockAccessor mBlockAccessor;
-	private HashSet<BlobOutputStream> mOpenOutputStreams;
-	private HashTable mTableImplementation;
-	private byte[] mPointer;
+	private final Database mDatabase;
+	private final Table mTable;
+	private final HashSet<BlobOutputStream> mOpenOutputStreams;
+	private final HashTable mTableImplementation;
 
 
-	TableType(Database aDatabase, Table aTableMetadata, byte[] aPointer)
+	TableInstance(Database aDatabase, Table aTableMetadata, byte[] aPointer)
 	{
 		try
 		{
 			mOpenOutputStreams = new HashSet<>();
 
 			mDatabase = aDatabase;
-			mTableMetadata = aTableMetadata;
-			mPointer = aPointer;
+			mTable = aTableMetadata;
 
-			mTableImplementation = new HashTable(mDatabase.getBlockDevice(), mPointer, mDatabase.getTransactionId(), false, mDatabase.getParameter(CompressionParam.class, null), mDatabase.getParameter(TableParam.class, null));
-
-			mBlockAccessor = new BlockAccessor(mDatabase.getBlockDevice());
-
-			CompressionParam parameter = mDatabase.getParameter(CompressionParam.class, null);
-			if (parameter != null)
-			{
-				mBlockAccessor.setCompressionParam(parameter);
-			}
+			mTableImplementation = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, mDatabase.getParameter(CompressionParam.class, CompressionParam.BEST_SPEED), mDatabase.getParameter(TableParam.class, null));
 		}
 		catch (IOException e)
 		{
@@ -115,7 +104,7 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 			{
 				ByteArrayBuffer buffer = new ByteArrayBuffer(entry.getValue());
 
-				return new BlobInputStream(mBlockAccessor, buffer);
+				return new BlobInputStream(getBlockAccessor(), buffer);
 			}
 			catch (Exception e)
 			{
@@ -140,7 +129,7 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 		{
 			type = FLAG_BLOB;
 
-			try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId(), null))
+			try (BlobOutputStream bos = new BlobOutputStream(getBlockAccessor(), mDatabase.getTransactionId(), null))
 			{
 				bos.write(value);
 				value = bos.finish();
@@ -170,7 +159,7 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 		{
 			try
 			{
-				Blob.deleteBlob(mBlockAccessor, aEntry.getValue());
+				Blob.deleteBlob(getBlockAccessor(), aEntry.getValue());
 			}
 			catch (IOException e)
 			{
@@ -184,30 +173,26 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 	{
 		try
 		{
-			BlobOutputStream.OnCloseListener onCloseListener = new BlobOutputStream.OnCloseListener()
+			BlobOutputStream.OnCloseListener onCloseListener = (aBlobOutputStream, aHeader) ->
 			{
-				@Override
-				public void onClose(BlobOutputStream aBlobOutputStream, byte[] aHeader)
+				Log.v("write blob entry");
+				
+				byte[] key = getKeys(aEntityKey);
+				
+				LeafEntry entry = new LeafEntry(key, aHeader, FLAG_BLOB);
+				
+				if (mTableImplementation.put(entry))
 				{
-					Log.v("write blob entry");
-
-					byte[] key = getKeys(aEntityKey);
-
-					LeafEntry entry = new LeafEntry(key, aHeader, FLAG_BLOB);
-
-					if (mTableImplementation.put(entry))
-					{
-						deleteIfBlob(entry);
-					}
-
-					synchronized (TableType.this)
-					{
-						mOpenOutputStreams.remove(aBlobOutputStream);
-					}
+					deleteIfBlob(entry);
+				}
+				
+				synchronized (TableInstance.this)
+				{
+					mOpenOutputStreams.remove(aBlobOutputStream);
 				}
 			};
 
-			BlobOutputStream out = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId(), onCloseListener);
+			BlobOutputStream out = new BlobOutputStream(getBlockAccessor(), mDatabase.getTransactionId(), onCloseListener);
 
 			synchronized (this)
 			{
@@ -225,7 +210,7 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 
 	public boolean save(T aEntity, InputStream aInputStream)
 	{
-		try (BlobOutputStream bos = new BlobOutputStream(mBlockAccessor, mDatabase.getTransactionId(), null))
+		try (BlobOutputStream bos = new BlobOutputStream(getBlockAccessor(), mDatabase.getTransactionId(), null))
 		{
 			bos.write(Streams.readAll(aInputStream));
 
@@ -278,15 +263,6 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 	}
 
 
-	/**
-	 * Creates an iterator over all items in this table.
-	 */
-//	public Iterator<ResultSet> resultSetIterator()
-//	{
-//		return new ResultSetIterator(this, mTableImplementation.iterator());
-//	}
-
-
 	public void clear()
 	{
 		mTableImplementation.clear();
@@ -333,11 +309,14 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 
 		byte[] newPointer = mTableImplementation.marshalHeader();
 
-		boolean wasUpdated = !Arrays.equals(newPointer, mPointer);
+		if (Arrays.equals(newPointer, mTable.getPointer()))
+		{
+			return false;
+		}
 
-		mTableMetadata.setPointer(newPointer);
+		mTable.setPointer(newPointer);
 
-		return wasUpdated;
+		return true;
 	}
 
 
@@ -363,7 +342,7 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getKey());
 
-		mTableMetadata.getMarshaller().unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_KEY);
+		mTable.getMarshaller().unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_KEY);
 	}
 
 
@@ -375,7 +354,7 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 		{
 			try
 			{
-				buffer.wrap(Streams.readAll(new BlobInputStream(mBlockAccessor, buffer)));
+				buffer.wrap(Streams.readAll(new BlobInputStream(getBlockAccessor(), buffer)));
 				buffer.position(0);
 			}
 			catch (Exception e)
@@ -384,14 +363,14 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 			}
 		}
 
-		Marshaller marshaller = mTableMetadata.getMarshaller();
+		Marshaller marshaller = mTable.getMarshaller();
 		marshaller.unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_DISCRIMINATOR | Table.FIELD_CATEGORY_VALUE);
 	}
 
 
 	private byte[] getKeys(Object aInput)
 	{
-		return mTableMetadata.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, Table.FIELD_CATEGORY_KEY).trim().array();
+		return mTable.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, Table.FIELD_CATEGORY_KEY).trim().array();
 	}
 
 
@@ -399,7 +378,7 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
 
-		Marshaller marshaller = mTableMetadata.getMarshaller();
+		Marshaller marshaller = mTable.getMarshaller();
 		marshaller.marshal(buffer, aInput, Table.FIELD_CATEGORY_DISCRIMINATOR | Table.FIELD_CATEGORY_VALUE);
 
 		return buffer.trim().array();
@@ -408,14 +387,14 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 
 	public Table getTable()
 	{
-		return mTableMetadata;
+		return mTable;
 	}
 
 
 	@Override
 	public String toString()
 	{
-		return mTableMetadata.toString();
+		return mTable.toString();
 	}
 
 
@@ -431,7 +410,7 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 		{
 			Stream<T> tmp = StreamSupport.stream(new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
 			{
-				EntityIterator entityIterator = new EntityIterator(TableType.this, mTableImplementation.iterator());
+				EntityIterator entityIterator = new EntityIterator(TableInstance.this, mTableImplementation.iterator());
 
 				@Override
 				public boolean tryAdvance(Consumer<? super T> aConsumer)
@@ -461,5 +440,11 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 	public class TypeResult
 	{
 		public byte type;
+	}
+	
+	
+	private synchronized BlockAccessor getBlockAccessor() throws IOException
+	{
+		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getParameter(CompressionParam.class, CompressionParam.BEST_SPEED), 0);
 	}
 }

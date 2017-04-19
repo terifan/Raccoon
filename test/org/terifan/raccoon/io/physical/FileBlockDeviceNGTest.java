@@ -24,7 +24,7 @@ public class FileBlockDeviceNGTest
 
 		for (int k = 0; k < 5; k++)
 		{
-			try (ManagedBlockDevice dev = new ManagedBlockDevice(new FileBlockDevice(file, s, false)))
+			try (ManagedBlockDevice dev = new ManagedBlockDevice(new FileBlockDevice(file, s, false), "", 512))
 			{
 				for (int j = 0; j < 10; j++)
 				{

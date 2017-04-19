@@ -2,6 +2,7 @@ package org.terifan.raccoon.storage;
 
 import java.io.IOException;
 import java.util.Random;
+import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.TransactionCounter;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -29,10 +30,10 @@ public class BlobInputStreamNGTest
 
 		IPhysicalBlockDevice memoryDevice = new MemoryBlockDevice(512);
 		SecureBlockDevice secureBlockDevice = new SecureBlockDevice(memoryDevice, new AccessCredentials("password"));
-		IManagedBlockDevice blockDevice = new ManagedBlockDevice(secureBlockDevice);
+		IManagedBlockDevice blockDevice = new ManagedBlockDevice(secureBlockDevice, "", 512);
 
 		byte[] header;
-		try (BlobOutputStream bos = new BlobOutputStream(new BlockAccessor(blockDevice), new TransactionCounter(0), null))
+		try (BlobOutputStream bos = new BlobOutputStream(new BlockAccessor(blockDevice, CompressionParam.BEST_SPEED, 0), new TransactionCounter(0), null))
 		{
 			bos.write(out);
 			header = bos.finish();
@@ -55,7 +56,7 @@ public class BlobInputStreamNGTest
 
 		byte[] in = new byte[out.length];
 
-		try (BlobInputStream bis = new BlobInputStream(new BlockAccessor(blockDevice), header))
+		try (BlobInputStream bis = new BlobInputStream(new BlockAccessor(blockDevice, CompressionParam.BEST_SPEED, 0), header))
 		{
 			bis.read(in);
 		}

@@ -31,10 +31,10 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
 import resources.entities._Fruit1K;
-import static resources.__TestUtils.createBuffer;
 import static resources.__TestUtils.t;
 import resources.entities._Fruit1K1D;
 import resources.entities._Number1K2D;
+import static resources.__TestUtils.createRandomBuffer;
 
 
 public class DatabaseNGTest
@@ -367,7 +367,7 @@ public class DatabaseNGTest
 	public void testBlobSave() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
-		byte[] content = createBuffer(0, 10*1024*1024);
+		byte[] content = createRandomBuffer(0, 10*1024*1024);
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
@@ -389,7 +389,7 @@ public class DatabaseNGTest
 	public void testBlobSaveFromStream() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
-		byte[] content = createBuffer(0, 10*1024*1024);
+		byte[] content = createRandomBuffer(0, 10*1024*1024);
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
@@ -412,13 +412,13 @@ public class DatabaseNGTest
 	public void testBlobUpdateFromStreamInline() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
-		byte[] content = createBuffer(0, 10*1024*1024);
+		byte[] content = createRandomBuffer(0, 10*1024*1024);
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
 
-			content = createBuffer(0, 10*1024*1024);
+			content = createRandomBuffer(0, 10*1024*1024);
 
 			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
 
@@ -435,14 +435,14 @@ public class DatabaseNGTest
 	public void testBlobUpdateFromStream() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
-		byte[] content = createBuffer(0, 10*1024*1024);
+		byte[] content = createRandomBuffer(0, 10*1024*1024);
 
 		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
 			database.commit();
 
-			content = createBuffer(0, 10*1024*1024);
+			content = createRandomBuffer(0, 10*1024*1024);
 
 			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
 			database.commit();
@@ -464,7 +464,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (IManagedBlockDevice blockDevice = new ManagedBlockDevice(device))
+		try (IManagedBlockDevice blockDevice = new ManagedBlockDevice(device, "", 512))
 		{
 			blockDevice.setExtraData(new byte[100]);
 			blockDevice.allocBlock(100);
@@ -482,9 +482,9 @@ public class DatabaseNGTest
 	public void testBlobDelete() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "", 512);
 
-		_KeyValue1K in = new _KeyValue1K("apple", createBuffer(0, 1000_000));
+		_KeyValue1K in = new _KeyValue1K("apple", createRandomBuffer(0, 1000_000));
 		_KeyValue1K out = new _KeyValue1K("apple");
 
 		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_COMPRESSION))
@@ -511,7 +511,7 @@ public class DatabaseNGTest
 	public void testDatabaseNotChangedWhenZeroItemsDeleted() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "", 512);
 
 		_Animal1K item = new _Animal1K("banana");
 
@@ -527,9 +527,9 @@ public class DatabaseNGTest
 	public void testBlobDeleteFromStream() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "", 512);
 
-		byte[] content = createBuffer(0, 10*1024*1024);
+		byte[] content = createRandomBuffer(0, 10*1024*1024);
 
 		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_COMPRESSION))
 		{
@@ -552,9 +552,9 @@ public class DatabaseNGTest
 	public void testBlobUpdate() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "", 512);
 
-		_KeyValue1K in = new _KeyValue1K("apple", createBuffer(0, 1000_000));
+		_KeyValue1K in = new _KeyValue1K("apple", createRandomBuffer(0, 1000_000));
 
 		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_COMPRESSION))
 		{
@@ -579,7 +579,7 @@ public class DatabaseNGTest
 	public void openCloseTest() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "", 512);
 
 		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
 		{
@@ -650,7 +650,7 @@ public class DatabaseNGTest
 	@Test(expectedExceptions = IllegalArgumentException.class)
 	public void testUnsupportedDevice() throws Exception
 	{
-		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
+		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512), "", 512);
 
 		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password")))
 		{
@@ -1066,16 +1066,16 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW, CompressionParam.BEST_SPEED))
 		{
 			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
 			database.commit();
 		}
-
+		
 		byte[] buffer = new byte[512];
-		device.readBlock(10, buffer, 0, buffer.length, 0L);
+		device.readBlock(20, buffer, 0, buffer.length, 0L);
 		buffer[0] ^= 1;
-		device.writeBlock(10, buffer, 0, buffer.length, 0L);
+		device.writeBlock(20, buffer, 0, buffer.length, 0L);
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
@@ -1083,6 +1083,37 @@ public class DatabaseNGTest
 
 			assertEquals(new byte[1000_000], Streams.readAll(database.read(new _BlobKey1K("good"))));
 		}
+	}
+
+
+	@Test
+	public void testBlobCompressionParameter() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW, new CompressionParam(CompressionParam.NONE, CompressionParam.NONE, CompressionParam.DEFLATE_BEST)))
+		{
+			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
+			database.commit();
+		}
+
+		assertTrue(device.length() > 10);
+		assertTrue(device.length() < 40);
+	}
+
+
+	@Test
+	public void testNodeCompressionParameter() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW, new CompressionParam(CompressionParam.NONE, CompressionParam.DEFLATE_BEST, CompressionParam.DEFLATE_BEST)))
+		{
+			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
+			database.commit();
+		}
+
+		assertTrue(device.length() < 10);
 	}
 
 
@@ -1108,7 +1139,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "", 512);
 
 		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
 		{

@@ -14,7 +14,7 @@ public class ManagedBlockDeviceNGTest
 	{
 		int s = 512;
 
-		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s)))
+		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s), "", 512))
 		{
 			long pos1 = dev.allocBlock(1);
 			long pos2 = dev.allocBlock(1);
@@ -36,7 +36,7 @@ public class ManagedBlockDeviceNGTest
 	{
 		int s = 512;
 
-		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s)))
+		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s), "", 512))
 		{
 			long pos1 = dev.allocBlock(1); // alloc 0
 			long pos2 = dev.allocBlock(1); // alloc 1
@@ -74,7 +74,7 @@ public class ManagedBlockDeviceNGTest
 
 		for (int test = 0; test < 10; test++)
 		{
-			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice))
+			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice, "", 512))
 			{
 				if (test > 0)
 				{
@@ -82,14 +82,14 @@ public class ManagedBlockDeviceNGTest
 					for (int i = 0; i < rows; i++)
 					{
 						dev.readBlock(positions[i], buf, 0, s, 0L);
-						verifyBuffer(i,buf);
+						assertTrue(verifyRandomBuffer(i,buf));
 					}
 				}
 
 				for (int i = test * rows; i < test * rows + rows; i++)
 				{
 					positions[i] = dev.allocBlock(1);
-					dev.writeBlock(positions[i], createBuffer(i,s), 0, s, 0L);
+					dev.writeBlock(positions[i], createRandomBuffer(i,s), 0, s, 0L);
 				}
 				dev.commit();
 			}

@@ -69,8 +69,7 @@ public class BlobOutputStream extends OutputStream
 
 		int pointerBufferLength = mPointerBuffer.position();
 
-		// create indirect block if pointers exceed max length
-		if (pointerBufferLength > POINTER_MAX_LENGTH)
+		if (pointerBufferLength > POINTER_MAX_LENGTH) // create indirect block if pointer buffer length exceed limit
 		{
 			BlockPointer bp = mBlockAccessor.writeBlock(mPointerBuffer.array(), 0, pointerBufferLength, mTransactionId.get(), BlockType.BLOB_INDEX, 0);
 			bp.marshal(mPointerBuffer.position(0));
@@ -111,6 +110,7 @@ public class BlobOutputStream extends OutputStream
 	}
 
 
+	@FunctionalInterface
 	public interface OnCloseListener
 	{
 		void onClose(BlobOutputStream aBlobOutputStream, byte[] aHeader);

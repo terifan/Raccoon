@@ -17,7 +17,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
  */
 public class ResultSet
 {
-	private final TableType mTable;
+	private final TableInstance mTable;
 	private final Iterator<LeafEntry> mIterator;
 	private final Marshaller mMarshaller;
 	private final FieldDescriptor[] mTypes;
@@ -39,7 +39,7 @@ public class ResultSet
 	}
 
 
-	ResultSet(TableType aTable, Iterator<LeafEntry> aIterator)
+	ResultSet(TableInstance aTable, Iterator<LeafEntry> aIterator)
 	{
 		mTable = aTable;
 		mIterator = aIterator;

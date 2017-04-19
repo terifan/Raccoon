@@ -1,5 +1,6 @@
 package org.terifan.raccoon.storage;
 
+import org.terifan.raccoon.util.Cache;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
@@ -15,22 +16,18 @@ import org.terifan.security.messagedigest.MurmurHash3;
 
 public class BlockAccessor
 {
-	private IManagedBlockDevice mBlockDevice;
+	private final IManagedBlockDevice mBlockDevice;
+	private final Cache<Long,byte[]> mCache;
+	private final int mBlockSize;
 	private CompressionParam mCompressionParam;
-	private int mPageSize;
-	private Cache<Long,byte[]> mCache;
-	private boolean mCacheEnabled;
 
 
-	public BlockAccessor(IManagedBlockDevice aBlockDevice) throws IOException
+	public BlockAccessor(IManagedBlockDevice aBlockDevice, CompressionParam aCompressionParam, int aCacheSize) throws IOException
 	{
 		mBlockDevice = aBlockDevice;
-		mPageSize = mBlockDevice.getBlockSize();
-		mCache = new Cache<>(1024);
-
-		mCompressionParam = CompressionParam.BEST_SPEED;
-
-		mCacheEnabled = !false;
+		mCompressionParam = aCompressionParam;
+		mBlockSize = mBlockDevice.getBlockSize();
+		mCache = aCacheSize == 0 ? null : new Cache<>(aCacheSize);
 	}
 
 
@@ -60,14 +57,15 @@ public class BlockAccessor
 			Log.inc();
 
 			mBlockDevice.freeBlock(aBlockPointer.getOffset(), roundUp(aBlockPointer.getPhysicalSize()) / mBlockDevice.getBlockSize());
-			Stats.blockFree.incrementAndGet();
 
-			if (mCacheEnabled)
+			if (mCache != null)
 			{
 				mCache.remove(aBlockPointer.getOffset());
 			}
 
 			Log.dec();
+
+			Stats.blockFree.incrementAndGet();
 		}
 		catch (Exception | Error e)
 		{
@@ -83,7 +81,7 @@ public class BlockAccessor
 			Log.v("read block %s", aBlockPointer);
 			Log.inc();
 
-			if (mCacheEnabled)
+			if (mCache != null)
 			{
 				byte[] copy = mCache.get(aBlockPointer.getOffset());
 
@@ -98,7 +96,6 @@ public class BlockAccessor
 			byte[] buffer = new byte[roundUp(aBlockPointer.getPhysicalSize())];
 
 			mBlockDevice.readBlock(aBlockPointer.getOffset(), buffer, 0, buffer.length, aBlockPointer.getBlockKey());
-			Stats.blockRead.incrementAndGet();
 
 			if (digest(buffer, 0, aBlockPointer.getPhysicalSize(), (int)aBlockPointer.getOffset()) != aBlockPointer.getChecksum())
 			{
@@ -117,6 +114,8 @@ public class BlockAccessor
 			}
 
 			Log.dec();
+
+			Stats.blockRead.incrementAndGet();
 
 			return buffer;
 		}
@@ -143,12 +142,12 @@ public class BlockAccessor
 			}
 
 			byte[] copy = null;
-			if (mCacheEnabled) // && aType == BlockPointer.Types.NODE_INDIRECT
+			if (mCache != null)
 			{
 				copy = Arrays.copyOfRange(aBuffer, aOffset, aOffset + aLength);
 			}
 
-			if (result && roundUp(baos.size()) < roundUp(aBuffer.length)) // use the compressed result only if we actual save one page or more
+			if (result && roundUp(baos.size()) < roundUp(aBuffer.length)) // use the compressed result only if we actual save one block or more
 			{
 				physicalSize = baos.size();
 				baos.write(new byte[roundUp(physicalSize) - physicalSize]); // padding
@@ -161,11 +160,10 @@ public class BlockAccessor
 				compressorId = CompressionParam.NONE;
 			}
 
-			assert aBuffer.length % mPageSize == 0;
+			assert aBuffer.length % mBlockSize == 0;
 
-			int blockCount = aBuffer.length / mPageSize;
+			int blockCount = aBuffer.length / mBlockSize;
 			long blockIndex = mBlockDevice.allocBlock(blockCount);
-			Stats.blockAlloc.incrementAndGet();
 
 			BlockPointer blockPointer = new BlockPointer();
 			blockPointer.setCompression(compressorId);
@@ -186,10 +184,12 @@ public class BlockAccessor
 
 			Log.dec();
 
-			if (copy != null)
+			if (mCache != null)
 			{
 				mCache.put(blockPointer.getOffset(), copy);
 			}
+
+			Stats.blockAlloc.incrementAndGet();
 
 			return blockPointer;
 		}
@@ -208,30 +208,24 @@ public class BlockAccessor
 
 	private Compressor getCompressor(int aCompressorId)
 	{
-		Compressor compressor;
 		switch (aCompressorId)
 		{
 			case CompressionParam.ZLE:
-				compressor = new ZeroCompressor(mPageSize);
-				break;
+				return new ZeroCompressor(mBlockSize);
 			case CompressionParam.DEFLATE_FAST:
-				compressor = new DeflateCompressor(Deflater.BEST_SPEED);
-				break;
+				return new DeflateCompressor(Deflater.BEST_SPEED);
 			case CompressionParam.DEFLATE_DEFAULT:
-				compressor = new DeflateCompressor(Deflater.DEFAULT_COMPRESSION);
-				break;
+				return new DeflateCompressor(Deflater.DEFAULT_COMPRESSION);
 			case CompressionParam.DEFLATE_BEST:
-				compressor = new DeflateCompressor(Deflater.BEST_COMPRESSION);
-				break;
+				return new DeflateCompressor(Deflater.BEST_COMPRESSION);
 			default:
 				throw new IllegalStateException("Illegal compressor: " + aCompressorId);
 		}
-		return compressor;
 	}
 
 
 	private int roundUp(int aSize)
 	{
-		return aSize + ((mPageSize - (aSize % mPageSize)) % mPageSize);
+		return aSize + ((mBlockSize - (aSize % mBlockSize)) % mBlockSize);
 	}
 }

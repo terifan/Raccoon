@@ -22,8 +22,6 @@ import org.terifan.security.messagedigest.MurmurHash3;
 
 public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 {
-	private final static TableParam DEFAULT_TABLE_PARAM = new TableParam();
-
 	private BlockAccessor mBlockAccessor;
 	private BlockPointer mRootBlockPointer;
 	private LeafNode mRootMap;
@@ -46,28 +44,16 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionCounter aTransactionId, boolean aStandAlone, CompressionParam aCompressionParam, TableParam aTableParam) throws IOException
 	{
 		mTransactionId = aTransactionId;
-
-		init(aBlockDevice, aTableHeader, aStandAlone, aCompressionParam, aTableParam);
-	}
-
-
-	private void init(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, boolean aStandAlone, CompressionParam aCompressionParam, TableParam aTableParam) throws IOException
-	{
 		mForwardCommits = aStandAlone;
-		mBlockAccessor = new BlockAccessor(aBlockDevice);
-
-		if (aCompressionParam != null)
-		{
-			mBlockAccessor.setCompressionParam(aCompressionParam);
-		}
+		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam, 1024);
 
 		if (aTableHeader == null)
 		{
 			Log.i("create hash table");
 			Log.inc();
 
-			mNodeSize = (aTableParam == null ? DEFAULT_TABLE_PARAM : aTableParam).getPagesPerNode() * aBlockDevice.getBlockSize();
-			mLeafSize = (aTableParam == null ? DEFAULT_TABLE_PARAM : aTableParam).getPagesPerLeaf() * aBlockDevice.getBlockSize();
+			mNodeSize = (aTableParam == null ? TableParam.DEFAULT : aTableParam).getPagesPerNode() * aBlockDevice.getBlockSize();
+			mLeafSize = (aTableParam == null ? TableParam.DEFAULT : aTableParam).getPagesPerLeaf() * aBlockDevice.getBlockSize();
 			mHashSeed = new SecureRandom().nextInt();
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;

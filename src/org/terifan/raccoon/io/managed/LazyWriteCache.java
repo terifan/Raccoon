@@ -7,20 +7,20 @@ import java.util.LinkedList;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 
 
-class BlockCache
+class LazyWriteCache
 {
-	private final static int LIMIT = 128;
+	private final IPhysicalBlockDevice mBlockDevice;
+	private final HashMap<Long, CacheEntry> mCache;
+	private final LinkedList<Long> mCacheOrder;
+	private final int mCacheSize;
 
-	private IPhysicalBlockDevice mBlockDevice;
-	private HashMap<Long, CacheEntry> mCache;
-	private LinkedList<Long> mCacheOrder;
 
-
-	public BlockCache(IPhysicalBlockDevice aBlockDevice)
+	public LazyWriteCache(IPhysicalBlockDevice aBlockDevice, int aCacheSize)
 	{
 		mBlockDevice = aBlockDevice;
 		mCache = new HashMap<>();
 		mCacheOrder = new LinkedList<>();
+		mCacheSize = aCacheSize;
 	}
 
 
@@ -40,7 +40,7 @@ class BlockCache
 		mCacheOrder.remove(aBlockIndex);
 		mCacheOrder.addFirst(aBlockIndex);
 
-		if (mCache.size() > LIMIT)
+		if (mCache.size() > mCacheSize)
 		{
 			reduce();
 		}
@@ -57,6 +57,9 @@ class BlockCache
 			assert entry.mBlockKey == aBlockKey : entry.mBlockKey+" == "+aBlockKey;
 
 			System.arraycopy(entry.mBuffer, 0, aBuffer, aBufferOffset, aBufferLength);
+
+			mCacheOrder.remove(aBlockIndex);
+			mCacheOrder.addFirst(aBlockIndex);
 		}
 		else
 		{
@@ -74,7 +77,7 @@ class BlockCache
 
 	private void reduce() throws IOException
 	{
-		for (int i = 0; i < LIMIT / 2; i++)
+		for (int i = 0; i < mCacheSize / 2; i++)
 		{
 			CacheEntry entry = mCache.remove(mCacheOrder.removeLast());
 

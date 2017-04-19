@@ -10,10 +10,10 @@ import java.util.function.Supplier;
 final class EntityIterator<T> implements Iterator<T>
 {
 	private final Iterator<LeafEntry> mIterator;
-	private final TableType mTable;
+	private final TableInstance mTable;
 
 
-	EntityIterator(TableType aTable, Iterator<LeafEntry> aIterator)
+	EntityIterator(TableInstance aTable, Iterator<LeafEntry> aIterator)
 	{
 		mIterator = aIterator;
 		mTable = aTable;

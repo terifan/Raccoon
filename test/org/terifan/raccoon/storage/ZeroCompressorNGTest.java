@@ -44,4 +44,16 @@ public class ZeroCompressorNGTest
 
 		assertEquals(Arrays.copyOfRange(input, srcOffset, srcOffset + length), Arrays.copyOfRange(output, dstOffset, dstOffset + length));
 	}
+
+
+	@Test
+	public void testCompress()
+	{
+	}
+
+
+	@Test
+	public void testDecompress() throws Exception
+	{
+	}
 }

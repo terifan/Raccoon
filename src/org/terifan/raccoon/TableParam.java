@@ -3,14 +3,10 @@ package org.terifan.raccoon;
 
 public final class TableParam
 {
+	public final static TableParam DEFAULT = new TableParam(4, 8);
+
 	private int mPagesPerNode;
 	private int mPagesPerLeaf;
-
-
-	public TableParam()
-	{
-		this(4, 8);
-	}
 
 
 	public TableParam(int aPagesPerNode, int aPagesPerLeaf)

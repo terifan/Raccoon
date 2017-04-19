@@ -23,7 +23,7 @@ public class MemoryBlockDeviceNGTest
 
 		for (int k = 0; k < 5; k++)
 		{
-			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice))
+			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice, "", 512))
 			{
 				for (int j = 0; j < 50; j++)
 				{

@@ -114,7 +114,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	{
 		for (Entry<Long,byte[]> entry : mStorage.entrySet())
 		{
-			Log.out.println("Block Index " + entry.getKey() + ":");
+			Log.out.println("Block #" + entry.getKey() + ":");
 			Log.hexDump(entry.getValue());
 		}
 	}

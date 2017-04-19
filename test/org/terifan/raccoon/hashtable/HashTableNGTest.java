@@ -3,6 +3,8 @@ package org.terifan.raccoon.hashtable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import org.terifan.raccoon.CompressionParam;
+import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.TransactionCounter;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
@@ -357,7 +359,7 @@ public class HashTableNGTest
 
 	private HashTable newHashTable(byte[] aRoot, TransactionCounter aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
 	{
-		return new HashTable(new ManagedBlockDevice(aBlockDevice), aRoot, aTransactionId, true, null, null);
+		return new HashTable(new ManagedBlockDevice(aBlockDevice, "", 512), aRoot, aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT);
 	}
 
 

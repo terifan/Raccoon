@@ -32,16 +32,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private boolean mModified;
 	private boolean mWasCreated;
 	private boolean mDoubleCommit;
-	private BlockCache mBlockCache;
-
-
-	/**
-	 * Create/open a ManagedBlockDevice with an empty label.
-	 */
-	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice) throws IOException
-	{
-		this(aBlockDevice, "");
-	}
+	private LazyWriteCache mLazyWriteCache;
 
 
 	/**
@@ -51,7 +42,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	 *   a label describing contents of the block device. If a non-null value is provided then this value must match the value found inside
 	 *   the block device opened or an exception is thrown.
 	 */
-	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice, String aBlockDeviceLabel) throws IOException
+	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice, String aBlockDeviceLabel, int aLazyWriteCacheSize) throws IOException
 	{
 		if (aBlockDevice.getBlockSize() < 512)
 		{
@@ -64,7 +55,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mWasCreated = mBlockDevice.length() < RESERVED_BLOCKS;
 		mUncommitedAllocations = new HashSet<>();
 		mDoubleCommit = true;
-		mBlockCache = new BlockCache(mBlockDevice);
+		mLazyWriteCache = new LazyWriteCache(mBlockDevice, aLazyWriteCacheSize);
 
 		init();
 	}
@@ -163,6 +154,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			rollback();
 		}
 
+		mLazyWriteCache = null;
+
 		if (mBlockDevice != null)
 		{
 			mBlockDevice.close();
@@ -174,7 +167,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public void forceClose() throws IOException
 	{
-		mBlockCache.clear();
+		mLazyWriteCache = null;
 
 		mUncommitedAllocations.clear();
 
@@ -249,7 +242,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		mModified = true;
 
-		mBlockCache.free(aBlockIndex);
+		mLazyWriteCache.free(aBlockIndex);
 
 		int blockIndex = (int)aBlockIndex;
 
@@ -296,7 +289,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		mModified = true;
 
-		mBlockCache.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mLazyWriteCache.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 
 		Log.dec();
 	}
@@ -331,7 +324,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.v("read block %d +%d", aBlockIndex, aBufferLength/mBlockSize);
 		Log.inc();
 
-		mBlockCache.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mLazyWriteCache.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 
 		Log.dec();
 	}
@@ -342,7 +335,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		if (mModified)
 		{
-			mBlockCache.flush();
+			mLazyWriteCache.flush();
 
 			Log.i("committing managed block device");
 			Log.inc();
@@ -364,7 +357,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			mRangeMap = mPendingRangeMap.clone();
 			mWasCreated = false;
 			mModified = false;
-//			mSuperBlock.mExtraDataModified = false;
 
 			Log.dec();
 		}
@@ -386,7 +378,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			Log.i("rollbacking block device");
 			Log.inc();
 
-			mBlockCache.clear();
+			mLazyWriteCache.clear();
 
 			mUncommitedAllocations.clear();
 

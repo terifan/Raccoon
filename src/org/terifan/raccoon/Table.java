@@ -272,7 +272,7 @@ public final class Table<T>
 	}
 
 
-	private TableType getTableType()
+	private TableInstance getTableType()
 	{
 		return mDatabase.openTable(this, OpenOption.OPEN);
 	}
