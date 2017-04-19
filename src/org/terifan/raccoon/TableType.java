@@ -47,7 +47,7 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 			mTableMetadata = aTableMetadata;
 			mPointer = aPointer;
 
-			mTableImplementation = new HashTable(mDatabase.getBlockDevice(), mPointer, mDatabase.getTransactionId(), false, mDatabase.getParameter(CompressionParam.class, null));
+			mTableImplementation = new HashTable(mDatabase.getBlockDevice(), mPointer, mDatabase.getTransactionId(), false, mDatabase.getParameter(CompressionParam.class, null), mDatabase.getParameter(TableParam.class, null));
 
 			mBlockAccessor = new BlockAccessor(mDatabase.getBlockDevice());
 

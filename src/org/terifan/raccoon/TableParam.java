@@ -1,0 +1,40 @@
+package org.terifan.raccoon;
+
+
+public final class TableParam
+{
+	private int mPagesPerNode;
+	private int mPagesPerLeaf;
+
+
+	public TableParam()
+	{
+		this(4, 8);
+	}
+
+
+	public TableParam(int aPagesPerNode, int aPagesPerLeaf)
+	{
+		mPagesPerNode = aPagesPerNode;
+		mPagesPerLeaf = aPagesPerLeaf;
+	}
+
+
+	public int getPagesPerNode()
+	{
+		return mPagesPerNode;
+	}
+
+
+	public int getPagesPerLeaf()
+	{
+		return mPagesPerLeaf;
+	}
+
+
+	@Override
+	public String toString()
+	{
+		return "TableParam{" + "mPagesPerNode=" + mPagesPerNode + ", mPagesPerLeaf=" + mPagesPerLeaf + '}';
+	}
+}

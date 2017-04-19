@@ -8,6 +8,7 @@ import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.Stats;
+import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.TransactionCounter;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
@@ -21,6 +22,8 @@ import org.terifan.security.messagedigest.MurmurHash3;
 
 public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 {
+	private final static TableParam DEFAULT_TABLE_PARAM = new TableParam();
+
 	private BlockAccessor mBlockAccessor;
 	private BlockPointer mRootBlockPointer;
 	private LeafNode mRootMap;
@@ -29,7 +32,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	private int mLeafSize;
 	private int mPointersPerNode;
 	/*private*/ int mModCount;
-	private long mHashSeed;
+	private int mHashSeed;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mChanged;
@@ -40,15 +43,15 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	/**
 	 * Open an existing HashTable or create a new HashTable with default settings.
 	 */
-	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionCounter aTransactionId, boolean aStandAlone, CompressionParam aCompressionParam) throws IOException
+	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionCounter aTransactionId, boolean aStandAlone, CompressionParam aCompressionParam, TableParam aTableParam) throws IOException
 	{
 		mTransactionId = aTransactionId;
 
-		init(aBlockDevice, aTableHeader, aStandAlone, aCompressionParam);
+		init(aBlockDevice, aTableHeader, aStandAlone, aCompressionParam, aTableParam);
 	}
 
 
-	private void init(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, boolean aStandAlone, CompressionParam aCompressionParam) throws IOException
+	private void init(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, boolean aStandAlone, CompressionParam aCompressionParam, TableParam aTableParam) throws IOException
 	{
 		mForwardCommits = aStandAlone;
 		mBlockAccessor = new BlockAccessor(aBlockDevice);
@@ -63,14 +66,14 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 			Log.i("create hash table");
 			Log.inc();
 
-			mNodeSize = 4 * aBlockDevice.getBlockSize();
-			mLeafSize = 8 * aBlockDevice.getBlockSize();
-			mHashSeed = new SecureRandom().nextLong();
+			mNodeSize = (aTableParam == null ? DEFAULT_TABLE_PARAM : aTableParam).getPagesPerNode() * aBlockDevice.getBlockSize();
+			mLeafSize = (aTableParam == null ? DEFAULT_TABLE_PARAM : aTableParam).getPagesPerLeaf() * aBlockDevice.getBlockSize();
+			mHashSeed = new SecureRandom().nextInt();
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
-			mWasEmptyInstance = true;
 			mRootMap = new LeafNode(mLeafSize);
 			mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode);
+			mWasEmptyInstance = true;
 			mChanged = true;
 		}
 		else
@@ -93,7 +96,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(BlockPointer.SIZE + 8 + 4 + 4 + 1);
 		mRootBlockPointer.marshal(buffer);
-		buffer.writeInt64(mHashSeed);
+		buffer.writeInt32(mHashSeed);
 		buffer.writeVar32(mNodeSize);
 		buffer.writeVar32(mLeafSize);
 		mBlockAccessor.getCompressionParam().marshal(buffer);
@@ -107,12 +110,12 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		mRootBlockPointer = new BlockPointer();
 		CompressionParam compressionParam = new CompressionParam();
 
-		ByteArrayBuffer tmp = new ByteArrayBuffer(aTableHeader);
-		mRootBlockPointer.unmarshal(tmp);
-		mHashSeed = tmp.readInt64();
-		mNodeSize = tmp.readVar32();
-		mLeafSize = tmp.readVar32();
-		compressionParam.unmarshal(tmp);
+		ByteArrayBuffer buffer = new ByteArrayBuffer(aTableHeader);
+		mRootBlockPointer.unmarshal(buffer);
+		mHashSeed = buffer.readInt32();
+		mNodeSize = buffer.readVar32();
+		mLeafSize = buffer.readVar32();
+		compressionParam.unmarshal(buffer);
 
 		mBlockAccessor.setCompressionParam(compressionParam);
 	}
@@ -143,7 +146,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		}
 		else
 		{
-			return getValue(computeHash(aEntry.mKey), 0, aEntry, mRootNode);
+			return getValue(aEntry.mKey, 0, aEntry, mRootNode);
 		}
 	}
 
@@ -180,7 +183,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		if (mRootMap == null)
 		{
-			putValue(aEntry, computeHash(aEntry.mKey), 0, mRootNode);
+			putValue(aEntry, aEntry.mKey, 0, mRootNode);
 		}
 
 		Log.dec();
@@ -202,7 +205,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		}
 		else
 		{
-			modified = removeValue(computeHash(aEntry.mKey), 0, aEntry, mRootNode);
+			modified = removeValue(aEntry.mKey, 0, aEntry, mRootNode);
 		}
 
 		mChanged |= modified;
@@ -224,10 +227,8 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		{
 			return new NodeIterator(this, mRootMap);
 		}
-		else
-		{
-			return new ArrayList<LeafEntry>().iterator();
-		}
+
+		return new ArrayList<LeafEntry>().iterator();
 	}
 
 
@@ -401,18 +402,18 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	private boolean getValue(long aHash, int aLevel, LeafEntry aEntry, IndexNode aNode)
+	private boolean getValue(byte[] aKey, int aLevel, LeafEntry aEntry, IndexNode aNode)
 	{
 		Stats.getValue.incrementAndGet();
 		Log.i("get value");
 
-		int index = aNode.findPointer(computeIndex(aHash, aLevel));
+		int index = aNode.findPointer(computeIndex(aKey, aLevel));
 		BlockPointer blockPointer = aNode.getPointer(index);
 
 		switch (blockPointer.getType())
 		{
 			case NODE_INDEX:
-				return getValue(aHash, aLevel + 1, aEntry, readNode(blockPointer));
+				return getValue(aKey, aLevel + 1, aEntry, readNode(blockPointer));
 			case NODE_LEAF:
 				return readLeaf(blockPointer).get(aEntry);
 			case NODE_HOLE:
@@ -424,13 +425,13 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	private byte[] putValue(LeafEntry aEntry, long aHash, int aLevel, IndexNode aNode)
+	private byte[] putValue(LeafEntry aEntry, byte[] aKey, int aLevel, IndexNode aNode)
 	{
 		Stats.putValue.incrementAndGet();
 		Log.v("put value");
 		Log.inc();
 
-		int index = aNode.findPointer(computeIndex(aHash, aLevel));
+		int index = aNode.findPointer(computeIndex(aKey, aLevel));
 		BlockPointer blockPointer = aNode.getPointer(index);
 		byte[] oldValue;
 
@@ -438,12 +439,12 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		{
 			case NODE_INDEX:
 				IndexNode node = readNode(blockPointer);
-				oldValue = putValue(aEntry, aHash, aLevel + 1, node);
+				oldValue = putValue(aEntry, aKey, aLevel + 1, node);
 				freeBlock(blockPointer);
 				aNode.setPointer(index, writeBlock(node, blockPointer.getRange()));
 				break;
 			case NODE_LEAF:
-				oldValue = putValueLeaf(blockPointer, index, aEntry, aLevel, aNode, aHash);
+				oldValue = putValueLeaf(blockPointer, index, aEntry, aLevel, aNode, aKey);
 				break;
 			case NODE_HOLE:
 				oldValue = upgradeHoleToLeaf(aEntry, aNode, blockPointer, index);
@@ -459,7 +460,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, LeafEntry aEntry, int aLevel, IndexNode aNode, long aHash)
+	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, LeafEntry aEntry, int aLevel, IndexNode aNode, byte[] aKey)
 	{
 		Stats.putValueLeaf.incrementAndGet();
 
@@ -477,13 +478,13 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		}
 		else if (splitLeaf(map, aBlockPointer, aIndex, aLevel, aNode))
 		{
-			oldValue = putValue(aEntry, aHash, aLevel, aNode); // recursive put
+			oldValue = putValue(aEntry, aKey, aLevel, aNode); // recursive put
 		}
 		else
 		{
 			IndexNode node = splitLeaf(aBlockPointer, map, aLevel + 1);
 
-			oldValue = putValue(aEntry, aHash, aLevel + 1, node); // recursive put
+			oldValue = putValue(aEntry, aKey, aLevel + 1, node); // recursive put
 
 			aNode.setPointer(aIndex, writeBlock(node, aBlockPointer.getRange()));
 		}
@@ -586,7 +587,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	{
 		for (LeafEntry entry : aMap)
 		{
-			if (computeIndex(computeHash(entry.mKey), aLevel) < aHalfRange)
+			if (computeIndex(entry.mKey, aLevel) < aHalfRange)
 			{
 				aLowLeaf.put(entry);
 			}
@@ -609,18 +610,18 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	private boolean removeValue(long aHash, int aLevel, LeafEntry aEntry, IndexNode aNode)
+	private boolean removeValue(byte[] aKey, int aLevel, LeafEntry aEntry, IndexNode aNode)
 	{
 		Stats.removeValue.incrementAndGet();
 
-		int index = aNode.findPointer(computeIndex(aHash, aLevel));
+		int index = aNode.findPointer(computeIndex(aKey, aLevel));
 		BlockPointer blockPointer = aNode.getPointer(index);
 
 		switch (blockPointer.getType())
 		{
 			case NODE_INDEX:
 				IndexNode node = readNode(blockPointer);
-				if (removeValue(aHash, aLevel + 1, aEntry, node))
+				if (removeValue(aKey, aLevel + 1, aEntry, node))
 				{
 					freeBlock(blockPointer);
 					BlockPointer newBlockPointer = writeBlock(node, blockPointer.getRange());
@@ -673,15 +674,9 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	private long computeHash(byte[] aData)
+	private int computeIndex(byte[] aKey, int aLevel)
 	{
-		return MurmurHash3.hash_x64_64(aData, mHashSeed);
-	}
-
-
-	private int computeIndex(long aHash, int aLevel)
-	{
-		return (int)Long.rotateRight(aHash, 17 * aLevel) & (mPointersPerNode - 1);
+		return MurmurHash3.hash_x86_32(aKey, mHashSeed ^ aLevel) & (mPointersPerNode - 1);
 	}
 
 
