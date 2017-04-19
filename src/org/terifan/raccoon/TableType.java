@@ -331,7 +331,7 @@ public final class TableType<T> implements Iterable<T>, AutoCloseable
 			throw new DatabaseIOException(e);
 		}
 
-		byte[] newPointer = mTableImplementation.getTableHeader();
+		byte[] newPointer = mTableImplementation.marshalHeader();
 
 		boolean wasUpdated = !Arrays.equals(newPointer, mPointer);
 

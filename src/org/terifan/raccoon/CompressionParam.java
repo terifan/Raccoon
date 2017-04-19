@@ -1,6 +1,7 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockType;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
 public final class CompressionParam
@@ -18,6 +19,12 @@ public final class CompressionParam
 	private int mNode;
 	private int mLeaf;
 	private int mBlob;
+
+
+	public CompressionParam()
+	{
+		this(NONE, NONE, NONE);
+	}
 
 
 	public CompressionParam(int aNode, int aLeaf, int aBlob)
@@ -67,5 +74,21 @@ public final class CompressionParam
 			default:
 				return NONE;
 		}
+	}
+
+
+	public void marshal(ByteArrayBuffer aBuffer)
+	{
+		aBuffer.writeVar32(mLeaf);
+		aBuffer.writeVar32(mNode);
+		aBuffer.writeVar32(mBlob);
+	}
+
+
+	public void unmarshal(ByteArrayBuffer aBuffer)
+	{
+		mLeaf = aBuffer.readVar32();
+		mNode = aBuffer.readVar32();
+		mBlob = aBuffer.readVar32();
 	}
 }

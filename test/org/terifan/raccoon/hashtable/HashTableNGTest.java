@@ -36,7 +36,7 @@ public class HashTableNGTest
 			}
 
 			hashTable.commit();
-			root = hashTable.getTableHeader();
+			root = hashTable.marshalHeader();
 		}
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
@@ -127,7 +127,7 @@ public class HashTableNGTest
 
 			assertEquals(hashTable.size(), 2);
 
-			root = hashTable.getTableHeader();
+			root = hashTable.marshalHeader();
 		}
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
@@ -184,7 +184,7 @@ public class HashTableNGTest
 			}
 
 			hashTable.commit();
-			root = hashTable.getTableHeader();
+			root = hashTable.marshalHeader();
 		}
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
@@ -223,7 +223,7 @@ public class HashTableNGTest
 			}
 
 			hashTable.commit();
-			root = hashTable.getTableHeader();
+			root = hashTable.marshalHeader();
 		}
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
@@ -262,7 +262,7 @@ public class HashTableNGTest
 			}
 
 			hashTable.commit();
-			root = hashTable.getTableHeader();
+			root = hashTable.marshalHeader();
 		}
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
@@ -297,7 +297,7 @@ public class HashTableNGTest
 			}
 
 			hashTable.commit();
-			root = hashTable.getTableHeader();
+			root = hashTable.marshalHeader();
 		}
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))

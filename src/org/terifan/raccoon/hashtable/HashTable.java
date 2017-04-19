@@ -44,21 +44,14 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	{
 		mTransactionId = aTransactionId;
 
-		if (aTableHeader == null)
-		{
-			mNodeSize = 4 * aBlockDevice.getBlockSize();
-			mLeafSize = 8 * aBlockDevice.getBlockSize();
-			mHashSeed = new SecureRandom().nextLong();
-		}
-
 		init(aBlockDevice, aTableHeader, aStandAlone, aCompressionParam);
 	}
 
 
 	private void init(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, boolean aStandAlone, CompressionParam aCompressionParam) throws IOException
 	{
-		mBlockAccessor = new BlockAccessor(aBlockDevice);
 		mForwardCommits = aStandAlone;
+		mBlockAccessor = new BlockAccessor(aBlockDevice);
 
 		if (aCompressionParam != null)
 		{
@@ -69,6 +62,10 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		{
 			Log.i("create hash table");
 			Log.inc();
+
+			mNodeSize = 4 * aBlockDevice.getBlockSize();
+			mLeafSize = 8 * aBlockDevice.getBlockSize();
+			mHashSeed = new SecureRandom().nextLong();
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 			mWasEmptyInstance = true;
@@ -81,14 +78,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 			Log.i("open hash table");
 			Log.inc();
 
-			mRootBlockPointer = new BlockPointer();
-
-			ByteArrayBuffer tmp = new ByteArrayBuffer(aTableHeader);
-			mRootBlockPointer.unmarshal(tmp);
-			mHashSeed = tmp.readInt64();
-			mNodeSize = tmp.readVar32();
-			mLeafSize = tmp.readVar32();
-			mBlockAccessor.setCompressionParam(new CompressionParam(tmp.readVar32(), tmp.readVar32(), tmp.readVar32()));
+			unmarshalHeader(aTableHeader);
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 
@@ -99,18 +89,32 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	}
 
 
-	public byte[] getTableHeader()
+	public byte[] marshalHeader()
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(BlockPointer.SIZE + 8 + 4 + 4 + 1);
 		mRootBlockPointer.marshal(buffer);
 		buffer.writeInt64(mHashSeed);
 		buffer.writeVar32(mNodeSize);
 		buffer.writeVar32(mLeafSize);
-		buffer.writeVar32(mBlockAccessor.getCompressionParam().getLeaf());
-		buffer.writeVar32(mBlockAccessor.getCompressionParam().getNode());
-		buffer.writeVar32(mBlockAccessor.getCompressionParam().getBlob());
+		mBlockAccessor.getCompressionParam().marshal(buffer);
 
 		return buffer.trim().array();
+	}
+
+
+	private void unmarshalHeader(byte[] aTableHeader)
+	{
+		mRootBlockPointer = new BlockPointer();
+		CompressionParam compressionParam = new CompressionParam();
+
+		ByteArrayBuffer tmp = new ByteArrayBuffer(aTableHeader);
+		mRootBlockPointer.unmarshal(tmp);
+		mHashSeed = tmp.readInt64();
+		mNodeSize = tmp.readVar32();
+		mLeafSize = tmp.readVar32();
+		compressionParam.unmarshal(tmp);
+
+		mBlockAccessor.setCompressionParam(compressionParam);
 	}
 
 
