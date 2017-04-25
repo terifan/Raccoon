@@ -31,11 +31,6 @@ import org.terifan.security.messagedigest.MurmurHash3;
 
 public final class Database implements AutoCloseable
 {
-	private final static int RACCOON_DB_VERSION = 2;
-	private final static int EXTRA_DATA_CHECKSUM_SEED = 0xf49209b1;
-	private final static long RACCOON_DB_IDENTITY = 0x726163636f6f6e00L; // 'raccoon\0'
-	private final static BlockSizeParam DEFAULT_BLOCK_SIZE = new BlockSizeParam(4096);
-
     private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
     private final Lock mReadLock = mReadWriteLock.readLock();
     private final Lock mWriteLock = mReadWriteLock.writeLock();
@@ -99,7 +94,7 @@ public final class Database implements AutoCloseable
 
 			boolean newFile = !aFile.exists();
 
-			BlockSizeParam blockSizeParam = getParameter(BlockSizeParam.class, aParameters, DEFAULT_BLOCK_SIZE);
+			BlockSizeParam blockSizeParam = getParameter(BlockSizeParam.class, aParameters, new BlockSizeParam(Constants.DEFAULT_BLOCK_SIZE));
 
 			fileBlockDevice = new FileBlockDevice(aFile, blockSizeParam.getValue(), aOpenOptions == OpenOption.READ_ONLY);
 
@@ -276,7 +271,7 @@ public final class Database implements AutoCloseable
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(extraData);
 
-		if (MurmurHash3.hash_x86_32(buffer.array(), 4, buffer.capacity()-4, EXTRA_DATA_CHECKSUM_SEED) != buffer.readInt32())
+		if (MurmurHash3.hash_x86_32(buffer.array(), 4, buffer.capacity()-4, Constants.EXTRA_DATA_CHECKSUM_SEED) != buffer.readInt32())
 		{
 			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra checksum)");
 		}
@@ -284,13 +279,13 @@ public final class Database implements AutoCloseable
 		long identity = buffer.readInt64();
 		int version = buffer.readInt32();
 
-		if (identity != RACCOON_DB_IDENTITY)
+		if (identity != Constants.RACCOON_DB_IDENTITY)
 		{
 			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra identity)");
 		}
-		if (version != RACCOON_DB_VERSION)
+		if (version != Constants.RACCOON_FILE_FORMAT_VERSION)
 		{
-			throw new UnsupportedVersionException("Unsupported database version: provided: " + version + ", expected: " + RACCOON_DB_VERSION);
+			throw new UnsupportedVersionException("Unsupported database version: provided: " + version + ", expected: " + Constants.RACCOON_FILE_FORMAT_VERSION);
 		}
 
 		db.mTransactionId.set(buffer.readInt64());
@@ -504,8 +499,8 @@ public final class Database implements AutoCloseable
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(4 + 8 + 4 + 8 + BlockPointer.SIZE);
 		buffer.writeInt32(0); // leave space for checksum
-		buffer.writeInt64(RACCOON_DB_IDENTITY);
-		buffer.writeInt32(RACCOON_DB_VERSION);
+		buffer.writeInt64(Constants.RACCOON_DB_IDENTITY);
+		buffer.writeInt32(Constants.RACCOON_FILE_FORMAT_VERSION);
 		buffer.writeInt64(mTransactionId.get());
 		if (mSystemTableMetadata.getPointer() != null)
 		{
@@ -513,7 +508,7 @@ public final class Database implements AutoCloseable
 		}
 		buffer.trim();
 
-		buffer.position(0).writeInt32(MurmurHash3.hash_x86_32(buffer.array(), 4, buffer.capacity() - 4, EXTRA_DATA_CHECKSUM_SEED));
+		buffer.position(0).writeInt32(MurmurHash3.hash_x86_32(buffer.array(), 4, buffer.capacity() - 4, Constants.EXTRA_DATA_CHECKSUM_SEED));
 
 		mBlockDevice.setExtraData(buffer.array());
 

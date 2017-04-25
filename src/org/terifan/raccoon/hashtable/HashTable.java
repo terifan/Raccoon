@@ -7,7 +7,7 @@ import java.util.Iterator;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.ScanResult;
-import org.terifan.raccoon.Stats;
+import org.terifan.raccoon.PerformanceCounters;
 import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.TransactionCounter;
 import org.terifan.raccoon.storage.BlockAccessor;
@@ -390,7 +390,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 	private boolean getValue(byte[] aKey, int aLevel, LeafEntry aEntry, IndexNode aNode)
 	{
-		Stats.getValue.incrementAndGet();
+		PerformanceCounters.getValue.incrementAndGet();
 		Log.i("get value");
 
 		int index = aNode.findPointer(computeIndex(aKey, aLevel));
@@ -413,7 +413,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 	private byte[] putValue(LeafEntry aEntry, byte[] aKey, int aLevel, IndexNode aNode)
 	{
-		Stats.putValue.incrementAndGet();
+		PerformanceCounters.putValue.incrementAndGet();
 		Log.v("put value");
 		Log.inc();
 
@@ -448,7 +448,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, LeafEntry aEntry, int aLevel, IndexNode aNode, byte[] aKey)
 	{
-		Stats.putValueLeaf.incrementAndGet();
+		PerformanceCounters.putValueLeaf.incrementAndGet();
 
 		LeafNode map = readLeaf(aBlockPointer);
 
@@ -481,7 +481,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 	private byte[] upgradeHoleToLeaf(LeafEntry aEntry, IndexNode aNode, BlockPointer aBlockPointer, int aIndex)
 	{
-		Stats.upgradeHoleToLeaf.incrementAndGet();
+		PerformanceCounters.upgradeHoleToLeaf.incrementAndGet();
 		Log.v("upgrade hole to leaf");
 		Log.inc();
 
@@ -509,7 +509,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		Log.v("split leaf");
 		Log.inc();
 
-		Stats.splitLeaf.incrementAndGet();
+		PerformanceCounters.splitLeaf.incrementAndGet();
 
 		freeBlock(aBlockPointer);
 
@@ -543,7 +543,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		assert aBlockPointer.getRange() >= 2;
 
-		Stats.splitLeaf.incrementAndGet();
+		PerformanceCounters.splitLeaf.incrementAndGet();
 		Log.inc();
 		Log.v("split leaf");
 		Log.inc();
@@ -598,7 +598,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 	private boolean removeValue(byte[] aKey, int aLevel, LeafEntry aEntry, IndexNode aNode)
 	{
-		Stats.removeValue.incrementAndGet();
+		PerformanceCounters.removeValue.incrementAndGet();
 
 		int index = aNode.findPointer(computeIndex(aKey, aLevel));
 		BlockPointer blockPointer = aNode.getPointer(index);

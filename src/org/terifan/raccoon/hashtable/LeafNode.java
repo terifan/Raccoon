@@ -4,7 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import org.terifan.raccoon.Stats;
+import org.terifan.raccoon.PerformanceCounters;
 import org.terifan.raccoon.storage.BlockType;
 
 
@@ -77,7 +77,7 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 		mFreeSpaceOffset = HEADER_SIZE;
 		mPointerListOffset = mCapacity;
 
-		Stats.leafNodeCreation.incrementAndGet();
+		PerformanceCounters.leafNodeCreation.incrementAndGet();
 	}
 
 
@@ -93,7 +93,7 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 	{
 		this(aBuffer, 0, aBuffer.length);
 
-		Stats.leafNodeCreation.incrementAndGet();
+		PerformanceCounters.leafNodeCreation.incrementAndGet();
 	}
 
 
@@ -135,7 +135,7 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 			throw new IllegalArgumentException("Entry count exceeds maximum possible entries: " + mEntryCount + ", allowed: " + limit);
 		}
 
-		Stats.leafNodeCreation.incrementAndGet();
+		PerformanceCounters.leafNodeCreation.incrementAndGet();
 
 		assert integrityCheck() == null : integrityCheck();
 	}

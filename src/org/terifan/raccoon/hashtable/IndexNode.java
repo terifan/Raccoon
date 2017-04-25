@@ -1,6 +1,6 @@
 package org.terifan.raccoon.hashtable;
 
-import org.terifan.raccoon.Stats;
+import org.terifan.raccoon.PerformanceCounters;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.storage.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -19,7 +19,7 @@ public final class IndexNode implements Node
 		mPointerCount = aBuffer.length / BlockPointer.SIZE;
 		mBuffer = aBuffer;
 
-		Stats.indexNodeCreation.incrementAndGet();
+		PerformanceCounters.indexNodeCreation.incrementAndGet();
 	}
 
 

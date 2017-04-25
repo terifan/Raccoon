@@ -4,7 +4,7 @@ import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicLong;
 
 
-public class Stats 
+public class PerformanceCounters
 {
 	public final static AtomicLong blockRead = new AtomicLong(0);
 	public final static AtomicLong blockWrite = new AtomicLong(0);
@@ -22,11 +22,25 @@ public class Stats
 	public final static AtomicLong leafNodeCreation = new AtomicLong(0);
 
 	
+	public final static int LAZY_WRITE_CACHE_READ = 0;
+	public final static int LAZY_WRITE_CACHE_HIT = 1;
+	public final static int LAZY_WRITE_CACHE_WRITE = 2;
+	public final static int LAZY_WRITE_CACHE_FLUSH = 3;
+	
+	private static long[] mCounters = new long[100];
+	
+	
+	public static synchronized boolean increment(int aField)
+	{
+		return true;
+	}
+	
+	
 	public static String print() throws IllegalAccessException
 	{
 		StringBuilder sb = new StringBuilder();
 		
-		for (Field f : Stats.class.getDeclaredFields())
+		for (Field f : PerformanceCounters.class.getDeclaredFields())
 		{
 			f.setAccessible(true);
 			

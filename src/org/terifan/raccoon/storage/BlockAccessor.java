@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.zip.Deflater;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
-import org.terifan.raccoon.Stats;
+import org.terifan.raccoon.PerformanceCounters;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.security.random.ISAAC;
 import org.terifan.raccoon.util.Log;
@@ -65,7 +65,7 @@ public class BlockAccessor
 
 			Log.dec();
 
-			Stats.blockFree.incrementAndGet();
+			PerformanceCounters.blockFree.incrementAndGet();
 		}
 		catch (Exception | Error e)
 		{
@@ -115,7 +115,7 @@ public class BlockAccessor
 
 			Log.dec();
 
-			Stats.blockRead.incrementAndGet();
+			PerformanceCounters.blockRead.incrementAndGet();
 
 			return buffer;
 		}
@@ -180,7 +180,7 @@ public class BlockAccessor
 			Log.inc();
 
 			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getBlockKey());
-			Stats.blockWrite.incrementAndGet();
+			PerformanceCounters.blockWrite.incrementAndGet();
 
 			Log.dec();
 
@@ -189,7 +189,7 @@ public class BlockAccessor
 				mCache.put(blockPointer.getOffset(), copy);
 			}
 
-			Stats.blockAlloc.incrementAndGet();
+			PerformanceCounters.blockAlloc.incrementAndGet();
 
 			return blockPointer;
 		}

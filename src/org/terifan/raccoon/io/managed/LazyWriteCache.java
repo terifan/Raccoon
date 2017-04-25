@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
+import org.terifan.raccoon.Constants;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
+import static org.terifan.raccoon.PerformanceCounters.*;
 
 
 class LazyWriteCache
@@ -12,15 +14,15 @@ class LazyWriteCache
 	private final IPhysicalBlockDevice mBlockDevice;
 	private final HashMap<Long, CacheEntry> mCache;
 	private final LinkedList<Long> mCacheOrder;
-	private final int mCacheSize;
+	private final int mCapacity;
 
 
-	public LazyWriteCache(IPhysicalBlockDevice aBlockDevice, int aCacheSize)
+	public LazyWriteCache(IPhysicalBlockDevice aBlockDevice, int aCapacity)
 	{
 		mBlockDevice = aBlockDevice;
 		mCache = new HashMap<>();
 		mCacheOrder = new LinkedList<>();
-		mCacheSize = aCacheSize;
+		mCapacity = aCapacity;
 	}
 
 
@@ -37,12 +39,22 @@ class LazyWriteCache
 
 		mCache.put(aBlockIndex, entry);
 
-		mCacheOrder.remove(aBlockIndex);
-		mCacheOrder.addFirst(aBlockIndex);
-
-		if (mCache.size() > mCacheSize)
+		if (Constants.REORDER_LAZY_CACHE_ON_WRITE)
 		{
-			reduce();
+			mCacheOrder.remove(aBlockIndex);
+			mCacheOrder.addFirst(aBlockIndex);
+		}
+
+		if (mCache.size() > mCapacity)
+		{
+			assert increment(LAZY_WRITE_CACHE_FLUSH);
+
+			for (int i = 0; i < mCapacity / 2; i++)
+			{
+				entry = mCache.remove(mCacheOrder.removeLast());
+
+				mBlockDevice.writeBlock(entry.mBlockIndex, entry.mBuffer, 0, entry.mBuffer.length, entry.mBlockKey);
+			}
 		}
 	}
 
@@ -58,11 +70,21 @@ class LazyWriteCache
 
 			System.arraycopy(entry.mBuffer, 0, aBuffer, aBufferOffset, aBufferLength);
 
-			mCacheOrder.remove(aBlockIndex);
-			mCacheOrder.addFirst(aBlockIndex);
+			assert increment(LAZY_WRITE_CACHE_HIT);
+
+			if (Constants.REORDER_LAZY_CACHE_ON_READ)
+			{
+				synchronized (this)
+				{
+					mCacheOrder.remove(aBlockIndex);
+					mCacheOrder.addFirst(aBlockIndex);
+				}
+			}
 		}
 		else
 		{
+			assert increment(LAZY_WRITE_CACHE_READ);
+
 			mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 		}
 	}
@@ -75,17 +97,6 @@ class LazyWriteCache
 	}
 
 
-	private void reduce() throws IOException
-	{
-		for (int i = 0; i < mCacheSize / 2; i++)
-		{
-			CacheEntry entry = mCache.remove(mCacheOrder.removeLast());
-
-			mBlockDevice.writeBlock(entry.mBlockIndex, entry.mBuffer, 0, entry.mBuffer.length, entry.mBlockKey);
-		}
-	}
-
-
 	public void flush() throws IOException
 	{
 		for (CacheEntry entry : mCache.values())
@@ -93,8 +104,7 @@ class LazyWriteCache
 			mBlockDevice.writeBlock(entry.mBlockIndex, entry.mBuffer, 0, entry.mBuffer.length, entry.mBlockKey);
 		}
 
-		mCache.clear();
-		mCacheOrder.clear();
+		clear();
 	}
 
 
