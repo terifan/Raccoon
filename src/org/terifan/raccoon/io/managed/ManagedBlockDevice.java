@@ -21,12 +21,12 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private final static int RESERVED_BLOCKS = 2;
 
 	private final static int NULL_CODE = 65535;
-	
+
 	private IPhysicalBlockDevice mBlockDevice;
 	private RangeMap mRangeMap;
 	private RangeMap mPendingRangeMap;
 	private SuperBlock mSuperBlock;
-	private HashSet<Integer> mUncommitedAllocations;
+	private HashSet<Integer> mUncommittedAllocations;
 	private String mBlockDeviceLabel;
 	private int mBlockSize;
 	private boolean mModified;
@@ -53,7 +53,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mBlockDeviceLabel = aBlockDeviceLabel;
 		mBlockSize = aBlockDevice.getBlockSize();
 		mWasCreated = mBlockDevice.length() < RESERVED_BLOCKS;
-		mUncommitedAllocations = new HashSet<>();
+		mUncommittedAllocations = new HashSet<>();
 		mDoubleCommit = true;
 		mLazyWriteCache = new LazyWriteCache(mBlockDevice, aLazyWriteCacheSize);
 
@@ -169,7 +169,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		mLazyWriteCache = null;
 
-		mUncommitedAllocations.clear();
+		mUncommittedAllocations.clear();
 
 		if (mBlockDevice != null)
 		{
@@ -215,7 +215,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		for (int i = 0; i < aBlockCount; i++)
 		{
-			mUncommitedAllocations.add(blockIndex + i);
+			mUncommittedAllocations.add(blockIndex + i);
 		}
 
 		mPendingRangeMap.remove(blockIndex, aBlockCount);
@@ -248,7 +248,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		for (int i = 0; i < aBlockCount; i++)
 		{
-			if (mUncommitedAllocations.remove(blockIndex + i))
+			if (mUncommittedAllocations.remove(blockIndex + i))
 			{
 				mRangeMap.add(blockIndex + i, 1);
 			}
@@ -353,7 +353,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			mBlockDevice.commit(aMetadata);
 
-			mUncommitedAllocations.clear();
+			mUncommittedAllocations.clear();
 			mRangeMap = mPendingRangeMap.clone();
 			mWasCreated = false;
 			mModified = false;
@@ -380,7 +380,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			mLazyWriteCache.clear();
 
-			mUncommitedAllocations.clear();
+			mUncommittedAllocations.clear();
 
 			mPendingRangeMap = mRangeMap.clone();
 
@@ -685,7 +685,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		mBlockDevice.setLength(0);
 
-		mUncommitedAllocations.clear();
+		mUncommittedAllocations.clear();
 
 		createBlockDevice();
 	}

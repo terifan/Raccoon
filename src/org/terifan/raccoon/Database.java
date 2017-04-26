@@ -1206,7 +1206,7 @@ public final class Database implements AutoCloseable
 			return;
 		}
 
-		reportStatus(LogLevel.FATAL, "an error was detected, forcefully closing block device to prevent damage, uncommited changes were lost.", aException);
+		reportStatus(LogLevel.FATAL, "an error was detected, forcefully closing block device to prevent damage, uncommitted changes were lost.", aException);
 
 		try
 		{
