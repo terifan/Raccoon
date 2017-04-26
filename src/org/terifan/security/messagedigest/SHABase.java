@@ -12,7 +12,7 @@ import java.security.DigestException;
  *
  * Copyright (c) 2000-2006 The Legion Of The Bouncy Castle (http://www.bouncycastle.org)
  */
-public abstract class SHABase extends MessageDigest
+abstract class SHABase extends MessageDigest
 {
 	private byte[] xBuf;
 	private int xBufOff;

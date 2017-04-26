@@ -6,6 +6,7 @@ import org.terifan.security.messagedigest.Skein512;
 import org.terifan.security.messagedigest.Whirlpool;
 import org.terifan.security.cryptography.PBKDF2;
 import org.terifan.security.messagedigest.HMAC;
+import org.terifan.security.messagedigest.SHA3;
 
 
 public final class AccessCredentials
@@ -122,6 +123,8 @@ public final class AccessCredentials
 	{
 		switch (mKeyGeneratorFunction)
 		{
+			case SHA3:
+				return new SHA3();
 			case SHA512:
 				return new SHA512();
 			case Skein512:
