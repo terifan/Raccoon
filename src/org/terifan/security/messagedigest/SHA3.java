@@ -14,7 +14,7 @@ public final class SHA3 extends MessageDigest implements Cloneable
 
 	public SHA3(int bitLength)
 	{
-		super("SHA3");
+		super("sha3-" + bitLength);
 
 		switch (bitLength)
 		{
@@ -32,7 +32,7 @@ public final class SHA3 extends MessageDigest implements Cloneable
 
 	public SHA3(SHA3 source)
 	{
-		super("SHA3");
+		super("sha3-" + source.fixedOutputLength);
 
 		System.arraycopy(source.state, 0, this.state, 0, source.state.length);
 		System.arraycopy(source.dataQueue, 0, this.dataQueue, 0, source.dataQueue.length);
@@ -43,12 +43,6 @@ public final class SHA3 extends MessageDigest implements Cloneable
 		this.bitsAvailableForSqueezing = source.bitsAvailableForSqueezing;
 		this.chunk = source.chunk.clone();
 		this.oneByte = source.oneByte.clone();
-	}
-
-
-	public String getAlgorithmName()
-	{
-		return "SHA3-" + fixedOutputLength;
 	}
 
 
@@ -138,14 +132,14 @@ public final class SHA3 extends MessageDigest implements Cloneable
 	}
 
 
-	public int getDigestSize()
+	private int getDigestSize()
 	{
 		return fixedOutputLength / 8;
 	}
 
 
 	@Override
-	public void engineUpdate(byte in)
+	protected void engineUpdate(byte in)
 	{
 		oneByte[0] = in;
 
@@ -154,14 +148,14 @@ public final class SHA3 extends MessageDigest implements Cloneable
 
 
 	@Override
-	public void engineUpdate(byte[] in, int inOff, int len)
+	protected void engineUpdate(byte[] in, int inOff, int len)
 	{
 		absorb(in, inOff, len * 8L);
 	}
 
 
 	@Override
-	public void engineReset()
+	protected void engineReset()
 	{
 		init(fixedOutputLength);
 	}
@@ -172,35 +166,16 @@ public final class SHA3 extends MessageDigest implements Cloneable
 	{
 		byte[] out = new byte[getDigestSize()];
 
-		doFinal(out, 0);
-
-		return out;
-	}
-
-
-	public int doFinal(byte[] out, int outOff)
-	{
 		absorb(new byte[]
 		{
 			0x02
 		}, 0, 2);
 
-		squeeze(out, outOff, fixedOutputLength);
+		squeeze(out, 0, fixedOutputLength);
 
 		reset();
 
-		return getDigestSize();
-	}
-
-
-	/**
-	 * Return the size of block that the compression function is applied to in bytes.
-	 *
-	 * @return internal byte length of a block.
-	 */
-	public int getByteLength()
-	{
-		return rate / 8;
+		return out;
 	}
 
 
