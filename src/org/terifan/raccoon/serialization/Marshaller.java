@@ -42,7 +42,7 @@ public class Marshaller
 	{
 		try
 		{
-			Log.v("marshal entity fields %s", aCategory);
+			Log.d("marshal entity fields %s", aCategory);
 			Log.inc();
 
 			ArrayList<Object> values = new ArrayList<>();
@@ -93,7 +93,7 @@ public class Marshaller
 	{
 		try
 		{
-			Log.v("unmarshal entity fields");
+			Log.d("unmarshal entity fields");
 			Log.inc();
 
 			ArrayList<FieldDescriptor> fields = new ArrayList<>();
@@ -138,7 +138,7 @@ public class Marshaller
 	{
 		try
 		{
-			Log.v("unmarshal entity fields");
+			Log.d("unmarshal entity fields");
 			Log.inc();
 
 			ArrayList<FieldDescriptor> readFields = new ArrayList<>();

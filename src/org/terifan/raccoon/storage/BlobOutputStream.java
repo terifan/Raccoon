@@ -59,7 +59,7 @@ public class BlobOutputStream extends OutputStream
 			return;
 		}
 
-		Log.v("closing blob");
+		Log.d("closing blob");
 		Log.inc();
 
 		if (mBuffer.position() > 0)

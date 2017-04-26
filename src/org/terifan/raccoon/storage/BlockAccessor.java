@@ -53,7 +53,7 @@ public class BlockAccessor
 	{
 		try
 		{
-			Log.v("free block %s", aBlockPointer);
+			Log.d("free block %s", aBlockPointer);
 			Log.inc();
 
 			mBlockDevice.freeBlock(aBlockPointer.getOffset(), roundUp(aBlockPointer.getPhysicalSize()) / mBlockDevice.getBlockSize());
@@ -78,7 +78,7 @@ public class BlockAccessor
 	{
 		try
 		{
-			Log.v("read block %s", aBlockPointer);
+			Log.d("read block %s", aBlockPointer);
 			Log.inc();
 
 			if (mCache != null)
@@ -176,7 +176,7 @@ public class BlockAccessor
 			blockPointer.setType(aType);
 			blockPointer.setRange(aRange);
 
-			Log.v("write block %s", blockPointer);
+			Log.d("write block %s", blockPointer);
 			Log.inc();
 
 			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getBlockKey());

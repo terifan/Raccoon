@@ -31,7 +31,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		Log.v("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
+		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
 		while (aBufferLength > 0)
 		{
@@ -47,7 +47,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		Log.v("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
+		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
 		while (aBufferLength > 0)
 		{

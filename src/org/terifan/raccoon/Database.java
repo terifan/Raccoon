@@ -41,14 +41,14 @@ public final class Database implements AutoCloseable
 	private final ConcurrentHashMap<Table,TableInstance> mOpenTables;
 	private final TableMetadataProvider mTableMetadatas;
 	private final TransactionCounter mTransactionId;
-	private final ArrayList<ErrorReportListener> mErrorReportListeners;
+	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 	private TableInstance mSystemTable;
 	private boolean mModified;
 	private Object[] mProperties;
 	private Table mSystemTableMetadata;
 	private boolean mCloseDeviceOnCloseDatabase;
 	private Thread mShutdownHook;
-	private boolean mIsOpeningTable;
+	private boolean mReadOnly;
 
 
 	private Database()
@@ -58,7 +58,7 @@ public final class Database implements AutoCloseable
 		mFactories = new HashMap<>();
 		mTransactionId = new TransactionCounter(0);
 		mInitializers = new HashMap<>();
-		mErrorReportListeners = new ArrayList<>();
+		mDatabaseStatusListener = new ArrayList<>();
 	}
 
 
@@ -98,7 +98,7 @@ public final class Database implements AutoCloseable
 
 			fileBlockDevice = new FileBlockDevice(aFile, blockSizeParam.getValue(), aOpenOptions == OpenOption.READ_ONLY);
 
-			return init(fileBlockDevice, newFile, true, aParameters);
+			return init(fileBlockDevice, newFile, true, aParameters, aOpenOptions);
 		}
 		catch (Throwable e)
 		{
@@ -129,7 +129,7 @@ public final class Database implements AutoCloseable
 
 		boolean create = aBlockDevice.length() == 0 || aOpenOptions == OpenOption.CREATE_NEW;
 
-		return init(aBlockDevice, create, false, aParameters);
+		return init(aBlockDevice, create, false, aParameters, aOpenOptions);
 	}
 
 
@@ -144,11 +144,11 @@ public final class Database implements AutoCloseable
 
 		boolean create = aBlockDevice.length() == 0 || aOpenOptions == OpenOption.CREATE_NEW;
 
-		return init(aBlockDevice, create, false, aParameters);
+		return init(aBlockDevice, create, false, aParameters, aOpenOptions);
 	}
 
 
-	private static Database init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, Object[] aParameters) throws IOException
+	private static Database init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, Object[] aParameters, OpenOption aOpenOptions) throws IOException
 	{
 		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aParameters, null);
 
@@ -193,7 +193,7 @@ public final class Database implements AutoCloseable
 		}
 		else
 		{
-			db = open(device, aParameters);
+			db = open(device, aParameters, aOpenOptions);
 		}
 
 		db.mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
@@ -255,7 +255,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private static Database open(IManagedBlockDevice aBlockDevice, Object[] aParameters) throws IOException, UnsupportedVersionException
+	private static Database open(IManagedBlockDevice aBlockDevice, Object[] aParameters, OpenOption aOpenOptions) throws IOException, UnsupportedVersionException
 	{
 		Database db = new Database();
 
@@ -294,6 +294,7 @@ public final class Database implements AutoCloseable
 		db.mBlockDevice = aBlockDevice;
 		db.mSystemTableMetadata = new Table(db, Table.class, null);
 		db.mSystemTable = new TableInstance(db, db.mSystemTableMetadata, buffer.crop().array());
+		db.mReadOnly = aOpenOptions == OpenOption.READ_ONLY;
 
 		Log.dec();
 
@@ -407,7 +408,7 @@ public final class Database implements AutoCloseable
 	{
 		checkOpen();
 
-		mWriteLock.lock();
+		aquireWriteLock();
 
 		try
 		{
@@ -466,7 +467,7 @@ public final class Database implements AutoCloseable
 	{
 		checkOpen();
 
-		mWriteLock.lock();
+		aquireWriteLock();
 		try
 		{
 			Log.i("rollback");
@@ -522,15 +523,22 @@ public final class Database implements AutoCloseable
 		if (mBlockDevice == null)
 		{
 			Log.w("database already closed");
-
+			return;
+		}
+		if (mReadOnly)
+		{
+			if (mModified)
+			{
+				reportStatus(LogLevel.WARN, "readonly database modified, changes are not committed", null);
+			}
 			return;
 		}
 
-		mWriteLock.lock();
+		aquireWriteLock();
 
 		try
 		{
-			Log.v("begin closing database");
+			Log.d("begin closing database");
 			Log.inc();
 
 			if (!mModified)
@@ -596,7 +604,7 @@ public final class Database implements AutoCloseable
 	 */
 	public boolean save(Object aEntity)
 	{
-		mWriteLock.lock();
+		aquireWriteLock();
 		try
 		{
 			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.CREATE);
@@ -611,6 +619,17 @@ public final class Database implements AutoCloseable
 		{
 			mWriteLock.unlock();
 		}
+	}
+
+
+	private void aquireWriteLock()
+	{
+		if (mReadOnly)
+		{
+			throw new ReadOnlyDatabaseException();
+		}
+
+		mWriteLock.lock();
 	}
 
 
@@ -689,7 +708,7 @@ public final class Database implements AutoCloseable
 	 */
 	public boolean remove(Object aEntity)
 	{
-		mWriteLock.lock();
+		aquireWriteLock();
 		try
 		{
 			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.OPEN);
@@ -731,7 +750,7 @@ public final class Database implements AutoCloseable
 
 	private void clearImpl(Class aType, Object aEntity)
 	{
-		mWriteLock.lock();
+		aquireWriteLock();
 		try
 		{
 			TableInstance table = openTable(aType, new DiscriminatorType(aEntity), OpenOption.OPEN);
@@ -757,7 +776,7 @@ public final class Database implements AutoCloseable
 	 */
 	public BlobOutputStream saveBlob(Object aEntity)
 	{
-		mWriteLock.lock();
+		aquireWriteLock();
 		try
 		{
 			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.CREATE);
@@ -780,7 +799,7 @@ public final class Database implements AutoCloseable
 	 */
 	public boolean save(Object aKeyEntity, InputStream aInputStream)
 	{
-		mWriteLock.lock();
+		aquireWriteLock();
 		try
 		{
 			TableInstance table = openTable(aKeyEntity.getClass(), new DiscriminatorType(aKeyEntity), OpenOption.CREATE);
@@ -988,7 +1007,7 @@ public final class Database implements AutoCloseable
 
 	public String integrityCheck()
 	{
-		mWriteLock.lock();
+		aquireWriteLock();
 		try
 		{
 			for (TableInstance table : mOpenTables.values())
@@ -1187,7 +1206,7 @@ public final class Database implements AutoCloseable
 			return;
 		}
 
-		fireErrorReport("RACCOON FATAL ERROR: an error was detected, forcefully closing block device to prevent damage, uncommited changes were lost.", aException);
+		reportStatus(LogLevel.FATAL, "an error was detected, forcefully closing block device to prevent damage, uncommited changes were lost.", aException);
 
 		try
 		{
@@ -1219,22 +1238,20 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private void fireErrorReport(String aMessage, Throwable aThrowable)
+	private void reportStatus(LogLevel aLevel, String aMessage, Throwable aThrowable)
 	{
-		for (ErrorReportListener listener : mErrorReportListeners)
+		System.err.printf("%-6s%s%n", aLevel, aMessage);
+
+		for (DatabaseStatusListener listener : mDatabaseStatusListener)
 		{
-			listener.receiveErrorReport(aMessage, aThrowable);
+			listener.statusChanged(aLevel, aMessage, aThrowable);
 		}
-
-		System.err.println(aMessage);
-
-//		aThrowable.printStackTrace(System.err);
 	}
 
 
-	public void addErrorReportListener(ErrorReportListener aErrorReportListener)
+	public void addStatusListener(DatabaseStatusListener aErrorReportListener)
 	{
-		mErrorReportListeners.add(aErrorReportListener);
+		mDatabaseStatusListener.add(aErrorReportListener);
 	}
 
 

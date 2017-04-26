@@ -93,7 +93,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			throw new IOException("Illegal offset: " + aBlockIndex);
 		}
 
-		Log.v("write block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
+		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
 		Log.inc();
 
 		byte[] workBuffer = aBuffer.clone();
@@ -114,7 +114,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			throw new IOException("Illegal offset: " + aBlockIndex);
 		}
 
-		Log.v("read block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
+		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
 		Log.inc();
 
 		mBlockDevice.readBlock(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L); // block key is used by this blockdevice and not passed to lower levels

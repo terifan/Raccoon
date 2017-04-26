@@ -175,7 +175,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 		{
 			BlobOutputStream.OnCloseListener onCloseListener = (aBlobOutputStream, aHeader) ->
 			{
-				Log.v("write blob entry");
+				Log.d("write blob entry");
 				
 				byte[] key = getKeys(aEntityKey);
 				

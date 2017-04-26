@@ -333,7 +333,7 @@ public class DatabaseNGTest
 		{
 			_Number1K1D d = new _Number1K1D();
 			d._odd = true;
-			
+
 			for (_Number1K1D item : database.list(_Number1K1D.class, new DiscriminatorType<>(d)))
 			{
 				assertTrue(item._odd);
@@ -684,20 +684,13 @@ public class DatabaseNGTest
 
 		try (Database db = Database.open(file, OpenOption.CREATE_NEW, ac))
 		{
-			try (Database db2 = Database.open(file, OpenOption.OPEN, ac))
+			try (Database unused = Database.open(file, OpenOption.OPEN, ac))
 			{
 				fail("unreachable");
 			}
 
 			db.save(new _Fruit1K("banana", 152));
 			db.commit();
-		}
-
-		try (Database db = Database.open(file, OpenOption.READ_ONLY, ac))
-		{
-			_Fruit1K item = new _Fruit1K("banana");
-			assertTrue(db.tryGet(item));
-			assertEquals(item.calories, 152);
 		}
 	}
 
@@ -1071,7 +1064,7 @@ public class DatabaseNGTest
 			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
 			database.commit();
 		}
-		
+
 		byte[] buffer = new byte[512];
 		device.readBlock(20, buffer, 0, buffer.length, 0L);
 		buffer[0] ^= 1;
@@ -1079,8 +1072,6 @@ public class DatabaseNGTest
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			database.addErrorReportListener((m,e)->{}); // avoid message printed to console
-
 			assertEquals(new byte[1000_000], Streams.readAll(database.read(new _BlobKey1K("good"))));
 		}
 	}
@@ -1208,6 +1199,25 @@ public class DatabaseNGTest
 	}
 
 
+	@Test(expectedExceptions = ReadOnlyDatabaseException.class)
+	public void testCommitToReadOnly() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database db = Database.open(device, OpenOption.CREATE))
+		{
+			db.save(new _Fruit1K("apple"));
+			db.commit();
+		}
+
+		try (Database db = Database.open(device, OpenOption.READ_ONLY))
+		{
+			db.save(new _Fruit1K("banana"));
+			db.commit();
+		}
+	}
+
+
 	@Test(expectedExceptions = FileNotFoundException.class)
 	public void testWriteReadOnly() throws Exception
 	{
@@ -1260,8 +1270,8 @@ public class DatabaseNGTest
 		{
 		}
 	}
-	
-	
+
+
 	@Test
 	public void testScan() throws IOException
 	{

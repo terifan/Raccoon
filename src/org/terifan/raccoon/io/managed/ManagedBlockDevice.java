@@ -209,7 +209,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			return -1;
 		}
 
-		Log.v("alloc block %d +%d", blockIndex, aBlockCount);
+		Log.d("alloc block %d +%d", blockIndex, aBlockCount);
 
 		mModified = true;
 
@@ -238,7 +238,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	private void freeBlockInternal(long aBlockIndex, int aBlockCount) throws IOException
 	{
-		Log.v("free block %d +%d", aBlockIndex, aBlockCount);
+		Log.d("free block %d +%d", aBlockIndex, aBlockCount);
 
 		mModified = true;
 
@@ -284,7 +284,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
 		}
 
-		Log.v("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
+		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 		Log.inc();
 
 		mModified = true;
@@ -321,7 +321,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
 		}
 
-		Log.v("read block %d +%d", aBlockIndex, aBufferLength/mBlockSize);
+		Log.d("read block %d +%d", aBlockIndex, aBufferLength/mBlockSize);
 		Log.inc();
 
 		mLazyWriteCache.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
@@ -395,7 +395,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	private void readSuperBlock() throws IOException
 	{
-		Log.v("read super block");
+		Log.d("read super block");
 		Log.inc();
 
 		SuperBlock superBlockOne = new SuperBlock();
@@ -424,13 +424,13 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		{
 			mSuperBlock = superBlockOne;
 
-			Log.v("using super block 0");
+			Log.d("using super block 0");
 		}
 		else if (superBlockTwo.mWriteCounter == superBlockOne.mWriteCounter + 1)
 		{
 			mSuperBlock = superBlockTwo;
 
-			Log.v("using super block 1");
+			Log.d("using super block 1");
 		}
 		else
 		{
@@ -471,7 +471,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	private void readSpaceMap() throws IOException
 	{
-		Log.v("read space map %d +%d (bytes used %d)", mSuperBlock.mSpaceMapBlockIndex, mSuperBlock.mSpaceMapBlockCount, mSuperBlock.mSpaceMapLength);
+		Log.d("read space map %d +%d (bytes used %d)", mSuperBlock.mSpaceMapBlockIndex, mSuperBlock.mSpaceMapBlockCount, mSuperBlock.mSpaceMapLength);
 		Log.inc();
 
 		mRangeMap = new RangeMap();
@@ -505,7 +505,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	private void writeSpaceMap() throws IOException
 	{
-		Log.v("write space map");
+		Log.d("write space map");
 		Log.inc();
 
 		if (mSuperBlock.mSpaceMapBlockCount > 0)

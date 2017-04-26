@@ -32,7 +32,7 @@ public class EntityDescriptor implements Externalizable
 
 	public EntityDescriptor(Class aType, FieldTypeCategorizer aCategorizer)
 	{
-		Log.v("create type declarations for %s", aType);
+		Log.d("create type declarations for %s", aType);
 		Log.inc();
 
 		mName = aType.getName();
@@ -157,7 +157,7 @@ public class EntityDescriptor implements Externalizable
 
 			fieldDescriptors.add(fieldDescriptor);
 
-			Log.v("type found: %s", fieldDescriptor);
+			Log.d("type found: %s", fieldDescriptor);
 		}
 
 		return fieldDescriptors.toArray(new FieldDescriptor[fieldDescriptors.size()]);

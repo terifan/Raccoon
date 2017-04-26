@@ -1,15 +1,14 @@
 package org.terifan.raccoon.util;
 
 import java.io.PrintStream;
+import org.terifan.raccoon.LogLevel;
 
 
 public class Log
 {
-	private final static String[] LEVELS = {"SEVERE","ERROR","WARN","INFO","VERBOSE","DEBUG"};
-
 	public static PrintStream out = System.out;
 
-	private static int mLevel = 1;
+	private static LogLevel mLevel = LogLevel.ERROR;
 	private static int mIndent;
 
 
@@ -27,43 +26,37 @@ public class Log
 
 	public static void s(String aMessage, Object... aParams)
 	{
-		logImpl(0, aMessage, aParams);
+		logImpl(LogLevel.FATAL, aMessage, aParams);
 	}
 
 
 	public static void e(String aMessage, Object... aParams)
 	{
-		logImpl(1, aMessage, aParams);
+		logImpl(LogLevel.ERROR, aMessage, aParams);
 	}
 
 
 	public static void w(String aMessage, Object... aParams)
 	{
-		logImpl(2, aMessage, aParams);
+		logImpl(LogLevel.WARN, aMessage, aParams);
 	}
 
 
 	public static void i(String aMessage, Object... aParams)
 	{
-		logImpl(3, aMessage, aParams);
-	}
-
-
-	public static void v(String aMessage, Object... aParams)
-	{
-		logImpl(4, aMessage, aParams);
+		logImpl(LogLevel.INFO, aMessage, aParams);
 	}
 
 
 	public static void d(String aMessage, Object... aParams)
 	{
-		logImpl(5, aMessage, aParams);
+		logImpl(LogLevel.DEBUG, aMessage, aParams);
 	}
 
 
-	private static void logImpl(int aLevel, String aMessage, Object... aParams)
+	private static void logImpl(LogLevel aLevel, String aMessage, Object... aParams)
 	{
-		if (aLevel <= mLevel && aMessage != null)
+		if (aLevel.ordinal() >= mLevel.ordinal() && aMessage != null)
 		{
 			StringBuilder message = new StringBuilder();
 			for (int i = 0; i < mIndent; i++)
@@ -78,7 +71,7 @@ public class Log
 			String methodName = trace[3].getMethodName();
 			String loggerName = trace[3].getFileName() + ":" + trace[3].getLineNumber();
 
-			System.out.printf("%-30s%-30s%-30s%-7s %s%n", loggerName, className, methodName, aLevel < LEVELS.length ? LEVELS[aLevel] : "", message.toString());
+			System.out.printf("%-30s%-30s%-30s%-7s %s%n", loggerName, className, methodName, aLevel, message.toString());
 		}
 	}
 

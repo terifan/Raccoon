@@ -1,7 +1,6 @@
 package org.terifan.security.cryptography;
 
 import java.util.Random;
-import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
@@ -10,14 +9,14 @@ import org.testng.annotations.DataProvider;
 public class BlockCipherNGTest
 {
 	@Test(dataProvider = "ciphers")
-	public void testCBCBlockEncryption(BlockCipher aCipher, BlockCipher aTweak)
+	public void testCBCBlockEncryption(BlockCipher aCipher, BlockCipher aTweak, int aKeyLength)
 	{
 		Random rnd = new Random();
 
-		byte[] cipherKey = new byte[16];
+		byte[] cipherKey = new byte[aKeyLength];
 		rnd.nextBytes(cipherKey);
 
-		byte[] tweakKey = new byte[16];
+		byte[] tweakKey = new byte[aKeyLength];
 		rnd.nextBytes(tweakKey);
 
 		aCipher.engineInit(new SecretKey(cipherKey));
@@ -56,9 +55,16 @@ public class BlockCipherNGTest
 	{
 		return new Object[][]
 		{
-			{new AES(), new AES()},
-			{new Twofish(), new Twofish()},
-			{new Serpent(), new Serpent()}
+			{new AES(), new AES(), 16},
+			{new AES(), new AES(), 24},
+			{new AES(), new AES(), 32},
+			{new Twofish(), new Twofish(), 8},
+			{new Twofish(), new Twofish(), 16},
+			{new Twofish(), new Twofish(), 24},
+			{new Twofish(), new Twofish(), 32},
+			{new Serpent(), new Serpent(), 16},
+			{new Serpent(), new Serpent(), 24},
+			{new Serpent(), new Serpent(), 32}
 		};
 	}
 }

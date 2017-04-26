@@ -154,11 +154,11 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		if (mRootMap != null)
 		{
-			Log.v("put root value");
+			Log.d("put root value");
 
 			if (!mRootMap.put(aEntry))
 			{
-				Log.v("upgrade root leaf to node");
+				Log.d("upgrade root leaf to node");
 
 				mRootNode = splitLeaf(mRootBlockPointer, mRootMap, 0);
 
@@ -307,14 +307,14 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		if (mWasEmptyInstance)
 		{
-			Log.v("rollback empty");
+			Log.d("rollback empty");
 
 			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
 			mRootMap = new LeafNode(mLeafSize);
 		}
 		else
 		{
-			Log.v("rollback %s", mRootBlockPointer.getType() == BlockType.NODE_LEAF ? "root map" : "root node");
+			Log.d("rollback %s", mRootBlockPointer.getType() == BlockType.NODE_LEAF ? "root map" : "root node");
 
 			loadRoot();
 		}
@@ -338,7 +338,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 		{
 			visit((aPointerIndex, aBlockPointer) ->
 			{
-				if (aPointerIndex != Visitor.ROOT_POINTER && aBlockPointer != null && (aBlockPointer.getType() == BlockType.NODE_INDEX || aBlockPointer.getType() == BlockType.NODE_LEAF))
+				if (aPointerIndex >= 0 && aBlockPointer != null && (aBlockPointer.getType() == BlockType.NODE_INDEX || aBlockPointer.getType() == BlockType.NODE_LEAF))
 				{
 					freeBlock(aBlockPointer);
 				}
@@ -414,7 +414,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	private byte[] putValue(LeafEntry aEntry, byte[] aKey, int aLevel, IndexNode aNode)
 	{
 		PerformanceCounters.putValue.incrementAndGet();
-		Log.v("put value");
+		Log.d("put value");
 		Log.inc();
 
 		int index = aNode.findPointer(computeIndex(aKey, aLevel));
@@ -482,7 +482,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	private byte[] upgradeHoleToLeaf(LeafEntry aEntry, IndexNode aNode, BlockPointer aBlockPointer, int aIndex)
 	{
 		PerformanceCounters.upgradeHoleToLeaf.incrementAndGet();
-		Log.v("upgrade hole to leaf");
+		Log.d("upgrade hole to leaf");
 		Log.inc();
 
 		LeafNode map = new LeafNode(mLeafSize);
@@ -506,7 +506,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 	private IndexNode splitLeaf(BlockPointer aBlockPointer, LeafNode aMap, int aLevel)
 	{
 		Log.inc();
-		Log.v("split leaf");
+		Log.d("split leaf");
 		Log.inc();
 
 		PerformanceCounters.splitLeaf.incrementAndGet();
@@ -545,7 +545,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 
 		PerformanceCounters.splitLeaf.incrementAndGet();
 		Log.inc();
-		Log.v("split leaf");
+		Log.d("split leaf");
 		Log.inc();
 
 		freeBlock(aBlockPointer);
@@ -692,7 +692,7 @@ public final class HashTable implements AutoCloseable, Iterable<LeafEntry>
 			visitNode(aVisitor, mRootBlockPointer);
 		}
 
-		aVisitor.visit(Visitor.ROOT_POINTER, mRootBlockPointer);
+		aVisitor.visit(-1, mRootBlockPointer); // start visit at root level
 	}
 
 

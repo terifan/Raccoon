@@ -50,7 +50,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 	public void readBlock(long aBlockIndex, ByteBuffer aBuffer, long aBlockKey) throws IOException
 	{
-		Log.v("read block %d +%d", aBlockIndex, (aBuffer.limit() - aBuffer.position()) / mBlockSize);
+		Log.d("read block %d +%d", aBlockIndex, (aBuffer.limit() - aBuffer.position()) / mBlockSize);
 
 		mFile.read(aBuffer, aBlockIndex * mBlockSize);
 	}
@@ -58,7 +58,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 	public void writeBlock(long aBlockIndex, ByteBuffer aBuffer, long aBlockKey) throws IOException
 	{
-		Log.v("write block %d +%d", aBlockIndex, (aBuffer.limit() - aBuffer.position()) / mBlockSize);
+		Log.d("write block %d +%d", aBlockIndex, (aBuffer.limit() - aBuffer.position()) / mBlockSize);
 
 		mFile.write(aBuffer, aBlockIndex * mBlockSize);
 	}
@@ -67,7 +67,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		Log.v("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
+		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
 		ByteBuffer buf = ByteBuffer.wrap(aBuffer, aBufferOffset, aBufferLength);
 		mFile.read(buf, aBlockIndex * mBlockSize);
@@ -77,7 +77,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
 	{
-		Log.v("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
+		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
 		ByteBuffer buf = ByteBuffer.wrap(aBuffer, aBufferOffset, aBufferLength);
 		mFile.write(buf, aBlockIndex * mBlockSize);
@@ -87,7 +87,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void close() throws IOException
 	{
-		Log.v("close");
+		Log.d("close");
 
 		synchronized (this)
 		{
@@ -112,7 +112,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 			}
 		}
 	}
-	
+
 
 	@Override
 	public long length() throws IOException
@@ -124,7 +124,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public void commit(boolean aMetadata) throws IOException
 	{
-		Log.v("commit");
+		Log.d("commit");
 
 		mFile.force(aMetadata);
 	}
