@@ -3,7 +3,6 @@ package org.terifan.raccoon;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
@@ -27,6 +26,7 @@ public final class Table<T>
 	private transient Class mType;
 	private transient Marshaller mMarshaller;
 	private transient Database mDatabase;
+	private transient volatile int mReadLocked;
 
 
 	Table()
@@ -72,25 +72,25 @@ public final class Table<T>
 		return this;
 	}
 
-	
+
 	public FieldDescriptor[] getFields()
 	{
 		return mEntityDescriptor.getFields();
 	}
 
-	
+
 	public ArrayList<FieldDescriptor> getKeyFields()
 	{
 		return mEntityDescriptor.getFields(FIELD_CATEGORY_KEY);
 	}
-	
-	
+
+
 	public ArrayList<FieldDescriptor> getDiscriminatorFields()
 	{
 		return mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR);
 	}
-	
-	
+
+
 	public ArrayList<FieldDescriptor> getValueFields()
 	{
 		return mEntityDescriptor.getFields(FIELD_CATEGORY_VALUE);
@@ -187,7 +187,7 @@ public final class Table<T>
 		}
 
 		ResultSet resultSet = new ResultSet(mEntityDescriptor).unmarshal(new ByteArrayBuffer(mDiscriminatorKey), FIELD_CATEGORY_DISCRIMINATOR);
-		
+
 		StringBuilder result = new StringBuilder();
 
 		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR))
@@ -278,10 +278,9 @@ public final class Table<T>
 	}
 
 
-	public void forEach(Consumer aConsumer)
+	public void forEach(Consumer<T> aConsumer)
 	{
-		Lock readLock = mDatabase.getReadLock();
-		readLock.lock();
+		aquireReadLock();
 
 		try
 		{
@@ -292,7 +291,7 @@ public final class Table<T>
 		}
 		finally
 		{
-			readLock.unlock();
+			releaseReadLock();
 		}
 	}
 
@@ -305,8 +304,7 @@ public final class Table<T>
 
 	public void forEachResultSet(ResultSetConsumer aConsumer)
 	{
-		Lock readLock = mDatabase.getReadLock();
-		readLock.lock();
+		aquireReadLock();
 
 		try
 		{
@@ -319,7 +317,27 @@ public final class Table<T>
 		}
 		finally
 		{
-			readLock.unlock();
+			releaseReadLock();
 		}
+	}
+
+
+	private synchronized void releaseReadLock()
+	{
+		mDatabase.getReadLock().unlock();
+		mReadLocked--;
+	}
+
+
+	private synchronized void aquireReadLock()
+	{
+		mDatabase.getReadLock().lock();
+		mReadLocked++;
+	}
+
+
+	synchronized boolean isReadLocked()
+	{
+		return mReadLocked > 0;
 	}
 }

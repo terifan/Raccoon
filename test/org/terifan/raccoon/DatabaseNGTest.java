@@ -343,6 +343,27 @@ public class DatabaseNGTest
 
 
 	@Test
+	public void testGetTableViaDiscriminator() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			database.save(new _Number1K1D("a", 1));
+			database.save(new _Number1K1D("b", 2));
+			database.save(new _Number1K1D("c", 3));
+			database.commit();
+		}
+
+		try (Database database = Database.open(device, OpenOption.OPEN))
+		{
+			assertEquals(database.getTable(new _Number1K1D(true)).size(), 2);
+			assertEquals(database.getTable(new _Number1K1D(false)).size(), 1);
+		}
+	}
+
+
+	@Test
 	public void testEncryptedAccess() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);

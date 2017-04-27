@@ -179,4 +179,63 @@ public class TableNGTest
 			assertEquals(nameLookup.size(), 0);
 		}
 	}
+
+
+	@Test
+	public void testForEach() throws IOException
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE))
+		{
+			database.save(new _Animal1K("cat", 1));
+			database.save(new _Animal1K("dog", 2));
+			database.save(new _Animal1K("horse", 3));
+			database.save(new _Animal1K("cow", 4));
+			database.commit();
+
+			HashSet<String> nameLookup = new HashSet<>(Arrays.asList("cat","dog","horse","cow"));
+			HashSet<Integer> numberLookup = new HashSet<>(Arrays.asList(1,2,3,4));
+
+			database.getTable(_Animal1K.class).forEach(e->{
+				assertTrue(nameLookup.remove(e._name));
+				assertTrue(numberLookup.remove(e.number));
+			});
+
+			assertEquals(nameLookup.size(), 0);
+		}
+	}
+
+
+	@Test
+	public void testForEachCloseOnException() throws IOException
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE))
+		{
+			database.save(new _Animal1K("cat", 1));
+			database.save(new _Animal1K("dog", 2));
+			database.save(new _Animal1K("horse", 3));
+			database.save(new _Animal1K("cow", 4));
+			database.commit();
+
+			Table<_Animal1K> table = database.getTable(_Animal1K.class);
+
+			try
+			{
+				table.forEach(e->{
+					throw new IllegalStateException();
+				});
+
+				fail("an exception was not thrown");
+			}
+			catch (IllegalStateException e)
+			{
+				// ignore
+			}
+
+			assertFalse(table.isReadLocked());
+		}
+	}
 }

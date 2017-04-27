@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -1068,15 +1067,42 @@ public final class Database implements AutoCloseable
 	}
 
 
+	public <T> Table<T> getTable(T aObject)
+	{
+		TableInstance table = openTable(aObject.getClass(), getDiscriminator(aObject), OpenOption.OPEN);
+
+		if (table == null)
+		{
+			return null;
+		}
+
+		return table.getTable();
+	}
+
+
 	public <T> Table<T> getTable(Class<T> aType)
 	{
-		return openTable(aType, null, OpenOption.OPEN).getTable();
+		TableInstance table = openTable(aType, null, OpenOption.OPEN);
+
+		if (table == null)
+		{
+			return null;
+		}
+
+		return table.getTable();
 	}
 
 
 	public <T> Table<T> getTable(Class<T> aType, DiscriminatorType aDiscriminator)
 	{
-		return openTable(aDiscriminator.getType(), aDiscriminator, OpenOption.OPEN).getTable();
+		TableInstance table = openTable(aType, aDiscriminator, OpenOption.OPEN);
+
+		if (table == null)
+		{
+			return null;
+		}
+
+		return table.getTable();
 	}
 
 
