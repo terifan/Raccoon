@@ -16,6 +16,12 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 	private final int mBlockSize;
 
 
+	public MemoryBlockDevice()
+	{
+		this(4096);
+	}
+
+
 	public MemoryBlockDevice(int aBlockSize)
 	{
 		mBlockSize = aBlockSize;

@@ -17,6 +17,12 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	protected int mBlockSize;
 
 
+	public FileBlockDevice(File aFile, boolean aReadOnly) throws IOException
+	{
+		this(aFile, 4096, aReadOnly);
+	}
+
+
 	public FileBlockDevice(File aFile, int aBlockSize, boolean aReadOnly) throws IOException
 	{
 		if (aReadOnly)
