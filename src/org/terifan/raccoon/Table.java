@@ -26,7 +26,7 @@ public final class Table<T>
 	private transient Class mType;
 	private transient Marshaller mMarshaller;
 	private transient Database mDatabase;
-	private transient volatile int mReadLocked;
+	private transient int mReadLocked;
 
 
 	Table()
