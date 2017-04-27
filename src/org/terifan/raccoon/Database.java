@@ -862,6 +862,12 @@ public final class Database implements AutoCloseable
 	}
 
 
+	public <T> List<T> list(T aDiscriminator)
+	{
+		return list(aDiscriminator.getClass(), getDiscriminator(aDiscriminator));
+	}
+
+
 	public <T> List<T> list(Class<T> aType)
 	{
 		return list(aType, (T)null);
