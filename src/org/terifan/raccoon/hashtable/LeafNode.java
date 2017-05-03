@@ -18,24 +18,25 @@ import org.terifan.raccoon.storage.BlockType;
  * - an empty map will always consist of only zero value bytes
  * - the map does not record the capacity, this must be provided when an instance is created
  * - the map have a six byte overhead
- * - each entry have a seven byte overhead
+ * - each entry have a eight byte overhead
  *
  * Data layout:
  *
  * [header]
- *   2 bytes - entry count
- *   3 bytes - free space offset (minus HEADER_SIZE)
+ * 2 bytes - entry count
+ * 3 bytes - free space offset (minus HEADER_SIZE)
  * [list of entries]
- *   (entry 1..n)
- *     2 bytes - key length
- *     2 bytes - value length
- *     n bytes - key
- *     n bytes - value
+ * (entry 1..n)
+ * 2 bytes - key length
+ * 2 bytes - value length
+ * n bytes - key
+ * 1 byte - flags
+ * n bytes - value
  * [free space]
- *   n bytes - zeros
+ * n bytes - zeros
  * [list of pointers]
- *   (pointer 1..n)
- *     3 bytes - offset
+ * (pointer 1..n)
+ * 3 bytes - offset
  */
 final class LeafNode implements Node, Iterable<LeafEntry>
 {
@@ -61,9 +62,9 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 	 * Create a new LeafNode with specified capacity.
 	 *
 	 * @param aCapacity
-	 *   the capacity (length) of the buffer. Maximum 65536 bytes.
+	 * the capacity (length) of the buffer. Maximum 65536 bytes.
 	 * @return
-	 *   the buffer
+	 * the buffer
 	 */
 	public LeafNode(int aCapacity)
 	{
@@ -86,9 +87,9 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 	 * Create a new LeafNode wrapping the provided array.
 	 *
 	 * @param aBuffer
-	 *   the byte array to wrap
+	 * the byte array to wrap
 	 * @return
-	 *   the buffer
+	 * the buffer
 	 */
 	public LeafNode(byte[] aBuffer)
 	{
@@ -100,13 +101,13 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 	 * Create a new LeafNode wrapping the provided array reading the actual map at the specified offset.
 	 *
 	 * @param aBuffer
-	 *   the byte array to wrap
+	 * the byte array to wrap
 	 * @param aOffset
-	 *   an offset to the the actual map in the byte array.
+	 * an offset to the the actual map in the byte array.
 	 * @param aCapacity
-	 *   the capacity of the buffer, ie. the map use this number of bytes in the byte array provided at the offset specified.
+	 * the capacity of the buffer, ie. the map use this number of bytes in the byte array provided at the offset specified.
 	 * @return
-	 *   the buffer
+	 * the buffer
 	 */
 	public LeafNode(byte[] aBuffer, int aOffset, int aCapacity)
 	{
@@ -193,9 +194,9 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 				int offset = mStartOffset + valueOffset;
 
 				aEntry.mFlags = mBuffer[offset];
-				aEntry.mValue = Arrays.copyOfRange(mBuffer, offset+1, offset + oldValueLengthPlus1);
+				aEntry.mValue = Arrays.copyOfRange(mBuffer, offset + 1, offset + oldValueLengthPlus1);
 
-				System.arraycopy(value, 0, mBuffer, offset+1, value.length);
+				System.arraycopy(value, 0, mBuffer, offset + 1, value.length);
 				mBuffer[offset] = format;
 
 				assert integrityCheck() == null : integrityCheck();
@@ -299,7 +300,7 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 
 		int valueOffset = mStartOffset + readValueOffset(aIndex);
 		aEntry.mFlags = mBuffer[valueOffset];
-		aEntry.mValue = Arrays.copyOfRange(mBuffer, valueOffset+1, valueOffset + readValueLength(aIndex));
+		aEntry.mValue = Arrays.copyOfRange(mBuffer, valueOffset + 1, valueOffset + readValueLength(aIndex));
 
 		int offset = readEntryOffset(aIndex);
 		int length = readEntryLength(aIndex);
@@ -542,7 +543,7 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 			}
 			if (offset + length > mStartOffset + mFreeSpaceOffset)
 			{
-				return "Entry offset after free space ("+(offset+" + "+length)+">"+(mStartOffset + mFreeSpaceOffset)+")";
+				return "Entry offset after free space (" + (offset + " + " + length) + ">" + (mStartOffset + mFreeSpaceOffset) + ")";
 			}
 
 			if (i > 0 && compare(mBuffer, prevKeyOffset, prevKeyLength, mBuffer, keyOffset, keyLength) >= 0)
