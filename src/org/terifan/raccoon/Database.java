@@ -120,7 +120,7 @@ public final class Database implements AutoCloseable
 	/**
 	 *
 	 * @param aParameters
-	 *   supports: AccessCredentials, DeviceLabel
+	 *   supports: AccessCredentials, DeviceLabel, CompressionParam, TableParam
 	 */
 	public static Database open(IPhysicalBlockDevice aBlockDevice, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
@@ -135,7 +135,7 @@ public final class Database implements AutoCloseable
 	/**
 	 *
 	 * @param aParameters
-	 *   supports: AccessCredentials, DeviceLabel
+	 *   supports: AccessCredentials, DeviceLabel, CompressionParam, TableParam
 	 */
 	public static Database open(IManagedBlockDevice aBlockDevice, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
@@ -175,13 +175,13 @@ public final class Database implements AutoCloseable
 		{
 			Log.d("creating a managed block device");
 
-			device = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice, label, 512);
+			device = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice, label, Constants.DEFAULT_LAZY_WRITE_CACHE_SIZE);
 		}
 		else
 		{
 			Log.d("creating a secure block device");
 
-			device = new ManagedBlockDevice(new SecureBlockDevice((IPhysicalBlockDevice)aBlockDevice, accessCredentials), label, 512);
+			device = new ManagedBlockDevice(new SecureBlockDevice((IPhysicalBlockDevice)aBlockDevice, accessCredentials), label, Constants.DEFAULT_LAZY_WRITE_CACHE_SIZE);
 		}
 
 		Database db;

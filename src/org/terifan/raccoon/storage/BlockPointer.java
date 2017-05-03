@@ -2,6 +2,7 @@ package org.terifan.raccoon.storage;
 
 import java.io.Serializable;
 import org.terifan.raccoon.PerformanceCounters;
+import static org.terifan.raccoon.PerformanceCounters.*;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
@@ -179,7 +180,7 @@ public class BlockPointer implements Serializable
 		aBuffer.writeInt32(mChecksum);
 		aBuffer.writeInt64(mBlockKey);
 
-		PerformanceCounters.pointerEncode.incrementAndGet();
+		assert PerformanceCounters.increment(POINTER_ENCODE);
 
 		return aBuffer;
 	}
@@ -197,7 +198,7 @@ public class BlockPointer implements Serializable
 		mChecksum = aBuffer.readInt32();
 		mBlockKey = aBuffer.readInt64();
 
-		PerformanceCounters.pointerDecode.incrementAndGet();
+		assert PerformanceCounters.increment(POINTER_DECODE);
 
 		return this;
 	}

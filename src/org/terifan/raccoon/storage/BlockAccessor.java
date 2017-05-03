@@ -8,6 +8,7 @@ import java.util.zip.Deflater;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.PerformanceCounters;
+import static org.terifan.raccoon.PerformanceCounters.*;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.security.random.ISAAC;
 import org.terifan.raccoon.util.Log;
@@ -65,7 +66,7 @@ public class BlockAccessor
 
 			Log.dec();
 
-			PerformanceCounters.blockFree.incrementAndGet();
+			assert PerformanceCounters.increment(BLOCK_FREE);
 		}
 		catch (Exception | Error e)
 		{
@@ -115,7 +116,7 @@ public class BlockAccessor
 
 			Log.dec();
 
-			PerformanceCounters.blockRead.incrementAndGet();
+			assert PerformanceCounters.increment(BLOCK_READ);
 
 			return buffer;
 		}
@@ -165,6 +166,8 @@ public class BlockAccessor
 			int blockCount = aBuffer.length / mBlockSize;
 			long blockIndex = mBlockDevice.allocBlock(blockCount);
 
+			assert PerformanceCounters.increment(BLOCK_ALLOC);
+
 			BlockPointer blockPointer = new BlockPointer();
 			blockPointer.setCompression(compressorId);
 			blockPointer.setChecksum(digest(aBuffer, 0, physicalSize, blockIndex));
@@ -180,7 +183,8 @@ public class BlockAccessor
 			Log.inc();
 
 			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getBlockKey());
-			PerformanceCounters.blockWrite.incrementAndGet();
+
+			assert PerformanceCounters.increment(BLOCK_WRITE);
 
 			Log.dec();
 
@@ -188,8 +192,6 @@ public class BlockAccessor
 			{
 				mCache.put(blockPointer.getOffset(), copy);
 			}
-
-			PerformanceCounters.blockAlloc.incrementAndGet();
 
 			return blockPointer;
 		}
