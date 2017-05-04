@@ -1218,13 +1218,21 @@ public final class Database implements AutoCloseable
 	{
 		ScanResult scanResult = new ScanResult();
 
+		scanResult.enterTable(mSystemTable);
+		
 		mSystemTable.scan(scanResult);
+		
+		scanResult.exitTable();
 
 		for (Table tableMetadata : getTables())
 		{
 			try (TableInstance table = openTable(tableMetadata, OpenOption.OPEN))
 			{
+				scanResult.enterTable(table);
+
 				table.scan(scanResult);
+		
+				scanResult.exitTable();
 			}
 		}
 

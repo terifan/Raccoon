@@ -35,7 +35,7 @@ final class IndexNode implements Node
 	@Override
 	public BlockType getType()
 	{
-		return BlockType.NODE_INDEX;
+		return BlockType.INDEX;
 	}
 
 
@@ -47,7 +47,7 @@ final class IndexNode implements Node
 
 	void setPointer(int aIndex, BlockPointer aBlockPointer)
 	{
-		assert get(aIndex).getType() == BlockType.NODE_FREE || get(aIndex).getRange() == aBlockPointer.getRange() : get(aIndex).getType() + " " + get(aIndex).getRange() +"=="+ aBlockPointer.getRange();
+		assert get(aIndex).getType() == BlockType.FREE || get(aIndex).getRange() == aBlockPointer.getRange() : get(aIndex).getType() + " " + get(aIndex).getRange() +"=="+ aBlockPointer.getRange();
 
 		set(aIndex, aBlockPointer);
 	}
@@ -55,7 +55,7 @@ final class IndexNode implements Node
 
 	BlockPointer getPointer(int aIndex)
 	{
-		if (getPointerType(aIndex) == BlockType.NODE_FREE)
+		if (getPointerType(aIndex) == BlockType.FREE)
 		{
 			return null;
 		}
@@ -70,7 +70,7 @@ final class IndexNode implements Node
 
 	int findPointer(int aIndex)
 	{
-		for (; getPointerType(aIndex) == BlockType.NODE_FREE; aIndex--)
+		for (; getPointerType(aIndex) == BlockType.FREE; aIndex--)
 		{
 		}
 

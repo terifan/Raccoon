@@ -28,6 +28,6 @@ public class LeafNode extends ArrayMap implements Node
 	@Override
 	public BlockType getType()
 	{
-		return BlockType.NODE_LEAF;
+		return BlockType.LEAF;
 	}
 }

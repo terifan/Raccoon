@@ -20,6 +20,6 @@ final class IndexNode implements Node
 	@Override
 	public BlockType getType()
 	{
-		return BlockType.NODE_INDEX;
+		return BlockType.INDEX;
 	}
 }

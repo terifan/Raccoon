@@ -27,7 +27,7 @@ public final class Blob
 		{
 			BlockPointer bp = new BlockPointer().unmarshal(aBuffer);
 
-			if (bp.getType() == BlockType.BLOB_INDEX)
+			if (bp.getType() == BlockType.DIR)
 			{
 				freeBlocks(aBlockAccessor, new ByteArrayBuffer(aBlockAccessor.readBlock(bp)).limit(bp.getLogicalSize()));
 			}

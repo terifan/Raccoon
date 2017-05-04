@@ -116,7 +116,7 @@ public final class HashTable extends TableImplementation
 	{
 		Log.i("load root %s", mRootBlockPointer);
 
-		if (mRootBlockPointer.getType() == BlockType.NODE_LEAF)
+		if (mRootBlockPointer.getType() == BlockType.LEAF)
 		{
 			mRootMap = readLeaf(mRootBlockPointer);
 		}
@@ -324,7 +324,7 @@ public final class HashTable extends TableImplementation
 		}
 		else
 		{
-			Log.d("rollback %s", mRootBlockPointer.getType() == BlockType.NODE_LEAF ? "root map" : "root node");
+			Log.d("rollback %s", mRootBlockPointer.getType() == BlockType.LEAF ? "root map" : "root node");
 
 			loadRoot();
 		}
@@ -349,7 +349,7 @@ public final class HashTable extends TableImplementation
 		{
 			visit((aPointerIndex, aBlockPointer) ->
 			{
-				if (aPointerIndex >= 0 && aBlockPointer != null && (aBlockPointer.getType() == BlockType.NODE_INDEX || aBlockPointer.getType() == BlockType.NODE_LEAF))
+				if (aPointerIndex >= 0 && aBlockPointer != null && (aBlockPointer.getType() == BlockType.INDEX || aBlockPointer.getType() == BlockType.LEAF))
 				{
 					freeBlock(aBlockPointer);
 				}
@@ -390,7 +390,7 @@ public final class HashTable extends TableImplementation
 
 		visit((aPointerIndex, aBlockPointer)->
 		{
-			if (aBlockPointer != null && aBlockPointer.getType() == BlockType.NODE_LEAF)
+			if (aBlockPointer != null && aBlockPointer.getType() == BlockType.LEAF)
 			{
 				result.set(result.get() + readLeaf(aBlockPointer).size());
 			}
@@ -409,13 +409,13 @@ public final class HashTable extends TableImplementation
 
 		switch (blockPointer.getType())
 		{
-			case NODE_INDEX:
+			case INDEX:
 				return getValue(aKey, aLevel + 1, aEntry, readNode(blockPointer));
-			case NODE_LEAF:
+			case LEAF:
 				return readLeaf(blockPointer).get(aEntry);
-			case NODE_HOLE:
+			case HOLE:
 				return false;
-			case NODE_FREE:
+			case FREE:
 			default:
 				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
 		}
@@ -434,19 +434,19 @@ public final class HashTable extends TableImplementation
 
 		switch (blockPointer.getType())
 		{
-			case NODE_INDEX:
+			case INDEX:
 				IndexNode node = readNode(blockPointer);
 				oldValue = putValue(aEntry, aKey, aLevel + 1, node);
 				freeBlock(blockPointer);
 				aNode.setPointer(index, writeBlock(node, blockPointer.getRange()));
 				break;
-			case NODE_LEAF:
+			case LEAF:
 				oldValue = putValueLeaf(blockPointer, index, aEntry, aLevel, aNode, aKey);
 				break;
-			case NODE_HOLE:
+			case HOLE:
 				oldValue = upgradeHoleToLeaf(aEntry, aNode, blockPointer, index);
 				break;
-			case NODE_FREE:
+			case FREE:
 			default:
 				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
 		}
@@ -600,7 +600,7 @@ public final class HashTable extends TableImplementation
 	{
 		if (aLeaf.isEmpty())
 		{
-			return new BlockPointer().setType(BlockType.NODE_HOLE).setRange(aRange);
+			return new BlockPointer().setType(BlockType.HOLE).setRange(aRange);
 		}
 
 		return writeBlock(aLeaf, aRange);
@@ -616,7 +616,7 @@ public final class HashTable extends TableImplementation
 
 		switch (blockPointer.getType())
 		{
-			case NODE_INDEX:
+			case INDEX:
 				IndexNode node = readNode(blockPointer);
 				if (removeValue(aKey, aLevel + 1, aEntry, node))
 				{
@@ -626,7 +626,7 @@ public final class HashTable extends TableImplementation
 					return true;
 				}
 				return false;
-			case NODE_LEAF:
+			case LEAF:
 				LeafNode map = readLeaf(blockPointer);
 				if (map.remove(aEntry))
 				{
@@ -636,9 +636,9 @@ public final class HashTable extends TableImplementation
 					return true;
 				}
 				return false;
-			case NODE_HOLE:
+			case HOLE:
 				return false;
-			case NODE_FREE:
+			case FREE:
 			default:
 				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
 		}
@@ -647,7 +647,7 @@ public final class HashTable extends TableImplementation
 
 	LeafNode readLeaf(BlockPointer aBlockPointer)
 	{
-		assert aBlockPointer.getType() == BlockType.NODE_LEAF;
+		assert aBlockPointer.getType() == BlockType.LEAF;
 
 		if (aBlockPointer.getOffset() == mRootBlockPointer.getOffset() && mRootMap != null)
 		{
@@ -660,7 +660,7 @@ public final class HashTable extends TableImplementation
 
 	IndexNode readNode(BlockPointer aBlockPointer)
 	{
-		assert aBlockPointer.getType() == BlockType.NODE_INDEX;
+		assert aBlockPointer.getType() == BlockType.INDEX;
 
 		if (aBlockPointer.getOffset() == mRootBlockPointer.getOffset() && mRootNode != null)
 		{
@@ -717,7 +717,7 @@ public final class HashTable extends TableImplementation
 		{
 			BlockPointer next = node.getPointer(i);
 
-			if (next != null && next.getType() == BlockType.NODE_INDEX)
+			if (next != null && next.getType() == BlockType.INDEX)
 			{
 				visitNode(aVisitor, next);
 			}
@@ -758,7 +758,7 @@ public final class HashTable extends TableImplementation
 	public void scan(ScanResult aScanResult)
 	{
 		aScanResult.tables++;
-
+		
 		scan(aScanResult, mRootBlockPointer);
 	}
 
@@ -769,10 +769,12 @@ public final class HashTable extends TableImplementation
 
 		switch (aBlockPointer.getType())
 		{
-			case NODE_INDEX:
+			case INDEX:
+				aScanResult.enterNode(aBlockPointer);
 				aScanResult.indexBlocks++;
 
 				IndexNode indexNode = new IndexNode(buffer);
+
 				for (int i = 0; i < indexNode.getPointerCount(); i++)
 				{
 					BlockPointer pointer = indexNode.getPointer(i);
@@ -781,11 +783,17 @@ public final class HashTable extends TableImplementation
 						scan(aScanResult, pointer);
 					}
 				}
+				aScanResult.exitNode();
 				break;
-			case NODE_LEAF:
+			case LEAF:
 				LeafNode leafNode = new LeafNode(buffer);
+
+				aScanResult.enterLeaf(aBlockPointer, buffer);
+
 				for (RecordEntry entry : leafNode)
 				{
+					aScanResult.entry();
+
 //					if (entry.hasFlag(LeafEntry.FLAG_BLOB))
 //					{
 //						aScanResult.blobs++;
@@ -804,18 +812,27 @@ public final class HashTable extends TableImplementation
 						aScanResult.records++;
 //					}
 				}
+
+				aScanResult.exitLeaf();
+
 				break;
-			case BLOB_INDEX:
+			case DIR:
 				aScanResult.blobIndices++;
 
 				ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(buffer);
 				while (byteArrayBuffer.remaining() > 0)
 				{
+					aScanResult.enterBlob();
+
 					scan(aScanResult, new BlockPointer().unmarshal(byteArrayBuffer));
+					
+					aScanResult.exitBlob();
 				}
 				break;
-			case BLOB_DATA:
+			case DATA:
 				aScanResult.blobData++;
+
+				aScanResult.blobData();
 
 				break;
 			default:

@@ -64,12 +64,12 @@ public final class CompressionParam
 	{
 		switch (aType)
 		{
-			case NODE_LEAF:
+			case LEAF:
 				return mLeaf;
-			case NODE_INDEX:
-			case BLOB_INDEX:
+			case INDEX:
+			case DIR:
 				return mNode;
-			case BLOB_DATA:
+			case DATA:
 				return mBlob;
 			default:
 				return NONE;
