@@ -1,7 +1,6 @@
 package org.terifan.raccoon.hashtable;
 
 import org.terifan.raccoon.core.Node;
-import org.terifan.raccoon.core.LeafNode;
 import org.terifan.raccoon.core.TableImplementation;
 import org.terifan.raccoon.core.RecordEntry;
 import java.io.IOException;
@@ -406,8 +405,7 @@ public final class HashTable extends TableImplementation
 		assert PerformanceCounters.increment(GET_VALUE);
 		Log.i("get value");
 
-		int index = aNode.findPointer(computeIndex(aKey, aLevel));
-		BlockPointer blockPointer = aNode.getPointer(index);
+		BlockPointer blockPointer = aNode.getPointer(aNode.findPointer(computeIndex(aKey, aLevel)));
 
 		switch (blockPointer.getType())
 		{

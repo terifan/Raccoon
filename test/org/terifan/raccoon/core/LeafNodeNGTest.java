@@ -12,7 +12,7 @@ public class LeafNodeNGTest
 	@Test
 	public void testSinglePutGet()
 	{
-		LeafNode map = new LeafNode(4096);
+		ArrayMap map = new ArrayMap(4096);
 
 		byte[] key = tb();
 		byte[] value = tb();
@@ -30,7 +30,7 @@ public class LeafNodeNGTest
 	@Test
 	public void testFillBuffer()
 	{
-		LeafNode map = new LeafNode(4096);
+		ArrayMap map = new ArrayMap(4096);
 
 		HashMap<byte[],byte[]> values = new HashMap<>();
 

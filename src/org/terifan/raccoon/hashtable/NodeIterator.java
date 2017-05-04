@@ -4,7 +4,7 @@ import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayDeque;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import org.terifan.raccoon.core.LeafNode;
+import org.terifan.raccoon.core.ArrayMap;
 import org.terifan.raccoon.core.RecordEntry;
 import org.terifan.raccoon.core.BlockType;
 
@@ -30,7 +30,7 @@ final class NodeIterator implements Iterator<RecordEntry>
 	}
 
 
-	NodeIterator(HashTable aHashTable, LeafNode aDataPage)
+	NodeIterator(HashTable aHashTable, ArrayMap aDataPage)
 	{
 		mNodes = new ArrayDeque<>();
 

@@ -21,7 +21,7 @@ import static org.terifan.raccoon.PerformanceCounters.*;
  * bytes - value length n bytes - key 1 byte - flags n bytes - value [free space] n bytes - zeros [list of pointers] (pointer 1..n) 3 bytes
  * - offset
  */
-public final class LeafNode implements Node, Iterable<RecordEntry>
+public class ArrayMap implements Iterable<RecordEntry>
 {
 	private final static int MAX_CAPACITY = 1 << 24;
 	private final static int HEADER_SIZE = 2 + 3;
@@ -47,7 +47,7 @@ public final class LeafNode implements Node, Iterable<RecordEntry>
 	 * @param aCapacity the capacity (length) of the buffer. Maximum 65536 bytes.
 	 * @return the buffer
 	 */
-	public LeafNode(int aCapacity)
+	public ArrayMap(int aCapacity)
 	{
 		if (aCapacity <= HEADER_SIZE || aCapacity > MAX_CAPACITY)
 		{
@@ -70,7 +70,7 @@ public final class LeafNode implements Node, Iterable<RecordEntry>
 	 * @param aBuffer the byte array to wrap
 	 * @return the buffer
 	 */
-	public LeafNode(byte[] aBuffer)
+	public ArrayMap(byte[] aBuffer)
 	{
 		this(aBuffer, 0, aBuffer.length);
 	}
@@ -84,7 +84,7 @@ public final class LeafNode implements Node, Iterable<RecordEntry>
 	 * @param aCapacity the capacity of the buffer, ie. the map use this number of bytes in the byte array provided at the offset specified.
 	 * @return the buffer
 	 */
-	public LeafNode(byte[] aBuffer, int aOffset, int aCapacity)
+	public ArrayMap(byte[] aBuffer, int aOffset, int aCapacity)
 	{
 		if (aCapacity > MAX_CAPACITY)
 		{
@@ -116,21 +116,13 @@ public final class LeafNode implements Node, Iterable<RecordEntry>
 	}
 
 
-	@Override
 	public byte[] array()
 	{
 		return mBuffer;
 	}
 
 
-	@Override
-	public BlockType getType()
-	{
-		return BlockType.NODE_LEAF;
-	}
-
-
-	public LeafNode clear()
+	public ArrayMap clear()
 	{
 		Arrays.fill(mBuffer, mStartOffset, mStartOffset + mCapacity, (byte)0);
 
