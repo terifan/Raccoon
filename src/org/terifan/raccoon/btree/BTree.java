@@ -44,8 +44,10 @@ public class BTree extends TableImplementation
 			Log.i("create hash table");
 			Log.inc();
 
-			mNodeSize = aTableParam.getPagesPerNode() * aBlockDevice.getBlockSize();
-			mLeafSize = aTableParam.getPagesPerLeaf() * aBlockDevice.getBlockSize();
+			mNodeSize = aBlockDevice.getBlockSize();
+			mLeafSize = aBlockDevice.getBlockSize();
+//			mNodeSize = aTableParam.getPagesPerNode() * aBlockDevice.getBlockSize();
+//			mLeafSize = aTableParam.getPagesPerLeaf() * aBlockDevice.getBlockSize();
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 			mRootMap = new LeafNode(mLeafSize);
@@ -157,7 +159,52 @@ public class BTree extends TableImplementation
 	@Override
 	public boolean commit() throws IOException
 	{
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+//		checkOpen();
+
+		try
+		{
+			if (mChanged)
+			{
+				int modCount = mModCount; // no increment
+				Log.i("commit hash table");
+				Log.inc();
+
+//				freeBlock(mRootBlockPointer);
+
+				if (mRootMap != null)
+				{
+					mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode);
+				}
+				else
+				{
+					mRootBlockPointer = writeBlock(mRootNode, mPointersPerNode);
+				}
+
+				if (mCommitChangesToBlockDevice)
+				{
+					mBlockAccessor.getBlockDevice().commit();
+				}
+
+				mChanged = false;
+
+				Log.i("commit finished; new root %s", mRootBlockPointer);
+
+				Log.dec();
+				assert mModCount == modCount : "concurrent modification";
+
+				return true;
+			}
+			else if (mWasEmptyInstance && mCommitChangesToBlockDevice)
+			{
+				mBlockAccessor.getBlockDevice().commit();
+			}
+
+			return false;
+		}
+		finally
+		{
+			mWasEmptyInstance = false;
+		}
 	}
 
 

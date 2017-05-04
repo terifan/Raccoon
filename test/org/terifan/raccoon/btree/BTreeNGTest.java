@@ -24,6 +24,8 @@ public class BTreeNGTest
 
 		table.put(new RecordEntry("abc".getBytes(), "123".getBytes(), (byte)0));
 
+		table.commit();
+
 		memoryBlockDevice.dump();
 	}
 }
