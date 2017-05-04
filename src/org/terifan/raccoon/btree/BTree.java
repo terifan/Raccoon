@@ -169,7 +169,7 @@ public class BTree extends TableImplementation
 				Log.i("commit hash table");
 				Log.inc();
 
-//				freeBlock(mRootBlockPointer);
+				freeBlock(mRootBlockPointer);
 
 				if (mRootMap != null)
 				{
@@ -254,6 +254,12 @@ public class BTree extends TableImplementation
 	public String integrityCheck()
 	{
 		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+
+	private void freeBlock(BlockPointer aBlockPointer)
+	{
+		mBlockAccessor.freeBlock(aBlockPointer);
 	}
 
 

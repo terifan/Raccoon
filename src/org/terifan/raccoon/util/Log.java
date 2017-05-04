@@ -8,7 +8,7 @@ public class Log
 {
 	public static PrintStream out = System.out;
 
-	private static LogLevel mLevel = LogLevel.ERROR;
+	public static LogLevel mLevel = LogLevel.ERROR;
 	private static int mIndent;
 
 
