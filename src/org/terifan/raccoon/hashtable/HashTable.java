@@ -514,7 +514,7 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	private IndexNode splitLeaf(BlockPointer aBlockPointer, LeafNode aMap, int aLevel)
+	private IndexNode splitLeaf(BlockPointer aBlockPointer, LeafNode aLeafNode, int aLevel)
 	{
 		Log.inc();
 		Log.d("split leaf");
@@ -528,7 +528,7 @@ public final class HashTable extends TableImplementation
 		LeafNode highLeaf = new LeafNode(mLeafSize);
 		int halfRange = mPointersPerNode / 2;
 
-		divideLeafEntries(aMap, aLevel, halfRange, lowLeaf, highLeaf);
+		divideLeafEntries(aLeafNode, aLevel, halfRange, lowLeaf, highLeaf);
 
 		// create nodes pointing to leafs
 		BlockPointer lowIndex = writeIfNotEmpty(lowLeaf, halfRange);

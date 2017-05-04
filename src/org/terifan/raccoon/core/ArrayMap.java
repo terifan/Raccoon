@@ -12,20 +12,32 @@ import static org.terifan.raccoon.PerformanceCounters.*;
  * This is a fixed size buffer for key/value storage suitable for persistence on external media. The LeafNode wraps an array and reads and
  * writes entries directly to the array maintaining all necessary structural information inside the array at all time.
  *
- * implementation notes: - an empty map will always consist of only zero value bytes - the map does not record the capacity, this must be
- * provided when an instance is created - the map have a six byte overhead - each entry have a eight byte overhead
+ * implementation notes: an empty map will always consist of only zero value bytes, the map does not record the capacity, this must be
+ * provided when an instance is created
  *
  * Data layout:
  *
- * [header] 2 bytes - entry count 3 bytes - free space offset (minus HEADER_SIZE) [list of entries] (entry 1..n) 2 bytes - key length 2
- * bytes - value length n bytes - key 1 byte - flags n bytes - value [free space] n bytes - zeros [list of pointers] (pointer 1..n) 3 bytes
- * - offset
+ * [header] 
+ *   2 bytes - entry count
+ *   2 bytes - free space offset (minus HEADER_SIZE) 
+ * [list of entries] 
+ *   (entry 1..n)
+ *   2 bytes - key length
+ *   2 bytes - value length
+ *   n bytes - key 
+ *   1 byte - flags 
+ *   n bytes - value 
+ * [free space]
+ *   n bytes - zeros 
+ * [list of pointers] 
+ *   (pointer 1..n)
+ *   2 bytes - offset
  */
 public class ArrayMap implements Iterable<RecordEntry>
 {
-	private final static int MAX_CAPACITY = 1 << 24;
-	private final static int HEADER_SIZE = 2 + 3;
-	private final static int ENTRY_POINTER_SIZE = 3;
+	private final static int MAX_CAPACITY = 1 << 16;
+	private final static int HEADER_SIZE = 2 + 2;
+	private final static int ENTRY_POINTER_SIZE = 2;
 	private final static int ENTRY_HEADER_SIZE = 2 + 2;
 	private final static int MAX_VALUE_SIZE = (1 << 16) - 1;
 
@@ -100,7 +112,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 		mCapacity = aCapacity;
 
 		mEntryCount = readInt16(0);
-		mFreeSpaceOffset = readInt24(2) + HEADER_SIZE;
+		mFreeSpaceOffset = readInt16(2) + HEADER_SIZE;
 		mPointerListOffset = mCapacity - ENTRY_POINTER_SIZE * mEntryCount;
 
 		int limit = (mCapacity - HEADER_SIZE) / (ENTRY_HEADER_SIZE + ENTRY_POINTER_SIZE + 1);
@@ -180,13 +192,12 @@ public class ArrayMap implements Iterable<RecordEntry>
 
 			assert indexOf(key) == (-index) - 1;
 		}
+		else if (getFreeSpace() < ENTRY_HEADER_SIZE + key.length + newValueLengthPlus1 + ENTRY_POINTER_SIZE)
+		{
+			return false;
+		}
 		else
 		{
-			if (getFreeSpace() < ENTRY_HEADER_SIZE + key.length + newValueLengthPlus1 + ENTRY_POINTER_SIZE)
-			{
-				return false;
-			}
-
 			index = (-index) - 1;
 
 			aEntry.setFlags((byte)0);
@@ -385,7 +396,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 	private void writeBufferHeader()
 	{
 		writeInt16(0, mEntryCount);
-		writeInt24(2, mFreeSpaceOffset - HEADER_SIZE);
+		writeInt16(2, mFreeSpaceOffset - HEADER_SIZE);
 	}
 
 
@@ -409,7 +420,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 		assert aIndex >= 0 && aIndex < mEntryCount;
 		assert aOffset > 0 && aOffset < mCapacity;
 
-		writeInt24(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE, aOffset);
+		writeInt16(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE, aOffset);
 	}
 
 
@@ -417,7 +428,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount;
 
-		return readInt24(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE);
+		return readInt16(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE);
 	}
 
 
@@ -455,20 +466,6 @@ public class ArrayMap implements Iterable<RecordEntry>
 	{
 		mBuffer[mStartOffset + aOffset + 0] = (byte)(aValue >> 8);
 		mBuffer[mStartOffset + aOffset + 1] = (byte)aValue;
-	}
-
-
-	private int readInt24(int aOffset)
-	{
-		return ((0xff & mBuffer[mStartOffset + aOffset]) << 16) + ((0xff & mBuffer[mStartOffset + aOffset + 1]) << 8) + (0xff & mBuffer[mStartOffset + aOffset + 2]);
-	}
-
-
-	private void writeInt24(int aOffset, int aValue)
-	{
-		mBuffer[mStartOffset + aOffset + 0] = (byte)(aValue >> 16);
-		mBuffer[mStartOffset + aOffset + 1] = (byte)(aValue >> 8);
-		mBuffer[mStartOffset + aOffset + 2] = (byte)aValue;
 	}
 
 

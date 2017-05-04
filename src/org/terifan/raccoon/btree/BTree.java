@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.terifan.raccoon.CompressionParam;
+import org.terifan.raccoon.PerformanceCounters;
+import static org.terifan.raccoon.PerformanceCounters.PUT_VALUE;
+import static org.terifan.raccoon.PerformanceCounters.SPLIT_LEAF;
 import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.TransactionCounter;
 import org.terifan.raccoon.core.Node;
@@ -95,7 +98,7 @@ public class BTree extends TableImplementation
 			{
 				Log.d("upgrade root leaf to node");
 
-//				mRootNode = splitLeaf(mRootBlockPointer, mRootMap, 0);
+				mRootNode = splitLeaf(mRootBlockPointer, mRootMap, 0);
 
 				mRootBlockPointer = writeBlock(mRootNode, mPointersPerNode);
 				mRootMap = null;
@@ -104,13 +107,82 @@ public class BTree extends TableImplementation
 
 		if (mRootMap == null)
 		{
-//			putValue(aEntry, aEntry.getKey(), 0, mRootNode);
+			putValue(aEntry, aEntry.getKey(), 0, mRootNode);
 		}
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
 		return aEntry.getValue() != null;
+	}
+
+
+	private IndexNode splitLeaf(BlockPointer aBlockPointer, LeafNode aLeaf, int aLevel)
+	{
+		return null;
+
+//		Log.inc();
+//		Log.d("split leaf");
+//		Log.inc();
+//
+//		assert PerformanceCounters.increment(SPLIT_LEAF);
+//
+//		freeBlock(aBlockPointer);
+//
+//		LeafNode lowLeaf = new LeafNode(mLeafSize);
+//		LeafNode highLeaf = new LeafNode(mLeafSize);
+//		int halfRange = mPointersPerNode / 2;
+//
+//		divideLeafEntries(aMap, aLevel, halfRange, lowLeaf, highLeaf);
+//
+//		// create nodes pointing to leafs
+//		BlockPointer lowIndex = writeIfNotEmpty(lowLeaf, halfRange);
+//		BlockPointer highIndex = writeIfNotEmpty(highLeaf, halfRange);
+//
+//		IndexNode node = new IndexNode(new byte[mNodeSize]);
+//		node.setPointer(0, lowIndex);
+//		node.setPointer(halfRange, highIndex);
+//
+//		Log.dec();
+//		Log.dec();
+//
+//		return node;
+	}
+
+
+	private byte[] putValue(RecordEntry aEntry, byte[] aKey, int aLevel, IndexNode aNode)
+	{
+		return null;
+//		assert PerformanceCounters.increment(PUT_VALUE);
+//		Log.d("put value");
+//		Log.inc();
+//
+//		int index = aNode.findPointer(computeIndex(aKey, aLevel));
+//		BlockPointer blockPointer = aNode.getPointer(index);
+//		byte[] oldValue;
+//
+//		switch (blockPointer.getType())
+//		{
+//			case NODE_INDEX:
+//				org.terifan.raccoon.hashtable.IndexNode node = readNode(blockPointer);
+//				oldValue = putValue(aEntry, aKey, aLevel + 1, node);
+//				freeBlock(blockPointer);
+//				aNode.setPointer(index, writeBlock(node, blockPointer.getRange()));
+//				break;
+//			case NODE_LEAF:
+//				oldValue = putValueLeaf(blockPointer, index, aEntry, aLevel, aNode, aKey);
+//				break;
+//			case NODE_HOLE:
+//				oldValue = upgradeHoleToLeaf(aEntry, aNode, blockPointer, index);
+//				break;
+//			case NODE_FREE:
+//			default:
+//				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
+//		}
+//
+//		Log.dec();
+//
+//		return oldValue;
 	}
 
 

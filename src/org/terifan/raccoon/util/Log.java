@@ -90,7 +90,7 @@ public class Log
 		}
 
 		int lw = 56;
-		int mr = 100;
+		int mr = 10000;
 
 		StringBuilder binText = new StringBuilder("");
 		StringBuilder hexText = new StringBuilder("");
