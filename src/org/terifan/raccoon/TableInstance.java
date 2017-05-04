@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.hashtable.HashTable;
-import org.terifan.raccoon.hashtable.LeafEntry;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,7 +31,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 	private final Database mDatabase;
 	private final Table mTable;
 	private final HashSet<BlobOutputStream> mOpenOutputStreams;
-	private final HashTable mTableImplementation;
+	private final TableImplementation mTableImplementation;
 
 
 	TableInstance(Database aDatabase, Table aTableMetadata, byte[] aPointer)
@@ -44,7 +43,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 			mDatabase = aDatabase;
 			mTable = aTableMetadata;
 
-			mTableImplementation = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, mDatabase.getParameter(CompressionParam.class, CompressionParam.BEST_SPEED), mDatabase.getParameter(TableParam.class, null));
+			mTableImplementation = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, mDatabase.getParameter(CompressionParam.class, CompressionParam.NO_COMPRESSION), mDatabase.getParameter(TableParam.class, TableParam.DEFAULT));
 		}
 		catch (IOException e)
 		{
@@ -64,7 +63,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 		Log.i("get entity");
 		Log.inc();
 
-		LeafEntry entry = new LeafEntry(getKeys(aEntity));
+		RecordEntry entry = new RecordEntry(getKeys(aEntity));
 
 		if (mTableImplementation.get(entry))
 		{
@@ -91,7 +90,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 
 	public synchronized InputStream read(T aEntity)
 	{
-		LeafEntry entry = new LeafEntry(getKeys(aEntity));
+		RecordEntry entry = new RecordEntry(getKeys(aEntity));
 
 		if (!mTableImplementation.get(entry))
 		{
@@ -125,7 +124,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 		byte[] value = getNonKeys(aEntity);
 		byte type = 0;
 
-		if (key.length + value.length > mTableImplementation.getEntryMaximumLength() / 4)
+		if (key.length + value.length + 1 > mTableImplementation.getEntryMaximumLength() / 4)
 		{
 			type = FLAG_BLOB;
 
@@ -140,7 +139,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 			}
 		}
 
-		LeafEntry entry = new LeafEntry(key, value, type);
+		RecordEntry entry = new RecordEntry(key, value, type);
 
 		if (mTableImplementation.put(entry))
 		{
@@ -153,7 +152,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 	}
 
 
-	private void deleteIfBlob(LeafEntry aEntry) throws DatabaseException
+	private void deleteIfBlob(RecordEntry aEntry) throws DatabaseException
 	{
 		if (aEntry.hasFlag(FLAG_BLOB))
 		{
@@ -176,16 +175,16 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 			BlobOutputStream.OnCloseListener onCloseListener = (aBlobOutputStream, aHeader) ->
 			{
 				Log.d("write blob entry");
-				
+
 				byte[] key = getKeys(aEntityKey);
-				
-				LeafEntry entry = new LeafEntry(key, aHeader, FLAG_BLOB);
-				
+
+				RecordEntry entry = new RecordEntry(key, aHeader, FLAG_BLOB);
+
 				if (mTableImplementation.put(entry))
 				{
 					deleteIfBlob(entry);
 				}
-				
+
 				synchronized (TableInstance.this)
 				{
 					mOpenOutputStreams.remove(aBlobOutputStream);
@@ -216,7 +215,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 
 			byte[] key = getKeys(aEntity);
 
-			LeafEntry entry = new LeafEntry(key, bos.finish(), FLAG_BLOB);
+			RecordEntry entry = new RecordEntry(key, bos.finish(), FLAG_BLOB);
 
 			if (mTableImplementation.put(entry))
 			{
@@ -234,7 +233,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 
 	public boolean remove(T aEntity)
 	{
-		LeafEntry entry = new LeafEntry(getKeys(aEntity));
+		RecordEntry entry = new RecordEntry(getKeys(aEntity));
 
 		if (mTableImplementation.remove(entry))
 		{
@@ -257,7 +256,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 	}
 
 
-	Iterator<LeafEntry> getLeafIterator()
+	Iterator<RecordEntry> getLeafIterator()
 	{
 		return mTableImplementation.iterator();
 	}
@@ -338,7 +337,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 	}
 
 
-	void unmarshalToObjectKeys(LeafEntry aBuffer, Object aOutput)
+	void unmarshalToObjectKeys(RecordEntry aBuffer, Object aOutput)
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getKey());
 
@@ -346,7 +345,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 	}
 
 
-	void unmarshalToObjectValues(LeafEntry aBuffer, Object aOutput)
+	void unmarshalToObjectValues(RecordEntry aBuffer, Object aOutput)
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getValue());
 
@@ -437,14 +436,8 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 	}
 
 
-	public class TypeResult
-	{
-		public byte type;
-	}
-	
-	
 	private synchronized BlockAccessor getBlockAccessor() throws IOException
 	{
-		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getParameter(CompressionParam.class, CompressionParam.BEST_SPEED), 0);
+		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getParameter(CompressionParam.class, CompressionParam.NO_COMPRESSION), 0);
 	}
 }

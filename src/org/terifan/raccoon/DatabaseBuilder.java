@@ -25,6 +25,7 @@ public class DatabaseBuilder
 	private int mCompressionOfNodes;
 	private int mCompressionOfLeafs;
 	private int mCompressionOfBlobs;
+	private int mBlockReadCacheSize;
 
 
 	public DatabaseBuilder(IPhysicalBlockDevice aBlockDevice)
@@ -33,6 +34,7 @@ public class DatabaseBuilder
 
 		mPagesPerNode = TableParam.DEFAULT.getPagesPerNode();
 		mPagesPerLeaf = TableParam.DEFAULT.getPagesPerLeaf();
+		mBlockReadCacheSize = TableParam.DEFAULT.getBlockReadCacheSize();
 		mCompressionOfNodes = CompressionParam.NONE;
 		mCompressionOfLeafs = CompressionParam.NONE;
 		mCompressionOfBlobs = CompressionParam.NONE;
@@ -47,7 +49,7 @@ public class DatabaseBuilder
 		ArrayList<Object> params = new ArrayList<>();
 
 		params.add(new CompressionParam(mCompressionOfNodes, mCompressionOfLeafs, mCompressionOfBlobs));
-		params.add(new TableParam(mPagesPerNode, mPagesPerLeaf));
+		params.add(new TableParam(mPagesPerNode, mPagesPerLeaf, mBlockReadCacheSize));
 
 		if (mPassword != null)
 		{
@@ -169,6 +171,13 @@ public class DatabaseBuilder
 	public DatabaseBuilder setCompressionOfBlobs(int aCompressionOfBlobs)
 	{
 		mCompressionOfBlobs = aCompressionOfBlobs;
+		return this;
+	}
+
+
+	public DatabaseBuilder setBlockReadCacheSize(int aBlockReadCacheSize)
+	{
+		mBlockReadCacheSize = aBlockReadCacheSize;
 		return this;
 	}
 }

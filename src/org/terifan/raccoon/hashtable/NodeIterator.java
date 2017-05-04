@@ -1,5 +1,6 @@
 package org.terifan.raccoon.hashtable;
 
+import org.terifan.raccoon.RecordEntry;
 import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayDeque;
 import java.util.ConcurrentModificationException;
@@ -7,12 +8,12 @@ import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockType;
 
 
-final class NodeIterator implements Iterator<LeafEntry>
+final class NodeIterator implements Iterator<RecordEntry>
 {
 	private long mModCount;
 	private ArrayDeque<BlockPointer> mNodes;
-	private Iterator<LeafEntry> mMap;
-	private LeafEntry mNextEntry;
+	private Iterator<RecordEntry> mMap;
+	private RecordEntry mNextEntry;
 	private HashTable mHashTable;
 	private boolean mHasEntry;
 
@@ -96,7 +97,7 @@ final class NodeIterator implements Iterator<LeafEntry>
 
 
 	@Override
-	public LeafEntry next()
+	public RecordEntry next()
 	{
 		if (mModCount != mHashTable.mModCount)
 		{

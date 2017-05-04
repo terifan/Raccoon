@@ -1,25 +1,25 @@
-package org.terifan.raccoon.hashtable;
+package org.terifan.raccoon;
 
 
-public final class LeafEntry
+public final class RecordEntry
 {
-	byte mFlags;
-	byte[] mKey;
-	byte[] mValue;
+	private byte mFlags;
+	private byte[] mKey;
+	private byte[] mValue;
 
 
-	public LeafEntry()
+	public RecordEntry()
 	{
 	}
 
 
-	public LeafEntry(byte[] aKey)
+	public RecordEntry(byte[] aKey)
 	{
 		mKey = aKey;
 	}
 
 
-	public LeafEntry(byte[] aKey, byte[] aValue, byte aFlags)
+	public RecordEntry(byte[] aKey, byte[] aValue, byte aFlags)
 	{
 		mKey = aKey;
 		mValue = aValue;

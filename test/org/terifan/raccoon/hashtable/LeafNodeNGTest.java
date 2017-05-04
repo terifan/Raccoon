@@ -1,5 +1,6 @@
 package org.terifan.raccoon.hashtable;
 
+import org.terifan.raccoon.RecordEntry;
 import java.util.HashMap;
 import java.util.Map;
 import org.testng.annotations.Test;
@@ -17,13 +18,13 @@ public class LeafNodeNGTest
 		byte[] key = tb();
 		byte[] value = tb();
 
-		map.put(new LeafEntry(key, value, (byte)77));
+		map.put(new RecordEntry(key, value, (byte)77));
 
-		LeafEntry entry = new LeafEntry(key);
+		RecordEntry entry = new RecordEntry(key);
 
 		assertTrue(map.get(entry));
-		assertEquals(entry.mValue, value);
-		assertEquals(entry.mFlags, (byte)77);
+		assertEquals(entry.getValue(), value);
+		assertEquals(entry.getFlags(), (byte)77);
 	}
 
 
@@ -39,7 +40,7 @@ public class LeafNodeNGTest
 			byte[] key = tb();
 			byte[] value = tb();
 
-			if (!map.put(new LeafEntry(key, value, (byte)0)))
+			if (!map.put(new RecordEntry(key, value, (byte)0)))
 			{
 				break;
 			}
@@ -49,9 +50,9 @@ public class LeafNodeNGTest
 
 		for (Map.Entry<byte[],byte[]> entry : values.entrySet())
 		{
-			LeafEntry entry1 = new LeafEntry(entry.getKey());
+			RecordEntry entry1 = new RecordEntry(entry.getKey());
 			assertTrue(map.get(entry1));
-			assertEquals(entry1.mValue, entry.getValue());
+			assertEquals(entry1.getValue(), entry.getValue());
 		}
 	}
 }

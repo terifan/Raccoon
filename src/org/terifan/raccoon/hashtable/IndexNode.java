@@ -7,7 +7,7 @@ import org.terifan.raccoon.storage.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-public final class IndexNode implements Node
+final class IndexNode implements Node
 {
 	private final static BlockPointer EMPTY_POINTER = new BlockPointer();
 

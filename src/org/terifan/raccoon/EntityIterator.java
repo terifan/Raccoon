@@ -1,6 +1,5 @@
 	package org.terifan.raccoon;
 
-import org.terifan.raccoon.hashtable.LeafEntry;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
@@ -9,11 +8,11 @@ import java.util.function.Supplier;
 
 final class EntityIterator<T> implements Iterator<T>
 {
-	private final Iterator<LeafEntry> mIterator;
+	private final Iterator<RecordEntry> mIterator;
 	private final TableInstance mTable;
 
 
-	EntityIterator(TableInstance aTable, Iterator<LeafEntry> aIterator)
+	EntityIterator(TableInstance aTable, Iterator<RecordEntry> aIterator)
 	{
 		mIterator = aIterator;
 		mTable = aTable;
@@ -32,7 +31,7 @@ final class EntityIterator<T> implements Iterator<T>
 	{
 		T outputEntity = (T)newEntityInstance();
 
-		LeafEntry entry = mIterator.next();
+		RecordEntry entry = mIterator.next();
 
 		mTable.unmarshalToObjectKeys(entry, outputEntity);
 		mTable.unmarshalToObjectValues(entry, outputEntity);

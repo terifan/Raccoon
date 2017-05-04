@@ -1,5 +1,6 @@
 package org.terifan.raccoon.hashtable;
 
+import org.terifan.raccoon.RecordEntry;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
@@ -37,7 +38,7 @@ import org.terifan.raccoon.storage.BlockType;
  *   (pointer 1..n)
  *     3 bytes - offset
  */
-final class LeafNode implements Node, Iterable<LeafEntry>
+final class LeafNode implements Node, Iterable<RecordEntry>
 {
 	private final static int MAX_CAPACITY = 1 << 24;
 	private final static int HEADER_SIZE = 2 + 3;
@@ -166,11 +167,11 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 	}
 
 
-	public boolean put(LeafEntry aEntry)
+	public boolean put(RecordEntry aEntry)
 	{
-		byte[] key = aEntry.mKey;
-		byte[] value = aEntry.mValue;
-		byte format = aEntry.mFlags;
+		byte[] key = aEntry.getKey();
+		byte[] value = aEntry.getValue();
+		byte format = aEntry.getFlags();
 		int newValueLengthPlus1 = 1 + value.length;
 
 		if (key.length > MAX_VALUE_SIZE || newValueLengthPlus1 > MAX_VALUE_SIZE || key.length + newValueLengthPlus1 > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
@@ -192,8 +193,8 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 				int valueOffset = entryOffset + ENTRY_HEADER_SIZE + readKeyLength(index);
 				int offset = mStartOffset + valueOffset;
 
-				aEntry.mFlags = mBuffer[offset];
-				aEntry.mValue = Arrays.copyOfRange(mBuffer, offset+1, offset + oldValueLengthPlus1);
+				aEntry.setFlags(mBuffer[offset]);
+				aEntry.setValue(Arrays.copyOfRange(mBuffer, offset+1, offset + oldValueLengthPlus1));
 
 				System.arraycopy(value, 0, mBuffer, offset+1, value.length);
 				mBuffer[offset] = format;
@@ -221,8 +222,8 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 
 			index = (-index) - 1;
 
-			aEntry.mFlags = 0;
-			aEntry.mValue = null;
+			aEntry.setFlags((byte)0);
+			aEntry.setValue(null);
 		}
 
 		int modCount = ++mModCount;
@@ -251,9 +252,9 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 	}
 
 
-	public boolean get(LeafEntry aEntry)
+	public boolean get(RecordEntry aEntry)
 	{
-		int index = indexOf(aEntry.mKey);
+		int index = indexOf(aEntry.getKey());
 
 		if (index < 0)
 		{
@@ -266,18 +267,18 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 	}
 
 
-	private void loadValue(int aIndex, LeafEntry aEntry)
+	private void loadValue(int aIndex, RecordEntry aEntry)
 	{
 		int valueOffset = mStartOffset + readValueOffset(aIndex);
 
-		aEntry.mFlags = mBuffer[valueOffset];
-		aEntry.mValue = Arrays.copyOfRange(mBuffer, valueOffset + 1, valueOffset + readValueLength(aIndex));
+		aEntry.setFlags(mBuffer[valueOffset]);
+		aEntry.setValue(Arrays.copyOfRange(mBuffer, valueOffset + 1, valueOffset + readValueLength(aIndex)));
 	}
 
 
-	public boolean remove(LeafEntry aEntry)
+	public boolean remove(RecordEntry aEntry)
 	{
-		int index = indexOf(aEntry.mKey);
+		int index = indexOf(aEntry.getKey());
 
 		if (index < 0)
 		{
@@ -290,16 +291,16 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 	}
 
 
-	private void remove(int aIndex, LeafEntry aEntry)
+	private void remove(int aIndex, RecordEntry aEntry)
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount;
-		assert aEntry.mKey.length == readKeyLength(aIndex);
+		assert aEntry.getKey().length == readKeyLength(aIndex);
 
 		int modCount = ++mModCount;
 
 		int valueOffset = mStartOffset + readValueOffset(aIndex);
-		aEntry.mFlags = mBuffer[valueOffset];
-		aEntry.mValue = Arrays.copyOfRange(mBuffer, valueOffset+1, valueOffset + readValueLength(aIndex));
+		aEntry.setFlags(mBuffer[valueOffset]);
+		aEntry.setValue(Arrays.copyOfRange(mBuffer, valueOffset+1, valueOffset + readValueLength(aIndex)));
 
 		int offset = readEntryOffset(aIndex);
 		int length = readEntryLength(aIndex);
@@ -569,13 +570,13 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 		try
 		{
 			StringBuilder sb = new StringBuilder();
-			for (LeafEntry entry : this)
+			for (RecordEntry entry : this)
 			{
 				if (sb.length() > 0)
 				{
 					sb.append(", ");
 				}
-				sb.append(new String(entry.mKey, "utf-8"));
+				sb.append(new String(entry.getKey(), "utf-8"));
 			}
 			return "[" + sb.toString() + "]";
 		}
@@ -587,13 +588,13 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 
 
 	@Override
-	public Iterator<LeafEntry> iterator()
+	public Iterator<RecordEntry> iterator()
 	{
 		return new EntryIterator();
 	}
 
 
-	public class EntryIterator implements Iterator<LeafEntry>
+	public class EntryIterator implements Iterator<RecordEntry>
 	{
 		private final int mExpectedModCount = mModCount;
 		private int mIndex;
@@ -607,7 +608,7 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 
 
 		@Override
-		public LeafEntry next()
+		public RecordEntry next()
 		{
 			if (mExpectedModCount != mModCount)
 			{
@@ -618,8 +619,8 @@ final class LeafNode implements Node, Iterable<LeafEntry>
 			int keyLength = readInt16(entryOffset);
 			int offset = mStartOffset + entryOffset + ENTRY_HEADER_SIZE;
 
-			LeafEntry entry = new LeafEntry();
-			entry.mKey = Arrays.copyOfRange(mBuffer, offset, offset + keyLength);
+			RecordEntry entry = new RecordEntry();
+			entry.setKey(Arrays.copyOfRange(mBuffer, offset, offset + keyLength));
 			loadValue(mIndex, entry);
 
 			mIndex++;

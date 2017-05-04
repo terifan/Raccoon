@@ -3,7 +3,6 @@ package org.terifan.raccoon;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import org.terifan.raccoon.hashtable.LeafEntry;
 import org.terifan.raccoon.serialization.EntityDescriptor;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
@@ -18,7 +17,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 public class ResultSet
 {
 	private final TableInstance mTable;
-	private final Iterator<LeafEntry> mIterator;
+	private final Iterator<RecordEntry> mIterator;
 	private final Marshaller mMarshaller;
 	private final FieldDescriptor[] mTypes;
 	private final Object[] mValues;
@@ -39,7 +38,7 @@ public class ResultSet
 	}
 
 
-	ResultSet(TableInstance aTable, Iterator<LeafEntry> aIterator)
+	ResultSet(TableInstance aTable, Iterator<RecordEntry> aIterator)
 	{
 		mTable = aTable;
 		mIterator = aIterator;
@@ -109,7 +108,7 @@ public class ResultSet
 			return false;
 		}
 
-		LeafEntry entry = mIterator.next();
+		RecordEntry entry = mIterator.next();
 
 		mMarshaller.unmarshal(new ByteArrayBuffer(entry.getKey()), this, Table.FIELD_CATEGORY_KEY);
 		mMarshaller.unmarshal(new ByteArrayBuffer(entry.getValue()), this, Table.FIELD_CATEGORY_DISCRIMINATOR + Table.FIELD_CATEGORY_VALUE);
