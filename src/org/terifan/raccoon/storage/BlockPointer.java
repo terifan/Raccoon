@@ -1,5 +1,6 @@
 package org.terifan.raccoon.storage;
 
+import org.terifan.raccoon.core.BlockType;
 import java.io.Serializable;
 import org.terifan.raccoon.PerformanceCounters;
 import static org.terifan.raccoon.PerformanceCounters.*;

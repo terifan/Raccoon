@@ -1,7 +1,9 @@
 package org.terifan.raccoon.hashtable;
 
-import org.terifan.raccoon.TableImplementation;
-import org.terifan.raccoon.RecordEntry;
+import org.terifan.raccoon.core.Node;
+import org.terifan.raccoon.core.LeafNode;
+import org.terifan.raccoon.core.TableImplementation;
+import org.terifan.raccoon.core.RecordEntry;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -9,13 +11,13 @@ import java.util.Iterator;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.PerformanceCounters;
-import org.terifan.raccoon.ScanResult;
+import org.terifan.raccoon.core.ScanResult;
 import static org.terifan.raccoon.PerformanceCounters.*;
 import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.TransactionCounter;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
-import org.terifan.raccoon.storage.BlockType;
+import org.terifan.raccoon.core.BlockType;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -23,7 +25,7 @@ import org.terifan.raccoon.util.Result;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-public final class HashTable implements TableImplementation
+public final class HashTable extends TableImplementation
 {
 	private BlockAccessor mBlockAccessor;
 	private BlockPointer mRootBlockPointer;

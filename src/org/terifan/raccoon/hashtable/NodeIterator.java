@@ -1,11 +1,12 @@
 package org.terifan.raccoon.hashtable;
 
-import org.terifan.raccoon.RecordEntry;
 import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayDeque;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import org.terifan.raccoon.storage.BlockType;
+import org.terifan.raccoon.core.LeafNode;
+import org.terifan.raccoon.core.RecordEntry;
+import org.terifan.raccoon.core.BlockType;
 
 
 final class NodeIterator implements Iterator<RecordEntry>

@@ -1,6 +1,6 @@
 package org.terifan.raccoon.hashtable;
 
-import org.terifan.raccoon.RecordEntry;
+import org.terifan.raccoon.core.RecordEntry;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;

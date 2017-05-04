@@ -3,12 +3,12 @@ package org.terifan.raccoon.btree;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import org.terifan.raccoon.RecordEntry;
-import org.terifan.raccoon.ScanResult;
-import org.terifan.raccoon.TableImplementation;
+import org.terifan.raccoon.core.RecordEntry;
+import org.terifan.raccoon.core.ScanResult;
+import org.terifan.raccoon.core.TableImplementation;
 
 
-public class BTree implements TableImplementation
+public class BTree extends TableImplementation
 {
 	@Override
 	public boolean get(RecordEntry aEntry)

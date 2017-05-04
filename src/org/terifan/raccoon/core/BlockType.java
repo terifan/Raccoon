@@ -1,4 +1,4 @@
-package org.terifan.raccoon.storage;
+package org.terifan.raccoon.core;
 
 
 public enum BlockType

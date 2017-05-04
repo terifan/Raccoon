@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.storage.BlockType;
+import org.terifan.raccoon.core.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 

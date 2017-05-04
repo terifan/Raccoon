@@ -1,5 +1,6 @@
 package org.terifan.raccoon.storage;
 
+import org.terifan.raccoon.core.BlockType;
 import java.io.IOException;
 import java.util.Random;
 import org.terifan.raccoon.CompressionParam;

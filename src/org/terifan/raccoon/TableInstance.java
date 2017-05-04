@@ -1,5 +1,8 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.core.ScanResult;
+import org.terifan.raccoon.core.RecordEntry;
+import org.terifan.raccoon.core.TableImplementation;
 import org.terifan.raccoon.hashtable.HashTable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

@@ -1,6 +1,5 @@
-package org.terifan.raccoon.hashtable;
+package org.terifan.raccoon.core;
 
-import org.terifan.raccoon.RecordEntry;
 import java.util.HashMap;
 import java.util.Map;
 import org.testng.annotations.Test;

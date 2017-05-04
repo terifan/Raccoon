@@ -1,44 +1,27 @@
-package org.terifan.raccoon.hashtable;
+package org.terifan.raccoon.core;
 
-import org.terifan.raccoon.RecordEntry;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import org.terifan.raccoon.PerformanceCounters;
 import static org.terifan.raccoon.PerformanceCounters.*;
-import org.terifan.raccoon.storage.BlockType;
 
 
 /**
- * This is a fixed size buffer for key/value storage suitable for persistence on external media.
- * The LeafNode wraps an array and reads and writes entries directly to the array
- * maintaining all necessary structural information inside the array at all time.
+ * This is a fixed size buffer for key/value storage suitable for persistence on external media. The LeafNode wraps an array and reads and
+ * writes entries directly to the array maintaining all necessary structural information inside the array at all time.
  *
- * implementation notes:
- * - an empty map will always consist of only zero value bytes
- * - the map does not record the capacity, this must be provided when an instance is created
- * - the map have a six byte overhead
- * - each entry have a seven byte overhead
+ * implementation notes: - an empty map will always consist of only zero value bytes - the map does not record the capacity, this must be
+ * provided when an instance is created - the map have a six byte overhead - each entry have a eight byte overhead
  *
  * Data layout:
  *
- * [header]
- *   2 bytes - entry count
- *   3 bytes - free space offset (minus HEADER_SIZE)
- * [list of entries]
- *   (entry 1..n)
- *     2 bytes - key length
- *     2 bytes - value length
- *     n bytes - key
- *     n bytes - value
- * [free space]
- *   n bytes - zeros
- * [list of pointers]
- *   (pointer 1..n)
- *     3 bytes - offset
+ * [header] 2 bytes - entry count 3 bytes - free space offset (minus HEADER_SIZE) [list of entries] (entry 1..n) 2 bytes - key length 2
+ * bytes - value length n bytes - key 1 byte - flags n bytes - value [free space] n bytes - zeros [list of pointers] (pointer 1..n) 3 bytes
+ * - offset
  */
-final class LeafNode implements Node, Iterable<RecordEntry>
+public final class LeafNode implements Node, Iterable<RecordEntry>
 {
 	private final static int MAX_CAPACITY = 1 << 24;
 	private final static int HEADER_SIZE = 2 + 3;
@@ -61,10 +44,8 @@ final class LeafNode implements Node, Iterable<RecordEntry>
 	/**
 	 * Create a new LeafNode with specified capacity.
 	 *
-	 * @param aCapacity
-	 *   the capacity (length) of the buffer. Maximum 65536 bytes.
-	 * @return
-	 *   the buffer
+	 * @param aCapacity the capacity (length) of the buffer. Maximum 65536 bytes.
+	 * @return the buffer
 	 */
 	public LeafNode(int aCapacity)
 	{
@@ -86,10 +67,8 @@ final class LeafNode implements Node, Iterable<RecordEntry>
 	/**
 	 * Create a new LeafNode wrapping the provided array.
 	 *
-	 * @param aBuffer
-	 *   the byte array to wrap
-	 * @return
-	 *   the buffer
+	 * @param aBuffer the byte array to wrap
+	 * @return the buffer
 	 */
 	public LeafNode(byte[] aBuffer)
 	{
@@ -100,14 +79,10 @@ final class LeafNode implements Node, Iterable<RecordEntry>
 	/**
 	 * Create a new LeafNode wrapping the provided array reading the actual map at the specified offset.
 	 *
-	 * @param aBuffer
-	 *   the byte array to wrap
-	 * @param aOffset
-	 *   an offset to the the actual map in the byte array.
-	 * @param aCapacity
-	 *   the capacity of the buffer, ie. the map use this number of bytes in the byte array provided at the offset specified.
-	 * @return
-	 *   the buffer
+	 * @param aBuffer the byte array to wrap
+	 * @param aOffset an offset to the the actual map in the byte array.
+	 * @param aCapacity the capacity of the buffer, ie. the map use this number of bytes in the byte array provided at the offset specified.
+	 * @return the buffer
 	 */
 	public LeafNode(byte[] aBuffer, int aOffset, int aCapacity)
 	{
@@ -194,9 +169,9 @@ final class LeafNode implements Node, Iterable<RecordEntry>
 				int offset = mStartOffset + valueOffset;
 
 				aEntry.setFlags(mBuffer[offset]);
-				aEntry.setValue(Arrays.copyOfRange(mBuffer, offset+1, offset + oldValueLengthPlus1));
+				aEntry.setValue(Arrays.copyOfRange(mBuffer, offset + 1, offset + oldValueLengthPlus1));
 
-				System.arraycopy(value, 0, mBuffer, offset+1, value.length);
+				System.arraycopy(value, 0, mBuffer, offset + 1, value.length);
 				mBuffer[offset] = format;
 
 				assert integrityCheck() == null : integrityCheck();
@@ -299,8 +274,9 @@ final class LeafNode implements Node, Iterable<RecordEntry>
 		int modCount = ++mModCount;
 
 		int valueOffset = mStartOffset + readValueOffset(aIndex);
+
 		aEntry.setFlags(mBuffer[valueOffset]);
-		aEntry.setValue(Arrays.copyOfRange(mBuffer, valueOffset+1, valueOffset + readValueLength(aIndex)));
+		aEntry.setValue(Arrays.copyOfRange(mBuffer, valueOffset + 1, valueOffset + readValueLength(aIndex)));
 
 		int offset = readEntryOffset(aIndex);
 		int length = readEntryLength(aIndex);
@@ -543,7 +519,7 @@ final class LeafNode implements Node, Iterable<RecordEntry>
 			}
 			if (offset + length > mStartOffset + mFreeSpaceOffset)
 			{
-				return "Entry offset after free space ("+(offset+" + "+length)+">"+(mStartOffset + mFreeSpaceOffset)+")";
+				return "Entry offset after free space (" + (offset + " + " + length) + ">" + (mStartOffset + mFreeSpaceOffset) + ")";
 			}
 
 			if (i > 0 && compare(mBuffer, prevKeyOffset, prevKeyLength, mBuffer, keyOffset, keyLength) >= 0)

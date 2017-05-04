@@ -1,5 +1,6 @@
 package org.terifan.raccoon.storage;
 
+import org.terifan.raccoon.core.BlockType;
 import org.terifan.raccoon.util.Cache;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

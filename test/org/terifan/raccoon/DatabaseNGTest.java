@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.core.ScanResult;
 import resources.entities._BlobKey1K;
 import resources.__FixedThreadExecutor;
 import resources.entities._Fruit2K;
@@ -1080,16 +1081,16 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW, CompressionParam.BEST_SPEED))
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION))
 		{
 			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
 			database.commit();
 		}
 
 		byte[] buffer = new byte[512];
-		device.readBlock(20, buffer, 0, buffer.length, 0L);
+		device.readBlock(100, buffer, 0, buffer.length, 0L);
 		buffer[0] ^= 1;
-		device.writeBlock(20, buffer, 0, buffer.length, 0L);
+		device.writeBlock(100, buffer, 0, buffer.length, 0L);
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{

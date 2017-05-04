@@ -1,5 +1,6 @@
 	package org.terifan.raccoon;
 
+import org.terifan.raccoon.core.RecordEntry;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
