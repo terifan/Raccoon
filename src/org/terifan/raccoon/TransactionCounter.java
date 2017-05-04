@@ -1,33 +1,31 @@
 package org.terifan.raccoon;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 
 public final class TransactionCounter
 {
-	private AtomicLong mCounter;
+	private long mCounter;
 
 
 	public TransactionCounter(long aCounter)
 	{
-		mCounter = new AtomicLong(aCounter);
+		mCounter = aCounter;
 	}
 
 
-	public long get()
+	public synchronized long get()
 	{
-		return mCounter.get();
+		return mCounter;
 	}
 
 
-	void increment()
+	synchronized void increment()
 	{
-		mCounter.incrementAndGet();
+		mCounter++;
 	}
 
 
-	void set(long aCounter)
+	synchronized void set(long aCounter)
 	{
-		mCounter.set(aCounter);
+		mCounter = aCounter;
 	}
 }
