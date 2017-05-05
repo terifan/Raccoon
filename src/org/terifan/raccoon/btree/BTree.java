@@ -9,6 +9,7 @@ import static org.terifan.raccoon.PerformanceCounters.PUT_VALUE;
 import static org.terifan.raccoon.PerformanceCounters.SPLIT_LEAF;
 import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.TransactionCounter;
+import org.terifan.raccoon.core.ArrayMap;
 import org.terifan.raccoon.core.Node;
 import org.terifan.raccoon.core.RecordEntry;
 import org.terifan.raccoon.core.ScanResult;
@@ -119,34 +120,224 @@ public class BTree extends TableImplementation
 
 	private IndexNode splitLeaf(BlockPointer aBlockPointer, LeafNode aLeaf, int aLevel)
 	{
-		return null;
+		Log.inc();
+		Log.d("split leaf");
+		Log.inc();
 
-//		Log.inc();
-//		Log.d("split leaf");
-//		Log.inc();
-//
-//		assert PerformanceCounters.increment(SPLIT_LEAF);
-//
-//		freeBlock(aBlockPointer);
-//
-//		LeafNode lowLeaf = new LeafNode(mLeafSize);
-//		LeafNode highLeaf = new LeafNode(mLeafSize);
-//		int halfRange = mPointersPerNode / 2;
-//
-//		divideLeafEntries(aMap, aLevel, halfRange, lowLeaf, highLeaf);
-//
-//		// create nodes pointing to leafs
+		assert PerformanceCounters.increment(SPLIT_LEAF);
+
+		freeBlock(aBlockPointer);
+
+		LeafNode lowLeaf = new LeafNode(mLeafSize);
+		LeafNode highLeaf = new LeafNode(mLeafSize);
+
+		// create nodes pointing to leafs
 //		BlockPointer lowIndex = writeIfNotEmpty(lowLeaf, halfRange);
 //		BlockPointer highIndex = writeIfNotEmpty(highLeaf, halfRange);
-//
-//		IndexNode node = new IndexNode(new byte[mNodeSize]);
+
+		IndexNode node = new IndexNode();
 //		node.setPointer(0, lowIndex);
 //		node.setPointer(halfRange, highIndex);
-//
-//		Log.dec();
-//		Log.dec();
-//
-//		return node;
+
+		Log.dec();
+		Log.dec();
+
+		return node;
+	}
+
+
+	static ArrayMap splitLeafImpl(ArrayMap aMap, ArrayMap low, ArrayMap high, int S, RecordEntry aNewEntry)
+	{
+		ArrayMap middle = null;
+		ArrayMap map;
+
+		int request = aNewEntry.getKey().length + aNewEntry.getValue().length + 10;
+
+		if (request > aMap.getFreeSpace())
+		{
+			map = aMap.resize(aMap.array().length + request);
+		}
+		else
+		{
+			map = aMap;
+		}
+		map.put(aNewEntry);
+
+		while (!map.isEmpty())
+		{
+			if (low.getFreeSpace() >= high.getFreeSpace())
+			{
+				RecordEntry entry = map.removeFirst();
+				if (!low.put(entry))
+				{
+					if (!high.put(entry))
+					{
+						middle = new ArrayMap(new byte[S]);
+						middle.put(entry);
+						while (!map.isEmpty())
+						{
+							entry = map.removeLast();
+							if (!middle.put(entry))
+							{
+								if (!high.put(middle.removeLast()))
+								{
+									throw new IllegalStateException();
+								}
+								if (!middle.put(entry))
+								{
+									throw new IllegalStateException();
+								}
+							}
+						}
+						break;
+					}
+					while (!map.isEmpty())
+					{
+						entry = map.removeLast();
+						if (!high.put(entry))
+						{
+							middle = new ArrayMap(new byte[S]);
+							middle.put(entry);
+							while (!map.isEmpty())
+							{
+								entry = map.removeLast();
+								if (!middle.put(entry))
+								{
+									if (!high.put(middle.removeLast()))
+									{
+										throw new IllegalStateException();
+									}
+									if (!middle.put(entry))
+									{
+										throw new IllegalStateException();
+									}
+								}
+							}
+						}
+					}
+					break;
+				}
+			}
+			else
+			{
+				RecordEntry entry = map.removeLast();
+				if (!high.put(entry))
+				{
+					if (!low.put(entry))
+					{
+						middle = new ArrayMap(new byte[S]);
+						middle.put(entry);
+						while (!map.isEmpty())
+						{
+							entry = map.removeFirst();
+							if (!middle.put(entry))
+							{
+								if (!low.put(middle.removeFirst()))
+								{
+									throw new IllegalStateException();
+								}
+								if (!middle.put(entry))
+								{
+									throw new IllegalStateException();
+								}
+							}
+						}
+						break;
+					}
+					while (!map.isEmpty())
+					{
+						entry = map.removeFirst();
+						if (!low.put(entry))
+						{
+							middle = new ArrayMap(new byte[S]);
+							middle.put(entry);
+							while (!map.isEmpty())
+							{
+								entry = map.removeFirst();
+								if (!middle.put(entry))
+								{
+									if (!low.put(middle.removeFirst()))
+									{
+										throw new IllegalStateException();
+									}
+									if (!middle.put(entry))
+									{
+										throw new IllegalStateException();
+									}
+								}
+							}
+						}
+					}
+					break;
+				}
+			}
+		}
+
+		return middle;
+	}
+
+
+	static ArrayMap splitLeafImpl2(ArrayMap aMap, ArrayMap low, ArrayMap high, int S, RecordEntry aNewEntry)
+	{
+		ArrayMap middle = null;
+		ArrayMap map;
+
+		int request = aNewEntry.getKey().length + aNewEntry.getValue().length + 10;
+
+		if (request > aMap.getFreeSpace())
+		{
+			map = aMap.resize(aMap.array().length + request);
+		}
+		else
+		{
+			map = aMap;
+		}
+		map.put(aNewEntry);
+
+		boolean lowFull = false;
+		boolean highFull = false;
+
+		while (!map.isEmpty())
+		{
+			if (!lowFull && (highFull || low.getFreeSpace() >= high.getFreeSpace()))
+			{
+				RecordEntry entry = map.removeFirst();
+				if (!low.put(entry))
+				{
+					map.put(entry);
+					lowFull = true;
+				}
+			}
+			else if (!highFull)
+			{
+				RecordEntry entry = map.removeLast();
+				if (!high.put(entry))
+				{
+					map.put(entry);
+					highFull = true;
+				}
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		if (map.isEmpty())
+		{
+			return null;
+		}
+
+		middle = new ArrayMap(S);
+		while (!map.isEmpty())
+		{
+			if (!middle.put(map.removeFirst()))
+			{
+				throw new IllegalStateException();
+			}
+		}
+
+		return middle;
 	}
 
 

@@ -67,4 +67,10 @@ public final class RecordEntry
 	{
 		mValue = aValue;
 	}
+
+
+	public int size()
+	{
+		return mKey.length + mValue.length + 1;
+	}
 }
