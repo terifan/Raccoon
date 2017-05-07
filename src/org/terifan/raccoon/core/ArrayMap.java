@@ -6,6 +6,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import org.terifan.raccoon.PerformanceCounters;
 import static org.terifan.raccoon.PerformanceCounters.*;
+import org.terifan.raccoon.util.Log;
 
 
 /**
@@ -17,19 +18,19 @@ import static org.terifan.raccoon.PerformanceCounters.*;
  *
  * Data layout:
  *
- * [header] 
+ * [header]
  *   2 bytes - entry count
- *   2 bytes - free space offset (minus HEADER_SIZE) 
- * [list of entries] 
+ *   2 bytes - free space offset (minus HEADER_SIZE)
+ * [list of entries]
  *   (entry 1..n)
  *   2 bytes - key length
  *   2 bytes - value length
- *   n bytes - key 
- *   1 byte - flags 
- *   n bytes - value 
+ *   n bytes - key
+ *   1 byte - flags
+ *   n bytes - value
  * [free space]
- *   n bytes - zeros 
- * [list of pointers] 
+ *   n bytes - zeros
+ * [list of pointers]
  *   (pointer 1..n)
  *   2 bytes - offset
  */
@@ -40,6 +41,10 @@ public class ArrayMap implements Iterable<RecordEntry>
 	private final static int ENTRY_POINTER_SIZE = 2;
 	private final static int ENTRY_HEADER_SIZE = 2 + 2;
 	private final static int MAX_VALUE_SIZE = (1 << 16) - 1;
+
+	public final static int EXACT = 0;
+	public final static int NEAR = 1;
+	public final static int LAST = 2;
 
 	private final static int ENTRY_OVERHEAD = ENTRY_POINTER_SIZE + ENTRY_HEADER_SIZE;
 	public final static int OVERHEAD = HEADER_SIZE + ENTRY_OVERHEAD + ENTRY_POINTER_SIZE;
@@ -245,6 +250,33 @@ public class ArrayMap implements Iterable<RecordEntry>
 	}
 
 
+	/**
+	 * Find an entry equal or before the sought key
+	 *
+	 * @return
+	 *   one of NEAR, EXACT or LAST depending on what entry was found. LAST indicated no identical or smaller key was found.
+	 */
+	public int nearest(RecordEntry aEntry)
+	{
+		int index = indexOf(aEntry.getKey());
+
+		if (index == -mEntryCount - 1)
+		{
+			return LAST;
+		}
+		if (index < 0)
+		{
+			loadValue(-index - 1, aEntry);
+
+			return NEAR;
+		}
+
+		loadValue(index, aEntry);
+
+		return EXACT;
+	}
+
+
 	private void loadValue(int aIndex, RecordEntry aEntry)
 	{
 		int valueOffset = mStartOffset + readValueOffset(aIndex);
@@ -272,14 +304,10 @@ public class ArrayMap implements Iterable<RecordEntry>
 	private void remove(int aIndex, RecordEntry aEntry)
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount;
-		assert aEntry.getKey().length == readKeyLength(aIndex);
 
 		int modCount = ++mModCount;
 
-		int valueOffset = mStartOffset + readValueOffset(aIndex);
-
-		aEntry.setFlags(mBuffer[valueOffset]);
-		aEntry.setValue(Arrays.copyOfRange(mBuffer, valueOffset + 1, valueOffset + readValueLength(aIndex)));
+		get(aIndex, aEntry);
 
 		int offset = readEntryOffset(aIndex);
 		int length = readEntryLength(aIndex);
@@ -316,6 +344,19 @@ public class ArrayMap implements Iterable<RecordEntry>
 
 		assert integrityCheck() == null : integrityCheck();
 		assert mModCount == modCount : mModCount + " == " + modCount;
+	}
+
+
+	public RecordEntry get(int aIndex, RecordEntry aEntry)
+	{
+		int keyOffset = mStartOffset + readKeyOffset(aIndex);
+		int valueOffset = mStartOffset + readValueOffset(aIndex);
+
+		aEntry.setKey(Arrays.copyOfRange(mBuffer, keyOffset, keyOffset + readKeyLength(aIndex)));
+		aEntry.setFlags(mBuffer[valueOffset]);
+		aEntry.setValue(Arrays.copyOfRange(mBuffer, valueOffset + 1, valueOffset + readValueLength(aIndex)));
+
+		return aEntry;
 	}
 
 
@@ -599,5 +640,33 @@ public class ArrayMap implements Iterable<RecordEntry>
 		{
 			throw new UnsupportedOperationException();
 		}
+	}
+
+
+	public RecordEntry removeFirst()
+	{
+		RecordEntry entry = new RecordEntry();
+		remove(0, entry);
+		return entry;
+	}
+
+
+	public RecordEntry removeLast()
+	{
+		RecordEntry entry = new RecordEntry();
+		remove(mEntryCount - 1, entry);
+		return entry;
+	}
+
+
+	public ArrayMap resize(int aNewSize)
+	{
+		int s = ENTRY_POINTER_SIZE * mEntryCount;
+		byte[] buffer = new byte[aNewSize];
+
+		System.arraycopy(mBuffer, 0, buffer, 0, mFreeSpaceOffset);
+		System.arraycopy(mBuffer, mBuffer.length - s, buffer, aNewSize - s, s);
+
+		return new ArrayMap(buffer);
 	}
 }
