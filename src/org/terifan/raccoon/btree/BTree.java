@@ -134,7 +134,6 @@ public class BTree extends TableImplementation
 		// create nodes pointing to leafs
 //		BlockPointer lowIndex = writeIfNotEmpty(lowLeaf, halfRange);
 //		BlockPointer highIndex = writeIfNotEmpty(highLeaf, halfRange);
-
 		IndexNode node = new IndexNode();
 //		node.setPointer(0, lowIndex);
 //		node.setPointer(halfRange, highIndex);
@@ -146,21 +145,14 @@ public class BTree extends TableImplementation
 	}
 
 
-	static ArrayMap splitLeafImpl(ArrayMap aMap, ArrayMap low, ArrayMap high, int S, RecordEntry aNewEntry)
+	static ArrayMap[] splitLeafImpl(ArrayMap aMap, RecordEntry aNewEntry)
 	{
-		ArrayMap middle = null;
-		ArrayMap map;
+		int len = 2 * aMap.array().length;
 
-		int request = aNewEntry.getKey().length + aNewEntry.getValue().length + 10;
+		ArrayMap low = new ArrayMap(len);
+		ArrayMap high = new ArrayMap(len);
 
-		if (request > aMap.getFreeSpace())
-		{
-			map = aMap.resize(aMap.array().length + request);
-		}
-		else
-		{
-			map = aMap;
-		}
+		ArrayMap map = aMap.resize(len);
 		map.put(aNewEntry);
 
 		while (!map.isEmpty())
@@ -170,52 +162,7 @@ public class BTree extends TableImplementation
 				RecordEntry entry = map.removeFirst();
 				if (!low.put(entry))
 				{
-					if (!high.put(entry))
-					{
-						middle = new ArrayMap(new byte[S]);
-						middle.put(entry);
-						while (!map.isEmpty())
-						{
-							entry = map.removeLast();
-							if (!middle.put(entry))
-							{
-								if (!high.put(middle.removeLast()))
-								{
-									throw new IllegalStateException();
-								}
-								if (!middle.put(entry))
-								{
-									throw new IllegalStateException();
-								}
-							}
-						}
-						break;
-					}
-					while (!map.isEmpty())
-					{
-						entry = map.removeLast();
-						if (!high.put(entry))
-						{
-							middle = new ArrayMap(new byte[S]);
-							middle.put(entry);
-							while (!map.isEmpty())
-							{
-								entry = map.removeLast();
-								if (!middle.put(entry))
-								{
-									if (!high.put(middle.removeLast()))
-									{
-										throw new IllegalStateException();
-									}
-									if (!middle.put(entry))
-									{
-										throw new IllegalStateException();
-									}
-								}
-							}
-						}
-					}
-					break;
+					throw new IllegalStateException();
 				}
 			}
 			else
@@ -223,121 +170,12 @@ public class BTree extends TableImplementation
 				RecordEntry entry = map.removeLast();
 				if (!high.put(entry))
 				{
-					if (!low.put(entry))
-					{
-						middle = new ArrayMap(new byte[S]);
-						middle.put(entry);
-						while (!map.isEmpty())
-						{
-							entry = map.removeFirst();
-							if (!middle.put(entry))
-							{
-								if (!low.put(middle.removeFirst()))
-								{
-									throw new IllegalStateException();
-								}
-								if (!middle.put(entry))
-								{
-									throw new IllegalStateException();
-								}
-							}
-						}
-						break;
-					}
-					while (!map.isEmpty())
-					{
-						entry = map.removeFirst();
-						if (!low.put(entry))
-						{
-							middle = new ArrayMap(new byte[S]);
-							middle.put(entry);
-							while (!map.isEmpty())
-							{
-								entry = map.removeFirst();
-								if (!middle.put(entry))
-								{
-									if (!low.put(middle.removeFirst()))
-									{
-										throw new IllegalStateException();
-									}
-									if (!middle.put(entry))
-									{
-										throw new IllegalStateException();
-									}
-								}
-							}
-						}
-					}
-					break;
+					throw new IllegalStateException();
 				}
 			}
 		}
 
-		return middle;
-	}
-
-
-	static ArrayMap splitLeafImpl2(ArrayMap aMap, ArrayMap low, ArrayMap high, int S, RecordEntry aNewEntry)
-	{
-		ArrayMap middle = null;
-		ArrayMap map;
-
-		int request = aNewEntry.getKey().length + aNewEntry.getValue().length + 10;
-
-		if (request > aMap.getFreeSpace())
-		{
-			map = aMap.resize(aMap.array().length + request);
-		}
-		else
-		{
-			map = aMap;
-		}
-		map.put(aNewEntry);
-
-		boolean lowFull = false;
-		boolean highFull = false;
-
-		while (!map.isEmpty())
-		{
-			if (!lowFull && (highFull || low.getFreeSpace() >= high.getFreeSpace()))
-			{
-				RecordEntry entry = map.removeFirst();
-				if (!low.put(entry))
-				{
-					map.put(entry);
-					lowFull = true;
-				}
-			}
-			else if (!highFull)
-			{
-				RecordEntry entry = map.removeLast();
-				if (!high.put(entry))
-				{
-					map.put(entry);
-					highFull = true;
-				}
-			}
-			else
-			{
-				break;
-			}
-		}
-
-		if (map.isEmpty())
-		{
-			return null;
-		}
-
-		middle = new ArrayMap(S);
-		while (!map.isEmpty())
-		{
-			if (!middle.put(map.removeFirst()))
-			{
-				throw new IllegalStateException();
-			}
-		}
-
-		return middle;
+		return new ArrayMap[]{low, high};
 	}
 
 

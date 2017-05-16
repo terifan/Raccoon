@@ -303,7 +303,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 
 	private void remove(int aIndex, RecordEntry aEntry)
 	{
-		assert aIndex >= 0 && aIndex < mEntryCount;
+		assert aIndex >= 0 && aIndex < mEntryCount : "index="+aIndex+", count="+mEntryCount;
 
 		int modCount = ++mModCount;
 
@@ -380,7 +380,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 	}
 
 
-	private int indexOf(byte[] aKey)
+	public int indexOf(byte[] aKey)
 	{
 		int low = 0;
 		int high = mEntryCount - 1;
@@ -640,6 +640,22 @@ public class ArrayMap implements Iterable<RecordEntry>
 		{
 			throw new UnsupportedOperationException();
 		}
+	}
+
+
+	public RecordEntry getFirst()
+	{
+		RecordEntry entry = new RecordEntry();
+		get(0, entry);
+		return entry;
+	}
+
+
+	public RecordEntry getLast()
+	{
+		RecordEntry entry = new RecordEntry();
+		get(mEntryCount - 1, entry);
+		return entry;
 	}
 
 
