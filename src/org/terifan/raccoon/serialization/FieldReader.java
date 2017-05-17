@@ -8,21 +8,21 @@ import java.util.Date;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-class FieldReader
+public class FieldReader
 {
-	static Object readField(FieldDescriptor aFieldType, ByteArrayBuffer aInput, boolean aIgnoreMissingClasses) throws IOException, ClassNotFoundException
+	public static Object readField(FieldDescriptor aFieldDescriptor, ByteArrayBuffer aInput, boolean aIgnoreMissingClasses) throws IOException, ClassNotFoundException
 	{
 		Object value;
 
-		if (aFieldType.isArray())
+		if (aFieldDescriptor.isArray())
 		{
-			Class type = aFieldType.getTypeClass();
+			Class type = aFieldDescriptor.getTypeClass();
 
-			value = readArray(aInput, aFieldType, 1, type, aIgnoreMissingClasses);
+			value = readArray(aInput, aFieldDescriptor, 1, type, aIgnoreMissingClasses);
 		}
 		else
 		{
-			value = readValue(aFieldType, aInput, aIgnoreMissingClasses);
+			value = readValue(aFieldDescriptor, aInput, aIgnoreMissingClasses);
 		}
 
 		aInput.align();
@@ -31,16 +31,16 @@ class FieldReader
 	}
 
 
-	private static Object readArray(ByteArrayBuffer aInput, FieldDescriptor aFieldType, int aLevel, Class<?> aComponentType, boolean aIgnoreMissingClasses) throws IOException, ClassNotFoundException
+	private static Object readArray(ByteArrayBuffer aInput, FieldDescriptor aFieldDescriptor, int aLevel, Class<?> aComponentType, boolean aIgnoreMissingClasses) throws IOException, ClassNotFoundException
 	{
 		int len = aInput.readVar32();
 
-		int[] dims = new int[aFieldType.getDepth() - aLevel + 1];
+		int[] dims = new int[aFieldDescriptor.getDepth() - aLevel + 1];
 		dims[0] = len;
 
 		Object array = Array.newInstance(aComponentType, dims);
 
-		if (aLevel < aFieldType.getDepth() || !aFieldType.isPrimitive())
+		if (aLevel < aFieldDescriptor.getDepth() || !aFieldDescriptor.isPrimitive())
 		{
 			boolean[] isNull = new boolean[len];
 
@@ -51,11 +51,11 @@ class FieldReader
 
 			aInput.align();
 
-			if (aLevel < aFieldType.getDepth())
+			if (aLevel < aFieldDescriptor.getDepth())
 			{
 				for (int i = 0; i < len; i++)
 				{
-					Object value = isNull[i] ? null : readArray(aInput, aFieldType, aLevel + 1, aComponentType, aIgnoreMissingClasses);
+					Object value = isNull[i] ? null : readArray(aInput, aFieldDescriptor, aLevel + 1, aComponentType, aIgnoreMissingClasses);
 
 					Array.set(array, i, value);
 				}
@@ -64,7 +64,7 @@ class FieldReader
 			{
 				for (int i = 0; i < len; i++)
 				{
-					Object value = isNull[i] ? null : readValue(aFieldType, aInput, aIgnoreMissingClasses);
+					Object value = isNull[i] ? null : readValue(aFieldDescriptor, aInput, aIgnoreMissingClasses);
 
 					Array.set(array, i, value);
 				}
@@ -72,7 +72,7 @@ class FieldReader
 				aInput.align();
 			}
 		}
-		else if (aFieldType.getValueType() == ValueType.BYTE && aFieldType.isPrimitive())
+		else if (aFieldDescriptor.getValueType() == ValueType.BYTE && aFieldDescriptor.isPrimitive())
 		{
 			aInput.read((byte[])array);
 		}
@@ -80,7 +80,7 @@ class FieldReader
 		{
 			for (int i = 0; i < len; i++)
 			{
-				Object value = readValue(aFieldType, aInput, aIgnoreMissingClasses);
+				Object value = readValue(aFieldDescriptor, aInput, aIgnoreMissingClasses);
 
 				Array.set(array, i, value);
 			}
@@ -92,9 +92,9 @@ class FieldReader
 	}
 
 
-	private static Object readValue(FieldDescriptor aFieldType, ByteArrayBuffer aInput, boolean aIgnoreMissingClasses) throws IOException, ClassNotFoundException
+	private static Object readValue(FieldDescriptor aFieldDescriptor, ByteArrayBuffer aInput, boolean aIgnoreMissingClasses) throws IOException, ClassNotFoundException
 	{
-		switch (aFieldType.getValueType())
+		switch (aFieldDescriptor.getValueType())
 		{
 			case BOOLEAN:
 				return aInput.readBit() == 1;
@@ -135,7 +135,7 @@ class FieldReader
 					throw e;
 				}
 			default:
-				throw new IllegalStateException("Content type not implemented: " + aFieldType.getValueType());
+				throw new IllegalStateException("Content type not implemented: " + aFieldDescriptor.getValueType());
 		}
 	}
 }

@@ -14,7 +14,7 @@ import org.terifan.raccoon.util.Log;
 
 public final class Table<T>
 {
-	protected final static int FIELD_CATEGORY_KEY = 1;
+	public final static int FIELD_CATEGORY_KEY = 1;
 	protected final static int FIELD_CATEGORY_DISCRIMINATOR = 2;
 	protected final static int FIELD_CATEGORY_VALUE = 4;
 
