@@ -145,34 +145,41 @@ public class BTree extends TableImplementation
 	}
 
 
-	static ArrayMap[] splitLeafImpl(ArrayMap aMap, RecordEntry aNewEntry)
+	static ArrayMap[] splitLeafImpl(ArrayMap aMap, RecordEntry aEntry)
 	{
-		int len = 2 * aMap.array().length;
+		int len = aMap.array().length;
 
-		ArrayMap low = new ArrayMap(len);
-		ArrayMap high = new ArrayMap(len);
+		ArrayMap low = new ArrayMap(2 * len);
+		ArrayMap high = new ArrayMap(2 * len);
+		ArrayMap map = aMap.resize(2 * len);
 
-		ArrayMap map = aMap.resize(len);
-		map.put(aNewEntry);
+		map.put(aEntry);
 
 		while (!map.isEmpty())
 		{
 			if (low.getFreeSpace() >= high.getFreeSpace())
 			{
-				RecordEntry entry = map.removeFirst();
-				if (!low.put(entry))
+				if (!low.put(map.removeFirst()))
 				{
 					throw new IllegalStateException();
 				}
 			}
 			else
 			{
-				RecordEntry entry = map.removeLast();
-				if (!high.put(entry))
+				if (!high.put(map.removeLast()))
 				{
 					throw new IllegalStateException();
 				}
 			}
+		}
+
+		if (low.getFreeSpace() >= len)
+		{
+			low = low.resize(len);
+		}
+		if (high.getFreeSpace() >= len)
+		{
+			high = high.resize(len);
 		}
 
 		return new ArrayMap[]{low, high};

@@ -36,22 +36,26 @@ public class BTreeNGTest
 	@Test
 	public void testSplitLeaf2() throws IOException
 	{
-		int S = 150;
+		int S = 170;
+		char chr = 'f';
 
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 15; i++)
 		{
 			ArrayMap map = new ArrayMap(S);
 
-			for (int k = 0; k < 50; k++)
+			for (char k = 'a'; k <= 'z'; k++)
 			{
-				map.put(new RecordEntry(s('a' + k, 1 + rnd.nextInt(30)).getBytes(), "123".getBytes(), (byte)0));
+				if (k!=chr && !map.put(new RecordEntry(s(k, 1 + rnd.nextInt(20)).getBytes(), "123".getBytes(), (byte)0)))
+				{
+					break;
+				}
 			}
 
 			String org = map.toString();
 
-			RecordEntry re = new RecordEntry(s('c', 5).getBytes(), "123".getBytes(), (byte)0);
+			RecordEntry ne = new RecordEntry(s(chr, 1 + rnd.nextInt(20)).getBytes(), "123".getBytes(), (byte)0);
 
-			ArrayMap[] maps = BTree.splitLeafImpl(map, re);
+			ArrayMap[] maps = BTree.splitLeafImpl(map, ne);
 
 			System.out.printf("%-10s %-115s => %-70s%-70s%n", maps[0].getFreeSpace() + "/" + maps[1].getFreeSpace(), org, maps[0], maps[1]);
 		}
