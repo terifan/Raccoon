@@ -30,6 +30,21 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	}
 
 
+	public FieldDescriptor(int aIndex, int aCategory, int aDepth, ValueType aValueType, boolean aNullable, boolean aArray, boolean aPrimitive, String aName, String aTypeName, Field aField)
+	{
+		this.mIndex = aIndex;
+		this.mCategory = aCategory;
+		this.mDepth = aDepth;
+		this.mValueType = aValueType;
+		this.mNullable = aNullable;
+		this.mArray = aArray;
+		this.mPrimitive = aPrimitive;
+		this.mName = aName;
+		this.mTypeName = aTypeName;
+		this.mField = aField;
+	}
+
+
 	public Field getField()
 	{
 		return mField;

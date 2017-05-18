@@ -49,12 +49,12 @@ public class ArrayMap implements Iterable<RecordEntry>
 	private final static int ENTRY_OVERHEAD = ENTRY_POINTER_SIZE + ENTRY_HEADER_SIZE;
 	public final static int OVERHEAD = HEADER_SIZE + ENTRY_OVERHEAD + ENTRY_POINTER_SIZE;
 
-	private byte[] mBuffer;
-	private int mStartOffset;
-	private int mCapacity;
-	private int mPointerListOffset;
-	private int mFreeSpaceOffset;
-	private int mEntryCount;
+	protected byte[] mBuffer;
+	protected int mStartOffset;
+	protected int mCapacity;
+	protected int mPointerListOffset;
+	protected int mFreeSpaceOffset;
+	protected int mEntryCount;
 	private int mModCount;
 
 
