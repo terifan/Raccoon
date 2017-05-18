@@ -758,7 +758,7 @@ public final class HashTable extends TableImplementation
 	public void scan(ScanResult aScanResult)
 	{
 		aScanResult.tables++;
-		
+
 		scan(aScanResult, mRootBlockPointer);
 	}
 
@@ -825,7 +825,7 @@ public final class HashTable extends TableImplementation
 					aScanResult.enterBlob();
 
 					scan(aScanResult, new BlockPointer().unmarshal(byteArrayBuffer));
-					
+
 					aScanResult.exitBlob();
 				}
 				break;
