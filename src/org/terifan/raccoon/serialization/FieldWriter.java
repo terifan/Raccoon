@@ -8,9 +8,9 @@ import java.util.Date;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-class FieldWriter
+public class FieldWriter
 {
-	static void writeField(FieldDescriptor aFieldType, Object aValue, ByteArrayBuffer aOutput) throws IOException
+	public static void writeField(FieldDescriptor aFieldType, Object aValue, ByteArrayBuffer aOutput) throws IOException
 	{
 		if (aFieldType.isArray())
 		{
