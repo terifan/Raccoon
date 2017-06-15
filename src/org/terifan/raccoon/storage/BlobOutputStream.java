@@ -3,7 +3,6 @@ package org.terifan.raccoon.storage;
 import org.terifan.raccoon.core.BlockType;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
 import org.terifan.raccoon.TransactionCounter;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -48,6 +47,31 @@ public class BlobOutputStream extends OutputStream
 		if (mBuffer.remaining() == 0)
 		{
 			flushBlock();
+		}
+	}
+
+
+	@Override
+	public void write(byte[] aBuffer, int aOffset, int aLength) throws IOException
+	{
+		if (mClosed)
+		{
+			throw new IOException("Stream closed");
+		}
+
+		while (aLength > 0)
+		{
+			int len = Math.min(mBuffer.remaining(), aLength);
+
+			mBuffer.write(aBuffer, aOffset, len);
+			mTotalLength += len;
+			aOffset += len;
+			aLength -= len;
+
+			if (mBuffer.remaining() == 0)
+			{
+				flushBlock();
+			}
 		}
 	}
 
@@ -105,9 +129,10 @@ public class BlobOutputStream extends OutputStream
 	{
 		BlockPointer bp = mBlockAccessor.writeBlock(mBuffer.array(), 0, mBuffer.position(), mTransactionId.get(), BlockType.DATA, 0);
 		bp.marshal(mPointerBuffer);
+
 		mBuffer.position(0);
 
-		Arrays.fill(mBuffer.array(), (byte)0);
+//		Arrays.fill(mBuffer.array(), (byte)0);
 	}
 
 

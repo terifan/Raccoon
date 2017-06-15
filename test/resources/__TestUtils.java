@@ -2,6 +2,7 @@ package resources;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.Random;
@@ -77,8 +78,8 @@ public class __TestUtils
 	{
 		return tb(16);
 	}
-	
-	
+
+
 	public static byte[] tb(int aMaxLength)
 	{
 		byte[] alpha = "abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÖÖ".getBytes();
@@ -109,7 +110,7 @@ public class __TestUtils
 		return Arrays.equals(aBuffer, buf);
 	}
 
-	
+
 	public static String compareObjects(Object msg0, Object msg1)
 	{
 		try
@@ -142,6 +143,30 @@ public class __TestUtils
 		catch (IOException e)
 		{
 			return e.toString();
+		}
+	}
+
+
+	public static byte[] readAll(InputStream aInputStream) throws IOException
+	{
+		try (InputStream in = aInputStream)
+		{
+			byte [] buffer = new byte[4096];
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+			for (;;)
+			{
+				int len = in.read(buffer);
+
+				if (len <= 0)
+				{
+					break;
+				}
+
+				baos.write(buffer, 0, len);
+			}
+
+			return baos.toByteArray();
 		}
 	}
 }

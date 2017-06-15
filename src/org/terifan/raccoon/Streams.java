@@ -15,14 +15,14 @@ final class Streams
 
 	public static byte[] readAll(InputStream aInputStream) throws IOException
 	{
-		try
+		try (InputStream in = aInputStream)
 		{
 			byte [] buffer = new byte[4096];
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
 			for (;;)
 			{
-				int len = aInputStream.read(buffer);
+				int len = in.read(buffer);
 
 				if (len <= 0)
 				{
@@ -33,10 +33,6 @@ final class Streams
 			}
 
 			return baos.toByteArray();
-		}
-		finally
-		{
-			aInputStream.close();
 		}
 	}
 

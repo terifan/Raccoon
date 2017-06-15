@@ -24,7 +24,7 @@ import static java.util.Arrays.fill;
 //           4 signature
 //           4 checksum (salt + key pool + payload padding)
 //     208 key pool
-//          32 tweak cipher key
+//          32 tweak cipher key (1 x 32)
 //          96 ciper keys (3 x 32)
 //          48 cipher iv (3 x 16)
 //      40 payload padding
@@ -45,8 +45,8 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
 	private final static int ITERATION_COUNT = 10_000;
 	private final static int PAYLOAD_SIZE = 256; // HEADER_SIZE + KEY_POOL_SIZE
-	private final static int SIGNATURE = 0xf46a290c;
-	private final static int CHECKSUM_SEED = 0x2fc8d359;
+	private final static int SIGNATURE = 0xf46a290c; // (random number)
+	private final static int CHECKSUM_SEED = 0x2fc8d359; // (random number)
 
 	private transient IPhysicalBlockDevice mBlockDevice;
 	private transient CipherImplementation mCipher;
