@@ -108,7 +108,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 
 				return new BlobInputStream(getBlockAccessor(), buffer);
 			}
-			catch (Exception e)
+			catch (IOException e)
 			{
 				throw new DatabaseException(e);
 			}
@@ -214,7 +214,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 	{
 		try (BlobOutputStream bos = new BlobOutputStream(getBlockAccessor(), mDatabase.getTransactionId(), null))
 		{
-			bos.write(Streams.readAll(aInputStream));
+			Streams.transfer(aInputStream, bos);
 
 			byte[] key = getKeys(aEntity);
 
@@ -359,7 +359,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 				buffer.wrap(Streams.readAll(new BlobInputStream(getBlockAccessor(), buffer)));
 				buffer.position(0);
 			}
-			catch (Exception e)
+			catch (IOException e)
 			{
 				throw new DatabaseException(e);
 			}
