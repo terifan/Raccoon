@@ -12,11 +12,9 @@ public class SecureBlockDeviceNGTest
 	@Test
 	public void testSomeMethod() throws IOException
 	{
-		KeyGenerationFunction kgf = KeyGenerationFunction.SHA512;
-//		for (KeyGenerationFunction kgf : KeyGenerationFunction.values())
+		for (KeyGenerationFunction kgf : KeyGenerationFunction.values())
 		{
-			EncryptionFunction ef = EncryptionFunction.AESTwofishSerpent;
-//			for (EncryptionFunction ef : EncryptionFunction.values())
+			for (EncryptionFunction ef : EncryptionFunction.values())
 			{
 				Random rnd = new Random();
 
@@ -37,7 +35,7 @@ public class SecureBlockDeviceNGTest
 
 				byte[] input = original.clone();
 
-				try (SecureBlockDevice device = new SecureBlockDevice(blockDevice, new AccessCredentials("password", ef, kgf)))
+				try (SecureBlockDevice device = new SecureBlockDevice(blockDevice, new AccessCredentials("password".toCharArray(), ef, kgf, 100)))
 				{
 					for (int i = 0; i < numUnits / blocksPerUnit; i++)
 					{
@@ -49,7 +47,7 @@ public class SecureBlockDeviceNGTest
 
 				byte[] output = new byte[numUnits * unitSize];
 
-				try (SecureBlockDevice device = new SecureBlockDevice(blockDevice, new AccessCredentials("password")))
+				try (SecureBlockDevice device = new SecureBlockDevice(blockDevice, new AccessCredentials("password".toCharArray()).setIterationCount(100)))
 				{
 					for (int i = 0; i < numUnits / blocksPerUnit; i++)
 					{

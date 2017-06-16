@@ -16,7 +16,7 @@ public class DatabaseBuilder
 	private IPhysicalBlockDevice mBlockDevice;
 	private boolean mReadOnly;
 	private String mLabel;
-	private String mPassword;
+	private char[] mPassword;
 	private EncryptionFunction mEncryptionFunction;
 	private KeyGenerationFunction mKeyGenerationFunction;
 	private int mLazyWriteCacheSizeBlocks;
@@ -26,6 +26,7 @@ public class DatabaseBuilder
 	private int mCompressionOfLeafs;
 	private int mCompressionOfBlobs;
 	private int mBlockReadCacheSize;
+	private int mIterationCount;
 
 
 	public DatabaseBuilder(IPhysicalBlockDevice aBlockDevice)
@@ -41,6 +42,7 @@ public class DatabaseBuilder
 		mLazyWriteCacheSizeBlocks = Constants.DEFAULT_LAZY_WRITE_CACHE_SIZE;
 		mEncryptionFunction = EncryptionFunction.AES;
 		mKeyGenerationFunction = KeyGenerationFunction.SHA512;
+		mIterationCount = AccessCredentials.DEFAULT_ITERATION_COUNT;
 	}
 
 
@@ -53,7 +55,7 @@ public class DatabaseBuilder
 
 		if (mPassword != null)
 		{
-			mBlockDevice = new SecureBlockDevice(mBlockDevice, new AccessCredentials(mPassword, mEncryptionFunction, mKeyGenerationFunction));
+			mBlockDevice = new SecureBlockDevice(mBlockDevice, new AccessCredentials(mPassword, mEncryptionFunction, mKeyGenerationFunction, mIterationCount));
 		}
 
 		IManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(mBlockDevice, mLabel, mLazyWriteCacheSizeBlocks);
@@ -104,6 +106,13 @@ public class DatabaseBuilder
 
 
 	public DatabaseBuilder setPassword(String aPassword)
+	{
+		mPassword = aPassword.toCharArray();
+		return this;
+	}
+
+
+	public DatabaseBuilder setPassword(char[] aPassword)
 	{
 		mPassword = aPassword;
 		return this;
@@ -178,6 +187,22 @@ public class DatabaseBuilder
 	public DatabaseBuilder setBlockReadCacheSize(int aBlockReadCacheSize)
 	{
 		mBlockReadCacheSize = aBlockReadCacheSize;
+		return this;
+	}
+
+
+	/**
+	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times. A larger number means more security but
+	 * also longer time to open a database. Default is 100000 iterations.
+	 *
+	 * WARNING: this value is not recorded in the database file and must be provided when opening a database!
+	 *
+	 * @param aIterationCount
+	 *   the iteration count used.
+	 */
+	public DatabaseBuilder setIterationCount(int aIterationCount)
+	{
+		mIterationCount = aIterationCount;
 		return this;
 	}
 }

@@ -43,7 +43,6 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	private final static int KEY_SIZE_BYTES = 32;
 	private final static int HEADER_SIZE = 8;
 	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
-	private final static int ITERATION_COUNT = 10_000;
 	private final static int PAYLOAD_SIZE = 256; // HEADER_SIZE + KEY_POOL_SIZE
 	private final static int SIGNATURE = 0xf46a290c; // (random number)
 	private final static int CHECKSUM_SEED = 0x2fc8d359; // (random number)
@@ -199,7 +198,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		mCipher = new CipherImplementation(aCredentials.getEncryptionFunction(), payload, HEADER_SIZE, mBlockDevice.getBlockSize());
 
 		// create user key
-		byte[] userKeyPool = aCredentials.generateKeyPool(salt, ITERATION_COUNT, KEY_POOL_SIZE);
+		byte[] userKeyPool = aCredentials.generateKeyPool(salt, KEY_POOL_SIZE);
 
 		// encrypt payload
 		CipherImplementation cipher = new CipherImplementation(aCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
@@ -244,7 +243,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			aCredentials.setKeyGeneratorFunction(keyGenerator);
 
 			// create a user key using the key generator
-			byte[] userKeyPool = aCredentials.generateKeyPool(salt, ITERATION_COUNT, KEY_POOL_SIZE);
+			byte[] userKeyPool = aCredentials.generateKeyPool(salt, KEY_POOL_SIZE);
 
 			// decode boot block using all available ciphers
 			for (EncryptionFunction ciphers : EncryptionFunction.values())
