@@ -33,12 +33,12 @@ public class BasicSample_1
 			String scan = db.scan().sb.toString();
 
 			System.out.println(scan);
-			
+
 			try (FileWriter fw = new FileWriter("d:\\test.html"))
 			{
 				fw.write(scan.toString());
 			}
-			
+
 			db.list(MyEntity.class).forEach(System.out::println);
 		}
 	}

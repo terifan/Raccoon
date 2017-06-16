@@ -20,7 +20,7 @@ public class BasicSample_2
 	{
 		AccessCredentials accessCredentials = new AccessCredentials("my password");
 
-		MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		try (Database db = Database.open(blockDevice, OpenOption.CREATE_NEW, accessCredentials))
 		{
@@ -42,5 +42,7 @@ public class BasicSample_2
 			System.out.println("people:");
 			db.list(_Person1K.class).forEach(System.out::println);
 		}
+
+		blockDevice.dump();
 	}
 }

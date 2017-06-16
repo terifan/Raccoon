@@ -37,7 +37,7 @@ import static java.util.Arrays.fill;
  */
 public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 {
-	private final static int RESERVED_BLOCKS = 1;
+	private final static int RESERVED_BLOCKS = 2;
 	private final static int SALT_SIZE = 256;
 	private final static int IV_SIZE = 16;
 	private final static int KEY_SIZE_BYTES = 32;
@@ -148,7 +148,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	@Override
 	public void setLength(long aLength) throws IOException
 	{
-		mBlockDevice.setLength(aLength + 1);
+		mBlockDevice.setLength(aLength + RESERVED_BLOCKS);
 	}
 
 
@@ -174,6 +174,16 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		Log.i("create boot block");
 		Log.inc();
 
+		mBlockDevice.writeBlock(0, createBootBlockImpl(aCredentials), 0, mBlockDevice.getBlockSize(), 0L);
+
+		mBlockDevice.writeBlock(1, createBootBlockImpl(aCredentials), 0, mBlockDevice.getBlockSize(), 1L);
+
+		Log.dec();
+	}
+
+
+	private byte[] createBootBlockImpl(final AccessCredentials aCredentials) throws IOException
+	{
 		byte[] salt = new byte[SALT_SIZE];
 		byte[] payload = new byte[PAYLOAD_SIZE];
 		byte[] padding = new byte[mBlockDevice.getBlockSize() - SALT_SIZE - PAYLOAD_SIZE];
@@ -210,10 +220,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		System.arraycopy(payload, 0, blockData, SALT_SIZE, PAYLOAD_SIZE);
 		System.arraycopy(padding, 0, blockData, SALT_SIZE + PAYLOAD_SIZE, padding.length);
 
-		// write boot block to disk
-		mBlockDevice.writeBlock(0, blockData, 0, mBlockDevice.getBlockSize(), 0L);
-
-		Log.dec();
+		return blockData;
 	}
 
 
