@@ -1,72 +1,80 @@
 package org.terifan.security.cryptography;
 
 
-public final class CBCCipherMode
+public final class CBCCipherMode implements CipherMode
 {
+	private final static int BYTES_PER_BLOCK = 16;
+	
+	
 	public CBCCipherMode()
 	{
 	}
 
 
-	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final byte[] aIV, final long aStartDataUnitNo, final long aBlockKey, final BlockCipher aTweakCipher, final int aUnitSize)
+	@Override
+	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final BlockCipher aTweak, final long aStartDataUnitNo, final int aUnitSize, final byte[] aIV, final long aBlockKey)
 	{
-		assert aUnitSize >= 16;
 		assert (aUnitSize & -aUnitSize) == aUnitSize;
+		assert (aLength & 15) == 0;
 
-		byte[] iv = new byte[16];
-		int numDataUnits = aLength / aUnitSize;
-		int numBlocks = aUnitSize >> 4;
+		byte[] iv = new byte[BYTES_PER_BLOCK];
+		int numUnits = aLength / aUnitSize;
+		int numBlocks = aUnitSize / BYTES_PER_BLOCK;
 
-		for (int unitIndex = 0, offset = aOffset; unitIndex < numDataUnits; unitIndex++)
+		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweakCipher, aBlockKey, iv);
+			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweak, aBlockKey, iv);
 
-			for (int i = 0; i < numBlocks; i++, offset += 16)
+			for (int block = 0; block < numBlocks; block++, bufferOffset += BYTES_PER_BLOCK)
 			{
-				for (int j = 0; j < 16; j++)
-				{
-					iv[j] ^= aBuffer[offset + j];
-				}
+				xor(iv, 0, aBuffer, bufferOffset);
 
-				aCipher.engineEncryptBlock(iv, 0, aBuffer, offset);
+				aCipher.engineEncryptBlock(iv, 0, aBuffer, bufferOffset);
 
-				System.arraycopy(aBuffer, offset, iv, 0, 16);
+				System.arraycopy(aBuffer, bufferOffset, iv, 0, BYTES_PER_BLOCK);
 			}
 		}
 	}
 
 
-	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final byte[] aIV, final long aStartDataUnitNo, final long aBlockKey, final BlockCipher aTweakCipher, final int aUnitSize)
+	@Override
+	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final BlockCipher aTweak, final long aStartDataUnitNo, final int aUnitSize, final byte[] aIV, final long aBlockKey)
 	{
-		assert aUnitSize >= 16;
 		assert (aUnitSize & -aUnitSize) == aUnitSize;
+		assert (aLength & 15) == 0;
 
-		byte[] iv = new byte[16 + 16]; // IV + next IV
-		int numDataUnits = aLength / aUnitSize;
-		int numBlocks = aUnitSize >> 4;
+		byte[] iv = new byte[BYTES_PER_BLOCK + BYTES_PER_BLOCK]; // IV + next IV
+		int numUnits = aLength / aUnitSize;
+		int numBlocks = aUnitSize / BYTES_PER_BLOCK;
 
-		for (int unitIndex = 0, offset = aOffset; unitIndex < numDataUnits; unitIndex++)
+		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweakCipher, aBlockKey, iv);
+			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweak, aBlockKey, iv);
 
-			for (int i = 0, x = 0; i < numBlocks; i++, x = 16 - x, offset += 16)
+			for (int block = 0, ivOffset = 0; block < numBlocks; block++, ivOffset = BYTES_PER_BLOCK - ivOffset, bufferOffset += BYTES_PER_BLOCK)
 			{
-				System.arraycopy(aBuffer, offset, iv, 16 - x, 16);
+				System.arraycopy(aBuffer, bufferOffset, iv, BYTES_PER_BLOCK - ivOffset, BYTES_PER_BLOCK);
 
-				aCipher.engineDecryptBlock(aBuffer, offset, aBuffer, offset);
+				aCipher.engineDecryptBlock(aBuffer, bufferOffset, aBuffer, bufferOffset);
 
-				for (int j = 0; j < 16; j++)
-				{
-					aBuffer[offset + j] ^= iv[j + x];
-				}
+				xor(aBuffer, bufferOffset, iv, ivOffset);
 			}
 		}
 	}
 
 
-	private static void prepareIV(long aDataUnitNo, byte[] aInputIV, BlockCipher aTweakCipher, long aBlockKey, byte[] aOutputIV)
+	private static void xor(byte[] aBuffer, int aOffset, byte[] aMask, int aMaskOffset)
 	{
-		System.arraycopy(aInputIV, 0, aOutputIV, 0, 16);
+		for (int i = 0; i < BYTES_PER_BLOCK; i++)
+		{
+			aBuffer[aOffset + i] ^= aMask[aMaskOffset + i];
+		}
+	}
+
+
+	private static void prepareIV(long aDataUnitNo, byte[] aInputIV, BlockCipher aTweak, long aBlockKey, byte[] aOutputIV)
+	{
+		System.arraycopy(aInputIV, 0, aOutputIV, 0, BYTES_PER_BLOCK);
 
 		aOutputIV[0] ^= (byte)(aBlockKey >>> 56);
 		aOutputIV[1] ^= (byte)(aBlockKey >> 48);
@@ -86,6 +94,6 @@ public final class CBCCipherMode
 		aOutputIV[14] ^= (byte)(aDataUnitNo >> 8);
 		aOutputIV[15] ^= (byte)(aDataUnitNo);
 
-		aTweakCipher.engineEncryptBlock(aOutputIV, 0, aOutputIV, 0);
+		aTweak.engineEncryptBlock(aOutputIV, 0, aOutputIV, 0);
 	}
 }

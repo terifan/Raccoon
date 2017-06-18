@@ -12,7 +12,7 @@ public final class CompressionParam
 	public final static int DEFLATE_DEFAULT = 3;
 	public final static int DEFLATE_BEST = 4;
 
-	public final static CompressionParam BEST_SPEED = new CompressionParam(DEFLATE_FAST, ZLE, DEFLATE_FAST);
+	public final static CompressionParam BEST_SPEED = new CompressionParam(DEFLATE_FAST, ZLE, NONE);
 	public final static CompressionParam BEST_COMPRESSION = new CompressionParam(DEFLATE_DEFAULT, DEFLATE_DEFAULT, DEFLATE_BEST);
 	public final static CompressionParam NO_COMPRESSION = new CompressionParam(NONE, NONE, NONE);
 

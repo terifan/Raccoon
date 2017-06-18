@@ -30,7 +30,7 @@ public class BlobInputStreamNGTest
 		rnd.nextBytes(out);
 
 		IPhysicalBlockDevice memoryDevice = new MemoryBlockDevice(512);
-		SecureBlockDevice secureBlockDevice = new SecureBlockDevice(memoryDevice, new AccessCredentials("password"));
+		SecureBlockDevice secureBlockDevice = new SecureBlockDevice(memoryDevice, new AccessCredentials("password").setIterationCount(100));
 		IManagedBlockDevice blockDevice = new ManagedBlockDevice(secureBlockDevice, "", 512);
 
 		byte[] header;

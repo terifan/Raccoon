@@ -1,13 +1,13 @@
 package org.terifan.raccoon.io.secure;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Random;
 import org.terifan.raccoon.io.physical.FileAlreadyOpenException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.security.cryptography.InvalidKeyException;
 import org.terifan.security.cryptography.AES;
-import org.terifan.security.cryptography.CBCCipherMode;
 import org.terifan.security.cryptography.BlockCipher;
 import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.security.cryptography.SecretKey;
@@ -15,6 +15,8 @@ import org.terifan.security.cryptography.Serpent;
 import org.terifan.security.cryptography.Twofish;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
+import org.terifan.security.cryptography.CBCCipherMode;
+import org.terifan.security.cryptography.CipherMode;
 
 
 // Boot block layout:
@@ -37,7 +39,7 @@ import static java.util.Arrays.fill;
  */
 public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 {
-	private final static int RESERVED_BLOCKS = 2;
+	private final static int RESERVED_BLOCKS = 1;
 	private final static int SALT_SIZE = 256;
 	private final static int IV_SIZE = 16;
 	private final static int KEY_SIZE_BYTES = 32;
@@ -176,8 +178,6 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		mBlockDevice.writeBlock(0, createBootBlockImpl(aCredentials), 0, mBlockDevice.getBlockSize(), 0L);
 
-		mBlockDevice.writeBlock(1, createBootBlockImpl(aCredentials), 0, mBlockDevice.getBlockSize(), 1L);
-
 		Log.dec();
 	}
 
@@ -189,8 +189,15 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		byte[] padding = new byte[mBlockDevice.getBlockSize() - SALT_SIZE - PAYLOAD_SIZE];
 
 		// create the secret keys
-		SecureRandom rnd = new SecureRandom();
-		rnd.nextBytes(payload);
+		try
+		{
+			SecureRandom rnd = SecureRandom.getInstanceStrong();
+			rnd.nextBytes(payload);
+		}
+		catch (NoSuchAlgorithmException e)
+		{
+			throw new IllegalStateException(e);
+		}
 
 		// create plain text random using Random function to not leak SecureRandom state
 		Random rand = new Random();
@@ -295,13 +302,14 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		private transient final byte [][] mIV = new byte[3][IV_SIZE];
 		private transient final BlockCipher[] mCiphers;
 		private transient final BlockCipher mTweakCipher;
-		private transient final CBCCipherMode mCipher;
+		private transient final CipherMode mCipher;
 		private transient final int mUnitSize;
 
 
 		public CipherImplementation(final EncryptionFunction aCiphers, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitSize)
 		{
 			mCipher = new CBCCipherMode();
+//			mCipher = new XTSCipherMode();
 			mUnitSize = aUnitSize;
 
 			switch (aCiphers)
@@ -377,7 +385,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		{
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mCipher.encrypt(aBuffer, aOffset, aLength, mCiphers[i], mIV[i], aBlockIndex, aBlockKey, mTweakCipher, mUnitSize);
+				mCipher.encrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
 			}
 		}
 
@@ -386,7 +394,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		{
 			for (int i = mCiphers.length; --i >= 0; )
 			{
-				mCipher.decrypt(aBuffer, aOffset, aLength, mCiphers[i], mIV[i], aBlockIndex, aBlockKey, mTweakCipher, mUnitSize);
+				mCipher.decrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
 			}
 		}
 

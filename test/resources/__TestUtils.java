@@ -169,4 +169,40 @@ public class __TestUtils
 			return baos.toByteArray();
 		}
 	}
+
+
+	public static byte[] hexToBytes(String aValue)
+	{
+		if (aValue.length() % 2 != 0)
+		{
+			throw new IllegalArgumentException("aHexString must have an even length.");
+		}
+
+		byte[] output = new byte[aValue.length() / 2];
+
+		for (int i = 0, j = 0; i < output.length; i++)
+		{
+			output[i] = (byte)((decodeChar(aValue.charAt(j++)) << 4) + decodeChar(aValue.charAt(j++)));
+		}
+
+		return output;
+	}
+
+
+	private static int decodeChar(char aByte)
+	{
+		if (aByte >= '0' && aByte <= '9')
+		{
+			return aByte - '0';
+		}
+		if (aByte >= 'a' && aByte <= 'z')
+		{
+			return 10 + aByte - 'a';
+		}
+		if (aByte >= 'A' && aByte <= 'Z')
+		{
+			return 10 + aByte - 'A';
+		}
+		throw new IllegalArgumentException();
+	}
 }

@@ -13,6 +13,7 @@ import static org.terifan.raccoon.PerformanceCounters.*;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.security.random.ISAAC;
 import org.terifan.raccoon.util.Log;
+import org.terifan.security.cryptography.CRC64;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
@@ -205,7 +206,12 @@ public class BlockAccessor
 
 	private int digest(byte[] aBuffer, int aOffset, int aLength, long aBlockIndex)
 	{
-		return MurmurHash3.hash_x86_32(aBuffer, aOffset, aLength, (int)aBlockIndex) ^ (int)(aBlockIndex >>> 32);
+//		return MurmurHash3.hash_x86_32(aBuffer, aOffset, aLength, (int)aBlockIndex) ^ (int)(aBlockIndex >>> 32);
+
+//		return (int)MurmurHash3.hash_x64_64(aBuffer, aOffset, aLength, aBlockIndex);
+		
+		// 77, 65, 66
+		return (int)CRC64.checksum(aBuffer, aOffset, aLength);
 	}
 
 

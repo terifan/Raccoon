@@ -8,12 +8,18 @@ import org.terifan.security.cryptography.PBKDF2;
 import org.terifan.security.messagedigest.HMAC;
 import org.terifan.security.messagedigest.SHA3;
 
+// CBC/XTS
+// 128/256
 
 public final class AccessCredentials
 {
 	public final static EncryptionFunction DEFAULT_ENCRYPTION = EncryptionFunction.AES;
 	public final static KeyGenerationFunction DEFAULT_KEY_GENERATOR = KeyGenerationFunction.SHA512;
-	public static final int DEFAULT_ITERATION_COUNT = 100_000;
+	
+	/**
+	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times, default is 100000 times.
+	 */
+	public final static int DEFAULT_ITERATION_COUNT = 100_000;
 
 	private EncryptionFunction mEncryptionFunction;
 	private KeyGenerationFunction mKeyGeneratorFunction;
