@@ -302,13 +302,13 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		private transient final byte [][] mIV = new byte[3][IV_SIZE];
 		private transient final BlockCipher[] mCiphers;
 		private transient final BlockCipher mTweakCipher;
-		private transient final CipherMode mCipher;
+		private transient final CipherMode mCipherMode;
 		private transient final int mUnitSize;
 
 
 		public CipherImplementation(final EncryptionFunction aCiphers, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitSize)
 		{
-			mCipher = new CBCCipherMode();
+			mCipherMode = new CBCCipherMode();
 //			mCipher = new XTSCipherMode();
 			mUnitSize = aUnitSize;
 
@@ -385,7 +385,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		{
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mCipher.encrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
+				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
 			}
 		}
 
@@ -394,7 +394,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		{
 			for (int i = mCiphers.length; --i >= 0; )
 			{
-				mCipher.decrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
+				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
 			}
 		}
 

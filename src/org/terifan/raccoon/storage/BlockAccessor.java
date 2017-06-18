@@ -4,6 +4,7 @@ import org.terifan.raccoon.core.BlockType;
 import org.terifan.raccoon.util.Cache;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.zip.Deflater;
 import org.terifan.raccoon.CompressionParam;
@@ -11,9 +12,8 @@ import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.PerformanceCounters;
 import static org.terifan.raccoon.PerformanceCounters.*;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
-import org.terifan.security.random.ISAAC;
 import org.terifan.raccoon.util.Log;
-import org.terifan.security.cryptography.CRC64;
+import org.terifan.raccoon.util.PRNGProvider;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
@@ -23,6 +23,7 @@ public class BlockAccessor
 	private final Cache<Long,byte[]> mCache;
 	private final int mBlockSize;
 	private CompressionParam mCompressionParam;
+	private final SecureRandom mRandom;
 
 
 	public BlockAccessor(IManagedBlockDevice aBlockDevice, CompressionParam aCompressionParam, int aCacheSize) throws IOException
@@ -31,6 +32,7 @@ public class BlockAccessor
 		mCompressionParam = aCompressionParam;
 		mBlockSize = mBlockDevice.getBlockSize();
 		mCache = aCacheSize == 0 ? null : new Cache<>(aCacheSize);
+		mRandom = PRNGProvider.getInstance();
 	}
 
 
@@ -173,7 +175,7 @@ public class BlockAccessor
 			BlockPointer blockPointer = new BlockPointer();
 			blockPointer.setCompression(compressorId);
 			blockPointer.setChecksum(digest(aBuffer, 0, physicalSize, blockIndex));
-			blockPointer.setBlockKey(ISAAC.PRNG.nextLong());
+			blockPointer.setBlockKey(mRandom.nextLong());
 			blockPointer.setOffset(blockIndex);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
@@ -206,12 +208,7 @@ public class BlockAccessor
 
 	private int digest(byte[] aBuffer, int aOffset, int aLength, long aBlockIndex)
 	{
-//		return MurmurHash3.hash_x86_32(aBuffer, aOffset, aLength, (int)aBlockIndex) ^ (int)(aBlockIndex >>> 32);
-
-//		return (int)MurmurHash3.hash_x64_64(aBuffer, aOffset, aLength, aBlockIndex);
-		
-		// 77, 65, 66
-		return (int)CRC64.checksum(aBuffer, aOffset, aLength);
+		return (int)MurmurHash3.hash_x64_64(aBuffer, aOffset, aLength, aBlockIndex);
 	}
 
 

@@ -9,9 +9,9 @@ import java.util.Date;
 import java.util.HashSet;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
-import org.terifan.security.random.ISAAC;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.util.PRNGProvider;
 
 
 public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
@@ -457,7 +457,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		if (mBlockDevice instanceof SecureBlockDevice)
 		{
 			byte[] padding = new byte[buffer.capacity() - buffer.position()];
-			ISAAC.PRNG.nextBytes(padding);
+			PRNGProvider.getInstance().nextBytes(padding);
 			buffer.write(padding);
 		}
 
@@ -522,7 +522,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mSuperBlock.mSpaceMapBlockCount = (buffer.position() + mBlockSize - 1) / mBlockSize;
 		mSuperBlock.mSpaceMapBlockIndex = allocBlockInternal(mSuperBlock.mSpaceMapBlockCount);
 		mSuperBlock.mSpaceMapLength = buffer.position();
-		mSuperBlock.mSpaceMapBlockKey = ISAAC.PRNG.nextLong();
+		mSuperBlock.mSpaceMapBlockKey = PRNGProvider.getInstance().nextLong();
 
 		// Pad buffer to block size
 		buffer.capacity(mBlockSize * mSuperBlock.mSpaceMapBlockCount);
