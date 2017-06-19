@@ -116,7 +116,7 @@ public final class HashTable extends TableImplementation
 	{
 		Log.i("load root %s", mRootBlockPointer);
 
-		if (mRootBlockPointer.getType() == BlockType.LEAF)
+		if (mRootBlockPointer.getBlockType() == BlockType.LEAF)
 		{
 			mRootMap = readLeaf(mRootBlockPointer);
 		}
@@ -324,7 +324,7 @@ public final class HashTable extends TableImplementation
 		}
 		else
 		{
-			Log.d("rollback %s", mRootBlockPointer.getType() == BlockType.LEAF ? "root map" : "root node");
+			Log.d("rollback %s", mRootBlockPointer.getBlockType() == BlockType.LEAF ? "root map" : "root node");
 
 			loadRoot();
 		}
@@ -349,7 +349,7 @@ public final class HashTable extends TableImplementation
 		{
 			visit((aPointerIndex, aBlockPointer) ->
 			{
-				if (aPointerIndex >= 0 && aBlockPointer != null && (aBlockPointer.getType() == BlockType.INDEX || aBlockPointer.getType() == BlockType.LEAF))
+				if (aPointerIndex >= 0 && aBlockPointer != null && (aBlockPointer.getBlockType() == BlockType.INDEX || aBlockPointer.getBlockType() == BlockType.LEAF))
 				{
 					freeBlock(aBlockPointer);
 				}
@@ -390,7 +390,7 @@ public final class HashTable extends TableImplementation
 
 		visit((aPointerIndex, aBlockPointer)->
 		{
-			if (aBlockPointer != null && aBlockPointer.getType() == BlockType.LEAF)
+			if (aBlockPointer != null && aBlockPointer.getBlockType() == BlockType.LEAF)
 			{
 				result.set(result.get() + readLeaf(aBlockPointer).size());
 			}
@@ -407,7 +407,7 @@ public final class HashTable extends TableImplementation
 
 		BlockPointer blockPointer = aNode.getPointer(aNode.findPointer(computeIndex(aKey, aLevel)));
 
-		switch (blockPointer.getType())
+		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
 				return getValue(aKey, aLevel + 1, aEntry, readNode(blockPointer));
@@ -432,7 +432,7 @@ public final class HashTable extends TableImplementation
 		BlockPointer blockPointer = aNode.getPointer(index);
 		byte[] oldValue;
 
-		switch (blockPointer.getType())
+		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
 				IndexNode node = readNode(blockPointer);
@@ -600,7 +600,7 @@ public final class HashTable extends TableImplementation
 	{
 		if (aLeaf.isEmpty())
 		{
-			return new BlockPointer().setType(BlockType.HOLE).setRange(aRange);
+			return new BlockPointer().setBlockType(BlockType.HOLE).setRange(aRange);
 		}
 
 		return writeBlock(aLeaf, aRange);
@@ -614,7 +614,7 @@ public final class HashTable extends TableImplementation
 		int index = aNode.findPointer(computeIndex(aKey, aLevel));
 		BlockPointer blockPointer = aNode.getPointer(index);
 
-		switch (blockPointer.getType())
+		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
 				IndexNode node = readNode(blockPointer);
@@ -647,7 +647,7 @@ public final class HashTable extends TableImplementation
 
 	LeafNode readLeaf(BlockPointer aBlockPointer)
 	{
-		assert aBlockPointer.getType() == BlockType.LEAF;
+		assert aBlockPointer.getBlockType() == BlockType.LEAF;
 
 		if (aBlockPointer.getOffset() == mRootBlockPointer.getOffset() && mRootMap != null)
 		{
@@ -660,7 +660,7 @@ public final class HashTable extends TableImplementation
 
 	IndexNode readNode(BlockPointer aBlockPointer)
 	{
-		assert aBlockPointer.getType() == BlockType.INDEX;
+		assert aBlockPointer.getBlockType() == BlockType.INDEX;
 
 		if (aBlockPointer.getOffset() == mRootBlockPointer.getOffset() && mRootNode != null)
 		{
@@ -717,7 +717,7 @@ public final class HashTable extends TableImplementation
 		{
 			BlockPointer next = node.getPointer(i);
 
-			if (next != null && next.getType() == BlockType.INDEX)
+			if (next != null && next.getBlockType() == BlockType.INDEX)
 			{
 				visitNode(aVisitor, next);
 			}
@@ -767,7 +767,7 @@ public final class HashTable extends TableImplementation
 	{
 		byte[] buffer = mBlockAccessor.readBlock(aBlockPointer);
 
-		switch (aBlockPointer.getType())
+		switch (aBlockPointer.getBlockType())
 		{
 			case INDEX:
 				aScanResult.enterNode(aBlockPointer);

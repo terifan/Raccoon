@@ -9,88 +9,79 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 /*
  * +------+------+------+------+------+------+------+------+
- * | type | comp |    range    |        logical size       |
+ * |ve|typ|ch|cmp|    range    |        logical size       |
  * +------+------+------+------+------+------+------+------+
  * |       physical size       |           offset          |
  * +------+------+------+------+------+------+------+------+
- * |         transaction       |          checksum         |
- * +------+------+------+------+------+------+------+------+
- * |                         block key                     |
- * +------+------+------+------+------+------+------+------+
- *
- *
- * +------+------+------+------+------+------+------+------+
- * | type | comp |    range    |        logical size       |
- * +------+------+------+------+------+------+------+------+
- * |       physical size       |           offset          |
- * +------+------+------+------+------+------+------+------+
- * |         transaction       |          block key        |
+ * |                      transaction                      |
  * +------+------+------+------+------+------+------+------+
  * |                       checksum                        |
  * +------+------+------+------+------+------+------+------+
  *
- *
- * +------+------+------+------+------+------+------+------+
- * | type | comp |    range    |        logical size       |
- * +------+------+------+------+------+------+------+------+
- * |       physical size       |           offset          |
- * +------+------+------+------+------+------+------+------+
- * |         transaction       |          block key        |
- * +------+------+------+------+------+------+------+------+
- * |                         block key                     |
- * +------+------+------+------+------+------+------+------+
- * |                         checksum                      |
- * +------+------+------+------+------+------+------+------+
- *
- *   8 type (3)
- *   8 compression (3)
+ *   4 version (1)
+ *   4 block type (3)
+ *   4 checksum algorithm (2)
+ *   4 compression algorithm (3)
  *  16 range (12)
  *  32 logical size (20)
  *  32 physical size (20)
- *  32 offset
- *  32 transaction id
- *  32 checksum
- *  64 block key
+ *  40 offset
+ *  64 transaction id
+ *  64 checksum
  */
 public class BlockPointer implements Serializable
 {
 	private final static long serialVersionUID = 1;
 
+	private final static int VERSION = 0;
 	public final static int SIZE = 32;
 
-	private int mType;
-	private int mCompression;
+	private int mBlockType;
+	private int mChecksumAlgorithm;
+	private int mCompressionAlgorithm;
 	private int mRange;
 	private int mLogicalSize;
 	private int mPhysicalSize;
 	private long mOffset;
 	private long mTransactionId;
-	private int mChecksum;
-	private long mBlockKey;
+	private long mChecksum;
 
 
-	public int getCompression()
+	public int getChecksumAlgorithm()
 	{
-		return mCompression;
+		return mChecksumAlgorithm;
+	}
+
+
+	public BlockPointer setChecksumAlgorithm(int aChecksumAlgorithm)
+	{
+		mChecksumAlgorithm = aChecksumAlgorithm;
+		return this;
+	}
+
+
+	public int getCompressionAlgorithm()
+	{
+		return mCompressionAlgorithm;
 	}
 
 
 	public BlockPointer setCompression(int aCompression)
 	{
-		mCompression = aCompression;
+		mCompressionAlgorithm = aCompression;
 		return this;
 	}
 
 
-	public BlockType getType()
+	public BlockType getBlockType()
 	{
-		return BlockType.values()[mType];
+		return BlockType.values()[mBlockType];
 	}
 
 
-	public BlockPointer setType(BlockType aType)
+	public BlockPointer setBlockType(BlockType aBlockType)
 	{
-		mType = aType.ordinal();
+		mBlockType = aBlockType.ordinal();
 		return this;
 	}
 
@@ -146,28 +137,15 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public int getChecksum()
+	public long getChecksum()
 	{
 		return mChecksum;
 	}
 
 
-	public BlockPointer setChecksum(int aChecksum)
+	public BlockPointer setChecksum(long aChecksum)
 	{
 		mChecksum = aChecksum;
-		return this;
-	}
-
-
-	public long getBlockKey()
-	{
-		return mBlockKey;
-	}
-
-
-	public BlockPointer setBlockKey(long aBlockKey)
-	{
-		mBlockKey = aBlockKey;
 		return this;
 	}
 
@@ -187,23 +165,23 @@ public class BlockPointer implements Serializable
 
 	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer)
 	{
-		assert mType >= 0 && mType < 256;
-		assert mCompression >= 0 && mCompression < 256;
+		assert mBlockType >= 0 && mBlockType < 16;
+		assert mChecksumAlgorithm >= 0 && mChecksumAlgorithm < 16;
+		assert mCompressionAlgorithm >= 0 && mCompressionAlgorithm < 16;
 		assert mRange >= 0 && mRange < 65536;
 		assert mPhysicalSize >= 0;
 		assert mLogicalSize >= 0;
 		assert mOffset >= 0 && mOffset < Integer.MAX_VALUE;
 		assert mTransactionId >= 0 && mTransactionId < Integer.MAX_VALUE;
 
-		aBuffer.writeInt8(mType);
-		aBuffer.writeInt8(mCompression);
+		aBuffer.writeInt8((VERSION << 4) + mBlockType);
+		aBuffer.writeInt8((mChecksumAlgorithm << 4) + mCompressionAlgorithm);
 		aBuffer.writeInt16(mRange);
 		aBuffer.writeInt32(mLogicalSize);
 		aBuffer.writeInt32(mPhysicalSize);
 		aBuffer.writeInt32((int)mOffset);
-		aBuffer.writeInt32((int)mTransactionId);
-		aBuffer.writeInt32(mChecksum);
-		aBuffer.writeInt64(mBlockKey);
+		aBuffer.writeInt64(mTransactionId);
+		aBuffer.writeInt64(mChecksum);
 
 		assert PerformanceCounters.increment(POINTER_ENCODE);
 
@@ -213,15 +191,26 @@ public class BlockPointer implements Serializable
 
 	public BlockPointer unmarshal(ByteArrayBuffer aBuffer)
 	{
-		mType = aBuffer.readInt8();
-		mCompression = aBuffer.readInt8();
-		mRange = aBuffer.readInt16();
-		mLogicalSize = aBuffer.readInt32();
-		mPhysicalSize = aBuffer.readInt32();
-		mOffset = 0xFFFFFFFFL & aBuffer.readInt32();
-		mTransactionId = 0xFFFFFFFFL & aBuffer.readInt32();
-		mChecksum = aBuffer.readInt32();
-		mBlockKey = aBuffer.readInt64();
+		int vt = aBuffer.readInt8();
+
+		switch (vt >> 4)
+		{
+			case 0:
+				int cc = aBuffer.readInt8();
+
+				mBlockType = 0x0F & vt;
+				mChecksumAlgorithm = (cc >> 4);
+				mCompressionAlgorithm = 0x0F & cc;
+				mRange = aBuffer.readInt16();
+				mLogicalSize = aBuffer.readInt32();
+				mPhysicalSize = aBuffer.readInt32();
+				mOffset = 0xFFFFFFFFL & aBuffer.readInt32();
+				mTransactionId = aBuffer.readInt64();
+				mChecksum = aBuffer.readInt64();
+				break;
+			default:
+				throw new IllegalArgumentException("Unsupported BlockPointer serial format: " + (vt >> 4));
+		}
 
 		assert PerformanceCounters.increment(POINTER_DECODE);
 
@@ -239,9 +228,9 @@ public class BlockPointer implements Serializable
 	 * @return
 	 *   the 'type' field
 	 */
-	public static BlockType getType(byte[] aBuffer, int aOffset)
+	public static BlockType getBlockType(byte[] aBuffer, int aOffset)
 	{
-		return BlockType.values()[0xFF & aBuffer[aOffset]];
+		return BlockType.values()[0x0F & aBuffer[aOffset]];
 	}
 
 
@@ -266,6 +255,6 @@ public class BlockPointer implements Serializable
 	@Override
 	public String toString()
 	{
-		return "{type=" + getType() + ", offset=" + mOffset + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRange + ", tx=" + mTransactionId + ")";
+		return "{type=" + getBlockType() + ", offset=" + mOffset + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRange + ", tx=" + mTransactionId + ")";
 	}
 }

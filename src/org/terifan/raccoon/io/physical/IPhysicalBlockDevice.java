@@ -75,11 +75,11 @@ public interface IPhysicalBlockDevice extends AutoCloseable
 	 *   number of blocks
 	 */
 	void setLength(long aNewLength) throws IOException;
-	
-	
+
+
 	/**
 	 * Close the block device not permitting any future changes to happen. Invoked when an error has occurred that may jeopardize the integrity of the block device.
-	 * 
+	 *
 	 * Default implementation calls close.
 	 */
 	default void forceClose() throws IOException

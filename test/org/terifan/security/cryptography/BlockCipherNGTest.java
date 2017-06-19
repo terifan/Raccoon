@@ -33,18 +33,18 @@ public class BlockCipherNGTest
 
 		long blockKey = rnd.nextLong();
 
-		CBCCipherMode cbc = new CBCCipherMode();
-		cbc.encrypt(encrypted,   0, 256, aCipher, aTweak, 0, 128, iv, blockKey);
-		cbc.encrypt(encrypted, 256, 256, aCipher, aTweak, 2, 128, iv, blockKey);
-		cbc.encrypt(encrypted, 512, 256, aCipher, aTweak, 4, 128, iv, blockKey);
-		cbc.encrypt(encrypted, 768, 256, aCipher, aTweak, 6, 128, iv, blockKey);
+		XTSCipherMode crypto = new XTSCipherMode();
+		crypto.encrypt(encrypted,   0, 256, aCipher, aTweak, 0, 128, iv, blockKey);
+		crypto.encrypt(encrypted, 256, 256, aCipher, aTweak, 2, 128, iv, blockKey);
+		crypto.encrypt(encrypted, 512, 256, aCipher, aTweak, 4, 128, iv, blockKey);
+		crypto.encrypt(encrypted, 768, 256, aCipher, aTweak, 6, 128, iv, blockKey);
 
 		byte[] decrypted = encrypted.clone();
 
-		cbc.decrypt(decrypted,   0, 256, aCipher, aTweak, 0, 128, iv, blockKey);
-		cbc.decrypt(decrypted, 256, 256, aCipher, aTweak, 2, 128, iv, blockKey);
-		cbc.decrypt(decrypted, 512, 256, aCipher, aTweak, 4, 128, iv, blockKey);
-		cbc.decrypt(decrypted, 768, 256, aCipher, aTweak, 6, 128, iv, blockKey);
+		crypto.decrypt(decrypted,   0, 256, aCipher, aTweak, 0, 128, iv, blockKey);
+		crypto.decrypt(decrypted, 256, 256, aCipher, aTweak, 2, 128, iv, blockKey);
+		crypto.decrypt(decrypted, 512, 256, aCipher, aTweak, 4, 128, iv, blockKey);
+		crypto.decrypt(decrypted, 768, 256, aCipher, aTweak, 6, 128, iv, blockKey);
 
 		assertEquals(decrypted, plain);
 	}

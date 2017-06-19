@@ -69,7 +69,7 @@ final class NodeIterator implements Iterator<RecordEntry>
 
 		BlockPointer pointer = mNodes.pop();
 
-		if (pointer.getType() == BlockType.LEAF)
+		if (pointer.getBlockType() == BlockType.LEAF)
 		{
 			mMap = mHashTable.readLeaf(pointer).iterator();
 
@@ -87,7 +87,7 @@ final class NodeIterator implements Iterator<RecordEntry>
 		{
 			BlockPointer next = node.getPointer(i);
 
-			if (next != null && (next.getType() == BlockType.INDEX || next.getType() == BlockType.LEAF))
+			if (next != null && (next.getBlockType() == BlockType.INDEX || next.getBlockType() == BlockType.LEAF))
 			{
 				mNodes.addLast(next);
 			}

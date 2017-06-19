@@ -4,7 +4,6 @@ import org.terifan.raccoon.core.BlockType;
 import org.terifan.raccoon.util.Cache;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.zip.Deflater;
 import org.terifan.raccoon.CompressionParam;
@@ -13,7 +12,6 @@ import org.terifan.raccoon.PerformanceCounters;
 import static org.terifan.raccoon.PerformanceCounters.*;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.Log;
-import org.terifan.raccoon.util.PRNGProvider;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
@@ -23,7 +21,6 @@ public class BlockAccessor
 	private final Cache<Long,byte[]> mCache;
 	private final int mBlockSize;
 	private CompressionParam mCompressionParam;
-	private final SecureRandom mRandom;
 
 
 	public BlockAccessor(IManagedBlockDevice aBlockDevice, CompressionParam aCompressionParam, int aCacheSize) throws IOException
@@ -32,7 +29,6 @@ public class BlockAccessor
 		mCompressionParam = aCompressionParam;
 		mBlockSize = mBlockDevice.getBlockSize();
 		mCache = aCacheSize == 0 ? null : new Cache<>(aCacheSize);
-		mRandom = PRNGProvider.getInstance();
 	}
 
 
@@ -100,17 +96,17 @@ public class BlockAccessor
 
 			byte[] buffer = new byte[roundUp(aBlockPointer.getPhysicalSize())];
 
-			mBlockDevice.readBlock(aBlockPointer.getOffset(), buffer, 0, buffer.length, aBlockPointer.getBlockKey());
+			mBlockDevice.readBlock(aBlockPointer.getOffset(), buffer, 0, buffer.length, aBlockPointer.getTransactionId());
 
 			if (digest(buffer, 0, aBlockPointer.getPhysicalSize(), (int)aBlockPointer.getOffset()) != aBlockPointer.getChecksum())
 			{
 				throw new IOException("Checksum error in block " + aBlockPointer);
 			}
 
-			if (aBlockPointer.getCompression() != CompressionParam.NONE)
+			if (aBlockPointer.getCompressionAlgorithm() != CompressionParam.NONE)
 			{
 				byte[] tmp = new byte[aBlockPointer.getLogicalSize()];
-				getCompressor(aBlockPointer.getCompression()).decompress(buffer, 0, aBlockPointer.getPhysicalSize(), tmp, 0, tmp.length);
+				getCompressor(aBlockPointer.getCompressionAlgorithm()).decompress(buffer, 0, aBlockPointer.getPhysicalSize(), tmp, 0, tmp.length);
 				buffer = tmp;
 			}
 			else if (aBlockPointer.getLogicalSize() < buffer.length)
@@ -175,18 +171,17 @@ public class BlockAccessor
 			BlockPointer blockPointer = new BlockPointer();
 			blockPointer.setCompression(compressorId);
 			blockPointer.setChecksum(digest(aBuffer, 0, physicalSize, blockIndex));
-			blockPointer.setBlockKey(mRandom.nextLong());
 			blockPointer.setOffset(blockIndex);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
 			blockPointer.setTransactionId(aTransactionId);
-			blockPointer.setType(aType);
+			blockPointer.setBlockType(aType);
 			blockPointer.setRange(aRange);
 
 			Log.d("write block %s", blockPointer);
 			Log.inc();
 
-			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getBlockKey());
+			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getTransactionId());
 
 			assert PerformanceCounters.increment(BLOCK_WRITE);
 

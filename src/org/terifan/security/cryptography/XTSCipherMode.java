@@ -5,7 +5,7 @@ package org.terifan.security.cryptography;
  * This is an implementation of the XTS cipher mode with a modified IV initialization.
  * XTS source code is ported from TrueCrypt 7.0.
  */
-public class XTSCipherMode implements CipherMode
+public class XTSCipherMode
 {
 	private final static int BYTES_PER_BLOCK = 16;
 
@@ -15,10 +15,21 @@ public class XTSCipherMode implements CipherMode
 	}
 
 
-	@Override
+	/**
+	 * Encrypts a buffer using the cipher mode and the provided ciphers.
+	 *
+	 * @param aBuffer the buffer to encrypt
+	 * @param aOffset the start offset in the buffer
+	 * @param aLength number of bytes to encrypt; must be divisible by 16
+	 * @param aStartDataUnitNo the sequential number of the data unit with which the buffer starts. Each data unit is 512 bytes in length.
+	 * @param aCipher the primary key schedule
+	 * @param aTweak the secondary key schedule
+	 * @param aIV initialization vector used for diffusing cipher text
+	 * @param aBlockKey a nonce value used in the encryption
+	 */
 	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final BlockCipher aTweak, final long aStartDataUnitNo, final int aUnitSize, final byte[] aIV, final long aBlockKey)
 	{
-		assert aUnitSize == 256 || aUnitSize == 512 || aUnitSize == 4096;
+		assert (aUnitSize & -aUnitSize) == aUnitSize;
 		assert (aLength & 15) == 0;
 
 		byte[] whiteningValue = new byte[BYTES_PER_BLOCK];
@@ -27,15 +38,15 @@ public class XTSCipherMode implements CipherMode
 
 		for (int unitIndex = 0, offset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweak, aBlockKey, whiteningValue);
+			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweak, aBlockKey, whiteningValue, BYTES_PER_BLOCK);
 
 			for (int block = 0; block < numBlocks; block++, offset += BYTES_PER_BLOCK)
 			{
-				xor(aBuffer, offset, whiteningValue, 0);
+				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue, 0);
 
 				aCipher.engineEncryptBlock(aBuffer, offset, aBuffer, offset);
 
-				xor(aBuffer, offset, whiteningValue, 0);
+				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue, 0);
 
 				int finalCarry = ((whiteningValue[8 + 7] & 0x80) != 0) ? 135 : 0;
 
@@ -54,10 +65,21 @@ public class XTSCipherMode implements CipherMode
 	}
 
 
-	@Override
+	/**
+	 * Decrypts a buffer using the cipher mode and the provided ciphers.
+	 *
+	 * @param aBuffer the buffer to decrypt
+	 * @param aOffset the start offset in the buffer
+	 * @param aLength number of bytes to decrypt; must be divisible by 16
+	 * @param aStartDataUnitNo the sequential number of the data unit with which the buffer starts. Each data unit is 512 bytes in length.
+	 * @param aCipher the primary key schedule
+	 * @param aTweak the secondary key schedule
+	 * @param aIV initialization vector used for diffusing cipher text
+	 * @param aBlockKey a nonce value used in the encryption
+	 */
 	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final BlockCipher aTweak, final long aStartDataUnitNo, final int aUnitSize, final byte[] aIV, final long aBlockKey)
 	{
-		assert aUnitSize == 256 || aUnitSize == 512 || aUnitSize == 4096;
+		assert (aUnitSize & -aUnitSize) == aUnitSize;
 		assert (aLength & 15) == 0;
 
 		byte[] whiteningValue = new byte[BYTES_PER_BLOCK];
@@ -66,15 +88,15 @@ public class XTSCipherMode implements CipherMode
 
 		for (int unitIndex = 0, offset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweak, aBlockKey, whiteningValue);
+			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweak, aBlockKey, whiteningValue, BYTES_PER_BLOCK);
 
 			for (int block = 0; block < numBlocks; block++, offset += BYTES_PER_BLOCK)
 			{
-				xor(aBuffer, offset, whiteningValue, 0);
+				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue, 0);
 
 				aCipher.engineDecryptBlock(aBuffer, offset, aBuffer, offset);
 
-				xor(aBuffer, offset, whiteningValue, 0);
+				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue, 0);
 
 				int finalCarry = (whiteningValue[8 + 7] & 0x80) != 0 ? 135 : 0;
 
@@ -93,63 +115,64 @@ public class XTSCipherMode implements CipherMode
 	}
 
 
-	private static void xor(byte[] aBuffer, int aOffset, byte[] aMask, int aMaskOffset)
+	// little endian
+	private static void putLong(byte[] aBuffer, int aOffset, long aValue)
 	{
-		for (int i = 0; i < BYTES_PER_BLOCK; i++)
+		aBuffer[aOffset + 0] = (byte)(aValue >>> 0);
+		aBuffer[aOffset + 1] = (byte)(aValue >>> 8);
+		aBuffer[aOffset + 2] = (byte)(aValue >>> 16);
+		aBuffer[aOffset + 3] = (byte)(aValue >>> 24);
+		aBuffer[aOffset + 4] = (byte)(aValue >>> 32);
+		aBuffer[aOffset + 5] = (byte)(aValue >>> 40);
+		aBuffer[aOffset + 6] = (byte)(aValue >>> 48);
+		aBuffer[aOffset + 7] = (byte)(aValue >>> 56);
+	}
+
+
+	// little endian
+	private static long getLong(byte[] aBuffer, int aOffset)
+	{
+		return ((255 & aBuffer[aOffset]))
+			+ ((255 & aBuffer[aOffset + 1]) << 8)
+			+ ((255 & aBuffer[aOffset + 2]) << 16)
+			+ ((long)(255 & aBuffer[aOffset + 3]) << 24)
+			+ ((long)(255 & aBuffer[aOffset + 4]) << 32)
+			+ ((long)(255 & aBuffer[aOffset + 5]) << 40)
+			+ ((long)(255 & aBuffer[aOffset + 6]) << 48)
+			+ ((long)(255 & aBuffer[aOffset + 7]) << 56);
+	}
+
+
+	private static void xor(byte[] aBuffer, int aOffset, int aLength, byte[] aMask, int aMaskOffset)
+	{
+		for (int i = 0; i < aLength; i++)
 		{
 			aBuffer[aOffset + i] ^= aMask[aMaskOffset + i];
 		}
 	}
 
 
-	private static void putLong(byte[] aBuffer, int aOffset, long aValue)
+	private static void prepareIV(long aDataUnitNo, byte[] aInputIV, BlockCipher aTweak, long aBlockKey, byte[] aOutputIV, int aLength)
 	{
-		aBuffer[aOffset++] = (byte)(aValue);
-		aBuffer[aOffset++] = (byte)(aValue >> 8);
-		aBuffer[aOffset++] = (byte)(aValue >> 16);
-		aBuffer[aOffset++] = (byte)(aValue >> 24);
-		aBuffer[aOffset++] = (byte)(aValue >> 32);
-		aBuffer[aOffset++] = (byte)(aValue >> 40);
-		aBuffer[aOffset++] = (byte)(aValue >> 48);
-		aBuffer[aOffset] = (byte)(aValue >>> 56);
-	}
+		System.arraycopy(aInputIV, 0, aOutputIV, 0, aLength);
 
-
-	private static long getLong(byte[] aBuffer, int aOffset)
-	{
-		return ((255 & aBuffer[aOffset++]))
-			+ ((255 & aBuffer[aOffset++]) << 8)
-			+ ((255 & aBuffer[aOffset++]) << 16)
-			+ ((long)(255 & aBuffer[aOffset++]) << 24)
-			+ ((long)(255 & aBuffer[aOffset++]) << 32)
-			+ ((long)(255 & aBuffer[aOffset++]) << 40)
-			+ ((long)(255 & aBuffer[aOffset++]) << 48)
-			+ ((long)(255 & aBuffer[aOffset]) << 56);
-	}
-
-
-	private static void prepareIV(long aDataUnitNo, byte[] aInputIV, BlockCipher aTweak, long aBlockKey, byte[] aOutputIV)
-	{
-		System.arraycopy(aInputIV, 0, aOutputIV, 0, BYTES_PER_BLOCK);
-
-		aOutputIV[0] ^= (byte)(aBlockKey >>> 56);
-		aOutputIV[1] ^= (byte)(aBlockKey >> 48);
-		aOutputIV[2] ^= (byte)(aBlockKey >> 40);
-		aOutputIV[3] ^= (byte)(aBlockKey >> 32);
-		aOutputIV[4] ^= (byte)(aBlockKey >> 24);
-		aOutputIV[5] ^= (byte)(aBlockKey >> 16);
-		aOutputIV[6] ^= (byte)(aBlockKey >> 8);
-		aOutputIV[7] ^= (byte)(aBlockKey);
-
-		aOutputIV[8] ^= (byte)(aDataUnitNo >>> 56);
-		aOutputIV[9] ^= (byte)(aDataUnitNo >> 48);
-		aOutputIV[10] ^= (byte)(aDataUnitNo >> 40);
-		aOutputIV[11] ^= (byte)(aDataUnitNo >> 32);
-		aOutputIV[12] ^= (byte)(aDataUnitNo >> 24);
-		aOutputIV[13] ^= (byte)(aDataUnitNo >> 16);
-		aOutputIV[14] ^= (byte)(aDataUnitNo >> 8);
-		aOutputIV[15] ^= (byte)(aDataUnitNo);
+		xorLong(aOutputIV, 0, aBlockKey);
+		xorLong(aOutputIV, 8, aDataUnitNo);
 
 		aTweak.engineEncryptBlock(aOutputIV, 0, aOutputIV, 0);
+	}
+
+
+	// big endian
+	private static void xorLong(byte[] aBuffer, int aOffset, long aValue)
+	{
+		aBuffer[aOffset + 0] ^= (byte)(aValue >>> 56);
+		aBuffer[aOffset + 1] ^= (byte)(aValue >>> 48);
+		aBuffer[aOffset + 2] ^= (byte)(aValue >>> 40);
+		aBuffer[aOffset + 3] ^= (byte)(aValue >>> 32);
+		aBuffer[aOffset + 4] ^= (byte)(aValue >>> 24);
+		aBuffer[aOffset + 5] ^= (byte)(aValue >>> 16);
+		aBuffer[aOffset + 6] ^= (byte)(aValue >>> 8);
+		aBuffer[aOffset + 7] ^= (byte)(aValue >>> 0);
 	}
 }

@@ -9,7 +9,7 @@ import org.testng.annotations.DataProvider;
 public class CipherModeNGTest
 {
 	@Test(dataProvider = "params")
-	public void testSomeMethod(CipherMode aCipherMode, int aUnitSize, int aBlockLength)
+	public void testSomeMethod(int aUnitSize, int aBlockLength)
 	{
 		int padd = 100;
 
@@ -31,11 +31,11 @@ public class CipherModeNGTest
 
 		byte[] output = input.clone();
 
-		aCipherMode.encrypt(output, padd, aBlockLength, cipher, tweakCipher, unitNo, aUnitSize, iv, blockKey);
-		
+		new XTSCipherMode().encrypt(output, padd, aBlockLength, cipher, tweakCipher, unitNo, aUnitSize, iv, blockKey);
+
 		assertNotEquals(output, input);
 
-		aCipherMode.decrypt(output, padd, aBlockLength, cipher, tweakCipher, unitNo, aUnitSize, iv, blockKey);
+		new XTSCipherMode().decrypt(output, padd, aBlockLength, cipher, tweakCipher, unitNo, aUnitSize, iv, blockKey);
 
 		assertEquals(output, input);
 	}
@@ -45,18 +45,18 @@ public class CipherModeNGTest
 	private Object[][] params()
 	{
 		return new Object[][]{
-			{new CBCCipherMode(), 512, 512},
-			{new CBCCipherMode(), 512, 4096},
-			{new CBCCipherMode(), 512, 1024*1024},
-			{new CBCCipherMode(), 4096, 4096},
-			{new CBCCipherMode(), 4096, 32768},
-			{new CBCCipherMode(), 4096, 1024*1024},
-			{new XTSCipherMode(), 512, 512},
-			{new XTSCipherMode(), 512, 4096},
-			{new XTSCipherMode(), 512, 1024*1024},
-			{new XTSCipherMode(), 4096, 4096},
-			{new XTSCipherMode(), 4096, 32768},
-			{new XTSCipherMode(), 4096, 1024*1024}
+			{512, 512},
+			{512, 4096},
+			{512, 1024*1024},
+			{4096, 4096},
+			{4096, 32768},
+			{4096, 1024*1024},
+			{512, 512},
+			{512, 4096},
+			{512, 1024*1024},
+			{4096, 4096},
+			{4096, 32768},
+			{4096, 1024*1024}
 		};
 	}
 }

@@ -15,8 +15,7 @@ import org.terifan.security.cryptography.Serpent;
 import org.terifan.security.cryptography.Twofish;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
-import org.terifan.security.cryptography.CBCCipherMode;
-import org.terifan.security.cryptography.CipherMode;
+import org.terifan.security.cryptography.XTSCipherMode;
 
 
 // Boot block layout:
@@ -87,7 +86,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 
 	@Override
-	public void writeBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long aBlockKey) throws IOException
+	public void writeBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long aTransactionId) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -99,7 +98,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		byte[] workBuffer = aBuffer.clone();
 
-		mCipher.encrypt(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mCipher.encrypt(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, aTransactionId);
 
 		mBlockDevice.writeBlock(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, 0L); // block key is used by this blockdevice and not passed to lower levels
 
@@ -108,7 +107,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 
 	@Override
-	public void readBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long aBlockKey) throws IOException
+	public void readBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long aTransactionId) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -120,7 +119,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		mBlockDevice.readBlock(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L); // block key is used by this blockdevice and not passed to lower levels
 
-		mCipher.decrypt(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mCipher.decrypt(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aTransactionId);
 
 		Log.dec();
 	}
@@ -302,14 +301,13 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		private transient final byte [][] mIV = new byte[3][IV_SIZE];
 		private transient final BlockCipher[] mCiphers;
 		private transient final BlockCipher mTweakCipher;
-		private transient final CipherMode mCipherMode;
+		private transient final XTSCipherMode mCipherMode;
 		private transient final int mUnitSize;
 
 
 		public CipherImplementation(final EncryptionFunction aCiphers, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitSize)
 		{
-			mCipherMode = new CBCCipherMode();
-//			mCipher = new XTSCipherMode();
+			mCipherMode = new XTSCipherMode();
 			mUnitSize = aUnitSize;
 
 			switch (aCiphers)
@@ -381,20 +379,20 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		}
 
 
-		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
+		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aTransactionId)
 		{
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
+				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aTransactionId);
 			}
 		}
 
 
-		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
+		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aTransactionId)
 		{
 			for (int i = mCiphers.length; --i >= 0; )
 			{
-				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
+				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aTransactionId);
 			}
 		}
 

@@ -51,7 +51,7 @@ public class BlobInputStreamNGTest
 			BlockPointer bp = new BlockPointer();
 
 			assertEquals(len, aUnitSize);
-			assertEquals(bp.unmarshal(tmp).getType(), aIndirect ? BlockType.DIR : BlockType.DATA);
+			assertEquals(bp.unmarshal(tmp).getBlockType(), aIndirect ? BlockType.DIR : BlockType.DATA);
 			assertEquals(tmp.remaining(), BlockPointer.SIZE * (aPointers - 1));
 		}
 

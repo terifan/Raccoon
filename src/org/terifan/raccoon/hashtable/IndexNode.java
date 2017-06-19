@@ -47,7 +47,7 @@ final class IndexNode implements Node
 
 	void setPointer(int aIndex, BlockPointer aBlockPointer)
 	{
-		assert get(aIndex).getType() == BlockType.FREE || get(aIndex).getRange() == aBlockPointer.getRange() : get(aIndex).getType() + " " + get(aIndex).getRange() +"=="+ aBlockPointer.getRange();
+		assert get(aIndex).getBlockType() == BlockType.FREE || get(aIndex).getRange() == aBlockPointer.getRange() : get(aIndex).getBlockType() + " " + get(aIndex).getRange() +"=="+ aBlockPointer.getRange();
 
 		set(aIndex, aBlockPointer);
 	}
@@ -122,7 +122,7 @@ final class IndexNode implements Node
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 
-		return BlockPointer.getType(mBuffer, aIndex * BlockPointer.SIZE);
+		return BlockPointer.getBlockType(mBuffer, aIndex * BlockPointer.SIZE);
 	}
 
 
