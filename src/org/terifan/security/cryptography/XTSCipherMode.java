@@ -42,11 +42,11 @@ public class XTSCipherMode
 
 			for (int block = 0; block < numBlocks; block++, offset += BYTES_PER_BLOCK)
 			{
-				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue, 0);
+				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue);
 
 				aCipher.engineEncryptBlock(aBuffer, offset, aBuffer, offset);
 
-				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue, 0);
+				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue);
 
 				int finalCarry = ((whiteningValue[8 + 7] & 0x80) != 0) ? 135 : 0;
 
@@ -92,11 +92,11 @@ public class XTSCipherMode
 
 			for (int block = 0; block < numBlocks; block++, offset += BYTES_PER_BLOCK)
 			{
-				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue, 0);
+				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue);
 
 				aCipher.engineDecryptBlock(aBuffer, offset, aBuffer, offset);
 
-				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue, 0);
+				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue);
 
 				int finalCarry = (whiteningValue[8 + 7] & 0x80) != 0 ? 135 : 0;
 
@@ -143,11 +143,11 @@ public class XTSCipherMode
 	}
 
 
-	private static void xor(byte[] aBuffer, int aOffset, int aLength, byte[] aMask, int aMaskOffset)
+	private static void xor(byte[] aBuffer, int aOffset, int aLength, byte[] aMask)
 	{
 		for (int i = 0; i < aLength; i++)
 		{
-			aBuffer[aOffset + i] ^= aMask[aMaskOffset + i];
+			aBuffer[aOffset + i] ^= aMask[i];
 		}
 	}
 
@@ -163,16 +163,15 @@ public class XTSCipherMode
 	}
 
 
-	// big endian
 	private static void xorLong(byte[] aBuffer, int aOffset, long aValue)
 	{
-		aBuffer[aOffset + 0] ^= (byte)(aValue >>> 56);
-		aBuffer[aOffset + 1] ^= (byte)(aValue >>> 48);
-		aBuffer[aOffset + 2] ^= (byte)(aValue >>> 40);
-		aBuffer[aOffset + 3] ^= (byte)(aValue >>> 32);
-		aBuffer[aOffset + 4] ^= (byte)(aValue >>> 24);
-		aBuffer[aOffset + 5] ^= (byte)(aValue >>> 16);
-		aBuffer[aOffset + 6] ^= (byte)(aValue >>> 8);
-		aBuffer[aOffset + 7] ^= (byte)(aValue >>> 0);
+		aBuffer[aOffset + 0] ^= (byte)(aValue >>> 0);
+		aBuffer[aOffset + 1] ^= (byte)(aValue >>> 8);
+		aBuffer[aOffset + 2] ^= (byte)(aValue >>> 16);
+		aBuffer[aOffset + 3] ^= (byte)(aValue >>> 24);
+		aBuffer[aOffset + 4] ^= (byte)(aValue >>> 32);
+		aBuffer[aOffset + 5] ^= (byte)(aValue >>> 40);
+		aBuffer[aOffset + 6] ^= (byte)(aValue >>> 48);
+		aBuffer[aOffset + 7] ^= (byte)(aValue >>> 56);
 	}
 }
