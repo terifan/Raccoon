@@ -15,11 +15,11 @@ public final class AccessCredentials
 {
 	public final static EncryptionFunction DEFAULT_ENCRYPTION = EncryptionFunction.AES;
 	public final static KeyGenerationFunction DEFAULT_KEY_GENERATOR = KeyGenerationFunction.SHA512;
-	
+
 	/**
-	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times, default is 100000 times.
+	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times, default is 10000 times.
 	 */
-	public final static int DEFAULT_ITERATION_COUNT = 100_000;
+	public final static int DEFAULT_ITERATION_COUNT = 10_000;
 
 	private EncryptionFunction mEncryptionFunction;
 	private KeyGenerationFunction mKeyGeneratorFunction;
@@ -43,7 +43,7 @@ public final class AccessCredentials
 	 *
 	 * @param aIterationCount
 	 *   Passwords are expanded into cryptographic keys by iterating a hash function this many times. A larger number means more security
-	 *   but also longer time to open a database. Default is 100000 iterations. WARNING: this value is not recorded in the database file and
+	 *   but also longer time to open a database. Default is 10000 iterations. WARNING: this value is not recorded in the database file and
 	 *   must always be provided!
 	 */
 	public AccessCredentials(char [] aPassword, EncryptionFunction aEncryptionFunction, KeyGenerationFunction aKeyFunction, int aIterationCount)
@@ -77,7 +77,7 @@ public final class AccessCredentials
 
 	/**
 	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times. A larger number means more security but
-	 * also longer time to open a database. Default is 100000 iterations.
+	 * also longer time to open a database. Default is 10000 iterations.
 	 *
 	 * WARNING: this value is not recorded in the database file and must be provided when opening a database!
 	 *

@@ -96,9 +96,9 @@ public class BlockAccessor
 
 			byte[] buffer = new byte[roundUp(aBlockPointer.getPhysicalSize())];
 
-			mBlockDevice.readBlock(aBlockPointer.getOffset(), buffer, 0, buffer.length, aBlockPointer.getTransactionId());
+			mBlockDevice.readBlock(aBlockPointer.getOffset(), buffer, 0, buffer.length, getBlockKey(aBlockPointer));
 
-			if (digest(buffer, 0, aBlockPointer.getPhysicalSize(), (int)aBlockPointer.getOffset()) != aBlockPointer.getChecksum())
+			if (getChecksum(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getOffset()) != aBlockPointer.getChecksum())
 			{
 				throw new IOException("Checksum error in block " + aBlockPointer);
 			}
@@ -170,7 +170,7 @@ public class BlockAccessor
 
 			BlockPointer blockPointer = new BlockPointer();
 			blockPointer.setCompression(compressorId);
-			blockPointer.setChecksum(digest(aBuffer, 0, physicalSize, blockIndex));
+			blockPointer.setChecksum(getChecksum(aBuffer, 0, physicalSize, blockIndex));
 			blockPointer.setOffset(blockIndex);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
@@ -181,7 +181,7 @@ public class BlockAccessor
 			Log.d("write block %s", blockPointer);
 			Log.inc();
 
-			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getTransactionId());
+			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, getBlockKey(blockPointer));
 
 			assert PerformanceCounters.increment(BLOCK_WRITE);
 
@@ -201,9 +201,15 @@ public class BlockAccessor
 	}
 
 
-	private int digest(byte[] aBuffer, int aOffset, int aLength, long aBlockIndex)
+	private static long getBlockKey(BlockPointer aBlockPointer)
 	{
-		return (int)MurmurHash3.hash_x64_64(aBuffer, aOffset, aLength, aBlockIndex);
+		return aBlockPointer.getTransactionId() ^ (aBlockPointer.getChecksum() << 48);
+	}
+
+
+	private long getChecksum(byte[] aBuffer, int aOffset, int aLength, long aBlockIndex)
+	{
+		return MurmurHash3.hash_x64_64(aBuffer, aOffset, aLength, aBlockIndex);
 	}
 
 

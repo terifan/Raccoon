@@ -6,7 +6,7 @@ import java.util.Random;
 import org.testng.annotations.DataProvider;
 
 
-public class CipherModeNGTest
+public class XTSCipherModeNGTest
 {
 	@Test(dataProvider = "params")
 	public void testSomeMethod(int aUnitSize, int aBlockLength)

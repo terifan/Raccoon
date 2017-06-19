@@ -1,5 +1,8 @@
 package org.terifan.security.cryptography;
 
+import java.util.Random;
+
+
 
 /**
  * This is an implementation of the XTS cipher mode with a modified IV initialization.
@@ -25,7 +28,7 @@ public class XTSCipherMode
 	 * @param aCipher the primary key schedule
 	 * @param aTweak the secondary key schedule
 	 * @param aIV initialization vector used for diffusing cipher text
-	 * @param aBlockKey a nonce value used in the encryption
+	 * @param aBlockKey a value nonce value used in the encryption
 	 */
 	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final BlockCipher aTweak, final long aStartDataUnitNo, final int aUnitSize, final byte[] aIV, final long aBlockKey)
 	{
@@ -36,12 +39,28 @@ public class XTSCipherMode
 		int numUnits = aLength / aUnitSize;
 		int numBlocks = aUnitSize / BYTES_PER_BLOCK;
 
+		int[] offsets = new int[numBlocks];
+		for (int i = 0; i < numBlocks; i++)
+		{
+			offsets[i] = i;
+		}
+		Random rnd = new Random(aBlockKey);
+		for (int i = 0; i < numBlocks; i++)
+		{
+			int p = rnd.nextInt(numBlocks);
+			int j = offsets[i];
+			offsets[i] = offsets[p];
+			offsets[p] = j;
+		}
+
 		for (int unitIndex = 0, offset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
 			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweak, aBlockKey, whiteningValue, BYTES_PER_BLOCK);
 
 			for (int block = 0; block < numBlocks; block++, offset += BYTES_PER_BLOCK)
 			{
+				offset = aOffset + 16 * (unitIndex * numBlocks + offsets[block]);
+
 				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue);
 
 				aCipher.engineEncryptBlock(aBuffer, offset, aBuffer, offset);
@@ -86,12 +105,28 @@ public class XTSCipherMode
 		int numUnits = aLength / aUnitSize;
 		int numBlocks = aUnitSize / BYTES_PER_BLOCK;
 
+		int[] offsets = new int[numBlocks];
+		for (int i = 0; i < numBlocks; i++)
+		{
+			offsets[i] = i;
+		}
+		Random rnd = new Random(aBlockKey);
+		for (int i = 0; i < numBlocks; i++)
+		{
+			int p = rnd.nextInt(numBlocks);
+			int j = offsets[i];
+			offsets[i] = offsets[p];
+			offsets[p] = j;
+		}
+
 		for (int unitIndex = 0, offset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
 			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweak, aBlockKey, whiteningValue, BYTES_PER_BLOCK);
 
 			for (int block = 0; block < numBlocks; block++, offset += BYTES_PER_BLOCK)
 			{
+				offset = aOffset + 16 * (unitIndex * numBlocks + offsets[block]);
+
 				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue);
 
 				aCipher.engineDecryptBlock(aBuffer, offset, aBuffer, offset);
