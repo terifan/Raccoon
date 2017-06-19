@@ -99,13 +99,15 @@ public final class HashTable extends TableImplementation
 	private void unmarshalHeader(byte[] aTableHeader)
 	{
 		mRootBlockPointer = new BlockPointer();
-		CompressionParam compressionParam = new CompressionParam();
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aTableHeader);
 		mRootBlockPointer.unmarshal(buffer);
+
 		mHashSeed = buffer.readInt32();
 		mNodeSize = buffer.readVar32();
 		mLeafSize = buffer.readVar32();
+
+		CompressionParam compressionParam = new CompressionParam();
 		compressionParam.unmarshal(buffer);
 
 		mBlockAccessor.setCompressionParam(compressionParam);

@@ -6,7 +6,7 @@ import java.security.SecureRandom;
 import java.util.Random;
 import org.terifan.raccoon.io.physical.FileAlreadyOpenException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
-import org.terifan.security.cryptography.InvalidKeyException;
+import org.terifan.raccoon.InvalidPasswordException;
 import org.terifan.security.cryptography.AES;
 import org.terifan.security.cryptography.BlockCipher;
 import org.terifan.security.messagedigest.MurmurHash3;
@@ -230,7 +230,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	private void openBootBlock(final AccessCredentials aCredentials) throws InvalidKeyException, IOException
+	private void openBootBlock(final AccessCredentials aCredentials) throws InvalidPasswordException, IOException
 	{
 		Log.i("open boot block");
 		Log.inc();
@@ -292,7 +292,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		Log.w("incorrect password or not a secure BlockDevice");
 		Log.dec();
 
-		throw new InvalidKeyException("Incorrect password or not a secure BlockDevice");
+		throw new InvalidPasswordException("Incorrect password or not a secured BlockDevice");
 	}
 
 

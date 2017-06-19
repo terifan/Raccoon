@@ -27,7 +27,6 @@ import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.managed.UnsupportedVersionException;
-import org.terifan.security.cryptography.InvalidKeyException;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
@@ -652,7 +651,7 @@ public class DatabaseNGTest
 	}
 
 
-	@Test(expectedExceptions = InvalidKeyException.class)
+	@Test(expectedExceptions = InvalidPasswordException.class)
 	public void testBadPassword() throws Exception
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
@@ -682,7 +681,7 @@ public class DatabaseNGTest
 	}
 
 
-	@Test(expectedExceptions = InvalidKeyException.class)
+	@Test(expectedExceptions = InvalidPasswordException.class)
 	public void testUnsupportedData() throws Exception
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);

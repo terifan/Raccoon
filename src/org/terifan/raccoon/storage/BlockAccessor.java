@@ -169,7 +169,8 @@ public class BlockAccessor
 			assert PerformanceCounters.increment(BLOCK_ALLOC);
 
 			BlockPointer blockPointer = new BlockPointer();
-			blockPointer.setCompression(compressorId);
+			blockPointer.setCompressionAlgorithm(compressorId);
+			blockPointer.setChecksumAlgorithm(0);
 			blockPointer.setChecksum(getChecksum(aBuffer, 0, physicalSize, blockIndex));
 			blockPointer.setOffset(blockIndex);
 			blockPointer.setPhysicalSize(physicalSize);

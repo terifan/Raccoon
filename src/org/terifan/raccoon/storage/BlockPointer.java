@@ -66,9 +66,9 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public BlockPointer setCompression(int aCompression)
+	public BlockPointer setCompressionAlgorithm(int aCompressionAlgorithm)
 	{
-		mCompressionAlgorithm = aCompression;
+		mCompressionAlgorithm = aCompressionAlgorithm;
 		return this;
 	}
 
