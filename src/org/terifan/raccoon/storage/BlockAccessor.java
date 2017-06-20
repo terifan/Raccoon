@@ -96,7 +96,7 @@ public class BlockAccessor
 
 			byte[] buffer = new byte[roundUp(aBlockPointer.getPhysicalSize())];
 
-			mBlockDevice.readBlock(aBlockPointer.getOffset(), buffer, 0, buffer.length, getBlockKey(aBlockPointer));
+			mBlockDevice.readBlock(aBlockPointer.getOffset(), buffer, 0, buffer.length, aBlockPointer.getTransactionId());
 
 			if (getChecksum(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getOffset()) != aBlockPointer.getChecksum())
 			{
@@ -182,7 +182,7 @@ public class BlockAccessor
 			Log.d("write block %s", blockPointer);
 			Log.inc();
 
-			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, getBlockKey(blockPointer));
+			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getTransactionId());
 
 			assert PerformanceCounters.increment(BLOCK_WRITE);
 
@@ -199,12 +199,6 @@ public class BlockAccessor
 		{
 			throw new DatabaseException("Error writing block", e);
 		}
-	}
-
-
-	private static long getBlockKey(BlockPointer aBlockPointer)
-	{
-		return aBlockPointer.getTransactionId() ^ (aBlockPointer.getChecksum() << 48);
 	}
 
 
