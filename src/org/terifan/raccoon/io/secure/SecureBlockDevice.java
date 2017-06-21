@@ -99,10 +99,6 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			throw new IllegalStateException(e);
 		}
 
-		// update header
-		putInt(payload, 0, SIGNATURE);
-		putInt(payload, 4, 0); // placeholder for checksum
-
 		// create the cipher used to encrypt data blocks
 		device.mCipher = new CipherImplementation(aAccessCredentials.getEncryptionFunction(), payload, HEADER_SIZE, device.mBlockDevice.getBlockSize());
 
@@ -164,9 +160,8 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		for (KeyGenerationFunction keyGenerator : KeyGenerationFunction.values())
 		{
-			aAccessCredentials.setKeyGeneratorFunction(keyGenerator);
-
 			// create a user key using the key generator
+			aAccessCredentials.setKeyGeneratorFunction(keyGenerator);
 			byte[] userKeyPool = aAccessCredentials.generateKeyPool(salt, KEY_POOL_SIZE);
 
 			// decode boot block using all available ciphers
@@ -292,7 +287,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	private void createBootBlockImpl(final AccessCredentials aCredentials, byte[] aPayload, long aBlockIndex) throws IOException
+	private void createBootBlockImpl(AccessCredentials aAccessCredentials, byte[] aPayload, long aBlockIndex) throws IOException
 	{
 		byte[] salt = new byte[SALT_SIZE];
 		byte[] padding = new byte[mBlockDevice.getBlockSize() - SALT_SIZE - PAYLOAD_SIZE];
@@ -302,19 +297,20 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		rand.nextBytes(padding);
 		rand.nextBytes(salt);
 
-		// compute checksum (salt, payload, padding)
+		// compute checksum
 		int checksum = MurmurHash3.hash_x86_32(salt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(aPayload, HEADER_SIZE, PAYLOAD_SIZE - HEADER_SIZE, CHECKSUM_SEED);
 
 		// update header
+		putInt(aPayload, 0, SIGNATURE);
 		putInt(aPayload, 4, checksum);
 
 		// create user key
-		byte[] userKeyPool = aCredentials.generateKeyPool(salt, KEY_POOL_SIZE);
+		byte[] userKeyPool = aAccessCredentials.generateKeyPool(salt, KEY_POOL_SIZE);
 
 		// encrypt payload
 		byte[] payload = aPayload.clone();
 
-		CipherImplementation cipher = new CipherImplementation(aCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
+		CipherImplementation cipher = new CipherImplementation(aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
 		cipher.encrypt(aBlockIndex, payload, 0, PAYLOAD_SIZE, 0L);
 
 		// assemble output buffer
