@@ -55,7 +55,21 @@ public class DatabaseBuilder
 
 		if (mPassword != null)
 		{
-			mBlockDevice = new SecureBlockDevice(mBlockDevice, new AccessCredentials(mPassword, mEncryptionFunction, mKeyGenerationFunction, mIterationCount));
+			AccessCredentials accessCredentials = new AccessCredentials(mPassword, mEncryptionFunction, mKeyGenerationFunction, mIterationCount);
+
+			if (mBlockDevice.length() == 0)
+			{
+				mBlockDevice = SecureBlockDevice.create(mBlockDevice, accessCredentials);
+			}
+			else
+			{
+				mBlockDevice = SecureBlockDevice.open(mBlockDevice, accessCredentials);
+			}
+
+			if (mBlockDevice == null)
+			{
+				throw new InvalidPasswordException("Incorrect password or not a secure BlockDevice");
+			}
 		}
 
 		IManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(mBlockDevice, mLabel, mLazyWriteCacheSizeBlocks);

@@ -182,7 +182,24 @@ public final class Database implements AutoCloseable
 		{
 			Log.d("creating a secure block device");
 
-			device = new ManagedBlockDevice(new SecureBlockDevice((IPhysicalBlockDevice)aBlockDevice, accessCredentials), label, Constants.DEFAULT_LAZY_WRITE_CACHE_SIZE);
+			IPhysicalBlockDevice physicalDevice = (IPhysicalBlockDevice)aBlockDevice;
+			SecureBlockDevice secureDevice;
+
+			if (aCreate)
+			{
+				secureDevice = SecureBlockDevice.create(physicalDevice, accessCredentials);
+			}
+			else
+			{
+				secureDevice = SecureBlockDevice.open(physicalDevice, accessCredentials);
+			}
+
+			if (secureDevice == null)
+			{
+				throw new InvalidPasswordException("Incorrect password or not a secure BlockDevice");
+			}
+
+			device = new ManagedBlockDevice(secureDevice, label, Constants.DEFAULT_LAZY_WRITE_CACHE_SIZE);
 		}
 
 		Database db;
@@ -1219,9 +1236,9 @@ public final class Database implements AutoCloseable
 		ScanResult scanResult = new ScanResult();
 
 		scanResult.enterTable(mSystemTable);
-		
+
 		mSystemTable.scan(scanResult);
-		
+
 		scanResult.exitTable();
 
 		for (Table tableMetadata : getTables())
@@ -1231,7 +1248,7 @@ public final class Database implements AutoCloseable
 				scanResult.enterTable(table);
 
 				table.scan(scanResult);
-		
+
 				scanResult.exitTable();
 			}
 		}
