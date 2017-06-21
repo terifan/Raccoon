@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Random;
 import org.terifan.raccoon.io.physical.FileAlreadyOpenException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
-import org.terifan.raccoon.InvalidPasswordException;
 import org.terifan.security.cryptography.AES;
 import org.terifan.security.cryptography.BlockCipher;
 import org.terifan.security.messagedigest.MurmurHash3;
@@ -16,6 +15,7 @@ import org.terifan.security.cryptography.Serpent;
 import org.terifan.security.cryptography.Twofish;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
+import org.terifan.security.cryptography.BitScrambler;
 import org.terifan.security.cryptography.XTSCipherMode;
 
 
@@ -50,6 +50,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	private final static int PAYLOAD_SIZE = 256; // HEADER_SIZE + KEY_POOL_SIZE
 	private final static int SIGNATURE = 0xf46a290c; // (random number)
 	private final static int CHECKSUM_SEED = 0x2fc8d359; // (random number)
+	private final static int USER_KEY_POOL_SIZE = KEY_POOL_SIZE + 16;
 
 	private transient IPhysicalBlockDevice mBlockDevice;
 	private transient CipherImplementation mCipher;
@@ -114,6 +115,46 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
+	private void createBootBlockImpl(AccessCredentials aAccessCredentials, byte[] aPayload, long aBlockIndex) throws IOException
+	{
+		byte[] salt = new byte[SALT_SIZE];
+		byte[] padding = new byte[mBlockDevice.getBlockSize() - SALT_SIZE - PAYLOAD_SIZE];
+
+		// padding and salt
+		Random rand = new Random();
+		rand.nextBytes(padding);
+		rand.nextBytes(salt);
+
+		// compute checksum
+		int checksum = MurmurHash3.hash_x86_32(salt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(aPayload, HEADER_SIZE, PAYLOAD_SIZE - HEADER_SIZE, CHECKSUM_SEED);
+
+		// update header
+		putInt(aPayload, 0, SIGNATURE);
+		putInt(aPayload, 4, checksum);
+
+		// create user key
+		byte[] userKeyPool = aAccessCredentials.generateKeyPool(salt, USER_KEY_POOL_SIZE);
+
+		// encrypt payload
+		byte[] payload = aPayload.clone();
+
+		BitScrambler.scramble(getLong(userKeyPool, USER_KEY_POOL_SIZE-8), payload);
+
+		CipherImplementation cipher = new CipherImplementation(aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
+		cipher.encrypt(aBlockIndex, payload, 0, PAYLOAD_SIZE, 0L);
+
+		BitScrambler.scramble(getLong(userKeyPool, USER_KEY_POOL_SIZE-16), payload);
+
+		// assemble output buffer
+		byte[] blockData = new byte[mBlockDevice.getBlockSize()];
+		System.arraycopy(salt, 0, blockData, 0, SALT_SIZE);
+		System.arraycopy(payload, 0, blockData, SALT_SIZE, PAYLOAD_SIZE);
+		System.arraycopy(padding, 0, blockData, SALT_SIZE + PAYLOAD_SIZE, padding.length);
+		
+		mBlockDevice.writeBlock(aBlockIndex, blockData, 0, mBlockDevice.getBlockSize(), 0L);
+	}
+
+
 	public static SecureBlockDevice open(IPhysicalBlockDevice aBlockDevice, AccessCredentials aAccessCredentials) throws IOException
 	{
 		return open(aBlockDevice, aAccessCredentials, 0);
@@ -162,16 +203,20 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		{
 			// create a user key using the key generator
 			aAccessCredentials.setKeyGeneratorFunction(keyGenerator);
-			byte[] userKeyPool = aAccessCredentials.generateKeyPool(salt, KEY_POOL_SIZE);
+			byte[] userKeyPool = aAccessCredentials.generateKeyPool(salt, USER_KEY_POOL_SIZE);
 
 			// decode boot block using all available ciphers
 			for (EncryptionFunction ciphers : EncryptionFunction.values())
 			{
 				byte[] payloadCopy = payload.clone();
 
+				BitScrambler.unscramble(getLong(userKeyPool, USER_KEY_POOL_SIZE-16), payloadCopy);
+
 				// decrypt payload using the user key
 				CipherImplementation cipher = new CipherImplementation(ciphers, userKeyPool, 0, PAYLOAD_SIZE);
 				cipher.decrypt(aBlockIndex, payloadCopy, 0, PAYLOAD_SIZE, 0L);
+
+				BitScrambler.unscramble(getLong(userKeyPool, USER_KEY_POOL_SIZE-8), payloadCopy);
 
 				// read header
 				int signature = getInt(payloadCopy, 0);
@@ -284,42 +329,6 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			mBlockDevice.close();
 			mBlockDevice = null;
 		}
-	}
-
-
-	private void createBootBlockImpl(AccessCredentials aAccessCredentials, byte[] aPayload, long aBlockIndex) throws IOException
-	{
-		byte[] salt = new byte[SALT_SIZE];
-		byte[] padding = new byte[mBlockDevice.getBlockSize() - SALT_SIZE - PAYLOAD_SIZE];
-
-		// padding and salt
-		Random rand = new Random();
-		rand.nextBytes(padding);
-		rand.nextBytes(salt);
-
-		// compute checksum
-		int checksum = MurmurHash3.hash_x86_32(salt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(aPayload, HEADER_SIZE, PAYLOAD_SIZE - HEADER_SIZE, CHECKSUM_SEED);
-
-		// update header
-		putInt(aPayload, 0, SIGNATURE);
-		putInt(aPayload, 4, checksum);
-
-		// create user key
-		byte[] userKeyPool = aAccessCredentials.generateKeyPool(salt, KEY_POOL_SIZE);
-
-		// encrypt payload
-		byte[] payload = aPayload.clone();
-
-		CipherImplementation cipher = new CipherImplementation(aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
-		cipher.encrypt(aBlockIndex, payload, 0, PAYLOAD_SIZE, 0L);
-
-		// assemble output buffer
-		byte[] blockData = new byte[mBlockDevice.getBlockSize()];
-		System.arraycopy(salt, 0, blockData, 0, SALT_SIZE);
-		System.arraycopy(payload, 0, blockData, SALT_SIZE, PAYLOAD_SIZE);
-		System.arraycopy(padding, 0, blockData, SALT_SIZE + PAYLOAD_SIZE, padding.length);
-
-		mBlockDevice.writeBlock(aBlockIndex, blockData, 0, mBlockDevice.getBlockSize(), 0L);
 	}
 
 
@@ -467,6 +476,19 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		byte[] buf = new byte[aLength];
 		System.arraycopy(aBuffer, aOffset, buf, 0, aLength);
 		return buf;
+	}
+
+
+	private static long getLong(byte[] aBuffer, int aOffset)
+	{
+		return ((255 & aBuffer[aOffset + 7]))
+			+ ((255 & aBuffer[aOffset + 6]) << 8)
+			+ ((255 & aBuffer[aOffset + 5]) << 16)
+			+ ((long)(255 & aBuffer[aOffset + 4]) << 24)
+			+ ((long)(255 & aBuffer[aOffset + 3]) << 32)
+			+ ((long)(255 & aBuffer[aOffset + 2]) << 40)
+			+ ((long)(255 & aBuffer[aOffset + 1]) << 48)
+			+ ((long)(255 & aBuffer[aOffset + 0]) << 56);
 	}
 
 
