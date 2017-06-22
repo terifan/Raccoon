@@ -1,6 +1,5 @@
 package org.terifan.security.cryptography;
 
-import java.util.Random;
 import org.terifan.raccoon.util.Log;
 
 
@@ -11,7 +10,7 @@ public class BitScrambler
 		try
 		{
 			byte[] buffer = new byte[256];
-			new Random(777).nextBytes(buffer);
+			new java.util.Random(777).nextBytes(buffer);
 
 			long key = 1;
 
@@ -38,11 +37,10 @@ public class BitScrambler
 	{
 		assert (aBuffer.length & -aBuffer.length) == aBuffer.length;
 
-		PRNG rnd = new PRNG(aKey);
-
+		ISAAC rnd = new ISAAC(aKey);
 		int size = 8 * aBuffer.length;
 		int[][] order = new int[2][size];
-		
+
 		for (int p = 0, q = size - 1; p < size; p++, q--)
 		{
 			order[0][q] = p;
@@ -57,8 +55,7 @@ public class BitScrambler
 	{
 		assert (aBuffer.length & -aBuffer.length) == aBuffer.length;
 
-		PRNG rnd = new PRNG(aKey);
-
+		ISAAC rnd = new ISAAC(aKey);
 		int size = 8 * aBuffer.length;
 		int[][] order = new int[2][size];
 
@@ -118,28 +115,5 @@ public class BitScrambler
 	private static void clearBit(byte[] aBuffer, int aPosition)
 	{
 		aBuffer[aPosition >>> 3] &= ~(1 << (aPosition & 7));
-	}
-
-
-	private static class PRNG
-	{
-		private static final long MULTIPLIER = 0x5DEECE66DL;
-		private static final long ADDED = 0xBL;
-		private static final long MASK = (1L << 48) - 1;
-		private long mSeed;
-
-
-		private PRNG(long aSeed)
-		{
-			mSeed = (aSeed ^ MULTIPLIER) & MASK;
-		}
-
-
-		private int nextInt(int aBound)
-		{
-			mSeed = (mSeed * MULTIPLIER + ADDED) & MASK;
-
-			return (int)((mSeed >>> 17) & (aBound - 1));
-		}
 	}
 }
