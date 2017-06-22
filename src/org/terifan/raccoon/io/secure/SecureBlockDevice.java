@@ -22,15 +22,13 @@ import org.terifan.security.cryptography.XTSCipherMode;
 // Boot block layout:
 // 256 salt (random, plaintext)
 // 256 payload (encrypted with user key)
-//       8 header
-//           4 signature
+//       4 header
 //           4 checksum (salt + key pool + payload padding)
 //     208 key pool
 //          32 tweak cipher key (1 x 32)
 //          96 ciper keys (3 x 32)
 //          48 cipher iv (3 x 16)
-//       n extra data
-//       n payload padding
+//      44 payload padding
 //   n padding (random, plaintext)
 
 /**
@@ -43,14 +41,14 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	private final static int BOOT_BLOCK_COUNT = 2;
 	private final static int RESERVED_BLOCKS = BOOT_BLOCK_COUNT;
 	private final static int SALT_SIZE = 256;
-	private final static int IV_SIZE = 16;
+	private final static int PAYLOAD_SIZE = 256;
+	private final static int HEADER_SIZE = 4;
 	private final static int KEY_SIZE_BYTES = 32;
-	private final static int HEADER_SIZE = 8;
+	private final static int IV_SIZE = 16;
 	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
-	private final static int PAYLOAD_SIZE = 256; // HEADER_SIZE + KEY_POOL_SIZE
-	private final static int SIGNATURE = 0xf46a290c; // (random number)
+	private final static int SCRAMBLE_KEY_OFFSET = KEY_POOL_SIZE;
+	private final static int USER_KEY_POOL_SIZE = SCRAMBLE_KEY_OFFSET + 16;
 	private final static int CHECKSUM_SEED = 0x2fc8d359; // (random number)
-	private final static int USER_KEY_POOL_SIZE = KEY_POOL_SIZE + 16;
 
 	private transient IPhysicalBlockDevice mBlockDevice;
 	private transient CipherImplementation mCipher;
@@ -129,8 +127,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		int checksum = MurmurHash3.hash_x86_32(salt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(aPayload, HEADER_SIZE, PAYLOAD_SIZE - HEADER_SIZE, CHECKSUM_SEED);
 
 		// update header
-		putInt(aPayload, 0, SIGNATURE);
-		putInt(aPayload, 4, checksum);
+		putInt(aPayload, 0, checksum);
 
 		// create user key
 		byte[] userKeyPool = aAccessCredentials.generateKeyPool(salt, USER_KEY_POOL_SIZE);
@@ -138,19 +135,19 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		// encrypt payload
 		byte[] payload = aPayload.clone();
 
-		BitScrambler.scramble(getLong(userKeyPool, USER_KEY_POOL_SIZE-8), payload);
+		BitScrambler.scramble(getLong(userKeyPool, SCRAMBLE_KEY_OFFSET + 8), payload);
 
 		CipherImplementation cipher = new CipherImplementation(aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
 		cipher.encrypt(aBlockIndex, payload, 0, PAYLOAD_SIZE, 0L);
 
-		BitScrambler.scramble(getLong(userKeyPool, USER_KEY_POOL_SIZE-16), payload);
+		BitScrambler.scramble(getLong(userKeyPool, SCRAMBLE_KEY_OFFSET), payload);
 
 		// assemble output buffer
 		byte[] blockData = new byte[mBlockDevice.getBlockSize()];
 		System.arraycopy(salt, 0, blockData, 0, SALT_SIZE);
 		System.arraycopy(payload, 0, blockData, SALT_SIZE, PAYLOAD_SIZE);
 		System.arraycopy(padding, 0, blockData, SALT_SIZE + PAYLOAD_SIZE, padding.length);
-		
+
 		mBlockDevice.writeBlock(aBlockIndex, blockData, 0, mBlockDevice.getBlockSize(), 0L);
 	}
 
@@ -210,32 +207,28 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			{
 				byte[] payloadCopy = payload.clone();
 
-				BitScrambler.unscramble(getLong(userKeyPool, USER_KEY_POOL_SIZE-16), payloadCopy);
+				BitScrambler.unscramble(getLong(userKeyPool, SCRAMBLE_KEY_OFFSET), payloadCopy);
 
 				// decrypt payload using the user key
 				CipherImplementation cipher = new CipherImplementation(ciphers, userKeyPool, 0, PAYLOAD_SIZE);
 				cipher.decrypt(aBlockIndex, payloadCopy, 0, PAYLOAD_SIZE, 0L);
 
-				BitScrambler.unscramble(getLong(userKeyPool, USER_KEY_POOL_SIZE-8), payloadCopy);
+				BitScrambler.unscramble(getLong(userKeyPool, SCRAMBLE_KEY_OFFSET + 8), payloadCopy);
 
 				// read header
-				int signature = getInt(payloadCopy, 0);
-				int expectedChecksum = getInt(payloadCopy, 4);
+				int expectedChecksum = getInt(payloadCopy, 0);
 
-				if (signature == SIGNATURE)
+				// verify checksum of boot block
+				int actualChecksum = MurmurHash3.hash_x86_32(salt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(payloadCopy, HEADER_SIZE, PAYLOAD_SIZE - HEADER_SIZE, CHECKSUM_SEED);
+
+				if (expectedChecksum == actualChecksum)
 				{
-					// verify checksum of boot block
-					int actualChecksum = MurmurHash3.hash_x86_32(salt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(payloadCopy, HEADER_SIZE, PAYLOAD_SIZE - HEADER_SIZE, CHECKSUM_SEED);
+					Log.dec();
 
-					if (expectedChecksum == actualChecksum)
-					{
-						Log.dec();
+					// create the cipher used to encrypt data blocks
+					device.mCipher = new CipherImplementation(ciphers, payloadCopy, HEADER_SIZE, blockSize);
 
-						// create the cipher used to encrypt data blocks
-						device.mCipher = new CipherImplementation(ciphers, payloadCopy, HEADER_SIZE, blockSize);
-
-						return device;
-					}
+					return device;
 				}
 			}
 		}
@@ -477,6 +470,19 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		System.arraycopy(aBuffer, aOffset, buf, 0, aLength);
 		return buf;
 	}
+
+
+//	private static void putLong(byte[] aBuffer, int aOffset, long aValue)
+//	{
+//		aBuffer[aOffset + 7] = (byte)(aValue >>> 0);
+//		aBuffer[aOffset + 6] = (byte)(aValue >>> 8);
+//		aBuffer[aOffset + 5] = (byte)(aValue >>> 16);
+//		aBuffer[aOffset + 4] = (byte)(aValue >>> 24);
+//		aBuffer[aOffset + 3] = (byte)(aValue >>> 32);
+//		aBuffer[aOffset + 2] = (byte)(aValue >>> 40);
+//		aBuffer[aOffset + 1] = (byte)(aValue >>> 48);
+//		aBuffer[aOffset + 0] = (byte)(aValue >>> 56);
+//	}
 
 
 	private static long getLong(byte[] aBuffer, int aOffset)
