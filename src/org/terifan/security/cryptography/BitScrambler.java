@@ -1,80 +1,40 @@
 package org.terifan.security.cryptography;
 
-import org.terifan.raccoon.util.Log;
 
-
+/**
+ * The BitScrambler is a simple transposition cipher rearranging data randomly on bit level over a wide block.
+ */
 public class BitScrambler
 {
-	public static void main(String... args)
-	{
-		try
-		{
-			byte[] buffer = new byte[256];
-			new java.util.Random(777).nextBytes(buffer);
-
-			long key = 1;
-
-			Log.hexDump(buffer);
-
-			scramble(key, buffer);
-
-			System.out.println();
-			Log.hexDump(buffer);
-			System.out.println();
-
-			unscramble(key, buffer);
-
-			Log.hexDump(buffer);
-		}
-		catch (Throwable e)
-		{
-			e.printStackTrace(System.out);
-		}
-	}
-
-
 	public static void scramble(long aKey, byte[] aBuffer)
 	{
-		assert (aBuffer.length & -aBuffer.length) == aBuffer.length;
-
-		ISAAC rnd = new ISAAC(aKey);
-		int size = 8 * aBuffer.length;
-		int[][] order = new int[2][size];
-
-		for (int p = 0, q = size - 1; p < size; p++, q--)
-		{
-			order[0][q] = p;
-			order[1][q] = rnd.nextInt(size);
-		}
-
-		mixBits(aBuffer, order, size);
+		mixBits(aBuffer, aKey, 8 * aBuffer.length - 1, -1, -1);
 	}
 
 
 	public static void unscramble(long aKey, byte[] aBuffer)
 	{
-		assert (aBuffer.length & -aBuffer.length) == aBuffer.length;
-
-		ISAAC rnd = new ISAAC(aKey);
-		int size = 8 * aBuffer.length;
-		int[][] order = new int[2][size];
-
-		for (int p = 0; p < size; p++)
-		{
-			order[0][p] = p;
-			order[1][p] = rnd.nextInt(size);
-		}
-
-		mixBits(aBuffer, order, size);
+		mixBits(aBuffer, aKey, 0, 8 * aBuffer.length, 1);
 	}
 
 
-	private static void mixBits(byte[] aBuffer, int[][] aOrder, int aRange)
+	private static void mixBits(byte[] aBuffer, long aKey, int aStart, int aEnd, int aDirection)
 	{
-		for (int i = 0; i < aRange; i++)
+		int size = 8 * aBuffer.length;
+
+		assert (size & -size) == size;
+
+		ISAAC rnd = new ISAAC(aKey);
+
+		int[] order = new int[size];
+		for (int i = 0; i < size; i++)
 		{
-			int p0 = aOrder[0][i];
-			int p1 = aOrder[1][i];
+			order[i] = rnd.nextInt(size);
+		}
+
+		for (int p0 = aStart; p0 != aEnd; p0+=aDirection)
+		{
+			int p1 = order[p0];
 
 			boolean b0 = isSet(aBuffer, p0);
 			boolean b1 = isSet(aBuffer, p1);

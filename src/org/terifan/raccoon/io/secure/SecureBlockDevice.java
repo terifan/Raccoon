@@ -22,8 +22,7 @@ import org.terifan.security.cryptography.XTSCipherMode;
 // Boot block layout:
 // 256 salt (random, plaintext)
 // 256 payload (encrypted with user key)
-//       4 header
-//           4 checksum (salt + key pool + payload padding)
+//       4 checksum (salt + key pool + payload padding)
 //     208 key pool
 //          32 tweak cipher key (1 x 32)
 //          96 ciper keys (3 x 32)
@@ -32,9 +31,9 @@ import org.terifan.security.cryptography.XTSCipherMode;
 //   n padding (random, plaintext)
 
 /**
- * The SecureBlockDevice encrypt blocks as they are written to the underlying physical block device. The block at index 0
- * contain a boot block which store the secret encryption key used to encrypt all other blocks. All read and write operations
- * offset the index to ensure the boot block can never be read/written.
+ * The SecureBlockDevice encrypt blocks as they are written to the underlying physical block device. The blocks at index 0 and 1
+ * contain a boot blocks which store the secret encryption keys used to encrypt all other blocks. All read and write operations
+ * offset the index to ensure the boot blocks can never be read/written.
  */
 public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoCloseable
 {
@@ -134,13 +133,15 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		// encrypt payload
 		byte[] payload = aPayload.clone();
+		long scrambleKey0 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET);
+		long scrambleKey1 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET + 8);
 
-		BitScrambler.scramble(getLong(userKeyPool, SCRAMBLE_KEY_OFFSET + 8), payload);
+		BitScrambler.scramble(scrambleKey0, payload);
 
 		CipherImplementation cipher = new CipherImplementation(aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
 		cipher.encrypt(aBlockIndex, payload, 0, PAYLOAD_SIZE, 0L);
 
-		BitScrambler.scramble(getLong(userKeyPool, SCRAMBLE_KEY_OFFSET), payload);
+		BitScrambler.scramble(scrambleKey1, payload);
 
 		// assemble output buffer
 		byte[] blockData = new byte[mBlockDevice.getBlockSize()];
@@ -206,14 +207,16 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			for (EncryptionFunction ciphers : EncryptionFunction.values())
 			{
 				byte[] payloadCopy = payload.clone();
+				long scrambleKey0 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET + 8);
+				long scrambleKey1 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET);
 
-				BitScrambler.unscramble(getLong(userKeyPool, SCRAMBLE_KEY_OFFSET), payloadCopy);
+				BitScrambler.unscramble(scrambleKey0, payloadCopy);
 
 				// decrypt payload using the user key
 				CipherImplementation cipher = new CipherImplementation(ciphers, userKeyPool, 0, PAYLOAD_SIZE);
 				cipher.decrypt(aBlockIndex, payloadCopy, 0, PAYLOAD_SIZE, 0L);
 
-				BitScrambler.unscramble(getLong(userKeyPool, SCRAMBLE_KEY_OFFSET + 8), payloadCopy);
+				BitScrambler.unscramble(scrambleKey1, payloadCopy);
 
 				// read header
 				int expectedChecksum = getInt(payloadCopy, 0);
