@@ -166,7 +166,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		BitScrambler.scramble(scrambleKey0, payload);
 
-		CipherImplementation cipher = new CipherImplementation(aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
+		CipherImplementation cipher = new CipherImplementation(CipherModeFunction.XTS, aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
 		cipher.encrypt(aBlockIndex, payload, 0, PAYLOAD_SIZE, 0L);
 
 		BitScrambler.scramble(scrambleKey1, payload);
@@ -247,35 +247,38 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			// decode boot block using all available ciphers
 			for (EncryptionFunction encryption : EncryptionFunction.values())
 			{
-				byte[] payloadCopy = payload.clone();
-
-				BitScrambler.unscramble(scrambleKey0, payloadCopy);
-
-				// decrypt payload using the user key
-				CipherImplementation cipher = new CipherImplementation(encryption, userKeyPool, 0, PAYLOAD_SIZE);
-				cipher.decrypt(aBlockIndex, payloadCopy, 0, PAYLOAD_SIZE, 0L);
-
-				BitScrambler.unscramble(scrambleKey1, payloadCopy);
-
-				// read header
-				int expectedChecksum = getInt(payloadCopy, 0);
-
-				// verify checksum of boot block
-				if (expectedChecksum == computeChecksum(salt, payloadCopy))
+				for (CipherModeFunction cipherMode : CipherModeFunction.values())
 				{
-					Log.dec();
+					byte[] payloadCopy = payload.clone();
 
-					// when a boot block is created it's also verified
-					if (aVerifyFunctions && (aAccessCredentials.getKeyGeneratorFunction() != keyGenerator || aAccessCredentials.getEncryptionFunction() != encryption))
+					BitScrambler.unscramble(scrambleKey0, payloadCopy);
+
+					// decrypt payload using the user key
+					CipherImplementation cipher = new CipherImplementation(cipherMode, encryption, userKeyPool, 0, PAYLOAD_SIZE);
+					cipher.decrypt(aBlockIndex, payloadCopy, 0, PAYLOAD_SIZE, 0L);
+
+					BitScrambler.unscramble(scrambleKey1, payloadCopy);
+
+					// read header
+					int expectedChecksum = getInt(payloadCopy, 0);
+
+					// verify checksum of boot block
+					if (expectedChecksum == computeChecksum(salt, payloadCopy))
 					{
-						System.err.println("hash collision in boot block");
+						Log.dec();
 
-						// a hash collision has occured!
-						return null;
+						// when a boot block is created it's also verified
+						if (aVerifyFunctions && (aAccessCredentials.getKeyGeneratorFunction() != keyGenerator || aAccessCredentials.getEncryptionFunction() != encryption))
+						{
+							System.err.println("hash collision in boot block");
+
+							// a hash collision has occured!
+							return null;
+						}
+
+						// create the cipher used to encrypt data blocks
+						return new CipherImplementation(cipherMode, encryption, payloadCopy, HEADER_SIZE, aBlockData.length);
 					}
-
-					// create the cipher used to encrypt data blocks
-					return new CipherImplementation(encryption, payloadCopy, HEADER_SIZE, aBlockData.length);
 				}
 			}
 		}
@@ -387,12 +390,24 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		private transient final int mUnitSize;
 
 
-		public CipherImplementation(final EncryptionFunction aEncryptionFunction, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitSize)
+		public CipherImplementation(final CipherModeFunction aCipherModeFunction, final EncryptionFunction aEncryptionFunction, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitSize)
 		{
-//			mCipherMode = new CBCCipherMode();
-//			mCipherMode = new PCBCCipherMode();
-			mCipherMode = new XTSCipherMode();
 			mUnitSize = aUnitSize;
+			
+			switch (aCipherModeFunction)
+			{
+				case CBC:
+					mCipherMode = new CBCCipherMode();
+					break;
+				case PCBC:
+					mCipherMode = new PCBCCipherMode();
+					break;
+				case XTS:
+					mCipherMode = new XTSCipherMode();
+					break;
+				default:
+					throw new IllegalStateException();
+			}
 
 			switch (aEncryptionFunction)
 			{

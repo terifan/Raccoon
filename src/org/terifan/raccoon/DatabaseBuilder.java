@@ -6,6 +6,7 @@ import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.secure.AccessCredentials;
+import org.terifan.raccoon.io.secure.CipherModeFunction;
 import org.terifan.raccoon.io.secure.EncryptionFunction;
 import org.terifan.raccoon.io.secure.KeyGenerationFunction;
 import org.terifan.raccoon.io.secure.SecureBlockDevice;
@@ -14,11 +15,12 @@ import org.terifan.raccoon.io.secure.SecureBlockDevice;
 public class DatabaseBuilder
 {
 	private IPhysicalBlockDevice mBlockDevice;
-	private boolean mReadOnly;
-	private String mLabel;
-	private char[] mPassword;
 	private EncryptionFunction mEncryptionFunction;
 	private KeyGenerationFunction mKeyGenerationFunction;
+	private CipherModeFunction mCipherModeFunction;
+	private String mLabel;
+	private boolean mReadOnly;
+	private char[] mPassword;
 	private int mLazyWriteCacheSizeBlocks;
 	private int mPagesPerNode;
 	private int mPagesPerLeaf;
@@ -40,8 +42,9 @@ public class DatabaseBuilder
 		mCompressionOfLeafs = CompressionParam.NONE;
 		mCompressionOfBlobs = CompressionParam.NONE;
 		mLazyWriteCacheSizeBlocks = Constants.DEFAULT_LAZY_WRITE_CACHE_SIZE;
-		mEncryptionFunction = EncryptionFunction.AES;
-		mKeyGenerationFunction = KeyGenerationFunction.SHA512;
+		mEncryptionFunction = AccessCredentials.DEFAULT_ENCRYPTION;
+		mKeyGenerationFunction = AccessCredentials.DEFAULT_KEY_GENERATOR;
+		mCipherModeFunction = AccessCredentials.DEFAULT_CIPHER_MODE;
 		mIterationCount = AccessCredentials.DEFAULT_ITERATION_COUNT;
 	}
 
@@ -55,7 +58,7 @@ public class DatabaseBuilder
 
 		if (mPassword != null)
 		{
-			AccessCredentials accessCredentials = new AccessCredentials(mPassword, mEncryptionFunction, mKeyGenerationFunction, mIterationCount);
+			AccessCredentials accessCredentials = new AccessCredentials(mPassword, mEncryptionFunction, mKeyGenerationFunction, mCipherModeFunction, mIterationCount);
 
 			if (mBlockDevice.length() == 0)
 			{
@@ -143,6 +146,13 @@ public class DatabaseBuilder
 	public DatabaseBuilder setKeyGeneration(KeyGenerationFunction aKeyGenerationFunction)
 	{
 		mKeyGenerationFunction = aKeyGenerationFunction;
+		return this;
+	}
+
+
+	public DatabaseBuilder setCipherModeFunction(CipherModeFunction aCipherModeFunction)
+	{
+		mCipherModeFunction = aCipherModeFunction;
 		return this;
 	}
 

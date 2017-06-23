@@ -37,54 +37,57 @@ public class SecureBlockDeviceNGTest
 		{
 			for (EncryptionFunction ef : EncryptionFunction.values())
 			{
-				Random rnd = new Random();
-
-				int unitSize = 512;
-				int numUnits = 32;
-				int blocksPerUnit = 4;
-
-				MemoryBlockDevice blockDevice = new MemoryBlockDevice(unitSize);
-
-				long[] blockKeys = new long[numUnits];
-				for (int i = 0; i < numUnits; i++)
+				for (CipherModeFunction cmf : CipherModeFunction.values())
 				{
-					blockKeys[i] = rnd.nextLong();
-				}
+					Random rnd = new Random();
 
-				byte[] original = new byte[numUnits * unitSize];
-				rnd.nextBytes(original);
+					int unitSize = 512;
+					int numUnits = 32;
+					int blocksPerUnit = 4;
 
-				byte[] input = original.clone();
+					MemoryBlockDevice blockDevice = new MemoryBlockDevice(unitSize);
 
-				long t0 = System.currentTimeMillis();
-				
-				try (SecureBlockDevice device = SecureBlockDevice.create(new AccessCredentials("password".toCharArray(), ef, kgf, 100), blockDevice))
-				{
-					for (int i = 0; i < numUnits / blocksPerUnit; i++)
+					long[] blockKeys = new long[numUnits];
+					for (int i = 0; i < numUnits; i++)
 					{
-						device.writeBlock(blocksPerUnit * i, input, blocksPerUnit * i * unitSize, blocksPerUnit * unitSize, blockKeys[i]);
+						blockKeys[i] = rnd.nextLong();
 					}
-				}
 
-				long t1 = System.currentTimeMillis();
+					byte[] original = new byte[numUnits * unitSize];
+					rnd.nextBytes(original);
 
-				assertEquals(input, original);
+					byte[] input = original.clone();
 
-				byte[] output = new byte[numUnits * unitSize];
+					long t0 = System.currentTimeMillis();
 
-				try (SecureBlockDevice device = SecureBlockDevice.open(blockDevice, new AccessCredentials("password".toCharArray()).setIterationCount(100)))
-				{
-					for (int i = 0; i < numUnits / blocksPerUnit; i++)
+					try (SecureBlockDevice device = SecureBlockDevice.create(new AccessCredentials("password".toCharArray(), ef, kgf, cmf, 100), blockDevice))
 					{
-						device.readBlock(blocksPerUnit * i, output, blocksPerUnit * i * unitSize, blocksPerUnit * unitSize, blockKeys[i]);
+						for (int i = 0; i < numUnits / blocksPerUnit; i++)
+						{
+							device.writeBlock(blocksPerUnit * i, input, blocksPerUnit * i * unitSize, blocksPerUnit * unitSize, blockKeys[i]);
+						}
 					}
-				}
-				
-				long t2 = System.currentTimeMillis();
 
-				assertEquals(output, input);
-				
-//				System.out.printf("%4d %4d %s %s%n", t1-t0, t2-t1, kgf, ef);
+					long t1 = System.currentTimeMillis();
+
+					assertEquals(input, original);
+
+					byte[] output = new byte[numUnits * unitSize];
+
+					try (SecureBlockDevice device = SecureBlockDevice.open(blockDevice, new AccessCredentials("password".toCharArray()).setIterationCount(100)))
+					{
+						for (int i = 0; i < numUnits / blocksPerUnit; i++)
+						{
+							device.readBlock(blocksPerUnit * i, output, blocksPerUnit * i * unitSize, blocksPerUnit * unitSize, blockKeys[i]);
+						}
+					}
+
+					long t2 = System.currentTimeMillis();
+
+					assertEquals(output, input);
+
+	//				System.out.printf("%4d %4d %s %s%n", t1-t0, t2-t1, kgf, ef);
+				}
 			}
 		}
 	}
