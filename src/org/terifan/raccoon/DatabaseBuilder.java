@@ -59,7 +59,7 @@ public class DatabaseBuilder
 
 			if (mBlockDevice.length() == 0)
 			{
-				mBlockDevice = SecureBlockDevice.create(mBlockDevice, accessCredentials);
+				mBlockDevice = SecureBlockDevice.create(accessCredentials, mBlockDevice);
 			}
 			else
 			{
@@ -207,7 +207,7 @@ public class DatabaseBuilder
 
 	/**
 	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times. A larger number means more security but
-	 * also longer time to open a database. Default is 10000 iterations.
+	 * also longer time to open a database.
 	 *
 	 * WARNING: this value is not recorded in the database file and must be provided when opening a database!
 	 *

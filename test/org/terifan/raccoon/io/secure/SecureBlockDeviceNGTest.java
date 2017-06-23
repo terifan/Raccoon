@@ -16,7 +16,7 @@ public class SecureBlockDeviceNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
 		AccessCredentials accessCredentials = new AccessCredentials("password").setIterationCount(100);
 
-		try (SecureBlockDevice device = SecureBlockDevice.create(blockDevice, accessCredentials))
+		try (SecureBlockDevice device = SecureBlockDevice.create(accessCredentials, blockDevice))
 		{
 			device.writeBlock(0, new byte[4096], 0, 4096, 0);
 		}
@@ -56,13 +56,17 @@ public class SecureBlockDeviceNGTest
 
 				byte[] input = original.clone();
 
-				try (SecureBlockDevice device = SecureBlockDevice.create(blockDevice, new AccessCredentials("password".toCharArray(), ef, kgf, 100)))
+				long t0 = System.currentTimeMillis();
+				
+				try (SecureBlockDevice device = SecureBlockDevice.create(new AccessCredentials("password".toCharArray(), ef, kgf, 100), blockDevice))
 				{
 					for (int i = 0; i < numUnits / blocksPerUnit; i++)
 					{
 						device.writeBlock(blocksPerUnit * i, input, blocksPerUnit * i * unitSize, blocksPerUnit * unitSize, blockKeys[i]);
 					}
 				}
+
+				long t1 = System.currentTimeMillis();
 
 				assertEquals(input, original);
 
@@ -75,8 +79,12 @@ public class SecureBlockDeviceNGTest
 						device.readBlock(blocksPerUnit * i, output, blocksPerUnit * i * unitSize, blocksPerUnit * unitSize, blockKeys[i]);
 					}
 				}
+				
+				long t2 = System.currentTimeMillis();
 
 				assertEquals(output, input);
+				
+//				System.out.printf("%4d %4d %s %s%n", t1-t0, t2-t1, kgf, ef);
 			}
 		}
 	}

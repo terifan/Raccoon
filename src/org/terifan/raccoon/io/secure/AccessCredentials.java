@@ -17,7 +17,7 @@ public final class AccessCredentials
 	public final static KeyGenerationFunction DEFAULT_KEY_GENERATOR = KeyGenerationFunction.SHA512;
 
 	/**
-	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times, default is 10000 times.
+	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times.
 	 */
 	public final static int DEFAULT_ITERATION_COUNT = 10_000;
 
@@ -43,7 +43,7 @@ public final class AccessCredentials
 	 *
 	 * @param aIterationCount
 	 *   Passwords are expanded into cryptographic keys by iterating a hash function this many times. A larger number means more security
-	 *   but also longer time to open a database. Default is 10000 iterations. WARNING: this value is not recorded in the database file and
+	 *   but also longer time to open a database. WARNING: this value is not recorded in the database file and
 	 *   must always be provided!
 	 */
 	public AccessCredentials(char [] aPassword, EncryptionFunction aEncryptionFunction, KeyGenerationFunction aKeyFunction, int aIterationCount)
@@ -77,7 +77,7 @@ public final class AccessCredentials
 
 	/**
 	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times. A larger number means more security but
-	 * also longer time to open a database. Default is 10000 iterations.
+	 * also longer time to open a database.
 	 *
 	 * WARNING: this value is not recorded in the database file and must be provided when opening a database!
 	 *
@@ -97,17 +97,23 @@ public final class AccessCredentials
 	}
 
 
-	byte[] generateKeyPool(byte[] aSalt, int aPoolSize)
+	KeyGenerationFunction getKeyGeneratorFunction()
 	{
-		HMAC mac = new HMAC(newMessageDigestInstance(), mPassword);
+		return mKeyGeneratorFunction;
+	}
+
+
+	byte[] generateKeyPool(KeyGenerationFunction aKeyGenerator, byte[] aSalt, int aPoolSize)
+	{
+		HMAC mac = new HMAC(newMessageDigestInstance(aKeyGenerator), mPassword);
 
 		return PBKDF2.generateKeyBytes(mac, aSalt, mIterationCount, aPoolSize);
 	}
 
 
-	private MessageDigest newMessageDigestInstance()
+	private MessageDigest newMessageDigestInstance(KeyGenerationFunction aKeyGenerator)
 	{
-		switch (mKeyGeneratorFunction)
+		switch (aKeyGenerator)
 		{
 			case SHA3:
 				return new SHA3();
