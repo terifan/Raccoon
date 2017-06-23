@@ -1,19 +1,14 @@
 package org.terifan.raccoon.io.secure;
 
-import java.security.MessageDigest;
-import org.terifan.security.messagedigest.SHA512;
-import org.terifan.security.messagedigest.Skein512;
-import org.terifan.security.messagedigest.Whirlpool;
 import org.terifan.security.cryptography.PBKDF2;
 import org.terifan.security.messagedigest.HMAC;
-import org.terifan.security.messagedigest.SHA3;
 
 
 public final class AccessCredentials
 {
 	public final static EncryptionFunction DEFAULT_ENCRYPTION = EncryptionFunction.AES;
-	public final static KeyGenerationFunction DEFAULT_KEY_GENERATOR = KeyGenerationFunction.SHA512;
 	public final static CipherModeFunction DEFAULT_CIPHER_MODE = CipherModeFunction.XTS;
+	public final static KeyGenerationFunction DEFAULT_KEY_GENERATOR = KeyGenerationFunction.SHA512;
 
 	/**
 	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times.
@@ -29,7 +24,7 @@ public final class AccessCredentials
 
 	public AccessCredentials(String aPassword)
 	{
-		this(aPassword.toCharArray(), DEFAULT_ENCRYPTION, DEFAULT_KEY_GENERATOR, DEFAULT_CIPHER_MODE, DEFAULT_ITERATION_COUNT);
+		this(aPassword.toCharArray());
 	}
 
 
@@ -126,26 +121,8 @@ public final class AccessCredentials
 
 	byte[] generateKeyPool(KeyGenerationFunction aKeyGenerator, byte[] aSalt, int aPoolSize)
 	{
-		HMAC mac = new HMAC(newMessageDigestInstance(aKeyGenerator), mPassword);
+		HMAC mac = new HMAC(aKeyGenerator.newInstance(), mPassword);
 
 		return PBKDF2.generateKeyBytes(mac, aSalt, mIterationCount, aPoolSize);
-	}
-
-
-	private MessageDigest newMessageDigestInstance(KeyGenerationFunction aKeyGenerator)
-	{
-		switch (aKeyGenerator)
-		{
-			case SHA3:
-				return new SHA3();
-			case SHA512:
-				return new SHA512();
-			case Skein512:
-				return new Skein512();
-			case Whirlpool:
-				return new Whirlpool();
-			default:
-				throw new IllegalStateException();
-		}
 	}
 }

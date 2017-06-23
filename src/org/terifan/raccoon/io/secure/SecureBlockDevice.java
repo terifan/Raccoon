@@ -7,19 +7,13 @@ import java.util.Arrays;
 import java.util.Random;
 import org.terifan.raccoon.io.physical.FileAlreadyOpenException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
-import org.terifan.security.cryptography.AES;
 import org.terifan.security.cryptography.BlockCipher;
 import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.security.cryptography.SecretKey;
-import org.terifan.security.cryptography.Serpent;
-import org.terifan.security.cryptography.Twofish;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
 import org.terifan.security.cryptography.BitScrambler;
-import org.terifan.security.cryptography.CBCCipherMode;
 import org.terifan.security.cryptography.CipherMode;
-import org.terifan.security.cryptography.PCBCCipherMode;
-import org.terifan.security.cryptography.XTSCipherMode;
 
 
 // Boot block layout:
@@ -166,7 +160,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		BitScrambler.scramble(scrambleKey0, payload);
 
-		CipherImplementation cipher = new CipherImplementation(CipherModeFunction.XTS, aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
+		CipherImplementation cipher = new CipherImplementation(aAccessCredentials.getCipherModeFunction(), aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
 		cipher.encrypt(aBlockIndex, payload, 0, PAYLOAD_SIZE, 0L);
 
 		BitScrambler.scramble(scrambleKey1, payload);
@@ -381,141 +375,6 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	private static final class CipherImplementation
-	{
-		private transient final byte [][] mIV = new byte[3][IV_SIZE];
-		private transient final BlockCipher[] mCiphers;
-		private transient final BlockCipher mTweakCipher;
-		private transient final CipherMode mCipherMode;
-		private transient final int mUnitSize;
-
-
-		public CipherImplementation(final CipherModeFunction aCipherModeFunction, final EncryptionFunction aEncryptionFunction, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitSize)
-		{
-			mUnitSize = aUnitSize;
-			
-			switch (aCipherModeFunction)
-			{
-				case CBC:
-					mCipherMode = new CBCCipherMode();
-					break;
-				case PCBC:
-					mCipherMode = new PCBCCipherMode();
-					break;
-				case XTS:
-					mCipherMode = new XTSCipherMode();
-					break;
-				default:
-					throw new IllegalStateException();
-			}
-
-			switch (aEncryptionFunction)
-			{
-				case AES:
-					mCiphers = new BlockCipher[]{new AES()};
-					mTweakCipher = new AES();
-					break;
-				case Twofish:
-					mCiphers = new BlockCipher[]{new Twofish()};
-					mTweakCipher = new Twofish();
-					break;
-				case Serpent:
-					mCiphers = new BlockCipher[]{new Serpent()};
-					mTweakCipher = new Serpent();
-					break;
-				case AESTwofish:
-					mCiphers = new BlockCipher[]{new AES(), new Twofish()};
-					mTweakCipher = new AES();
-					break;
-				case TwofishSerpent:
-					mCiphers = new BlockCipher[]{new Twofish(), new Serpent()};
-					mTweakCipher = new Twofish();
-					break;
-				case SerpentAES:
-					mCiphers = new BlockCipher[]{new Serpent(), new AES()};
-					mTweakCipher = new Serpent();
-					break;
-				case AESTwofishSerpent:
-					mCiphers = new BlockCipher[]{new AES(), new Twofish(), new Serpent()};
-					mTweakCipher = new AES();
-					break;
-				case TwofishAESSerpent:
-					mCiphers = new BlockCipher[]{new Twofish(), new AES(), new Serpent()};
-					mTweakCipher = new Twofish();
-					break;
-				case SerpentTwofishAES:
-					mCiphers = new BlockCipher[]{new Serpent(), new Twofish(), new AES()};
-					mTweakCipher = new Serpent();
-					break;
-				default:
-					throw new IllegalStateException();
-			}
-
-			int offset = aKeyPoolOffset;
-
-			mTweakCipher.engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
-			offset += KEY_SIZE_BYTES;
-
-			for (int j = 0; j < 3; j++)
-			{
-				if (j < mCiphers.length)
-				{
-					mCiphers[j].engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
-				}
-				offset += KEY_SIZE_BYTES;
-			}
-
-			for (int j = 0; j < 3; j++)
-			{
-				System.arraycopy(aKeyPool, offset, mIV[j], 0, IV_SIZE);
-				offset += IV_SIZE;
-			}
-
-			if (offset != aKeyPoolOffset + KEY_POOL_SIZE)
-			{
-				throw new IllegalArgumentException("Bad offset: " + offset);
-			}
-		}
-
-
-		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
-		{
-			for (int i = 0; i < mCiphers.length; i++)
-			{
-				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
-			}
-		}
-
-
-		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
-		{
-			for (int i = mCiphers.length; --i >= 0; )
-			{
-				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
-			}
-		}
-
-
-		private void reset()
-		{
-			for (BlockCipher cipher : mCiphers)
-			{
-				if (cipher != null)
-				{
-					cipher.engineReset();
-				}
-			}
-
-			mTweakCipher.engineReset();
-
-			fill(mIV[0], (byte)0);
-			fill(mIV[1], (byte)0);
-			fill(mIV[2], (byte)0);
-			fill(mCiphers, null);
-		}
-	};
-
-
 	private static int getInt(byte [] aBuffer, int aPosition)
 	{
 		return    ((aBuffer[aPosition++] & 255) << 24)
@@ -604,4 +463,80 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			}
 		}
 	}
+
+
+	private static final class CipherImplementation
+	{
+		private transient final byte [][] mIV;
+		private transient final BlockCipher[] mCiphers;
+		private transient final BlockCipher mTweakCipher;
+		private transient final CipherMode mCipherMode;
+		private transient final int mUnitSize;
+
+
+		public CipherImplementation(final CipherModeFunction aCipherModeFunction, final EncryptionFunction aEncryptionFunction, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitSize)
+		{
+			mUnitSize = aUnitSize;
+			mCipherMode = aCipherModeFunction.newInstance();
+			mCiphers = aEncryptionFunction.newCipherInstances();
+			mTweakCipher = aEncryptionFunction.newTweakInstance();
+			mIV = new byte[mCiphers.length][IV_SIZE];
+
+			int offset = aKeyPoolOffset;
+
+			mTweakCipher.engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
+			offset += KEY_SIZE_BYTES;
+
+			for (BlockCipher cipher : mCiphers)
+			{
+				cipher.engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
+				offset += KEY_SIZE_BYTES;
+			}
+
+			for (byte[] iv : mIV)
+			{
+				System.arraycopy(aKeyPool, offset, iv, 0, IV_SIZE);
+				offset += IV_SIZE;
+			}
+		}
+
+
+		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
+		{
+			for (int i = 0; i < mCiphers.length; i++)
+			{
+				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
+			}
+		}
+
+
+		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
+		{
+			for (int i = mCiphers.length; --i >= 0; )
+			{
+				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
+			}
+		}
+
+
+		private void reset()
+		{
+			for (BlockCipher cipher : mCiphers)
+			{
+				if (cipher != null)
+				{
+					cipher.engineReset();
+				}
+			}
+
+			mTweakCipher.engineReset();
+
+			for (byte[] iv : mIV)
+			{
+				fill(iv, (byte)0);
+			}
+
+			fill(mCiphers, null);
+		}
+	};
 }
