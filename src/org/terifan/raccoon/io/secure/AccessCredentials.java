@@ -8,8 +8,6 @@ import org.terifan.security.cryptography.PBKDF2;
 import org.terifan.security.messagedigest.HMAC;
 import org.terifan.security.messagedigest.SHA3;
 
-// CBC/XTS
-// 128/256
 
 public final class AccessCredentials
 {
@@ -25,8 +23,8 @@ public final class AccessCredentials
 	private EncryptionFunction mEncryptionFunction;
 	private KeyGenerationFunction mKeyGeneratorFunction;
 	private CipherModeFunction mCipherModeFunction;
-	private byte [] mPassword;
 	private int mIterationCount;
+	private byte [] mPassword;
 
 
 	public AccessCredentials(String aPassword)
@@ -44,9 +42,10 @@ public final class AccessCredentials
 	/**
 	 *
 	 * @param aIterationCount
-	 *   Passwords are expanded into cryptographic keys by iterating a hash function this many times. A larger number means more security
-	 *   but also longer time to open a database. WARNING: this value is not recorded in the database file and
-	 *   must always be provided!
+	 *   Passwords are expanded into cryptographic keys by iterating a hash function this many times. 
+	 *   A larger number means more security but also longer time to open a database. WARNING: this 
+	 *   value is not recorded in the database file and must always be provided if different from the 
+	 *   default value!
 	 */
 	public AccessCredentials(char [] aPassword, EncryptionFunction aEncryptionFunction, KeyGenerationFunction aKeyFunction, CipherModeFunction aCipherModeFunction, int aIterationCount)
 	{
@@ -64,6 +63,12 @@ public final class AccessCredentials
 	}
 
 
+	public EncryptionFunction getEncryptionFunction()
+	{
+		return mEncryptionFunction;
+	}
+
+
 	public AccessCredentials setEncryptionFunction(EncryptionFunction aEncryptionFunction)
 	{
 		mEncryptionFunction = aEncryptionFunction;
@@ -71,10 +76,35 @@ public final class AccessCredentials
 	}
 
 
+	public KeyGenerationFunction getKeyGeneratorFunction()
+	{
+		return mKeyGeneratorFunction;
+	}
+
+
 	public AccessCredentials setKeyGeneratorFunction(KeyGenerationFunction aKeyGeneratorFunction)
 	{
 		mKeyGeneratorFunction = aKeyGeneratorFunction;
 		return this;
+	}
+
+
+	public CipherModeFunction getCipherModeFunction()
+	{
+		return mCipherModeFunction;
+	}
+
+
+	public AccessCredentials setCipherModeFunction(CipherModeFunction aCipherModeFunction)
+	{
+		mCipherModeFunction = aCipherModeFunction;
+		return this;
+	}
+
+
+	public int getIterationCount()
+	{
+		return mIterationCount;
 	}
 
 
@@ -91,24 +121,6 @@ public final class AccessCredentials
 	{
 		mIterationCount = aIterationCount;
 		return this;
-	}
-
-
-	EncryptionFunction getEncryptionFunction()
-	{
-		return mEncryptionFunction;
-	}
-
-
-	KeyGenerationFunction getKeyGeneratorFunction()
-	{
-		return mKeyGeneratorFunction;
-	}
-
-
-	CipherModeFunction getCipherModeFunction()
-	{
-		return mCipherModeFunction;
 	}
 
 

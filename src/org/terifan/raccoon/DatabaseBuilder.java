@@ -18,9 +18,6 @@ public class DatabaseBuilder
 	private EncryptionFunction mEncryptionFunction;
 	private KeyGenerationFunction mKeyGenerationFunction;
 	private CipherModeFunction mCipherModeFunction;
-	private String mLabel;
-	private boolean mReadOnly;
-	private char[] mPassword;
 	private int mLazyWriteCacheSizeBlocks;
 	private int mPagesPerNode;
 	private int mPagesPerLeaf;
@@ -29,6 +26,9 @@ public class DatabaseBuilder
 	private int mCompressionOfBlobs;
 	private int mBlockReadCacheSize;
 	private int mIterationCount;
+	private boolean mReadOnly;
+	private char[] mPassword;
+	private String mLabel;
 
 
 	public DatabaseBuilder(IPhysicalBlockDevice aBlockDevice)
@@ -58,7 +58,11 @@ public class DatabaseBuilder
 
 		if (mPassword != null)
 		{
-			AccessCredentials accessCredentials = new AccessCredentials(mPassword, mEncryptionFunction, mKeyGenerationFunction, mCipherModeFunction, mIterationCount);
+			AccessCredentials accessCredentials = new AccessCredentials(mPassword)
+				.setEncryptionFunction(mEncryptionFunction)
+				.setKeyGeneratorFunction(mKeyGenerationFunction)
+				.setCipherModeFunction(mCipherModeFunction)
+				.setIterationCount(mIterationCount);
 
 			if (mBlockDevice.length() == 0)
 			{
@@ -71,7 +75,7 @@ public class DatabaseBuilder
 
 			if (mBlockDevice == null)
 			{
-				throw new InvalidPasswordException("Incorrect password or not a secure BlockDevice");
+				throw new InvalidPasswordException("Incorrect password or not a secure block device");
 			}
 		}
 
