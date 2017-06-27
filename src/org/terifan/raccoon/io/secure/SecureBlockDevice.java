@@ -46,7 +46,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	private final static int IV_SIZE = 16;
 	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
 	private final static int SCRAMBLE_KEY_OFFSET = KEY_POOL_SIZE;
-	private final static int USER_KEY_POOL_SIZE = SCRAMBLE_KEY_OFFSET + 16;
+	private final static int USER_KEY_POOL_SIZE = SCRAMBLE_KEY_OFFSET + 2 * 8;
 	private final static int CHECKSUM_SEED = 0x2fc8d359; // (random number)
 
 	private transient IPhysicalBlockDevice mBlockDevice;

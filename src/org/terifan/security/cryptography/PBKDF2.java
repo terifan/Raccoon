@@ -62,4 +62,19 @@ public final class PBKDF2
 			}
 		}
 	}
+
+
+//	public static void main(String ... args)
+//	{
+//		try
+//		{
+//			long t = System.currentTimeMillis();
+//			PBKDF2.generateKey(new HMAC(new SHA512(), "password".getBytes()), new byte[256], 100_000, 32+3*32+3*16+8+8);
+//			System.out.println(System.currentTimeMillis()-t);
+//		}
+//		catch (Throwable e)
+//		{
+//			e.printStackTrace(System.out);
+//		}
+//	}
 }

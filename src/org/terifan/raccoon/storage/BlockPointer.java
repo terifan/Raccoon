@@ -9,6 +9,20 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 /*
  * +------+------+------+------+------+------+------+------+
+ * |  ver | type | chk  | enc  | comp |       range        |
+ * |------+------+------+------+------+------+------+------+
+ * |       physical size       |        logical size       |
+ * |------+------+------+------+------+------+------+------+
+ * |                         offset                        |
+ * +------+------+------+------+------+------+------+------+
+ * |                      transaction                      |
+ * +------+------+------+------+------+------+------+------+
+ * |                          iv                           |
+ * +------+------+------+------+------+------+------+------+
+ * |                       checksum                        |
+ * +------+------+------+------+------+------+------+------+
+ *
+ * +------+------+------+------+------+------+------+------+
  * |ve|typ|ch|cmp|    range    |        logical size       |
  * +------+------+------+------+------+------+------+------+
  * |       physical size       |           offset          |
@@ -34,7 +48,7 @@ public class BlockPointer implements Serializable
 	private final static long serialVersionUID = 1;
 
 	private final static int VERSION = 0;
-	public final static int SIZE = 32;
+	public final static int SIZE = 32+16;
 
 	private int mBlockType;
 	private int mChecksumAlgorithm;
@@ -183,6 +197,9 @@ public class BlockPointer implements Serializable
 		aBuffer.writeInt64(mTransactionId);
 		aBuffer.writeInt64(mChecksum);
 
+		aBuffer.writeInt64(mChecksum);
+		aBuffer.writeInt64(mChecksum);
+
 		assert PerformanceCounters.increment(POINTER_ENCODE);
 
 		return aBuffer;
@@ -206,6 +223,9 @@ public class BlockPointer implements Serializable
 				mPhysicalSize = aBuffer.readInt32();
 				mOffset = 0xFFFFFFFFL & aBuffer.readInt32();
 				mTransactionId = aBuffer.readInt64();
+				mChecksum = aBuffer.readInt64();
+
+				mChecksum = aBuffer.readInt64();
 				mChecksum = aBuffer.readInt64();
 				break;
 			default:
