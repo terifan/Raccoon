@@ -9,7 +9,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 /*
  * +------+------+------+------+------+------+------+------+
- * |  ver | type | chk  | enc  | comp |       range        |
+ * | type | chk  | enc  | comp |  X   |       range        |
  * |------+------+------+------+------+------+------+------+
  * |       physical size       |        logical size       |
  * |------+------+------+------+------+------+------+------+
@@ -17,9 +17,13 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
  * +------+------+------+------+------+------+------+------+
  * |                      transaction                      |
  * +------+------+------+------+------+------+------+------+
- * |                          iv                           |
+ * |                       checksum0                       |
  * +------+------+------+------+------+------+------+------+
- * |                       checksum                        |
+ * |                       checksum1                       |
+ * +------+------+------+------+------+------+------+------+
+ * |                          iv0                          |
+ * +------+------+------+------+------+------+------+------+
+ * |                          iv1                          |
  * +------+------+------+------+------+------+------+------+
  *
  * +------+------+------+------+------+------+------+------+
@@ -48,7 +52,7 @@ public class BlockPointer implements Serializable
 	private final static long serialVersionUID = 1;
 
 	private final static int VERSION = 0;
-	public final static int SIZE = 32+16;
+	public final static int SIZE = 32+32;
 
 	private int mBlockType;
 	private int mChecksumAlgorithm;
@@ -195,9 +199,12 @@ public class BlockPointer implements Serializable
 		aBuffer.writeInt32(mPhysicalSize);
 		aBuffer.writeInt32((int)mOffset);
 		aBuffer.writeInt64(mTransactionId);
+
+		aBuffer.writeInt64(0);
+		aBuffer.writeInt64(0);
+		aBuffer.writeInt64(mChecksum);
 		aBuffer.writeInt64(mChecksum);
 
-		aBuffer.writeInt64(mChecksum);
 		aBuffer.writeInt64(mChecksum);
 
 		assert PerformanceCounters.increment(POINTER_ENCODE);
@@ -223,9 +230,12 @@ public class BlockPointer implements Serializable
 				mPhysicalSize = aBuffer.readInt32();
 				mOffset = 0xFFFFFFFFL & aBuffer.readInt32();
 				mTransactionId = aBuffer.readInt64();
-				mChecksum = aBuffer.readInt64();
 
 				mChecksum = aBuffer.readInt64();
+				mChecksum = aBuffer.readInt64();
+				mChecksum = aBuffer.readInt64();
+				mChecksum = aBuffer.readInt64();
+
 				mChecksum = aBuffer.readInt64();
 				break;
 			default:
