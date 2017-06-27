@@ -19,7 +19,7 @@ public enum EncryptionFunction
 	SerpentTwofishAES;
 
 
-	BlockCipher[] newCipherInstances()
+	BlockCipher[] newInstance()
 	{
 		switch (this)
 		{
@@ -41,28 +41,6 @@ public enum EncryptionFunction
 				return new BlockCipher[]{new Twofish(), new AES(), new Serpent()};
 			case SerpentTwofishAES:
 				return new BlockCipher[]{new Serpent(), new Twofish(), new AES()};
-		}
-
-		throw new IllegalStateException();
-	}
-
-
-	BlockCipher newTweakInstance()
-	{
-		switch (this)
-		{
-			case AES:
-			case AESTwofishSerpent:
-			case AESTwofish:
-				return new AES();
-			case Twofish:
-			case TwofishSerpent:
-			case TwofishAESSerpent:
-				return new Twofish();
-			case Serpent:
-			case SerpentAES:
-			case SerpentTwofishAES:
-				return new Serpent();
 		}
 
 		throw new IllegalStateException();

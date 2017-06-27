@@ -16,7 +16,7 @@ public final class XTSCipherMode extends CipherMode
 
 
 	@Override
-	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final BlockCipher aTweak, final long aStartDataUnitNo, final int aUnitSize, final byte[] aIV, final long aBlockKey)
+	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long aIV0, final long aIV1)
 	{
 		assert (aUnitSize & -aUnitSize) == aUnitSize;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
@@ -29,7 +29,7 @@ public final class XTSCipherMode extends CipherMode
 
 		for (int unitIndex = 0, offset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweak, aBlockKey, whiteningValue, BYTES_PER_BLOCK);
+			prepareIV(aMasterIV, aIV0, aIV1, unitIndex, whiteningValue);
 
 			for (int block = 0; block < numBlocks; block++, offset += BYTES_PER_BLOCK)
 			{
@@ -57,7 +57,7 @@ public final class XTSCipherMode extends CipherMode
 
 
 	@Override
-	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final BlockCipher aTweak, final long aStartDataUnitNo, final int aUnitSize, final byte[] aIV, final long aBlockKey)
+	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long aIV0, final long aIV1)
 	{
 		assert (aUnitSize & -aUnitSize) == aUnitSize;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
@@ -70,7 +70,7 @@ public final class XTSCipherMode extends CipherMode
 
 		for (int unitIndex = 0, offset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweak, aBlockKey, whiteningValue, BYTES_PER_BLOCK);
+			prepareIV(aMasterIV, aIV0, aIV1, unitIndex, whiteningValue);
 
 			for (int block = 0; block < numBlocks; block++, offset += BYTES_PER_BLOCK)
 			{
@@ -94,33 +94,5 @@ public final class XTSCipherMode extends CipherMode
 				whiteningValue[0] ^= finalCarry;
 			}
 		}
-	}
-
-
-	// little endian
-	private static void putLong(byte[] aBuffer, int aOffset, long aValue)
-	{
-		aBuffer[aOffset + 0] = (byte)(aValue >>> 0);
-		aBuffer[aOffset + 1] = (byte)(aValue >>> 8);
-		aBuffer[aOffset + 2] = (byte)(aValue >>> 16);
-		aBuffer[aOffset + 3] = (byte)(aValue >>> 24);
-		aBuffer[aOffset + 4] = (byte)(aValue >>> 32);
-		aBuffer[aOffset + 5] = (byte)(aValue >>> 40);
-		aBuffer[aOffset + 6] = (byte)(aValue >>> 48);
-		aBuffer[aOffset + 7] = (byte)(aValue >>> 56);
-	}
-
-
-	// little endian
-	private static long getLong(byte[] aBuffer, int aOffset)
-	{
-		return ((255 & aBuffer[aOffset]))
-			+ ((255 & aBuffer[aOffset + 1]) << 8)
-			+ ((255 & aBuffer[aOffset + 2]) << 16)
-			+ ((long)(255 & aBuffer[aOffset + 3]) << 24)
-			+ ((long)(255 & aBuffer[aOffset + 4]) << 32)
-			+ ((long)(255 & aBuffer[aOffset + 5]) << 40)
-			+ ((long)(255 & aBuffer[aOffset + 6]) << 48)
-			+ ((long)(255 & aBuffer[aOffset + 7]) << 56);
 	}
 }

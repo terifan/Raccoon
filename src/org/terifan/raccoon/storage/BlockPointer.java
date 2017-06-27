@@ -9,60 +9,55 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 /*
  * +------+------+------+------+------+------+------+------+
- * | type | chk  | enc  | comp |  X   |       range        |
- * |------+------+------+------+------+------+------+------+
- * |       physical size       |        logical size       |
- * |------+------+------+------+------+------+------+------+
+ * | type | chk  | enc  | comp |      X      |    range    |
+ * +------+------+------+------+------+------+------+------+
+ * |        logical size       |       physical size       |
+ * +------+------+------+------+------+------+------+------+
  * |                         offset                        |
  * +------+------+------+------+------+------+------+------+
  * |                      transaction                      |
- * +------+------+------+------+------+------+------+------+
- * |                       checksum0                       |
- * +------+------+------+------+------+------+------+------+
- * |                       checksum1                       |
  * +------+------+------+------+------+------+------+------+
  * |                          iv0                          |
  * +------+------+------+------+------+------+------+------+
  * |                          iv1                          |
  * +------+------+------+------+------+------+------+------+
- *
+ * |                       checksum0                       |
  * +------+------+------+------+------+------+------+------+
- * |ve|typ|ch|cmp|    range    |        logical size       |
- * +------+------+------+------+------+------+------+------+
- * |       physical size       |           offset          |
- * +------+------+------+------+------+------+------+------+
- * |                      transaction                      |
- * +------+------+------+------+------+------+------+------+
- * |                       checksum                        |
+ * |                       checksum1                       |
  * +------+------+------+------+------+------+------+------+
  *
- *   4 version (1)
- *   4 block type (3)
- *   4 checksum algorithm (2)
- *   4 compression algorithm (3)
+ *   8 version (1)
+ *   8 block type (3)
+ *   8 checksum algorithm (2)
+ *   8 compression algorithm (3)
+ *  16 unused
  *  16 range (12)
  *  32 logical size (20)
  *  32 physical size (20)
- *  40 offset
+ *  64 offset
  *  64 transaction id
- *  64 checksum
+ * 128 initialization vector
+ * 128 checksum
  */
 public class BlockPointer implements Serializable
 {
 	private final static long serialVersionUID = 1;
 
-	private final static int VERSION = 0;
-	public final static int SIZE = 32+32;
+	public final static int SIZE = 64;
 
 	private int mBlockType;
 	private int mChecksumAlgorithm;
 	private int mCompressionAlgorithm;
+	private int mEncryptionAlgorithm;
 	private int mRange;
 	private int mLogicalSize;
 	private int mPhysicalSize;
 	private long mOffset;
 	private long mTransactionId;
-	private long mChecksum;
+	private long mChecksum0;
+	private long mChecksum1;
+	private long mIV0;
+	private long mIV1;
 
 
 	public int getChecksumAlgorithm()
@@ -155,15 +150,67 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public long getChecksum()
+	public long getChecksum0()
 	{
-		return mChecksum;
+		return mChecksum0;
 	}
 
 
-	public BlockPointer setChecksum(long aChecksum)
+	public BlockPointer setChecksum0(long aChecksum)
 	{
-		mChecksum = aChecksum;
+		mChecksum0 = aChecksum;
+		return this;
+	}
+
+
+	public long getChecksum1()
+	{
+		return mChecksum1;
+	}
+
+
+	public BlockPointer setChecksum1(long aChecksum)
+	{
+		mChecksum1 = aChecksum;
+		return this;
+	}
+
+
+	public int getEncryptionAlgorithm()
+	{
+		return mEncryptionAlgorithm;
+	}
+
+
+	public BlockPointer setEncryptionAlgorithm(int aEncryptionAlgorithm)
+	{
+		mEncryptionAlgorithm = aEncryptionAlgorithm;
+		return this;
+	}
+
+
+	public long getIV0()
+	{
+		return mIV0;
+	}
+
+
+	public BlockPointer setIV0(long aIV0)
+	{
+		mIV0 = aIV0;
+		return this;
+	}
+
+
+	public long getIV1()
+	{
+		return mIV1;
+	}
+
+
+	public BlockPointer setIV1(long aIV1)
+	{
+		mIV1 = aIV1;
 		return this;
 	}
 
@@ -192,20 +239,20 @@ public class BlockPointer implements Serializable
 		assert mOffset >= 0 && mOffset < Integer.MAX_VALUE;
 		assert mTransactionId >= 0 && mTransactionId < Integer.MAX_VALUE;
 
-		aBuffer.writeInt8((VERSION << 4) + mBlockType);
-		aBuffer.writeInt8((mChecksumAlgorithm << 4) + mCompressionAlgorithm);
+		aBuffer.writeInt8(mBlockType);
+		aBuffer.writeInt8(mChecksumAlgorithm);
+		aBuffer.writeInt8(mEncryptionAlgorithm);
+		aBuffer.writeInt8(mCompressionAlgorithm);
+		aBuffer.writeInt16(0);
 		aBuffer.writeInt16(mRange);
 		aBuffer.writeInt32(mLogicalSize);
 		aBuffer.writeInt32(mPhysicalSize);
-		aBuffer.writeInt32((int)mOffset);
+		aBuffer.writeInt64(mOffset);
 		aBuffer.writeInt64(mTransactionId);
-
-		aBuffer.writeInt64(0);
-		aBuffer.writeInt64(0);
-		aBuffer.writeInt64(mChecksum);
-		aBuffer.writeInt64(mChecksum);
-
-		aBuffer.writeInt64(mChecksum);
+		aBuffer.writeInt64(mIV0);
+		aBuffer.writeInt64(mIV1);
+		aBuffer.writeInt64(mChecksum0);
+		aBuffer.writeInt64(mChecksum1);
 
 		assert PerformanceCounters.increment(POINTER_ENCODE);
 
@@ -215,32 +262,20 @@ public class BlockPointer implements Serializable
 
 	public BlockPointer unmarshal(ByteArrayBuffer aBuffer)
 	{
-		int vt = aBuffer.readInt8();
-
-		switch (vt >> 4)
-		{
-			case 0:
-				int cc = aBuffer.readInt8();
-
-				mBlockType = 0x0F & vt;
-				mChecksumAlgorithm = (cc >> 4);
-				mCompressionAlgorithm = 0x0F & cc;
-				mRange = aBuffer.readInt16();
-				mLogicalSize = aBuffer.readInt32();
-				mPhysicalSize = aBuffer.readInt32();
-				mOffset = 0xFFFFFFFFL & aBuffer.readInt32();
-				mTransactionId = aBuffer.readInt64();
-
-				mChecksum = aBuffer.readInt64();
-				mChecksum = aBuffer.readInt64();
-				mChecksum = aBuffer.readInt64();
-				mChecksum = aBuffer.readInt64();
-
-				mChecksum = aBuffer.readInt64();
-				break;
-			default:
-				throw new IllegalArgumentException("Unsupported BlockPointer serial format: " + (vt >> 4));
-		}
+		mBlockType = aBuffer.readInt8();
+		mChecksumAlgorithm = aBuffer.readInt8();
+		mEncryptionAlgorithm = aBuffer.readInt8();
+		mCompressionAlgorithm = aBuffer.readInt8();
+		aBuffer.skip(2);
+		mRange = aBuffer.readInt16();
+		mLogicalSize = aBuffer.readInt32();
+		mPhysicalSize = aBuffer.readInt32();
+		mOffset = aBuffer.readInt64();
+		mTransactionId = aBuffer.readInt64();
+		mIV0 = aBuffer.readInt64();
+		mIV1 = aBuffer.readInt64();
+		mChecksum0 = aBuffer.readInt64();
+		mChecksum1 = aBuffer.readInt64();
 
 		assert PerformanceCounters.increment(POINTER_DECODE);
 
@@ -260,7 +295,7 @@ public class BlockPointer implements Serializable
 	 */
 	public static BlockType getBlockType(byte[] aBuffer, int aOffset)
 	{
-		return BlockType.values()[0x0F & aBuffer[aOffset]];
+		return BlockType.values()[0xFF & aBuffer[aOffset]];
 	}
 
 

@@ -140,4 +140,23 @@ public class ISAAC
 		}
 		return set[--count] & (aBound - 1);
 	}
+
+
+	/**
+	 * @param aBound
+	 *   must be power of 2
+	 */
+	public long nextLong()
+	{
+		if (count == 0)
+		{
+			nextSet();
+		}
+		long value = set[--count];
+		if (count == 0)
+		{
+			nextSet();
+		}
+		return (value << 32) | set[--count];
+	}
 }

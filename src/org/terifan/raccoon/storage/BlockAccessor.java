@@ -12,11 +12,14 @@ import org.terifan.raccoon.PerformanceCounters;
 import static org.terifan.raccoon.PerformanceCounters.*;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.Log;
+import org.terifan.security.cryptography.ISAAC;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
 public class BlockAccessor
 {
+	private final static ISAAC PRNG = new ISAAC(System.nanoTime());
+
 	private final IManagedBlockDevice mBlockDevice;
 	private final Cache<Long,byte[]> mCache;
 	private final int mBlockSize;
@@ -96,9 +99,12 @@ public class BlockAccessor
 
 			byte[] buffer = new byte[roundUp(aBlockPointer.getPhysicalSize())];
 
-			mBlockDevice.readBlock(aBlockPointer.getOffset(), buffer, 0, buffer.length, aBlockPointer.getTransactionId());
+			mBlockDevice.readBlock(aBlockPointer.getOffset(), buffer, 0, buffer.length, aBlockPointer.getIV0(), aBlockPointer.getIV1());
 
-			if (getChecksum(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getOffset()) != aBlockPointer.getChecksum())
+			long[] hash = MurmurHash3.hash_x64_128(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getOffset());
+//			long[] hash = new long[]{0L,MurmurHash3.hash_x64_64(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getOffset())};
+
+			if (hash[0] != aBlockPointer.getChecksum0() || hash[1] != aBlockPointer.getChecksum1())
 			{
 				throw new IOException("Checksum error in block " + aBlockPointer);
 			}
@@ -166,24 +172,30 @@ public class BlockAccessor
 			int blockCount = aBuffer.length / mBlockSize;
 			long blockIndex = mBlockDevice.allocBlock(blockCount);
 
-			assert PerformanceCounters.increment(BLOCK_ALLOC);
+			long[] hash = MurmurHash3.hash_x64_128(aBuffer, 0, physicalSize, blockIndex);
+//			long[] hash = new long[]{0L,MurmurHash3.hash_x64_64(aBuffer, 0, physicalSize, blockIndex)};
 
 			BlockPointer blockPointer = new BlockPointer();
 			blockPointer.setCompressionAlgorithm(compressorId);
 			blockPointer.setChecksumAlgorithm(0);
-			blockPointer.setChecksum(getChecksum(aBuffer, 0, physicalSize, blockIndex));
+			blockPointer.setEncryptionAlgorithm(0);
 			blockPointer.setOffset(blockIndex);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
 			blockPointer.setTransactionId(aTransactionId);
 			blockPointer.setBlockType(aType);
 			blockPointer.setRange(aRange);
+			blockPointer.setChecksum0(hash[0]);
+			blockPointer.setChecksum1(hash[1]);
+			blockPointer.setIV0(PRNG.nextLong());
+			blockPointer.setIV1(PRNG.nextLong());
 
 			Log.d("write block %s", blockPointer);
 			Log.inc();
 
-			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getTransactionId());
+			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getIV0(), blockPointer.getIV1());
 
+			assert PerformanceCounters.increment(BLOCK_ALLOC);
 			assert PerformanceCounters.increment(BLOCK_WRITE);
 
 			Log.dec();
@@ -199,12 +211,6 @@ public class BlockAccessor
 		{
 			throw new DatabaseException("Error writing block", e);
 		}
-	}
-
-
-	private long getChecksum(byte[] aBuffer, int aOffset, int aLength, long aBlockIndex)
-	{
-		return MurmurHash3.hash_x64_64(aBuffer, aOffset, aLength, aBlockIndex);
 	}
 
 

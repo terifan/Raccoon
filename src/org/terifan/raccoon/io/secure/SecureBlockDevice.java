@@ -21,7 +21,6 @@ import org.terifan.security.cryptography.CipherMode;
 // 256 payload (encrypted with user key)
 //       4 checksum (salt + key pool + payload padding)
 //     208 key pool
-//          32 tweak cipher key (1 x 32)
 //          96 ciper keys (3 x 32)
 //          48 cipher iv (3 x 16)
 //      44 payload padding
@@ -41,7 +40,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	private final static int HEADER_SIZE = 4;
 	private final static int KEY_SIZE_BYTES = 32;
 	private final static int IV_SIZE = 16;
-	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
+	private final static int KEY_POOL_SIZE = 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
 	private final static int SCRAMBLE_KEY_OFFSET = KEY_POOL_SIZE;
 	private final static int USER_KEY_POOL_SIZE = SCRAMBLE_KEY_OFFSET + 2 * 8;
 	private final static int CHECKSUM_SEED = 0x2fc8d359; // (random number)
@@ -130,7 +129,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		}
 
 		aDevice.mCipher = cipher;
-		aDevice.mBlockDevice.writeBlock(aBlockIndex, blockData, 0, blockData.length, 0L);
+		aDevice.mBlockDevice.writeBlock(aBlockIndex, blockData, 0, blockData.length, 0L, 0L);
 	}
 
 
@@ -161,7 +160,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		BitScrambler.scramble(scrambleKey0, payload);
 
 		CipherImplementation cipher = new CipherImplementation(aAccessCredentials.getCipherModeFunction(), aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
-		cipher.encrypt(aBlockIndex, payload, 0, PAYLOAD_SIZE, 0L);
+		cipher.encrypt(aBlockIndex, payload, 0, PAYLOAD_SIZE, 0L, 0L);
 
 		BitScrambler.scramble(scrambleKey1, payload);
 
@@ -206,7 +205,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		try
 		{
-			device.mBlockDevice.readBlock(aBlockIndex, blockData, 0, blockData.length, 0L);
+			device.mBlockDevice.readBlock(aBlockIndex, blockData, 0, blockData.length, 0L, 0L);
 		}
 		catch (Exception e)
 		{
@@ -249,7 +248,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 					// decrypt payload using the user key
 					CipherImplementation cipher = new CipherImplementation(cipherMode, encryption, userKeyPool, 0, PAYLOAD_SIZE);
-					cipher.decrypt(aBlockIndex, payloadCopy, 0, PAYLOAD_SIZE, 0L);
+					cipher.decrypt(aBlockIndex, payloadCopy, 0, PAYLOAD_SIZE, 0L, 0L);
 
 					BitScrambler.unscramble(scrambleKey1, payloadCopy);
 
@@ -291,7 +290,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 
 	@Override
-	public void writeBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long aTransactionId) throws IOException
+	public void writeBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long aIV0, final long aIV1) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -303,16 +302,16 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		byte[] workBuffer = aBuffer.clone();
 
-		mCipher.encrypt(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, aTransactionId);
+		mCipher.encrypt(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, aIV0, aIV1);
 
-		mBlockDevice.writeBlock(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, 0L); // block key is used by this blockdevice and not passed to lower levels
+		mBlockDevice.writeBlock(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, 0L, 0L); // block key is used by this blockdevice and not passed to lower levels
 
 		Log.dec();
 	}
 
 
 	@Override
-	public void readBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long aTransactionId) throws IOException
+	public void readBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long aIV0, final long aIV1) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -322,9 +321,9 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
 		Log.inc();
 
-		mBlockDevice.readBlock(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L); // block key is used by this blockdevice and not passed to lower levels
+		mBlockDevice.readBlock(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L, 0L); // block key is used by this blockdevice and not passed to lower levels
 
-		mCipher.decrypt(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aTransactionId);
+		mCipher.decrypt(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV0, aIV1);
 
 		Log.dec();
 	}
@@ -448,13 +447,13 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 			if (i == 0)
 			{
-				cipher.encrypt(0, encypted, 0, original.length, 0);
+				cipher.encrypt(0, encypted, 0, original.length, 0L, 0L);
 			}
 			else
 			{
 				byte[] decrypted = encypted.clone();
 
-				cipher.decrypt(0, decrypted, 0, original.length, 0);
+				cipher.decrypt(0, decrypted, 0, original.length, 0L, 0L);
 
 				if (!Arrays.equals(original, decrypted))
 				{
@@ -467,9 +466,8 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 	private static final class CipherImplementation
 	{
-		private transient final byte [][] mIV;
+		private transient final long [][] mIV;
 		private transient final BlockCipher[] mCiphers;
-		private transient final BlockCipher mTweakCipher;
 		private transient final CipherMode mCipherMode;
 		private transient final int mUnitSize;
 
@@ -478,14 +476,10 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		{
 			mUnitSize = aUnitSize;
 			mCipherMode = aCipherModeFunction.newInstance();
-			mCiphers = aEncryptionFunction.newCipherInstances();
-			mTweakCipher = aEncryptionFunction.newTweakInstance();
-			mIV = new byte[mCiphers.length][IV_SIZE];
+			mCiphers = aEncryptionFunction.newInstance();
+			mIV = new long[mCiphers.length][2];
 
 			int offset = aKeyPoolOffset;
-
-			mTweakCipher.engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
-			offset += KEY_SIZE_BYTES;
 
 			for (BlockCipher cipher : mCiphers)
 			{
@@ -493,28 +487,29 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 				offset += KEY_SIZE_BYTES;
 			}
 
-			for (byte[] iv : mIV)
+			for (int i = 0; i < mIV.length; i++)
 			{
-				System.arraycopy(aKeyPool, offset, iv, 0, IV_SIZE);
+				mIV[i][0] = getLong(aKeyPool, offset + 0);
+				mIV[i][1] = getLong(aKeyPool, offset + 8);
 				offset += IV_SIZE;
 			}
 		}
 
 
-		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
+		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aIV0, final long aIV1)
 		{
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
+				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, mUnitSize, mIV[i], aIV0, aIV1);
 			}
 		}
 
 
-		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
+		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aIV0, final long aIV1)
 		{
 			for (int i = mCiphers.length; --i >= 0; )
 			{
-				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
+				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, mUnitSize, mIV[i], aIV0, aIV1);
 			}
 		}
 
@@ -529,11 +524,9 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 				}
 			}
 
-			mTweakCipher.engineReset();
-
-			for (byte[] iv : mIV)
+			for (int i = 0; i < mIV.length; i++)
 			{
-				fill(iv, (byte)0);
+				mIV[i][0] = mIV[i][1] = 0L;
 			}
 
 			fill(mCiphers, null);

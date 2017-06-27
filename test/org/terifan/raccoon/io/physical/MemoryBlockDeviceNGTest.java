@@ -33,7 +33,7 @@ public class MemoryBlockDeviceNGTest
 						byte[] buf = new byte[s];
 						rnd.nextBytes(buf);
 						blocks.put(pos, buf);
-						dev.writeBlock(pos, buf, 0, s, 0L);
+						dev.writeBlock(pos, buf, 0, s, 0L, 0L);
 						offsets.add(pos);
 					}
 
@@ -41,7 +41,7 @@ public class MemoryBlockDeviceNGTest
 					{
 						long pos = offsets.remove(rnd.nextInt(offsets.size()));
 						byte[] buf = new byte[s];
-						dev.readBlock(pos, buf, 0, s, 0L);
+						dev.readBlock(pos, buf, 0, s, 0L, 0L);
 						assertEquals(blocks.remove(pos), buf);
 						dev.freeBlock(pos, 1);
 					}

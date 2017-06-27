@@ -18,10 +18,12 @@ public interface IManagedBlockDevice extends AutoCloseable //IPhysicalBlockDevic
 	 *   offset in the block array where block data is stored
 	 * @param aBufferLength
 	 *   length of buffer to write, must be dividable by block size
-	 * @param aBlockKey
+	 * @param aIV0 
+	 *   64 bit seed value that may be used by block device implementations performing cryptography
+	 * @param aIV1
 	 *   64 bit seed value that may be used by block device implementations performing cryptography
 	 */
-	void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException;
+	void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException;
 
 
 	/**
@@ -35,10 +37,12 @@ public interface IManagedBlockDevice extends AutoCloseable //IPhysicalBlockDevic
 	 *   offset in the block array where block data is stored
 	 * @param aBufferLength
 	 *   length of buffer to write, must be dividable by block size
-	 * @param aBlockKey
+	 * @param aIV0 
+	 *   64 bit seed value that may be used by block device implementations performing cryptography
+	 * @param aIV1
 	 *   64 bit seed value that may be used by block device implementations performing cryptography
 	 */
-	void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException;
+	void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException;
 
 
 	/**

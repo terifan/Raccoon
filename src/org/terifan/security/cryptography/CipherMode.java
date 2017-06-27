@@ -20,7 +20,7 @@ public abstract class CipherMode
 	 * @param aIV initialization vector used for diffusing cipher text
 	 * @param aBlockKey a value nonce value used in the encryption
 	 */
-	public abstract void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final BlockCipher aTweak, final long aStartDataUnitNo, final int aUnitSize, final byte[] aIV, final long aBlockKey);
+	public abstract void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long aIV0, final long aIV1);
 
 
 	/**
@@ -35,15 +35,13 @@ public abstract class CipherMode
 	 * @param aIV initialization vector used for diffusing cipher text
 	 * @param aBlockKey a nonce value used in the encryption
 	 */
-	public abstract void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final BlockCipher aTweak, final long aStartDataUnitNo, final int aUnitSize, final byte[] aIV, final long aBlockKey);
+	public abstract void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long aIV0, final long aIV1);
 
 
-	protected static void prepareIV(long aDataUnitNo, byte[] aInputIV, BlockCipher aTweak, long aBlockKey, byte[] aOutputIV, int aLength)
+	protected static void prepareIV(long[] aMasterIV, long aBlockIV0, long aBlockIV1, long aDataUnitNo, byte[] aOutputIV)
 	{
-		System.arraycopy(aInputIV, 0, aOutputIV, 0, aLength);
-		xorLong(aOutputIV, 0, aBlockKey);
-		xorLong(aOutputIV, 8, aDataUnitNo);
-		aTweak.engineEncryptBlock(aOutputIV, 0, aOutputIV, 0);
+		putLong(aOutputIV, 0, aBlockIV0 ^ aMasterIV[0]);
+		putLong(aOutputIV, 8, aBlockIV1 ^ aMasterIV[1] ^ aDataUnitNo);
 	}
 
 
@@ -66,5 +64,33 @@ public abstract class CipherMode
 		{
 			aBuffer[aOffset + i] ^= aMask[aMaskOffset + i];
 		}
+	}
+
+
+	// little endian
+	protected static void putLong(byte[] aBuffer, int aOffset, long aValue)
+	{
+		aBuffer[aOffset + 0] = (byte)(aValue >>> 0);
+		aBuffer[aOffset + 1] = (byte)(aValue >>> 8);
+		aBuffer[aOffset + 2] = (byte)(aValue >>> 16);
+		aBuffer[aOffset + 3] = (byte)(aValue >>> 24);
+		aBuffer[aOffset + 4] = (byte)(aValue >>> 32);
+		aBuffer[aOffset + 5] = (byte)(aValue >>> 40);
+		aBuffer[aOffset + 6] = (byte)(aValue >>> 48);
+		aBuffer[aOffset + 7] = (byte)(aValue >>> 56);
+	}
+
+
+	// little endian
+	protected static long getLong(byte[] aBuffer, int aOffset)
+	{
+		return ((255 & aBuffer[aOffset]))
+			+ ((255 & aBuffer[aOffset + 1]) << 8)
+			+ ((255 & aBuffer[aOffset + 2]) << 16)
+			+ ((long)(255 & aBuffer[aOffset + 3]) << 24)
+			+ ((long)(255 & aBuffer[aOffset + 4]) << 32)
+			+ ((long)(255 & aBuffer[aOffset + 5]) << 40)
+			+ ((long)(255 & aBuffer[aOffset + 6]) << 48)
+			+ ((long)(255 & aBuffer[aOffset + 7]) << 56);
 	}
 }

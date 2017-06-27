@@ -81,7 +81,7 @@ public class ManagedBlockDeviceNGTest
 					byte[] buf = new byte[s];
 					for (int i = 0; i < rows; i++)
 					{
-						dev.readBlock(positions[i], buf, 0, s, 0L);
+						dev.readBlock(positions[i], buf, 0, s, 0L, 0L);
 						assertTrue(verifyRandomBuffer(i,buf));
 					}
 				}
@@ -89,7 +89,7 @@ public class ManagedBlockDeviceNGTest
 				for (int i = test * rows; i < test * rows + rows; i++)
 				{
 					positions[i] = dev.allocBlock(1);
-					dev.writeBlock(positions[i], createRandomBuffer(i,s), 0, s, 0L);
+					dev.writeBlock(positions[i], createRandomBuffer(i,s), 0, s, 0L, 0L);
 				}
 				dev.commit();
 			}

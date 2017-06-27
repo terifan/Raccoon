@@ -54,7 +54,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	}
 
 
-	public void readBlock(long aBlockIndex, ByteBuffer aBuffer, long aBlockKey) throws IOException
+	public void readBlock(long aBlockIndex, ByteBuffer aBuffer, long aIV0, long aIV1) throws IOException
 	{
 		Log.d("read block %d +%d", aBlockIndex, (aBuffer.limit() - aBuffer.position()) / mBlockSize);
 
@@ -62,7 +62,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	}
 
 
-	public void writeBlock(long aBlockIndex, ByteBuffer aBuffer, long aBlockKey) throws IOException
+	public void writeBlock(long aBlockIndex, ByteBuffer aBuffer, long aIV0, long aIV1) throws IOException
 	{
 		Log.d("write block %d +%d", aBlockIndex, (aBuffer.limit() - aBuffer.position()) / mBlockSize);
 
@@ -71,7 +71,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 
 	@Override
-	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException
 	{
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
@@ -81,7 +81,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 
 	@Override
-	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException
 	{
 		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 

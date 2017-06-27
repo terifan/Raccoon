@@ -259,7 +259,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -270,11 +270,11 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			throw new IOException("Illegal buffer length: " + aBlockIndex);
 		}
 
-		writeBlockInternal(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		writeBlockInternal(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV0, aIV1);
 	}
 
 
-	private void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	private void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException
 	{
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;
@@ -289,14 +289,14 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		mModified = true;
 
-		mLazyWriteCache.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mLazyWriteCache.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV0, aIV1);
 
 		Log.dec();
 	}
 
 
 	@Override
-	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -307,11 +307,11 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			throw new IOException("Illegal buffer length: " + aBlockIndex);
 		}
 
-		readBlockInternal(aBlockIndex + RESERVED_BLOCKS, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		readBlockInternal(aBlockIndex + RESERVED_BLOCKS, aBuffer, aBufferOffset, aBufferLength, aIV0, aIV1);
 	}
 
 
-	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aBlockKey) throws IOException
+	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException
 	{
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;
@@ -324,7 +324,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength/mBlockSize);
 		Log.inc();
 
-		mLazyWriteCache.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mLazyWriteCache.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV0, aIV1);
 
 		Log.dec();
 	}
@@ -463,7 +463,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		long pageIndex = mSuperBlock.mWriteCounter & 1L;
 
-		writeCheckedBlock(pageIndex, buffer, -pageIndex);
+		writeCheckedBlock(pageIndex, buffer, 0L, 0L);
 
 		Log.dec();
 	}
@@ -487,7 +487,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 				throw new IOException("Block at illegal offset: " + mSuperBlock.mSpaceMapBlockIndex);
 			}
 
-			ByteArrayBuffer buffer = readCheckedBlock(mSuperBlock.mSpaceMapBlockIndex, mSuperBlock.mSpaceMapBlockKey, mSuperBlock.mSpaceMapBlockCount * mBlockSize);
+			ByteArrayBuffer buffer = readCheckedBlock(mSuperBlock.mSpaceMapBlockIndex, mSuperBlock.mSpaceMapBlockKey[0], mSuperBlock.mSpaceMapBlockKey[1], mSuperBlock.mSpaceMapBlockCount * mBlockSize);
 
 			buffer.position(16);
 			buffer.limit(mSuperBlock.mSpaceMapLength);
@@ -522,12 +522,13 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mSuperBlock.mSpaceMapBlockCount = (buffer.position() + mBlockSize - 1) / mBlockSize;
 		mSuperBlock.mSpaceMapBlockIndex = allocBlockInternal(mSuperBlock.mSpaceMapBlockCount);
 		mSuperBlock.mSpaceMapLength = buffer.position();
-		mSuperBlock.mSpaceMapBlockKey = PRNGProvider.getInstance().nextLong();
+		mSuperBlock.mSpaceMapBlockKey[0] = PRNGProvider.getInstance().nextLong();
+		mSuperBlock.mSpaceMapBlockKey[1] = PRNGProvider.getInstance().nextLong();
 
 		// Pad buffer to block size
 		buffer.capacity(mBlockSize * mSuperBlock.mSpaceMapBlockCount);
 
-		writeCheckedBlock(mSuperBlock.mSpaceMapBlockIndex, buffer, mSuperBlock.mSpaceMapBlockKey);
+		writeCheckedBlock(mSuperBlock.mSpaceMapBlockIndex, buffer, mSuperBlock.mSpaceMapBlockKey[0], mSuperBlock.mSpaceMapBlockKey[1]);
 
 		Log.dec();
 	}
@@ -546,11 +547,11 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private ByteArrayBuffer readCheckedBlock(long aBlockIndex, long aBlockKey, int aLength) throws IOException
+	private ByteArrayBuffer readCheckedBlock(long aBlockIndex, long aIV0, long aIV1, int aLength) throws IOException
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aLength);
 
-		mBlockDevice.readBlock(aBlockIndex, buffer.array(), 0, aLength, aBlockKey);
+		mBlockDevice.readBlock(aBlockIndex, buffer.array(), 0, aLength, aIV0, aIV1);
 
 		verifyChecksum(aBlockIndex, buffer);
 
@@ -578,7 +579,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private void writeCheckedBlock(long aBlockIndex, ByteArrayBuffer aBuffer, long aBlockKey) throws IOException
+	private void writeCheckedBlock(long aBlockIndex, ByteArrayBuffer aBuffer, long aIV0, long aIV1) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -592,7 +593,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		aBuffer.position(0).write(digest);
 
-		mBlockDevice.writeBlock(aBlockIndex, aBuffer.array(), 0, aBuffer.capacity(), aBlockKey);
+		mBlockDevice.writeBlock(aBlockIndex, aBuffer.array(), 0, aBuffer.capacity(), aIV0, aIV1);
 	}
 
 
@@ -700,9 +701,15 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		long mSpaceMapBlockIndex;
 		int mSpaceMapBlockCount;
 		int mSpaceMapLength;
-		long mSpaceMapBlockKey;
+		long[] mSpaceMapBlockKey;
 		String mBlockDeviceLabel;
 		byte[] mExtraData;
+
+
+		public SuperBlock()
+		{
+			mSpaceMapBlockKey = new long[2];
+		}
 
 
 		void marshal(ByteArrayBuffer buffer) throws IOException
@@ -714,7 +721,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			buffer.writeInt64(mSpaceMapBlockIndex);
 			buffer.writeInt32(mSpaceMapBlockCount);
 			buffer.writeInt32(mSpaceMapLength);
-			buffer.writeInt64(mSpaceMapBlockKey);
+			buffer.writeInt64(mSpaceMapBlockKey[0]);
+			buffer.writeInt64(mSpaceMapBlockKey[1]);
 			buffer.writeInt8(mBlockDeviceLabel.length());
 			buffer.writeString(mBlockDeviceLabel);
 			if (mExtraData == null)
@@ -737,8 +745,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		{
 			assert aPageIndex == 0 || aPageIndex == 1;
 
-			ByteArrayBuffer buffer = readCheckedBlock(aPageIndex, -aPageIndex, mBlockSize);
-
+			ByteArrayBuffer buffer = readCheckedBlock(aPageIndex, 0L, 0L, mBlockSize);
+			
 			mFormatVersion = buffer.readInt8();
 			mCreated = new Date(buffer.readInt64());
 			mUpdated = new Date(buffer.readInt64());
@@ -746,7 +754,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			mSpaceMapBlockIndex = buffer.readInt64();
 			mSpaceMapBlockCount = buffer.readInt32();
 			mSpaceMapLength = buffer.readInt32();
-			mSpaceMapBlockKey = buffer.readInt64();
+			mSpaceMapBlockKey[0] = buffer.readInt64();
+			mSpaceMapBlockKey[1] = buffer.readInt64();
 			mBlockDeviceLabel = buffer.readString(buffer.readInt8());
 			int len = buffer.readInt16();
 			if (len == NULL_CODE)

@@ -16,35 +16,32 @@ public class BlockCipherNGTest
 		byte[] cipherKey = new byte[aKeyLength];
 		rnd.nextBytes(cipherKey);
 
-		byte[] tweakKey = new byte[aKeyLength];
-		rnd.nextBytes(tweakKey);
-
 		aCipher.engineInit(new SecretKey(cipherKey));
 
-		aTweak.engineInit(new SecretKey(tweakKey));
-
-		byte[] iv = new byte[16];
-		rnd.nextBytes(iv);
+		long[] iv = new long[2];
+		iv[0] = rnd.nextLong();
+		iv[1] = rnd.nextLong();
 
 		byte[] plain = new byte[1024];
 		rnd.nextBytes(plain);
 
 		byte[] encrypted = plain.clone();
 
-		long blockKey = rnd.nextLong();
+		long iv0 = rnd.nextLong();
+		long iv1 = rnd.nextLong();
 
 		XTSCipherMode crypto = new XTSCipherMode();
-		crypto.encrypt(encrypted,   0, 256, aCipher, aTweak, 0, 128, iv, blockKey);
-		crypto.encrypt(encrypted, 256, 256, aCipher, aTweak, 2, 128, iv, blockKey);
-		crypto.encrypt(encrypted, 512, 256, aCipher, aTweak, 4, 128, iv, blockKey);
-		crypto.encrypt(encrypted, 768, 256, aCipher, aTweak, 6, 128, iv, blockKey);
+		crypto.encrypt(encrypted,   0, 256, aCipher, 0, 128, iv, iv0, iv1);
+		crypto.encrypt(encrypted, 256, 256, aCipher, 2, 128, iv, iv0, iv1);
+		crypto.encrypt(encrypted, 512, 256, aCipher, 4, 128, iv, iv0, iv1);
+		crypto.encrypt(encrypted, 768, 256, aCipher, 6, 128, iv, iv0, iv1);
 
 		byte[] decrypted = encrypted.clone();
 
-		crypto.decrypt(decrypted,   0, 256, aCipher, aTweak, 0, 128, iv, blockKey);
-		crypto.decrypt(decrypted, 256, 256, aCipher, aTweak, 2, 128, iv, blockKey);
-		crypto.decrypt(decrypted, 512, 256, aCipher, aTweak, 4, 128, iv, blockKey);
-		crypto.decrypt(decrypted, 768, 256, aCipher, aTweak, 6, 128, iv, blockKey);
+		crypto.decrypt(decrypted,   0, 256, aCipher, 0, 128, iv, iv0, iv1);
+		crypto.decrypt(decrypted, 256, 256, aCipher, 2, 128, iv, iv0, iv1);
+		crypto.decrypt(decrypted, 512, 256, aCipher, 4, 128, iv, iv0, iv1);
+		crypto.decrypt(decrypted, 768, 256, aCipher, 6, 128, iv, iv0, iv1);
 
 		assertEquals(decrypted, plain);
 	}

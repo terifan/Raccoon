@@ -12,7 +12,7 @@ public final class PCBCCipherMode extends CipherMode
 
 
 	@Override
-	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final BlockCipher aTweak, final long aStartDataUnitNo, final int aUnitSize, final byte[] aIV, final long aBlockKey)
+	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long aIV0, final long aIV1)
 	{
 		assert (aUnitSize & -aUnitSize) == aUnitSize;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
@@ -25,7 +25,7 @@ public final class PCBCCipherMode extends CipherMode
 
 		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweak, aBlockKey, iv, BYTES_PER_BLOCK);
+			prepareIV(aMasterIV, aIV0, aIV1, bufferOffset, iv);
 
 			for (int block = 0; block < numBlocks; block++, bufferOffset += BYTES_PER_BLOCK)
 			{
@@ -44,7 +44,7 @@ public final class PCBCCipherMode extends CipherMode
 
 
 	@Override
-	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final BlockCipher aTweak, final long aStartDataUnitNo, final int aUnitSize, final byte[] aIV, final long aBlockKey)
+	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long aIV0, final long aIV1)
 	{
 		assert (aUnitSize & -aUnitSize) == aUnitSize;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
@@ -57,7 +57,7 @@ public final class PCBCCipherMode extends CipherMode
 
 		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aStartDataUnitNo + unitIndex, aIV, aTweak, aBlockKey, iv, BYTES_PER_BLOCK);
+			prepareIV(aMasterIV, aIV0, aIV1, bufferOffset, iv);
 
 			for (int block = 0, ivOffset = 0; block < numBlocks; block++, ivOffset = BYTES_PER_BLOCK - ivOffset, bufferOffset += BYTES_PER_BLOCK)
 			{
