@@ -463,7 +463,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		long pageIndex = mSuperBlock.mWriteCounter & 1L;
 
-		writeCheckedBlock(pageIndex, buffer, 0L, 0L);
+		writeCheckedBlock(pageIndex, buffer, pageIndex, 0L);
 
 		Log.dec();
 	}
@@ -745,8 +745,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		{
 			assert aPageIndex == 0 || aPageIndex == 1;
 
-			ByteArrayBuffer buffer = readCheckedBlock(aPageIndex, 0L, 0L, mBlockSize);
-			
+			ByteArrayBuffer buffer = readCheckedBlock(aPageIndex, aPageIndex, 0L, mBlockSize);
+
 			mFormatVersion = buffer.readInt8();
 			mCreated = new Date(buffer.readInt64());
 			mUpdated = new Date(buffer.readInt64());
