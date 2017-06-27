@@ -31,14 +31,14 @@ import org.terifan.security.messagedigest.MurmurHash3;
 
 public final class Database implements AutoCloseable
 {
-    private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
-    private final Lock mReadLock = mReadWriteLock.readLock();
-    private final Lock mWriteLock = mReadWriteLock.writeLock();
+	private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
+	private final Lock mReadLock = mReadWriteLock.readLock();
+	private final Lock mWriteLock = mReadWriteLock.writeLock();
 
 	private IManagedBlockDevice mBlockDevice;
-	private final HashMap<Class,Supplier> mFactories;
-	private final HashMap<Class,Initializer> mInitializers;
-	private final ConcurrentHashMap<Table,TableInstance> mOpenTables;
+	private final HashMap<Class, Supplier> mFactories;
+	private final HashMap<Class, Initializer> mInitializers;
+	private final ConcurrentHashMap<Table, TableInstance> mOpenTables;
 	private final TableMetadataProvider mTableMetadatas;
 	private final TransactionCounter mTransactionId;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
@@ -65,7 +65,7 @@ public final class Database implements AutoCloseable
 	/**
 	 *
 	 * @param aParameters
-	 *   supports: AccessCredentials, DeviceLabel
+	 * supports: AccessCredentials, DeviceLabel
 	 */
 	public static Database open(File aFile, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
@@ -121,7 +121,7 @@ public final class Database implements AutoCloseable
 	/**
 	 *
 	 * @param aParameters
-	 *   supports: AccessCredentials, DeviceLabel, CompressionParam, TableParam
+	 * supports: AccessCredentials, DeviceLabel, CompressionParam, TableParam
 	 */
 	public static Database open(IPhysicalBlockDevice aBlockDevice, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
@@ -136,7 +136,7 @@ public final class Database implements AutoCloseable
 	/**
 	 *
 	 * @param aParameters
-	 *   supports: AccessCredentials, DeviceLabel, CompressionParam, TableParam
+	 * supports: AccessCredentials, DeviceLabel, CompressionParam, TableParam
 	 */
 	public static Database open(IManagedBlockDevice aBlockDevice, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
 	{
@@ -187,7 +187,7 @@ public final class Database implements AutoCloseable
 
 			if (aCreate)
 			{
-				secureDevice = SecureBlockDevice.create(physicalDevice, accessCredentials);
+				secureDevice = SecureBlockDevice.create(accessCredentials, physicalDevice);
 			}
 			else
 			{
@@ -283,12 +283,12 @@ public final class Database implements AutoCloseable
 
 		if (extraData == null || extraData.length < 20)
 		{
-			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra data length) ("+(extraData==null?null:extraData.length)+")");
+			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra data length) (" + (extraData == null ? null : extraData.length) + ")");
 		}
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(extraData);
 
-		if (MurmurHash3.hash_x86_32(buffer.array(), 4, buffer.capacity()-4, Constants.EXTRA_DATA_CHECKSUM_SEED) != buffer.readInt32())
+		if (MurmurHash3.hash_x86_32(buffer.array(), 4, buffer.capacity() - 4, Constants.EXTRA_DATA_CHECKSUM_SEED) != buffer.readInt32())
 		{
 			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra checksum)");
 		}
@@ -432,7 +432,7 @@ public final class Database implements AutoCloseable
 			Log.i("commit database");
 			Log.inc();
 
-			for (java.util.Map.Entry<Table,TableInstance> entry : mOpenTables.entrySet())
+			for (java.util.Map.Entry<Table, TableInstance> entry : mOpenTables.entrySet())
 			{
 				if (entry.getValue().commit())
 				{
@@ -560,7 +560,7 @@ public final class Database implements AutoCloseable
 
 			if (!mModified)
 			{
-				for (java.util.Map.Entry<Table,TableInstance> entry : mOpenTables.entrySet())
+				for (java.util.Map.Entry<Table, TableInstance> entry : mOpenTables.entrySet())
 				{
 					mModified |= entry.getValue().isModified();
 				}
@@ -617,7 +617,7 @@ public final class Database implements AutoCloseable
 	 * Saves an entity.
 	 *
 	 * @return
-	 *   true if the entity didn't previously existed.
+	 * true if the entity didn't previously existed.
 	 */
 	public boolean save(Object aEntity)
 	{
@@ -654,7 +654,7 @@ public final class Database implements AutoCloseable
 	 * Retrieves an entity.
 	 *
 	 * @return
-	 *   true if the entity was found.
+	 * true if the entity was found.
 	 */
 	public boolean tryGet(Object aEntity)
 	{
@@ -683,7 +683,7 @@ public final class Database implements AutoCloseable
 	/**
 	 *
 	 * @throws NoSuchEntityException
-	 *   if the entity cannot be found
+	 * if the entity cannot be found
 	 */
 	public <T> T get(T aEntity) throws DatabaseException
 	{
@@ -721,7 +721,7 @@ public final class Database implements AutoCloseable
 	 * Removes the entity.
 	 *
 	 * @return
-	 *   true if the entity was removed.
+	 * true if the entity was removed.
 	 */
 	public boolean remove(Object aEntity)
 	{
@@ -946,13 +946,11 @@ public final class Database implements AutoCloseable
 //			throw e;
 //		}
 //	}
-
-
 	/**
 	 * Sets a Supplier associated with the specified type. The Supplier is used to create instances of specified types.
 	 *
 	 * E.g:
-	 * 	 mDatabase.setSupplier(Photo.class, ()-&gt;new Photo(PhotoAlbum.this));
+	 * mDatabase.setSupplier(Photo.class, ()-&gt;new Photo(PhotoAlbum.this));
 	 */
 	public <T> void setSupplier(Class<T> aType, Supplier<T> aSupplier)
 	{
@@ -1138,7 +1136,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return (Table)mSystemTable.list(Table.class).stream().filter(e->
+			return (Table)mSystemTable.list(Table.class).stream().filter(e ->
 			{
 				String tm = ((Table)e).getTypeName();
 				return tm.equals(aTypeName) || tm.endsWith("." + aTypeName);
@@ -1159,7 +1157,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return (List<Table>)mSystemTable.list(Table.class).stream().filter(e->
+			return (List<Table>)mSystemTable.list(Table.class).stream().filter(e ->
 			{
 				String tm = ((Table)e).getTypeName();
 				return tm.equals(aTypeName) || tm.endsWith("." + aTypeName);
@@ -1180,7 +1178,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return (List<Table<T>>)mSystemTable.list(Table.class).stream().filter(e->e == aType).collect(Collectors.toList());
+			return (List<Table<T>>)mSystemTable.list(Table.class).stream().filter(e -> e == aType).collect(Collectors.toList());
 		}
 		finally
 		{

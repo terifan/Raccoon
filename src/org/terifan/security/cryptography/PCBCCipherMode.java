@@ -1,12 +1,12 @@
 package org.terifan.security.cryptography;
 
 
-public final class CBCCipherMode extends CipherMode
+public final class PCBCCipherMode extends CipherMode
 {
 	private final static int BYTES_PER_BLOCK = 16;
 
 
-	public CBCCipherMode()
+	public PCBCCipherMode()
 	{
 	}
 
@@ -19,7 +19,7 @@ public final class CBCCipherMode extends CipherMode
 		assert aLength >= aUnitSize;
 		assert (aLength % aUnitSize) == 0;
 
-		byte[] iv = new byte[BYTES_PER_BLOCK];
+		byte[] iv = new byte[2 * BYTES_PER_BLOCK]; // IV + plaintext
 		int numUnits = aLength / aUnitSize;
 		int numBlocks = aUnitSize / BYTES_PER_BLOCK;
 
@@ -29,11 +29,15 @@ public final class CBCCipherMode extends CipherMode
 
 			for (int block = 0; block < numBlocks; block++, bufferOffset += BYTES_PER_BLOCK)
 			{
+				System.arraycopy(aBuffer, bufferOffset, iv, BYTES_PER_BLOCK, BYTES_PER_BLOCK);
+
 				xor(iv, 0, BYTES_PER_BLOCK, aBuffer, bufferOffset);
 
 				aCipher.engineEncryptBlock(iv, 0, aBuffer, bufferOffset);
 
 				System.arraycopy(aBuffer, bufferOffset, iv, 0, BYTES_PER_BLOCK);
+
+				xor(iv, 0, BYTES_PER_BLOCK, iv, BYTES_PER_BLOCK);
 			}
 		}
 	}
@@ -47,7 +51,7 @@ public final class CBCCipherMode extends CipherMode
 		assert aLength >= aUnitSize;
 		assert (aLength % aUnitSize) == 0;
 
-		byte[] iv = new byte[BYTES_PER_BLOCK + BYTES_PER_BLOCK]; // IV + next IV
+		byte[] iv = new byte[2 * BYTES_PER_BLOCK]; // IV + next IV
 		int numUnits = aLength / aUnitSize;
 		int numBlocks = aUnitSize / BYTES_PER_BLOCK;
 
@@ -62,6 +66,8 @@ public final class CBCCipherMode extends CipherMode
 				aCipher.engineDecryptBlock(aBuffer, bufferOffset, aBuffer, bufferOffset);
 
 				xor(aBuffer, bufferOffset, BYTES_PER_BLOCK, iv, ivOffset);
+
+				xor(iv, BYTES_PER_BLOCK - ivOffset, BYTES_PER_BLOCK, aBuffer, bufferOffset);
 			}
 		}
 	}

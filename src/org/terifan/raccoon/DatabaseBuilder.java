@@ -6,6 +6,7 @@ import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.secure.AccessCredentials;
+import org.terifan.raccoon.io.secure.CipherModeFunction;
 import org.terifan.raccoon.io.secure.EncryptionFunction;
 import org.terifan.raccoon.io.secure.KeyGenerationFunction;
 import org.terifan.raccoon.io.secure.SecureBlockDevice;
@@ -14,11 +15,9 @@ import org.terifan.raccoon.io.secure.SecureBlockDevice;
 public class DatabaseBuilder
 {
 	private IPhysicalBlockDevice mBlockDevice;
-	private boolean mReadOnly;
-	private String mLabel;
-	private char[] mPassword;
 	private EncryptionFunction mEncryptionFunction;
 	private KeyGenerationFunction mKeyGenerationFunction;
+	private CipherModeFunction mCipherModeFunction;
 	private int mLazyWriteCacheSizeBlocks;
 	private int mPagesPerNode;
 	private int mPagesPerLeaf;
@@ -27,6 +26,9 @@ public class DatabaseBuilder
 	private int mCompressionOfBlobs;
 	private int mBlockReadCacheSize;
 	private int mIterationCount;
+	private boolean mReadOnly;
+	private char[] mPassword;
+	private String mLabel;
 
 
 	public DatabaseBuilder(IPhysicalBlockDevice aBlockDevice)
@@ -40,8 +42,9 @@ public class DatabaseBuilder
 		mCompressionOfLeafs = CompressionParam.NONE;
 		mCompressionOfBlobs = CompressionParam.NONE;
 		mLazyWriteCacheSizeBlocks = Constants.DEFAULT_LAZY_WRITE_CACHE_SIZE;
-		mEncryptionFunction = EncryptionFunction.AES;
-		mKeyGenerationFunction = KeyGenerationFunction.SHA512;
+		mEncryptionFunction = AccessCredentials.DEFAULT_ENCRYPTION;
+		mKeyGenerationFunction = AccessCredentials.DEFAULT_KEY_GENERATOR;
+		mCipherModeFunction = AccessCredentials.DEFAULT_CIPHER_MODE;
 		mIterationCount = AccessCredentials.DEFAULT_ITERATION_COUNT;
 	}
 
@@ -55,11 +58,15 @@ public class DatabaseBuilder
 
 		if (mPassword != null)
 		{
-			AccessCredentials accessCredentials = new AccessCredentials(mPassword, mEncryptionFunction, mKeyGenerationFunction, mIterationCount);
+			AccessCredentials accessCredentials = new AccessCredentials(mPassword)
+				.setEncryptionFunction(mEncryptionFunction)
+				.setKeyGeneratorFunction(mKeyGenerationFunction)
+				.setCipherModeFunction(mCipherModeFunction)
+				.setIterationCount(mIterationCount);
 
 			if (mBlockDevice.length() == 0)
 			{
-				mBlockDevice = SecureBlockDevice.create(mBlockDevice, accessCredentials);
+				mBlockDevice = SecureBlockDevice.create(accessCredentials, mBlockDevice);
 			}
 			else
 			{
@@ -68,7 +75,7 @@ public class DatabaseBuilder
 
 			if (mBlockDevice == null)
 			{
-				throw new InvalidPasswordException("Incorrect password or not a secure BlockDevice");
+				throw new InvalidPasswordException("Incorrect password or not a secure block device");
 			}
 		}
 
@@ -147,6 +154,13 @@ public class DatabaseBuilder
 	}
 
 
+	public DatabaseBuilder setCipherModeFunction(CipherModeFunction aCipherModeFunction)
+	{
+		mCipherModeFunction = aCipherModeFunction;
+		return this;
+	}
+
+
 	public DatabaseBuilder setLabel(String aLabel)
 	{
 		mLabel = aLabel;
@@ -207,7 +221,7 @@ public class DatabaseBuilder
 
 	/**
 	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times. A larger number means more security but
-	 * also longer time to open a database. Default is 10000 iterations.
+	 * also longer time to open a database.
 	 *
 	 * WARNING: this value is not recorded in the database file and must be provided when opening a database!
 	 *

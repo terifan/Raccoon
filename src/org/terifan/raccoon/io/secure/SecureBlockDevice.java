@@ -7,16 +7,13 @@ import java.util.Arrays;
 import java.util.Random;
 import org.terifan.raccoon.io.physical.FileAlreadyOpenException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
-import org.terifan.security.cryptography.AES;
 import org.terifan.security.cryptography.BlockCipher;
 import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.security.cryptography.SecretKey;
-import org.terifan.security.cryptography.Serpent;
-import org.terifan.security.cryptography.Twofish;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
 import org.terifan.security.cryptography.BitScrambler;
-import org.terifan.security.cryptography.XTSCipherMode;
+import org.terifan.security.cryptography.CipherMode;
 
 
 // Boot block layout:
@@ -63,7 +60,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	public static SecureBlockDevice create(IPhysicalBlockDevice aBlockDevice, AccessCredentials aAccessCredentials) throws IOException
+	public static SecureBlockDevice create(AccessCredentials aAccessCredentials, IPhysicalBlockDevice aBlockDevice) throws IOException
 	{
 		if (aBlockDevice == null)
 		{
@@ -89,19 +86,26 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		// create the secret keys
 		try
 		{
+			byte[] raw = new byte[PAYLOAD_SIZE * 10];
+
 			SecureRandom rnd = SecureRandom.getInstanceStrong();
-			rnd.nextBytes(payload);
+			rnd.nextBytes(raw);
+			
+			for (int dst = 0, src = 0; dst < payload.length; dst++)
+			{
+				for (long i = System.nanoTime() & 7; i >= 0; i--)
+				{
+					payload[dst] ^= raw[src++];
+				}
+			}
 		}
 		catch (NoSuchAlgorithmException e)
 		{
 			throw new IllegalStateException(e);
 		}
 
-		// create the cipher used to encrypt data blocks
-		device.mCipher = new CipherImplementation(aAccessCredentials.getEncryptionFunction(), payload, HEADER_SIZE, device.mBlockDevice.getBlockSize());
-
-		device.createBootBlockImpl(aAccessCredentials, payload, 0L);
-		device.createBootBlockImpl(aAccessCredentials, payload, 1L);
+		createImpl(aAccessCredentials, device, payload, 0L);
+		createImpl(aAccessCredentials, device, payload, 1L);
 
 		// cleanup
 		Arrays.fill(payload, (byte)0);
@@ -112,10 +116,28 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	private void createBootBlockImpl(AccessCredentials aAccessCredentials, byte[] aPayload, long aBlockIndex) throws IOException
+	private static void createImpl(AccessCredentials aAccessCredentials, SecureBlockDevice aDevice, byte[] aPayload, long aBlockIndex) throws IOException
+	{
+		byte[] blockData = createBootBlock(aAccessCredentials, aPayload, aBlockIndex, aDevice.mBlockDevice.getBlockSize());
+
+		CipherImplementation cipher = readBootBlock(aAccessCredentials, blockData, aBlockIndex, true);
+
+		if (cipher == null)
+		{
+			// TODO: improve
+			createImpl(aAccessCredentials, aDevice, aPayload, aBlockIndex);
+			return;
+		}
+
+		aDevice.mCipher = cipher;
+		aDevice.mBlockDevice.writeBlock(aBlockIndex, blockData, 0, blockData.length, 0L);
+	}
+
+
+	private static byte[] createBootBlock(AccessCredentials aAccessCredentials, byte[] aPayload, long aBlockIndex, int aBlockSize) throws IOException
 	{
 		byte[] salt = new byte[SALT_SIZE];
-		byte[] padding = new byte[mBlockDevice.getBlockSize() - SALT_SIZE - PAYLOAD_SIZE];
+		byte[] padding = new byte[aBlockSize - SALT_SIZE - PAYLOAD_SIZE];
 
 		// padding and salt
 		Random rand = new Random();
@@ -123,13 +145,13 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		rand.nextBytes(salt);
 
 		// compute checksum
-		int checksum = MurmurHash3.hash_x86_32(salt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(aPayload, HEADER_SIZE, PAYLOAD_SIZE - HEADER_SIZE, CHECKSUM_SEED);
+		int checksum = computeChecksum(salt, aPayload);
 
 		// update header
 		putInt(aPayload, 0, checksum);
 
 		// create user key
-		byte[] userKeyPool = aAccessCredentials.generateKeyPool(salt, USER_KEY_POOL_SIZE);
+		byte[] userKeyPool = aAccessCredentials.generateKeyPool(aAccessCredentials.getKeyGeneratorFunction(), salt, USER_KEY_POOL_SIZE);
 
 		// encrypt payload
 		byte[] payload = aPayload.clone();
@@ -138,18 +160,18 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		BitScrambler.scramble(scrambleKey0, payload);
 
-		CipherImplementation cipher = new CipherImplementation(aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
+		CipherImplementation cipher = new CipherImplementation(aAccessCredentials.getCipherModeFunction(), aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
 		cipher.encrypt(aBlockIndex, payload, 0, PAYLOAD_SIZE, 0L);
 
 		BitScrambler.scramble(scrambleKey1, payload);
 
 		// assemble output buffer
-		byte[] blockData = new byte[mBlockDevice.getBlockSize()];
+		byte[] blockData = new byte[aBlockSize];
 		System.arraycopy(salt, 0, blockData, 0, SALT_SIZE);
 		System.arraycopy(payload, 0, blockData, SALT_SIZE, PAYLOAD_SIZE);
 		System.arraycopy(padding, 0, blockData, SALT_SIZE + PAYLOAD_SIZE, padding.length);
 
-		mBlockDevice.writeBlock(aBlockIndex, blockData, 0, mBlockDevice.getBlockSize(), 0L);
+		return blockData;
 	}
 
 
@@ -180,58 +202,77 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		Log.i("open boot block #%s", aBlockIndex);
 		Log.inc();
 
-		// read boot block from disk
-		int blockSize = device.mBlockDevice.getBlockSize();
-		byte [] blockData = new byte[blockSize];
+		byte [] blockData = new byte[device.mBlockDevice.getBlockSize()];
 
 		try
 		{
-			device.mBlockDevice.readBlock(aBlockIndex, blockData, 0, blockSize, 0L);
+			device.mBlockDevice.readBlock(aBlockIndex, blockData, 0, blockData.length, 0L);
 		}
 		catch (Exception e)
 		{
-			throw new FileAlreadyOpenException("Database file already open", e);
+			throw new FileAlreadyOpenException("Error reading boot block. Database file might already be open?", e);
 		}
 
+		device.mCipher = readBootBlock(aAccessCredentials, blockData, aBlockIndex, false);
+
+		if (device.mCipher != null)
+		{
+			return device;
+		}	
+
+		return null;
+	}
+
+
+	private static CipherImplementation readBootBlock(AccessCredentials aAccessCredentials, byte[] aBlockData, long aBlockIndex, boolean aVerifyFunctions)
+	{
 		// extract the salt and payload
-		byte[] salt = getBytes(blockData, 0, SALT_SIZE);
-		byte[] payload = getBytes(blockData, SALT_SIZE, PAYLOAD_SIZE);
+		byte[] salt = getBytes(aBlockData, 0, SALT_SIZE);
+		byte[] payload = getBytes(aBlockData, SALT_SIZE, PAYLOAD_SIZE);
 
 		for (KeyGenerationFunction keyGenerator : KeyGenerationFunction.values())
 		{
 			// create a user key using the key generator
-			aAccessCredentials.setKeyGeneratorFunction(keyGenerator);
-			byte[] userKeyPool = aAccessCredentials.generateKeyPool(salt, USER_KEY_POOL_SIZE);
+			byte[] userKeyPool = aAccessCredentials.generateKeyPool(keyGenerator, salt, USER_KEY_POOL_SIZE);
+
+			long scrambleKey0 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET + 8);
+			long scrambleKey1 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET);
 
 			// decode boot block using all available ciphers
-			for (EncryptionFunction ciphers : EncryptionFunction.values())
+			for (EncryptionFunction encryption : EncryptionFunction.values())
 			{
-				byte[] payloadCopy = payload.clone();
-				long scrambleKey0 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET + 8);
-				long scrambleKey1 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET);
-
-				BitScrambler.unscramble(scrambleKey0, payloadCopy);
-
-				// decrypt payload using the user key
-				CipherImplementation cipher = new CipherImplementation(ciphers, userKeyPool, 0, PAYLOAD_SIZE);
-				cipher.decrypt(aBlockIndex, payloadCopy, 0, PAYLOAD_SIZE, 0L);
-
-				BitScrambler.unscramble(scrambleKey1, payloadCopy);
-
-				// read header
-				int expectedChecksum = getInt(payloadCopy, 0);
-
-				// verify checksum of boot block
-				int actualChecksum = MurmurHash3.hash_x86_32(salt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(payloadCopy, HEADER_SIZE, PAYLOAD_SIZE - HEADER_SIZE, CHECKSUM_SEED);
-
-				if (expectedChecksum == actualChecksum)
+				for (CipherModeFunction cipherMode : CipherModeFunction.values())
 				{
-					Log.dec();
+					byte[] payloadCopy = payload.clone();
 
-					// create the cipher used to encrypt data blocks
-					device.mCipher = new CipherImplementation(ciphers, payloadCopy, HEADER_SIZE, blockSize);
+					BitScrambler.unscramble(scrambleKey0, payloadCopy);
 
-					return device;
+					// decrypt payload using the user key
+					CipherImplementation cipher = new CipherImplementation(cipherMode, encryption, userKeyPool, 0, PAYLOAD_SIZE);
+					cipher.decrypt(aBlockIndex, payloadCopy, 0, PAYLOAD_SIZE, 0L);
+
+					BitScrambler.unscramble(scrambleKey1, payloadCopy);
+
+					// read header
+					int expectedChecksum = getInt(payloadCopy, 0);
+
+					// verify checksum of boot block
+					if (expectedChecksum == computeChecksum(salt, payloadCopy))
+					{
+						Log.dec();
+
+						// when a boot block is created it's also verified
+						if (aVerifyFunctions && (aAccessCredentials.getKeyGeneratorFunction() != keyGenerator || aAccessCredentials.getEncryptionFunction() != encryption))
+						{
+							System.err.println("hash collision in boot block");
+
+							// a hash collision has occured!
+							return null;
+						}
+
+						// create the cipher used to encrypt data blocks
+						return new CipherImplementation(cipherMode, encryption, payloadCopy, HEADER_SIZE, aBlockData.length);
+					}
 				}
 			}
 		}
@@ -240,6 +281,12 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		Log.dec();
 
 		return null;
+	}
+
+
+	private static int computeChecksum(byte[] aSalt, byte[] aPayloadCopy)
+	{
+		return MurmurHash3.hash_x86_32(aSalt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(aPayloadCopy, HEADER_SIZE, PAYLOAD_SIZE - HEADER_SIZE, CHECKSUM_SEED);
 	}
 
 
@@ -326,127 +373,6 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			mBlockDevice = null;
 		}
 	}
-
-
-	private static final class CipherImplementation
-	{
-		private transient final byte [][] mIV = new byte[3][IV_SIZE];
-		private transient final BlockCipher[] mCiphers;
-		private transient final BlockCipher mTweakCipher;
-		private transient final XTSCipherMode mCipherMode;
-		private transient final int mUnitSize;
-
-
-		public CipherImplementation(final EncryptionFunction aCiphers, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitSize)
-		{
-			mCipherMode = new XTSCipherMode();
-			mUnitSize = aUnitSize;
-
-			switch (aCiphers)
-			{
-				case AES:
-					mCiphers = new BlockCipher[]{new AES()};
-					mTweakCipher = new AES();
-					break;
-				case Twofish:
-					mCiphers = new BlockCipher[]{new Twofish()};
-					mTweakCipher = new Twofish();
-					break;
-				case Serpent:
-					mCiphers = new BlockCipher[]{new Serpent()};
-					mTweakCipher = new Serpent();
-					break;
-				case AESTwofish:
-					mCiphers = new BlockCipher[]{new AES(), new Twofish()};
-					mTweakCipher = new AES();
-					break;
-				case TwofishSerpent:
-					mCiphers = new BlockCipher[]{new Twofish(), new Serpent()};
-					mTweakCipher = new Twofish();
-					break;
-				case SerpentAES:
-					mCiphers = new BlockCipher[]{new Serpent(), new AES()};
-					mTweakCipher = new Serpent();
-					break;
-				case AESTwofishSerpent:
-					mCiphers = new BlockCipher[]{new AES(), new Twofish(), new Serpent()};
-					mTweakCipher = new AES();
-					break;
-				case TwofishAESSerpent:
-					mCiphers = new BlockCipher[]{new Twofish(), new AES(), new Serpent()};
-					mTweakCipher = new Twofish();
-					break;
-				case SerpentTwofishAES:
-					mCiphers = new BlockCipher[]{new Serpent(), new Twofish(), new AES()};
-					mTweakCipher = new Serpent();
-					break;
-				default:
-					throw new IllegalStateException();
-			}
-
-			int offset = aKeyPoolOffset;
-
-			mTweakCipher.engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
-			offset += KEY_SIZE_BYTES;
-
-			for (int j = 0; j < 3; j++)
-			{
-				if (j < mCiphers.length)
-				{
-					mCiphers[j].engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
-				}
-				offset += KEY_SIZE_BYTES;
-			}
-
-			for (int j = 0; j < 3; j++)
-			{
-				System.arraycopy(aKeyPool, offset, mIV[j], 0, IV_SIZE);
-				offset += IV_SIZE;
-			}
-
-			if (offset != aKeyPoolOffset + KEY_POOL_SIZE)
-			{
-				throw new IllegalArgumentException("Bad offset: " + offset);
-			}
-		}
-
-
-		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
-		{
-			for (int i = 0; i < mCiphers.length; i++)
-			{
-				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
-			}
-		}
-
-
-		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
-		{
-			for (int i = mCiphers.length; --i >= 0; )
-			{
-				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
-			}
-		}
-
-
-		private void reset()
-		{
-			for (BlockCipher cipher : mCiphers)
-			{
-				if (cipher != null)
-				{
-					cipher.engineReset();
-				}
-			}
-
-			mTweakCipher.engineReset();
-
-			fill(mIV[0], (byte)0);
-			fill(mIV[1], (byte)0);
-			fill(mIV[2], (byte)0);
-			fill(mCiphers, null);
-		}
-	};
 
 
 	private static int getInt(byte [] aBuffer, int aPosition)
@@ -537,4 +463,80 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			}
 		}
 	}
+
+
+	private static final class CipherImplementation
+	{
+		private transient final byte [][] mIV;
+		private transient final BlockCipher[] mCiphers;
+		private transient final BlockCipher mTweakCipher;
+		private transient final CipherMode mCipherMode;
+		private transient final int mUnitSize;
+
+
+		public CipherImplementation(final CipherModeFunction aCipherModeFunction, final EncryptionFunction aEncryptionFunction, final byte[] aKeyPool, final int aKeyPoolOffset, final int aUnitSize)
+		{
+			mUnitSize = aUnitSize;
+			mCipherMode = aCipherModeFunction.newInstance();
+			mCiphers = aEncryptionFunction.newCipherInstances();
+			mTweakCipher = aEncryptionFunction.newTweakInstance();
+			mIV = new byte[mCiphers.length][IV_SIZE];
+
+			int offset = aKeyPoolOffset;
+
+			mTweakCipher.engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
+			offset += KEY_SIZE_BYTES;
+
+			for (BlockCipher cipher : mCiphers)
+			{
+				cipher.engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
+				offset += KEY_SIZE_BYTES;
+			}
+
+			for (byte[] iv : mIV)
+			{
+				System.arraycopy(aKeyPool, offset, iv, 0, IV_SIZE);
+				offset += IV_SIZE;
+			}
+		}
+
+
+		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
+		{
+			for (int i = 0; i < mCiphers.length; i++)
+			{
+				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
+			}
+		}
+
+
+		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aBlockKey)
+		{
+			for (int i = mCiphers.length; --i >= 0; )
+			{
+				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], mTweakCipher, aBlockIndex, mUnitSize, mIV[i], aBlockKey);
+			}
+		}
+
+
+		private void reset()
+		{
+			for (BlockCipher cipher : mCiphers)
+			{
+				if (cipher != null)
+				{
+					cipher.engineReset();
+				}
+			}
+
+			mTweakCipher.engineReset();
+
+			for (byte[] iv : mIV)
+			{
+				fill(iv, (byte)0);
+			}
+
+			fill(mCiphers, null);
+		}
+	};
 }
