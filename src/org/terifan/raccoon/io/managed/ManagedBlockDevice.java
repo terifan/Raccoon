@@ -12,16 +12,14 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private final static int RESERVED_BLOCKS = 2;
 
 	private IPhysicalBlockDevice mBlockDevice;
-	private RangeMap mRangeMap;
-	private RangeMap mPendingRangeMap;
 	private SuperBlock mSuperBlock;
-	private HashSet<Integer> mUncommittedAllocations;
 	private String mBlockDeviceLabel;
 	private int mBlockSize;
 	private boolean mModified;
 	private boolean mWasCreated;
 	private boolean mDoubleCommit;
 	private LazyWriteCache mLazyWriteCache;
+	private SpaceMap mSpaceMap;
 
 
 	/**
@@ -42,7 +40,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mBlockDeviceLabel = aBlockDeviceLabel;
 		mBlockSize = aBlockDevice.getBlockSize();
 		mWasCreated = mBlockDevice.length() < RESERVED_BLOCKS;
-		mUncommittedAllocations = new HashSet<>();
 		mLazyWriteCache = new LazyWriteCache(mBlockDevice, aLazyWriteCacheSize);
 		mDoubleCommit = true;
 
@@ -68,10 +65,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.i("create block device");
 		Log.inc();
 
-		mRangeMap = new RangeMap();
-		mRangeMap.add(0, Integer.MAX_VALUE);
-
-		mPendingRangeMap = mRangeMap.clone();
+		mSpaceMap = new SpaceMap();
 
 		mSuperBlock = new SuperBlock();
 		mSuperBlock.mWriteCounter = -1L; // counter is incremented in writeSuperBlock method and we want to ensure we write block 0 before block 1
@@ -101,8 +95,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		readSuperBlock();
 
-		mRangeMap = new SpaceMapIO().readSpaceMap(mSuperBlock, this, mBlockDevice);
-		mPendingRangeMap = mRangeMap.clone();
+		mSpaceMap = new SpaceMap(mSuperBlock, this, mBlockDevice);
 
 		Log.dec();
 	}
@@ -157,7 +150,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		mLazyWriteCache = null;
 
-		mUncommittedAllocations.clear();
+		mSpaceMap.clearUncommitted();
 
 		if (mBlockDevice != null)
 		{
@@ -190,25 +183,9 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	long allocBlockInternal(int aBlockCount) throws IOException
 	{
-		int blockIndex = mRangeMap.next(aBlockCount);
-
-		if (blockIndex < 0)
-		{
-			return -1;
-		}
-
-		Log.d("alloc block %d +%d", blockIndex, aBlockCount);
-
 		mModified = true;
 
-		for (int i = 0; i < aBlockCount; i++)
-		{
-			mUncommittedAllocations.add(blockIndex + i);
-		}
-
-		mPendingRangeMap.remove(blockIndex, aBlockCount);
-
-		return blockIndex;
+		return mSpaceMap.alloc(aBlockCount);
 	}
 
 
@@ -230,19 +207,9 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		mModified = true;
 
+		mSpaceMap.free(aBlockIndex, aBlockCount);
+
 		mLazyWriteCache.free(aBlockIndex);
-
-		int blockIndex = (int)aBlockIndex;
-
-		for (int i = 0; i < aBlockCount; i++)
-		{
-			if (mUncommittedAllocations.remove(blockIndex + i))
-			{
-				mRangeMap.add(blockIndex + i, 1);
-			}
-		}
-
-		mPendingRangeMap.add(blockIndex, aBlockCount);
 	}
 
 
@@ -267,15 +234,12 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;
 
-		if (!mRangeMap.isFree((int)aBlockIndex, aBufferLength / mBlockSize))
-		{
-			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
-		}
+		mSpaceMap.assertUsed(aBlockIndex, aBufferLength / mBlockSize);
+
+		mModified = true;
 
 		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 		Log.inc();
-
-		mModified = true;
 
 		mLazyWriteCache.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
 
@@ -304,10 +268,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;
 
-		if (!mRangeMap.isFree((int)aBlockIndex, aBufferLength / mBlockSize))
-		{
-			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
-		}
+		mSpaceMap.assertUsed(aBlockIndex, aBufferLength / mBlockSize);
 
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 		Log.inc();
@@ -328,7 +289,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			Log.i("committing managed block device");
 			Log.inc();
 
-			new SpaceMapIO().writeSpaceMap(mSuperBlock, mPendingRangeMap, this, mBlockDevice);
+			mSpaceMap.write(mSuperBlock.mSpaceMapPointer, this, mBlockDevice);
 
 			if (mDoubleCommit) // enabled by default
 			{
@@ -341,8 +302,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			mBlockDevice.commit(aMetadata);
 
-			mUncommittedAllocations.clear();
-			mRangeMap = mPendingRangeMap.clone();
+			mSpaceMap.clearUncommitted();
 			mWasCreated = false;
 			mModified = false;
 
@@ -368,9 +328,9 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			mLazyWriteCache.clear();
 
-			mUncommittedAllocations.clear();
+			mSpaceMap.clearUncommitted();
 
-			mPendingRangeMap = mRangeMap.clone();
+			mSpaceMap.rollback();
 
 			init();
 
@@ -386,8 +346,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.d("read super block");
 		Log.inc();
 
-		SuperBlock superBlockOne = new SuperBlockIO().readSuperBlock(mBlockDevice, 0L);
-		SuperBlock superBlockTwo = new SuperBlockIO().readSuperBlock(mBlockDevice, 1L);
+		SuperBlock superBlockOne = new SuperBlock(mBlockDevice, 0L);
+		SuperBlock superBlockTwo = new SuperBlock(mBlockDevice, 1L);
 
 		if (!(mBlockDeviceLabel == null || mBlockDeviceLabel.isEmpty() && superBlockOne.mBlockDeviceLabel.isEmpty() || mBlockDeviceLabel.equals(superBlockOne.mBlockDeviceLabel)))
 		{
@@ -424,7 +384,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		long pageIndex = mSuperBlock.mWriteCounter & 1L;
 
-		new SuperBlockIO().writeSuperBlock(mBlockDevice, pageIndex, mSuperBlock);
+		mSuperBlock.write(mBlockDevice, pageIndex);
 
 		Log.dec();
 	}
@@ -458,7 +418,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public String toString()
 	{
-		return mRangeMap.toString();
+		return mSpaceMap.getRangeMap().toString();
 	}
 
 
@@ -467,7 +427,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	 */
 	public String getSpaceMap()
 	{
-		return mRangeMap.toString();
+		return mSpaceMap.getRangeMap().toString();
 	}
 
 
@@ -476,7 +436,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	 */
 	public long getAvailableSpace() throws IOException
 	{
-		return mRangeMap.getFreeSpace();
+		return mSpaceMap.getRangeMap().getFreeSpace();
 	}
 
 
@@ -494,7 +454,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	 */
 	public long getFreeSpace() throws IOException
 	{
-		return mBlockDevice.length() - mRangeMap.getUsedSpace();
+		return mBlockDevice.length() - mSpaceMap.getRangeMap().getUsedSpace();
 	}
 
 
@@ -503,7 +463,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	 */
 	public long getUsedSpace() throws IOException
 	{
-		return mRangeMap.getUsedSpace();
+		return mSpaceMap.getRangeMap().getUsedSpace();
 	}
 
 
@@ -519,7 +479,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		mBlockDevice.setLength(0);
 
-		mUncommittedAllocations.clear();
+		mSpaceMap.clearUncommitted();
 
 		createBlockDevice();
 	}
