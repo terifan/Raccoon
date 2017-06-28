@@ -7,38 +7,6 @@ import static org.terifan.raccoon.PerformanceCounters.*;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-/*
- * +------+------+------+------+------+------+------+------+
- * | type | chk  | enc  | comp |    range    |  alloc size |
- * +------+------+------+------+------+------+------+------+
- * |        logical size       |       physical size       |
- * +------+------+------+------+------+------+------+------+
- * |                      block index                      |
- * +------+------+------+------+------+------+------+------+
- * |                      transaction                      |
- * +------+------+------+------+------+------+------+------+
- * |                          iv0                          |
- * +------+------+------+------+------+------+------+------+
- * |                          iv1                          |
- * +------+------+------+------+------+------+------+------+
- * |                       checksum0                       |
- * +------+------+------+------+------+------+------+------+
- * |                       checksum1                       |
- * +------+------+------+------+------+------+------+------+
- *
- *   8 block type (3)
- *   8 checksum algorithm (2)
- *   8 encryption algorithm (0)
- *   8 compression algorithm (3)
- *  16 range (12)
- *  16 allocated size (11)
- *  32 logical size (20)
- *  32 physical size (20)
- *  64 block index
- *  64 transaction id
- * 128 initialization vector
- * 128 checksum
- */
 public class BlockPointer implements Serializable
 {
 	private final static long serialVersionUID = 1;

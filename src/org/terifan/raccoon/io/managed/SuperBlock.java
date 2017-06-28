@@ -5,17 +5,6 @@ import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-/**
- *   8 format version
- *  64 created
- *  64 last updated
- *  64 write counter
- * 512 space map block pointer
- *   8 label length
- *   n label
- *  16 extra length
- *   n extra
- */
 class SuperBlock
 {
 	private final static byte FORMAT_VERSION = 1;

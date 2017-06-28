@@ -8,15 +8,6 @@ import org.terifan.security.cryptography.ISAAC;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-/**
- * Class implementing read and write operations for the SuperBlock
- *
- * SuperBlock on-disk layout
- *
- *  128 checksum
- *    n payload
- *  128 reserved space for IV
- */
 final class SuperBlockIO
 {
 	private final static int CHECKSUM_SIZE = 16;

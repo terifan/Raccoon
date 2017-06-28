@@ -16,17 +16,6 @@ import org.terifan.security.cryptography.CipherMode;
 import org.terifan.security.cryptography.ISAAC;
 
 
-// Boot block layout:
-// 256 salt (random, plaintext)
-// 256 payload (encrypted with user key)
-//       4 checksum (salt + key pool + payload padding)
-//     208 key pool
-//          32 tweak ciper key (1 x 32)
-//          96 ciper keys (3 x 32)
-//          48 cipher iv (3 x 16)
-//      44 payload padding
-//   n padding (random, plaintext)
-
 /**
  * The SecureBlockDevice encrypt blocks as they are written to the underlying physical block device. The blocks at index 0 and 1
  * contain a boot blocks which store the secret encryption keys used to encrypt all other blocks. All read and write operations
