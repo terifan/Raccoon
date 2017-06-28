@@ -7,6 +7,7 @@ public enum BlockType
 	HOLE,
 	LEAF,
 	INDEX,
-	DATA, // blob data
-	DIR // blob index
+	BLOB_DATA,
+	BLOB_INDEX,
+	SPACEMAP
 }

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+	<body>
+		<h1>Boot Block</h1>
+		<table border="1">
+			<tr>
+				<th>Plaintext</th>
+				<th colspan="5">Encrypted by user cipher</th>
+				<th>Plaintext</th>
+			</tr>
+			<tr>
+				<th rowspan="2">Salt</th>
+				<th colspan="5">Secret key pool</th>
+				<th rowspan="2">Padding</th>
+			</tr>
+			<tr>
+				<td>Checksum</td>
+				<td>Tweak cipher key</td>
+				<td>Data cipher key</td>
+				<td>Cipher IV</td>
+				<td>Padding</td>
+			</tr>
+			<tr>
+				<td>256</td>
+				<td>4</td>
+				<td>32</td>
+				<td>96</td>
+				<td>48</td>
+				<td>44</td>
+				<td>n</td>
+			</tr>
+		</table>
+
+		<h1>Super Block</h1>
+		<table border="1">
+			<tr>
+				<th colspan="10">Encrypted by data cipher</th>
+				<th>Encrypted by tweak cipher</th>
+			</tr>
+			<tr>
+				<th rowspan="2">Checksum</th>
+				<th colspan="9">Payload</th>
+				<th rowspan="2">IV</th>
+			</tr>
+			<tr>
+				<td>format version</td>
+				<td>created</td>
+				<td>last updated</td>
+				<td>transaction id</td>
+				<td>space map block pointer</td>
+				<td>label length</td>
+				<td>label</td>
+				<td>extra length</td>
+				<td>extra</td>
+			</tr>
+			<tr>
+				<td>16</td>
+				<td>1</td>
+				<td>8</td>
+				<td>8</td>
+				<td>8</td>
+				<td>64</td>
+				<td>1</td>
+				<td>n</td>
+				<td>2</td>
+				<td>n</td>
+				<td>16</td>
+			</tr>
+		</table>
+
+		<h1>Block Pointer</h1>
+		<table border="1">
+			<tr>
+				<td>block type</td>
+				<td>checksum type</td>
+				<td>encryption type</td>
+				<td>compression type</td>
+				<td>range</td>
+				<td>allocated size</td>
+				<td>logical size</td>
+				<td>physical size</td>
+				<td>block index</td>
+				<td>transaction group</td>
+				<td>IV</td>
+				<td>checksum</td>
+			</tr>
+			<tr>
+				<td>1</td>
+				<td>1</td>
+				<td>1</td>
+				<td>1</td>
+				<td>2</td>
+				<td>2</td>
+				<td>4</td>
+				<td>4</td>
+				<td>8</td>
+				<td>8</td>
+				<td>16</td>
+				<td>16</td>
+			</tr>
+		</table>
+	</body>
+</html>

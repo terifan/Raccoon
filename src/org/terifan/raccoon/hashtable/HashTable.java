@@ -651,7 +651,7 @@ public final class HashTable extends TableImplementation
 	{
 		assert aBlockPointer.getBlockType() == BlockType.LEAF;
 
-		if (aBlockPointer.getOffset() == mRootBlockPointer.getOffset() && mRootMap != null)
+		if (aBlockPointer.getBlockIndex() == mRootBlockPointer.getBlockIndex() && mRootMap != null)
 		{
 			return mRootMap;
 		}
@@ -664,7 +664,7 @@ public final class HashTable extends TableImplementation
 	{
 		assert aBlockPointer.getBlockType() == BlockType.INDEX;
 
-		if (aBlockPointer.getOffset() == mRootBlockPointer.getOffset() && mRootNode != null)
+		if (aBlockPointer.getBlockIndex() == mRootBlockPointer.getBlockIndex() && mRootNode != null)
 		{
 			return mRootNode;
 		}
@@ -818,7 +818,7 @@ public final class HashTable extends TableImplementation
 				aScanResult.exitLeaf();
 
 				break;
-			case DIR:
+			case BLOB_INDEX:
 				aScanResult.blobIndices++;
 
 				ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(buffer);
@@ -831,7 +831,7 @@ public final class HashTable extends TableImplementation
 					aScanResult.exitBlob();
 				}
 				break;
-			case DATA:
+			case BLOB_DATA:
 				aScanResult.blobData++;
 
 				aScanResult.blobData();

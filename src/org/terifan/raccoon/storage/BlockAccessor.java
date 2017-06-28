@@ -18,8 +18,6 @@ import org.terifan.security.messagedigest.MurmurHash3;
 
 public class BlockAccessor
 {
-	private final static ISAAC PRNG = new ISAAC(System.nanoTime());
-
 	private final IManagedBlockDevice mBlockDevice;
 	private final Cache<Long,byte[]> mCache;
 	private final int mBlockSize;
@@ -60,11 +58,11 @@ public class BlockAccessor
 			Log.d("free block %s", aBlockPointer);
 			Log.inc();
 
-			mBlockDevice.freeBlock(aBlockPointer.getOffset(), roundUp(aBlockPointer.getPhysicalSize()) / mBlockDevice.getBlockSize());
+			mBlockDevice.freeBlock(aBlockPointer.getBlockIndex(), roundUp(aBlockPointer.getPhysicalSize()) / mBlockDevice.getBlockSize());
 
 			if (mCache != null)
 			{
-				mCache.remove(aBlockPointer.getOffset());
+				mCache.remove(aBlockPointer.getBlockIndex());
 			}
 
 			Log.dec();
@@ -87,7 +85,7 @@ public class BlockAccessor
 
 			if (mCache != null)
 			{
-				byte[] copy = mCache.get(aBlockPointer.getOffset());
+				byte[] copy = mCache.get(aBlockPointer.getBlockIndex());
 
 				if (copy != null)
 				{
@@ -99,10 +97,9 @@ public class BlockAccessor
 
 			byte[] buffer = new byte[roundUp(aBlockPointer.getPhysicalSize())];
 
-			mBlockDevice.readBlock(aBlockPointer.getOffset(), buffer, 0, buffer.length, aBlockPointer.getIV0(), aBlockPointer.getIV1());
+			mBlockDevice.readBlock(aBlockPointer.getBlockIndex(), buffer, 0, buffer.length, aBlockPointer.getIV0(), aBlockPointer.getIV1());
 
-			long[] hash = MurmurHash3.hash_x64_128(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getOffset());
-//			long[] hash = new long[]{0L,MurmurHash3.hash_x64_64(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getOffset())};
+			long[] hash = MurmurHash3.hash_x64_128(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getBlockIndex());
 
 			if (hash[0] != aBlockPointer.getChecksum0() || hash[1] != aBlockPointer.getChecksum1())
 			{
@@ -173,13 +170,12 @@ public class BlockAccessor
 			long blockIndex = mBlockDevice.allocBlock(blockCount);
 
 			long[] hash = MurmurHash3.hash_x64_128(aBuffer, 0, physicalSize, blockIndex);
-//			long[] hash = new long[]{0L,MurmurHash3.hash_x64_64(aBuffer, 0, physicalSize, blockIndex)};
 
 			BlockPointer blockPointer = new BlockPointer();
 			blockPointer.setCompressionAlgorithm(compressorId);
 			blockPointer.setChecksumAlgorithm(0);
 			blockPointer.setEncryptionAlgorithm(0);
-			blockPointer.setOffset(blockIndex);
+			blockPointer.setBlockIndex(blockIndex);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
 			blockPointer.setTransactionId(aTransactionId);
@@ -187,8 +183,8 @@ public class BlockAccessor
 			blockPointer.setRange(aRange);
 			blockPointer.setChecksum0(hash[0]);
 			blockPointer.setChecksum1(hash[1]);
-			blockPointer.setIV0(PRNG.nextLong());
-			blockPointer.setIV1(PRNG.nextLong());
+			blockPointer.setIV0(ISAAC.PRNG.nextLong());
+			blockPointer.setIV1(ISAAC.PRNG.nextLong());
 
 			Log.d("write block %s", blockPointer);
 			Log.inc();
@@ -202,7 +198,7 @@ public class BlockAccessor
 
 			if (mCache != null)
 			{
-				mCache.put(blockPointer.getOffset(), copy);
+				mCache.put(blockPointer.getBlockIndex(), copy);
 			}
 
 			return blockPointer;

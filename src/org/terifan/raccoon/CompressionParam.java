@@ -67,9 +67,9 @@ public final class CompressionParam
 			case LEAF:
 				return mLeaf;
 			case INDEX:
-			case DIR:
+			case BLOB_INDEX:
 				return mNode;
-			case DATA:
+			case BLOB_DATA:
 				return mBlob;
 			default:
 				return NONE;

@@ -1,26 +1,15 @@
 package org.terifan.raccoon.io.managed;
 
-import org.terifan.raccoon.io.secure.SecureBlockDevice;
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.HashSet;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
-import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
-import org.terifan.raccoon.util.PRNGProvider;
 
 
 public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 {
-	private final static byte FORMAT_VERSION = 1;
-	private final static int CHECKSUM_SIZE = 16;
 	private final static int RESERVED_BLOCKS = 2;
-
-	private final static int NULL_CODE = 65535;
 
 	private IPhysicalBlockDevice mBlockDevice;
 	private RangeMap mRangeMap;
@@ -82,13 +71,10 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mRangeMap = new RangeMap();
 		mRangeMap.add(0, Integer.MAX_VALUE);
 
-		mPendingRangeMap = new RangeMap();
-		mPendingRangeMap.add(0, Integer.MAX_VALUE);
+		mPendingRangeMap = mRangeMap.clone();
 
 		mSuperBlock = new SuperBlock();
-		mSuperBlock.mCreated = new Date();
 		mSuperBlock.mWriteCounter = -1L; // counter is incremented in writeSuperBlock method and we want to ensure we write block 0 before block 1
-		mSuperBlock.mFormatVersion = FORMAT_VERSION;
 		mSuperBlock.mBlockDeviceLabel = mBlockDeviceLabel == null ? "" : mBlockDeviceLabel;
 
 		setExtraData(null);
@@ -114,7 +100,9 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.inc();
 
 		readSuperBlock();
-		readSpaceMap();
+
+		mRangeMap = new SpaceMapIO().readSpaceMap(mSuperBlock, this, mBlockDevice);
+		mPendingRangeMap = mRangeMap.clone();
 
 		Log.dec();
 	}
@@ -200,7 +188,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private long allocBlockInternal(int aBlockCount) throws IOException
+	long allocBlockInternal(int aBlockCount) throws IOException
 	{
 		int blockIndex = mRangeMap.next(aBlockCount);
 
@@ -236,7 +224,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private void freeBlockInternal(long aBlockIndex, int aBlockCount) throws IOException
+	void freeBlockInternal(long aBlockIndex, int aBlockCount) throws IOException
 	{
 		Log.d("free block %d +%d", aBlockIndex, aBlockCount);
 
@@ -340,7 +328,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			Log.i("committing managed block device");
 			Log.inc();
 
-			writeSpaceMap();
+			new SpaceMapIO().writeSpaceMap(mSuperBlock, mPendingRangeMap, this, mBlockDevice);
 
 			if (mDoubleCommit) // enabled by default
 			{
@@ -398,23 +386,9 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.d("read super block");
 		Log.inc();
 
-		SuperBlock superBlockOne = new SuperBlock();
-		SuperBlock superBlockTwo = new SuperBlock();
+		SuperBlock superBlockOne = new SuperBlockIO().readSuperBlock(mBlockDevice, 0L);
+		SuperBlock superBlockTwo = new SuperBlockIO().readSuperBlock(mBlockDevice, 1L);
 
-		try
-		{
-			superBlockOne.unmarshal(0L);
-			superBlockTwo.unmarshal(1L);
-		}
-		catch (IOException e)
-		{
-			throw new UnsupportedVersionException("Invalid or corrupt data or data may be encrypted.", e);
-		}
-
-		if (superBlockOne.mFormatVersion != FORMAT_VERSION)
-		{
-			throw new UnsupportedVersionException("Data format is not supported: was " + superBlockOne.mFormatVersion + ", expected " + FORMAT_VERSION);
-		}
 		if (!(mBlockDeviceLabel == null || mBlockDeviceLabel.isEmpty() && superBlockOne.mBlockDeviceLabel.isEmpty() || mBlockDeviceLabel.equals(superBlockOne.mBlockDeviceLabel)))
 		{
 			throw new UnsupportedVersionException("Block device label don't match: was " + (superBlockOne.mBlockDeviceLabel.isEmpty()?"<empty>" : superBlockOne.mBlockDeviceLabel) + ", expected " + (mBlockDeviceLabel.isEmpty()?"<empty>" : mBlockDeviceLabel));
@@ -444,156 +418,15 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private void writeSuperBlock() throws IOException
 	{
 		mSuperBlock.mWriteCounter++;
-		mSuperBlock.mUpdated = new Date();
 
 		Log.i("write super block %d", mSuperBlock.mWriteCounter & 1L);
 		Log.inc();
 
-		ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[mBlockSize]);
-		buffer.position(CHECKSUM_SIZE); // leave space for checksum
-
-		mSuperBlock.marshal(buffer);
-
-		if (mBlockDevice instanceof SecureBlockDevice)
-		{
-			byte[] padding = new byte[buffer.capacity() - buffer.position()];
-			PRNGProvider.getInstance().nextBytes(padding);
-			buffer.write(padding);
-		}
-
 		long pageIndex = mSuperBlock.mWriteCounter & 1L;
 
-		writeCheckedBlock(pageIndex, buffer, pageIndex, 0L);
+		new SuperBlockIO().writeSuperBlock(mBlockDevice, pageIndex, mSuperBlock);
 
 		Log.dec();
-	}
-
-
-	private void readSpaceMap() throws IOException
-	{
-		Log.d("read space map %d +%d (bytes used %d)", mSuperBlock.mSpaceMapBlockIndex, mSuperBlock.mSpaceMapBlockCount, mSuperBlock.mSpaceMapLength);
-		Log.inc();
-
-		mRangeMap = new RangeMap();
-
-		if (mSuperBlock.mSpaceMapBlockCount == 0) // all blocks are free in this device
-		{
-			mRangeMap.add(0, Integer.MAX_VALUE);
-		}
-		else
-		{
-			if (mSuperBlock.mSpaceMapBlockIndex < 0)
-			{
-				throw new IOException("Block at illegal offset: " + mSuperBlock.mSpaceMapBlockIndex);
-			}
-
-			ByteArrayBuffer buffer = readCheckedBlock(mSuperBlock.mSpaceMapBlockIndex, mSuperBlock.mSpaceMapBlockKey[0], mSuperBlock.mSpaceMapBlockKey[1], mSuperBlock.mSpaceMapBlockCount * mBlockSize);
-
-			buffer.position(16);
-			buffer.limit(mSuperBlock.mSpaceMapLength);
-
-			mRangeMap.unmarshal(buffer);
-
-			mRangeMap.remove((int)mSuperBlock.mSpaceMapBlockIndex, mSuperBlock.mSpaceMapBlockCount);
-		}
-
-		mPendingRangeMap = mRangeMap.clone();
-
-		Log.dec();
-	}
-
-
-	private void writeSpaceMap() throws IOException
-	{
-		Log.d("write space map");
-		Log.inc();
-
-		if (mSuperBlock.mSpaceMapBlockCount > 0)
-		{
-			freeBlockInternal(mSuperBlock.mSpaceMapBlockIndex, mSuperBlock.mSpaceMapBlockCount);
-		}
-
-		ByteArrayBuffer buffer = new ByteArrayBuffer(mBlockSize);
-		buffer.position(CHECKSUM_SIZE); // leave space for checksum
-
-		mPendingRangeMap.marshal(buffer);
-
-		// Allocate space for the new space map block
-		mSuperBlock.mSpaceMapBlockCount = (buffer.position() + mBlockSize - 1) / mBlockSize;
-		mSuperBlock.mSpaceMapBlockIndex = allocBlockInternal(mSuperBlock.mSpaceMapBlockCount);
-		mSuperBlock.mSpaceMapLength = buffer.position();
-		mSuperBlock.mSpaceMapBlockKey[0] = PRNGProvider.getInstance().nextLong();
-		mSuperBlock.mSpaceMapBlockKey[1] = PRNGProvider.getInstance().nextLong();
-
-		// Pad buffer to block size
-		buffer.capacity(mBlockSize * mSuperBlock.mSpaceMapBlockCount);
-
-		writeCheckedBlock(mSuperBlock.mSpaceMapBlockIndex, buffer, mSuperBlock.mSpaceMapBlockKey[0], mSuperBlock.mSpaceMapBlockKey[1]);
-
-		Log.dec();
-	}
-
-
-	private MessageDigest getMessageDigest() throws IOException
-	{
-		try
-		{
-			return MessageDigest.getInstance("MD5");
-		}
-		catch (NoSuchAlgorithmException e)
-		{
-			throw new IOException(e);
-		}
-	}
-
-
-	private ByteArrayBuffer readCheckedBlock(long aBlockIndex, long aIV0, long aIV1, int aLength) throws IOException
-	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(aLength);
-
-		mBlockDevice.readBlock(aBlockIndex, buffer.array(), 0, aLength, aIV0, aIV1);
-
-		verifyChecksum(aBlockIndex, buffer);
-
-		assert buffer.position() == CHECKSUM_SIZE;
-
-		return buffer;
-	}
-
-
-	private void verifyChecksum(long aBlockIndex, ByteArrayBuffer aBuffer) throws IOException
-	{
-		MessageDigest messageDigest = getMessageDigest();
-		messageDigest.update((byte)aBlockIndex);
-		messageDigest.update(aBuffer.array(), CHECKSUM_SIZE, aBuffer.capacity() - CHECKSUM_SIZE);
-
-		aBuffer.position(0);
-
-		byte[] actualDigest = messageDigest.digest();
-		byte[] expectedDigest = aBuffer.read(new byte[CHECKSUM_SIZE]);
-
-		if (!Arrays.equals(expectedDigest, actualDigest))
-		{
-			throw new IOException("Checksum error at block index " + aBlockIndex);
-		}
-	}
-
-
-	private void writeCheckedBlock(long aBlockIndex, ByteArrayBuffer aBuffer, long aIV0, long aIV1) throws IOException
-	{
-		if (aBlockIndex < 0)
-		{
-			throw new IOException("Block at illegal offset: " + aBlockIndex);
-		}
-
-		MessageDigest messageDigest = getMessageDigest();
-		messageDigest.update((byte)aBlockIndex);
-		messageDigest.update(aBuffer.array(), CHECKSUM_SIZE, aBuffer.capacity() - CHECKSUM_SIZE);
-		byte[] digest = messageDigest.digest();
-
-		aBuffer.position(0).write(digest);
-
-		mBlockDevice.writeBlock(aBlockIndex, aBuffer.array(), 0, aBuffer.capacity(), aIV0, aIV1);
 	}
 
 
@@ -689,83 +522,5 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mUncommittedAllocations.clear();
 
 		createBlockDevice();
-	}
-
-
-	class SuperBlock
-	{
-		int mFormatVersion;
-		Date mCreated;
-		Date mUpdated;
-		long mWriteCounter;
-		long mSpaceMapBlockIndex;
-		int mSpaceMapBlockCount;
-		int mSpaceMapLength;
-		long[] mSpaceMapBlockKey;
-		String mBlockDeviceLabel;
-		byte[] mExtraData;
-
-
-		public SuperBlock()
-		{
-			mSpaceMapBlockKey = new long[2];
-		}
-
-
-		void marshal(ByteArrayBuffer buffer) throws IOException
-		{
-			buffer.writeInt8(mFormatVersion);
-			buffer.writeInt64(mCreated.getTime());
-			buffer.writeInt64(mUpdated.getTime());
-			buffer.writeInt64(mWriteCounter);
-			buffer.writeInt64(mSpaceMapBlockIndex);
-			buffer.writeInt32(mSpaceMapBlockCount);
-			buffer.writeInt32(mSpaceMapLength);
-			buffer.writeInt64(mSpaceMapBlockKey[0]);
-			buffer.writeInt64(mSpaceMapBlockKey[1]);
-			buffer.writeInt8(mBlockDeviceLabel.length());
-			buffer.writeString(mBlockDeviceLabel);
-			if (mExtraData == null)
-			{
-				buffer.writeInt16(NULL_CODE);
-			}
-			else if (mExtraData.length == NULL_CODE)
-			{
-				throw new IllegalStateException("Illegal length: " + mExtraData.length);
-			}
-			else
-			{
-				buffer.writeInt16(mExtraData.length);
-				buffer.write(mExtraData);
-			}
-		}
-
-
-		void unmarshal(long aPageIndex) throws IOException
-		{
-			assert aPageIndex == 0 || aPageIndex == 1;
-
-			ByteArrayBuffer buffer = readCheckedBlock(aPageIndex, aPageIndex, 0L, mBlockSize);
-
-			mFormatVersion = buffer.readInt8();
-			mCreated = new Date(buffer.readInt64());
-			mUpdated = new Date(buffer.readInt64());
-			mWriteCounter = buffer.readInt64();
-			mSpaceMapBlockIndex = buffer.readInt64();
-			mSpaceMapBlockCount = buffer.readInt32();
-			mSpaceMapLength = buffer.readInt32();
-			mSpaceMapBlockKey[0] = buffer.readInt64();
-			mSpaceMapBlockKey[1] = buffer.readInt64();
-			mBlockDeviceLabel = buffer.readString(buffer.readInt8());
-			int len = buffer.readInt16();
-			if (len == NULL_CODE)
-			{
-				mExtraData = null;
-			}
-			else
-			{
-				mExtraData = buffer.read(new byte[len]);
-			}
-		}
 	}
 }

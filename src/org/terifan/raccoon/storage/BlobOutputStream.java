@@ -96,7 +96,7 @@ public class BlobOutputStream extends OutputStream
 
 		if (pointerBufferLength > POINTER_MAX_LENGTH) // create indirect block if pointer buffer length exceed limit
 		{
-			BlockPointer bp = mBlockAccessor.writeBlock(mPointerBuffer.array(), 0, pointerBufferLength, mTransactionId.get(), BlockType.DIR, 0);
+			BlockPointer bp = mBlockAccessor.writeBlock(mPointerBuffer.array(), 0, pointerBufferLength, mTransactionId.get(), BlockType.BLOB_INDEX, 0);
 			bp.marshal(mPointerBuffer.position(0));
 			pointerBufferLength = BlockPointer.SIZE;
 		}
@@ -127,7 +127,7 @@ public class BlobOutputStream extends OutputStream
 
 	private void flushBlock() throws IOException
 	{
-		BlockPointer bp = mBlockAccessor.writeBlock(mBuffer.array(), 0, mBuffer.position(), mTransactionId.get(), BlockType.DATA, 0);
+		BlockPointer bp = mBlockAccessor.writeBlock(mBuffer.array(), 0, mBuffer.position(), mTransactionId.get(), BlockType.BLOB_DATA, 0);
 		bp.marshal(mPointerBuffer);
 
 		mBuffer.position(0);

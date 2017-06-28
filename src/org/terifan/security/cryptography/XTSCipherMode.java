@@ -18,9 +18,10 @@ public final class XTSCipherMode extends CipherMode
 	@Override
 	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long aIV0, final long aIV1)
 	{
-		assert (aUnitSize & -aUnitSize) == aUnitSize;
+//		assert (aUnitSize & -aUnitSize) == aUnitSize;
+		assert (aUnitSize & (BYTES_PER_BLOCK - 1)) == 0;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
-		assert aLength >= aUnitSize;
+		assert aLength >= aUnitSize : aLength+" >= "+aUnitSize;
 		assert (aLength % aUnitSize) == 0;
 
 		byte[] whiteningValue = new byte[BYTES_PER_BLOCK];
@@ -59,7 +60,8 @@ public final class XTSCipherMode extends CipherMode
 	@Override
 	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long aIV0, final long aIV1)
 	{
-		assert (aUnitSize & -aUnitSize) == aUnitSize;
+//		assert (aUnitSize & -aUnitSize) == aUnitSize;
+		assert (aUnitSize & (BYTES_PER_BLOCK - 1)) == 0;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
 		assert aLength >= aUnitSize;
 		assert (aLength % aUnitSize) == 0;

@@ -9,11 +9,11 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 /*
  * +------+------+------+------+------+------+------+------+
- * | type | chk  | enc  | comp |      X      |    range    |
+ * | type | chk  | enc  | comp |    range    |  alloc size |
  * +------+------+------+------+------+------+------+------+
  * |        logical size       |       physical size       |
  * +------+------+------+------+------+------+------+------+
- * |                         offset                        |
+ * |                      block index                      |
  * +------+------+------+------+------+------+------+------+
  * |                      transaction                      |
  * +------+------+------+------+------+------+------+------+
@@ -26,15 +26,15 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
  * |                       checksum1                       |
  * +------+------+------+------+------+------+------+------+
  *
- *   8 version (1)
  *   8 block type (3)
  *   8 checksum algorithm (2)
+ *   8 encryption algorithm (0)
  *   8 compression algorithm (3)
- *  16 unused
  *  16 range (12)
+ *  16 allocated size (11)
  *  32 logical size (20)
  *  32 physical size (20)
- *  64 offset
+ *  64 block index
  *  64 transaction id
  * 128 initialization vector
  * 128 checksum
@@ -50,9 +50,10 @@ public class BlockPointer implements Serializable
 	private int mCompressionAlgorithm;
 	private int mEncryptionAlgorithm;
 	private int mRange;
+	private int mAllocatedSize;
 	private int mLogicalSize;
 	private int mPhysicalSize;
-	private long mOffset;
+	private long mBlockIndex;
 	private long mTransactionId;
 	private long mChecksum0;
 	private long mChecksum1;
@@ -99,9 +100,16 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public int getRange()
+	public int getAllocatedSize()
 	{
-		return mRange;
+		return mAllocatedSize;
+	}
+
+
+	public BlockPointer setAllocatedSize(int aAllocSize)
+	{
+		mAllocatedSize = aAllocSize;
+		return this;
 	}
 
 
@@ -111,9 +119,16 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public void setLogicalSize(int aLogicalSize)
+	public BlockPointer setLogicalSize(int aLogicalSize)
 	{
 		mLogicalSize = aLogicalSize;
+		return this;
+	}
+
+
+	public int getRange()
+	{
+		return mRange;
 	}
 
 
@@ -124,15 +139,15 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public long getOffset()
+	public long getBlockIndex()
 	{
-		return mOffset;
+		return mBlockIndex;
 	}
 
 
-	public BlockPointer setOffset(long aOffset)
+	public BlockPointer setBlockIndex(long aBlockIndex)
 	{
-		mOffset = aOffset;
+		mBlockIndex = aBlockIndex;
 		return this;
 	}
 
@@ -230,24 +245,26 @@ public class BlockPointer implements Serializable
 
 	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer)
 	{
-		assert mBlockType >= 0 && mBlockType < 16;
-		assert mChecksumAlgorithm >= 0 && mChecksumAlgorithm < 16;
-		assert mCompressionAlgorithm >= 0 && mCompressionAlgorithm < 16;
+		assert mBlockType >= 0 && mBlockType < 256;
+		assert mChecksumAlgorithm >= 0 && mChecksumAlgorithm < 256;
+		assert mCompressionAlgorithm >= 0 && mCompressionAlgorithm < 256;
+		assert mEncryptionAlgorithm >= 0 && mEncryptionAlgorithm < 256;
 		assert mRange >= 0 && mRange < 65536;
+		assert mAllocatedSize >= 0 && mAllocatedSize < 65536;
 		assert mPhysicalSize >= 0;
 		assert mLogicalSize >= 0;
-		assert mOffset >= 0 && mOffset < Integer.MAX_VALUE;
-		assert mTransactionId >= 0 && mTransactionId < Integer.MAX_VALUE;
+		assert mBlockIndex >= 0;
+		assert mTransactionId >= 0;
 
 		aBuffer.writeInt8(mBlockType);
 		aBuffer.writeInt8(mChecksumAlgorithm);
 		aBuffer.writeInt8(mEncryptionAlgorithm);
 		aBuffer.writeInt8(mCompressionAlgorithm);
-		aBuffer.writeInt16(0);
 		aBuffer.writeInt16(mRange);
+		aBuffer.writeInt16(mAllocatedSize);
 		aBuffer.writeInt32(mLogicalSize);
 		aBuffer.writeInt32(mPhysicalSize);
-		aBuffer.writeInt64(mOffset);
+		aBuffer.writeInt64(mBlockIndex);
 		aBuffer.writeInt64(mTransactionId);
 		aBuffer.writeInt64(mIV0);
 		aBuffer.writeInt64(mIV1);
@@ -266,11 +283,11 @@ public class BlockPointer implements Serializable
 		mChecksumAlgorithm = aBuffer.readInt8();
 		mEncryptionAlgorithm = aBuffer.readInt8();
 		mCompressionAlgorithm = aBuffer.readInt8();
-		aBuffer.skip(2);
 		mRange = aBuffer.readInt16();
+		mAllocatedSize = aBuffer.readInt16();
 		mLogicalSize = aBuffer.readInt32();
 		mPhysicalSize = aBuffer.readInt32();
-		mOffset = aBuffer.readInt64();
+		mBlockIndex = aBuffer.readInt64();
 		mTransactionId = aBuffer.readInt64();
 		mIV0 = aBuffer.readInt64();
 		mIV1 = aBuffer.readInt64();
@@ -302,7 +319,7 @@ public class BlockPointer implements Serializable
 	@Override
 	public int hashCode()
 	{
-		return (int)(mOffset ^ (mOffset >>> 32));
+		return (int)(mBlockIndex ^ (mBlockIndex >>> 32));
 	}
 
 
@@ -311,7 +328,7 @@ public class BlockPointer implements Serializable
 	{
 		if (aBlockPointer instanceof BlockPointer)
 		{
-			return ((BlockPointer)aBlockPointer).getOffset() == mOffset;
+			return ((BlockPointer)aBlockPointer).getBlockIndex() == mBlockIndex;
 		}
 		return false;
 	}
@@ -320,6 +337,6 @@ public class BlockPointer implements Serializable
 	@Override
 	public String toString()
 	{
-		return "{type=" + getBlockType() + ", offset=" + mOffset + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRange + ", tx=" + mTransactionId + ")";
+		return "{type=" + getBlockType() + ", offset=" + mBlockIndex + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRange + ", tx=" + mTransactionId + ")";
 	}
 }
