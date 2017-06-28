@@ -16,7 +16,7 @@ public class LazyWriteCacheNGTest
 		LazyWriteCache cache = new LazyWriteCache(device, 4);
 		for (int i = 0; i < 10; i++)
 		{
-			cache.writeBlock(i, createRandomBuffer(i, 512), 0, 512, 0L, 0L);
+			cache.writeBlock(i, createRandomBuffer(i, 512), 0, 512, new long[2]);
 		}
 
 		assertEquals(6, device.length()); // cached blocks are not yet written
@@ -24,7 +24,7 @@ public class LazyWriteCacheNGTest
 		byte[] buffer = new byte[512];
 		for (int i = 0; i < 10; i++)
 		{
-			cache.readBlock(i, buffer, 0, 512, 0L, 0L);
+			cache.readBlock(i, buffer, 0, 512, new long[2]);
 			assertTrue(verifyRandomBuffer(i, buffer));
 		}
 

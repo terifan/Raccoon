@@ -685,7 +685,7 @@ public class DatabaseNGTest
 	public void testUnsupportedData() throws Exception
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		blockDevice.writeBlock(0, new byte[512], 0, 512, 0L, 0L);
+		blockDevice.writeBlock(0, new byte[512], 0, 512, new long[2]);
 
 		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(100)))
 		{
@@ -1087,9 +1087,9 @@ public class DatabaseNGTest
 		}
 
 		byte[] buffer = new byte[512];
-		device.readBlock(100, buffer, 0, buffer.length, 0L, 0L);
+		device.readBlock(100, buffer, 0, buffer.length, new long[2]);
 		buffer[0] ^= 1;
-		device.writeBlock(100, buffer, 0, buffer.length, 0L, 0L);
+		device.writeBlock(100, buffer, 0, buffer.length, new long[2]);
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{

@@ -23,8 +23,9 @@ public class SpaceMapIO
 
 		RangeMap rangeMap = new RangeMap();
 
-		if (blockPointer.getAllocatedSize() == 0) // all blocks are free in this device
+		if (blockPointer.getAllocatedSize() == 0)
 		{
+			// all blocks are free in this device
 			rangeMap.add(0, Integer.MAX_VALUE);
 		}
 		else
@@ -36,16 +37,15 @@ public class SpaceMapIO
 
 			ByteArrayBuffer buffer = new ByteArrayBuffer(blockSize * blockPointer.getAllocatedSize());
 
-			aBlockDeviceDirect.readBlock(blockPointer.getBlockIndex(), buffer.array(), 0, blockSize * blockPointer.getAllocatedSize(), blockPointer.getIV0(), blockPointer.getIV1());
+			aBlockDeviceDirect.readBlock(blockPointer.getBlockIndex(), buffer.array(), 0, blockSize * blockPointer.getAllocatedSize(), blockPointer.getIV());
 
 			long[] hash = MurmurHash3.hash_x64_128(buffer.array(), 0, blockPointer.getLogicalSize(), 0L);
 
-			if (hash[0] != blockPointer.getChecksum0() || hash[1] != blockPointer.getChecksum1())
+			if (!blockPointer.verifyChecksum(hash))
 			{
 				throw new IOException("Checksum error at block index ");
 			}
 
-			buffer.position(0);
 			buffer.limit(blockPointer.getLogicalSize());
 
 			rangeMap.unmarshal(buffer);
@@ -77,25 +77,18 @@ public class SpaceMapIO
 
 		aRangeMap.marshal(buffer);
 
-		long[] hash = MurmurHash3.hash_x64_128(buffer.array(), 0, buffer.position(), 0L);
-
-		// Allocate space for the new space map block
 		blockPointer.setBlockType(BlockType.SPACEMAP);
 		blockPointer.setAllocatedSize((buffer.position() + blockSize - 1) / blockSize);
 		blockPointer.setBlockIndex(aBlockDevice.allocBlockInternal(blockPointer.getAllocatedSize()));
 		blockPointer.setLogicalSize(buffer.position());
 		blockPointer.setPhysicalSize(blockSize * blockPointer.getAllocatedSize());
-		blockPointer.setChecksum0(hash[0]);
-		blockPointer.setChecksum1(hash[1]);
-		blockPointer.setIV0(ISAAC.PRNG.nextLong());
-		blockPointer.setIV1(ISAAC.PRNG.nextLong());
+		blockPointer.setChecksum(MurmurHash3.hash_x64_128(buffer.array(), 0, buffer.position(), 0L));
+		blockPointer.setIV(ISAAC.PRNG.nextLong(), ISAAC.PRNG.nextLong());
 
 		// Pad buffer to block size
 		buffer.capacity(blockSize * blockPointer.getAllocatedSize());
 
-		buffer.position(0);
-
-		aBlockDeviceDirect.writeBlock(blockPointer.getBlockIndex(), buffer.array(), 0, buffer.capacity(), blockPointer.getIV0(), blockPointer.getIV1());
+		aBlockDeviceDirect.writeBlock(blockPointer.getBlockIndex(), buffer.array(), 0, buffer.capacity(), blockPointer.getIV());
 
 		Log.dec();
 	}

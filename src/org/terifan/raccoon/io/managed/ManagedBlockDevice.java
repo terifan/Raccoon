@@ -28,8 +28,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	 * Create/open a ManagedBlockDevice with an user defined label.
 	 *
 	 * @param aBlockDeviceLabel
-	 *   a label describing contents of the block device. If a non-null value is provided then this value must match the value found inside
-	 *   the block device opened or an exception is thrown.
+	 * a label describing contents of the block device. If a non-null value is provided then this value must match the value found inside
+	 * the block device opened or an exception is thrown.
 	 */
 	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice, String aBlockDeviceLabel, int aLazyWriteCacheSize) throws IOException
 	{
@@ -43,8 +43,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mBlockSize = aBlockDevice.getBlockSize();
 		mWasCreated = mBlockDevice.length() < RESERVED_BLOCKS;
 		mUncommittedAllocations = new HashSet<>();
-		mDoubleCommit = true;
 		mLazyWriteCache = new LazyWriteCache(mBlockDevice, aLazyWriteCacheSize);
+		mDoubleCommit = true;
 
 		init();
 	}
@@ -247,7 +247,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException
+	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -258,11 +258,11 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			throw new IOException("Illegal buffer length: " + aBlockIndex);
 		}
 
-		writeBlockInternal(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV0, aIV1);
+		writeBlockInternal(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
 	}
 
 
-	private void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException
+	private void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
 	{
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;
@@ -277,14 +277,14 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		mModified = true;
 
-		mLazyWriteCache.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV0, aIV1);
+		mLazyWriteCache.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
 
 		Log.dec();
 	}
 
 
 	@Override
-	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException
+	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -295,11 +295,11 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			throw new IOException("Illegal buffer length: " + aBlockIndex);
 		}
 
-		readBlockInternal(aBlockIndex + RESERVED_BLOCKS, aBuffer, aBufferOffset, aBufferLength, aIV0, aIV1);
+		readBlockInternal(aBlockIndex + RESERVED_BLOCKS, aBuffer, aBufferOffset, aBufferLength, aIV);
 	}
 
 
-	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException
+	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
 	{
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;
@@ -309,10 +309,10 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			throw new IOException("Range not allocted: " + aBlockIndex + " +" + (aBufferLength / mBlockSize));
 		}
 
-		Log.d("read block %d +%d", aBlockIndex, aBufferLength/mBlockSize);
+		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 		Log.inc();
 
-		mLazyWriteCache.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV0, aIV1);
+		mLazyWriteCache.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
 
 		Log.dec();
 	}
@@ -391,7 +391,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		if (!(mBlockDeviceLabel == null || mBlockDeviceLabel.isEmpty() && superBlockOne.mBlockDeviceLabel.isEmpty() || mBlockDeviceLabel.equals(superBlockOne.mBlockDeviceLabel)))
 		{
-			throw new UnsupportedVersionException("Block device label don't match: was " + (superBlockOne.mBlockDeviceLabel.isEmpty()?"<empty>" : superBlockOne.mBlockDeviceLabel) + ", expected " + (mBlockDeviceLabel.isEmpty()?"<empty>" : mBlockDeviceLabel));
+			throw new UnsupportedVersionException("Block device label don't match: was " + (superBlockOne.mBlockDeviceLabel.isEmpty() ? "<empty>" : superBlockOne.mBlockDeviceLabel) + ", expected " + (mBlockDeviceLabel.isEmpty() ? "<empty>" : mBlockDeviceLabel));
 		}
 
 		if (superBlockOne.mWriteCounter == superBlockTwo.mWriteCounter + 1)

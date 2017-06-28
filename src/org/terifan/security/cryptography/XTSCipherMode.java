@@ -1,5 +1,7 @@
 package org.terifan.security.cryptography;
 
+import static org.terifan.raccoon.util.ByteArrayUtil.*;
+
 
 /**
  * This is an implementation of the XTS cipher mode with a modified IV initialization.
@@ -16,9 +18,8 @@ public final class XTSCipherMode extends CipherMode
 
 
 	@Override
-	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long aIV0, final long aIV1)
+	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV)
 	{
-//		assert (aUnitSize & -aUnitSize) == aUnitSize;
 		assert (aUnitSize & (BYTES_PER_BLOCK - 1)) == 0;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
 		assert aLength >= aUnitSize : aLength+" >= "+aUnitSize;
@@ -30,7 +31,7 @@ public final class XTSCipherMode extends CipherMode
 
 		for (int unitIndex = 0, offset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aMasterIV, aIV0, aIV1, unitIndex, whiteningValue);
+			prepareIV(aMasterIV, aBlockIV, unitIndex, whiteningValue);
 
 			for (int block = 0; block < numBlocks; block++, offset += BYTES_PER_BLOCK)
 			{
@@ -42,14 +43,14 @@ public final class XTSCipherMode extends CipherMode
 
 				int finalCarry = ((whiteningValue[8 + 7] & 0x80) != 0) ? 135 : 0;
 
-				putLong(whiteningValue, 8, getLong(whiteningValue, 8) << 1);
+				putLongLE(whiteningValue, 8, getLongLE(whiteningValue, 8) << 1);
 
 				if ((whiteningValue[7] & 0x80) != 0)
 				{
 					whiteningValue[8] |= 0x01;
 				}
 
-				putLong(whiteningValue, 0, getLong(whiteningValue, 0) << 1);
+				putLongLE(whiteningValue, 0, getLongLE(whiteningValue, 0) << 1);
 
 				whiteningValue[0] ^= finalCarry;
 			}
@@ -58,9 +59,8 @@ public final class XTSCipherMode extends CipherMode
 
 
 	@Override
-	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long aIV0, final long aIV1)
+	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV)
 	{
-//		assert (aUnitSize & -aUnitSize) == aUnitSize;
 		assert (aUnitSize & (BYTES_PER_BLOCK - 1)) == 0;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
 		assert aLength >= aUnitSize;
@@ -72,7 +72,7 @@ public final class XTSCipherMode extends CipherMode
 
 		for (int unitIndex = 0, offset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aMasterIV, aIV0, aIV1, unitIndex, whiteningValue);
+			prepareIV(aMasterIV, aBlockIV, unitIndex, whiteningValue);
 
 			for (int block = 0; block < numBlocks; block++, offset += BYTES_PER_BLOCK)
 			{
@@ -84,14 +84,14 @@ public final class XTSCipherMode extends CipherMode
 
 				int finalCarry = (whiteningValue[8 + 7] & 0x80) != 0 ? 135 : 0;
 
-				putLong(whiteningValue, 8, getLong(whiteningValue, 8) << 1);
+				putLongLE(whiteningValue, 8, getLongLE(whiteningValue, 8) << 1);
 
 				if ((whiteningValue[7] & 0x80) != 0)
 				{
 					whiteningValue[8] |= 0x01;
 				}
 
-				putLong(whiteningValue, 0, getLong(whiteningValue, 0) << 1);
+				putLongLE(whiteningValue, 0, getLongLE(whiteningValue, 0) << 1);
 
 				whiteningValue[0] ^= finalCarry;
 			}

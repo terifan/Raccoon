@@ -33,9 +33,9 @@ class LazyWriteCache
 	}
 
 
-	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException
+	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
 	{
-		CacheEntry entry = new CacheEntry(aBlockIndex, Arrays.copyOfRange(aBuffer, aBufferOffset, aBufferOffset + aBufferLength), aIV0, aIV1);
+		CacheEntry entry = new CacheEntry(aBlockIndex, Arrays.copyOfRange(aBuffer, aBufferOffset, aBufferOffset + aBufferLength), aIV);
 
 		mCache.put(aBlockIndex, entry);
 
@@ -53,21 +53,21 @@ class LazyWriteCache
 			{
 				entry = mCache.remove(mCacheOrder.removeLast());
 
-				mBlockDevice.writeBlock(entry.mBlockIndex, entry.mBuffer, 0, entry.mBuffer.length, entry.mIV0, entry.mIV1);
+				mBlockDevice.writeBlock(entry.mBlockIndex, entry.mBuffer, 0, entry.mBuffer.length, entry.mIV);
 			}
 		}
 	}
 
 
-	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long aIV0, long aIV1) throws IOException
+	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
 	{
 		CacheEntry entry = mCache.get(aBlockIndex);
 
 		if (entry != null)
 		{
 			assert entry.mBuffer.length == aBufferLength : entry.mBuffer.length + " == " + aBufferLength;
-			assert entry.mIV0 == aIV0 : entry.mIV0 + " == " + aIV0;
-			assert entry.mIV1 == aIV1 : entry.mIV1 + " == " + aIV1;
+			assert entry.mIV[0] == aIV[0] : entry.mIV[0] + " == " + aIV[0];
+			assert entry.mIV[1] == aIV[1] : entry.mIV[1] + " == " + aIV[1];
 
 			System.arraycopy(entry.mBuffer, 0, aBuffer, aBufferOffset, aBufferLength);
 
@@ -86,7 +86,7 @@ class LazyWriteCache
 		{
 			assert increment(LAZY_WRITE_CACHE_READ);
 
-			mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV0, aIV1);
+			mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
 		}
 	}
 
@@ -102,7 +102,7 @@ class LazyWriteCache
 	{
 		for (CacheEntry entry : mCache.values())
 		{
-			mBlockDevice.writeBlock(entry.mBlockIndex, entry.mBuffer, 0, entry.mBuffer.length, entry.mIV0, entry.mIV1);
+			mBlockDevice.writeBlock(entry.mBlockIndex, entry.mBuffer, 0, entry.mBuffer.length, entry.mIV);
 		}
 
 		clear();
@@ -112,18 +112,15 @@ class LazyWriteCache
 	private static class CacheEntry
 	{
 		long mBlockIndex;
-		long mIV0;
-		long mIV1
-			;
+		long[] mIV;
 		byte[] mBuffer;
 
 
-		public CacheEntry(long aBlockIndex, byte[] aBuffer, long aIV0, long aIV1)
+		public CacheEntry(long aBlockIndex, byte[] aBuffer, long[] aIV)
 		{
 			mBlockIndex = aBlockIndex;
 			mBuffer = aBuffer;
-			mIV0 = aIV0;
-			mIV1 = aIV1;
+			mIV = aIV;
 		}
 	}
 }

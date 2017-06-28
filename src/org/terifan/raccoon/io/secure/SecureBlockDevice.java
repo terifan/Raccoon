@@ -14,6 +14,7 @@ import static java.util.Arrays.fill;
 import org.terifan.security.cryptography.BitScrambler;
 import org.terifan.security.cryptography.CipherMode;
 import org.terifan.security.cryptography.ISAAC;
+import static org.terifan.raccoon.util.ByteArrayUtil.*;
 
 
 /**
@@ -119,7 +120,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		}
 
 		aDevice.mCipher = cipher;
-		aDevice.mBlockDevice.writeBlock(aBlockIndex, blockData, 0, blockData.length, 0L, 0L);
+		aDevice.mBlockDevice.writeBlock(aBlockIndex, blockData, 0, blockData.length, new long[2]);
 	}
 
 
@@ -149,7 +150,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		BitScrambler.scramble(scrambleKey0, payload);
 
 		CipherImplementation cipher = new CipherImplementation(aAccessCredentials.getCipherModeFunction(), aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
-		cipher.encrypt(aBlockIndex, payload, 0, PAYLOAD_SIZE, 0L, 0L);
+		cipher.encrypt(aBlockIndex, payload, 0, PAYLOAD_SIZE, new long[2]);
 
 		BitScrambler.scramble(scrambleKey1, payload);
 
@@ -194,7 +195,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		try
 		{
-			device.mBlockDevice.readBlock(aBlockIndex, blockData, 0, blockData.length, 0L, 0L);
+			device.mBlockDevice.readBlock(aBlockIndex, blockData, 0, blockData.length, new long[2]);
 		}
 		catch (Exception e)
 		{
@@ -237,7 +238,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 					// decrypt payload using the user key
 					CipherImplementation cipher = new CipherImplementation(cipherMode, encryption, userKeyPool, 0, PAYLOAD_SIZE);
-					cipher.decrypt(aBlockIndex, payloadCopy, 0, PAYLOAD_SIZE, 0L, 0L);
+					cipher.decrypt(aBlockIndex, payloadCopy, 0, PAYLOAD_SIZE, new long[2]);
 
 					BitScrambler.unscramble(scrambleKey1, payloadCopy);
 
@@ -279,7 +280,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 
 	@Override
-	public void writeBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long aIV0, final long aIV1) throws IOException
+	public void writeBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long[] aIV) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -291,16 +292,16 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		byte[] workBuffer = aBuffer.clone();
 
-		mCipher.encrypt(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, aIV0, aIV1);
+		mCipher.encrypt(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, aIV);
 
-		mBlockDevice.writeBlock(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, 0L, 0L); // block key is used by this blockdevice and not passed to lower levels
+		mBlockDevice.writeBlock(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, new long[2]); // block key is used by this blockdevice and not passed to lower levels
 
 		Log.dec();
 	}
 
 
 	@Override
-	public void readBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long aIV0, final long aIV1) throws IOException
+	public void readBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long[] aIV) throws IOException
 	{
 		if (aBlockIndex < 0)
 		{
@@ -310,9 +311,9 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
 		Log.inc();
 
-		mBlockDevice.readBlock(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L, 0L); // block key is used by this blockdevice and not passed to lower levels
+		mBlockDevice.readBlock(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, new long[2]); // block key is used by this blockdevice and not passed to lower levels
 
-		mCipher.decrypt(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV0, aIV1);
+		mCipher.decrypt(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
 
 		Log.dec();
 	}
@@ -334,17 +335,20 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		byte[] workBuffer = aBuffer.clone();
 
-		long iv0 = ISAAC.PRNG.nextLong();
-		long iv1 = ISAAC.PRNG.nextLong();
+		long[] iv = 
+		{
+			ISAAC.PRNG.nextLong(), 
+			ISAAC.PRNG.nextLong()
+		};
 
-		putLong(workBuffer, workBuffer.length - 16, iv0);
-		putLong(workBuffer, workBuffer.length - 8, iv1);
+		putLong(workBuffer, workBuffer.length - 16, iv[0]);
+		putLong(workBuffer, workBuffer.length - 8, iv[1]);
 
-		mCipher.encrypt(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength - 16, iv0, iv1);
+		mCipher.encrypt(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength - 16, iv);
 
 		mCipher.mTweakCipher.engineEncryptBlock(workBuffer, workBuffer.length-16, workBuffer, workBuffer.length-16);
 
-		mBlockDevice.writeBlock(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, 0L, 0L); // block key is used by this blockdevice and not passed to lower levels
+		mBlockDevice.writeBlock(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength, new long[2]); // block key is used by this blockdevice and not passed to lower levels
 
 		Log.dec();
 	}
@@ -360,14 +364,17 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
 		Log.inc();
 
-		mBlockDevice.readBlock(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, 0L, 0L); // block key is used by this blockdevice and not passed to lower levels
+		mBlockDevice.readBlock(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, new long[2]); // block key is used by this blockdevice and not passed to lower levels
 
 		mCipher.mTweakCipher.engineDecryptBlock(aBuffer, aBuffer.length-16, aBuffer, aBuffer.length-16);
 
-		long iv0 = getLong(aBuffer, aBuffer.length - 16);
-		long iv1 = getLong(aBuffer, aBuffer.length - 8);
+		long[] iv = 
+		{
+			getLong(aBuffer, aBuffer.length - 16),
+			getLong(aBuffer, aBuffer.length - 8)
+		};
 
-		mCipher.decrypt(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength - 16, iv0, iv1);
+		mCipher.decrypt(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength - 16, iv);
 
 		Arrays.fill(aBuffer, aBuffer.length - 16, aBuffer.length, (byte)0);
 
@@ -420,58 +427,6 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	private static int getInt(byte [] aBuffer, int aPosition)
-	{
-		return    ((aBuffer[aPosition++] & 255) << 24)
-				+ ((aBuffer[aPosition++] & 255) << 16)
-				+ ((aBuffer[aPosition++] & 255) <<  8)
-				+ ((aBuffer[aPosition  ] & 255)      );
-	}
-
-
-	private static void putInt(byte [] aBuffer, int aPosition, int aValue)
-	{
-		aBuffer[aPosition++] = (byte)(aValue >>> 24);
-		aBuffer[aPosition++] = (byte)(aValue >>  16);
-		aBuffer[aPosition++] = (byte)(aValue >>   8);
-		aBuffer[aPosition  ] = (byte)(aValue       );
-	}
-
-
-	private static byte[] getBytes(byte[] aBuffer, int aOffset, int aLength)
-	{
-		byte[] buf = new byte[aLength];
-		System.arraycopy(aBuffer, aOffset, buf, 0, aLength);
-		return buf;
-	}
-
-
-	private static void putLong(byte[] aBuffer, int aOffset, long aValue)
-	{
-		aBuffer[aOffset + 7] = (byte)(aValue >>> 0);
-		aBuffer[aOffset + 6] = (byte)(aValue >>> 8);
-		aBuffer[aOffset + 5] = (byte)(aValue >>> 16);
-		aBuffer[aOffset + 4] = (byte)(aValue >>> 24);
-		aBuffer[aOffset + 3] = (byte)(aValue >>> 32);
-		aBuffer[aOffset + 2] = (byte)(aValue >>> 40);
-		aBuffer[aOffset + 1] = (byte)(aValue >>> 48);
-		aBuffer[aOffset + 0] = (byte)(aValue >>> 56);
-	}
-
-
-	private static long getLong(byte[] aBuffer, int aOffset)
-	{
-		return ((255 & aBuffer[aOffset + 7]))
-			+ ((255 & aBuffer[aOffset + 6]) << 8)
-			+ ((255 & aBuffer[aOffset + 5]) << 16)
-			+ ((long)(255 & aBuffer[aOffset + 4]) << 24)
-			+ ((long)(255 & aBuffer[aOffset + 3]) << 32)
-			+ ((long)(255 & aBuffer[aOffset + 2]) << 40)
-			+ ((long)(255 & aBuffer[aOffset + 1]) << 48)
-			+ ((long)(255 & aBuffer[aOffset + 0]) << 56);
-	}
-
-
 	protected void validateBootBlocks(AccessCredentials aAccessCredentials) throws IOException
 	{
 		byte[] original = new byte[mBlockDevice.getBlockSize()];
@@ -493,13 +448,13 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 			if (i == 0)
 			{
-				cipher.encrypt(0, encypted, 0, original.length, 0L, 0L);
+				cipher.encrypt(0, encypted, 0, original.length, new long[2]);
 			}
 			else
 			{
 				byte[] decrypted = encypted.clone();
 
-				cipher.decrypt(0, decrypted, 0, original.length, 0L, 0L);
+				cipher.decrypt(0, decrypted, 0, original.length, new long[2]);
 
 				if (!Arrays.equals(original, decrypted))
 				{
@@ -547,20 +502,20 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		}
 
 
-		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aIV0, final long aIV1)
+		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long[] aIV)
 		{
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, Math.min(mUnitSize, aLength), mIV[i], aIV0, aIV1);
+				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, Math.min(mUnitSize, aLength), mIV[i], aIV);
 			}
 		}
 
 
-		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long aIV0, final long aIV1)
+		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long[] aIV)
 		{
 			for (int i = mCiphers.length; --i >= 0; )
 			{
-				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, Math.min(mUnitSize, aLength), mIV[i], aIV0, aIV1);
+				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, Math.min(mUnitSize, aLength), mIV[i], aIV);
 			}
 		}
 

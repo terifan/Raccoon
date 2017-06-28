@@ -26,7 +26,7 @@ final class SuperBlockIO
 		}
 		else
 		{
-			aBlockDevice.readBlock(aBlockIndex, buffer.array(), 0, buffer.capacity(), 0L, 0L);
+			aBlockDevice.readBlock(aBlockIndex, buffer.array(), 0, buffer.capacity(), new long[2]);
 		}
 
 		long[] hash = MurmurHash3.hash_x64_128(buffer.array(), CHECKSUM_SIZE, blockSize - CHECKSUM_SIZE - IV_SIZE, aBlockIndex);
@@ -83,7 +83,7 @@ final class SuperBlockIO
 		}
 		else
 		{
-			aBlockDevice.writeBlock(aBlockIndex, buffer.array(), 0, blockSize, 0L, 0L);
+			aBlockDevice.writeBlock(aBlockIndex, buffer.array(), 0, blockSize, new long[2]);
 		}
 	}
 }

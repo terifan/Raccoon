@@ -1,16 +1,20 @@
 <!DOCTYPE html>
 <html>
 	<style>
+		html{
+			font-family: arial;
+		}
 		table{
-			border:1px solid black;
-			border-spacing: 0px;
-			border-collapse: collapse;
-			background:#f8f8f8;
+			background: #f8f8f8;
+		}
+		table td, table th{
+			text-align: center;
+			padding: 1px 4px;
 		}
 	</style>
 	<body>
 		<h1>Boot Block</h1>
-		<table border="1">
+		<table border="1" cellspacing="0">
 			<tr>
 				<th>Plaintext</th>
 				<th colspan="5">Encrypted with user key</th>
@@ -23,9 +27,9 @@
 			</tr>
 			<tr>
 				<td>Checksum</td>
-				<td>Tweak cipher key</td>
-				<td>Data cipher key</td>
-				<td>Cipher IV</td>
+				<td>Tweak key</td>
+				<td>Data key</td>
+				<td>IV</td>
 				<td>Padding</td>
 			</tr>
 			<tr>
@@ -40,7 +44,7 @@
 		</table>
 
 		<h1>Super Block</h1>
-		<table border="1">
+		<table border="1" cellspacing="0">
 			<tr>
 				<th colspan="10">Encrypted with data key</th>
 				<th>Encrypted with tweak key</th>
@@ -51,15 +55,15 @@
 				<th rowspan="2">IV</th>
 			</tr>
 			<tr>
-				<td>format version</td>
-				<td>created</td>
-				<td>last updated</td>
-				<td>transaction id</td>
-				<td>space map block pointer</td>
-				<td>label length</td>
-				<td>label</td>
-				<td>extra length</td>
-				<td>extra</td>
+				<td>Format version</td>
+				<td>Create time</td>
+				<td>Update time</td>
+				<td>Transaction id</td>
+				<td>Space map block pointer</td>
+				<td>Label length</td>
+				<td>Label</td>
+				<td>Extra length</td>
+				<td>Extra</td>
 			</tr>
 			<tr>
 				<td>16</td>
@@ -77,20 +81,20 @@
 		</table>
 
 		<h1>Block Pointer</h1>
-		<table border="1">
+		<table border="1" cellspacing="0">
 			<tr>
-				<td>block type</td>
-				<td>checksum type</td>
-				<td>encryption type</td>
-				<td>compression type</td>
-				<td>range</td>
-				<td>allocated size</td>
-				<td>logical size</td>
-				<td>physical size</td>
-				<td>block index</td>
-				<td>transaction group</td>
+				<td>Block type</td>
+				<td>Checksum type</td>
+				<td>Encryption type</td>
+				<td>Compression type</td>
+				<td>Range</td>
+				<td>Allocated size</td>
+				<td>Logical size</td>
+				<td>Physical size</td>
+				<td>Block index</td>
+				<td>Transaction group</td>
 				<td>IV</td>
-				<td>checksum</td>
+				<td>Checksum</td>
 			</tr>
 			<tr>
 				<td>1</td>

@@ -23,10 +23,15 @@ public class BlockPointer implements Serializable
 	private int mPhysicalSize;
 	private long mBlockIndex;
 	private long mTransactionId;
-	private long mChecksum0;
-	private long mChecksum1;
-	private long mIV0;
-	private long mIV1;
+	private long[] mChecksum;
+	private long[] mIV;
+
+
+	public BlockPointer()
+	{
+		mIV = new long[2];
+		mChecksum = new long[2];
+	}
 
 
 	public int getChecksumAlgorithm()
@@ -133,28 +138,15 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public long getChecksum0()
+	public long[] getChecksum()
 	{
-		return mChecksum0;
+		return mChecksum;
 	}
 
 
-	public BlockPointer setChecksum0(long aChecksum)
+	public BlockPointer setChecksum(long[] aChecksum)
 	{
-		mChecksum0 = aChecksum;
-		return this;
-	}
-
-
-	public long getChecksum1()
-	{
-		return mChecksum1;
-	}
-
-
-	public BlockPointer setChecksum1(long aChecksum)
-	{
-		mChecksum1 = aChecksum;
+		mChecksum = aChecksum;
 		return this;
 	}
 
@@ -172,28 +164,16 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public long getIV0()
+	public long[] getIV()
 	{
-		return mIV0;
+		return mIV;
 	}
 
 
-	public BlockPointer setIV0(long aIV0)
+	public BlockPointer setIV(long aIV0, long aIV1)
 	{
-		mIV0 = aIV0;
-		return this;
-	}
-
-
-	public long getIV1()
-	{
-		return mIV1;
-	}
-
-
-	public BlockPointer setIV1(long aIV1)
-	{
-		mIV1 = aIV1;
+		mIV[0] = aIV0;
+		mIV[1] = aIV1;
 		return this;
 	}
 
@@ -234,10 +214,10 @@ public class BlockPointer implements Serializable
 		aBuffer.writeInt32(mPhysicalSize);
 		aBuffer.writeInt64(mBlockIndex);
 		aBuffer.writeInt64(mTransactionId);
-		aBuffer.writeInt64(mIV0);
-		aBuffer.writeInt64(mIV1);
-		aBuffer.writeInt64(mChecksum0);
-		aBuffer.writeInt64(mChecksum1);
+		aBuffer.writeInt64(mIV[0]);
+		aBuffer.writeInt64(mIV[1]);
+		aBuffer.writeInt64(mChecksum[0]);
+		aBuffer.writeInt64(mChecksum[1]);
 
 		assert PerformanceCounters.increment(POINTER_ENCODE);
 
@@ -257,14 +237,20 @@ public class BlockPointer implements Serializable
 		mPhysicalSize = aBuffer.readInt32();
 		mBlockIndex = aBuffer.readInt64();
 		mTransactionId = aBuffer.readInt64();
-		mIV0 = aBuffer.readInt64();
-		mIV1 = aBuffer.readInt64();
-		mChecksum0 = aBuffer.readInt64();
-		mChecksum1 = aBuffer.readInt64();
+		mIV[0] = aBuffer.readInt64();
+		mIV[1] = aBuffer.readInt64();
+		mChecksum[0] = aBuffer.readInt64();
+		mChecksum[1] = aBuffer.readInt64();
 
 		assert PerformanceCounters.increment(POINTER_DECODE);
 
 		return this;
+	}
+
+
+	public boolean verifyChecksum(long[] aChecksum)
+	{
+		return aChecksum[0] == mChecksum[0] && aChecksum[1] == mChecksum[1];
 	}
 
 

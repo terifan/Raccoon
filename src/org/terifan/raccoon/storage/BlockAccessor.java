@@ -97,11 +97,11 @@ public class BlockAccessor
 
 			byte[] buffer = new byte[roundUp(aBlockPointer.getPhysicalSize())];
 
-			mBlockDevice.readBlock(aBlockPointer.getBlockIndex(), buffer, 0, buffer.length, aBlockPointer.getIV0(), aBlockPointer.getIV1());
+			mBlockDevice.readBlock(aBlockPointer.getBlockIndex(), buffer, 0, buffer.length, aBlockPointer.getIV());
 
 			long[] hash = MurmurHash3.hash_x64_128(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getBlockIndex());
 
-			if (hash[0] != aBlockPointer.getChecksum0() || hash[1] != aBlockPointer.getChecksum1())
+			if (!aBlockPointer.verifyChecksum(hash))
 			{
 				throw new IOException("Checksum error in block " + aBlockPointer);
 			}
@@ -181,15 +181,13 @@ public class BlockAccessor
 			blockPointer.setTransactionId(aTransactionId);
 			blockPointer.setBlockType(aType);
 			blockPointer.setRange(aRange);
-			blockPointer.setChecksum0(hash[0]);
-			blockPointer.setChecksum1(hash[1]);
-			blockPointer.setIV0(ISAAC.PRNG.nextLong());
-			blockPointer.setIV1(ISAAC.PRNG.nextLong());
+			blockPointer.setChecksum(hash);
+			blockPointer.setIV(ISAAC.PRNG.nextLong(),ISAAC.PRNG.nextLong());
 
 			Log.d("write block %s", blockPointer);
 			Log.inc();
 
-			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getIV0(), blockPointer.getIV1());
+			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getIV());
 
 			assert PerformanceCounters.increment(BLOCK_ALLOC);
 			assert PerformanceCounters.increment(BLOCK_WRITE);

@@ -1,5 +1,7 @@
 package org.terifan.security.cryptography;
 
+import static org.terifan.raccoon.util.ByteArrayUtil.*;
+
 
 public final class PCBCCipherMode extends CipherMode
 {
@@ -12,9 +14,9 @@ public final class PCBCCipherMode extends CipherMode
 
 
 	@Override
-	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long aIV0, final long aIV1)
+	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV)
 	{
-		assert (aUnitSize & -aUnitSize) == aUnitSize;
+		assert (aUnitSize & (BYTES_PER_BLOCK - 1)) == 0;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
 		assert aLength >= aUnitSize;
 		assert (aLength % aUnitSize) == 0;
@@ -25,7 +27,7 @@ public final class PCBCCipherMode extends CipherMode
 
 		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aMasterIV, aIV0, aIV1, bufferOffset, iv);
+			prepareIV(aMasterIV, aBlockIV, bufferOffset, iv);
 
 			for (int block = 0; block < numBlocks; block++, bufferOffset += BYTES_PER_BLOCK)
 			{
@@ -44,9 +46,9 @@ public final class PCBCCipherMode extends CipherMode
 
 
 	@Override
-	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long aIV0, final long aIV1)
+	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV)
 	{
-		assert (aUnitSize & -aUnitSize) == aUnitSize;
+		assert (aUnitSize & (BYTES_PER_BLOCK - 1)) == 0;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
 		assert aLength >= aUnitSize;
 		assert (aLength % aUnitSize) == 0;
@@ -57,7 +59,7 @@ public final class PCBCCipherMode extends CipherMode
 
 		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aMasterIV, aIV0, aIV1, bufferOffset, iv);
+			prepareIV(aMasterIV, aBlockIV, bufferOffset, iv);
 
 			for (int block = 0, ivOffset = 0; block < numBlocks; block++, ivOffset = BYTES_PER_BLOCK - ivOffset, bufferOffset += BYTES_PER_BLOCK)
 			{
