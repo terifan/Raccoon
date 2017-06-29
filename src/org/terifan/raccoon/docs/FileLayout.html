@@ -17,19 +17,23 @@
 		<table border="1" cellspacing="0">
 			<tr>
 				<th>Plaintext</th>
-				<th colspan="5">Encrypted with user key</th>
+				<th colspan="8">Encrypted with user key</th>
 				<th>Plaintext</th>
 			</tr>
 			<tr>
-				<th rowspan="2">Salt</th>
-				<th colspan="5">Secret key pool</th>
-				<th rowspan="2">Padding</th>
+				<td rowspan="2">Salt</td>
+				<td rowspan="2">Checksum</td>
+				<th colspan="3">Secret key pool</th>
+				<th colspan="4">Metadata</th>
+				<td rowspan="2">Padding</td>
 			</tr>
 			<tr>
-				<td>Checksum</td>
 				<td>Tweak key</td>
-				<td>Data key</td>
-				<td>IV</td>
+				<td>Data key (3x32)</td>
+				<td>Master IVs (3x16)</td>
+				<td>Application id</td>
+				<td>Instance id</td>
+				<td>Super block offsets (4x8)</td>
 				<td>Padding</td>
 			</tr>
 			<tr>
@@ -38,7 +42,10 @@
 				<td>32</td>
 				<td>96</td>
 				<td>48</td>
-				<td>44</td>
+				<td>16</td>
+				<td>16</td>
+				<td>32</td>
+				<td>12</td>
 				<td>n</td>
 			</tr>
 		</table>
@@ -46,24 +53,27 @@
 		<h1>Super Block</h1>
 		<table border="1" cellspacing="0">
 			<tr>
-				<th colspan="10">Encrypted with data key</th>
+				<th colspan="12">Encrypted with data key</th>
 				<th>Encrypted with tweak key</th>
 			</tr>
 			<tr>
-				<th rowspan="2">Checksum</th>
-				<th colspan="9">Payload</th>
-				<th rowspan="2">IV</th>
+				<td rowspan="2">Checksum</td>
+				<th colspan="7">Device header</th>
+				<th colspan="3">Application data</th>
+				<td rowspan="2">Padding</td>
+				<td rowspan="2">IV</td>
 			</tr>
 			<tr>
 				<td>Format version</td>
 				<td>Create time</td>
 				<td>Update time</td>
-				<td>Transaction id</td>
+				<td>Write counter</td>
 				<td>Space map block pointer</td>
 				<td>Label length</td>
 				<td>Label</td>
+				<td>Application root block pointer</td>
 				<td>Extra length</td>
-				<td>Extra</td>
+				<td>Extra data</td>
 			</tr>
 			<tr>
 				<td>16</td>
@@ -73,10 +83,24 @@
 				<td>8</td>
 				<td>64</td>
 				<td>1</td>
-				<td>n</td>
+				<td>0<=n<=76</td>
+				<td>64</td>
 				<td>2</td>
+				<td>0<=n<=256</td>
 				<td>n</td>
 				<td>16</td>
+			</tr>
+		</table>
+
+		<h1>Extra data</h1>
+		<table border="1" cellspacing="0">
+			<tr>
+				<td>Format version</td>
+				<td>Transaction id</td>
+			</tr>
+			<tr>
+				<td>4</td>
+				<td>8</td>
 			</tr>
 		</table>
 
@@ -84,13 +108,15 @@
 		<table border="1" cellspacing="0">
 			<tr>
 				<td>Block type</td>
-				<td>Checksum type</td>
-				<td>Encryption type</td>
+				<td>--Checksum type</td>
+				<td>--Encryption type</td>
 				<td>Compression type</td>
 				<td>Range</td>
 				<td>Allocated size</td>
 				<td>Logical size</td>
 				<td>Physical size</td>
+				<td>Block index</td>
+				<td>Block index</td>
 				<td>Block index</td>
 				<td>Transaction group</td>
 				<td>IV</td>
@@ -103,9 +129,11 @@
 				<td>1</td>
 				<td>2</td>
 				<td>2</td>
+				<td>3</td>
+				<td>3</td>
 				<td>4</td>
 				<td>4</td>
-				<td>8</td>
+				<td>4</td>
 				<td>8</td>
 				<td>16</td>
 				<td>16</td>

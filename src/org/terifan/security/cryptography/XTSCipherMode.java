@@ -29,17 +29,17 @@ public final class XTSCipherMode extends CipherMode
 		int numUnits = aLength / aUnitSize;
 		int numBlocks = aUnitSize / BYTES_PER_BLOCK;
 
-		for (int unitIndex = 0, offset = aOffset; unitIndex < numUnits; unitIndex++)
+		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aMasterIV, aBlockIV, unitIndex, whiteningValue);
+			prepareIV(aMasterIV, aBlockIV, bufferOffset, whiteningValue);
 
-			for (int block = 0; block < numBlocks; block++, offset += BYTES_PER_BLOCK)
+			for (int block = 0; block < numBlocks; block++, bufferOffset += BYTES_PER_BLOCK)
 			{
-				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue, 0);
+				xor(aBuffer, bufferOffset, BYTES_PER_BLOCK, whiteningValue, 0);
 
-				aCipher.engineEncryptBlock(aBuffer, offset, aBuffer, offset);
+				aCipher.engineEncryptBlock(aBuffer, bufferOffset, aBuffer, bufferOffset);
 
-				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue, 0);
+				xor(aBuffer, bufferOffset, BYTES_PER_BLOCK, whiteningValue, 0);
 
 				int finalCarry = ((whiteningValue[8 + 7] & 0x80) != 0) ? 135 : 0;
 
@@ -70,17 +70,17 @@ public final class XTSCipherMode extends CipherMode
 		int numUnits = aLength / aUnitSize;
 		int numBlocks = aUnitSize / BYTES_PER_BLOCK;
 
-		for (int unitIndex = 0, offset = aOffset; unitIndex < numUnits; unitIndex++)
+		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aMasterIV, aBlockIV, unitIndex, whiteningValue);
+			prepareIV(aMasterIV, aBlockIV, bufferOffset, whiteningValue);
 
-			for (int block = 0; block < numBlocks; block++, offset += BYTES_PER_BLOCK)
+			for (int block = 0; block < numBlocks; block++, bufferOffset += BYTES_PER_BLOCK)
 			{
-				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue, 0);
+				xor(aBuffer, bufferOffset, BYTES_PER_BLOCK, whiteningValue, 0);
 
-				aCipher.engineDecryptBlock(aBuffer, offset, aBuffer, offset);
+				aCipher.engineDecryptBlock(aBuffer, bufferOffset, aBuffer, bufferOffset);
 
-				xor(aBuffer, offset, BYTES_PER_BLOCK, whiteningValue, 0);
+				xor(aBuffer, bufferOffset, BYTES_PER_BLOCK, whiteningValue, 0);
 
 				int finalCarry = (whiteningValue[8 + 7] & 0x80) != 0 ? 135 : 0;
 

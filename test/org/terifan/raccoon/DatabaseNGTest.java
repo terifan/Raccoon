@@ -485,7 +485,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (IManagedBlockDevice blockDevice = new ManagedBlockDevice(device, "", 512))
+		try (IManagedBlockDevice blockDevice = new ManagedBlockDevice(device, ""))
 		{
 			blockDevice.setExtraData(new byte[100]);
 			blockDevice.allocBlock(100);
@@ -503,7 +503,7 @@ public class DatabaseNGTest
 	public void testBlobDelete() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "", 512);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "");
 
 		_KeyValue1K in = new _KeyValue1K("apple", createRandomBuffer(0, 1000_000));
 		_KeyValue1K out = new _KeyValue1K("apple");
@@ -532,7 +532,7 @@ public class DatabaseNGTest
 	public void testDatabaseNotChangedWhenZeroItemsDeleted() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "", 512);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "");
 
 		_Animal1K item = new _Animal1K("banana");
 
@@ -548,7 +548,7 @@ public class DatabaseNGTest
 	public void testBlobDeleteFromStream() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "", 512);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "");
 
 		byte[] content = createRandomBuffer(0, 10*1024*1024);
 
@@ -573,7 +573,7 @@ public class DatabaseNGTest
 	public void testBlobUpdate() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "", 512);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "");
 
 		_KeyValue1K in = new _KeyValue1K("apple", createRandomBuffer(0, 1000_000));
 
@@ -600,7 +600,7 @@ public class DatabaseNGTest
 	public void openCloseTest() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "", 512);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "");
 
 		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
 		{
@@ -671,7 +671,7 @@ public class DatabaseNGTest
 	@Test(expectedExceptions = IllegalArgumentException.class)
 	public void testUnsupportedDevice() throws Exception
 	{
-		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512), "", 512);
+		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512), "");
 
 		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(100)))
 		{
@@ -1151,7 +1151,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "", 512);
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "");
 
 		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
 		{
