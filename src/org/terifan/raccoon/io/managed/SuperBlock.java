@@ -37,6 +37,7 @@ class SuperBlock
 	{
 		this();
 
+		read(aBlockDevice, aBlockIndex);
 	}
 
 
