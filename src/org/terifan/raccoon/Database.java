@@ -176,7 +176,7 @@ public final class Database implements AutoCloseable
 		{
 			Log.d("creating a managed block device");
 
-			device = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice, label, Constants.DEFAULT_LAZY_WRITE_CACHE_SIZE);
+			device = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice, label);
 		}
 		else
 		{
@@ -199,7 +199,7 @@ public final class Database implements AutoCloseable
 				throw new InvalidPasswordException("Incorrect password or not a secure BlockDevice");
 			}
 
-			device = new ManagedBlockDevice(secureDevice, label, Constants.DEFAULT_LAZY_WRITE_CACHE_SIZE);
+			device = new ManagedBlockDevice(secureDevice, label);
 		}
 
 		Database db;

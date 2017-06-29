@@ -18,7 +18,6 @@ public class DatabaseBuilder
 	private EncryptionFunction mEncryptionFunction;
 	private KeyGenerationFunction mKeyGenerationFunction;
 	private CipherModeFunction mCipherModeFunction;
-	private int mLazyWriteCacheSizeBlocks;
 	private int mPagesPerNode;
 	private int mPagesPerLeaf;
 	private int mCompressionOfNodes;
@@ -41,7 +40,6 @@ public class DatabaseBuilder
 		mCompressionOfNodes = CompressionParam.NONE;
 		mCompressionOfLeafs = CompressionParam.NONE;
 		mCompressionOfBlobs = CompressionParam.NONE;
-		mLazyWriteCacheSizeBlocks = Constants.DEFAULT_LAZY_WRITE_CACHE_SIZE;
 		mEncryptionFunction = AccessCredentials.DEFAULT_ENCRYPTION;
 		mKeyGenerationFunction = AccessCredentials.DEFAULT_KEY_GENERATOR;
 		mCipherModeFunction = AccessCredentials.DEFAULT_CIPHER_MODE;
@@ -79,7 +77,7 @@ public class DatabaseBuilder
 			}
 		}
 
-		IManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(mBlockDevice, mLabel, mLazyWriteCacheSizeBlocks);
+		IManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(mBlockDevice, mLabel);
 
 		return Database.open(managedBlockDevice, aOpenOption, params.toArray());
 	}
@@ -115,13 +113,6 @@ public class DatabaseBuilder
 	public DatabaseBuilder setReadOnly(boolean aReadOnly)
 	{
 		mReadOnly = aReadOnly;
-		return this;
-	}
-
-
-	public DatabaseBuilder setLazyWriteCacheSizeBlocks(int aLazyWriteCacheSizeBlocks)
-	{
-		mLazyWriteCacheSizeBlocks = aLazyWriteCacheSizeBlocks;
 		return this;
 	}
 

@@ -360,7 +360,7 @@ public class HashTableNGTest
 
 	private HashTable newHashTable(byte[] aRoot, TransactionCounter aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
 	{
-		return new HashTable(new ManagedBlockDevice(aBlockDevice, "", 512), aRoot, aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT);
+		return new HashTable(new ManagedBlockDevice(aBlockDevice, ""), aRoot, aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT);
 	}
 
 

@@ -1,7 +1,6 @@
 package org.terifan.raccoon.io.managed;
 
 import java.io.IOException;
-import java.util.HashSet;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.util.Log;
@@ -18,7 +17,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private boolean mModified;
 	private boolean mWasCreated;
 	private boolean mDoubleCommit;
-	private LazyWriteCache mLazyWriteCache;
 	private SpaceMap mSpaceMap;
 
 
@@ -29,7 +27,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	 * a label describing contents of the block device. If a non-null value is provided then this value must match the value found inside
 	 * the block device opened or an exception is thrown.
 	 */
-	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice, String aBlockDeviceLabel, int aLazyWriteCacheSize) throws IOException
+	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice, String aBlockDeviceLabel) throws IOException
 	{
 		if (aBlockDevice.getBlockSize() < 512)
 		{
@@ -40,7 +38,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mBlockDeviceLabel = aBlockDeviceLabel;
 		mBlockSize = aBlockDevice.getBlockSize();
 		mWasCreated = mBlockDevice.length() < RESERVED_BLOCKS;
-		mLazyWriteCache = new LazyWriteCache(mBlockDevice, aLazyWriteCacheSize);
 		mDoubleCommit = true;
 
 		init();
@@ -135,8 +132,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			rollback();
 		}
 
-		mLazyWriteCache = null;
-
 		if (mBlockDevice != null)
 		{
 			mBlockDevice.close();
@@ -148,8 +143,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public void forceClose() throws IOException
 	{
-		mLazyWriteCache = null;
-
 		mSpaceMap.clearUncommitted();
 
 		if (mBlockDevice != null)
@@ -208,8 +201,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mModified = true;
 
 		mSpaceMap.free(aBlockIndex, aBlockCount);
-
-		mLazyWriteCache.free(aBlockIndex);
 	}
 
 
@@ -241,7 +232,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 		Log.inc();
 
-		mLazyWriteCache.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
+		mBlockDevice.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
 
 		Log.dec();
 	}
@@ -273,7 +264,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 		Log.inc();
 
-		mLazyWriteCache.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
+		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
 
 		Log.dec();
 	}
@@ -284,8 +275,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		if (mModified)
 		{
-			mLazyWriteCache.flush();
-
 			Log.i("committing managed block device");
 			Log.inc();
 
@@ -326,10 +315,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			Log.i("rollbacking block device");
 			Log.inc();
 
-			mLazyWriteCache.clear();
-
 			mSpaceMap.clearUncommitted();
-
 			mSpaceMap.rollback();
 
 			init();

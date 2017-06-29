@@ -14,7 +14,7 @@ public class ManagedBlockDeviceNGTest
 	{
 		int s = 512;
 
-		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s), "", 512))
+		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s), ""))
 		{
 			long pos1 = dev.allocBlock(1);
 			long pos2 = dev.allocBlock(1);
@@ -36,7 +36,7 @@ public class ManagedBlockDeviceNGTest
 	{
 		int s = 512;
 
-		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s), "", 512))
+		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s), ""))
 		{
 			long pos1 = dev.allocBlock(1); // alloc 0
 			long pos2 = dev.allocBlock(1); // alloc 1
@@ -74,7 +74,7 @@ public class ManagedBlockDeviceNGTest
 
 		for (int test = 0; test < 10; test++)
 		{
-			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice, "", 512))
+			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice, ""))
 			{
 				if (test > 0)
 				{
