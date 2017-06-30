@@ -113,7 +113,7 @@ class SpaceMap
 
 		if (aSpaceMapBlockPointer.getAllocatedSize() > 0)
 		{
-			aBlockDevice.freeBlockInternal(aSpaceMapBlockPointer.getBlockIndex(), aSpaceMapBlockPointer.getAllocatedSize());
+			aBlockDevice.freeBlockInternal(aSpaceMapBlockPointer.getBlockIndex0(), aSpaceMapBlockPointer.getAllocatedSize());
 		}
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(blockSize);
@@ -131,7 +131,7 @@ class SpaceMap
 		// Pad buffer to block size
 		buffer.capacity(blockSize * aSpaceMapBlockPointer.getAllocatedSize());
 
-		aBlockDeviceDirect.writeBlock(aSpaceMapBlockPointer.getBlockIndex(), buffer.array(), 0, buffer.capacity(), aSpaceMapBlockPointer.getIV());
+		aBlockDeviceDirect.writeBlock(aSpaceMapBlockPointer.getBlockIndex0(), buffer.array(), 0, buffer.capacity(), aSpaceMapBlockPointer.getIV());
 
 		mRangeMap = mPendingRangeMap.clone();
 		
@@ -143,7 +143,7 @@ class SpaceMap
 	{
 		BlockPointer blockPointer = aSuperBlock.mSpaceMapPointer;
 
-		Log.d("read space map %d +%d (bytes used %d)", blockPointer.getBlockIndex(), blockPointer.getAllocatedSize(), blockPointer.getLogicalSize());
+		Log.d("read space map %d +%d (bytes used %d)", blockPointer.getBlockIndex0(), blockPointer.getAllocatedSize(), blockPointer.getLogicalSize());
 		Log.inc();
 
 		RangeMap rangeMap = new RangeMap();
@@ -155,16 +155,16 @@ class SpaceMap
 		}
 		else
 		{
-			if (blockPointer.getBlockIndex() < 0)
+			if (blockPointer.getBlockIndex0() < 0)
 			{
-				throw new IOException("Block at illegal offset: " + blockPointer.getBlockIndex());
+				throw new IOException("Block at illegal offset: " + blockPointer.getBlockIndex0());
 			}
 
 			int blockSize = aBlockDevice.getBlockSize();
 
 			ByteArrayBuffer buffer = new ByteArrayBuffer(blockSize * blockPointer.getAllocatedSize());
 
-			aBlockDeviceDirect.readBlock(blockPointer.getBlockIndex(), buffer.array(), 0, blockSize * blockPointer.getAllocatedSize(), blockPointer.getIV());
+			aBlockDeviceDirect.readBlock(blockPointer.getBlockIndex0(), buffer.array(), 0, blockSize * blockPointer.getAllocatedSize(), blockPointer.getIV());
 
 			long[] hash = MurmurHash3.hash_x64_128(buffer.array(), 0, blockPointer.getLogicalSize(), 0L);
 
@@ -177,7 +177,7 @@ class SpaceMap
 
 			rangeMap.unmarshal(buffer);
 
-			rangeMap.remove((int)blockPointer.getBlockIndex(), blockPointer.getAllocatedSize());
+			rangeMap.remove((int)blockPointer.getBlockIndex0(), blockPointer.getAllocatedSize());
 		}
 
 		Log.dec();

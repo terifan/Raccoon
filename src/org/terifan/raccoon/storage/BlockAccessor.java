@@ -58,11 +58,11 @@ public class BlockAccessor
 			Log.d("free block %s", aBlockPointer);
 			Log.inc();
 
-			mBlockDevice.freeBlock(aBlockPointer.getBlockIndex(), roundUp(aBlockPointer.getPhysicalSize()) / mBlockDevice.getBlockSize());
+			mBlockDevice.freeBlock(aBlockPointer.getBlockIndex0(), roundUp(aBlockPointer.getPhysicalSize()) / mBlockDevice.getBlockSize());
 
 			if (mCache != null)
 			{
-				mCache.remove(aBlockPointer.getBlockIndex());
+				mCache.remove(aBlockPointer.getBlockIndex0());
 			}
 
 			Log.dec();
@@ -85,7 +85,7 @@ public class BlockAccessor
 
 			if (mCache != null)
 			{
-				byte[] copy = mCache.get(aBlockPointer.getBlockIndex());
+				byte[] copy = mCache.get(aBlockPointer.getBlockIndex0());
 
 				if (copy != null)
 				{
@@ -97,9 +97,9 @@ public class BlockAccessor
 
 			byte[] buffer = new byte[roundUp(aBlockPointer.getPhysicalSize())];
 
-			mBlockDevice.readBlock(aBlockPointer.getBlockIndex(), buffer, 0, buffer.length, aBlockPointer.getIV());
+			mBlockDevice.readBlock(aBlockPointer.getBlockIndex0(), buffer, 0, buffer.length, aBlockPointer.getIV());
 
-			long[] hash = MurmurHash3.hash_x64_128(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getBlockIndex());
+			long[] hash = MurmurHash3.hash_x64_128(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getBlockIndex0());
 
 			if (!aBlockPointer.verifyChecksum(hash))
 			{
@@ -173,8 +173,6 @@ public class BlockAccessor
 
 			BlockPointer blockPointer = new BlockPointer();
 			blockPointer.setCompressionAlgorithm(compressorId);
-			blockPointer.setChecksumAlgorithm(0);
-			blockPointer.setEncryptionAlgorithm(0);
 			blockPointer.setBlockIndex(blockIndex);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
@@ -196,7 +194,7 @@ public class BlockAccessor
 
 			if (mCache != null)
 			{
-				mCache.put(blockPointer.getBlockIndex(), copy);
+				mCache.put(blockPointer.getBlockIndex0(), copy);
 			}
 
 			return blockPointer;

@@ -16,12 +16,13 @@ public class BlockPointer implements Serializable
 	private int mBlockType;
 	private int mChecksumAlgorithm;
 	private int mCompressionAlgorithm;
-	private int mEncryptionAlgorithm;
 	private int mRange;
 	private int mAllocatedSize;
 	private int mLogicalSize;
 	private int mPhysicalSize;
-	private long mBlockIndex;
+	private long mBlockIndex0;
+	private long mBlockIndex1;
+	private long mBlockIndex2;
 	private long mTransactionId;
 	private long[] mChecksum;
 	private long[] mIV;
@@ -112,15 +113,15 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public long getBlockIndex()
+	public long getBlockIndex0()
 	{
-		return mBlockIndex;
+		return mBlockIndex0;
 	}
 
 
 	public BlockPointer setBlockIndex(long aBlockIndex)
 	{
-		mBlockIndex = aBlockIndex;
+		mBlockIndex0 = aBlockIndex;
 		return this;
 	}
 
@@ -147,19 +148,6 @@ public class BlockPointer implements Serializable
 	public BlockPointer setChecksum(long[] aChecksum)
 	{
 		mChecksum = aChecksum;
-		return this;
-	}
-
-
-	public int getEncryptionAlgorithm()
-	{
-		return mEncryptionAlgorithm;
-	}
-
-
-	public BlockPointer setEncryptionAlgorithm(int aEncryptionAlgorithm)
-	{
-		mEncryptionAlgorithm = aEncryptionAlgorithm;
 		return this;
 	}
 
@@ -193,27 +181,28 @@ public class BlockPointer implements Serializable
 
 	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer)
 	{
-		assert mBlockType >= 0 && mBlockType < 256;
-		assert mChecksumAlgorithm >= 0 && mChecksumAlgorithm < 256;
-		assert mCompressionAlgorithm >= 0 && mCompressionAlgorithm < 256;
-		assert mEncryptionAlgorithm >= 0 && mEncryptionAlgorithm < 256;
-		assert mRange >= 0 && mRange < 65536;
-		assert mAllocatedSize >= 0 && mAllocatedSize < 65536;
-		assert mPhysicalSize >= 0;
-		assert mLogicalSize >= 0;
-		assert mBlockIndex >= 0;
-		assert mTransactionId >= 0;
+		assert mBlockType >= 0 && mBlockType <= 0xff;
+		assert mCompressionAlgorithm >= 0 && mCompressionAlgorithm <= 0xff;
+		assert mChecksumAlgorithm >= 0 && mChecksumAlgorithm <= 0x0f;
+		assert mAllocatedSize >= 0 && mAllocatedSize <= 0xffff;
+		assert mPhysicalSize >= 0 && mPhysicalSize <= 0xffffff;
+		assert mLogicalSize >= 0 && mPhysicalSize <= 0xffffff;
+		assert mBlockIndex0 >= 0 && mBlockIndex0 <= 0xffffffffffL;
+		assert mBlockIndex1 >= 0 && mBlockIndex1 <= 0xffffffffffL;
+		assert mBlockIndex2 >= 0 && mBlockIndex2 <= 0xffffffffffL;
+		assert mTransactionId >= 0 && mTransactionId <= 0xffffffffffL;
+		assert mRange >= 0 && mRange <= 0xfff;
 
 		aBuffer.writeInt8(mBlockType);
-		aBuffer.writeInt8(mChecksumAlgorithm);
-		aBuffer.writeInt8(mEncryptionAlgorithm);
 		aBuffer.writeInt8(mCompressionAlgorithm);
-		aBuffer.writeInt16(mRange);
+		aBuffer.writeInt16((mChecksumAlgorithm << 12) + mRange);
 		aBuffer.writeInt16(mAllocatedSize);
-		aBuffer.writeInt32(mLogicalSize);
-		aBuffer.writeInt32(mPhysicalSize);
-		aBuffer.writeInt64(mBlockIndex);
-		aBuffer.writeInt64(mTransactionId);
+		aBuffer.writeInt24(mLogicalSize);
+		aBuffer.writeInt24(mPhysicalSize);
+		aBuffer.writeInt40(mBlockIndex0);
+		aBuffer.writeInt40(mBlockIndex1);
+		aBuffer.writeInt40(mBlockIndex2);
+		aBuffer.writeInt40(mTransactionId);
 		aBuffer.writeInt64(mIV[0]);
 		aBuffer.writeInt64(mIV[1]);
 		aBuffer.writeInt64(mChecksum[0]);
@@ -228,15 +217,17 @@ public class BlockPointer implements Serializable
 	public BlockPointer unmarshal(ByteArrayBuffer aBuffer)
 	{
 		mBlockType = aBuffer.readInt8();
-		mChecksumAlgorithm = aBuffer.readInt8();
-		mEncryptionAlgorithm = aBuffer.readInt8();
 		mCompressionAlgorithm = aBuffer.readInt8();
-		mRange = aBuffer.readInt16();
+		int tmp = aBuffer.readInt16();
+		mChecksumAlgorithm = tmp >>> 12;
+		mRange = tmp & 0xfff;
 		mAllocatedSize = aBuffer.readInt16();
-		mLogicalSize = aBuffer.readInt32();
-		mPhysicalSize = aBuffer.readInt32();
-		mBlockIndex = aBuffer.readInt64();
-		mTransactionId = aBuffer.readInt64();
+		mLogicalSize = aBuffer.readInt24();
+		mPhysicalSize = aBuffer.readInt24();
+		mBlockIndex0 = aBuffer.readInt40();
+		mBlockIndex1 = aBuffer.readInt40();
+		mBlockIndex2 = aBuffer.readInt40();
+		mTransactionId = aBuffer.readInt40();
 		mIV[0] = aBuffer.readInt64();
 		mIV[1] = aBuffer.readInt64();
 		mChecksum[0] = aBuffer.readInt64();
@@ -273,7 +264,7 @@ public class BlockPointer implements Serializable
 	@Override
 	public int hashCode()
 	{
-		return (int)(mBlockIndex ^ (mBlockIndex >>> 32));
+		return (int)(mBlockIndex0 ^ (mBlockIndex0 >>> 32));
 	}
 
 
@@ -282,7 +273,7 @@ public class BlockPointer implements Serializable
 	{
 		if (aBlockPointer instanceof BlockPointer)
 		{
-			return ((BlockPointer)aBlockPointer).getBlockIndex() == mBlockIndex;
+			return ((BlockPointer)aBlockPointer).getBlockIndex0() == mBlockIndex0;
 		}
 		return false;
 	}
@@ -291,6 +282,6 @@ public class BlockPointer implements Serializable
 	@Override
 	public String toString()
 	{
-		return "{type=" + getBlockType() + ", offset=" + mBlockIndex + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRange + ", tx=" + mTransactionId + ")";
+		return "{type=" + getBlockType() + ", offset=" + mBlockIndex0 + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRange + ", tx=" + mTransactionId + ")";
 	}
 }

@@ -17,21 +17,19 @@
 		<table border="1" cellspacing="0">
 			<tr>
 				<th>Plaintext</th>
-				<th colspan="6">Encrypted with user key</th>
+				<th colspan="5">Encrypted with user key</th>
 				<th>Plaintext</th>
 			</tr>
 			<tr>
 				<td rowspan="2">Salt</td>
 				<td rowspan="2">Checksum</td>
-				<th colspan="3">Secret key pool</th>
-				<th colspan="2">Root pointers</th>
+				<th colspan="4">Secret key pool</th>
 				<td rowspan="2">Padding</td>
 			</tr>
 			<tr>
 				<td>Tweak key</td>
 				<td>Data key (3x32)</td>
 				<td>Master IVs (3x16)</td>
-				<td>Super block offsets (4x8)</td>
 				<td>Padding</td>
 			</tr>
 			<tr>
@@ -40,8 +38,7 @@
 				<td>32</td>
 				<td>96</td>
 				<td>48</td>
-				<td>32</td>
-				<td>44</td>
+				<td>76</td>
 				<td>n</td>
 			</tr>
 		</table>
@@ -55,8 +52,7 @@
 			<tr>
 				<td rowspan="2">Checksum</td>
 				<th colspan="7">Device header</th>
-				<th colspan="6">Application header</th>
-				<td rowspan="2">Padding</td>
+				<th colspan="7">Application header</th>
 				<td rowspan="2">IV</td>
 			</tr>
 			<tr>
@@ -73,6 +69,7 @@
 				<td>Application root block pointer</td>
 				<td>Extra length</td>
 				<td>Extra data</td>
+				<td>Padding</td>
 			</tr>
 			<tr>
 				<td>16</td>
@@ -88,7 +85,7 @@
 				<td>4</td>
 				<td>64</td>
 				<td>1</td>
-				<td>0<=n<=256</td>
+				<td>0<=n<=255</td>
 				<td>n</td>
 				<td>16</td>
 			</tr>
@@ -98,12 +95,15 @@
 		<table border="1" cellspacing="0">
 			<tr>
 				<td>Block type</td>
-				<td>Compression type</td>
+				<td>Compression</td>
+				<td>Checksum</td>
 				<td>Range</td>
 				<td>Allocated size</td>
 				<td>Logical size</td>
 				<td>Physical size</td>
-				<td>Block index (3x4)</td>
+				<td>Block index</td>
+				<td>Block index</td>
+				<td>Block index</td>
 				<td>Transaction id</td>
 				<td>IV</td>
 				<td>Checksum</td>
@@ -111,12 +111,15 @@
 			<tr>
 				<td>1</td>
 				<td>1</td>
-				<td>2</td>
+				<td>4b</td>
+				<td>12b</td>
 				<td>2</td>
 				<td>3</td>
 				<td>3</td>
-				<td>12</td>
-				<td>8</td>
+				<td>5</td>
+				<td>5</td>
+				<td>5</td>
+				<td>5</td>
 				<td>16</td>
 				<td>16</td>
 			</tr>

@@ -323,6 +323,25 @@ public final class ByteArrayBuffer
 	}
 
 
+	public int readInt24()
+	{
+		int ch1 = readInt8();
+		int ch2 = readInt8();
+		int ch3 = readInt8();
+		return (ch1 << 16) + (ch2 << 8) + ch3;
+	}
+
+
+	public ByteArrayBuffer writeInt24(int aValue)
+	{
+		ensureCapacity(3);
+		mBuffer[mOffset++] = (byte)(aValue >> 16);
+		mBuffer[mOffset++] = (byte)(aValue >> 8);
+		mBuffer[mOffset++] = (byte)(aValue);
+		return this;
+	}
+
+
 	public int readInt32()
 	{
 		int ch1 = readInt8();
@@ -337,6 +356,29 @@ public final class ByteArrayBuffer
 	{
 		ensureCapacity(4);
 		mBuffer[mOffset++] = (byte)(aValue >>> 24);
+		mBuffer[mOffset++] = (byte)(aValue >> 16);
+		mBuffer[mOffset++] = (byte)(aValue >> 8);
+		mBuffer[mOffset++] = (byte)(aValue);
+		return this;
+	}
+
+
+	public long readInt40()
+	{
+		read(readBuffer, 0, 5);
+		return ((long)(readBuffer[0] & 255) << 32)
+			+ ((long)(readBuffer[1] & 255) << 24)
+			+ ((readBuffer[2] & 255) << 16)
+			+ ((readBuffer[3] & 255) << 8)
+			+ (readBuffer[4] & 255);
+	}
+
+
+	public ByteArrayBuffer writeInt40(long aValue)
+	{
+		ensureCapacity(8);
+		mBuffer[mOffset++] = (byte)(aValue >> 32);
+		mBuffer[mOffset++] = (byte)(aValue >> 24);
 		mBuffer[mOffset++] = (byte)(aValue >> 16);
 		mBuffer[mOffset++] = (byte)(aValue >> 8);
 		mBuffer[mOffset++] = (byte)(aValue);

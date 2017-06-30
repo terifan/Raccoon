@@ -335,9 +335,9 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		byte[] workBuffer = aBuffer.clone();
 
-		long[] iv = 
+		long[] iv =
 		{
-			ISAAC.PRNG.nextLong(), 
+			ISAAC.PRNG.nextLong(),
 			ISAAC.PRNG.nextLong()
 		};
 
@@ -368,7 +368,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		mCipher.mTweakCipher.engineDecryptBlock(aBuffer, aBuffer.length-16, aBuffer, aBuffer.length-16);
 
-		long[] iv = 
+		long[] iv =
 		{
 			getLong(aBuffer, aBuffer.length - 16),
 			getLong(aBuffer, aBuffer.length - 8)

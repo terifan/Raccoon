@@ -651,7 +651,7 @@ public final class HashTable extends TableImplementation
 	{
 		assert aBlockPointer.getBlockType() == BlockType.LEAF;
 
-		if (aBlockPointer.getBlockIndex() == mRootBlockPointer.getBlockIndex() && mRootMap != null)
+		if (aBlockPointer.getBlockIndex0() == mRootBlockPointer.getBlockIndex0() && mRootMap != null)
 		{
 			return mRootMap;
 		}
@@ -664,7 +664,7 @@ public final class HashTable extends TableImplementation
 	{
 		assert aBlockPointer.getBlockType() == BlockType.INDEX;
 
-		if (aBlockPointer.getBlockIndex() == mRootBlockPointer.getBlockIndex() && mRootNode != null)
+		if (aBlockPointer.getBlockIndex0() == mRootBlockPointer.getBlockIndex0() && mRootNode != null)
 		{
 			return mRootNode;
 		}
