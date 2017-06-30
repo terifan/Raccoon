@@ -141,7 +141,7 @@ class SpaceMap
 
 	private RangeMap read(SuperBlock aSuperBlock, ManagedBlockDevice aBlockDevice, IPhysicalBlockDevice aBlockDeviceDirect) throws IOException
 	{
-		BlockPointer blockPointer = aSuperBlock.mSpaceMapPointer;
+		BlockPointer blockPointer = aSuperBlock.getSpaceMapPointer();
 
 		Log.d("read space map %d +%d (bytes used %d)", blockPointer.getBlockIndex0(), blockPointer.getAllocatedSize(), blockPointer.getLogicalSize());
 		Log.inc();

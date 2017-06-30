@@ -12,7 +12,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	private IPhysicalBlockDevice mBlockDevice;
 	private SuperBlock mSuperBlock;
-	private String mBlockDeviceLabel;
 	private int mBlockSize;
 	private boolean mModified;
 	private boolean mWasCreated;
@@ -35,12 +34,23 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		}
 
 		mBlockDevice = aBlockDevice;
-		mBlockDeviceLabel = aBlockDeviceLabel;
 		mBlockSize = aBlockDevice.getBlockSize();
 		mWasCreated = mBlockDevice.length() < RESERVED_BLOCKS;
 		mDoubleCommit = true;
 
 		init();
+
+		if (mWasCreated)
+		{
+			mSuperBlock.setBlockDeviceLabel(aBlockDeviceLabel);
+		}
+		else
+		{
+			if (aBlockDeviceLabel != null && !aBlockDeviceLabel.equals(mSuperBlock.getBlockDeviceLabel()))
+			{
+				throw new UnsupportedVersionException("Block device label don't match: was: \"" + mSuperBlock.getBlockDeviceLabel() + "\", expected: \"" + aBlockDeviceLabel + "\"");
+			}
+		}
 	}
 
 
@@ -64,11 +74,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		mSpaceMap = new SpaceMap();
 
-		mSuperBlock = new SuperBlock();
-		mSuperBlock.mWriteCounter = -1L; // counter is incremented in writeSuperBlock method and we want to ensure we write block 0 before block 1
-		mSuperBlock.mBlockDeviceLabel = mBlockDeviceLabel == null ? "" : mBlockDeviceLabel;
-
-		setExtraData(null);
+		mSuperBlock = new SuperBlock(-1L); // counter is incremented in writeSuperBlock method and we want to ensure we write block 0 before block 1
 
 		long index = allocBlockInternal(2);
 
@@ -278,7 +284,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			Log.i("committing managed block device");
 			Log.inc();
 
-			mSpaceMap.write(mSuperBlock.mSpaceMapPointer, this, mBlockDevice);
+			mSpaceMap.write(mSuperBlock.getSpaceMapPointer(), this, mBlockDevice);
 
 			if (mDoubleCommit) // enabled by default
 			{
@@ -335,18 +341,13 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		SuperBlock superBlockOne = new SuperBlock(mBlockDevice, 0L);
 		SuperBlock superBlockTwo = new SuperBlock(mBlockDevice, 1L);
 
-		if (!(mBlockDeviceLabel == null || mBlockDeviceLabel.isEmpty() && superBlockOne.mBlockDeviceLabel.isEmpty() || mBlockDeviceLabel.equals(superBlockOne.mBlockDeviceLabel)))
-		{
-			throw new UnsupportedVersionException("Block device label don't match: was " + (superBlockOne.mBlockDeviceLabel.isEmpty() ? "<empty>" : superBlockOne.mBlockDeviceLabel) + ", expected " + (mBlockDeviceLabel.isEmpty() ? "<empty>" : mBlockDeviceLabel));
-		}
-
-		if (superBlockOne.mWriteCounter == superBlockTwo.mWriteCounter + 1)
+		if (superBlockOne.getTransactionId() == superBlockTwo.getTransactionId() + 1)
 		{
 			mSuperBlock = superBlockOne;
 
 			Log.d("using super block 0");
 		}
-		else if (superBlockTwo.mWriteCounter == superBlockOne.mWriteCounter + 1)
+		else if (superBlockTwo.getTransactionId() == superBlockOne.getTransactionId() + 1)
 		{
 			mSuperBlock = superBlockTwo;
 
@@ -354,7 +355,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		}
 		else
 		{
-			throw new DatabaseException("Database appears to be corrupt. SuperBlock versions are illegal: " + superBlockOne.mWriteCounter + " / " + superBlockTwo.mWriteCounter);
+			throw new DatabaseException("Database appears to be corrupt. SuperBlock versions are illegal: " + superBlockOne.getTransactionId() + " / " + superBlockTwo.getTransactionId());
 		}
 
 		Log.dec();
@@ -363,12 +364,12 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	private void writeSuperBlock() throws IOException
 	{
-		mSuperBlock.mWriteCounter++;
+		mSuperBlock.incrementTransactionId();
 
-		Log.i("write super block %d", mSuperBlock.mWriteCounter & 1L);
+		Log.i("write super block %d", mSuperBlock.getTransactionId() & 1L);
 		Log.inc();
 
-		long pageIndex = mSuperBlock.mWriteCounter & 1L;
+		long pageIndex = mSuperBlock.getTransactionId() & 1L;
 
 		mSuperBlock.write(mBlockDevice, pageIndex);
 
@@ -376,29 +377,29 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	@Override
-	public void setExtraData(byte[] aExtraData)
-	{
-		Log.i("set extra data");
-
-		if (aExtraData != null && aExtraData.length > EXTRA_DATA_LIMIT)
-		{
-			throw new IllegalArgumentException("Length of extra data exceeds maximum length: extra length: " + aExtraData.length + ", limit: " + EXTRA_DATA_LIMIT);
-		}
-
-		mModified = true;
-
-		mSuperBlock.mExtraData = aExtraData == null ? null : aExtraData.clone();
-
-//		mSuperBlock.mExtraDataModified = true;
-	}
-
-
-	@Override
-	public byte[] getExtraData()
-	{
-		return mSuperBlock.mExtraData == null ? null : mSuperBlock.mExtraData.clone();
-	}
+//	@Override
+//	public void setExtraData(byte[] aExtraData)
+//	{
+//		Log.i("set extra data");
+//
+//		if (aExtraData != null && aExtraData.length > EXTRA_DATA_LIMIT)
+//		{
+//			throw new IllegalArgumentException("Length of extra data exceeds maximum length: extra length: " + aExtraData.length + ", limit: " + EXTRA_DATA_LIMIT);
+//		}
+//
+//		mModified = true;
+//
+//		mSuperBlock.setExtraData(aExtraData == null ? null : aExtraData.clone());
+//
+////		mSuperBlock.mExtraDataModified = true;
+//	}
+//
+//
+//	@Override
+//	public byte[] getExtraData()
+//	{
+//		return mSuperBlock.getExtraData() == null ? null : mSuperBlock.getExtraData().clone();
+//	}
 
 
 	@Override
@@ -468,5 +469,12 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mSpaceMap.clearUncommitted();
 
 		createBlockDevice();
+	}
+
+
+	@Override
+	public SuperBlock getSuperBlock()
+	{
+		return mSuperBlock;
 	}
 }

@@ -5,7 +5,7 @@ import java.io.IOException;
 
 public interface IManagedBlockDevice extends AutoCloseable //IPhysicalBlockDevice
 {
-	final static int EXTRA_DATA_LIMIT = 256;
+	final static int EXTRA_DATA_LIMIT = 64 + 256;
 
 	/**
 	 * Read a single block from the device.
@@ -97,22 +97,22 @@ public interface IManagedBlockDevice extends AutoCloseable //IPhysicalBlockDevic
 	boolean isModified();
 
 
-	/**
-	 * @return
-	 *   the "extra data" block.
-	 */
-	byte[] getExtraData();
-
-
-	/**
-	 * Sets the "extra data" block of this block device.
-	 *
-	 * The block device must be able to store an "extra data" block with minimum 384 bytes. The block I/O must be transactional safe and the block is written as the block device changes are committed.
-	 *
-	 * @param aExtra
-	 *   the extra data.
-	 */
-	void setExtraData(byte[] aExtra);
+//	/**
+//	 * @return
+//	 *   the "extra data" block.
+//	 */
+//	byte[] getExtraData();
+//
+//
+//	/**
+//	 * Sets the "extra data" block of this block device.
+//	 *
+//	 * The block device must be able to store an "extra data" block with minimum 256 bytes. The block I/O must be transactional safe and the block is written as the block device changes are committed.
+//	 *
+//	 * @param aExtra
+//	 *   the extra data.
+//	 */
+//	void setExtraData(byte[] aExtra);
 
 
 	/**
@@ -143,4 +143,7 @@ public interface IManagedBlockDevice extends AutoCloseable //IPhysicalBlockDevic
 
 
 	void clear() throws IOException;
+
+
+	SuperBlock getSuperBlock();
 }

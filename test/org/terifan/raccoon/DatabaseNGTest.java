@@ -487,7 +487,7 @@ public class DatabaseNGTest
 
 		try (IManagedBlockDevice blockDevice = new ManagedBlockDevice(device, ""))
 		{
-			blockDevice.setExtraData(new byte[100]);
+			blockDevice.getSuperBlock().setApplicationHeader(new byte[100]);
 			blockDevice.allocBlock(100);
 			blockDevice.commit();
 		}

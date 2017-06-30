@@ -34,9 +34,9 @@ public class DatabaseBuilder
 	{
 		mBlockDevice = aBlockDevice;
 
-		mPagesPerNode = TableParam.DEFAULT.getPagesPerNode();
-		mPagesPerLeaf = TableParam.DEFAULT.getPagesPerLeaf();
-		mBlockReadCacheSize = TableParam.DEFAULT.getBlockReadCacheSize();
+		mPagesPerNode = TableParam.DEFAULT_PAGES_PER_NODE;
+		mPagesPerLeaf = TableParam.DEFAULT_PAGES_PER_LEAF;
+		mBlockReadCacheSize = TableParam.DEFAULT_READ_CACHE_SIZE;
 		mCompressionOfNodes = CompressionParam.NONE;
 		mCompressionOfLeafs = CompressionParam.NONE;
 		mCompressionOfBlobs = CompressionParam.NONE;

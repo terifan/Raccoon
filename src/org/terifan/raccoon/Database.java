@@ -17,16 +17,15 @@ import java.util.stream.Collectors;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
+import org.terifan.raccoon.io.managed.SuperBlock;
 import org.terifan.raccoon.io.secure.SecureBlockDevice;
 import org.terifan.raccoon.io.managed.UnsupportedVersionException;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.storage.BlobOutputStream;
-import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.io.physical.FileBlockDevice;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
-import org.terifan.security.messagedigest.MurmurHash3;
 
 
 public final class Database implements AutoCloseable
@@ -40,7 +39,6 @@ public final class Database implements AutoCloseable
 	private final HashMap<Class, Initializer> mInitializers;
 	private final ConcurrentHashMap<Table, TableInstance> mOpenTables;
 	private final TableMetadataProvider mTableMetadatas;
-	private final TransactionCounter mTransactionId;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 	private TableInstance mSystemTable;
 	private boolean mModified;
@@ -56,7 +54,6 @@ public final class Database implements AutoCloseable
 		mOpenTables = new ConcurrentHashMap<>();
 		mTableMetadatas = new TableMetadataProvider();
 		mFactories = new HashMap<>();
-		mTransactionId = new TransactionCounter(0);
 		mInitializers = new HashMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
 	}
@@ -249,11 +246,14 @@ public final class Database implements AutoCloseable
 
 		if (aBlockDevice.length() > 0)
 		{
-			aBlockDevice.setExtraData(null);
+			aBlockDevice.getSuperBlock().setApplicationHeader(new byte[0]);
 			aBlockDevice.clear();
 			aBlockDevice.commit();
 		}
 
+		aBlockDevice.getSuperBlock().setApplicationHeader(Constants.RACCOON_DB_IDENTITY);
+		aBlockDevice.getSuperBlock().setApplicationVersion(Constants.RACCOON_DB_VERSION);
+		
 		Database db = new Database();
 
 		db.mProperties = aParameters;
@@ -279,32 +279,28 @@ public final class Database implements AutoCloseable
 		Log.i("open database");
 		Log.inc();
 
-		byte[] extraData = aBlockDevice.getExtraData();
+		SuperBlock superBlock = aBlockDevice.getSuperBlock();
 
-		if (extraData == null || extraData.length < 20)
-		{
-			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra data length) (" + (extraData == null ? null : extraData.length) + ")");
-		}
+		byte[] applicationHeader = superBlock.getApplicationHeader();
 
-		ByteArrayBuffer buffer = new ByteArrayBuffer(extraData);
+//		if (extraData == null || extraData.length < 20)
+//		{
+//			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra data length) (" + (extraData == null ? null : extraData.length) + ")");
+//		}
 
-		long identity = buffer.readInt64();
-		int version = buffer.readInt32();
-
-		if (identity != Constants.RACCOON_DB_IDENTITY)
+		if (superBlock.getApplicationId().equals(Constants.RACCOON_DB_IDENTITY))
 		{
 			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra identity)");
 		}
-		if (version != Constants.RACCOON_FILE_FORMAT_VERSION)
+		if (superBlock.getApplicationVersion() != Constants.RACCOON_DB_VERSION)
 		{
-			throw new UnsupportedVersionException("Unsupported database version: provided: " + version + ", expected: " + Constants.RACCOON_FILE_FORMAT_VERSION);
+			throw new UnsupportedVersionException("Unsupported database version: provided: " + superBlock.getApplicationVersion() + ", expected: " + Constants.RACCOON_DB_VERSION);
 		}
 
-		db.mTransactionId.set(buffer.readInt64());
 		db.mProperties = aParameters;
 		db.mBlockDevice = aBlockDevice;
 		db.mSystemTableMetadata = new Table(db, Table.class, null);
-		db.mSystemTable = new TableInstance(db, db.mSystemTableMetadata, buffer.crop().array());
+		db.mSystemTable = new TableInstance(db, db.mSystemTableMetadata, applicationHeader);
 		db.mReadOnly = aOpenOptions == OpenOption.READ_ONLY;
 
 		Log.dec();
@@ -507,18 +503,14 @@ public final class Database implements AutoCloseable
 		Log.i("updating super block");
 		Log.inc();
 
-		mTransactionId.increment();
-
-		ByteArrayBuffer buffer = new ByteArrayBuffer(8 + 4 + 8 + BlockPointer.SIZE);
-		buffer.writeInt64(Constants.RACCOON_DB_IDENTITY);
-		buffer.writeInt32(Constants.RACCOON_FILE_FORMAT_VERSION);
-		buffer.writeInt64(mTransactionId.get());
+		ByteArrayBuffer buffer = new ByteArrayBuffer(IManagedBlockDevice.EXTRA_DATA_LIMIT);
 		if (mSystemTableMetadata.getPointer() != null)
 		{
 			buffer.write(mSystemTableMetadata.getPointer());
 		}
+		buffer.trim();
 
-		mBlockDevice.setExtraData(buffer.array());
+		mBlockDevice.getSuperBlock().setApplicationHeader(buffer.array());
 
 		Log.dec();
 	}
@@ -974,7 +966,7 @@ public final class Database implements AutoCloseable
 
 	public TransactionCounter getTransactionId()
 	{
-		return mTransactionId;
+		return new TransactionCounter(mBlockDevice.getSuperBlock().getTransactionId());
 	}
 
 

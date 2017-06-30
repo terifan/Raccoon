@@ -46,13 +46,13 @@
 		<h1>Super Block</h1>
 		<table border="1" cellspacing="0">
 			<tr>
-				<th colspan="15">Encrypted with data key</th>
+				<th colspan="14">Encrypted with data key</th>
 				<th>Encrypted with tweak key</th>
 			</tr>
 			<tr>
 				<td rowspan="2">Checksum</td>
 				<th colspan="7">Device header</th>
-				<th colspan="7">Application header</th>
+				<th colspan="6">Application header</th>
 				<td rowspan="2">IV</td>
 			</tr>
 			<tr>
@@ -66,14 +66,13 @@
 				<td>Instance id</td>
 				<td>Application id</td>
 				<td>Application version</td>
-				<td>Application root block pointer</td>
-				<td>Extra length</td>
-				<td>Extra data</td>
+				<td>Application header length</td>
+				<td>Application header</td>
 				<td>Padding</td>
 			</tr>
 			<tr>
 				<td>16</td>
-				<td>2</td>
+				<td>1</td>
 				<td>8</td>
 				<td>8</td>
 				<td>8</td>
@@ -83,9 +82,8 @@
 				<td>16</td>
 				<td>16</td>
 				<td>4</td>
-				<td>64</td>
-				<td>1</td>
-				<td>0<=n<=255</td>
+				<td>2</td>
+				<td>0<=n<=320</td>
 				<td>n</td>
 				<td>16</td>
 			</tr>

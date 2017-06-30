@@ -24,8 +24,9 @@ public final class TransactionCounter
 	}
 
 
-	synchronized void set(long aCounter)
+	public synchronized TransactionCounter set(long aCounter)
 	{
 		mCounter = aCounter;
+		return this;
 	}
 }

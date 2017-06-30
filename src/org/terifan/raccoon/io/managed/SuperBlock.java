@@ -9,27 +9,44 @@ import org.terifan.security.cryptography.ISAAC;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-class SuperBlock
+public class SuperBlock
 {
 	private final static byte FORMAT_VERSION = 1;
-	private final static int NULL_CODE = 65535;
 	private final static int CHECKSUM_SIZE = 16;
 	private final static int IV_SIZE = 16;
+	private final static int MAX_LABEL_LENGTH = 32;
 
 	private int mFormatVersion;
-	private long mCreated;
-	long mUpdated;
-	long mWriteCounter;
-	String mBlockDeviceLabel;
-	byte[] mExtraData;
-	BlockPointer mSpaceMapPointer;
+	private long mCreateTime;
+	private long mModifiedTime;
+	private long mTransactionId;
+	private String mBlockDeviceLabel;
+	private byte[] mApplicationHeader;
+	private BlockPointer mSpaceMapPointer;
+	private byte[] mInstanceId;
+	private byte[] mApplicationId;
+	private int mApplicationVersion;
 
 
 	public SuperBlock()
 	{
 		mFormatVersion = FORMAT_VERSION;
-		mCreated = System.currentTimeMillis();
+		mCreateTime = System.currentTimeMillis();
 		mSpaceMapPointer = new BlockPointer();
+		mTransactionId = -1L;
+		mApplicationId = new byte[16];
+		mInstanceId = new byte[16];
+		mApplicationHeader = new byte[0];
+
+		ISAAC.PRNG.nextBytes(mInstanceId);
+	}
+
+
+	public SuperBlock(long aTransactionId)
+	{
+		this();
+		
+		mTransactionId = aTransactionId;
 	}
 
 
@@ -38,6 +55,117 @@ class SuperBlock
 		this();
 
 		read(aBlockDevice, aBlockIndex);
+	}
+
+
+	public BlockPointer getSpaceMapPointer()
+	{
+		return mSpaceMapPointer;
+	}
+
+
+	public String getBlockDeviceLabel()
+	{
+		return mBlockDeviceLabel;
+	}
+
+
+	public void setBlockDeviceLabel(String aBlockDeviceLabel)
+	{
+		mBlockDeviceLabel = aBlockDeviceLabel;
+	}
+
+
+	public long getTransactionId()
+	{
+		return mTransactionId;
+	}
+
+
+	public void incrementTransactionId()
+	{
+		mTransactionId++;
+	}
+
+
+	public int getFormatVersion()
+	{
+		return mFormatVersion;
+	}
+
+
+	public long getCreateTime()
+	{
+		return mCreateTime;
+	}
+
+
+	public void setCreateTime(long aCreateTime)
+	{
+		mCreateTime = aCreateTime;
+	}
+
+
+	public long getModifiedTime()
+	{
+		return mModifiedTime;
+	}
+
+
+	public void setModifiedTime(long aModifiedTime)
+	{
+		mModifiedTime = aModifiedTime;
+	}
+
+
+	public byte[] getApplicationHeader()
+	{
+		return mApplicationHeader;
+	}
+
+
+	public void setApplicationHeader(byte[] aApplicationHeader)
+	{
+		if (aApplicationHeader.length > IManagedBlockDevice.EXTRA_DATA_LIMIT)
+		{
+			throw new IllegalArgumentException("Application header is to long");
+		}
+
+		mApplicationHeader = aApplicationHeader;
+	}
+
+
+	public byte[] getInstanceId()
+	{
+		return mInstanceId.clone();
+	}
+
+
+	public byte[] getApplicationId()
+	{
+		return mApplicationId;
+	}
+
+
+	public void setApplicationId(byte[] aApplicationId)
+	{
+		if (aApplicationId == null || aApplicationId.length != 16)
+		{
+			throw new IllegalArgumentException("Instance ID must be 16 bytes in length");
+		}
+		mApplicationId = aApplicationId;
+	}
+
+
+	public int getApplicationVersion()
+	{
+		return mApplicationVersion;
+	}
+
+
+	public void setApplicationVersion(int aApplicationVersion)
+	{
+		mApplicationVersion = aApplicationVersion;
 	}
 
 
@@ -76,7 +204,7 @@ class SuperBlock
 			throw new IOException("Block at illegal offset: " + aBlockIndex);
 		}
 
-		mUpdated = System.currentTimeMillis();
+		mModifiedTime = System.currentTimeMillis();
 
 		int blockSize = aBlockDevice.getBlockSize();
 
@@ -114,46 +242,40 @@ class SuperBlock
 
 	private void marshal(ByteArrayBuffer aBuffer) throws IOException
 	{
+		byte[] label = mBlockDeviceLabel == null ? new byte[0] : mBlockDeviceLabel.getBytes("utf-8");
+
+		if (mApplicationHeader == null)
+		{
+			throw new IllegalArgumentException("mApplicationHeader == null");
+		}
+
 		aBuffer.writeInt8(mFormatVersion);
-		aBuffer.writeInt64(mCreated);
-		aBuffer.writeInt64(mUpdated);
-		aBuffer.writeInt64(mWriteCounter);
+		aBuffer.writeInt64(mCreateTime);
+		aBuffer.writeInt64(mModifiedTime);
+		aBuffer.writeInt64(mTransactionId);
 		mSpaceMapPointer.marshal(aBuffer);
-		aBuffer.writeInt8(mBlockDeviceLabel.length());
-		aBuffer.writeString(mBlockDeviceLabel);
-		if (mExtraData == null)
-		{
-			aBuffer.writeInt16(NULL_CODE);
-		}
-		else if (mExtraData.length >= NULL_CODE)
-		{
-			throw new IllegalStateException("Illegal length: " + mExtraData.length);
-		}
-		else
-		{
-			aBuffer.writeInt16(mExtraData.length);
-			aBuffer.write(mExtraData);
-		}
+		aBuffer.writeInt8(label.length);
+		aBuffer.write(label);
+		aBuffer.write(mInstanceId);
+		aBuffer.write(mApplicationId);
+		aBuffer.writeInt32(mApplicationVersion);
+		aBuffer.writeInt16(mApplicationHeader.length);
+		aBuffer.write(mApplicationHeader == null ? new byte[0] : mApplicationHeader);
 	}
 
 
 	private void unmarshal(ByteArrayBuffer aBuffer) throws IOException
 	{
 		mFormatVersion = aBuffer.readInt8();
-		mCreated = aBuffer.readInt64();
-		mUpdated = aBuffer.readInt64();
-		mWriteCounter = aBuffer.readInt64();
+		mCreateTime = aBuffer.readInt64();
+		mModifiedTime = aBuffer.readInt64();
+		mTransactionId = aBuffer.readInt64();
 		mSpaceMapPointer.unmarshal(aBuffer);
 		mBlockDeviceLabel = aBuffer.readString(aBuffer.readInt8());
-		int len = aBuffer.readInt16();
-		if (len == NULL_CODE)
-		{
-			mExtraData = null;
-		}
-		else
-		{
-			mExtraData = aBuffer.read(new byte[len]);
-		}
+		aBuffer.read(mInstanceId);
+		aBuffer.read(mApplicationId);
+		mApplicationVersion = aBuffer.readInt32();
+		mApplicationHeader = aBuffer.read(new byte[aBuffer.readInt16()]);
 
 		if (mFormatVersion != FORMAT_VERSION)
 		{
