@@ -45,4 +45,26 @@ public enum EncryptionFunction
 
 		throw new IllegalStateException();
 	}
+
+
+	BlockCipher newTweakInstance()
+	{
+		switch (this)
+		{
+			case AES:
+			case AESTwofish:
+			case AESTwofishSerpent:
+				return new AES();
+			case Twofish:
+			case TwofishSerpent:
+			case TwofishAESSerpent:
+				return new Twofish();
+			case Serpent:
+			case SerpentAES:
+			case SerpentTwofishAES:
+				return new Serpent();
+		}
+
+		throw new IllegalStateException();
+	}
 }

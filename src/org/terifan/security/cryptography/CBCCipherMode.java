@@ -14,7 +14,7 @@ public final class CBCCipherMode extends CipherMode
 
 
 	@Override
-	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV)
+	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV, BlockCipher aTweakCipher)
 	{
 		assert (aUnitSize & (BYTES_PER_BLOCK - 1)) == 0;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
@@ -27,7 +27,7 @@ public final class CBCCipherMode extends CipherMode
 
 		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aMasterIV, aBlockIV, bufferOffset, iv);
+			prepareIV(aMasterIV, aBlockIV, bufferOffset, iv, aTweakCipher);
 
 			for (int block = 0; block < numBlocks; block++, bufferOffset += BYTES_PER_BLOCK)
 			{
@@ -42,7 +42,7 @@ public final class CBCCipherMode extends CipherMode
 
 
 	@Override
-	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV)
+	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV, BlockCipher aTweakCipher)
 	{
 		assert (aUnitSize & (BYTES_PER_BLOCK - 1)) == 0;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
@@ -55,7 +55,7 @@ public final class CBCCipherMode extends CipherMode
 
 		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aMasterIV, aBlockIV, bufferOffset, iv);
+			prepareIV(aMasterIV, aBlockIV, bufferOffset, iv, aTweakCipher);
 
 			for (int block = 0, ivOffset = 0; block < numBlocks; block++, ivOffset = BYTES_PER_BLOCK - ivOffset, bufferOffset += BYTES_PER_BLOCK)
 			{

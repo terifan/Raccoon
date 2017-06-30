@@ -9,14 +9,19 @@ import org.testng.annotations.DataProvider;
 public class BlockCipherNGTest
 {
 	@Test(dataProvider = "ciphers")
-	public void testCBCBlockEncryption(CipherMode aCipherMode, BlockCipher aCipher, BlockCipher aTweak, int aKeyLength)
+	public void testCBCBlockEncryption(CipherMode aCipherMode, BlockCipher aCipher, BlockCipher aTweakCipher, int aKeyLength)
 	{
 		Random rnd = new Random();
 
 		byte[] cipherKey = new byte[aKeyLength];
 		rnd.nextBytes(cipherKey);
 
+		byte[] tweakKey = new byte[aKeyLength];
+		rnd.nextBytes(tweakKey);
+
 		aCipher.engineInit(new SecretKey(cipherKey));
+		
+		aTweakCipher.engineInit(new SecretKey(tweakKey));
 
 		long[] masterIV = {rnd.nextLong(), rnd.nextLong()};
 
@@ -27,15 +32,15 @@ public class BlockCipherNGTest
 
 		long[] blockIV = {rnd.nextLong(), rnd.nextLong()};
 
-		aCipherMode.encrypt(encrypted,   0, 256, aCipher, 0, 128, masterIV, blockIV);
-		aCipherMode.encrypt(encrypted, 256, 256, aCipher, 2, 128, masterIV, blockIV);
-		aCipherMode.encrypt(encrypted, 512, 256, aCipher, 4, 128, masterIV, blockIV);
-		aCipherMode.encrypt(encrypted, 768, 256, aCipher, 6, 128, masterIV, blockIV);
+		aCipherMode.encrypt(encrypted,   0, 256, aCipher, 0, 128, masterIV, blockIV, aTweakCipher);
+		aCipherMode.encrypt(encrypted, 256, 256, aCipher, 2, 128, masterIV, blockIV, aTweakCipher);
+		aCipherMode.encrypt(encrypted, 512, 256, aCipher, 4, 128, masterIV, blockIV, aTweakCipher);
+		aCipherMode.encrypt(encrypted, 768, 256, aCipher, 6, 128, masterIV, blockIV, aTweakCipher);
 
 		byte[] decrypted = encrypted.clone();
 
-		aCipherMode.decrypt(decrypted,   0, 512, aCipher, 0, 128, masterIV, blockIV);
-		aCipherMode.decrypt(decrypted, 512, 512, aCipher, 4, 128, masterIV, blockIV);
+		aCipherMode.decrypt(decrypted,   0, 512, aCipher, 0, 128, masterIV, blockIV, aTweakCipher);
+		aCipherMode.decrypt(decrypted, 512, 512, aCipher, 4, 128, masterIV, blockIV, aTweakCipher);
 
 		assertEquals(decrypted, plain);
 	}

@@ -15,23 +15,26 @@ public class CipherModeNGTest
 
 		byte[] input = new byte[padd + aBlockLength + padd];
 		byte[] key = new byte[32];
+		byte[] tweakKey = new byte[32];
 
 		Random rnd = new Random(1);
 		rnd.nextBytes(input);
 		rnd.nextBytes(key);
+		rnd.nextBytes(tweakKey);
 		long[] iv = {rnd.nextLong(),rnd.nextLong()};
 		long[] blockIV = {rnd.nextLong(),rnd.nextLong()};
 		long unitNo = rnd.nextLong();
 
 		AES cipher = new AES(new SecretKey(key));
+		AES tweakCipher = new AES(new SecretKey(tweakKey));
 
 		byte[] encrypted = input.clone();
 
-		aCipherMode.encrypt(encrypted, padd, aBlockLength, cipher, unitNo, aUnitSize, iv, blockIV);
+		aCipherMode.encrypt(encrypted, padd, aBlockLength, cipher, unitNo, aUnitSize, iv, blockIV, tweakCipher);
 
 		byte[] decrypted = encrypted.clone();
 
-		aCipherMode.decrypt(decrypted, padd, aBlockLength, cipher, unitNo, aUnitSize, iv, blockIV);
+		aCipherMode.decrypt(decrypted, padd, aBlockLength, cipher, unitNo, aUnitSize, iv, blockIV, tweakCipher);
 
 		assertNotEquals(encrypted, input);
 		assertEquals(decrypted, input);

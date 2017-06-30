@@ -479,7 +479,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			mUnitSize = aUnitSize;
 			mCipherMode = aCipherModeFunction.newInstance();
 			mCiphers = aEncryptionFunction.newInstance();
-			mTweakCipher = aEncryptionFunction.newInstance()[0];
+			mTweakCipher = aEncryptionFunction.newTweakInstance();
 			mIV = new long[mCiphers.length][2];
 
 			int offset = aKeyPoolOffset;
@@ -487,16 +487,22 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			mTweakCipher.engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
 			offset += KEY_SIZE_BYTES;
 
-			for (BlockCipher cipher : mCiphers)
+			for (int i = 0; i < 3; i++)
 			{
-				cipher.engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
+				if (i < mCiphers.length)
+				{
+					mCiphers[i].engineInit(new SecretKey(getBytes(aKeyPool, offset, KEY_SIZE_BYTES)));
+				}
 				offset += KEY_SIZE_BYTES;
 			}
 
-			for (int i = 0; i < mIV.length; i++)
+			for (int i = 0; i < 3; i++)
 			{
-				mIV[i][0] = getLong(aKeyPool, offset + 0);
-				mIV[i][1] = getLong(aKeyPool, offset + 8);
+				if (i < mIV.length)
+				{
+					mIV[i][0] = getLong(aKeyPool, offset + 0);
+					mIV[i][1] = getLong(aKeyPool, offset + 8);
+				}
 				offset += IV_SIZE;
 			}
 		}
@@ -506,7 +512,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		{
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, Math.min(mUnitSize, aLength), mIV[i], aIV);
+				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, Math.min(mUnitSize, aLength), mIV[i], aIV, mTweakCipher);
 			}
 		}
 
@@ -515,7 +521,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		{
 			for (int i = mCiphers.length; --i >= 0;)
 			{
-				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, Math.min(mUnitSize, aLength), mIV[i], aIV);
+				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, Math.min(mUnitSize, aLength), mIV[i], aIV, mTweakCipher);
 			}
 		}
 
