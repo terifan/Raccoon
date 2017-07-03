@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,6 +24,7 @@ import org.terifan.raccoon.io.managed.UnsupportedVersionException;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.storage.BlobOutputStream;
 import org.terifan.raccoon.io.physical.FileBlockDevice;
+import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -91,7 +93,7 @@ public final class Database implements AutoCloseable
 
 			boolean newFile = !aFile.exists();
 
-			BlockSizeParam blockSizeParam = getParameter(BlockSizeParam.class, aParameters, new BlockSizeParam(Constants.DEFAULT_BLOCK_SIZE));
+			BlockSizeParam blockSizeParam = getParameter(BlockSizeParam.class, aParameters, new BlockSizeParam(Constants.getDefaultBlockSize()));
 
 			fileBlockDevice = new FileBlockDevice(aFile, blockSizeParam.getValue(), aOpenOptions == OpenOption.READ_ONLY);
 
@@ -251,9 +253,9 @@ public final class Database implements AutoCloseable
 			aBlockDevice.commit();
 		}
 
-		aBlockDevice.getSuperBlock().setApplicationHeader(Constants.RACCOON_DB_IDENTITY);
-		aBlockDevice.getSuperBlock().setApplicationVersion(Constants.RACCOON_DB_VERSION);
-		
+		aBlockDevice.getSuperBlock().setApplicationHeader(Constants.getApplicationidentity());
+		aBlockDevice.getSuperBlock().setApplicationVersion(Constants.getDatabaseVersion());
+
 		Database db = new Database();
 
 		db.mProperties = aParameters;
@@ -283,18 +285,18 @@ public final class Database implements AutoCloseable
 
 		byte[] applicationHeader = superBlock.getApplicationHeader();
 
-//		if (extraData == null || extraData.length < 20)
-//		{
-//			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra data length) (" + (extraData == null ? null : extraData.length) + ")");
-//		}
+		if (applicationHeader == null || applicationHeader.length < BlockPointer.SIZE)
+		{
+			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (short application header)");
+		}
 
-		if (superBlock.getApplicationId().equals(Constants.RACCOON_DB_IDENTITY))
+		if (Arrays.equals(superBlock.getApplicationId(), Constants.getApplicationidentity()))
 		{
 			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra identity)");
 		}
-		if (superBlock.getApplicationVersion() != Constants.RACCOON_DB_VERSION)
+		if (superBlock.getApplicationVersion() != Constants.getDatabaseVersion())
 		{
-			throw new UnsupportedVersionException("Unsupported database version: provided: " + superBlock.getApplicationVersion() + ", expected: " + Constants.RACCOON_DB_VERSION);
+			throw new UnsupportedVersionException("Unsupported database version: provided: " + superBlock.getApplicationVersion() + ", expected: " + Constants.getDatabaseVersion());
 		}
 
 		db.mProperties = aParameters;
@@ -353,7 +355,7 @@ public final class Database implements AutoCloseable
 				return null;
 			}
 
-			table = new TableInstance(this, aTableMetadata, aTableMetadata.getPointer());
+			table = new TableInstance(this, aTableMetadata, aTableMetadata.getTableHeader());
 
 			if (!tableExists)
 			{
@@ -504,9 +506,9 @@ public final class Database implements AutoCloseable
 		Log.inc();
 
 		ByteArrayBuffer buffer = new ByteArrayBuffer(IManagedBlockDevice.EXTRA_DATA_LIMIT);
-		if (mSystemTableMetadata.getPointer() != null)
+		if (mSystemTableMetadata.getTableHeader() != null)
 		{
-			buffer.write(mSystemTableMetadata.getPointer());
+			buffer.write(mSystemTableMetadata.getTableHeader());
 		}
 		buffer.trim();
 

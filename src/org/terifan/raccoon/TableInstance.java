@@ -311,12 +311,12 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 
 		byte[] newPointer = mTableImplementation.marshalHeader();
 
-		if (Arrays.equals(newPointer, mTable.getPointer()))
+		if (Arrays.equals(newPointer, mTable.getTableHeader()))
 		{
 			return false;
 		}
 
-		mTable.setPointer(newPointer);
+		mTable.setTableHeader(newPointer);
 
 		return true;
 	}

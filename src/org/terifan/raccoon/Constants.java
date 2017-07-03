@@ -3,8 +3,20 @@ package org.terifan.raccoon;
 
 public class Constants
 {
-	public final static int RACCOON_DB_VERSION = 4;
-	public final static int EXTRA_DATA_CHECKSUM_SEED = 0xf49209b1;
-	public final static byte[] RACCOON_DB_IDENTITY = "raccoon-database".getBytes();
-	public final static int DEFAULT_BLOCK_SIZE = 4096;
+	final static int getDatabaseVersion()
+	{
+		return 1;
+	}
+
+
+	final static byte[] getApplicationidentity()
+	{
+		return new byte[]{(byte)'r',(byte)'a',(byte)'c',(byte)'c',(byte)'o',(byte)'o',(byte)'n',(byte)'-',(byte)'d',(byte)'a',(byte)'t',(byte)'a',(byte)'b',(byte)'a',(byte)'s',(byte)'e'};
+	}
+
+
+	final static int getDefaultBlockSize()
+	{
+		return 4096;
+	}
 }

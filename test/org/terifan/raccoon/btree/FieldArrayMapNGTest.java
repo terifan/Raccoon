@@ -17,24 +17,24 @@ public class FieldArrayMapNGTest
 	@Test
 	public void testIndexOf() throws IOException
 	{
-		ArrayList<FieldDescriptor> fields = new ArrayList<>();
-		fields.add(new FieldDescriptor(0, 1, 0, ValueType.INT, false, false, true, "test", "test", null));
-			
-		ByteArrayBuffer key = new ByteArrayBuffer(512);
-		FieldWriter.writeField(fields.get(0), 13, key);
-		key.trim();
-		
-		byte[] value = "abc".getBytes();
-
-		byte[] buffer = new byte[512];
-		FieldArrayMap map = new FieldArrayMap(fields, buffer);
-
-		RecordEntry entry = new RecordEntry(key.array(), value, (byte)0);
-
-		map.put(entry);
-
-		Log.hexDump(buffer);
-		
-		assertTrue(true);
+//		ArrayList<FieldDescriptor> fields = new ArrayList<>();
+//		fields.add(new FieldDescriptor(0, 1, 0, ValueType.INT, false, false, true, "test", "test", null));
+//
+//		ByteArrayBuffer key = new ByteArrayBuffer(512);
+//		FieldWriter.writeField(fields.get(0), 13, key);
+//		key.trim();
+//
+//		byte[] value = "abc".getBytes();
+//
+//		byte[] buffer = new byte[512];
+//		FieldArrayMap map = new FieldArrayMap(fields, buffer);
+//
+//		RecordEntry entry = new RecordEntry(key.array(), value, (byte)0);
+//
+//		map.put(entry);
+//
+//		Log.hexDump(buffer);
+//		
+//		assertTrue(true);
 	}
 }

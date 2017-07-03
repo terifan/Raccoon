@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.PerformanceCounters;
-import static org.terifan.raccoon.PerformanceCounters.PUT_VALUE;
 import static org.terifan.raccoon.PerformanceCounters.SPLIT_LEAF;
 import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.TransactionCounter;

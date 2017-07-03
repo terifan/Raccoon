@@ -13,18 +13,6 @@ public class LeafNode extends ArrayMap implements Node
 	}
 
 
-	public LeafNode(byte[] aBuffer)
-	{
-		super(aBuffer);
-	}
-
-
-	public LeafNode(byte[] aBuffer, int aOffset, int aCapacity)
-	{
-		super(aBuffer, aOffset, aCapacity);
-	}
-
-
 	@Override
 	public BlockType getType()
 	{

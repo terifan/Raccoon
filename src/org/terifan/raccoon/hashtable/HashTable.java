@@ -85,7 +85,7 @@ public final class HashTable extends TableImplementation
 	@Override
 	public byte[] marshalHeader()
 	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(BlockPointer.SIZE + 8 + 4 + 4 + 1);
+		ByteArrayBuffer buffer = new ByteArrayBuffer(BlockPointer.SIZE + 4 + 4 + 4 + 3);
 		mRootBlockPointer.marshal(buffer);
 		buffer.writeInt32(mHashSeed);
 		buffer.writeVar32(mNodeSize);

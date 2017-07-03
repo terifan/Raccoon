@@ -20,8 +20,8 @@ public final class Table<T>
 
 	@Key private String mTypeName;
 	@Key private byte[] mDiscriminatorKey;
-	private byte[] mPointer;
 	private EntityDescriptor mEntityDescriptor;
+	private byte[] mTableHeader;
 
 	private transient Class mType;
 	private transient Marshaller mMarshaller;
@@ -132,15 +132,15 @@ public final class Table<T>
 	}
 
 
-	byte[] getPointer()
+	byte[] getTableHeader()
 	{
-		return mPointer;
+		return mTableHeader;
 	}
 
 
-	void setPointer(byte[] aPointer)
+	void setTableHeader(byte[] aTableHeader)
 	{
-		mPointer = aPointer;
+		mTableHeader = aTableHeader;
 	}
 
 

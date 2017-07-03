@@ -80,5 +80,113 @@ public class TestPerformance
 			string1 = aName;
 			string2 = double1 + string1 + long1;
 		}
+
+
+		public int getIntkey1()
+		{
+			return intkey1;
+		}
+
+
+		public void setIntkey1(int aIntkey1)
+		{
+			this.intkey1 = aIntkey1;
+		}
+
+
+		public long getLong1()
+		{
+			return long1;
+		}
+
+
+		public void setLong1(long aLong1)
+		{
+			this.long1 = aLong1;
+		}
+
+
+		public double getDouble1()
+		{
+			return double1;
+		}
+
+
+		public void setDouble1(double aDouble1)
+		{
+			this.double1 = aDouble1;
+		}
+
+
+		public String getString1()
+		{
+			return string1;
+		}
+
+
+		public void setString1(String aString1)
+		{
+			this.string1 = aString1;
+		}
+
+
+		public String getString2()
+		{
+			return string2;
+		}
+
+
+		public void setString2(String aString2)
+		{
+			this.string2 = aString2;
+		}
+
+
+		public boolean isBoolean1()
+		{
+			return boolean1;
+		}
+
+
+		public void setBoolean1(boolean aBoolean1)
+		{
+			this.boolean1 = aBoolean1;
+		}
+
+
+		public int getInt1()
+		{
+			return int1;
+		}
+
+
+		public void setInt1(int aInt1)
+		{
+			this.int1 = aInt1;
+		}
+
+
+		public int getInt2()
+		{
+			return int2;
+		}
+
+
+		public void setInt2(int aInt2)
+		{
+			this.int2 = aInt2;
+		}
+
+
+		public int getInt3()
+		{
+			return int3;
+		}
+
+
+		public void setInt3(int aInt3)
+		{
+			this.int3 = aInt3;
+		}
 	}
 }
