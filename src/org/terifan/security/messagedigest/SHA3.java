@@ -45,7 +45,6 @@ public final class SHA3 extends MessageDigest implements Cloneable
 		this.oneByte = source.oneByte.clone();
 	}
 
-
 	private static long[] keccakRoundConstants = keccakInitializeRoundConstants();
 
 	private static int[] keccakRhoOffsets = keccakInitializeRhoOffsets();

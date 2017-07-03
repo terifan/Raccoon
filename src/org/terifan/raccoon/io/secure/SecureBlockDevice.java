@@ -275,7 +275,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 	private static int computeChecksum(byte[] aSalt, byte[] aPayloadCopy)
 	{
-		return MurmurHash3.hash_x86_32(aSalt, CHECKSUM_SEED) ^ MurmurHash3.hash_x86_32(aPayloadCopy, HEADER_SIZE, PAYLOAD_SIZE - HEADER_SIZE, CHECKSUM_SEED);
+		return MurmurHash3.hash32(aSalt, CHECKSUM_SEED) ^ MurmurHash3.hash32(aPayloadCopy, HEADER_SIZE, PAYLOAD_SIZE - HEADER_SIZE, CHECKSUM_SEED);
 	}
 
 

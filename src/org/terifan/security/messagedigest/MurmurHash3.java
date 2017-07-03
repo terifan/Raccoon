@@ -2,53 +2,43 @@ package org.terifan.security.messagedigest;
 
 
 /**
- * The MurmurHash3 algorithm was created by Austin Appleby. This java port was authored by Yonik Seeley
- * and is placed into the public domain. The author hereby disclaims copyright to this source code.
+ * The MurmurHash3 algorithm was created by Austin Appleby. This java port was authored by Yonik Seeley and is placed into the public
+ * domain. The author hereby disclaims copyright to this source code.
  * <p>
- * This produces exactly the same hash values as the final C++ version of MurmurHash3 and is thus suitable
- * for producing the same hash values across platforms.
+ * This produces exactly the same hash values as the final C++ version of MurmurHash3 and is thus suitable for producing the same hash
+ * values across platforms.
  * <p>
  * The 32 bit x86 version of this hash should be the fastest variant for relatively short keys like ids.
  * <p>
- * Note - The x86 and x64 versions do _not_ produce the same results, as the algorithms are optimized for
- * their respective platforms.
+ * Note - The x86 and x64 versions do _not_ produce the same results, as the algorithms are optimized for their respective platforms.
  * <p>
- * See http://code.google.com/p/smhasher/source/browse/trunk/MurmurHash3.cpp
- * See http://github.com/yonik/java_util
+ * See http://code.google.com/p/smhasher/source/browse/trunk/MurmurHash3.cpp See http://github.com/yonik/java_util
  */
 public class MurmurHash3
 {
 	/**
 	 * Compute the hash value of buffer provided.
 	 *
-	 * @param aData
-	 *   buffer to process
-	 * @param aSeed
-	 *   seed value
-	 * @return
-	 *   the hash value
+	 * @param aData buffer to process
+	 * @param aSeed seed value
+	 * @return the hash value
 	 */
-	public static int hash_x86_32(byte[] aData, int aSeed)
+	public static int hash32(byte[] aData, int aSeed)
 	{
-		return hash_x86_32(aData, 0, aData.length, aSeed);
+		return hash32(aData, 0, aData.length, aSeed);
 	}
 
 
 	/**
 	 * Compute the hash value of buffer provided.
 	 *
-	 * @param aData
-	 *   buffer to process
-	 * @param aOffset
-	 *   offset in buffer
-	 * @param aLength
-	 *   number of bytes to process
-	 * @param aSeed
-	 *   seed value
-	 * @return
-	 *   the hash value
+	 * @param aData buffer to process
+	 * @param aOffset offset in buffer
+	 * @param aLength number of bytes to process
+	 * @param aSeed seed value
+	 * @return the hash value
 	 */
-	public static int hash_x86_32(byte[] aData, int aOffset, int aLength, int aSeed)
+	public static int hash32(byte[] aData, int aOffset, int aLength, int aSeed)
 	{
 		int h1 = aSeed;
 		int c1 = 0xcc9e2d51;
@@ -106,13 +96,13 @@ public class MurmurHash3
 	}
 
 
-	public static long hash_x64_64(byte[] aData, long aSeed)
+	public static long hash64(byte[] aData, long aSeed)
 	{
-		return hash_x64_64(aData, 0, aData.length, aSeed);
+		return hash64(aData, 0, aData.length, aSeed);
 	}
 
 
-	public static long hash_x64_64(byte[] aData, int aOffset, int aLength, long aSeed)
+	public static long hash64(byte[] aData, int aOffset, int aLength, long aSeed)
 	{
 		int nblocks = aLength / 16;
 
@@ -151,26 +141,40 @@ public class MurmurHash3
 
 		switch (aLength & 15)
 		{
-			case 15: k2 |= (0xffL & aData[tail + 14]) << 48;
-			case 14: k2 |= (0xffL & aData[tail + 13]) << 40;
-			case 13: k2 |= (0xffL & aData[tail + 12]) << 32;
-			case 12: k2 |= (0xffL & aData[tail + 11]) << 24;
-			case 11: k2 |= (0xffL & aData[tail + 10]) << 16;
-			case 10: k2 |= (0xffL & aData[tail + 9]) << 8;
-			case 9:	 k2 |= (0xffL & aData[tail + 8]);
+			case 15:
+				k2 |= (0xffL & aData[tail + 14]) << 48;
+			case 14:
+				k2 |= (0xffL & aData[tail + 13]) << 40;
+			case 13:
+				k2 |= (0xffL & aData[tail + 12]) << 32;
+			case 12:
+				k2 |= (0xffL & aData[tail + 11]) << 24;
+			case 11:
+				k2 |= (0xffL & aData[tail + 10]) << 16;
+			case 10:
+				k2 |= (0xffL & aData[tail + 9]) << 8;
+			case 9:
+				k2 |= (0xffL & aData[tail + 8]);
 				k2 *= c2;
 				k2 = Long.rotateLeft(k2, 33);
 				k2 *= c1;
 				h2 ^= k2;
-				// fall-trough
-			case 8: k1 |= (0xffL & aData[tail + 7]) << 56;
-			case 7: k1 |= (0xffL & aData[tail + 6]) << 48;
-			case 6: k1 |= (0xffL & aData[tail + 5]) << 40;
-			case 5: k1 |= (0xffL & aData[tail + 4]) << 32;
-			case 4: k1 |= (0xffL & aData[tail + 3]) << 24;
-			case 3: k1 |= (0xffL & aData[tail + 2]) << 16;
-			case 2: k1 |= (0xffL & aData[tail + 1]) << 8;
-			case 1: k1 |= (0xffL & aData[tail + 0]);
+			case 8:
+				k1 |= (0xffL & aData[tail + 7]) << 56;
+			case 7:
+				k1 |= (0xffL & aData[tail + 6]) << 48;
+			case 6:
+				k1 |= (0xffL & aData[tail + 5]) << 40;
+			case 5:
+				k1 |= (0xffL & aData[tail + 4]) << 32;
+			case 4:
+				k1 |= (0xffL & aData[tail + 3]) << 24;
+			case 3:
+				k1 |= (0xffL & aData[tail + 2]) << 16;
+			case 2:
+				k1 |= (0xffL & aData[tail + 1]) << 8;
+			case 1:
+				k1 |= (0xffL & aData[tail + 0]);
 				k1 *= c1;
 				k1 = Long.rotateLeft(k1, 31);
 				k1 *= c2;
@@ -209,50 +213,42 @@ public class MurmurHash3
 	}
 
 
-	private static long getLong(byte [] aBuffer, int aPosition)
+	private static long getLong(byte[] aBuffer, int aPosition)
 	{
-		return (((long)(aBuffer[aPosition + 7]      ) << 56)
-			  + ((long)(aBuffer[aPosition + 6] & 255) << 48)
-			  + ((long)(aBuffer[aPosition + 5] & 255) << 40)
-			  + ((long)(aBuffer[aPosition + 4] & 255) << 32)
-			  + ((long)(aBuffer[aPosition + 3] & 255) << 24)
-			  + ((      aBuffer[aPosition + 2] & 255) << 16)
-			  + ((      aBuffer[aPosition + 1] & 255) <<  8)
-			  + ((      aBuffer[aPosition    ] & 255       )));
+		return (((long)(aBuffer[aPosition + 7]) << 56)
+			+ ((long)(aBuffer[aPosition + 6] & 255) << 48)
+			+ ((long)(aBuffer[aPosition + 5] & 255) << 40)
+			+ ((long)(aBuffer[aPosition + 4] & 255) << 32)
+			+ ((long)(aBuffer[aPosition + 3] & 255) << 24)
+			+ ((aBuffer[aPosition + 2] & 255) << 16)
+			+ ((aBuffer[aPosition + 1] & 255) << 8)
+			+ ((aBuffer[aPosition] & 255)));
 	}
 
 
 	/**
 	 * Compute the hash value of buffer provided.
 	 *
-	 * @param aData
-	 *   buffer to process
-	 * @param aSeed
-	 *   seed value
-	 * @return
-	 *   the provided output array
+	 * @param aData buffer to process
+	 * @param aSeed seed value
+	 * @return the provided output array
 	 */
-	public static long[] hash_x64_128(byte[] aData, long aSeed)
+	public static long[] hash128(byte[] aData, long aSeed)
 	{
-		return hash_x64_128(aData, 0, aData.length, aSeed);
+		return hash128(aData, 0, aData.length, aSeed);
 	}
 
 
 	/**
 	 * Compute the hash value of buffer provided.
 	 *
-	 * @param aData
-	 *   buffer to process
-	 * @param aOffset
-	 *   offset in buffer
-	 * @param aLength
-	 *   number of bytes to process
-	 * @param aSeed
-	 *   seed value
-	 * @return
-	 *   the provided output array
+	 * @param aData buffer to process
+	 * @param aOffset offset in buffer
+	 * @param aLength number of bytes to process
+	 * @param aSeed seed value
+	 * @return the provided output array
 	 */
-	public static long[] hash_x64_128(byte[] aData, int aOffset, int aLength, long aSeed)
+	public static long[] hash128(byte[] aData, int aOffset, int aLength, long aSeed)
 	{
 		int nblocks = aLength / 16;
 
@@ -291,26 +287,40 @@ public class MurmurHash3
 
 		switch (aLength & 15)
 		{
-			case 15: k2 |= (0xffL & aData[tail + 14]) << 48;
-			case 14: k2 |= (0xffL & aData[tail + 13]) << 40;
-			case 13: k2 |= (0xffL & aData[tail + 12]) << 32;
-			case 12: k2 |= (0xffL & aData[tail + 11]) << 24;
-			case 11: k2 |= (0xffL & aData[tail + 10]) << 16;
-			case 10: k2 |= (0xffL & aData[tail + 9]) << 8;
-			case 9:	 k2 |= (0xffL & aData[tail + 8]);
+			case 15:
+				k2 |= (0xffL & aData[tail + 14]) << 48;
+			case 14:
+				k2 |= (0xffL & aData[tail + 13]) << 40;
+			case 13:
+				k2 |= (0xffL & aData[tail + 12]) << 32;
+			case 12:
+				k2 |= (0xffL & aData[tail + 11]) << 24;
+			case 11:
+				k2 |= (0xffL & aData[tail + 10]) << 16;
+			case 10:
+				k2 |= (0xffL & aData[tail + 9]) << 8;
+			case 9:
+				k2 |= (0xffL & aData[tail + 8]);
 				k2 *= c2;
 				k2 = Long.rotateLeft(k2, 33);
 				k2 *= c1;
 				h2 ^= k2;
-				// fall-trough
-			case 8: k1 |= (0xffL & aData[tail + 7]) << 56;
-			case 7: k1 |= (0xffL & aData[tail + 6]) << 48;
-			case 6: k1 |= (0xffL & aData[tail + 5]) << 40;
-			case 5: k1 |= (0xffL & aData[tail + 4]) << 32;
-			case 4: k1 |= (0xffL & aData[tail + 3]) << 24;
-			case 3: k1 |= (0xffL & aData[tail + 2]) << 16;
-			case 2: k1 |= (0xffL & aData[tail + 1]) << 8;
-			case 1: k1 |= (0xffL & aData[tail + 0]);
+			case 8:
+				k1 |= (0xffL & aData[tail + 7]) << 56;
+			case 7:
+				k1 |= (0xffL & aData[tail + 6]) << 48;
+			case 6:
+				k1 |= (0xffL & aData[tail + 5]) << 40;
+			case 5:
+				k1 |= (0xffL & aData[tail + 4]) << 32;
+			case 4:
+				k1 |= (0xffL & aData[tail + 3]) << 24;
+			case 3:
+				k1 |= (0xffL & aData[tail + 2]) << 16;
+			case 2:
+				k1 |= (0xffL & aData[tail + 1]) << 8;
+			case 1:
+				k1 |= (0xffL & aData[tail + 0]);
 				k1 *= c1;
 				k1 = Long.rotateLeft(k1, 31);
 				k1 *= c2;

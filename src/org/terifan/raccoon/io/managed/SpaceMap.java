@@ -125,7 +125,7 @@ class SpaceMap
 		aSpaceMapBlockPointer.setBlockIndex(aBlockDevice.allocBlockInternal(aSpaceMapBlockPointer.getAllocatedSize()));
 		aSpaceMapBlockPointer.setLogicalSize(buffer.position());
 		aSpaceMapBlockPointer.setPhysicalSize(blockSize * aSpaceMapBlockPointer.getAllocatedSize());
-		aSpaceMapBlockPointer.setChecksum(MurmurHash3.hash_x64_128(buffer.array(), 0, buffer.position(), 0L));
+		aSpaceMapBlockPointer.setChecksum(MurmurHash3.hash128(buffer.array(), 0, buffer.position(), 0L));
 		aSpaceMapBlockPointer.setIV(ISAAC.PRNG.nextLong(), ISAAC.PRNG.nextLong());
 
 		// Pad buffer to block size
@@ -166,7 +166,7 @@ class SpaceMap
 
 			aBlockDeviceDirect.readBlock(blockPointer.getBlockIndex0(), buffer.array(), 0, blockSize * blockPointer.getAllocatedSize(), blockPointer.getIV());
 
-			long[] hash = MurmurHash3.hash_x64_128(buffer.array(), 0, blockPointer.getLogicalSize(), 0L);
+			long[] hash = MurmurHash3.hash128(buffer.array(), 0, blockPointer.getLogicalSize(), 0L);
 
 			if (!blockPointer.verifyChecksum(hash))
 			{

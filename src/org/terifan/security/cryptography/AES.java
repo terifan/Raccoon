@@ -6,36 +6,36 @@ import java.util.Arrays;
 /**
  * AES (Rijndael) is a variable block-size and variable key-size symmetric cipher.
  *
- * <p>References:</p>
+ * <p>
+ * References:</p>
  *
  * <ol>
- *	 <li><a href="http://www.esat.kuleuven.ac.be/~rijmen/rijndael/">The
- *	 Rijndael Block Cipher - AES Proposal</a>.<br>
- *	 <a href="mailto:vincent.rijmen@esat.kuleuven.ac.be">Vincent Rijmen</a> and
- *	 <a href="mailto:daemen.j@protonworld.com">Joan Daemen</a>.</li>
+ * <li><a href="http://www.esat.kuleuven.ac.be/~rijmen/rijndael/">The Rijndael Block Cipher - AES Proposal</a>.<br>
+ * <a href="mailto:vincent.rijmen@esat.kuleuven.ac.be">Vincent Rijmen</a> and
+ * <a href="mailto:daemen.j@protonworld.com">Joan Daemen</a>.</li>
  * </ol>
  */
 public final class AES implements BlockCipher
 {
-	private static final String SS =
-			"\u637C\u777B\uF26B\u6FC5\u3001\u672B\uFED7\uAB76"
-			+ "\uCA82\uC97D\uFA59\u47F0\uADD4\uA2AF\u9CA4\u72C0"
-			+ "\uB7FD\u9326\u363F\uF7CC\u34A5\uE5F1\u71D8\u3115"
-			+ "\u04C7\u23C3\u1896\u059A\u0712\u80E2\uEB27\uB275"
-			+ "\u0983\u2C1A\u1B6E\u5AA0\u523B\uD6B3\u29E3\u2F84"
-			+ "\u53D1\u00ED\u20FC\uB15B\u6ACB\uBE39\u4A4C\u58CF"
-			+ "\uD0EF\uAAFB\u434D\u3385\u45F9\u027F\u503C\u9FA8"
-			+ "\u51A3\u408F\u929D\u38F5\uBCB6\uDA21\u10FF\uF3D2"
-			+ "\uCD0C\u13EC\u5F97\u4417\uC4A7\u7E3D\u645D\u1973"
-			+ "\u6081\u4FDC\u222A\u9088\u46EE\uB814\uDE5E\u0BDB"
-			+ "\uE032\u3A0A\u4906\u245C\uC2D3\uAC62\u9195\uE479"
-			+ "\uE7C8\u376D\u8DD5\u4EA9\u6C56\uF4EA\u657A\uAE08"
-			+ "\uBA78\u252E\u1CA6\uB4C6\uE8DD\u741F\u4BBD\u8B8A"
-			+ "\u703E\uB566\u4803\uF60E\u6135\u57B9\u86C1\u1D9E"
-			+ "\uE1F8\u9811\u69D9\u8E94\u9B1E\u87E9\uCE55\u28DF"
-			+ "\u8CA1\u890D\uBFE6\u4268\u4199\u2D0F\uB054\uBB16";
+	private static final String SS
+		= "\u637C\u777B\uF26B\u6FC5\u3001\u672B\uFED7\uAB76"
+		+ "\uCA82\uC97D\uFA59\u47F0\uADD4\uA2AF\u9CA4\u72C0"
+		+ "\uB7FD\u9326\u363F\uF7CC\u34A5\uE5F1\u71D8\u3115"
+		+ "\u04C7\u23C3\u1896\u059A\u0712\u80E2\uEB27\uB275"
+		+ "\u0983\u2C1A\u1B6E\u5AA0\u523B\uD6B3\u29E3\u2F84"
+		+ "\u53D1\u00ED\u20FC\uB15B\u6ACB\uBE39\u4A4C\u58CF"
+		+ "\uD0EF\uAAFB\u434D\u3385\u45F9\u027F\u503C\u9FA8"
+		+ "\u51A3\u408F\u929D\u38F5\uBCB6\uDA21\u10FF\uF3D2"
+		+ "\uCD0C\u13EC\u5F97\u4417\uC4A7\u7E3D\u645D\u1973"
+		+ "\u6081\u4FDC\u222A\u9088\u46EE\uB814\uDE5E\u0BDB"
+		+ "\uE032\u3A0A\u4906\u245C\uC2D3\uAC62\u9195\uE479"
+		+ "\uE7C8\u376D\u8DD5\u4EA9\u6C56\uF4EA\u657A\uAE08"
+		+ "\uBA78\u252E\u1CA6\uB4C6\uE8DD\u741F\u4BBD\u8B8A"
+		+ "\u703E\uB566\u4803\uF60E\u6135\u57B9\u86C1\u1D9E"
+		+ "\uE1F8\u9811\u69D9\u8E94\u9B1E\u87E9\uCE55\u28DF"
+		+ "\u8CA1\u890D\uBFE6\u4268\u4199\u2D0F\uB054\uBB16";
 	private final static int[] S = new int[256];
-	private final static int[] Si = new int[256];
+	private final static int[] SI = new int[256];
 	private final static int[] T1 = new int[256];
 	private final static int[] T2 = new int[256];
 	private final static int[] T3 = new int[256];
@@ -53,8 +53,8 @@ public final class AES implements BlockCipher
 
 	static
 	{
-		int ROOT = 0x11B;
-		int i, j = 0;
+		int root = 0x11B;
+		int i = 0;
 
 		// S-box, inverse S-box, T-boxes, U-boxes
 		int s, s2, s3, i2, i4, i8, i9, ib, id, ie, t;
@@ -64,27 +64,27 @@ public final class AES implements BlockCipher
 			c = SS.charAt(i >>> 1);
 			S[i] = 255 & (((i & 1) == 0) ? c >>> 8 : c & 255);
 			s = S[i] & 255;
-			Si[s] = 255 & i;
+			SI[s] = 255 & i;
 			s2 = s << 1;
 			if (s2 >= 0x100)
 			{
-				s2 ^= ROOT;
+				s2 ^= root;
 			}
 			s3 = s2 ^ s;
 			i2 = i << 1;
 			if (i2 >= 0x100)
 			{
-				i2 ^= ROOT;
+				i2 ^= root;
 			}
 			i4 = i2 << 1;
 			if (i4 >= 0x100)
 			{
-				i4 ^= ROOT;
+				i4 ^= root;
 			}
 			i8 = i4 << 1;
 			if (i8 >= 0x100)
 			{
-				i8 ^= ROOT;
+				i8 ^= root;
 			}
 			i9 = i8 ^ i;
 			ib = i9 ^ i2;
@@ -111,9 +111,9 @@ public final class AES implements BlockCipher
 			r <<= 1;
 			if (r >= 0x100)
 			{
-				r ^= ROOT;
+				r ^= root;
 			}
-			rcon[i] = (byte) r;
+			rcon[i] = (byte)r;
 		}
 	}
 	private transient int[][] ke;
@@ -143,79 +143,79 @@ public final class AES implements BlockCipher
 
 		int bs = 16;
 
-		int ROUNDS = getRounds(k.length, bs);
-		int BC = bs / 4;
-		ke = new int[ROUNDS + 1][BC]; // encryption round keys
-		kd = new int[ROUNDS + 1][BC]; // decryption round keys
-		int ROUND_KEY_COUNT = (ROUNDS + 1) * BC;
-		int KC = k.length / 4;
-		int[] tk = new int[KC];
+		int rounds = getRounds(k.length, bs);
+		int bc = bs / 4;
+		ke = new int[rounds + 1][bc]; // encryption round keys
+		kd = new int[rounds + 1][bc]; // decryption round keys
+		int roundKeyCount = (rounds + 1) * bc;
+		int kc = k.length / 4;
+		int[] tk = new int[kc];
 		int i, j;
 
 		// copy user material bytes into temporary ints
-		for (i = 0, j = 0; i < KC;)
+		for (i = 0, j = 0; i < kc;)
 		{
 			tk[i++] = k[j++] << 24
-					| (k[j++] & 255) << 16
-					| (k[j++] & 255) << 8
-					| (k[j++] & 255);
+				| (k[j++] & 255) << 16
+				| (k[j++] & 255) << 8
+				| (k[j++] & 255);
 		}
 		// copy values into round key arrays
 		int t = 0;
-		for (j = 0; (j < KC) && (t < ROUND_KEY_COUNT); j++, t++)
+		for (j = 0; (j < kc) && (t < roundKeyCount); j++, t++)
 		{
-			ke[t / BC][t % BC] = tk[j];
-			kd[ROUNDS - (t / BC)][t % BC] = tk[j];
+			ke[t / bc][t % bc] = tk[j];
+			kd[rounds - (t / bc)][t % bc] = tk[j];
 		}
 		int tt, rconpointer = 0;
-		while (t < ROUND_KEY_COUNT)
+		while (t < roundKeyCount)
 		{
 			// extrapolate using phi (the round key evolution function)
-			tt = tk[KC - 1];
+			tt = tk[kc - 1];
 			tk[0] ^= (S[(tt >>> 16) & 255] & 255) << 24
-					^ (S[(tt >>> 8) & 255] & 255) << 16
-					^ (S[ tt & 255] & 255) << 8
-					^ (S[(tt >>> 24)] & 255)
-					^ rcon[rconpointer++] << 24;
-			if (KC != 8)
+				^ (S[(tt >>> 8) & 255] & 255) << 16
+				^ (S[tt & 255] & 255) << 8
+				^ (S[(tt >>> 24)] & 255)
+				^ rcon[rconpointer++] << 24;
+			if (kc != 8)
 			{
-				for (i = 1, j = 0; i < KC;)
+				for (i = 1, j = 0; i < kc;)
 				{
 					tk[i++] ^= tk[j++];
 				}
 			}
 			else
 			{
-				for (i = 1, j = 0; i < KC / 2;)
+				for (i = 1, j = 0; i < kc / 2;)
 				{
 					tk[i++] ^= tk[j++];
 				}
-				tt = tk[KC / 2 - 1];
-				tk[KC / 2] ^= (S[ tt & 255] & 255)
-						^ (S[(tt >>> 8) & 255] & 255) << 8
-						^ (S[(tt >>> 16) & 255] & 255) << 16
-						^ S[(tt >>> 24) & 255] << 24;
-				for (j = KC / 2, i = j + 1; i < KC;)
+				tt = tk[kc / 2 - 1];
+				tk[kc / 2] ^= (S[tt & 255] & 255)
+					^ (S[(tt >>> 8) & 255] & 255) << 8
+					^ (S[(tt >>> 16) & 255] & 255) << 16
+					^ S[(tt >>> 24) & 255] << 24;
+				for (j = kc / 2, i = j + 1; i < kc;)
 				{
 					tk[i++] ^= tk[j++];
 				}
 			}
 			// copy values into round key arrays
-			for (j = 0; (j < KC) && (t < ROUND_KEY_COUNT); j++, t++)
+			for (j = 0; (j < kc) && (t < roundKeyCount); j++, t++)
 			{
-				ke[t / BC][t % BC] = tk[j];
-				kd[ROUNDS - (t / BC)][t % BC] = tk[j];
+				ke[t / bc][t % bc] = tk[j];
+				kd[rounds - (t / bc)][t % bc] = tk[j];
 			}
 		}
-		for (int r = 1; r < ROUNDS; r++)
+		for (int r = 1; r < rounds; r++)
 		{ // inverse MixColumn where needed
-			for (j = 0; j < BC; j++)
+			for (j = 0; j < bc; j++)
 			{
 				tt = kd[r][j];
 				kd[r][j] = U1[(tt >>> 24)]
-						^ U2[(tt >>> 16) & 255]
-						^ U3[(tt >>> 8) & 255]
-						^ U4[ tt & 255];
+					^ U2[(tt >>> 16) & 255]
+					^ U3[(tt >>> 8) & 255]
+					^ U4[tt & 255];
 			}
 		}
 	}
@@ -224,169 +224,157 @@ public final class AES implements BlockCipher
 	/**
 	 * Encrypts a single block of plaintext in ECB-mode.
 	 *
-	 * @param in
-	 *    A buffer containing the plaintext to be encrypted.
-	 * @param inOffset
-	 *    Index in the in buffer where plaintext should be read.
-	 * @param out
-	 *    A buffer where ciphertext is written.
-	 * @param outOffset
-	 *    Index in the out buffer where ciphertext should be written.
+	 * @param in A buffer containing the plaintext to be encrypted.
+	 * @param inOffset Index in the in buffer where plaintext should be read.
+	 * @param out A buffer where ciphertext is written.
+	 * @param outOffset Index in the out buffer where ciphertext should be written.
 	 */
 	@Override
 	public void engineEncryptBlock(byte[] in, int inOffset, byte[] out, int outOffset)
 	{
-		int ROUNDS = ke.length - 1;
-		int[] Ker = ke[0];
-		int[] _T1 = T1;
-		int[] _T2 = T2;
-		int[] _T3 = T3;
-		int[] _T4 = T4;
+		int rounds = ke.length - 1;
+		int[] ker = ke[0];
+		int[] _t1 = T1;
+		int[] _t2 = T2;
+		int[] _t3 = T3;
+		int[] _t4 = T4;
 
-		int t0 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ Ker[0];
-		int t1 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ Ker[1];
-		int t2 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ Ker[2];
-		int t3 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ Ker[3];
+		int t0 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ ker[0];
+		int t1 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ ker[1];
+		int t2 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ ker[2];
+		int t3 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ ker[3];
 
-		for (int r = 1; r < ROUNDS; r++)
+		for (int r = 1; r < rounds; r++)
 		{
-			Ker = ke[r];
-			int a0 = (_T1[t0 >>> 24] ^ _T2[(t1 >> 16) & 255] ^ _T3[(t2 >> 8) & 255] ^ _T4[t3 & 255]) ^ Ker[0];
-			int a1 = (_T1[t1 >>> 24] ^ _T2[(t2 >> 16) & 255] ^ _T3[(t3 >> 8) & 255] ^ _T4[t0 & 255]) ^ Ker[1];
-			int a2 = (_T1[t2 >>> 24] ^ _T2[(t3 >> 16) & 255] ^ _T3[(t0 >> 8) & 255] ^ _T4[t1 & 255]) ^ Ker[2];
-			int a3 = (_T1[t3 >>> 24] ^ _T2[(t0 >> 16) & 255] ^ _T3[(t1 >> 8) & 255] ^ _T4[t2 & 255]) ^ Ker[3];
+			ker = ke[r];
+			int a0 = (_t1[t0 >>> 24] ^ _t2[(t1 >> 16) & 255] ^ _t3[(t2 >> 8) & 255] ^ _t4[t3 & 255]) ^ ker[0];
+			int a1 = (_t1[t1 >>> 24] ^ _t2[(t2 >> 16) & 255] ^ _t3[(t3 >> 8) & 255] ^ _t4[t0 & 255]) ^ ker[1];
+			int a2 = (_t1[t2 >>> 24] ^ _t2[(t3 >> 16) & 255] ^ _t3[(t0 >> 8) & 255] ^ _t4[t1 & 255]) ^ ker[2];
+			int a3 = (_t1[t3 >>> 24] ^ _t2[(t0 >> 16) & 255] ^ _t3[(t1 >> 8) & 255] ^ _t4[t2 & 255]) ^ ker[3];
 			t0 = a0;
 			t1 = a1;
 			t2 = a2;
 			t3 = a3;
 		}
 
-		Ker = ke[ROUNDS];
+		ker = ke[rounds];
 		int[] _S = S;
 
-		int tt0 = Ker[0] ^ ((_S[t0 >>> 24] << 24) + (_S[(t1 >> 16) & 255] << 16) + (_S[(t2 >> 8) & 255] << 8) + _S[t3 & 255]);
-		int tt1 = Ker[1] ^ ((_S[t1 >>> 24] << 24) + (_S[(t2 >> 16) & 255] << 16) + (_S[(t3 >> 8) & 255] << 8) + _S[t0 & 255]);
-		int tt2 = Ker[2] ^ ((_S[t2 >>> 24] << 24) + (_S[(t3 >> 16) & 255] << 16) + (_S[(t0 >> 8) & 255] << 8) + _S[t1 & 255]);
-		int tt3 = Ker[3] ^ ((_S[t3 >>> 24] << 24) + (_S[(t0 >> 16) & 255] << 16) + (_S[(t1 >> 8) & 255] << 8) + _S[t2 & 255]);
+		int tt0 = ker[0] ^ ((_S[t0 >>> 24] << 24) + (_S[(t1 >> 16) & 255] << 16) + (_S[(t2 >> 8) & 255] << 8) + _S[t3 & 255]);
+		int tt1 = ker[1] ^ ((_S[t1 >>> 24] << 24) + (_S[(t2 >> 16) & 255] << 16) + (_S[(t3 >> 8) & 255] << 8) + _S[t0 & 255]);
+		int tt2 = ker[2] ^ ((_S[t2 >>> 24] << 24) + (_S[(t3 >> 16) & 255] << 16) + (_S[(t0 >> 8) & 255] << 8) + _S[t1 & 255]);
+		int tt3 = ker[3] ^ ((_S[t3 >>> 24] << 24) + (_S[(t0 >> 16) & 255] << 16) + (_S[(t1 >> 8) & 255] << 8) + _S[t2 & 255]);
 
-		out[outOffset++] = (byte) (tt0 >>> 24);
-		out[outOffset++] = (byte) (tt0 >> 16);
-		out[outOffset++] = (byte) (tt0 >> 8);
-		out[outOffset++] = (byte) (tt0);
-		out[outOffset++] = (byte) (tt1 >>> 24);
-		out[outOffset++] = (byte) (tt1 >> 16);
-		out[outOffset++] = (byte) (tt1 >> 8);
-		out[outOffset++] = (byte) (tt1);
-		out[outOffset++] = (byte) (tt2 >>> 24);
-		out[outOffset++] = (byte) (tt2 >> 16);
-		out[outOffset++] = (byte) (tt2 >> 8);
-		out[outOffset++] = (byte) (tt2);
-		out[outOffset++] = (byte) (tt3 >>> 24);
-		out[outOffset++] = (byte) (tt3 >> 16);
-		out[outOffset++] = (byte) (tt3 >> 8);
-		out[outOffset++] = (byte) (tt3);
+		out[outOffset++] = (byte)(tt0 >>> 24);
+		out[outOffset++] = (byte)(tt0 >> 16);
+		out[outOffset++] = (byte)(tt0 >> 8);
+		out[outOffset++] = (byte)(tt0);
+		out[outOffset++] = (byte)(tt1 >>> 24);
+		out[outOffset++] = (byte)(tt1 >> 16);
+		out[outOffset++] = (byte)(tt1 >> 8);
+		out[outOffset++] = (byte)(tt1);
+		out[outOffset++] = (byte)(tt2 >>> 24);
+		out[outOffset++] = (byte)(tt2 >> 16);
+		out[outOffset++] = (byte)(tt2 >> 8);
+		out[outOffset++] = (byte)(tt2);
+		out[outOffset++] = (byte)(tt3 >>> 24);
+		out[outOffset++] = (byte)(tt3 >> 16);
+		out[outOffset++] = (byte)(tt3 >> 8);
+		out[outOffset++] = (byte)(tt3);
 	}
 
 
 	/**
 	 * Decrypts a single block of ciphertext in ECB-mode.
 	 *
-	 * @param in
-	 *    A buffer containing the ciphertext to be decrypted.
-	 * @param inOffset
-	 *    Index in the in buffer where ciphertext should be read.
-	 * @param out
-	 *    A buffer where plaintext is written.
-	 * @param outOffset
-	 *    Index in the out buffer where plaintext should be written.
+	 * @param in A buffer containing the ciphertext to be decrypted.
+	 * @param inOffset Index in the in buffer where ciphertext should be read.
+	 * @param out A buffer where plaintext is written.
+	 * @param outOffset Index in the out buffer where plaintext should be written.
 	 */
 	@Override
 	public void engineDecryptBlock(byte[] in, int inOffset, byte[] out, int outOffset)
 	{
-		int ROUNDS = kd.length - 1;
-		int[] Kdr = kd[0];
+		int rounds = kd.length - 1;
+		int[] kdr = kd[0];
 
-		int t0 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ Kdr[0];
-		int t1 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ Kdr[1];
-		int t2 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ Kdr[2];
-		int t3 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ Kdr[3];
+		int t0 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ kdr[0];
+		int t1 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ kdr[1];
+		int t2 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ kdr[2];
+		int t3 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ kdr[3];
 
-		for (int r = 1; r < ROUNDS; r++)
+		for (int r = 1; r < rounds; r++)
 		{
-			Kdr = kd[r];
-			int a0 = (T5[t0 >>> 24] ^ T6[(t3 >> 16) & 255] ^ T7[(t2 >> 8) & 255] ^ T8[t1 & 255]) ^ Kdr[0];
-			int a1 = (T5[t1 >>> 24] ^ T6[(t0 >> 16) & 255] ^ T7[(t3 >> 8) & 255] ^ T8[t2 & 255]) ^ Kdr[1];
-			int a2 = (T5[t2 >>> 24] ^ T6[(t1 >> 16) & 255] ^ T7[(t0 >> 8) & 255] ^ T8[t3 & 255]) ^ Kdr[2];
-			int a3 = (T5[t3 >>> 24] ^ T6[(t2 >> 16) & 255] ^ T7[(t1 >> 8) & 255] ^ T8[t0 & 255]) ^ Kdr[3];
+			kdr = kd[r];
+			int a0 = (T5[t0 >>> 24] ^ T6[(t3 >> 16) & 255] ^ T7[(t2 >> 8) & 255] ^ T8[t1 & 255]) ^ kdr[0];
+			int a1 = (T5[t1 >>> 24] ^ T6[(t0 >> 16) & 255] ^ T7[(t3 >> 8) & 255] ^ T8[t2 & 255]) ^ kdr[1];
+			int a2 = (T5[t2 >>> 24] ^ T6[(t1 >> 16) & 255] ^ T7[(t0 >> 8) & 255] ^ T8[t3 & 255]) ^ kdr[2];
+			int a3 = (T5[t3 >>> 24] ^ T6[(t2 >> 16) & 255] ^ T7[(t1 >> 8) & 255] ^ T8[t0 & 255]) ^ kdr[3];
 			t0 = a0;
 			t1 = a1;
 			t2 = a2;
 			t3 = a3;
 		}
 
-		Kdr = kd[ROUNDS];
-		int[] _S = Si;
+		kdr = kd[rounds];
+		int[] _s = SI;
 
-		int tt0 = Kdr[0] ^ ((_S[t0 >>> 24] << 24) + (_S[(t3 >> 16) & 255] << 16) + (_S[(t2 >> 8) & 255] << 8) + _S[t1 & 255]);
-		int tt1 = Kdr[1] ^ ((_S[t1 >>> 24] << 24) + (_S[(t0 >> 16) & 255] << 16) + (_S[(t3 >> 8) & 255] << 8) + _S[t2 & 255]);
-		int tt2 = Kdr[2] ^ ((_S[t2 >>> 24] << 24) + (_S[(t1 >> 16) & 255] << 16) + (_S[(t0 >> 8) & 255] << 8) + _S[t3 & 255]);
-		int tt3 = Kdr[3] ^ ((_S[t3 >>> 24] << 24) + (_S[(t2 >> 16) & 255] << 16) + (_S[(t1 >> 8) & 255] << 8) + _S[t0 & 255]);
+		int tt0 = kdr[0] ^ ((_s[t0 >>> 24] << 24) + (_s[(t3 >> 16) & 255] << 16) + (_s[(t2 >> 8) & 255] << 8) + _s[t1 & 255]);
+		int tt1 = kdr[1] ^ ((_s[t1 >>> 24] << 24) + (_s[(t0 >> 16) & 255] << 16) + (_s[(t3 >> 8) & 255] << 8) + _s[t2 & 255]);
+		int tt2 = kdr[2] ^ ((_s[t2 >>> 24] << 24) + (_s[(t1 >> 16) & 255] << 16) + (_s[(t0 >> 8) & 255] << 8) + _s[t3 & 255]);
+		int tt3 = kdr[3] ^ ((_s[t3 >>> 24] << 24) + (_s[(t2 >> 16) & 255] << 16) + (_s[(t1 >> 8) & 255] << 8) + _s[t0 & 255]);
 
-		out[outOffset++] = (byte) (tt0 >>> 24);
-		out[outOffset++] = (byte) (tt0 >> 16);
-		out[outOffset++] = (byte) (tt0 >> 8);
-		out[outOffset++] = (byte) (tt0);
-		out[outOffset++] = (byte) (tt1 >>> 24);
-		out[outOffset++] = (byte) (tt1 >> 16);
-		out[outOffset++] = (byte) (tt1 >> 8);
-		out[outOffset++] = (byte) (tt1);
-		out[outOffset++] = (byte) (tt2 >>> 24);
-		out[outOffset++] = (byte) (tt2 >> 16);
-		out[outOffset++] = (byte) (tt2 >> 8);
-		out[outOffset++] = (byte) (tt2);
-		out[outOffset++] = (byte) (tt3 >>> 24);
-		out[outOffset++] = (byte) (tt3 >> 16);
-		out[outOffset++] = (byte) (tt3 >> 8);
-		out[outOffset++] = (byte) (tt3);
+		out[outOffset++] = (byte)(tt0 >>> 24);
+		out[outOffset++] = (byte)(tt0 >> 16);
+		out[outOffset++] = (byte)(tt0 >> 8);
+		out[outOffset++] = (byte)(tt0);
+		out[outOffset++] = (byte)(tt1 >>> 24);
+		out[outOffset++] = (byte)(tt1 >> 16);
+		out[outOffset++] = (byte)(tt1 >> 8);
+		out[outOffset++] = (byte)(tt1);
+		out[outOffset++] = (byte)(tt2 >>> 24);
+		out[outOffset++] = (byte)(tt2 >> 16);
+		out[outOffset++] = (byte)(tt2 >> 8);
+		out[outOffset++] = (byte)(tt2);
+		out[outOffset++] = (byte)(tt3 >>> 24);
+		out[outOffset++] = (byte)(tt3 >> 16);
+		out[outOffset++] = (byte)(tt3 >> 8);
+		out[outOffset++] = (byte)(tt3);
 	}
 
 
 	/**
 	 * Encrypts a single block of plaintext in ECB-mode.
 	 *
-	 * @param in
-	 *    A buffer containing the plaintext to be encrypted.
-	 * @param inOffset
-	 *    Index in the in buffer where plaintext should be read.
-	 * @param out
-	 *    A buffer where ciphertext is written.
-	 * @param outOffset
-	 *    Index in the out buffer where ciphertext should be written.
+	 * @param in A buffer containing the plaintext to be encrypted.
+	 * @param inOffset Index in the in buffer where plaintext should be read.
+	 * @param out A buffer where ciphertext is written.
+	 * @param outOffset Index in the out buffer where ciphertext should be written.
 	 */
 	@Override
 	public void engineEncryptBlock(int[] in, int inOffset, int[] out, int outOffset)
 	{
-		int ROUNDS = ke.length - 1;
-		int[] Ker = ke[0];
+		int rounds = ke.length - 1;
+		int[] ker = ke[0];
 
 		// plaintext to ints + key
-		int t0 = (in[inOffset + 0]) ^ Ker[0];
-		int t1 = (in[inOffset + 1]) ^ Ker[1];
-		int t2 = (in[inOffset + 2]) ^ Ker[2];
-		int t3 = (in[inOffset + 3]) ^ Ker[3];
+		int t0 = (in[inOffset + 0]) ^ ker[0];
+		int t1 = (in[inOffset + 1]) ^ ker[1];
+		int t2 = (in[inOffset + 2]) ^ ker[2];
+		int t3 = (in[inOffset + 3]) ^ ker[3];
 
-		int[] _T1 = T1;
-		int[] _T2 = T2;
-		int[] _T3 = T3;
-		int[] _T4 = T4;
+		int[] _t1 = T1;
+		int[] _t2 = T2;
+		int[] _t3 = T3;
+		int[] _t4 = T4;
 
-		for (int r = 1; r < ROUNDS; r++)  // apply round transforms
+		for (int r = 1; r < rounds; r++)  // apply round transforms
 		{
-			Ker = ke[r];
-			int a0 = (_T1[t0 >>> 24] ^ _T2[(t1 >> 16) & 255] ^ _T3[(t2 >> 8) & 255] ^ _T4[t3 & 255]) ^ Ker[0];
-			int a1 = (_T1[t1 >>> 24] ^ _T2[(t2 >> 16) & 255] ^ _T3[(t3 >> 8) & 255] ^ _T4[t0 & 255]) ^ Ker[1];
-			int a2 = (_T1[t2 >>> 24] ^ _T2[(t3 >> 16) & 255] ^ _T3[(t0 >> 8) & 255] ^ _T4[t1 & 255]) ^ Ker[2];
-			int a3 = (_T1[t3 >>> 24] ^ _T2[(t0 >> 16) & 255] ^ _T3[(t1 >> 8) & 255] ^ _T4[t2 & 255]) ^ Ker[3];
+			ker = ke[r];
+			int a0 = (_t1[t0 >>> 24] ^ _t2[(t1 >> 16) & 255] ^ _t3[(t2 >> 8) & 255] ^ _t4[t3 & 255]) ^ ker[0];
+			int a1 = (_t1[t1 >>> 24] ^ _t2[(t2 >> 16) & 255] ^ _t3[(t3 >> 8) & 255] ^ _t4[t0 & 255]) ^ ker[1];
+			int a2 = (_t1[t2 >>> 24] ^ _t2[(t3 >> 16) & 255] ^ _t3[(t0 >> 8) & 255] ^ _t4[t1 & 255]) ^ ker[2];
+			int a3 = (_t1[t3 >>> 24] ^ _t2[(t0 >> 16) & 255] ^ _t3[(t1 >> 8) & 255] ^ _t4[t2 & 255]) ^ ker[3];
 			t0 = a0;
 			t1 = a1;
 			t2 = a2;
@@ -394,52 +382,48 @@ public final class AES implements BlockCipher
 		}
 
 		// last round is special
-		Ker = ke[ROUNDS];
-		int[] _S = S;
+		ker = ke[rounds];
+		int[] _s = S;
 
-		out[outOffset + 0] = Ker[0] ^ ((_S[t0 >>> 24] << 24) + (_S[(t1 >> 16) & 255] << 16) + (_S[(t2 >> 8) & 255] << 8) + _S[t3 & 255]);
-		out[outOffset + 1] = Ker[1] ^ ((_S[t1 >>> 24] << 24) + (_S[(t2 >> 16) & 255] << 16) + (_S[(t3 >> 8) & 255] << 8) + _S[t0 & 255]);
-		out[outOffset + 2] = Ker[2] ^ ((_S[t2 >>> 24] << 24) + (_S[(t3 >> 16) & 255] << 16) + (_S[(t0 >> 8) & 255] << 8) + _S[t1 & 255]);
-		out[outOffset + 3] = Ker[3] ^ ((_S[t3 >>> 24] << 24) + (_S[(t0 >> 16) & 255] << 16) + (_S[(t1 >> 8) & 255] << 8) + _S[t2 & 255]);
+		out[outOffset + 0] = ker[0] ^ ((_s[t0 >>> 24] << 24) + (_s[(t1 >> 16) & 255] << 16) + (_s[(t2 >> 8) & 255] << 8) + _s[t3 & 255]);
+		out[outOffset + 1] = ker[1] ^ ((_s[t1 >>> 24] << 24) + (_s[(t2 >> 16) & 255] << 16) + (_s[(t3 >> 8) & 255] << 8) + _s[t0 & 255]);
+		out[outOffset + 2] = ker[2] ^ ((_s[t2 >>> 24] << 24) + (_s[(t3 >> 16) & 255] << 16) + (_s[(t0 >> 8) & 255] << 8) + _s[t1 & 255]);
+		out[outOffset + 3] = ker[3] ^ ((_s[t3 >>> 24] << 24) + (_s[(t0 >> 16) & 255] << 16) + (_s[(t1 >> 8) & 255] << 8) + _s[t2 & 255]);
 	}
 
 
 	/**
 	 * Decrypts a single block of ciphertext in ECB-mode.
 	 *
-	 * @param in
-	 *    A buffer containing the ciphertext to be decrypted.
-	 * @param inOffset
-	 *    Index in the in buffer where ciphertext should be read.
-	 * @param out
-	 *    A buffer where plaintext is written.
-	 * @param outOffset
-	 *    Index in the out buffer where plaintext should be written.
+	 * @param in A buffer containing the ciphertext to be decrypted.
+	 * @param inOffset Index in the in buffer where ciphertext should be read.
+	 * @param out A buffer where plaintext is written.
+	 * @param outOffset Index in the out buffer where plaintext should be written.
 	 */
 	@Override
 	public void engineDecryptBlock(int[] in, int inOffset, int[] out, int outOffset)
 	{
-		int ROUNDS = kd.length - 1;
-		int[] Kdr = kd[0];
+		int rounds = kd.length - 1;
+		int[] kdr = kd[0];
 
 		// ciphertext to ints + key
-		int t0 = (in[inOffset + 0]) ^ Kdr[0];
-		int t1 = (in[inOffset + 1]) ^ Kdr[1];
-		int t2 = (in[inOffset + 2]) ^ Kdr[2];
-		int t3 = (in[inOffset + 3]) ^ Kdr[3];
+		int t0 = (in[inOffset + 0]) ^ kdr[0];
+		int t1 = (in[inOffset + 1]) ^ kdr[1];
+		int t2 = (in[inOffset + 2]) ^ kdr[2];
+		int t3 = (in[inOffset + 3]) ^ kdr[3];
 
-		int[] _T5 = T5;
-		int[] _T6 = T6;
-		int[] _T7 = T7;
-		int[] _T8 = T8;
+		int[] _t5 = T5;
+		int[] _t6 = T6;
+		int[] _t7 = T7;
+		int[] _t8 = T8;
 
-		for (int r = 1; r < ROUNDS; r++)  // apply round transforms
+		for (int r = 1; r < rounds; r++)  // apply round transforms
 		{
-			Kdr = kd[r];
-			int a0 = (_T5[t0 >>> 24] ^ _T6[(t3 >> 16) & 255] ^ _T7[(t2 >> 8) & 255] ^ _T8[t1 & 255]) ^ Kdr[0];
-			int a1 = (_T5[t1 >>> 24] ^ _T6[(t0 >> 16) & 255] ^ _T7[(t3 >> 8) & 255] ^ _T8[t2 & 255]) ^ Kdr[1];
-			int a2 = (_T5[t2 >>> 24] ^ _T6[(t1 >> 16) & 255] ^ _T7[(t0 >> 8) & 255] ^ _T8[t3 & 255]) ^ Kdr[2];
-			int a3 = (_T5[t3 >>> 24] ^ _T6[(t2 >> 16) & 255] ^ _T7[(t1 >> 8) & 255] ^ _T8[t0 & 255]) ^ Kdr[3];
+			kdr = kd[r];
+			int a0 = (_t5[t0 >>> 24] ^ _t6[(t3 >> 16) & 255] ^ _t7[(t2 >> 8) & 255] ^ _t8[t1 & 255]) ^ kdr[0];
+			int a1 = (_t5[t1 >>> 24] ^ _t6[(t0 >> 16) & 255] ^ _t7[(t3 >> 8) & 255] ^ _t8[t2 & 255]) ^ kdr[1];
+			int a2 = (_t5[t2 >>> 24] ^ _t6[(t1 >> 16) & 255] ^ _t7[(t0 >> 8) & 255] ^ _t8[t3 & 255]) ^ kdr[2];
+			int a3 = (_t5[t3 >>> 24] ^ _t6[(t2 >> 16) & 255] ^ _t7[(t1 >> 8) & 255] ^ _t8[t0 & 255]) ^ kdr[3];
 			t0 = a0;
 			t1 = a1;
 			t2 = a2;
@@ -447,13 +431,13 @@ public final class AES implements BlockCipher
 		}
 
 		// last round is special
-		Kdr = kd[ROUNDS];
-		int[] _Si = Si;
+		kdr = kd[rounds];
+		int[] _si = SI;
 
-		out[outOffset + 0] = (Kdr[0] ^ (((_Si[(t0 >>> 24)] << 24) + ((_Si[(t3 >> 16) & 255] & 255) << 16) + ((_Si[(t2 >> 8) & 255] & 255) << 8) + (_Si[t1 & 255] & 255))));
-		out[outOffset + 1] = (Kdr[1] ^ (((_Si[(t1 >>> 24)] << 24) + ((_Si[(t0 >> 16) & 255] & 255) << 16) + ((_Si[(t3 >> 8) & 255] & 255) << 8) + (_Si[t2 & 255] & 255))));
-		out[outOffset + 2] = (Kdr[2] ^ (((_Si[(t2 >>> 24)] << 24) + ((_Si[(t1 >> 16) & 255] & 255) << 16) + ((_Si[(t0 >> 8) & 255] & 255) << 8) + (_Si[t3 & 255] & 255))));
-		out[outOffset + 3] = (Kdr[3] ^ (((_Si[(t3 >>> 24)] << 24) + ((_Si[(t2 >> 16) & 255] & 255) << 16) + ((_Si[(t1 >> 8) & 255] & 255) << 8) + (_Si[t0 & 255] & 255))));
+		out[outOffset + 0] = (kdr[0] ^ (((_si[(t0 >>> 24)] << 24) + ((_si[(t3 >> 16) & 255] & 255) << 16) + ((_si[(t2 >> 8) & 255] & 255) << 8) + (_si[t1 & 255] & 255))));
+		out[outOffset + 1] = (kdr[1] ^ (((_si[(t1 >>> 24)] << 24) + ((_si[(t0 >> 16) & 255] & 255) << 16) + ((_si[(t3 >> 8) & 255] & 255) << 8) + (_si[t2 & 255] & 255))));
+		out[outOffset + 2] = (kdr[2] ^ (((_si[(t2 >>> 24)] << 24) + ((_si[(t1 >> 16) & 255] & 255) << 16) + ((_si[(t0 >> 8) & 255] & 255) << 8) + (_si[t3 & 255] & 255))));
+		out[outOffset + 3] = (kdr[3] ^ (((_si[(t3 >>> 24)] << 24) + ((_si[(t2 >> 16) & 255] & 255) << 16) + ((_si[(t1 >> 8) & 255] & 255) << 8) + (_si[t0 & 255] & 255))));
 	}
 
 
@@ -472,8 +456,7 @@ public final class AES implements BlockCipher
 
 
 	/**
-	 * Resets all internal state data. This Cipher object needs to be
-	 * reinitialized again before it can be used again.
+	 * Resets all internal state data. This Cipher object needs to be reinitialized again before it can be used again.
 	 */
 	@Override
 	public void engineReset()
@@ -482,10 +465,10 @@ public final class AES implements BlockCipher
 		{
 			for (int i = 0; i < ke.length; i++)
 			{
-				Arrays.fill(ke[i], (byte) 255);
-				Arrays.fill(ke[i], (byte) 0);
-				Arrays.fill(kd[i], (byte) 255);
-				Arrays.fill(kd[i], (byte) 0);
+				Arrays.fill(ke[i], (byte)255);
+				Arrays.fill(ke[i], (byte)0);
+				Arrays.fill(kd[i], (byte)255);
+				Arrays.fill(kd[i], (byte)0);
 			}
 		}
 		ke = null;

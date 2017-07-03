@@ -95,11 +95,12 @@ public class BlockAccessor
 				}
 			}
 
+			// TODO: use allocatedSize
 			byte[] buffer = new byte[roundUp(aBlockPointer.getPhysicalSize())];
 
 			mBlockDevice.readBlock(aBlockPointer.getBlockIndex0(), buffer, 0, buffer.length, aBlockPointer.getIV());
 
-			long[] hash = MurmurHash3.hash_x64_128(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getBlockIndex0());
+			long[] hash = MurmurHash3.hash128(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getBlockIndex0());
 
 			if (!aBlockPointer.verifyChecksum(hash))
 			{
@@ -125,13 +126,15 @@ public class BlockAccessor
 		}
 		catch (Exception | Error e)
 		{
-			throw new DatabaseException("Error reading block", e);
+			throw new DatabaseException("Error reading block: " + aBlockPointer, e);
 		}
 	}
 
 
 	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType, int aRange)
 	{
+		BlockPointer blockPointer = null;
+
 		try
 		{
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -169,9 +172,9 @@ public class BlockAccessor
 			int blockCount = aBuffer.length / mBlockSize;
 			long blockIndex = mBlockDevice.allocBlock(blockCount);
 
-			long[] hash = MurmurHash3.hash_x64_128(aBuffer, 0, physicalSize, blockIndex);
+			long[] hash = MurmurHash3.hash128(aBuffer, 0, physicalSize, blockIndex);
 
-			BlockPointer blockPointer = new BlockPointer();
+			blockPointer = new BlockPointer();
 			blockPointer.setCompressionAlgorithm(compressorId);
 			blockPointer.setBlockIndex(blockIndex);
 			blockPointer.setPhysicalSize(physicalSize);
@@ -201,7 +204,7 @@ public class BlockAccessor
 		}
 		catch (Exception | Error e)
 		{
-			throw new DatabaseException("Error writing block", e);
+			throw new DatabaseException("Error writing block: " + blockPointer, e);
 		}
 	}
 

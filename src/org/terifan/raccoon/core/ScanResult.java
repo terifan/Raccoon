@@ -11,6 +11,7 @@ public class ScanResult
 	public int indexBlocks;
 	public int blobIndices;
 	public int blobData;
+	public int holes;
 
 	public StringBuilder sb = new StringBuilder();
 
@@ -78,6 +79,6 @@ public class ScanResult
 	@Override
 	public String toString()
 	{
-		return "ScanResult{" + "tables=" + tables + ", records=" + records + ", indexBlocks=" + indexBlocks + ", blobIndices=" + blobIndices + ", blobData=" + blobData + '}';
+		return "ScanResult{" + "tables=" + tables + ", records=" + records + ", indexBlocks=" + indexBlocks + ", blobIndices=" + blobIndices + ", blobData=" + blobData + ", holes=" + holes + ", sb=" + sb + '}';
 	}
 }

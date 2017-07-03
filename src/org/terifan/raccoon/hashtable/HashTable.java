@@ -675,7 +675,7 @@ public final class HashTable extends TableImplementation
 
 	private int computeIndex(byte[] aKey, int aLevel)
 	{
-		return MurmurHash3.hash_x86_32(aKey, mHashSeed ^ aLevel) & (mPointersPerNode - 1);
+		return MurmurHash3.hash32(aKey, mHashSeed ^ aLevel) & (mPointersPerNode - 1);
 	}
 
 
@@ -780,9 +780,17 @@ public final class HashTable extends TableImplementation
 				for (int i = 0; i < indexNode.getPointerCount(); i++)
 				{
 					BlockPointer pointer = indexNode.getPointer(i);
+
 					if (pointer != null)
 					{
-						scan(aScanResult, pointer);
+						if (pointer.getBlockType() == BlockType.HOLE)
+						{
+							aScanResult.holes++;
+						}
+						else
+						{
+							scan(aScanResult, pointer);
+						}
 					}
 				}
 				aScanResult.exitNode();

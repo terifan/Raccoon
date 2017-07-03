@@ -22,9 +22,9 @@ public final class SHA512 extends MessageDigest implements Cloneable
 	private long byteCount1;
 	private long byteCount2;
 
-	private long H1, H2, H3, H4, H5, H6, H7, H8;
+	private long h1, h2, h3, h4, h5, h6, h7, h8;
 
-	private long[] W = new long[80];
+	private long[] w = new long[80];
 	private int wOff;
 
 
@@ -50,15 +50,15 @@ public final class SHA512 extends MessageDigest implements Cloneable
 		xBufOff = aBase.xBufOff;
 		byteCount1 = aBase.byteCount1;
 		byteCount2 = aBase.byteCount2;
-		H1 = aBase.H1;
-		H2 = aBase.H2;
-		H3 = aBase.H3;
-		H4 = aBase.H4;
-		H5 = aBase.H5;
-		H6 = aBase.H6;
-		H7 = aBase.H7;
-		H8 = aBase.H8;
-		W = aBase.W.clone();
+		h1 = aBase.h1;
+		h2 = aBase.h2;
+		h3 = aBase.h3;
+		h4 = aBase.h4;
+		h5 = aBase.h5;
+		h6 = aBase.h6;
+		h7 = aBase.h7;
+		h8 = aBase.h8;
+		w = aBase.w.clone();
 		wOff = aBase.wOff;
 	}
 
@@ -183,9 +183,9 @@ public final class SHA512 extends MessageDigest implements Cloneable
 		}
 
 		wOff = 0;
-		for (int i = 0; i != W.length; i++)
+		for (int i = 0; i != w.length; i++)
 		{
-			W[i] = 0;
+			w[i] = 0;
 		}
 	}
 
@@ -194,7 +194,7 @@ public final class SHA512 extends MessageDigest implements Cloneable
 		byte[] in,
 		int inOff)
 	{
-		W[wOff++] = ((long)(in[inOff] & 0xff) << 56)
+		w[wOff++] = ((long)(in[inOff] & 0xff) << 56)
 			| ((long)(in[inOff + 1] & 0xff) << 48)
 			| ((long)(in[inOff + 2] & 0xff) << 40)
 			| ((long)(in[inOff + 3] & 0xff) << 32)
@@ -248,8 +248,8 @@ public final class SHA512 extends MessageDigest implements Cloneable
 			processBlock();
 		}
 
-		W[14] = hiW;
-		W[15] = lowW;
+		w[14] = hiW;
+		w[15] = lowW;
 	}
 
 
@@ -262,73 +262,73 @@ public final class SHA512 extends MessageDigest implements Cloneable
 		//
 		for (int t = 16; t <= 79; t++)
 		{
-			W[t] = sigma1(W[t - 2]) + W[t - 7] + sigma0(W[t - 15]) + W[t - 16];
+			w[t] = sigma1(w[t - 2]) + w[t - 7] + sigma0(w[t - 15]) + w[t - 16];
 		}
 
 		//
 		// set up working variables.
 		//
-		long a = H1;
-		long b = H2;
-		long c = H3;
-		long d = H4;
-		long e = H5;
-		long f = H6;
-		long g = H7;
-		long h = H8;
+		long a = h1;
+		long b = h2;
+		long c = h3;
+		long d = h4;
+		long e = h5;
+		long f = h6;
+		long g = h7;
+		long h = h8;
 
 		int t = 0;
 		for (int i = 0; i < 10; i++)
 		{
 			// t = 8 * i
-			h += sum1(e) + ch(e, f, g) + K[t] + W[t++];
+			h += sum1(e) + ch(e, f, g) + K[t] + w[t++];
 			d += h;
 			h += sum0(a) + maj(a, b, c);
 
 			// t = 8 * i + 1
-			g += sum1(d) + ch(d, e, f) + K[t] + W[t++];
+			g += sum1(d) + ch(d, e, f) + K[t] + w[t++];
 			c += g;
 			g += sum0(h) + maj(h, a, b);
 
 			// t = 8 * i + 2
-			f += sum1(c) + ch(c, d, e) + K[t] + W[t++];
+			f += sum1(c) + ch(c, d, e) + K[t] + w[t++];
 			b += f;
 			f += sum0(g) + maj(g, h, a);
 
 			// t = 8 * i + 3
-			e += sum1(b) + ch(b, c, d) + K[t] + W[t++];
+			e += sum1(b) + ch(b, c, d) + K[t] + w[t++];
 			a += e;
 			e += sum0(f) + maj(f, g, h);
 
 			// t = 8 * i + 4
-			d += sum1(a) + ch(a, b, c) + K[t] + W[t++];
+			d += sum1(a) + ch(a, b, c) + K[t] + w[t++];
 			h += d;
 			d += sum0(e) + maj(e, f, g);
 
 			// t = 8 * i + 5
-			c += sum1(h) + ch(h, a, b) + K[t] + W[t++];
+			c += sum1(h) + ch(h, a, b) + K[t] + w[t++];
 			g += c;
 			c += sum0(d) + maj(d, e, f);
 
 			// t = 8 * i + 6
-			b += sum1(g) + ch(g, h, a) + K[t] + W[t++];
+			b += sum1(g) + ch(g, h, a) + K[t] + w[t++];
 			f += b;
 			b += sum0(c) + maj(c, d, e);
 
 			// t = 8 * i + 7
-			a += sum1(f) + ch(f, g, h) + K[t] + W[t++];
+			a += sum1(f) + ch(f, g, h) + K[t] + w[t++];
 			e += a;
 			a += sum0(b) + maj(b, c, d);
 		}
 
-		H1 += a;
-		H2 += b;
-		H3 += c;
-		H4 += d;
-		H5 += e;
-		H6 += f;
-		H7 += g;
-		H8 += h;
+		h1 += a;
+		h2 += b;
+		h3 += c;
+		h4 += d;
+		h5 += e;
+		h6 += f;
+		h7 += g;
+		h8 += h;
 
 		//
 		// reset the offset and clean out the word buffer.
@@ -336,7 +336,7 @@ public final class SHA512 extends MessageDigest implements Cloneable
 		wOff = 0;
 		for (int i = 0; i < 16; i++)
 		{
-			W[i] = 0;
+			w[i] = 0;
 		}
 	}
 
@@ -426,14 +426,14 @@ public final class SHA512 extends MessageDigest implements Cloneable
 
 		finish();
 
-		unpackWord(H1, out, outOff);
-		unpackWord(H2, out, outOff + 8);
-		unpackWord(H3, out, outOff + 16);
-		unpackWord(H4, out, outOff + 24);
-		unpackWord(H5, out, outOff + 32);
-		unpackWord(H6, out, outOff + 40);
-		unpackWord(H7, out, outOff + 48);
-		unpackWord(H8, out, outOff + 56);
+		unpackWord(h1, out, outOff);
+		unpackWord(h2, out, outOff + 8);
+		unpackWord(h3, out, outOff + 16);
+		unpackWord(h4, out, outOff + 24);
+		unpackWord(h5, out, outOff + 32);
+		unpackWord(h6, out, outOff + 40);
+		unpackWord(h7, out, outOff + 48);
+		unpackWord(h8, out, outOff + 56);
 
 		reset();
 
@@ -457,14 +457,14 @@ public final class SHA512 extends MessageDigest implements Cloneable
          * The first 64 bits of the fractional parts of the square roots
          * of the first eight prime numbers
 		 */
-		H1 = 0x6a09e667f3bcc908L;
-		H2 = 0xbb67ae8584caa73bL;
-		H3 = 0x3c6ef372fe94f82bL;
-		H4 = 0xa54ff53a5f1d36f1L;
-		H5 = 0x510e527fade682d1L;
-		H6 = 0x9b05688c2b3e6c1fL;
-		H7 = 0x1f83d9abfb41bd6bL;
-		H8 = 0x5be0cd19137e2179L;
+		h1 = 0x6a09e667f3bcc908L;
+		h2 = 0xbb67ae8584caa73bL;
+		h3 = 0x3c6ef372fe94f82bL;
+		h4 = 0xa54ff53a5f1d36f1L;
+		h5 = 0x510e527fade682d1L;
+		h6 = 0x9b05688c2b3e6c1fL;
+		h7 = 0x1f83d9abfb41bd6bL;
+		h8 = 0x5be0cd19137e2179L;
 	}
 
 

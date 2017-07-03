@@ -63,8 +63,6 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	// TODO: use iterator
-	@Deprecated
 	public FieldDescriptor[] getFields()
 	{
 		return mFields.clone();
