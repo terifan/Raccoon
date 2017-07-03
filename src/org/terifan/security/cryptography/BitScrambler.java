@@ -78,46 +78,4 @@ public class BitScrambler
 	{
 		aBuffer[aPosition >>> 3] &= ~(1 << (aPosition & 7));
 	}
-
-
-//	public static void main(String ... args)
-//	{
-//		try
-//		{
-//			int len = 4;
-//
-//			int[] stats = new int[8 * len];
-//
-//			for (int test = 0; test < 100000; test++)
-//			{
-//			byte[] buffer = new byte[len];
-////			ISAAC.PRNG.nextBytes(buffer);
-//
-//			int key = ISAAC.PRNG.nextInt();
-//
-////			Log.hexDump(buffer);
-//
-//			BitScrambler.scramble(key, buffer);
-//
-////			Log.hexDump(buffer);
-//
-//			for (int i = 0; i < stats.length; i++)
-//			{
-//				if (isSet(buffer, i)) stats[i]++;
-//			}
-//			}
-//
-//			for (int i = 0; i < stats.length; i++)
-//				System.out.print(stats[i]+" ");
-//			System.out.println();
-//
-////			BitScrambler.unscramble(key, buffer);
-////
-////			Log.hexDump(buffer);
-//		}
-//		catch (Throwable e)
-//		{
-//			e.printStackTrace(System.out);
-//		}
-//	}
 }

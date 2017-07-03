@@ -1,7 +1,5 @@
 package org.terifan.security.cryptography;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 
 /**
  * ISAAC is a fast cryptographic random number generator. This implementation is not thread safe.
@@ -10,8 +8,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class ISAAC
 {
-	private final static AtomicLong seedUniquifier = new AtomicLong(8682522807148012L); // constants from java.util.Random
-
 	private transient int[] set;
 	private transient int[] mem;
 	private transient int ma, mb, mc, count;
@@ -24,7 +20,7 @@ public final class ISAAC
 	 */
 	public ISAAC()
 	{
-		setSeed(seedUniquifier() ^ System.nanoTime());
+		this(System.nanoTime());
 	}
 
 
@@ -40,16 +36,18 @@ public final class ISAAC
 	public void setSeed(long aSeed)
 	{
 		int[] seed = new int[256];
-
-		long s = aSeed ^ 5712613008489222801L; // just a random number
+		long s = aSeed;
 
 		for (int j = 0; j < 32; j++)
 		{
+			s ^= 5712613008489222801L;
+
 			for (int i = 0; i < 256; i++)
 			{
-				s = (s * 0x5DEECE66DL + 0xBL) & 281474976710655L; // constants from java.util.Random
+				s = (s * 0x5DEECE66DL + 0xBL) & 281474976710655L;
 
-				seed[i] ^= (int)(Long.rotateLeft(s, j) >>> 16);
+				seed[i] ^= s >>> j;
+
 			}
 		}
 
@@ -57,22 +55,7 @@ public final class ISAAC
 	}
 
 
-	// code from java.util.Random
-    private static long seedUniquifier()
-	{
-		for (;;)
-		{
-			long current = seedUniquifier.get();
-			long next = current * 181783497276652981L;
-			if (seedUniquifier.compareAndSet(current, next))
-			{
-				return next;
-			}
-		}
-	}
-
-
-	private void initializeState(int[] seed)
+	private void initializeState(int[] aSeed)
 	{
 		mem = new int[256];
 		set = new int[256];
@@ -97,14 +80,14 @@ public final class ISAAC
 
 		for (i = 0; i < 256; i += 8)
 		{
-			a += seed[i];
-			b += seed[i + 1];
-			c += seed[i + 2];
-			d += seed[i + 3];
-			e += seed[i + 4];
-			f += seed[i + 5];
-			g += seed[i + 6];
-			h += seed[i + 7];
+			a += aSeed[i];
+			b += aSeed[i + 1];
+			c += aSeed[i + 2];
+			d += aSeed[i + 3];
+			e += aSeed[i + 4];
+			f += aSeed[i + 5];
+			g += aSeed[i + 6];
+			h += aSeed[i + 7];
 			a ^= b << 11;			d += a;			b += c;
 			b ^= c >>> 2;			e += b;			c += d;
 			c ^= d << 8;			f += c;			d += e;
