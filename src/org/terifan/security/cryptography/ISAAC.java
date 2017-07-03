@@ -43,11 +43,14 @@ public final class ISAAC
 
 		long s = aSeed ^ 5712613008489222801L; // just a random number
 
-		for (int i = 0; i < 256; i++)
+		for (int j = 0; j < 32; j++)
 		{
-			s = (s * 0x5DEECE66DL + 0xBL) & 281474976710655L; // constants from java.util.Random
+			for (int i = 0; i < 256; i++)
+			{
+				s = (s * 0x5DEECE66DL + 0xBL) & 281474976710655L; // constants from java.util.Random
 
-			seed[i] = (int)(s >>> 16);
+				seed[i] ^= (int)(Long.rotateLeft(s, j) >>> 16);
+			}
 		}
 
 		initializeState(seed);
