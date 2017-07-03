@@ -4,7 +4,7 @@ import org.terifan.raccoon.core.BlockType;
 import java.io.IOException;
 import java.util.Random;
 import org.terifan.raccoon.CompressionParam;
-import org.terifan.raccoon.TransactionCounter;
+import org.terifan.raccoon.TransactionGroup;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.testng.annotations.DataProvider;
@@ -34,7 +34,7 @@ public class BlobInputStreamNGTest
 		IManagedBlockDevice blockDevice = new ManagedBlockDevice(secureBlockDevice, "");
 
 		byte[] header;
-		try (BlobOutputStream bos = new BlobOutputStream(new BlockAccessor(blockDevice, CompressionParam.BEST_SPEED, 0), new TransactionCounter(0), null))
+		try (BlobOutputStream bos = new BlobOutputStream(new BlockAccessor(blockDevice, CompressionParam.BEST_SPEED, 0), new TransactionGroup(0), null))
 		{
 			bos.write(out);
 			header = bos.finish();

@@ -3,7 +3,7 @@ package org.terifan.raccoon.storage;
 import org.terifan.raccoon.core.BlockType;
 import java.io.IOException;
 import java.io.OutputStream;
-import org.terifan.raccoon.TransactionCounter;
+import org.terifan.raccoon.TransactionGroup;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
@@ -16,14 +16,14 @@ public class BlobOutputStream extends OutputStream
 	private final BlockAccessor mBlockAccessor;
 	private final ByteArrayBuffer mBuffer;
 	private final ByteArrayBuffer mPointerBuffer;
-	private final TransactionCounter mTransactionId;
+	private final TransactionGroup mTransactionId;
 	private long mTotalLength;
 	private byte[] mHeader;
 	private boolean mClosed;
 	private OnCloseListener mOnCloseListener;
 
 
-	public BlobOutputStream(BlockAccessor aBlockAccessor, TransactionCounter aTransactionId, OnCloseListener aOnCloseListener) throws IOException
+	public BlobOutputStream(BlockAccessor aBlockAccessor, TransactionGroup aTransactionId, OnCloseListener aOnCloseListener) throws IOException
 	{
 		mBlockAccessor = aBlockAccessor;
 		mTransactionId = aTransactionId;

@@ -13,7 +13,7 @@ import org.terifan.raccoon.PerformanceCounters;
 import org.terifan.raccoon.core.ScanResult;
 import static org.terifan.raccoon.PerformanceCounters.*;
 import org.terifan.raccoon.TableParam;
-import org.terifan.raccoon.TransactionCounter;
+import org.terifan.raccoon.TransactionGroup;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.core.BlockType;
@@ -39,13 +39,13 @@ public final class HashTable extends TableImplementation
 	private boolean mClosed;
 	private boolean mChanged;
 	private boolean mCommitChangesToBlockDevice;
-	private TransactionCounter mTransactionId;
+	private TransactionGroup mTransactionId;
 
 
 	/**
 	 * Open an existing HashTable or create a new HashTable with default settings.
 	 */
-	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionCounter aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam) throws IOException
+	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam) throws IOException
 	{
 		mTransactionId = aTransactionId;
 		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;

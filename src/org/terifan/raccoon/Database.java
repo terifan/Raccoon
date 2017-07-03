@@ -966,9 +966,9 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public TransactionCounter getTransactionId()
+	public TransactionGroup getTransactionId()
 	{
-		return new TransactionCounter(mBlockDevice.getSuperBlock().getTransactionId());
+		return new TransactionGroup(mBlockDevice.getSuperBlock().getTransactionId());
 	}
 
 

@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.TableParam;
-import org.terifan.raccoon.TransactionCounter;
+import org.terifan.raccoon.TransactionGroup;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import static resources.__TestUtils.*;
@@ -26,7 +26,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionCounter tx = new TransactionCounter(0);
+		TransactionGroup tx = new TransactionGroup(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -64,7 +64,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionCounter tx = new TransactionCounter(0);
+		TransactionGroup tx = new TransactionGroup(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -107,7 +107,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionCounter tx = new TransactionCounter(0);
+		TransactionGroup tx = new TransactionGroup(0);
 
 		byte[] k0 = tb();
 		byte[] k1 = tb();
@@ -172,7 +172,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionCounter tx = new TransactionCounter(0);
+		TransactionGroup tx = new TransactionGroup(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -216,7 +216,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionCounter tx = new TransactionCounter(0);
+		TransactionGroup tx = new TransactionGroup(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -255,7 +255,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionCounter tx = new TransactionCounter(0);
+		TransactionGroup tx = new TransactionGroup(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -290,7 +290,7 @@ public class HashTableNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		byte[] root = null;
-		TransactionCounter tx = new TransactionCounter(0);
+		TransactionGroup tx = new TransactionGroup(0);
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
@@ -322,7 +322,7 @@ public class HashTableNGTest
 	public void testPut() throws Exception
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		TransactionCounter tx = new TransactionCounter(0);
+		TransactionGroup tx = new TransactionGroup(0);
 		byte[] root = null;
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
@@ -358,7 +358,7 @@ public class HashTableNGTest
 	}
 
 
-	private HashTable newHashTable(byte[] aRoot, TransactionCounter aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
+	private HashTable newHashTable(byte[] aRoot, TransactionGroup aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
 	{
 		return new HashTable(new ManagedBlockDevice(aBlockDevice, ""), aRoot, aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT);
 	}
