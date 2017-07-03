@@ -377,35 +377,10 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-//	@Override
-//	public void setExtraData(byte[] aExtraData)
-//	{
-//		Log.i("set extra data");
-//
-//		if (aExtraData != null && aExtraData.length > EXTRA_DATA_LIMIT)
-//		{
-//			throw new IllegalArgumentException("Length of extra data exceeds maximum length: extra length: " + aExtraData.length + ", limit: " + EXTRA_DATA_LIMIT);
-//		}
-//
-//		mModified = true;
-//
-//		mSuperBlock.setExtraData(aExtraData == null ? null : aExtraData.clone());
-//
-////		mSuperBlock.mExtraDataModified = true;
-//	}
-//
-//
-//	@Override
-//	public byte[] getExtraData()
-//	{
-//		return mSuperBlock.getExtraData() == null ? null : mSuperBlock.getExtraData().clone();
-//	}
-
-
 	@Override
 	public String toString()
 	{
-		return mSpaceMap.getRangeMap().toString();
+		return getSpaceMap();
 	}
 
 
