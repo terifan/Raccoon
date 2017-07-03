@@ -1,6 +1,7 @@
 package org.terifan.raccoon.util;
 
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import org.terifan.raccoon.LogLevel;
 
 
@@ -8,10 +9,16 @@ public class Log
 {
 	private final static String [] DIGITS = {"0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"};
 
-	public static PrintStream out = System.out;
+	public final static PrintStream out = System.out;
 
-	public static LogLevel mLevel = LogLevel.ERROR;
+	private static LogLevel mLevel = LogLevel.ERROR;
 	private static int mIndent;
+
+
+	public static void setLevel(LogLevel aLevel)
+	{
+		mLevel = aLevel;
+	}
 
 
 	public static void inc()
@@ -133,6 +140,6 @@ public class Log
 
 	public static String toString(byte[] aValue)
 	{
-		return aValue == null ? null : new String(aValue);
+		return aValue == null ? null : new String(aValue, Charset.defaultCharset());
 	}
 }

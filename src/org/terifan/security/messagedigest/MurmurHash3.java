@@ -85,6 +85,11 @@ public class MurmurHash3
 				k1 = (k1 << 15) | (k1 >>> 17); // ROTL32(k1,15);
 				k1 *= c2;
 				h1 ^= k1;
+				break;
+			case 0:
+				break;
+			default:
+				throw new IllegalStateException();
 		}
 
 		// finalization
@@ -157,6 +162,7 @@ public class MurmurHash3
 				k2 = Long.rotateLeft(k2, 33);
 				k2 *= c1;
 				h2 ^= k2;
+				// fall-trough
 			case 8: k1 |= (0xffL & aData[tail + 7]) << 56;
 			case 7: k1 |= (0xffL & aData[tail + 6]) << 48;
 			case 6: k1 |= (0xffL & aData[tail + 5]) << 40;
@@ -169,6 +175,11 @@ public class MurmurHash3
 				k1 = Long.rotateLeft(k1, 31);
 				k1 *= c2;
 				h1 ^= k1;
+				break;
+			case 0:
+				break;
+			default:
+				throw new IllegalStateException();
 		}
 
 		h1 ^= aLength;
@@ -291,6 +302,7 @@ public class MurmurHash3
 				k2 = Long.rotateLeft(k2, 33);
 				k2 *= c1;
 				h2 ^= k2;
+				// fall-trough
 			case 8: k1 |= (0xffL & aData[tail + 7]) << 56;
 			case 7: k1 |= (0xffL & aData[tail + 6]) << 48;
 			case 6: k1 |= (0xffL & aData[tail + 5]) << 40;
@@ -303,6 +315,11 @@ public class MurmurHash3
 				k1 = Long.rotateLeft(k1, 31);
 				k1 *= c2;
 				h1 ^= k1;
+				break;
+			case 0:
+				break;
+			default:
+				throw new IllegalStateException();
 		}
 
 		h1 ^= aLength;
@@ -317,7 +334,7 @@ public class MurmurHash3
 		h1 += h2;
 		h2 += h1;
 
-		long[] output = new long[2]; 
+		long[] output = new long[2];
 		output[0] = h1;
 		output[1] = h2;
 

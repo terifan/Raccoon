@@ -126,7 +126,7 @@ public class DatabaseBuilder
 
 	public DatabaseBuilder setPassword(char[] aPassword)
 	{
-		mPassword = aPassword;
+		mPassword = aPassword.clone();
 		return this;
 	}
 

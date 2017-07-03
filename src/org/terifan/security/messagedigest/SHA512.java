@@ -262,7 +262,7 @@ public final class SHA512 extends MessageDigest implements Cloneable
 		//
 		for (int t = 16; t <= 79; t++)
 		{
-			W[t] = Sigma1(W[t - 2]) + W[t - 7] + Sigma0(W[t - 15]) + W[t - 16];
+			W[t] = sigma1(W[t - 2]) + W[t - 7] + sigma0(W[t - 15]) + W[t - 16];
 		}
 
 		//
@@ -281,44 +281,44 @@ public final class SHA512 extends MessageDigest implements Cloneable
 		for (int i = 0; i < 10; i++)
 		{
 			// t = 8 * i
-			h += Sum1(e) + Ch(e, f, g) + K[t] + W[t++];
+			h += sum1(e) + ch(e, f, g) + K[t] + W[t++];
 			d += h;
-			h += Sum0(a) + Maj(a, b, c);
+			h += sum0(a) + maj(a, b, c);
 
 			// t = 8 * i + 1
-			g += Sum1(d) + Ch(d, e, f) + K[t] + W[t++];
+			g += sum1(d) + ch(d, e, f) + K[t] + W[t++];
 			c += g;
-			g += Sum0(h) + Maj(h, a, b);
+			g += sum0(h) + maj(h, a, b);
 
 			// t = 8 * i + 2
-			f += Sum1(c) + Ch(c, d, e) + K[t] + W[t++];
+			f += sum1(c) + ch(c, d, e) + K[t] + W[t++];
 			b += f;
-			f += Sum0(g) + Maj(g, h, a);
+			f += sum0(g) + maj(g, h, a);
 
 			// t = 8 * i + 3
-			e += Sum1(b) + Ch(b, c, d) + K[t] + W[t++];
+			e += sum1(b) + ch(b, c, d) + K[t] + W[t++];
 			a += e;
-			e += Sum0(f) + Maj(f, g, h);
+			e += sum0(f) + maj(f, g, h);
 
 			// t = 8 * i + 4
-			d += Sum1(a) + Ch(a, b, c) + K[t] + W[t++];
+			d += sum1(a) + ch(a, b, c) + K[t] + W[t++];
 			h += d;
-			d += Sum0(e) + Maj(e, f, g);
+			d += sum0(e) + maj(e, f, g);
 
 			// t = 8 * i + 5
-			c += Sum1(h) + Ch(h, a, b) + K[t] + W[t++];
+			c += sum1(h) + ch(h, a, b) + K[t] + W[t++];
 			g += c;
-			c += Sum0(d) + Maj(d, e, f);
+			c += sum0(d) + maj(d, e, f);
 
 			// t = 8 * i + 6
-			b += Sum1(g) + Ch(g, h, a) + K[t] + W[t++];
+			b += sum1(g) + ch(g, h, a) + K[t] + W[t++];
 			f += b;
-			b += Sum0(c) + Maj(c, d, e);
+			b += sum0(c) + maj(c, d, e);
 
 			// t = 8 * i + 7
-			a += Sum1(f) + Ch(f, g, h) + K[t] + W[t++];
+			a += sum1(f) + ch(f, g, h) + K[t] + W[t++];
 			e += a;
-			a += Sum0(b) + Maj(b, c, d);
+			a += sum0(b) + maj(b, c, d);
 		}
 
 		H1 += a;
@@ -342,7 +342,7 @@ public final class SHA512 extends MessageDigest implements Cloneable
 
 
 	/* SHA-384 and SHA-512 functions (as for SHA-256 but for longs) */
-	private long Ch(
+	private long ch(
 		long x,
 		long y,
 		long z)
@@ -351,7 +351,7 @@ public final class SHA512 extends MessageDigest implements Cloneable
 	}
 
 
-	private long Maj(
+	private long maj(
 		long x,
 		long y,
 		long z)
@@ -360,28 +360,28 @@ public final class SHA512 extends MessageDigest implements Cloneable
 	}
 
 
-	private long Sum0(
+	private long sum0(
 		long x)
 	{
 		return ((x << 36) | (x >>> 28)) ^ ((x << 30) | (x >>> 34)) ^ ((x << 25) | (x >>> 39));
 	}
 
 
-	private long Sum1(
+	private long sum1(
 		long x)
 	{
 		return ((x << 50) | (x >>> 14)) ^ ((x << 46) | (x >>> 18)) ^ ((x << 23) | (x >>> 41));
 	}
 
 
-	private long Sigma0(
+	private long sigma0(
 		long x)
 	{
 		return ((x << 63) | (x >>> 1)) ^ ((x << 56) | (x >>> 8)) ^ (x >>> 7);
 	}
 
 
-	private long Sigma1(
+	private long sigma1(
 		long x)
 	{
 		return ((x << 45) | (x >>> 19)) ^ ((x << 3) | (x >>> 61)) ^ (x >>> 6);

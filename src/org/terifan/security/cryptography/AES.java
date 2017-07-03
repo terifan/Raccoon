@@ -116,8 +116,8 @@ public final class AES implements BlockCipher
 			rcon[i] = (byte) r;
 		}
 	}
-	private transient int[][] Ke;
-	private transient int[][] Kd;
+	private transient int[][] ke;
+	private transient int[][] kd;
 
 
 	public AES()
@@ -145,8 +145,8 @@ public final class AES implements BlockCipher
 
 		int ROUNDS = getRounds(k.length, bs);
 		int BC = bs / 4;
-		Ke = new int[ROUNDS + 1][BC]; // encryption round keys
-		Kd = new int[ROUNDS + 1][BC]; // decryption round keys
+		ke = new int[ROUNDS + 1][BC]; // encryption round keys
+		kd = new int[ROUNDS + 1][BC]; // decryption round keys
 		int ROUND_KEY_COUNT = (ROUNDS + 1) * BC;
 		int KC = k.length / 4;
 		int[] tk = new int[KC];
@@ -164,8 +164,8 @@ public final class AES implements BlockCipher
 		int t = 0;
 		for (j = 0; (j < KC) && (t < ROUND_KEY_COUNT); j++, t++)
 		{
-			Ke[t / BC][t % BC] = tk[j];
-			Kd[ROUNDS - (t / BC)][t % BC] = tk[j];
+			ke[t / BC][t % BC] = tk[j];
+			kd[ROUNDS - (t / BC)][t % BC] = tk[j];
 		}
 		int tt, rconpointer = 0;
 		while (t < ROUND_KEY_COUNT)
@@ -203,16 +203,16 @@ public final class AES implements BlockCipher
 			// copy values into round key arrays
 			for (j = 0; (j < KC) && (t < ROUND_KEY_COUNT); j++, t++)
 			{
-				Ke[t / BC][t % BC] = tk[j];
-				Kd[ROUNDS - (t / BC)][t % BC] = tk[j];
+				ke[t / BC][t % BC] = tk[j];
+				kd[ROUNDS - (t / BC)][t % BC] = tk[j];
 			}
 		}
 		for (int r = 1; r < ROUNDS; r++)
 		{ // inverse MixColumn where needed
 			for (j = 0; j < BC; j++)
 			{
-				tt = Kd[r][j];
-				Kd[r][j] = U1[(tt >>> 24)]
+				tt = kd[r][j];
+				kd[r][j] = U1[(tt >>> 24)]
 						^ U2[(tt >>> 16) & 255]
 						^ U3[(tt >>> 8) & 255]
 						^ U4[ tt & 255];
@@ -236,8 +236,8 @@ public final class AES implements BlockCipher
 	@Override
 	public void engineEncryptBlock(byte[] in, int inOffset, byte[] out, int outOffset)
 	{
-		int ROUNDS = Ke.length - 1;
-		int[] Ker = Ke[0];
+		int ROUNDS = ke.length - 1;
+		int[] Ker = ke[0];
 		int[] _T1 = T1;
 		int[] _T2 = T2;
 		int[] _T3 = T3;
@@ -250,7 +250,7 @@ public final class AES implements BlockCipher
 
 		for (int r = 1; r < ROUNDS; r++)
 		{
-			Ker = Ke[r];
+			Ker = ke[r];
 			int a0 = (_T1[t0 >>> 24] ^ _T2[(t1 >> 16) & 255] ^ _T3[(t2 >> 8) & 255] ^ _T4[t3 & 255]) ^ Ker[0];
 			int a1 = (_T1[t1 >>> 24] ^ _T2[(t2 >> 16) & 255] ^ _T3[(t3 >> 8) & 255] ^ _T4[t0 & 255]) ^ Ker[1];
 			int a2 = (_T1[t2 >>> 24] ^ _T2[(t3 >> 16) & 255] ^ _T3[(t0 >> 8) & 255] ^ _T4[t1 & 255]) ^ Ker[2];
@@ -261,7 +261,7 @@ public final class AES implements BlockCipher
 			t3 = a3;
 		}
 
-		Ker = Ke[ROUNDS];
+		Ker = ke[ROUNDS];
 		int[] _S = S;
 
 		int tt0 = Ker[0] ^ ((_S[t0 >>> 24] << 24) + (_S[(t1 >> 16) & 255] << 16) + (_S[(t2 >> 8) & 255] << 8) + _S[t3 & 255]);
@@ -303,8 +303,8 @@ public final class AES implements BlockCipher
 	@Override
 	public void engineDecryptBlock(byte[] in, int inOffset, byte[] out, int outOffset)
 	{
-		int ROUNDS = Kd.length - 1;
-		int[] Kdr = Kd[0];
+		int ROUNDS = kd.length - 1;
+		int[] Kdr = kd[0];
 
 		int t0 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ Kdr[0];
 		int t1 = ((in[inOffset++] << 24) + ((in[inOffset++] & 255) << 16) + ((in[inOffset++] & 255) << 8) + (in[inOffset++] & 255)) ^ Kdr[1];
@@ -313,7 +313,7 @@ public final class AES implements BlockCipher
 
 		for (int r = 1; r < ROUNDS; r++)
 		{
-			Kdr = Kd[r];
+			Kdr = kd[r];
 			int a0 = (T5[t0 >>> 24] ^ T6[(t3 >> 16) & 255] ^ T7[(t2 >> 8) & 255] ^ T8[t1 & 255]) ^ Kdr[0];
 			int a1 = (T5[t1 >>> 24] ^ T6[(t0 >> 16) & 255] ^ T7[(t3 >> 8) & 255] ^ T8[t2 & 255]) ^ Kdr[1];
 			int a2 = (T5[t2 >>> 24] ^ T6[(t1 >> 16) & 255] ^ T7[(t0 >> 8) & 255] ^ T8[t3 & 255]) ^ Kdr[2];
@@ -324,7 +324,7 @@ public final class AES implements BlockCipher
 			t3 = a3;
 		}
 
-		Kdr = Kd[ROUNDS];
+		Kdr = kd[ROUNDS];
 		int[] _S = Si;
 
 		int tt0 = Kdr[0] ^ ((_S[t0 >>> 24] << 24) + (_S[(t3 >> 16) & 255] << 16) + (_S[(t2 >> 8) & 255] << 8) + _S[t1 & 255]);
@@ -366,8 +366,8 @@ public final class AES implements BlockCipher
 	@Override
 	public void engineEncryptBlock(int[] in, int inOffset, int[] out, int outOffset)
 	{
-		int ROUNDS = Ke.length - 1;
-		int[] Ker = Ke[0];
+		int ROUNDS = ke.length - 1;
+		int[] Ker = ke[0];
 
 		// plaintext to ints + key
 		int t0 = (in[inOffset + 0]) ^ Ker[0];
@@ -382,7 +382,7 @@ public final class AES implements BlockCipher
 
 		for (int r = 1; r < ROUNDS; r++)  // apply round transforms
 		{
-			Ker = Ke[r];
+			Ker = ke[r];
 			int a0 = (_T1[t0 >>> 24] ^ _T2[(t1 >> 16) & 255] ^ _T3[(t2 >> 8) & 255] ^ _T4[t3 & 255]) ^ Ker[0];
 			int a1 = (_T1[t1 >>> 24] ^ _T2[(t2 >> 16) & 255] ^ _T3[(t3 >> 8) & 255] ^ _T4[t0 & 255]) ^ Ker[1];
 			int a2 = (_T1[t2 >>> 24] ^ _T2[(t3 >> 16) & 255] ^ _T3[(t0 >> 8) & 255] ^ _T4[t1 & 255]) ^ Ker[2];
@@ -394,7 +394,7 @@ public final class AES implements BlockCipher
 		}
 
 		// last round is special
-		Ker = Ke[ROUNDS];
+		Ker = ke[ROUNDS];
 		int[] _S = S;
 
 		out[outOffset + 0] = Ker[0] ^ ((_S[t0 >>> 24] << 24) + (_S[(t1 >> 16) & 255] << 16) + (_S[(t2 >> 8) & 255] << 8) + _S[t3 & 255]);
@@ -419,8 +419,8 @@ public final class AES implements BlockCipher
 	@Override
 	public void engineDecryptBlock(int[] in, int inOffset, int[] out, int outOffset)
 	{
-		int ROUNDS = Kd.length - 1;
-		int[] Kdr = Kd[0];
+		int ROUNDS = kd.length - 1;
+		int[] Kdr = kd[0];
 
 		// ciphertext to ints + key
 		int t0 = (in[inOffset + 0]) ^ Kdr[0];
@@ -435,7 +435,7 @@ public final class AES implements BlockCipher
 
 		for (int r = 1; r < ROUNDS; r++)  // apply round transforms
 		{
-			Kdr = Kd[r];
+			Kdr = kd[r];
 			int a0 = (_T5[t0 >>> 24] ^ _T6[(t3 >> 16) & 255] ^ _T7[(t2 >> 8) & 255] ^ _T8[t1 & 255]) ^ Kdr[0];
 			int a1 = (_T5[t1 >>> 24] ^ _T6[(t0 >> 16) & 255] ^ _T7[(t3 >> 8) & 255] ^ _T8[t2 & 255]) ^ Kdr[1];
 			int a2 = (_T5[t2 >>> 24] ^ _T6[(t1 >> 16) & 255] ^ _T7[(t0 >> 8) & 255] ^ _T8[t3 & 255]) ^ Kdr[2];
@@ -447,7 +447,7 @@ public final class AES implements BlockCipher
 		}
 
 		// last round is special
-		Kdr = Kd[ROUNDS];
+		Kdr = kd[ROUNDS];
 		int[] _Si = Si;
 
 		out[outOffset + 0] = (Kdr[0] ^ (((_Si[(t0 >>> 24)] << 24) + ((_Si[(t3 >> 16) & 255] & 255) << 16) + ((_Si[(t2 >> 8) & 255] & 255) << 8) + (_Si[t1 & 255] & 255))));
@@ -478,18 +478,18 @@ public final class AES implements BlockCipher
 	@Override
 	public void engineReset()
 	{
-		if (Ke != null)
+		if (ke != null)
 		{
-			for (int i = 0; i < Ke.length; i++)
+			for (int i = 0; i < ke.length; i++)
 			{
-				Arrays.fill(Ke[i], (byte) 255);
-				Arrays.fill(Ke[i], (byte) 0);
-				Arrays.fill(Kd[i], (byte) 255);
-				Arrays.fill(Kd[i], (byte) 0);
+				Arrays.fill(ke[i], (byte) 255);
+				Arrays.fill(ke[i], (byte) 0);
+				Arrays.fill(kd[i], (byte) 255);
+				Arrays.fill(kd[i], (byte) 0);
 			}
 		}
-		Ke = null;
-		Kd = null;
+		ke = null;
+		kd = null;
 	}
 
 

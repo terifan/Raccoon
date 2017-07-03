@@ -1,15 +1,14 @@
 package org.terifan.raccoon.core;
 
 import org.terifan.raccoon.TableInstance;
-import org.terifan.raccoon.hashtable.LeafNode;
 import org.terifan.raccoon.storage.BlockPointer;
+
 
 public class ScanResult
 {
 	public int tables;
 	public int records;
 	public int indexBlocks;
-	public int blobs;
 	public int blobIndices;
 	public int blobData;
 
@@ -32,7 +31,7 @@ public class ScanResult
 	{
 		sb.append("<table border=1><tr><td>"+aBlockPointer+"</td><td>");
 	}
-	
+
 
 	public void entry()
 	{
@@ -75,10 +74,10 @@ public class ScanResult
 		sb.append("</td></tr></table>");
 	}
 
-	
+
 	@Override
 	public String toString()
 	{
-		return "ScanResult{" + "tables=" + tables + ", records=" + records + ", indexBlocks=" + indexBlocks + ", blobs=" + blobs + ", blobIndices=" + blobIndices + ", blobData=" + blobData + '}';
+		return "ScanResult{" + "tables=" + tables + ", records=" + records + ", indexBlocks=" + indexBlocks + ", blobIndices=" + blobIndices + ", blobData=" + blobData + '}';
 	}
 }

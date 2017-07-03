@@ -201,16 +201,21 @@ public final class Twofish implements BlockCipher
 					b1 = (FIXEDPERM0[b1] & 0xFF) ^ b1(k3);
 					b2 = (FIXEDPERM0[b2] & 0xFF) ^ b2(k3);
 					b3 = (FIXEDPERM1[b3] & 0xFF) ^ b3(k3);
+					// fall-through
 				case 3:
 					b0 = (FIXEDPERM1[b0] & 0xFF) ^ b0(k2);
 					b1 = (FIXEDPERM1[b1] & 0xFF) ^ b1(k2);
 					b2 = (FIXEDPERM0[b2] & 0xFF) ^ b2(k2);
 					b3 = (FIXEDPERM0[b3] & 0xFF) ^ b3(k2);
+					// fall-through
 				case 2: // 128-bit keys
 					mSBox[      2*i  ] = MDS[0][(FIXEDPERM0[(FIXEDPERM0[b0] & 0xFF) ^ b0(k1)] & 0xFF) ^ b0(k0)];
 					mSBox[      2*i+1] = MDS[1][(FIXEDPERM0[(FIXEDPERM1[b1] & 0xFF) ^ b1(k1)] & 0xFF) ^ b1(k0)];
 					mSBox[0x200+2*i  ] = MDS[2][(FIXEDPERM1[(FIXEDPERM0[b2] & 0xFF) ^ b2(k1)] & 0xFF) ^ b2(k0)];
 					mSBox[0x200+2*i+1] = MDS[3][(FIXEDPERM1[(FIXEDPERM1[b3] & 0xFF) ^ b3(k1)] & 0xFF) ^ b3(k0)];
+					break;
+				default:
+					throw new IllegalStateException();
 			}
 		}
 	}
@@ -931,17 +936,21 @@ public final class Twofish implements BlockCipher
 				b1 = (FIXEDPERM0[b1] & 0xFF) ^ b1(k3);
 				b2 = (FIXEDPERM0[b2] & 0xFF) ^ b2(k3);
 				b3 = (FIXEDPERM1[b3] & 0xFF) ^ b3(k3);
+				// fall-trough
 			case 3:
 				b0 = (FIXEDPERM1[b0] & 0xFF) ^ b0(k2);
 				b1 = (FIXEDPERM1[b1] & 0xFF) ^ b1(k2);
 				b2 = (FIXEDPERM0[b2] & 0xFF) ^ b2(k2);
 				b3 = (FIXEDPERM0[b3] & 0xFF) ^ b3(k2);
+				// fall-trough
 			case 2:	// 128-bit keys (optimize for this case)
 				result = MDS[0][(FIXEDPERM0[(FIXEDPERM0[b0] & 0xFF) ^ b0(k1)] & 0xFF) ^ b0(k0)] ^
 				         MDS[1][(FIXEDPERM0[(FIXEDPERM1[b1] & 0xFF) ^ b1(k1)] & 0xFF) ^ b1(k0)] ^
 				         MDS[2][(FIXEDPERM1[(FIXEDPERM0[b2] & 0xFF) ^ b2(k1)] & 0xFF) ^ b2(k0)] ^
 				         MDS[3][(FIXEDPERM1[(FIXEDPERM1[b3] & 0xFF) ^ b3(k1)] & 0xFF) ^ b3(k0)];
 				break;
+			default:
+				throw new IllegalStateException();
 		}
 
 		return result;

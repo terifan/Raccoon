@@ -141,20 +141,20 @@ public class BlockPointer implements Serializable
 
 	public long[] getChecksum()
 	{
-		return mChecksum;
+		return mChecksum.clone();
 	}
 
 
 	public BlockPointer setChecksum(long[] aChecksum)
 	{
-		mChecksum = aChecksum;
+		mChecksum = aChecksum.clone();
 		return this;
 	}
 
 
 	public long[] getIV()
 	{
-		return mIV;
+		return mIV.clone();
 	}
 
 

@@ -307,7 +307,7 @@ public class DatabaseNGTest
 			for (_Number1K1D item : database.list(_Number1K1D.class, disc))
 			{
 				assertTrue(item._odd);
-				assertTrue((item._number % 2) == 1);
+				assertTrue((item._number & 1) == 1);
 			}
 		}
 	}
@@ -641,13 +641,6 @@ public class DatabaseNGTest
 		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
 		{
 		}
-	}
-
-
-	@DataProvider(name="itemSizes")
-	private Object[][] itemSizes()
-	{
-		return new Object[][]{{1},{10},{1000}};
 	}
 
 
@@ -1322,7 +1315,6 @@ public class DatabaseNGTest
 			assertEquals(scan.tables, 38);
 			assertEquals(scan.records, 1+1+5*7+10000+10000+10000);
 //			assertEquals(scan.indexBlocks, 156);
-			assertEquals(scan.blobs, 0);
 			assertEquals(scan.blobIndices, 0);
 			assertEquals(scan.blobData, 0);
 		}

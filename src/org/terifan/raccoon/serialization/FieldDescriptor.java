@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Field;
+import java.util.Locale;
 import static org.terifan.raccoon.serialization.TypeMappings.*;
 
 
@@ -240,10 +241,10 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	@Override
 	public String toString()
 	{
-		String s = mValueType.toString().toLowerCase();
+		String s = mValueType.toString().toLowerCase(Locale.getDefault());
 		if (!mPrimitive)
 		{
-			s = s.substring(0, 1).toUpperCase() + s.substring(1);
+			s = s.substring(0, 1).toUpperCase(Locale.getDefault()) + s.substring(1);
 		}
 		s = s.replace("Int", "Integer");
 		s = s.replace("Char", "Character");

@@ -45,7 +45,7 @@ public class SuperBlock
 	public SuperBlock(long aTransactionId)
 	{
 		this();
-		
+
 		mTransactionId = aTransactionId;
 	}
 
@@ -120,7 +120,7 @@ public class SuperBlock
 
 	public byte[] getApplicationHeader()
 	{
-		return mApplicationHeader;
+		return mApplicationHeader.clone();
 	}
 
 
@@ -131,7 +131,7 @@ public class SuperBlock
 			throw new IllegalArgumentException("Application header is to long");
 		}
 
-		mApplicationHeader = aApplicationHeader;
+		mApplicationHeader = aApplicationHeader.clone();
 	}
 
 
@@ -143,7 +143,7 @@ public class SuperBlock
 
 	public byte[] getApplicationId()
 	{
-		return mApplicationId;
+		return mApplicationId.clone();
 	}
 
 
@@ -153,7 +153,8 @@ public class SuperBlock
 		{
 			throw new IllegalArgumentException("Instance ID must be 16 bytes in length");
 		}
-		mApplicationId = aApplicationId;
+
+		mApplicationId = aApplicationId.clone();
 	}
 
 
@@ -244,11 +245,6 @@ public class SuperBlock
 	{
 		byte[] label = mBlockDeviceLabel == null ? new byte[0] : mBlockDeviceLabel.getBytes("utf-8");
 
-		if (mApplicationHeader == null)
-		{
-			throw new IllegalArgumentException("mApplicationHeader == null");
-		}
-
 		aBuffer.writeInt8(mFormatVersion);
 		aBuffer.writeInt64(mCreateTime);
 		aBuffer.writeInt64(mModifiedTime);
@@ -260,7 +256,7 @@ public class SuperBlock
 		aBuffer.write(mApplicationId);
 		aBuffer.writeInt32(mApplicationVersion);
 		aBuffer.writeInt16(mApplicationHeader.length);
-		aBuffer.write(mApplicationHeader == null ? new byte[0] : mApplicationHeader);
+		aBuffer.write(mApplicationHeader);
 	}
 
 

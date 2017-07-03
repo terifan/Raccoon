@@ -158,6 +158,8 @@ public final class ISAAC
 				case 3:
 					ma ^= ma >>> 16;
 					break;
+				default:
+					throw new IllegalStateException();
 			}
 
 			ma          = mem[(i + 128) & 255] + ma;

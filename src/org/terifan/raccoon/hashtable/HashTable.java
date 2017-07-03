@@ -792,10 +792,12 @@ public final class HashTable extends TableImplementation
 
 				aScanResult.enterLeaf(aBlockPointer, buffer);
 
-				for (RecordEntry entry : leafNode)
-				{
-					aScanResult.entry();
+				aScanResult.records += leafNode.size();
 
+//				for (RecordEntry entry : leafNode)
+//				{
+//					aScanResult.entry();
+//
 //					if (entry.hasFlag(LeafEntry.FLAG_BLOB))
 //					{
 //						aScanResult.blobs++;
@@ -811,9 +813,9 @@ public final class HashTable extends TableImplementation
 //					}
 //					else
 //					{
-						aScanResult.records++;
+//						aScanResult.records++;
 //					}
-				}
+//				}
 
 				aScanResult.exitLeaf();
 

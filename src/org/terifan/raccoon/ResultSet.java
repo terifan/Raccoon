@@ -90,12 +90,6 @@ public class ResultSet
 	}
 
 
-	public FieldDescriptor[] getFields()
-	{
-		return mTypes;
-	}
-
-
 	public void set(int aIndex, Object aValue)
 	{
 		mValues[aIndex] = aValue;

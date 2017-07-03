@@ -4,9 +4,9 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import org.terifan.raccoon.PerformanceCounters;
 import static org.terifan.raccoon.PerformanceCounters.*;
-import org.terifan.raccoon.util.Log;
 
 
 /**
@@ -619,6 +619,10 @@ public class ArrayMap implements Iterable<RecordEntry>
 			if (mExpectedModCount != mModCount)
 			{
 				throw new ConcurrentModificationException();
+			}
+			if (mIndex >= mEntryCount)
+			{
+				throw new NoSuchElementException();
 			}
 
 			int entryOffset = readEntryOffset(mIndex);

@@ -285,7 +285,7 @@ public final class Database implements AutoCloseable
 
 		byte[] applicationHeader = superBlock.getApplicationHeader();
 
-		if (applicationHeader == null || applicationHeader.length < BlockPointer.SIZE)
+		if (applicationHeader.length < BlockPointer.SIZE)
 		{
 			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (short application header)");
 		}

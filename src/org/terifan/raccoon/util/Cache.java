@@ -6,6 +6,7 @@ import java.util.Map.Entry;
 
 public final class Cache<K, V> extends LinkedHashMap<K, V>
 {
+	private static final long serialVersionUID = 1L;
 	private final int mCapacity;
 
 

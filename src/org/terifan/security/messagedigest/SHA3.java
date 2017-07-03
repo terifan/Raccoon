@@ -46,9 +46,9 @@ public final class SHA3 extends MessageDigest implements Cloneable
 	}
 
 
-	private static long[] KeccakRoundConstants = keccakInitializeRoundConstants();
+	private static long[] keccakRoundConstants = keccakInitializeRoundConstants();
 
-	private static int[] KeccakRhoOffsets = keccakInitializeRhoOffsets();
+	private static int[] keccakRhoOffsets = keccakInitializeRhoOffsets();
 
 
 	private static long[] keccakInitializeRoundConstants()
@@ -232,7 +232,7 @@ public final class SHA3 extends MessageDigest implements Cloneable
 
 	private void absorbQueue()
 	{
-		KeccakAbsorb(state, dataQueue, rate / 8);
+		keccakAbsorb(state, dataQueue, rate / 8);
 
 		bitsInQueue = 0;
 	}
@@ -261,7 +261,7 @@ public final class SHA3 extends MessageDigest implements Cloneable
 				for (j = 0; j < wholeBlocks; j++)
 				{
 					System.arraycopy(data, (int)(off + (i / 8) + (j * chunk.length)), chunk, 0, chunk.length);
-					KeccakAbsorb(state, chunk, chunk.length);
+					keccakAbsorb(state, chunk, chunk.length);
 				}
 
 				i += wholeBlocks * rate;
@@ -313,12 +313,12 @@ public final class SHA3 extends MessageDigest implements Cloneable
 
 		if (rate == 1024)
 		{
-			KeccakExtract1024bits(state, dataQueue);
+			keccakExtract1024bits(state, dataQueue);
 			bitsAvailableForSqueezing = 1024;
 		}
 		else
 		{
-			KeccakExtract(state, dataQueue, rate / 64);
+			keccakExtract(state, dataQueue, rate / 64);
 			bitsAvailableForSqueezing = rate;
 		}
 
@@ -349,12 +349,12 @@ public final class SHA3 extends MessageDigest implements Cloneable
 
 				if (rate == 1024)
 				{
-					KeccakExtract1024bits(state, dataQueue);
+					keccakExtract1024bits(state, dataQueue);
 					bitsAvailableForSqueezing = 1024;
 				}
 				else
 				{
-					KeccakExtract(state, dataQueue, rate / 64);
+					keccakExtract(state, dataQueue, rate / 64);
 					bitsAvailableForSqueezing = rate;
 				}
 			}
@@ -466,7 +466,7 @@ public final class SHA3 extends MessageDigest implements Cloneable
 			for (int y = 0; y < 5; y++)
 			{
 				int index = x + 5 * y;
-				A[index] = ((KeccakRhoOffsets[index] != 0) ? (((A[index]) << KeccakRhoOffsets[index]) ^ ((A[index]) >>> (64 - KeccakRhoOffsets[index]))) : A[index]);
+				A[index] = ((keccakRhoOffsets[index] != 0) ? (((A[index]) << keccakRhoOffsets[index]) ^ ((A[index]) >>> (64 - keccakRhoOffsets[index]))) : A[index]);
 			}
 		}
 	}
@@ -508,23 +508,23 @@ public final class SHA3 extends MessageDigest implements Cloneable
 
 	private void iota(long[] A, int indexRound)
 	{
-		A[(((0) % 5) + 5 * ((0) % 5))] ^= KeccakRoundConstants[indexRound];
+		A[(((0) % 5) + 5 * ((0) % 5))] ^= keccakRoundConstants[indexRound];
 	}
 
 
-	private void KeccakAbsorb(byte[] byteState, byte[] data, int dataInBytes)
+	private void keccakAbsorb(byte[] byteState, byte[] data, int dataInBytes)
 	{
 		keccakPermutationAfterXor(byteState, data, dataInBytes);
 	}
 
 
-	private void KeccakExtract1024bits(byte[] byteState, byte[] data)
+	private void keccakExtract1024bits(byte[] byteState, byte[] data)
 	{
 		System.arraycopy(byteState, 0, data, 0, 128);
 	}
 
 
-	private void KeccakExtract(byte[] byteState, byte[] data, int laneCount)
+	private void keccakExtract(byte[] byteState, byte[] data, int laneCount)
 	{
 		System.arraycopy(byteState, 0, data, 0, laneCount * 8);
 	}

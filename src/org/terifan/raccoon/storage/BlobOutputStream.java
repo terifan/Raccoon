@@ -30,6 +30,7 @@ public class BlobOutputStream extends OutputStream
 		mBuffer = new ByteArrayBuffer(FRAGMENT_SIZE);
 		mPointerBuffer = new ByteArrayBuffer(mBlockAccessor.getBlockDevice().getBlockSize());
 		mOnCloseListener = aOnCloseListener;
+		mHeader = null;
 	}
 
 
@@ -121,7 +122,7 @@ public class BlobOutputStream extends OutputStream
 	{
 		close();
 
-		return mHeader;
+		return mHeader.clone();
 	}
 
 

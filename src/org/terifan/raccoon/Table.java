@@ -15,8 +15,8 @@ import org.terifan.raccoon.util.Log;
 public final class Table<T>
 {
 	public final static int FIELD_CATEGORY_KEY = 1;
-	protected final static int FIELD_CATEGORY_DISCRIMINATOR = 2;
-	protected final static int FIELD_CATEGORY_VALUE = 4;
+	public final static int FIELD_CATEGORY_DISCRIMINATOR = 2;
+	public final static int FIELD_CATEGORY_VALUE = 4;
 
 	@Key private String mTypeName;
 	@Key private byte[] mDiscriminatorKey;

@@ -20,7 +20,7 @@ public class Test1
 	@Test(enabled = false)
 	public void test() throws IOException
 	{
-		Log.mLevel = LogLevel.DEBUG;
+		Log.setLevel(LogLevel.DEBUG);
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
 

@@ -1,6 +1,8 @@
 package org.terifan.raccoon;
 
 import java.lang.reflect.Field;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Arrays;
 
 
@@ -57,7 +59,11 @@ public final class PerformanceCounters
 
 		for (Field f : PerformanceCounters.class.getDeclaredFields())
 		{
-			f.setAccessible(true);
+			AccessController.doPrivileged((PrivilegedAction<Void>)() ->
+			{
+				f.setAccessible(true);
+				return null; // nothing to return
+			});
 
 			if (f.getType() == Integer.TYPE)
 			{
@@ -83,7 +89,11 @@ public final class PerformanceCounters
 
 		for (Field f : PerformanceCounters.class.getDeclaredFields())
 		{
-			f.setAccessible(true);
+			AccessController.doPrivileged((PrivilegedAction<Void>)() ->
+			{
+				f.setAccessible(true);
+				return null; // nothing to return
+			});
 
 			if (f.getType() == Integer.TYPE)
 			{
@@ -109,7 +119,11 @@ public final class PerformanceCounters
 
 		for (Field f : PerformanceCounters.class.getDeclaredFields())
 		{
-			f.setAccessible(true);
+			AccessController.doPrivileged((PrivilegedAction<Void>)() ->
+			{
+				f.setAccessible(true);
+				return null; // nothing to return
+			});
 
 			if (f.getType() == Integer.TYPE)
 			{
