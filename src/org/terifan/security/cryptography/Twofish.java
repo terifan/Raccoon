@@ -69,13 +69,13 @@ public final class Twofish implements BlockCipher
 		{
 			j = FIXEDPERM0[i] & 0xFF; // compute all the matrix elements
 			m1[0] = j;
-			mX[0] = Mx_X(j) & 0xFF;
-			mY[0] = Mx_Y(j) & 0xFF;
+			mX[0] = mxX(j) & 0xFF;
+			mY[0] = mxY(j) & 0xFF;
 
 			j = FIXEDPERM1[i] & 0xFF;
 			m1[1] = j;
-			mX[1] = Mx_X(j) & 0xFF;
-			mY[1] = Mx_Y(j) & 0xFF;
+			mX[1] = mxX(j) & 0xFF;
+			mY[1] = mxY(j) & 0xFF;
 
 			// fill matrix w/ above elements
 			MDS[0][i] = m1[1] << 0 | mX[1] << 8 | mY[1] << 16 | mY[1] << 24;
@@ -86,27 +86,27 @@ public final class Twofish implements BlockCipher
 	}
 
 
-	private static int LFSR1(int x)
+	private static int lfsr1(int x)
 	{
 		return (x >> 1) ^ ((x & 0x01) != 0 ? 0x169 / 2 : 0);
 	}
 
 
-	private static int LFSR2(int x)
+	private static int lfsr2(int x)
 	{
 		return (x >> 2) ^ ((x & 0x02) != 0 ? 0x169 / 2 : 0) ^ ((x & 0x01) != 0 ? 0x169 / 4 : 0);
 	}
 
 
-	private static int Mx_X(int x)
+	private static int mxX(int x)
 	{
-		return x ^ LFSR2(x);
+		return x ^ lfsr2(x);
 	}
 
 
-	private static int Mx_Y(int x)
+	private static int mxY(int x)
 	{
-		return x ^ LFSR1(x) ^ LFSR2(x);
+		return x ^ lfsr1(x) ^ lfsr2(x);
 	}
 
 	private transient int[] mSBox;
@@ -150,22 +150,22 @@ public final class Twofish implements BlockCipher
 		{
 			k32e[i] = (k[offset++] & 0xFF) | (k[offset++] & 0xFF) << 8 | (k[offset++] & 0xFF) << 16 | (k[offset++] & 0xFF) << 24;
 			k32o[i] = (k[offset++] & 0xFF) | (k[offset++] & 0xFF) << 8 | (k[offset++] & 0xFF) << 16 | (k[offset++] & 0xFF) << 24;
-			sboxKey[j] = RS_MDS_Encode(k32e[i], k32o[i]); // reverse order
+			sboxKey[j] = rsMDSEncode(k32e[i], k32o[i]); // reverse order
 		}
 
 		// compute the round decryption subkeys for PHT. these same subkeys
 		// will be used in encryption but will be applied in reverse order.
-		int q, A, B;
+		int q, a, b;
 		mSubKeys = new int[subkeyCnt];
 		for (i = q = 0; i < subkeyCnt / 2; i++, q += 0x02020202)
 		{
-			A = F32(k64Cnt, q, k32e); // A uses even key entities
-			B = F32(k64Cnt, q + 0x01010101, k32o); // B uses odd  key entities
-			B = B << 8 | B >>> 24;
-			A += B;
-			mSubKeys[i << 1] = A;					// combine with a PHT
-			A += B;
-			mSubKeys[(i << 1) + 1] = A << 9 | A >>> (32 - 9);
+			a = f32(k64Cnt, q, k32e); // A uses even key entities
+			b = f32(k64Cnt, q + 0x01010101, k32o); // B uses odd  key entities
+			b = b << 8 | b >>> 24;
+			a += b;
+			mSubKeys[i << 1] = a;					// combine with a PHT
+			a += b;
+			mSubKeys[(i << 1) + 1] = a << 9 | a >>> (32 - 9);
 		}
 
 		mSubKey0 = mSubKeys[0];
@@ -890,20 +890,20 @@ public final class Twofish implements BlockCipher
 	 * @param k1 2nd 32-bit entity.
 	 * @return Remainder polynomial generated using RS code
 	 */
-	private static int RS_MDS_Encode(int k0, int k1)
+	private static int rsMDSEncode(int k0, int k1)
 	{
 		int r = k1;
 
 		for (int i = 0; i < 4; i++) // shift 1 byte at a time
 		{
-			r = RS_rem(r);
+			r = rsRem(r);
 		}
 
 		r ^= k0;
 
 		for (int i = 0; i < 4; i++)
 		{
-			r = RS_rem(r);
+			r = rsRem(r);
 		}
 
 		return r;
@@ -918,7 +918,7 @@ public final class Twofish implements BlockCipher
 	 *
 	 * where a = primitive root of field generator 0x14D
 	 */
-	private static int RS_rem(int x)
+	private static int rsRem(int x)
 	{
 		int b = (x >>> 24) & 0xFF;
 		int g2 = ((b << 1) ^ ((b & 0x80) != 0 ? 0x14D : 0)) & 0xFF;
@@ -929,7 +929,7 @@ public final class Twofish implements BlockCipher
 	}
 
 
-	private static int F32(int k64Cnt, int x, int[] k32)
+	private static int f32(int k64Cnt, int x, int[] k32)
 	{
 		int b0 = b0(x);
 		int b1 = b1(x);

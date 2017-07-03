@@ -50,11 +50,11 @@ public class MurmurHash3
 			// little endian load order
 			int k1 = (aData[i] & 0xff) | ((aData[i + 1] & 0xff) << 8) | ((aData[i + 2] & 0xff) << 16) | (aData[i + 3] << 24);
 			k1 *= c1;
-			k1 = (k1 << 15) | (k1 >>> 17); // ROTL32(k1,15);
+			k1 = (k1 << 15) | (k1 >>> 17);
 			k1 *= c2;
 
 			h1 ^= k1;
-			h1 = (h1 << 13) | (h1 >>> 19); // ROTL32(h1,13);
+			h1 = (h1 << 13) | (h1 >>> 19);
 			h1 = h1 * 5 + 0xe6546b64;
 		}
 
@@ -72,7 +72,7 @@ public class MurmurHash3
 			case 1:
 				k1 |= (aData[roundedEnd] & 0xff);
 				k1 *= c1;
-				k1 = (k1 << 15) | (k1 >>> 17); // ROTL32(k1,15);
+				k1 = (k1 << 15) | (k1 >>> 17);
 				k1 *= c2;
 				h1 ^= k1;
 				break;
@@ -85,7 +85,6 @@ public class MurmurHash3
 		// finalization
 		h1 ^= aLength;
 
-		// fmix(h1);
 		h1 ^= h1 >>> 16;
 		h1 *= 0x85ebca6b;
 		h1 ^= h1 >>> 13;

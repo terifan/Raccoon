@@ -11,8 +11,8 @@ public final class ISAAC
 	private transient int[] set;
 	private transient int[] mem;
 	private transient int ma, mb, mc, count;
-    private transient double nextNextGaussian;
-    private transient boolean haveNextNextGaussian;
+	private transient double nextNextGaussian;
+	private transient boolean haveNextNextGaussian;
 
 
 	/**
@@ -68,14 +68,30 @@ public final class ISAAC
 
 		for (i = 0; i < 4; ++i)
 		{
-			a ^= b << 11;			d += a;			b += c;
-			b ^= c >>> 2;			e += b;			c += d;
-			c ^= d << 8;			f += c;			d += e;
-			d ^= e >>> 16;			g += d;			e += f;
-			e ^= f << 10;			h += e;			f += g;
-			f ^= g >>> 4;			a += f;			g += h;
-			g ^= h << 8;			b += g;			h += a;
-			h ^= a >>> 9;			c += h;			a += b;
+			a ^= b << 11;
+			d += a;
+			b += c;
+			b ^= c >>> 2;
+			e += b;
+			c += d;
+			c ^= d << 8;
+			f += c;
+			d += e;
+			d ^= e >>> 16;
+			g += d;
+			e += f;
+			e ^= f << 10;
+			h += e;
+			f += g;
+			f ^= g >>> 4;
+			a += f;
+			g += h;
+			g ^= h << 8;
+			b += g;
+			h += a;
+			h ^= a >>> 9;
+			c += h;
+			a += b;
 		}
 
 		for (i = 0; i < 256; i += 8)
@@ -88,14 +104,30 @@ public final class ISAAC
 			f += aSeed[i + 5];
 			g += aSeed[i + 6];
 			h += aSeed[i + 7];
-			a ^= b << 11;			d += a;			b += c;
-			b ^= c >>> 2;			e += b;			c += d;
-			c ^= d << 8;			f += c;			d += e;
-			d ^= e >>> 16;			g += d;			e += f;
-			e ^= f << 10;			h += e;			f += g;
-			f ^= g >>> 4;			a += f;			g += h;
-			g ^= h << 8;			b += g;			h += a;
-			h ^= a >>> 9;			c += h;			a += b;
+			a ^= b << 11;
+			d += a;
+			b += c;
+			b ^= c >>> 2;
+			e += b;
+			c += d;
+			c ^= d << 8;
+			f += c;
+			d += e;
+			d ^= e >>> 16;
+			g += d;
+			e += f;
+			e ^= f << 10;
+			h += e;
+			f += g;
+			f ^= g >>> 4;
+			a += f;
+			g += h;
+			g ^= h << 8;
+			b += g;
+			h += a;
+			h ^= a >>> 9;
+			c += h;
+			a += b;
 			mem[i] = a;
 			mem[i + 1] = b;
 			mem[i + 2] = c;
@@ -116,14 +148,30 @@ public final class ISAAC
 			f += mem[i + 5];
 			g += mem[i + 6];
 			h += mem[i + 7];
-			a ^= b << 11;			d += a;			b += c;
-			b ^= c >>> 2;			e += b;			c += d;
-			c ^= d << 8;			f += c;			d += e;
-			d ^= e >>> 16;			g += d;			e += f;
-			e ^= f << 10;			h += e;			f += g;
-			f ^= g >>> 4;			a += f;			g += h;
-			g ^= h << 8;			b += g;			h += a;
-			h ^= a >>> 9;			c += h;			a += b;
+			a ^= b << 11;
+			d += a;
+			b += c;
+			b ^= c >>> 2;
+			e += b;
+			c += d;
+			c ^= d << 8;
+			f += c;
+			d += e;
+			d ^= e >>> 16;
+			g += d;
+			e += f;
+			e ^= f << 10;
+			h += e;
+			f += g;
+			f ^= g >>> 4;
+			a += f;
+			g += h;
+			g ^= h << 8;
+			b += g;
+			h += a;
+			h ^= a >>> 9;
+			c += h;
+			a += b;
 			mem[i] = a;
 			mem[i + 1] = b;
 			mem[i + 2] = c;
@@ -162,8 +210,8 @@ public final class ISAAC
 					throw new IllegalStateException();
 			}
 
-			ma          = mem[(i + 128) & 255] + ma;
-			mem[i] =  y = mem[(x >> 2) & 255] + ma + mb;
+			ma = mem[(i + 128) & 255] + ma;
+			mem[i] = y = mem[(x >> 2) & 255] + ma + mb;
 			set[i] = mb = mem[(y >> 10) & 255] + x;
 		}
 
@@ -205,8 +253,7 @@ public final class ISAAC
 	/**
 	 * Returns a random integer.
 	 *
-	 * @param aMaxValue
-	 *   the bound on the random number to be returned. Must be positive.
+	 * @param aMaxValue the bound on the random number to be returned. Must be positive.
 	 */
 	public int nextInt(int aMaxValue)
 	{
@@ -243,18 +290,18 @@ public final class ISAAC
 	public double nextDouble()
 	{
 		return (((long)nextInt(1 << 26) << 27) + nextInt(1 << 27)) / (double)(1L << 53);
-    }
+	}
 
 
 	// copy from java.util.Random
 	public float nextFloat()
 	{
-        return nextInt(1 << 24) / ((float)(1 << 24));
-    }
+		return nextInt(1 << 24) / ((float)(1 << 24));
+	}
 
 
 	// copy from java.util.Random
-    public double nextGaussian()
+	public double nextGaussian()
 	{
 		if (haveNextNextGaussian)
 		{
@@ -276,7 +323,7 @@ public final class ISAAC
 			haveNextNextGaussian = true;
 			return v1 * multiplier;
 		}
-    }
+	}
 
 
 	/**
@@ -302,9 +349,9 @@ public final class ISAAC
 			}
 			int v = set[--count];
 			aBuffer[aOffset++] = (byte)(v);
-			aBuffer[aOffset++] = (byte)(v>>8);
-			aBuffer[aOffset++] = (byte)(v>>16);
-			aBuffer[aOffset++] = (byte)(v>>>24);
+			aBuffer[aOffset++] = (byte)(v >> 8);
+			aBuffer[aOffset++] = (byte)(v >> 16);
+			aBuffer[aOffset++] = (byte)(v >>> 24);
 			aLength -= 4;
 		}
 		while (--aLength >= 0)
@@ -322,17 +369,13 @@ public final class ISAAC
 	/**
 	 * Get an integer value based on the probability of it.<p>
 	 *
-	 * E.g. if the probabilities {25,25,50} are provided the integer value
-	 *      0 and 1 will be returned 25% of the time each and value 2 returned
-	 *      50% of the time.
+	 * E.g. if the probabilities {25,25,50} are provided the integer value 0 and 1 will be returned 25% of the time each and value 2
+	 * returned 50% of the time.
 	 *
-	 * @param aProbabilties
-	 *    an array of probabilities, any positive values can be provided as
-	 *    these are normalized by the implementation.
-	 * @return
-	 *    an integer value ranging from 0 to the length of the provided probabilities array.
+	 * @param aProbabilties an array of probabilities, any positive values can be provided as these are normalized by the implementation.
+	 * @return an integer value ranging from 0 to the length of the provided probabilities array.
 	 */
-	public int nextProb(double ... aProbabilties)
+	public int nextProb(double... aProbabilties)
 	{
 		double v = nextInt(Integer.MAX_VALUE) / (double)Integer.MAX_VALUE;
 
@@ -451,20 +494,20 @@ public final class ISAAC
 		/**
 		 * @see org.terifan.v1.raccoon.security.ISAAC#nextProb
 		 */
-		public static int nextProb(double ... aProbabilities)
+		public static int nextProb(double... aProbabilities)
 		{
 			return instance.nextProb(aProbabilities);
 		}
 
 
-		public static int [] nextInts(int[] aBuffer)
+		public static int[] nextInts(int[] aBuffer)
 		{
 			instance.nextInts(aBuffer);
 			return aBuffer;
 		}
 
 
-		public static int [] nextInts(int[] aBuffer, int aOffset, int aLength)
+		public static int[] nextInts(int[] aBuffer, int aOffset, int aLength)
 		{
 			instance.nextInts(aBuffer, aOffset, aLength);
 			return aBuffer;

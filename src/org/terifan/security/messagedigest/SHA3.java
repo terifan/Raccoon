@@ -52,39 +52,39 @@ public final class SHA3 extends MessageDigest implements Cloneable
 
 	private static long[] keccakInitializeRoundConstants()
 	{
-		long[] keccakRoundConstants = new long[24];
-		byte[] LFSRstate = new byte[1];
+		long[] output = new long[24];
+		byte[] lfsrState = new byte[1];
 
-		LFSRstate[0] = 0x01;
+		lfsrState[0] = 0x01;
 		int i, j, bitPosition;
 
 		for (i = 0; i < 24; i++)
 		{
-			keccakRoundConstants[i] = 0;
+			output[i] = 0;
 			for (j = 0; j < 7; j++)
 			{
 				bitPosition = (1 << j) - 1;
-				if (LFSR86540(LFSRstate))
+				if (lfsr86540(lfsrState))
 				{
-					keccakRoundConstants[i] ^= 1L << bitPosition;
+					output[i] ^= 1L << bitPosition;
 				}
 			}
 		}
 
-		return keccakRoundConstants;
+		return output;
 	}
 
 
-	private static boolean LFSR86540(byte[] LFSR)
+	private static boolean lfsr86540(byte[] aLFSR)
 	{
-		boolean result = (((LFSR[0]) & 0x01) != 0);
-		if (((LFSR[0]) & 0x80) != 0)
+		boolean result = (((aLFSR[0]) & 0x01) != 0);
+		if (((aLFSR[0]) & 0x80) != 0)
 		{
-			LFSR[0] = (byte)(((LFSR[0]) << 1) ^ 0x71);
+			aLFSR[0] = (byte)(((aLFSR[0]) << 1) ^ 0x71);
 		}
 		else
 		{
-			LFSR[0] <<= 1;
+			aLFSR[0] <<= 1;
 		}
 
 		return result;
@@ -93,22 +93,22 @@ public final class SHA3 extends MessageDigest implements Cloneable
 
 	private static int[] keccakInitializeRhoOffsets()
 	{
-		int[] keccakRhoOffsets = new int[25];
+		int[] output = new int[25];
 		int x, y, t, newX, newY;
 
-		keccakRhoOffsets[(((0) % 5) + 5 * ((0) % 5))] = 0;
+		output[(((0) % 5) + 5 * ((0) % 5))] = 0;
 		x = 1;
 		y = 0;
 		for (t = 0; t < 24; t++)
 		{
-			keccakRhoOffsets[(((x) % 5) + 5 * ((y) % 5))] = ((t + 1) * (t + 2) / 2) % 64;
+			output[(((x) % 5) + 5 * ((y) % 5))] = ((t + 1) * (t + 2) / 2) % 64;
 			newX = (0 * x + 1 * y) % 5;
 			newY = (2 * x + 3 * y) % 5;
 			x = newX;
 			y = newY;
 		}
 
-		return keccakRhoOffsets;
+		return output;
 	}
 
 	private byte[] state = new byte[(1600 / 8)];
@@ -434,38 +434,38 @@ public final class SHA3 extends MessageDigest implements Cloneable
 		}
 	}
 
-	private long[] C = new long[5];
+	private long[] c = new long[5];
 
 
-	private void theta(long[] A)
+	private void theta(long[] a)
 	{
 		for (int x = 0; x < 5; x++)
 		{
-			C[x] = 0;
+			c[x] = 0;
 			for (int y = 0; y < 5; y++)
 			{
-				C[x] ^= A[x + 5 * y];
+				c[x] ^= a[x + 5 * y];
 			}
 		}
 		for (int x = 0; x < 5; x++)
 		{
-			long dX = ((((C[(x + 1) % 5]) << 1) ^ ((C[(x + 1) % 5]) >>> (64 - 1)))) ^ C[(x + 4) % 5];
+			long dX = ((((c[(x + 1) % 5]) << 1) ^ ((c[(x + 1) % 5]) >>> (64 - 1)))) ^ c[(x + 4) % 5];
 			for (int y = 0; y < 5; y++)
 			{
-				A[x + 5 * y] ^= dX;
+				a[x + 5 * y] ^= dX;
 			}
 		}
 	}
 
 
-	private void rho(long[] A)
+	private void rho(long[] a)
 	{
 		for (int x = 0; x < 5; x++)
 		{
 			for (int y = 0; y < 5; y++)
 			{
 				int index = x + 5 * y;
-				A[index] = ((keccakRhoOffsets[index] != 0) ? (((A[index]) << keccakRhoOffsets[index]) ^ ((A[index]) >>> (64 - keccakRhoOffsets[index]))) : A[index]);
+				a[index] = ((keccakRhoOffsets[index] != 0) ? (((a[index]) << keccakRhoOffsets[index]) ^ ((a[index]) >>> (64 - keccakRhoOffsets[index]))) : a[index]);
 			}
 		}
 	}
@@ -473,15 +473,15 @@ public final class SHA3 extends MessageDigest implements Cloneable
 	private long[] tempA = new long[25];
 
 
-	private void pi(long[] A)
+	private void pi(long[] a)
 	{
-		System.arraycopy(A, 0, tempA, 0, tempA.length);
+		System.arraycopy(a, 0, tempA, 0, tempA.length);
 
 		for (int x = 0; x < 5; x++)
 		{
 			for (int y = 0; y < 5; y++)
 			{
-				A[y + 5 * ((2 * x + 3 * y) % 5)] = tempA[x + 5 * y];
+				a[y + 5 * ((2 * x + 3 * y) % 5)] = tempA[x + 5 * y];
 			}
 		}
 	}
@@ -489,25 +489,25 @@ public final class SHA3 extends MessageDigest implements Cloneable
 	long[] chiC = new long[5];
 
 
-	private void chi(long[] A)
+	private void chi(long[] a)
 	{
 		for (int y = 0; y < 5; y++)
 		{
 			for (int x = 0; x < 5; x++)
 			{
-				chiC[x] = A[x + 5 * y] ^ ((~A[(((x + 1) % 5) + 5 * y)]) & A[(((x + 2) % 5) + 5 * y)]);
+				chiC[x] = a[x + 5 * y] ^ ((~a[(((x + 1) % 5) + 5 * y)]) & a[(((x + 2) % 5) + 5 * y)]);
 			}
 			for (int x = 0; x < 5; x++)
 			{
-				A[x + 5 * y] = chiC[x];
+				a[x + 5 * y] = chiC[x];
 			}
 		}
 	}
 
 
-	private void iota(long[] A, int indexRound)
+	private void iota(long[] a, int indexRound)
 	{
-		A[(((0) % 5) + 5 * ((0) % 5))] ^= keccakRoundConstants[indexRound];
+		a[(((0) % 5) + 5 * ((0) % 5))] ^= keccakRoundConstants[indexRound];
 	}
 
 

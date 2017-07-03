@@ -27,7 +27,7 @@ public final class Whirlpool extends MessageDigest implements Cloneable
 	private final static int R = 10;
 	private final static long[][] C = new long[8][256];
 	private final static long[] RC = new long[R + 1];
-	private final static String sbox =
+	private final static String SBOX =
 		"\u1823\uc6E8\u87B8\u014F\u36A6\ud2F5\u796F\u9152" +
 		"\u60Bc\u9B8E\uA30c\u7B35\u1dE0\ud7c2\u2E4B\uFE57" +
 		"\u1577\u37E5\u9FF0\u4AdA\u58c9\u290A\uB1A0\u6B85" +
@@ -49,7 +49,7 @@ public final class Whirlpool extends MessageDigest implements Cloneable
 	{
 		for (int x = 0; x < 256; x++)
 		{
-			char c = sbox.charAt(x/2);
+			char c = SBOX.charAt(x/2);
 			long v1 = ((x & 1) == 0) ? c >>> 8 : c & 0xff;
 			long v2 = v1 << 1;
 			if (v2 >= 0x100L)
@@ -95,8 +95,8 @@ public final class Whirlpool extends MessageDigest implements Cloneable
 	private transient int bufferBytes = 0;
 	private transient int bufferPos = 0;
 	private transient long [] hash  = new long[8];
-	private transient long [] K	 = new long[8];
-	private transient long [] L	 = new long[8];
+	private transient long [] k	 = new long[8];
+	private transient long [] l	 = new long[8];
 	private transient long [] block = new long[8];
 	private transient long [] state = new long[8];
 	private transient final byte [] dummyBuffer = new byte[1];
@@ -197,31 +197,31 @@ public final class Whirlpool extends MessageDigest implements Cloneable
 
 		for (int i = 0; i < 8; i++)
 		{
-			state[i] = block[i] ^ (K[i] = hash[i]);
+			state[i] = block[i] ^ (k[i] = hash[i]);
 		}
 
 		for (int r = 1; r <= R; r++)
 		{
 			for (int i = 0; i < 8; i++)
 			{
-				L[i] = 0L;
+				l[i] = 0L;
 				for (int t = 0, s = 56; t < 8; t++, s -= 8)
 				{
-					L[i] ^= C[t][(int)(K[(i - t) & 7] >>> s) & 0xff];
+					l[i] ^= C[t][(int)(k[(i - t) & 7] >>> s) & 0xff];
 				}
 			}
-			System.arraycopy(L, 0, K, 0, 8);
-			K[0] ^= RC[r];
+			System.arraycopy(l, 0, k, 0, 8);
+			k[0] ^= RC[r];
 
 			for (int i = 0; i < 8; i++)
 			{
-				L[i] = K[i];
+				l[i] = k[i];
 				for (int t = 0, s = 56; t < 8; t++, s -= 8)
 				{
-					L[i] ^= C[t][(int)(state[(i - t) & 7] >>> s) & 0xff];
+					l[i] ^= C[t][(int)(state[(i - t) & 7] >>> s) & 0xff];
 				}
 			}
-			System.arraycopy(L, 0, state, 0, 8);
+			System.arraycopy(l, 0, state, 0, 8);
 		}
 
 		for (int i = 0; i < 8; i++)
@@ -323,8 +323,8 @@ public final class Whirlpool extends MessageDigest implements Cloneable
 	{
 		Whirlpool instance = new Whirlpool();
 
-		instance.K = this.K.clone();
-		instance.L = this.L.clone();
+		instance.k = this.k.clone();
+		instance.l = this.l.clone();
 		instance.bitLength = this.bitLength.clone();
 		instance.block = this.block.clone();
 		instance.buffer = this.buffer.clone();
