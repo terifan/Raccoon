@@ -29,12 +29,12 @@ import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.managed.UnsupportedVersionException;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
-import org.testng.annotations.DataProvider;
 import resources.entities._Fruit1K;
 import static resources.__TestUtils.t;
 import resources.entities._Fruit1K1D;
 import resources.entities._Number1K2D;
 import static resources.__TestUtils.createRandomBuffer;
+import resources.entities._Number1K1DS;
 
 
 public class DatabaseNGTest
@@ -276,7 +276,7 @@ public class DatabaseNGTest
 				assertTrue(database.tryGet(entity));
 				assertEquals(entity.name, numberNames[i]);
 				assertEquals(entity._number, i);
-				assertEquals(entity._odd, (i&1)==1);
+				assertEquals(entity._odd, (i & 1) == 1);
 			}
 		}
 	}
@@ -293,22 +293,55 @@ public class DatabaseNGTest
 		{
 			for (int i = 0; i < numberNames.length; i++)
 			{
-				database.save(new _Number1K1D(numberNames[i], i));
+				database.save(new _Number1K1DS(numberNames[i], i, i % 3));
 			}
+
+			for (int j = 0; j < 3; j++)
+			{
+				int cnt = 0;
+				for (_Number1K1DS item : database.list(_Number1K1DS.class, new _Number1K1DS(j)))
+				{
+					assertEquals(item._number % 3, j);
+					cnt++;
+				}
+				assertEquals(cnt, j == 2 ? 3 : 4);
+			}
+
 			database.commit();
 		}
 
 		try (Database database = Database.open(device, OpenOption.OPEN))
 		{
-			_Number1K1D disc = new _Number1K1D();
-			disc._odd = true;
-
-
-			for (_Number1K1D item : database.list(_Number1K1D.class, disc))
+			for (int j = 0; j < 3; j++)
 			{
-				assertTrue(item._odd);
-				assertTrue((item._number & 1) == 1);
+				int cnt = 0;
+				for (_Number1K1DS item : database.list(_Number1K1DS.class, new _Number1K1DS(j)))
+				{
+					assertEquals(item._number % 3, j);
+					cnt++;
+				}
+				assertEquals(cnt, j == 2 ? 3 : 4);
 			}
+		}
+	}
+
+
+	@Test
+	public void testDiscriminatorListEntity() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		{
+			_Number1K1DS a = new _Number1K1DS("a", 1, 9);
+			_Number1K1DS b = new _Number1K1DS("a", 2, 9);
+			_Number1K1DS c = new _Number1K1DS("a", 3, 9);
+
+			database.save(a);
+			database.save(b);
+			database.save(c);
+
+			assertEquals(database.list(a).size(), 3);
 		}
 	}
 
