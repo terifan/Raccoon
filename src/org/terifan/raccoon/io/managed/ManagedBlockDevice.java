@@ -22,15 +22,21 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	/**
 	 * Create/open a ManagedBlockDevice with an user defined label.
 	 *
-	 * @param aBlockDeviceLabel
+	 * @param aApplicationHeader
 	 * a label describing contents of the block device. If a non-null value is provided then this value must match the value found inside
 	 * the block device opened or an exception is thrown.
 	 */
-	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice, String aBlockDeviceLabel) throws IOException
+	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice) throws IOException
+	{
+		this(aBlockDevice, new DeviceHeader(), new DeviceHeader());
+	}
+
+	
+	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice, DeviceHeader aApplicationHeader, DeviceHeader aTenantHeader) throws IOException
 	{
 		if (aBlockDevice.getBlockSize() < 512)
 		{
-			throw new IllegalArgumentException("Block device must have 512 byte block size or larger.");
+			throw new IllegalArgumentException("The block device must have 512 byte block size or larger.");
 		}
 
 		mBlockDevice = aBlockDevice;
@@ -42,14 +48,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		if (mWasCreated)
 		{
-			mSuperBlock.setBlockDeviceLabel(aBlockDeviceLabel);
-		}
-		else
-		{
-			if (aBlockDeviceLabel != null && !aBlockDeviceLabel.equals(mSuperBlock.getBlockDeviceLabel()))
-			{
-				throw new UnsupportedVersionException("Block device label don't match: was: \"" + mSuperBlock.getBlockDeviceLabel() + "\", expected: \"" + aBlockDeviceLabel + "\"");
-			}
+			mSuperBlock.setApplicationHeader(aApplicationHeader);
+			mSuperBlock.setTenantHeader(aTenantHeader);
 		}
 	}
 

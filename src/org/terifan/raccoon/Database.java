@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.managed.DeviceHeader;
 import org.terifan.raccoon.core.ScanResult;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -93,7 +94,7 @@ public final class Database implements AutoCloseable
 
 			boolean newFile = !aFile.exists();
 
-			BlockSizeParam blockSizeParam = getParameter(BlockSizeParam.class, aParameters, new BlockSizeParam(Constants.getDefaultBlockSize()));
+			BlockSizeParam blockSizeParam = getParameter(BlockSizeParam.class, aParameters, new BlockSizeParam(Constants.DEFAULT_BLOCK_SIZE));
 
 			fileBlockDevice = new FileBlockDevice(aFile, blockSizeParam.getValue(), aOpenOptions == OpenOption.READ_ONLY);
 
@@ -152,13 +153,13 @@ public final class Database implements AutoCloseable
 		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aParameters, null);
 
 		IManagedBlockDevice device;
-		String label = null;
+		DeviceHeader label = new DeviceHeader("");
 
 		for (Object o : aParameters)
 		{
-			if (o instanceof DeviceLabel)
+			if (o instanceof DeviceHeader)
 			{
-				label = o.toString();
+				label = (DeviceHeader)o;
 			}
 		}
 
@@ -175,7 +176,7 @@ public final class Database implements AutoCloseable
 		{
 			Log.d("creating a managed block device");
 
-			device = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice, label);
+			device = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice, Constants.DEVICE_HEADER, label);
 		}
 		else
 		{
@@ -198,7 +199,7 @@ public final class Database implements AutoCloseable
 				throw new InvalidPasswordException("Incorrect password or not a secure BlockDevice");
 			}
 
-			device = new ManagedBlockDevice(secureDevice, label);
+			device = new ManagedBlockDevice(secureDevice, Constants.DEVICE_HEADER, label);
 		}
 
 		Database db;
@@ -253,9 +254,6 @@ public final class Database implements AutoCloseable
 			aBlockDevice.commit();
 		}
 
-		aBlockDevice.getSuperBlock().setApplicationHeader(Constants.getApplicationidentity());
-		aBlockDevice.getSuperBlock().setApplicationVersion(Constants.getDatabaseVersion());
-
 		Database db = new Database();
 
 		db.mProperties = aParameters;
@@ -282,27 +280,36 @@ public final class Database implements AutoCloseable
 		Log.inc();
 
 		SuperBlock superBlock = aBlockDevice.getSuperBlock();
+		
+//		else
+//		{
+//			if (aApplicationHeader != null && !aApplicationHeader.equals(mSuperBlock.getApplicationHeader()))
+//			{
+//				throw new UnsupportedVersionException("Block device label don't match: was: \"" + mSuperBlock.getTenantHeader() + "\", expected: \"" + aTenantHeader + "\"");
+//			}
+//		}
 
-		byte[] applicationHeader = superBlock.getApplicationHeader();
+		byte[] applicationPointer = superBlock.getApplicationPointer();
+		DeviceHeader applicationHeader = superBlock.getApplicationHeader();
 
-		if (applicationHeader.length < BlockPointer.SIZE)
+		if (applicationPointer.length < BlockPointer.SIZE)
 		{
 			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (short application header)");
 		}
 
-		if (Arrays.equals(superBlock.getApplicationId(), Constants.getApplicationidentity()))
+		if (Arrays.equals(applicationHeader.getSerialNumberBytes(), Constants.DEVICE_HEADER.getSerialNumberBytes()) || !applicationHeader.getLabel().equals(Constants.DEVICE_HEADER.getLabel()))
 		{
-			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (bad extra identity)");
+			throw new UnsupportedVersionException("This block device does not contain a Raccoon database: " + applicationHeader);
 		}
-		if (superBlock.getApplicationVersion() != Constants.getDatabaseVersion())
+		if (applicationHeader.getMajorVersion() != Constants.DEVICE_HEADER.getMajorVersion() || applicationHeader.getMinorVersion() != Constants.DEVICE_HEADER.getMinorVersion())
 		{
-			throw new UnsupportedVersionException("Unsupported database version: provided: " + superBlock.getApplicationVersion() + ", expected: " + Constants.getDatabaseVersion());
+			throw new UnsupportedVersionException("Unsupported database version: " + applicationHeader);
 		}
 
 		db.mProperties = aParameters;
 		db.mBlockDevice = aBlockDevice;
 		db.mSystemTableMetadata = new Table(db, Table.class, null);
-		db.mSystemTable = new TableInstance(db, db.mSystemTableMetadata, applicationHeader);
+		db.mSystemTable = new TableInstance(db, db.mSystemTableMetadata, applicationPointer);
 		db.mReadOnly = aOpenOptions == OpenOption.READ_ONLY;
 
 		Log.dec();

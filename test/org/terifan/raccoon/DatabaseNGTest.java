@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.managed.DeviceHeader;
 import org.terifan.raccoon.core.ScanResult;
 import resources.entities._BlobKey1K;
 import resources.__FixedThreadExecutor;
@@ -513,30 +514,11 @@ public class DatabaseNGTest
 	}
 
 
-	@Test(expectedExceptions = UnsupportedVersionException.class)
-	public void testDatabaseVersionConflict() throws Exception
-	{
-		MemoryBlockDevice device = new MemoryBlockDevice(512);
-
-		try (IManagedBlockDevice blockDevice = new ManagedBlockDevice(device, ""))
-		{
-			blockDevice.getSuperBlock().setApplicationHeader(new byte[100]);
-			blockDevice.allocBlock(100);
-			blockDevice.commit();
-		}
-
-		try (Database db = Database.open(device, OpenOption.OPEN)) // throws exception
-		{
-			fail();
-		}
-	}
-
-
 	@Test
 	public void testBlobDelete() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "");
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
 
 		_KeyValue1K in = new _KeyValue1K("apple", createRandomBuffer(0, 1000_000));
 		_KeyValue1K out = new _KeyValue1K("apple");
@@ -565,7 +547,7 @@ public class DatabaseNGTest
 	public void testDatabaseNotChangedWhenZeroItemsDeleted() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "");
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
 
 		_Animal1K item = new _Animal1K("banana");
 
@@ -581,7 +563,7 @@ public class DatabaseNGTest
 	public void testBlobDeleteFromStream() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "");
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
 
 		byte[] content = createRandomBuffer(0, 10*1024*1024);
 
@@ -606,7 +588,7 @@ public class DatabaseNGTest
 	public void testBlobUpdate() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "");
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
 
 		_KeyValue1K in = new _KeyValue1K("apple", createRandomBuffer(0, 1000_000));
 
@@ -633,7 +615,7 @@ public class DatabaseNGTest
 	public void openCloseTest() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "");
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
 
 		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
 		{
@@ -697,7 +679,7 @@ public class DatabaseNGTest
 	@Test(expectedExceptions = IllegalArgumentException.class)
 	public void testUnsupportedDevice() throws Exception
 	{
-		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512), "");
+		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
 
 		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(100)))
 		{
@@ -1177,7 +1159,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "");
+		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
 
 		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
 		{
@@ -1304,16 +1286,16 @@ public class DatabaseNGTest
 
 
 	@Test(expectedExceptions = UnsupportedVersionException.class, expectedExceptionsMessageRegExp = ".*Block device label don't match.*")
-	public void testWriteLockedFile2() throws Exception
+	public void testDeviceLabel1() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database db = Database.open(device, OpenOption.CREATE, new DeviceLabel("test")))
+		try (Database db = Database.open(device, OpenOption.CREATE, new DeviceHeader("test")))
 		{
 			db.commit();
 		}
 
-		try (Database db = Database.open(device, OpenOption.READ_ONLY, new DeviceLabel("test2")))
+		try (Database db = Database.open(device, OpenOption.READ_ONLY, new DeviceHeader("test2")))
 		{
 		}
 	}

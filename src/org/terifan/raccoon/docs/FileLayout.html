@@ -46,13 +46,15 @@
 		<h1>Super Block</h1>
 		<table border="1" cellspacing="0">
 			<tr>
-				<th colspan="14">Encrypted with data key</th>
+				<th colspan="19">Encrypted with data key</th>
 				<th>Encrypted with tweak key</th>
 			</tr>
 			<tr>
 				<td rowspan="2">Checksum</td>
-				<th colspan="7">Device header</th>
-				<th colspan="6">Application header</th>
+				<th colspan="5">Device header</th>
+				<th colspan="7">Application header</th>
+				<th colspan="5">Host header</th>
+				<td rowspan="2">Padding</td>
 				<td rowspan="2">IV</td>
 			</tr>
 			<tr>
@@ -61,14 +63,18 @@
 				<td>Update time</td>
 				<td>Transaction id</td>
 				<td>Space map block pointer</td>
-				<td>Label length</td>
-				<td>Label</td>
-				<td>Instance id</td>
+				<td>Application pointer length</td>
+				<td>Application pointer</td>
+				<td>Application major version</td>
+				<td>Application minor version</td>
+				<td>Application label length</td>
+				<td>Application label</td>
 				<td>Application id</td>
-				<td>Application version</td>
-				<td>Application header length</td>
-				<td>Application header</td>
-				<td>Padding</td>
+				<td>Tenant major version</td>
+				<td>Tenant minor version</td>
+				<td>Tenant label length</td>
+				<td>Tenant label</td>
+				<td>Instance id</td>
 			</tr>
 			<tr>
 				<td>16</td>
@@ -78,12 +84,17 @@
 				<td>8</td>
 				<td>64</td>
 				<td>1</td>
+				<td>0<=n<=255</td>
+				<td>1</td>
+				<td>1</td>
+				<td>1</td>
 				<td>0<=n<=32</td>
 				<td>16</td>
+				<td>1</td>
+				<td>1</td>
+				<td>1</td>
+				<td>0<=n<=32</td>
 				<td>16</td>
-				<td>4</td>
-				<td>2</td>
-				<td>0<=n<=320</td>
 				<td>n</td>
 				<td>16</td>
 			</tr>

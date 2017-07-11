@@ -2,6 +2,8 @@ package org.terifan.raccoon.io.managed;
 
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import java.io.IOException;
+import org.terifan.raccoon.Database;
+import org.terifan.raccoon.OpenOption;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import static resources.__TestUtils.*;
@@ -74,7 +76,7 @@ public class ManagedBlockDeviceNGTest
 
 		for (int test = 0; test < 10; test++)
 		{
-			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice, ""))
+			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice, new DeviceHeader("raccoon"), new DeviceHeader("tenant")))
 			{
 				if (test > 0)
 				{
@@ -96,6 +98,25 @@ public class ManagedBlockDeviceNGTest
 		}
 	}
 
+
+	@Test(expectedExceptions = UnsupportedVersionException.class)
+	public void testDatabaseVersionConflict() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (IManagedBlockDevice blockDevice = new ManagedBlockDevice(device, ""))
+		{
+			blockDevice.getSuperBlock().getApplicationHeader().setLabel(new byte[100]);
+			blockDevice.allocBlock(100);
+			blockDevice.commit();
+		}
+
+		try (Database db = Database.open(device, OpenOption.OPEN)) // throws exception
+		{
+			fail();
+		}
+	}
+	
 
 //	@Test(expectedExceptions = UnsupportedVersionException.class)
 //	public void testBadLabel() throws Exception
