@@ -227,14 +227,16 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			long scrambleKey0 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET + 8);
 			long scrambleKey1 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET);
 
+			byte[] unscrambledPayload = payload.clone();
+
+			BitScrambler.unscramble(scrambleKey0, unscrambledPayload);
+			
 			// decode boot block using all available ciphers
 			for (EncryptionFunction encryption : EncryptionFunction.values())
 			{
 				for (CipherModeFunction cipherMode : CipherModeFunction.values())
 				{
-					byte[] payloadCopy = payload.clone();
-
-					BitScrambler.unscramble(scrambleKey0, payloadCopy);
+					byte[] payloadCopy = unscrambledPayload.clone();
 
 					// decrypt payload using the user key
 					CipherImplementation cipher = new CipherImplementation(cipherMode, encryption, userKeyPool, 0, PAYLOAD_SIZE);
