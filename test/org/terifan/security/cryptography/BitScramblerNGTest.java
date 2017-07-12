@@ -63,9 +63,13 @@ public class BitScramblerNGTest
 	public void testExpectedOutput()
 	{
 		byte[] scrambled = new byte[16];
+		for (int i = 0; i < scrambled.length; i++)
+		{
+			scrambled[i] = (byte)i;
+		}
 
 		scramble(0, scrambled);
 
-		assertEquals(scrambled, new byte[]{(byte)0xdd,(byte)0xdc,(byte)0x99,(byte)0xb3,0x4c,(byte)0x8f,0x6b,0x48,(byte)0xff,(byte)0xbf,0x72,0x41,(byte)0xf7,(byte)0xae,(byte)0xff,(byte)0xa0});
+		assertEquals(scrambled, new byte[]{(byte)0x00,(byte)0xa8,(byte)0x20,(byte)0x82,(byte)0x7,(byte)0x21,(byte)0x22,(byte)0x88,(byte)0x24,(byte)0x19,(byte)0x9,(byte)0x82,(byte)0xc,(byte)0x50,(byte)0x64,(byte)0x20});
 	}
 }

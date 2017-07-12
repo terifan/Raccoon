@@ -1,6 +1,8 @@
 package org.terifan.security.cryptography;
 
 
+
+
 public class BitScrambler
 {
 	public static void scramble(long aKey, byte[] aBuffer)
@@ -17,8 +19,6 @@ public class BitScrambler
 
 	private static void mixBits(byte[] aBuffer, long aKey, int aStart, int aEnd, int aDirection)
 	{
-		assert (aBuffer.length & -aBuffer.length) == aBuffer.length;
-
 		int size = 8 * aBuffer.length;
 
 		ISAAC rnd = new ISAAC(aKey);
@@ -36,27 +36,18 @@ public class BitScrambler
 			boolean b0 = isSet(aBuffer, p0);
 			boolean b1 = isSet(aBuffer, p1);
 
-			if (b0 == b1)
+			if (b0 != b1)
 			{
-				b0 = b1 = !b0;
-			}
-
-			if (b0)
-			{
-				setBit(aBuffer, p1);
-			}
-			else
-			{
-				clearBit(aBuffer, p1);
-			}
-
-			if (b1)
-			{
-				setBit(aBuffer, p0);
-			}
-			else
-			{
-				clearBit(aBuffer, p0);
+				if (b0)
+				{
+					clearBit(aBuffer, p0);
+					setBit(aBuffer, p1);
+				}
+				else
+				{
+					setBit(aBuffer, p0);
+					clearBit(aBuffer, p1);
+				}
 			}
 		}
 	}
@@ -78,4 +69,76 @@ public class BitScrambler
 	{
 		aBuffer[aPosition >>> 3] &= ~(1 << (aPosition & 7));
 	}
+
+
+//	public static void main(String ... args)
+//	{
+//		try
+//		{
+//			byte[] original = new byte[48];
+//			ISAAC.PRNG.nextBytes(original);
+//
+//			long k = ISAAC.PRNG.nextLong();
+//
+//			byte[] encodedError = original.clone();
+//			BitScrambler.scramble(k, encodedError);
+//
+//			encodedError[0] ^= 1;
+//
+//			byte[] decodedError = encodedError.clone();
+//			BitScrambler.unscramble(k, decodedError);
+//
+//
+//			byte[] encoded = original.clone();
+//			BitScrambler.scramble(k, encoded);
+//
+//			byte[] decoded = encoded.clone();
+//			BitScrambler.unscramble(k, decoded);
+//
+//			Log.hexDump(original);
+//			System.out.println();
+//			Log.hexDump(encodedError);
+//			Log.hexDump(encoded);
+//
+//			System.out.print("      ");
+//			for (int i = 0; i < original.length; )
+//			{
+//				for (int j = 0; j<8 && i < original.length; i++,j++)
+//				{
+//					if (encoded[i]!=encodedError[i])
+//					{
+//						System.out.print(" * ");
+//					}
+//					else
+//						System.out.print("   ");
+//				}
+//				System.out.print(" ");
+//			}
+//			System.out.println();
+//
+//			System.out.println();
+//			Log.hexDump(decodedError);
+//			Log.hexDump(decoded);
+//
+//			System.out.print("      ");
+//			for (int i = 0; i < original.length; )
+//			{
+//				for (int j = 0; j<8 && i < original.length; i++,j++)
+//				{
+//					if (decoded[i]!=decodedError[i])
+//					{
+//						System.out.print(" * ");
+//					}
+//					else
+//						System.out.print("   ");
+//				}
+//				System.out.print(" ");
+//			}
+//			System.out.println();
+//		}
+//		catch (Throwable e)
+//		{
+//			e.printStackTrace(System.out);
+//		}
+//	}
 }
