@@ -16,7 +16,7 @@ public class ManagedBlockDeviceNGTest
 	{
 		int s = 512;
 
-		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s), ""))
+		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s)))
 		{
 			long pos1 = dev.allocBlock(1);
 			long pos2 = dev.allocBlock(1);
@@ -38,7 +38,7 @@ public class ManagedBlockDeviceNGTest
 	{
 		int s = 512;
 
-		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s), ""))
+		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s)))
 		{
 			long pos1 = dev.allocBlock(1); // alloc 0
 			long pos2 = dev.allocBlock(1); // alloc 1
@@ -76,7 +76,7 @@ public class ManagedBlockDeviceNGTest
 
 		for (int test = 0; test < 10; test++)
 		{
-			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice, new DeviceHeader("raccoon"), new DeviceHeader("tenant")))
+			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice))
 			{
 				if (test > 0)
 				{
@@ -104,9 +104,8 @@ public class ManagedBlockDeviceNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (IManagedBlockDevice blockDevice = new ManagedBlockDevice(device, ""))
+		try (IManagedBlockDevice blockDevice = new ManagedBlockDevice(device))
 		{
-			blockDevice.getSuperBlock().getApplicationHeader().setLabel(new byte[100]);
 			blockDevice.allocBlock(100);
 			blockDevice.commit();
 		}
@@ -116,7 +115,7 @@ public class ManagedBlockDeviceNGTest
 			fail();
 		}
 	}
-	
+
 
 //	@Test(expectedExceptions = UnsupportedVersionException.class)
 //	public void testBadLabel() throws Exception

@@ -4,17 +4,33 @@
 		html{
 			font-family: arial;
 		}
-		table{
+		.layout{
 			background: #f8f8f8;
 		}
-		table td, table th{
+		.layout td, .layout th{
 			text-align: center;
 			padding: 1px 4px;
+		}
+		.definitions{
+			border-collapse: collapse;
+		}
+		.definitions th{
+			padding: 1px 8px;
+			text-align: right;
+			font-size: smaller;
+			border-bottom:1px solid #ddd;
+			border-right:1px solid #ddd;
+			font-weight: normal;
+		}
+		.definitions td{
+			padding: 1px 8px;
+			font-size: smaller;
+			border-bottom:1px solid #ddd;
 		}
 	</style>
 	<body>
 		<h1>Boot Block</h1>
-		<table border="1" cellspacing="0">
+		<table border="1" cellspacing="0" class="layout">
 			<tr>
 				<th>Plaintext</th>
 				<th colspan="5">Encrypted with user key</th>
@@ -44,7 +60,7 @@
 		</table>
 
 		<h1>Super Block</h1>
-		<table border="1" cellspacing="0">
+		<table border="1" cellspacing="0" class="layout">
 			<tr>
 				<th colspan="19">Encrypted with data key</th>
 				<th>Encrypted with tweak key</th>
@@ -53,7 +69,7 @@
 				<td rowspan="2">Checksum</td>
 				<th colspan="5">Device header</th>
 				<th colspan="7">Application header</th>
-				<th colspan="5">Host header</th>
+				<th colspan="5">Tenant header</th>
 				<td rowspan="2">Padding</td>
 				<td rowspan="2">IV</td>
 			</tr>
@@ -74,7 +90,7 @@
 				<td>Tenant minor version</td>
 				<td>Tenant label length</td>
 				<td>Tenant label</td>
-				<td>Instance id</td>
+				<td>Tenant instance id</td>
 			</tr>
 			<tr>
 				<td>16</td>
@@ -100,8 +116,81 @@
 			</tr>
 		</table>
 
+		<br />
+
+		<table class="definitions">
+			<tr>
+				<th>Format version</th>
+				<td>Super block format version</td>
+			</tr>
+			<tr>
+				<th>Create time</th>
+				<td>When the block device was created</td>
+			</tr>
+			<tr>
+				<th>Update time</th>
+				<td>The most recent update of the block device</td>
+			</tr>
+			<tr>
+				<th>Transaction id</th>
+				<td>A counter incremented every time a super block is written, controls which super block to write</td>
+			</tr>
+			<tr>
+				<th>Space map block pointer</th>
+				<td>A block pointer to the structure that manages block allocations</td>
+			</tr>
+			<tr>
+				<th>Application pointer length</th>
+				<td></td>
+			</tr>
+			<tr>
+				<th>Application pointer</th>
+				<td>Application dependant pointer used by the application to load any further information from the block device</td>
+			</tr>
+			<tr>
+				<th>Application major version</th>
+				<td></td>
+			</tr>
+			<tr>
+				<th>Application minor version</th>
+				<td></td>
+			</tr>
+			<tr>
+				<th>Application label length</th>
+				<td></td>
+			</tr>
+			<tr>
+				<th>Application label</th>
+				<td>The name of the application using this block device, e.g. the name of the database engine</td>
+			</tr>
+			<tr>
+				<th>Application id</th>
+				<td>A unique id used by the application to verify this block device actual is supported</td>
+			</tr>
+			<tr>
+				<th>Tenant major version</th>
+				<td></td>
+			</tr>
+			<tr>
+				<th>Tenant minor version</th>
+				<td></td>
+			</tr>
+			<tr>
+				<th>Tenant label length</th>
+				<td></td>
+			</tr>
+			<tr>
+				<th>Tenant label</th>
+				<td>The name of the content contained in the block device, e.g. the database instance name</td>
+			</tr>
+			<tr>
+				<th>Tenant instance id</th>
+				<td>A unique id separating this instance from other instances, application dependant, default is random</td>
+			</tr>
+		</table>
+
 		<h1>Block Pointer</h1>
-		<table border="1" cellspacing="0">
+		<table border="1" cellspacing="0" class="layout">
 			<tr>
 				<td>Block type</td>
 				<td>Compression</td>

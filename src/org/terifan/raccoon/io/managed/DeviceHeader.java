@@ -3,7 +3,6 @@ package org.terifan.raccoon.io.managed;
 import java.io.UnsupportedEncodingException;
 import java.util.UUID;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.security.cryptography.ISAAC;
 
 
 public class DeviceHeader
@@ -11,7 +10,7 @@ public class DeviceHeader
 	private byte[] mLabel;
 	private int mMajorVersion;
 	private int mMinorVersion;
-	private byte[] mSerialNumber;
+	private final byte[] mSerialNumber;
 
 
 	DeviceHeader()
@@ -37,27 +36,13 @@ public class DeviceHeader
 			throw new IllegalArgumentException("Illegal minor version, must be 0-255: " + aMinorVersion);
 		}
 
-		try
-		{
-			mLabel = aLabel.getBytes("utf-8");
+		setLabel(aLabel);
 
-			if (mLabel.length > SuperBlock.DEVICE_HEADER_LABEL_MAX_LENGTH)
-			{
-				throw new IllegalArgumentException("The block device label exceed maximum length.");
-			}
-
-			mMajorVersion = aMajorVersion;
-			mMinorVersion = aMinorVersion;
-			mSerialNumber = new byte[16];
-			ByteArrayBuffer.writeInt64(mSerialNumber, 0, aSerialNumber.getMostSignificantBits());
-			ByteArrayBuffer.writeInt64(mSerialNumber, 0, aSerialNumber.getLeastSignificantBits());
-
-			ISAAC.PRNG.nextBytes(mSerialNumber);
-		}
-		catch (UnsupportedEncodingException e)
-		{
-			throw new IllegalArgumentException(e);
-		}
+		mMajorVersion = aMajorVersion;
+		mMinorVersion = aMinorVersion;
+		mSerialNumber = new byte[16];
+		ByteArrayBuffer.writeInt64(mSerialNumber, 0, aSerialNumber.getMostSignificantBits());
+		ByteArrayBuffer.writeInt64(mSerialNumber, 8, aSerialNumber.getLeastSignificantBits());
 	}
 
 
@@ -67,9 +52,21 @@ public class DeviceHeader
 	}
 
 
+	public void setMajorVersion(int aMajorVersion)
+	{
+		mMajorVersion = aMajorVersion;
+	}
+
+
 	public int getMinorVersion()
 	{
 		return mMinorVersion;
+	}
+
+
+	public void setMinorVersion(int aMinorVersion)
+	{
+		mMinorVersion = aMinorVersion;
 	}
 
 
@@ -82,6 +79,24 @@ public class DeviceHeader
 		catch (UnsupportedEncodingException e)
 		{
 			throw new IllegalArgumentException(e);
+		}
+	}
+
+
+	public void setLabel(String aLabel)
+	{
+		try
+		{
+			mLabel = aLabel.getBytes("utf-8");
+		}
+		catch (UnsupportedEncodingException e)
+		{
+			throw new IllegalArgumentException(e);
+		}
+
+		if (mLabel.length > SuperBlock.DEVICE_HEADER_LABEL_MAX_LENGTH)
+		{
+			throw new IllegalArgumentException("The label exceeds maximum length.");
 		}
 	}
 
@@ -102,8 +117,8 @@ public class DeviceHeader
 	{
 		mLabel = aLabel;
 	}
- 	
-	
+
+
 	public void marshal(ByteArrayBuffer aBuffer)
 	{
 		aBuffer.writeInt8(mMajorVersion);
@@ -112,8 +127,8 @@ public class DeviceHeader
 		aBuffer.write(mLabel);
 		aBuffer.write(mSerialNumber);
 	}
- 	
-	
+
+
 	public void unmarshal(ByteArrayBuffer aBuffer)
 	{
 		mMajorVersion = aBuffer.readInt8();
@@ -127,6 +142,6 @@ public class DeviceHeader
 	@Override
 	public String toString()
 	{
-		return getLabel() + "[" + mMajorVersion + "." + mMinorVersion + "]";
+		return "{label=" + getLabel() + ", version=" + mMajorVersion + "." + mMinorVersion + ", serial=" + getSerialNumberUUID() + "}";
 	}
 }

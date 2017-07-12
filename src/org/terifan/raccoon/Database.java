@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
-import org.terifan.raccoon.io.managed.SuperBlock;
 import org.terifan.raccoon.io.secure.SecureBlockDevice;
 import org.terifan.raccoon.io.managed.UnsupportedVersionException;
 import org.terifan.raccoon.io.secure.AccessCredentials;
@@ -153,13 +152,13 @@ public final class Database implements AutoCloseable
 		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aParameters, null);
 
 		IManagedBlockDevice device;
-		DeviceHeader label = new DeviceHeader("");
+		DeviceHeader tenantHeader = null;
 
 		for (Object o : aParameters)
 		{
 			if (o instanceof DeviceHeader)
 			{
-				label = (DeviceHeader)o;
+				tenantHeader = (DeviceHeader)o;
 			}
 		}
 
@@ -176,7 +175,7 @@ public final class Database implements AutoCloseable
 		{
 			Log.d("creating a managed block device");
 
-			device = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice, Constants.DEVICE_HEADER, label);
+			device = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice);
 		}
 		else
 		{
@@ -199,18 +198,28 @@ public final class Database implements AutoCloseable
 				throw new InvalidPasswordException("Incorrect password or not a secure BlockDevice");
 			}
 
-			device = new ManagedBlockDevice(secureDevice, Constants.DEVICE_HEADER, label);
+			device = new ManagedBlockDevice(secureDevice);
 		}
 
 		Database db;
 
 		if (aCreate)
 		{
+			if (tenantHeader != null)
+			{
+				device.setTenantHeader(tenantHeader);
+			}
+
 			db = create(device, aParameters);
 		}
 		else
 		{
 			db = open(device, aParameters, aOpenOptions);
+
+			if (tenantHeader != null && !tenantHeader.getLabel().equals(device.getTenantHeader().getLabel()))
+			{
+				throw new UnsupportedVersionException("Device tenant header labels don't match: expected: "+tenantHeader+", actual:" + device.getTenantHeader());
+			}
 		}
 
 		db.mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
@@ -249,7 +258,7 @@ public final class Database implements AutoCloseable
 
 		if (aBlockDevice.length() > 0)
 		{
-			aBlockDevice.getSuperBlock().setApplicationHeader(new byte[0]);
+			aBlockDevice.setApplicationPointer(new byte[0]);
 			aBlockDevice.clear();
 			aBlockDevice.commit();
 		}
@@ -261,8 +270,6 @@ public final class Database implements AutoCloseable
 		db.mSystemTableMetadata = new Table(db, Table.class, null);
 		db.mSystemTable = new TableInstance(db, db.mSystemTableMetadata, null);
 		db.mModified = true;
-
-		db.updateSuperBlock();
 
 		db.commit();
 
@@ -279,31 +286,23 @@ public final class Database implements AutoCloseable
 		Log.i("open database");
 		Log.inc();
 
-		SuperBlock superBlock = aBlockDevice.getSuperBlock();
-		
-//		else
-//		{
-//			if (aApplicationHeader != null && !aApplicationHeader.equals(mSuperBlock.getApplicationHeader()))
-//			{
-//				throw new UnsupportedVersionException("Block device label don't match: was: \"" + mSuperBlock.getTenantHeader() + "\", expected: \"" + aTenantHeader + "\"");
-//			}
-//		}
+		DeviceHeader applicationHeader = aBlockDevice.getApplicationHeader();
 
-		byte[] applicationPointer = superBlock.getApplicationPointer();
-		DeviceHeader applicationHeader = superBlock.getApplicationHeader();
-
-		if (applicationPointer.length < BlockPointer.SIZE)
+		if (!Arrays.equals(applicationHeader.getSerialNumberBytes(), Constants.DEVICE_HEADER.getSerialNumberBytes()))
 		{
-			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (short application header)");
+			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (serialno): " + applicationHeader);
 		}
 
-		if (Arrays.equals(applicationHeader.getSerialNumberBytes(), Constants.DEVICE_HEADER.getSerialNumberBytes()) || !applicationHeader.getLabel().equals(Constants.DEVICE_HEADER.getLabel()))
-		{
-			throw new UnsupportedVersionException("This block device does not contain a Raccoon database: " + applicationHeader);
-		}
 		if (applicationHeader.getMajorVersion() != Constants.DEVICE_HEADER.getMajorVersion() || applicationHeader.getMinorVersion() != Constants.DEVICE_HEADER.getMinorVersion())
 		{
 			throw new UnsupportedVersionException("Unsupported database version: " + applicationHeader);
+		}
+
+		byte[] applicationPointer = aBlockDevice.getApplicationPointer();
+
+		if (applicationPointer.length < BlockPointer.SIZE)
+		{
+			throw new UnsupportedVersionException("The application pointer is too short: " + applicationPointer.length);
 		}
 
 		db.mProperties = aParameters;
@@ -512,14 +511,15 @@ public final class Database implements AutoCloseable
 		Log.i("updating super block");
 		Log.inc();
 
-		ByteArrayBuffer buffer = new ByteArrayBuffer(IManagedBlockDevice.EXTRA_DATA_LIMIT);
+		ByteArrayBuffer buffer = new ByteArrayBuffer(IManagedBlockDevice.APPLICATION_POINTER_MAX_SIZE);
 		if (mSystemTableMetadata.getTableHeader() != null)
 		{
 			buffer.write(mSystemTableMetadata.getTableHeader());
 		}
 		buffer.trim();
 
-		mBlockDevice.getSuperBlock().setApplicationHeader(buffer.array());
+		mBlockDevice.setApplicationPointer(buffer.array());
+		mBlockDevice.setApplicationHeader(Constants.DEVICE_HEADER);
 
 		Log.dec();
 	}
@@ -975,7 +975,7 @@ public final class Database implements AutoCloseable
 
 	public TransactionGroup getTransactionId()
 	{
-		return new TransactionGroup(mBlockDevice.getSuperBlock().getTransactionId());
+		return new TransactionGroup(mBlockDevice.getTransactionId());
 	}
 
 

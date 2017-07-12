@@ -1285,7 +1285,7 @@ public class DatabaseNGTest
 	}
 
 
-	@Test(expectedExceptions = UnsupportedVersionException.class, expectedExceptionsMessageRegExp = ".*Block device label don't match.*")
+	@Test(expectedExceptions = UnsupportedVersionException.class, expectedExceptionsMessageRegExp = ".*Device tenant header labels don't match.*")
 	public void testDeviceLabel1() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);

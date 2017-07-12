@@ -9,7 +9,7 @@ import org.terifan.security.cryptography.ISAAC;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-public class SuperBlock
+class SuperBlock
 {
 	private final static byte FORMAT_VERSION = 1;
 	private final static int CHECKSUM_SIZE = 16;
@@ -32,9 +32,10 @@ public class SuperBlock
 		mCreateTime = System.currentTimeMillis();
 		mSpaceMapPointer = new BlockPointer();
 		mTransactionId = -1L;
-		
+
 		mApplicationHeader = new DeviceHeader();
 		mTenantHeader = new DeviceHeader();
+		mApplicationPointer = new byte[0];
 	}
 
 
@@ -57,18 +58,6 @@ public class SuperBlock
 	public BlockPointer getSpaceMapPointer()
 	{
 		return mSpaceMapPointer;
-	}
-
-
-	public DeviceHeader getTenantHeader()
-	{
-		return mTenantHeader;
-	}
-
-
-	public void setTenantHeader(DeviceHeader aTenantHeader)
-	{
-		mTenantHeader = aTenantHeader;
 	}
 
 
@@ -114,15 +103,27 @@ public class SuperBlock
 	}
 
 
-	public DeviceHeader getApplicationHeader()
+	DeviceHeader getApplicationHeader()
 	{
 		return mApplicationHeader;
 	}
 
 
-	public void setApplicationHeader(DeviceHeader aApplicationHeader)
+	void setApplicationHeader(DeviceHeader aApplicationHeader)
 	{
 		mApplicationHeader = aApplicationHeader;
+	}
+
+
+	DeviceHeader getTenantHeader()
+	{
+		return mTenantHeader;
+	}
+
+
+	void setTenantHeader(DeviceHeader aTenantHeader)
+	{
+		mTenantHeader = aTenantHeader;
 	}
 
 
@@ -211,14 +212,24 @@ public class SuperBlock
 
 	private void marshal(ByteArrayBuffer aBuffer) throws IOException
 	{
+		if (mApplicationPointer == null)
+		{
+			throw new IllegalStateException("The application pointer must be specified");
+		}
+		if (mApplicationPointer.length > IManagedBlockDevice.APPLICATION_POINTER_MAX_SIZE)
+		{
+			throw new IllegalStateException("The application pointer is too long");
+		}
+
 		aBuffer.writeInt8(mFormatVersion);
 		aBuffer.writeInt64(mCreateTime);
 		aBuffer.writeInt64(mModifiedTime);
 		aBuffer.writeInt64(mTransactionId);
 		mSpaceMapPointer.marshal(aBuffer);
-		mApplicationPointer = aBuffer.read(new byte[aBuffer.readInt8()]);
-		mTenantHeader.marshal(aBuffer);
+		aBuffer.writeInt8(mApplicationPointer.length);
+		aBuffer.write(mApplicationPointer);
 		mApplicationHeader.marshal(aBuffer);
+		mTenantHeader.marshal(aBuffer);
 	}
 
 
@@ -235,9 +246,8 @@ public class SuperBlock
 		mModifiedTime = aBuffer.readInt64();
 		mTransactionId = aBuffer.readInt64();
 		mSpaceMapPointer.unmarshal(aBuffer);
-		aBuffer.writeInt8(mApplicationPointer.length);
-		aBuffer.write(mApplicationPointer);
-		mTenantHeader.unmarshal(aBuffer);
+		mApplicationPointer = aBuffer.read(new byte[aBuffer.readInt8()]);
 		mApplicationHeader.unmarshal(aBuffer);
+		mTenantHeader.unmarshal(aBuffer);
 	}
 }
