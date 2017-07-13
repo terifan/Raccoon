@@ -20,10 +20,10 @@ public abstract class CipherMode
 	 * @param aUnitSize size of a unit, the length must be a multiple of unit size
 	 * @param aCipher the primary key schedule
 	 * @param aMasterIV initialisation vector for this cipher
-	 * @param aIV initialisation vector for this block
+	 * @param aBlockIV initialisation vector for this block
 	 * @param aTweakCipher cipher to used to encrypt the IV
 	 */
-	public abstract void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aIV, BlockCipher aTweakCipher);
+	public abstract void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV, BlockCipher aTweakCipher);
 
 
 	/**
@@ -36,10 +36,10 @@ public abstract class CipherMode
 	 * @param aUnitSize size of a unit, the length must be a multiple of unit size
 	 * @param aCipher the primary key schedule
 	 * @param aMasterIV initialisation vector for this cipher
-	 * @param aIV initialisation vector for this block
+	 * @param aBlockIV initialisation vector for this block
 	 * @param aTweakCipher cipher to used to encrypt the IV
 	 */
-	public abstract void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aIV, BlockCipher aTweakCipher);
+	public abstract void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV, BlockCipher aTweakCipher);
 
 
 	protected static void prepareIV(long[] aMasterIV, long[] aBlockIV, long aDataUnitNo, byte[] aOutputIV, BlockCipher aTweakCipher)

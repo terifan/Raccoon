@@ -239,7 +239,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 						{
 							System.err.println("hash collision in boot block");
 
-							// a hash collision has occured!
+							// a checksum collision has occured!
 							return null;
 						}
 

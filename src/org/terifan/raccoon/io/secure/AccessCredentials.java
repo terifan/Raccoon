@@ -13,7 +13,7 @@ public final class AccessCredentials
 	/**
 	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times.
 	 */
-	public final static int DEFAULT_ITERATION_COUNT = 10_000;
+	public final static int DEFAULT_ITERATION_COUNT = 100_000;
 
 	private EncryptionFunction mEncryptionFunction;
 	private KeyGenerationFunction mKeyGeneratorFunction;
@@ -37,9 +37,9 @@ public final class AccessCredentials
 	/**
 	 *
 	 * @param aIterationCount
-	 *   Passwords are expanded into cryptographic keys by iterating a hash function this many times. 
-	 *   A larger number means more security but also longer time to open a database. WARNING: this 
-	 *   value is not recorded in the database file and must always be provided if different from the 
+	 *   Passwords are expanded into cryptographic keys by iterating a hash function this many times.
+	 *   A larger number means more security but also longer time to open a database. WARNING: this
+	 *   value is not recorded in the database file and must always be provided if different from the
 	 *   default value!
 	 */
 	public AccessCredentials(char [] aPassword, EncryptionFunction aEncryptionFunction, KeyGenerationFunction aKeyFunction, CipherModeFunction aCipherModeFunction, int aIterationCount)
