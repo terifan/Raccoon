@@ -22,15 +22,28 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	/**
 	 * Create/open a ManagedBlockDevice with an user defined label.
 	 *
-	 * @param aBlockDeviceLabel
+	 * @param aApplicationHeader
 	 * a label describing contents of the block device. If a non-null value is provided then this value must match the value found inside
 	 * the block device opened or an exception is thrown.
 	 */
-	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice, String aBlockDeviceLabel) throws IOException
+	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice) throws IOException
+	{
+		this(aBlockDevice, new DeviceHeader(), new DeviceHeader());
+	}
+
+
+	/**
+	 * Create/open a ManagedBlockDevice with an user defined label.
+	 *
+	 * @param aApplicationHeader
+	 * a label describing contents of the block device. If a non-null value is provided then this value must match the value found inside
+	 * the block device opened or an exception is thrown.
+	 */
+	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice, DeviceHeader aApplicationHeader, DeviceHeader aTenantHeader) throws IOException
 	{
 		if (aBlockDevice.getBlockSize() < 512)
 		{
-			throw new IllegalArgumentException("Block device must have 512 byte block size or larger.");
+			throw new IllegalArgumentException("The block device must have 512 byte block size or larger.");
 		}
 
 		mBlockDevice = aBlockDevice;
@@ -42,14 +55,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		if (mWasCreated)
 		{
-			mSuperBlock.setBlockDeviceLabel(aBlockDeviceLabel);
-		}
-		else
-		{
-			if (aBlockDeviceLabel != null && !aBlockDeviceLabel.equals(mSuperBlock.getBlockDeviceLabel()))
-			{
-				throw new UnsupportedVersionException("Block device label don't match: was: \"" + mSuperBlock.getBlockDeviceLabel() + "\", expected: \"" + aBlockDeviceLabel + "\"");
-			}
+			setApplicationHeader(aApplicationHeader);
+			setTenantHeader(aTenantHeader);
 		}
 	}
 
@@ -120,6 +127,55 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	public boolean isModified()
 	{
 		return mModified;
+	}
+
+
+	@Override
+	public byte[] getApplicationPointer()
+	{
+		return mSuperBlock.getApplicationPointer();
+	}
+
+
+	@Override
+	public void setApplicationPointer(byte[] aApplicationPointer)
+	{
+		mSuperBlock.setApplicationPointer(aApplicationPointer);
+	}
+
+
+	@Override
+	public DeviceHeader getApplicationHeader()
+	{
+		return mSuperBlock.getApplicationHeader();
+	}
+
+
+	@Override
+	public void setApplicationHeader(DeviceHeader aApplicationHeader)
+	{
+		mSuperBlock.setApplicationHeader(aApplicationHeader);
+	}
+
+
+	@Override
+	public DeviceHeader getTenantHeader()
+	{
+		return mSuperBlock.getTenantHeader();
+	}
+
+
+	@Override
+	public void setTenantHeader(DeviceHeader aTenantHeader)
+	{
+		mSuperBlock.setTenantHeader(aTenantHeader);
+	}
+
+
+	@Override
+	public long getTransactionId()
+	{
+		return mSuperBlock.getTransactionId();
 	}
 
 
@@ -366,10 +422,10 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		mSuperBlock.incrementTransactionId();
 
-		Log.i("write super block %d", mSuperBlock.getTransactionId() & 1L);
-		Log.inc();
-
 		long pageIndex = mSuperBlock.getTransactionId() & 1L;
+
+		Log.i("write super block %d", pageIndex);
+		Log.inc();
 
 		mSuperBlock.write(mBlockDevice, pageIndex);
 
@@ -444,12 +500,5 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mSpaceMap.clearUncommitted();
 
 		createBlockDevice();
-	}
-
-
-	@Override
-	public SuperBlock getSuperBlock()
-	{
-		return mSuperBlock;
 	}
 }

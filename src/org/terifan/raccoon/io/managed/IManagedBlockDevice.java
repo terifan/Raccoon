@@ -6,7 +6,7 @@ import org.terifan.raccoon.io.IBlockDevice;
 
 public interface IManagedBlockDevice extends IBlockDevice
 {
-	final static int EXTRA_DATA_LIMIT = 64 + 256;
+	final static int APPLICATION_POINTER_MAX_SIZE = 255;
 
 
 	/**
@@ -46,5 +46,23 @@ public interface IManagedBlockDevice extends IBlockDevice
 	void clear() throws IOException;
 
 
-	SuperBlock getSuperBlock();
+	DeviceHeader getApplicationHeader();
+
+
+	void setApplicationHeader(DeviceHeader aApplicationHeader);
+
+
+	DeviceHeader getTenantHeader();
+
+
+	void setTenantHeader(DeviceHeader aTenantHeader);
+
+
+	byte[] getApplicationPointer();
+
+
+	void setApplicationPointer(byte[] aApplicationPointer);
+
+
+	long getTransactionId();
 }

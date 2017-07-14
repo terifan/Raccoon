@@ -31,7 +31,7 @@ public class BlobInputStreamNGTest
 
 		IPhysicalBlockDevice memoryDevice = new MemoryBlockDevice(512);
 		SecureBlockDevice secureBlockDevice = SecureBlockDevice.create(new AccessCredentials("password").setIterationCount(100), memoryDevice);
-		IManagedBlockDevice blockDevice = new ManagedBlockDevice(secureBlockDevice, "");
+		IManagedBlockDevice blockDevice = new ManagedBlockDevice(secureBlockDevice);
 
 		byte[] header;
 		try (BlobOutputStream bos = new BlobOutputStream(new BlockAccessor(blockDevice, CompressionParam.BEST_SPEED, 0), new TransactionGroup(0), null))

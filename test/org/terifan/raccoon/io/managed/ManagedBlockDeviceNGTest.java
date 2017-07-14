@@ -2,6 +2,8 @@ package org.terifan.raccoon.io.managed;
 
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import java.io.IOException;
+import org.terifan.raccoon.Database;
+import org.terifan.raccoon.OpenOption;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import static resources.__TestUtils.*;
@@ -14,7 +16,7 @@ public class ManagedBlockDeviceNGTest
 	{
 		int s = 512;
 
-		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s), ""))
+		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s)))
 		{
 			long pos1 = dev.allocBlock(1);
 			long pos2 = dev.allocBlock(1);
@@ -36,7 +38,7 @@ public class ManagedBlockDeviceNGTest
 	{
 		int s = 512;
 
-		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s), ""))
+		try (ManagedBlockDevice dev = new ManagedBlockDevice(new MemoryBlockDevice(s)))
 		{
 			long pos1 = dev.allocBlock(1); // alloc 0
 			long pos2 = dev.allocBlock(1); // alloc 1
@@ -74,7 +76,7 @@ public class ManagedBlockDeviceNGTest
 
 		for (int test = 0; test < 10; test++)
 		{
-			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice, ""))
+			try (ManagedBlockDevice dev = new ManagedBlockDevice(memoryBlockDevice))
 			{
 				if (test > 0)
 				{
@@ -93,6 +95,24 @@ public class ManagedBlockDeviceNGTest
 				}
 				dev.commit();
 			}
+		}
+	}
+
+
+	@Test(expectedExceptions = UnsupportedVersionException.class)
+	public void testDatabaseVersionConflict() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (IManagedBlockDevice blockDevice = new ManagedBlockDevice(device))
+		{
+			blockDevice.allocBlock(100);
+			blockDevice.commit();
+		}
+
+		try (Database db = Database.open(device, OpenOption.OPEN)) // throws exception
+		{
+			fail();
 		}
 	}
 

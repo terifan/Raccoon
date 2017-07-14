@@ -13,7 +13,7 @@ public final class AccessCredentials
 	/**
 	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times.
 	 */
-	public final static int DEFAULT_ITERATION_COUNT = 10_000;
+	public final static int DEFAULT_ITERATION_COUNT = 100_000;
 
 	private EncryptionFunction mEncryptionFunction;
 	private KeyGenerationFunction mKeyGeneratorFunction;
@@ -30,21 +30,21 @@ public final class AccessCredentials
 
 	public AccessCredentials(char [] aPassword)
 	{
-		this(aPassword, DEFAULT_ENCRYPTION, DEFAULT_KEY_GENERATOR, DEFAULT_CIPHER_MODE, DEFAULT_ITERATION_COUNT);
+		this(aPassword, DEFAULT_ENCRYPTION, DEFAULT_KEY_GENERATOR, DEFAULT_CIPHER_MODE);
 	}
 
 
 	/**
 	 *
 	 * @param aIterationCount
-	 *   Passwords are expanded into cryptographic keys by iterating a hash function this many times. 
-	 *   A larger number means more security but also longer time to open a database. WARNING: this 
-	 *   value is not recorded in the database file and must always be provided if different from the 
+	 *   Passwords are expanded into cryptographic keys by iterating a hash function this many times.
+	 *   A larger number means more security but also longer time to open a database. WARNING: this
+	 *   value is not recorded in the database file and must always be provided if different from the
 	 *   default value!
 	 */
-	public AccessCredentials(char [] aPassword, EncryptionFunction aEncryptionFunction, KeyGenerationFunction aKeyFunction, CipherModeFunction aCipherModeFunction, int aIterationCount)
+	public AccessCredentials(char [] aPassword, EncryptionFunction aEncryptionFunction, KeyGenerationFunction aKeyFunction, CipherModeFunction aCipherModeFunction)
 	{
-		mIterationCount = aIterationCount;
+		mIterationCount = DEFAULT_ITERATION_COUNT;
 		mEncryptionFunction = aEncryptionFunction;
 		mKeyGeneratorFunction = aKeyFunction;
 		mCipherModeFunction = aCipherModeFunction;

@@ -2,6 +2,7 @@ package org.terifan.raccoon;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import org.terifan.raccoon.io.managed.DeviceHeader;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
@@ -27,7 +28,7 @@ public class DatabaseBuilder
 	private int mIterationCount;
 	private boolean mReadOnly;
 	private char[] mPassword;
-	private String mLabel;
+	private DeviceHeader mDeviceHeader;
 
 
 	public DatabaseBuilder(IPhysicalBlockDevice aBlockDevice)
@@ -44,6 +45,7 @@ public class DatabaseBuilder
 		mKeyGenerationFunction = AccessCredentials.DEFAULT_KEY_GENERATOR;
 		mCipherModeFunction = AccessCredentials.DEFAULT_CIPHER_MODE;
 		mIterationCount = AccessCredentials.DEFAULT_ITERATION_COUNT;
+		mDeviceHeader = new DeviceHeader("");
 	}
 
 
@@ -77,7 +79,7 @@ public class DatabaseBuilder
 			}
 		}
 
-		IManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(mBlockDevice, mLabel);
+		IManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(mBlockDevice, Constants.DEVICE_HEADER, mDeviceHeader);
 
 		return Database.open(managedBlockDevice, aOpenOption, params.toArray());
 	}
@@ -154,7 +156,15 @@ public class DatabaseBuilder
 
 	public DatabaseBuilder setLabel(String aLabel)
 	{
-		mLabel = aLabel;
+		mDeviceHeader.setLabel(aLabel);
+		return this;
+	}
+
+
+	public DatabaseBuilder setVersion(int aMajorVersion, int aMinorVersion)
+	{
+		mDeviceHeader.setMajorVersion(aMajorVersion);
+		mDeviceHeader.setMinorVersion(aMinorVersion);
 		return this;
 	}
 

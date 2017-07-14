@@ -9,14 +9,14 @@ import org.terifan.security.cryptography.Twofish;
 public enum EncryptionFunction
 {
 	AES,
-	Twofish,
-	Serpent,
-	AESTwofish,
-	TwofishSerpent,
-	SerpentAES,
-	AESTwofishSerpent,
-	TwofishAESSerpent,
-	SerpentTwofishAES;
+	TWOFISH,
+	SERPENT,
+	AES_TWOFISH,
+	TWOFISH_SERPENT,
+	SERPENT_AES,
+	AES_TWOFISH_SERPENT,
+	TWOFISH_AES_SERPENT,
+	SERPENT_TWOFISH_AES;
 
 
 	BlockCipher[] newInstance()
@@ -25,21 +25,21 @@ public enum EncryptionFunction
 		{
 			case AES:
 				return new BlockCipher[]{new AES()};
-			case Twofish:
+			case TWOFISH:
 				return new BlockCipher[]{new Twofish()};
-			case Serpent:
+			case SERPENT:
 				return new BlockCipher[]{new Serpent()};
-			case AESTwofish:
+			case AES_TWOFISH:
 				return new BlockCipher[]{new AES(), new Twofish()};
-			case TwofishSerpent:
+			case TWOFISH_SERPENT:
 				return new BlockCipher[]{new Twofish(), new Serpent()};
-			case SerpentAES:
+			case SERPENT_AES:
 				return new BlockCipher[]{new Serpent(), new AES()};
-			case AESTwofishSerpent:
+			case AES_TWOFISH_SERPENT:
 				return new BlockCipher[]{new AES(), new Twofish(), new Serpent()};
-			case TwofishAESSerpent:
+			case TWOFISH_AES_SERPENT:
 				return new BlockCipher[]{new Twofish(), new AES(), new Serpent()};
-			case SerpentTwofishAES:
+			case SERPENT_TWOFISH_AES:
 				return new BlockCipher[]{new Serpent(), new Twofish(), new AES()};
 		}
 
@@ -52,16 +52,16 @@ public enum EncryptionFunction
 		switch (this)
 		{
 			case AES:
-			case AESTwofish:
-			case AESTwofishSerpent:
+			case AES_TWOFISH:
+			case AES_TWOFISH_SERPENT:
 				return new AES();
-			case Twofish:
-			case TwofishSerpent:
-			case TwofishAESSerpent:
+			case TWOFISH:
+			case TWOFISH_SERPENT:
+			case TWOFISH_AES_SERPENT:
 				return new Twofish();
-			case Serpent:
-			case SerpentAES:
-			case SerpentTwofishAES:
+			case SERPENT:
+			case SERPENT_AES:
+			case SERPENT_TWOFISH_AES:
 				return new Serpent();
 		}
 

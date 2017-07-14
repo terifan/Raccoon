@@ -11,7 +11,6 @@ import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.security.cryptography.SecretKey;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
-import org.terifan.security.cryptography.BitScrambler;
 import org.terifan.security.cryptography.CipherMode;
 import org.terifan.security.cryptography.ISAAC;
 import static org.terifan.raccoon.util.ByteArrayUtil.*;
@@ -32,8 +31,6 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	private final static int KEY_SIZE_BYTES = 32;
 	private final static int IV_SIZE = 16;
 	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
-	private final static int SCRAMBLE_KEY_OFFSET = KEY_POOL_SIZE;
-	private final static int USER_KEY_POOL_SIZE = SCRAMBLE_KEY_OFFSET + 2 * 8;
 	private final static int CHECKSUM_SEED = 0x2fc8d359; // (random number)
 
 	private transient IPhysicalBlockDevice mBlockDevice;
@@ -140,19 +137,13 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		putInt(aPayload, 0, checksum);
 
 		// create user key
-		byte[] userKeyPool = aAccessCredentials.generateKeyPool(aAccessCredentials.getKeyGeneratorFunction(), salt, USER_KEY_POOL_SIZE);
+		byte[] userKeyPool = aAccessCredentials.generateKeyPool(aAccessCredentials.getKeyGeneratorFunction(), salt, KEY_POOL_SIZE);
 
 		// encrypt payload
 		byte[] payload = aPayload.clone();
-		long scrambleKey0 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET);
-		long scrambleKey1 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET + 8);
-
-		BitScrambler.scramble(scrambleKey0, payload);
 
 		CipherImplementation cipher = new CipherImplementation(aAccessCredentials.getCipherModeFunction(), aAccessCredentials.getEncryptionFunction(), userKeyPool, 0, PAYLOAD_SIZE);
 		cipher.encrypt(aBlockIndex, payload, 0, PAYLOAD_SIZE, new long[2]);
-
-		BitScrambler.scramble(scrambleKey1, payload);
 
 		// assemble output buffer
 		byte[] blockData = new byte[aBlockSize];
@@ -222,10 +213,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		for (KeyGenerationFunction keyGenerator : KeyGenerationFunction.values())
 		{
 			// create a user key using the key generator
-			byte[] userKeyPool = aAccessCredentials.generateKeyPool(keyGenerator, salt, USER_KEY_POOL_SIZE);
-
-			long scrambleKey0 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET + 8);
-			long scrambleKey1 = getLong(userKeyPool, SCRAMBLE_KEY_OFFSET);
+			byte[] userKeyPool = aAccessCredentials.generateKeyPool(keyGenerator, salt, KEY_POOL_SIZE);
 
 			// decode boot block using all available ciphers
 			for (EncryptionFunction encryption : EncryptionFunction.values())
@@ -234,13 +222,9 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 				{
 					byte[] payloadCopy = payload.clone();
 
-					BitScrambler.unscramble(scrambleKey0, payloadCopy);
-
 					// decrypt payload using the user key
 					CipherImplementation cipher = new CipherImplementation(cipherMode, encryption, userKeyPool, 0, PAYLOAD_SIZE);
 					cipher.decrypt(aBlockIndex, payloadCopy, 0, PAYLOAD_SIZE, new long[2]);
-
-					BitScrambler.unscramble(scrambleKey1, payloadCopy);
 
 					// read header
 					int expectedChecksum = getInt(payloadCopy, 0);
@@ -255,7 +239,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 						{
 							System.err.println("hash collision in boot block");
 
-							// a hash collision has occured!
+							// a checksum collision has occured!
 							return null;
 						}
 

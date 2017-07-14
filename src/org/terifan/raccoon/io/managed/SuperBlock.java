@@ -9,23 +9,21 @@ import org.terifan.security.cryptography.ISAAC;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-public class SuperBlock
+class SuperBlock
 {
 	private final static byte FORMAT_VERSION = 1;
 	private final static int CHECKSUM_SIZE = 16;
 	private final static int IV_SIZE = 16;
-	private final static int MAX_LABEL_LENGTH = 32;
+	public static final int DEVICE_HEADER_LABEL_MAX_LENGTH = 32;
 
 	private int mFormatVersion;
 	private long mCreateTime;
 	private long mModifiedTime;
 	private long mTransactionId;
-	private String mBlockDeviceLabel;
-	private byte[] mApplicationHeader;
+	private DeviceHeader mTenantHeader;
+	private DeviceHeader mApplicationHeader;
 	private BlockPointer mSpaceMapPointer;
-	private byte[] mInstanceId;
-	private byte[] mApplicationId;
-	private int mApplicationVersion;
+	private byte[] mApplicationPointer;
 
 
 	public SuperBlock()
@@ -34,11 +32,10 @@ public class SuperBlock
 		mCreateTime = System.currentTimeMillis();
 		mSpaceMapPointer = new BlockPointer();
 		mTransactionId = -1L;
-		mApplicationId = new byte[16];
-		mInstanceId = new byte[16];
-		mApplicationHeader = new byte[0];
 
-		ISAAC.PRNG.nextBytes(mInstanceId);
+		mApplicationHeader = new DeviceHeader();
+		mTenantHeader = new DeviceHeader();
+		mApplicationPointer = new byte[0];
 	}
 
 
@@ -61,18 +58,6 @@ public class SuperBlock
 	public BlockPointer getSpaceMapPointer()
 	{
 		return mSpaceMapPointer;
-	}
-
-
-	public String getBlockDeviceLabel()
-	{
-		return mBlockDeviceLabel;
-	}
-
-
-	public void setBlockDeviceLabel(String aBlockDeviceLabel)
-	{
-		mBlockDeviceLabel = aBlockDeviceLabel;
 	}
 
 
@@ -118,55 +103,39 @@ public class SuperBlock
 	}
 
 
-	public byte[] getApplicationHeader()
+	DeviceHeader getApplicationHeader()
 	{
-		return mApplicationHeader.clone();
+		return mApplicationHeader;
 	}
 
 
-	public void setApplicationHeader(byte[] aApplicationHeader)
+	void setApplicationHeader(DeviceHeader aApplicationHeader)
 	{
-		if (aApplicationHeader.length > IManagedBlockDevice.EXTRA_DATA_LIMIT)
-		{
-			throw new IllegalArgumentException("Application header is to long");
-		}
-
-		mApplicationHeader = aApplicationHeader.clone();
+		mApplicationHeader = aApplicationHeader;
 	}
 
 
-	public byte[] getInstanceId()
+	DeviceHeader getTenantHeader()
 	{
-		return mInstanceId.clone();
+		return mTenantHeader;
 	}
 
 
-	public byte[] getApplicationId()
+	void setTenantHeader(DeviceHeader aTenantHeader)
 	{
-		return mApplicationId.clone();
+		mTenantHeader = aTenantHeader;
 	}
 
 
-	public void setApplicationId(byte[] aApplicationId)
+	public byte[] getApplicationPointer()
 	{
-		if (aApplicationId == null || aApplicationId.length != 16)
-		{
-			throw new IllegalArgumentException("Instance ID must be 16 bytes in length");
-		}
-
-		mApplicationId = aApplicationId.clone();
+		return mApplicationPointer;
 	}
 
 
-	public int getApplicationVersion()
+	public void setApplicationPointer(byte[] aApplicationPointer)
 	{
-		return mApplicationVersion;
-	}
-
-
-	public void setApplicationVersion(int aApplicationVersion)
-	{
-		mApplicationVersion = aApplicationVersion;
+		mApplicationPointer = aApplicationPointer;
 	}
 
 
@@ -243,39 +212,42 @@ public class SuperBlock
 
 	private void marshal(ByteArrayBuffer aBuffer) throws IOException
 	{
-		byte[] label = mBlockDeviceLabel == null ? new byte[0] : mBlockDeviceLabel.getBytes("utf-8");
+		if (mApplicationPointer == null)
+		{
+			throw new IllegalStateException("The application pointer must be specified");
+		}
+		if (mApplicationPointer.length > IManagedBlockDevice.APPLICATION_POINTER_MAX_SIZE)
+		{
+			throw new IllegalStateException("The application pointer is too long");
+		}
 
 		aBuffer.writeInt8(mFormatVersion);
 		aBuffer.writeInt64(mCreateTime);
 		aBuffer.writeInt64(mModifiedTime);
 		aBuffer.writeInt64(mTransactionId);
 		mSpaceMapPointer.marshal(aBuffer);
-		aBuffer.writeInt8(label.length);
-		aBuffer.write(label);
-		aBuffer.write(mInstanceId);
-		aBuffer.write(mApplicationId);
-		aBuffer.writeInt32(mApplicationVersion);
-		aBuffer.writeInt16(mApplicationHeader.length);
-		aBuffer.write(mApplicationHeader);
+		aBuffer.writeInt8(mApplicationPointer.length);
+		aBuffer.write(mApplicationPointer);
+		mApplicationHeader.marshal(aBuffer);
+		mTenantHeader.marshal(aBuffer);
 	}
 
 
 	private void unmarshal(ByteArrayBuffer aBuffer) throws IOException
 	{
 		mFormatVersion = aBuffer.readInt8();
-		mCreateTime = aBuffer.readInt64();
-		mModifiedTime = aBuffer.readInt64();
-		mTransactionId = aBuffer.readInt64();
-		mSpaceMapPointer.unmarshal(aBuffer);
-		mBlockDeviceLabel = aBuffer.readString(aBuffer.readInt8());
-		aBuffer.read(mInstanceId);
-		aBuffer.read(mApplicationId);
-		mApplicationVersion = aBuffer.readInt32();
-		mApplicationHeader = aBuffer.read(new byte[aBuffer.readInt16()]);
 
 		if (mFormatVersion != FORMAT_VERSION)
 		{
 			throw new UnsupportedVersionException("Data format is not supported: was " + mFormatVersion + ", expected " + FORMAT_VERSION);
 		}
+
+		mCreateTime = aBuffer.readInt64();
+		mModifiedTime = aBuffer.readInt64();
+		mTransactionId = aBuffer.readInt64();
+		mSpaceMapPointer.unmarshal(aBuffer);
+		mApplicationPointer = aBuffer.read(new byte[aBuffer.readInt8()]);
+		mApplicationHeader.unmarshal(aBuffer);
+		mTenantHeader.unmarshal(aBuffer);
 	}
 }
