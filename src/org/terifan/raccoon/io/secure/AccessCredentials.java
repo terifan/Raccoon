@@ -30,7 +30,7 @@ public final class AccessCredentials
 
 	public AccessCredentials(char [] aPassword)
 	{
-		this(aPassword, DEFAULT_ENCRYPTION, DEFAULT_KEY_GENERATOR, DEFAULT_CIPHER_MODE, DEFAULT_ITERATION_COUNT);
+		this(aPassword, DEFAULT_ENCRYPTION, DEFAULT_KEY_GENERATOR, DEFAULT_CIPHER_MODE);
 	}
 
 
@@ -42,9 +42,9 @@ public final class AccessCredentials
 	 *   value is not recorded in the database file and must always be provided if different from the
 	 *   default value!
 	 */
-	public AccessCredentials(char [] aPassword, EncryptionFunction aEncryptionFunction, KeyGenerationFunction aKeyFunction, CipherModeFunction aCipherModeFunction, int aIterationCount)
+	public AccessCredentials(char [] aPassword, EncryptionFunction aEncryptionFunction, KeyGenerationFunction aKeyFunction, CipherModeFunction aCipherModeFunction)
 	{
-		mIterationCount = aIterationCount;
+		mIterationCount = DEFAULT_ITERATION_COUNT;
 		mEncryptionFunction = aEncryptionFunction;
 		mKeyGeneratorFunction = aKeyFunction;
 		mCipherModeFunction = aCipherModeFunction;
