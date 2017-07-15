@@ -18,7 +18,7 @@ public final class XTSCipherMode extends CipherMode
 
 
 	@Override
-	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV, BlockCipher aTweakCipher)
+	public void encrypt(final byte[] aBuffer, int aOffset, final int aLength, final BlockCipher aCipher, long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV, BlockCipher aTweakCipher)
 	{
 		assert (aUnitSize & (BYTES_PER_BLOCK - 1)) == 0;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
@@ -26,20 +26,20 @@ public final class XTSCipherMode extends CipherMode
 		assert (aLength % aUnitSize) == 0;
 
 		byte[] whiteningValue = new byte[BYTES_PER_BLOCK];
-		int numUnits = aLength / aUnitSize;
 		int numBlocks = aUnitSize / BYTES_PER_BLOCK;
+		int numUnits = aLength / aUnitSize;
 
-		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
+		for (int unitIndex = 0; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aMasterIV, aBlockIV, bufferOffset, whiteningValue, aTweakCipher);
+			prepareIV(aMasterIV, aBlockIV, aStartDataUnitNo++, whiteningValue, aTweakCipher);
 
-			for (int block = 0; block < numBlocks; block++, bufferOffset += BYTES_PER_BLOCK)
+			for (int block = 0; block < numBlocks; block++, aOffset += BYTES_PER_BLOCK)
 			{
-				xor(aBuffer, bufferOffset, BYTES_PER_BLOCK, whiteningValue, 0);
+				xor(aBuffer, aOffset, BYTES_PER_BLOCK, whiteningValue, 0);
 
-				aCipher.engineEncryptBlock(aBuffer, bufferOffset, aBuffer, bufferOffset);
+				aCipher.engineEncryptBlock(aBuffer, aOffset, aBuffer, aOffset);
 
-				xor(aBuffer, bufferOffset, BYTES_PER_BLOCK, whiteningValue, 0);
+				xor(aBuffer, aOffset, BYTES_PER_BLOCK, whiteningValue, 0);
 
 				int finalCarry = ((whiteningValue[8 + 7] & 0x80) != 0) ? 135 : 0;
 
@@ -59,7 +59,7 @@ public final class XTSCipherMode extends CipherMode
 
 
 	@Override
-	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV, BlockCipher aTweakCipher)
+	public void decrypt(final byte[] aBuffer, int aOffset, final int aLength, final BlockCipher aCipher, long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV, BlockCipher aTweakCipher)
 	{
 		assert (aUnitSize & (BYTES_PER_BLOCK - 1)) == 0;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
@@ -70,17 +70,17 @@ public final class XTSCipherMode extends CipherMode
 		int numUnits = aLength / aUnitSize;
 		int numBlocks = aUnitSize / BYTES_PER_BLOCK;
 
-		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
+		for (int unitIndex = 0; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aMasterIV, aBlockIV, bufferOffset, whiteningValue, aTweakCipher);
+			prepareIV(aMasterIV, aBlockIV, aStartDataUnitNo++, whiteningValue, aTweakCipher);
 
-			for (int block = 0; block < numBlocks; block++, bufferOffset += BYTES_PER_BLOCK)
+			for (int block = 0; block < numBlocks; block++, aOffset += BYTES_PER_BLOCK)
 			{
-				xor(aBuffer, bufferOffset, BYTES_PER_BLOCK, whiteningValue, 0);
+				xor(aBuffer, aOffset, BYTES_PER_BLOCK, whiteningValue, 0);
 
-				aCipher.engineDecryptBlock(aBuffer, bufferOffset, aBuffer, bufferOffset);
+				aCipher.engineDecryptBlock(aBuffer, aOffset, aBuffer, aOffset);
 
-				xor(aBuffer, bufferOffset, BYTES_PER_BLOCK, whiteningValue, 0);
+				xor(aBuffer, aOffset, BYTES_PER_BLOCK, whiteningValue, 0);
 
 				int finalCarry = (whiteningValue[8 + 7] & 0x80) != 0 ? 135 : 0;
 

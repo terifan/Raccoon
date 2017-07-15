@@ -9,7 +9,7 @@ import org.testng.annotations.DataProvider;
 public class BlockCipherNGTest
 {
 	@Test(dataProvider = "ciphers")
-	public void testCBCBlockEncryption(CipherMode aCipherMode, BlockCipher aCipher, BlockCipher aTweakCipher, int aKeyLength)
+	public void testBlockEncryption(CipherMode aCipherMode, BlockCipher aCipher, BlockCipher aTweakCipher, int aKeyLength)
 	{
 		Random rnd = new Random();
 
@@ -20,27 +20,24 @@ public class BlockCipherNGTest
 		rnd.nextBytes(tweakKey);
 
 		aCipher.engineInit(new SecretKey(cipherKey));
-		
 		aTweakCipher.engineInit(new SecretKey(tweakKey));
 
 		long[] masterIV = {rnd.nextLong(), rnd.nextLong()};
+		long[] blockIV = {rnd.nextLong(), rnd.nextLong()};
 
-		byte[] plain = new byte[1024];
+		byte[] plain = new byte[1024*1024];
 		rnd.nextBytes(plain);
 
 		byte[] encrypted = plain.clone();
 
-		long[] blockIV = {rnd.nextLong(), rnd.nextLong()};
-
-		aCipherMode.encrypt(encrypted,   0, 256, aCipher, 0, 128, masterIV, blockIV, aTweakCipher);
-		aCipherMode.encrypt(encrypted, 256, 256, aCipher, 2, 128, masterIV, blockIV, aTweakCipher);
-		aCipherMode.encrypt(encrypted, 512, 256, aCipher, 4, 128, masterIV, blockIV, aTweakCipher);
-		aCipherMode.encrypt(encrypted, 768, 256, aCipher, 6, 128, masterIV, blockIV, aTweakCipher);
+		aCipherMode.encrypt(encrypted, 1024*  0, 1024*256, aCipher, 1024*  0/4096, 4096, masterIV, blockIV, aTweakCipher);
+		aCipherMode.encrypt(encrypted, 1024*256, 1024*512, aCipher, 1024*256/4096, 4096, masterIV, blockIV, aTweakCipher);
+		aCipherMode.encrypt(encrypted, 1024*768, 1024*256, aCipher, 1024*768/4096, 4096, masterIV, blockIV, aTweakCipher);
 
 		byte[] decrypted = encrypted.clone();
 
-		aCipherMode.decrypt(decrypted,   0, 512, aCipher, 0, 128, masterIV, blockIV, aTweakCipher);
-		aCipherMode.decrypt(decrypted, 512, 512, aCipher, 4, 128, masterIV, blockIV, aTweakCipher);
+		aCipherMode.decrypt(decrypted, 1024*  0, 1024*128, aCipher, 1024*  0/4096, 4096, masterIV, blockIV, aTweakCipher);
+		aCipherMode.decrypt(decrypted, 1024*128, 1024*896, aCipher, 1024*128/4096, 4096, masterIV, blockIV, aTweakCipher);
 
 		assertEquals(decrypted, plain);
 	}
@@ -54,6 +51,7 @@ public class BlockCipherNGTest
 			{new XTSCipherMode(), new AES(), new AES(), 16},
 			{new XTSCipherMode(), new AES(), new AES(), 24},
 			{new XTSCipherMode(), new AES(), new AES(), 32},
+			{new XTSCipherMode(), new Kuznechik(), new Kuznechik(), 32},
 			{new XTSCipherMode(), new Twofish(), new Twofish(), 8},
 			{new XTSCipherMode(), new Twofish(), new Twofish(), 16},
 			{new XTSCipherMode(), new Twofish(), new Twofish(), 24},
@@ -65,6 +63,7 @@ public class BlockCipherNGTest
 			{new CBCCipherMode(), new AES(), new AES(), 16},
 			{new CBCCipherMode(), new AES(), new AES(), 24},
 			{new CBCCipherMode(), new AES(), new AES(), 32},
+			{new CBCCipherMode(), new Kuznechik(), new Kuznechik(), 32},
 			{new CBCCipherMode(), new Twofish(), new Twofish(), 8},
 			{new CBCCipherMode(), new Twofish(), new Twofish(), 16},
 			{new CBCCipherMode(), new Twofish(), new Twofish(), 24},
@@ -76,6 +75,7 @@ public class BlockCipherNGTest
 			{new PCBCCipherMode(), new AES(), new AES(), 16},
 			{new PCBCCipherMode(), new AES(), new AES(), 24},
 			{new PCBCCipherMode(), new AES(), new AES(), 32},
+			{new PCBCCipherMode(), new Kuznechik(), new Kuznechik(), 32},
 			{new PCBCCipherMode(), new Twofish(), new Twofish(), 8},
 			{new PCBCCipherMode(), new Twofish(), new Twofish(), 16},
 			{new PCBCCipherMode(), new Twofish(), new Twofish(), 24},

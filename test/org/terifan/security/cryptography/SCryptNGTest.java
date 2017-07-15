@@ -20,7 +20,5 @@ public class SCryptNGTest
 
 		byte[] output3 = SCrypt.generate(new HMAC(new SHA512(), "pleaseletmein".getBytes()), "SodiumChloride".getBytes(), 16384, 8, 1, 1, 64);
 		assertEquals(output3, __TestUtils.hexToBytes("84a3eac52ac434a26536b7f7f128aa74bc827528c6cb646c707989bfa58dd61f4d5b69e7089d7fe17c1ac5ded74b04cb205e869c8c026dce4f32a4bcefda25ba"));
-
-		byte[] output4 = SCrypt.generate(new HMAC(new SHA512(), "pleaseletmein".getBytes()), "SodiumChloride".getBytes(), 16384, 16, 1, 8192, 160);
 	}
 }

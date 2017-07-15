@@ -1,6 +1,6 @@
 package org.terifan.raccoon.io.secure;
 
-import org.terifan.security.cryptography.PBKDF2;
+import org.terifan.security.cryptography.SCrypt;
 import org.terifan.security.messagedigest.HMAC;
 
 
@@ -10,16 +10,13 @@ public final class AccessCredentials
 	public final static CipherModeFunction DEFAULT_CIPHER_MODE = CipherModeFunction.XTS;
 	public final static KeyGenerationFunction DEFAULT_KEY_GENERATOR = KeyGenerationFunction.SHA512;
 
-	/**
-	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times.
-	 */
-	public final static int DEFAULT_ITERATION_COUNT = 100_000;
+	public final static int DEFAULT_ITERATION_COUNT = 10_000;
 
 	private EncryptionFunction mEncryptionFunction;
 	private KeyGenerationFunction mKeyGeneratorFunction;
 	private CipherModeFunction mCipherModeFunction;
 	private int mIterationCount;
-	private byte [] mPassword;
+	private byte[] mPassword;
 
 
 	public AccessCredentials(String aPassword)
@@ -28,7 +25,7 @@ public final class AccessCredentials
 	}
 
 
-	public AccessCredentials(char [] aPassword)
+	public AccessCredentials(char[] aPassword)
 	{
 		this(aPassword, DEFAULT_ENCRYPTION, DEFAULT_KEY_GENERATOR, DEFAULT_CIPHER_MODE);
 	}
@@ -37,12 +34,12 @@ public final class AccessCredentials
 	/**
 	 *
 	 * @param aIterationCount
-	 *   Passwords are expanded into cryptographic keys by iterating a hash function this many times.
-	 *   A larger number means more security but also longer time to open a database. WARNING: this
-	 *   value is not recorded in the database file and must always be provided if different from the
-	 *   default value!
+	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times.
+	 * A larger number means more security but also longer time to open a database. WARNING: this
+	 * value is not recorded in the database file and must always be provided if different from the
+	 * default value!
 	 */
-	public AccessCredentials(char [] aPassword, EncryptionFunction aEncryptionFunction, KeyGenerationFunction aKeyFunction, CipherModeFunction aCipherModeFunction)
+	public AccessCredentials(char[] aPassword, EncryptionFunction aEncryptionFunction, KeyGenerationFunction aKeyFunction, CipherModeFunction aCipherModeFunction)
 	{
 		mIterationCount = DEFAULT_ITERATION_COUNT;
 		mEncryptionFunction = aEncryptionFunction;
@@ -107,10 +104,10 @@ public final class AccessCredentials
 	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times. A larger number means more security but
 	 * also longer time to open a database.
 	 *
-	 * WARNING: this value is not recorded in the database file and must be provided when opening a database!
+	 * WARNING: this value is not recorded in the database file and must be provided when opening a database if other than the default value!
 	 *
 	 * @param aIterationCount
-	 *   the iteration count used.
+	 * the iteration count used.
 	 */
 	public AccessCredentials setIterationCount(int aIterationCount)
 	{
@@ -123,6 +120,14 @@ public final class AccessCredentials
 	{
 		HMAC mac = new HMAC(aKeyGenerator.newInstance(), mPassword);
 
-		return PBKDF2.generateKeyBytes(mac, aSalt, mIterationCount, aPoolSize);
+		int cost = 1 << Math.max(1, (int)(Math.log(mIterationCount) / Math.log(2)));
+
+//		long t = System.currentTimeMillis();
+
+		byte[] pool = SCrypt.generate(mac, aSalt, cost, 32, 1, mIterationCount, aPoolSize);
+
+//		System.out.println(System.currentTimeMillis() - t);
+
+		return pool;
 	}
 }

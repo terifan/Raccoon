@@ -18,7 +18,7 @@ public class BasicSample_2
 	@Test
 	public void test() throws IOException
 	{
-		AccessCredentials accessCredentials = new AccessCredentials("my password").setIterationCount(100);
+		AccessCredentials accessCredentials = new AccessCredentials("my password").setIterationCount(1);
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 

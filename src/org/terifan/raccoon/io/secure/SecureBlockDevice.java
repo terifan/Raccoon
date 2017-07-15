@@ -70,29 +70,34 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		byte[] payload = new byte[PAYLOAD_SIZE];
 
-		// create the secret keys
-		try
+		for (;;)
 		{
-			byte[] raw = new byte[PAYLOAD_SIZE * 10];
-
-			SecureRandom rnd = SecureRandom.getInstanceStrong();
-			rnd.nextBytes(raw);
-
-			for (int dst = 0, src = 0; dst < payload.length; dst++)
+			// create the secret keys
+			try
 			{
-				for (long i = System.nanoTime() & 7; i >= 0; i--)
+				byte[] raw = new byte[PAYLOAD_SIZE * 8];
+
+				SecureRandom rnd = SecureRandom.getInstanceStrong();
+				rnd.nextBytes(raw);
+
+				for (int dst = 0, src = 0; dst < payload.length; dst++)
 				{
-					payload[dst] ^= raw[src++];
+					for (long i = System.nanoTime() & 7; i >= 0; i--)
+					{
+						payload[dst] ^= raw[src++];
+					}
 				}
 			}
-		}
-		catch (NoSuchAlgorithmException e)
-		{
-			throw new IllegalStateException(e);
-		}
+			catch (NoSuchAlgorithmException e)
+			{
+				throw new IllegalStateException(e);
+			}
 
-		createImpl(aAccessCredentials, device, payload, 0L);
-		createImpl(aAccessCredentials, device, payload, 1L);
+			if (createImpl(aAccessCredentials, device, payload, 0L) && createImpl(aAccessCredentials, device, payload, 1L))
+			{
+				break;
+			}
+		}
 
 		// cleanup
 		Arrays.fill(payload, (byte)0);
@@ -103,7 +108,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	private static void createImpl(AccessCredentials aAccessCredentials, SecureBlockDevice aDevice, byte[] aPayload, long aBlockIndex) throws IOException
+	private static boolean createImpl(AccessCredentials aAccessCredentials, SecureBlockDevice aDevice, byte[] aPayload, long aBlockIndex) throws IOException
 	{
 		byte[] blockData = createBootBlock(aAccessCredentials, aPayload, aBlockIndex, aDevice.mBlockDevice.getBlockSize());
 
@@ -112,12 +117,13 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		if (cipher == null)
 		{
 			// TODO: improve
-			createImpl(aAccessCredentials, aDevice, aPayload, aBlockIndex);
-			return;
+			return false;
 		}
 
 		aDevice.mCipherImplementation = cipher;
 		aDevice.mBlockDevice.writeBlock(aBlockIndex, blockData, 0, blockData.length, new long[2]);
+
+		return true;
 	}
 
 
@@ -237,7 +243,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 						// when a boot block is created it's also verified
 						if (aVerifyFunctions && (aAccessCredentials.getKeyGeneratorFunction() != keyGenerator || aAccessCredentials.getEncryptionFunction() != encryption))
 						{
-							System.err.println("hash collision in boot block");
+							System.out.println("hash collision in boot block");
 
 							// a checksum collision has occured!
 							return null;
@@ -451,7 +457,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 	private static final class CipherImplementation
 	{
-		private transient final long[][] mIV;
+		private transient final long[][] mMasterIV;
 		private transient final BlockCipher[] mCiphers;
 		private transient final CipherMode mCipherMode;
 		private transient final int mUnitSize;
@@ -464,7 +470,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			mCipherMode = aCipherModeFunction.newInstance();
 			mCiphers = aEncryptionFunction.newInstance();
 			mTweakCipher = aEncryptionFunction.newTweakInstance();
-			mIV = new long[mCiphers.length][2];
+			mMasterIV = new long[mCiphers.length][2];
 
 			int offset = aKeyPoolOffset;
 
@@ -482,30 +488,30 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 			for (int i = 0; i < 3; i++)
 			{
-				if (i < mIV.length)
+				if (i < mMasterIV.length)
 				{
-					mIV[i][0] = getLong(aKeyPool, offset + 0);
-					mIV[i][1] = getLong(aKeyPool, offset + 8);
+					mMasterIV[i][0] = getLong(aKeyPool, offset + 0);
+					mMasterIV[i][1] = getLong(aKeyPool, offset + 8);
 				}
 				offset += IV_SIZE;
 			}
 		}
 
 
-		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long[] aIV)
+		public void encrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long[] aBlockIV)
 		{
 			for (int i = 0; i < mCiphers.length; i++)
 			{
-				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, Math.min(mUnitSize, aLength), mIV[i], aIV, mTweakCipher);
+				mCipherMode.encrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, Math.min(mUnitSize, aLength), mMasterIV[i], aBlockIV, mTweakCipher);
 			}
 		}
 
 
-		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long[] aIV)
+		public void decrypt(final long aBlockIndex, final byte[] aBuffer, final int aOffset, final int aLength, final long[] aBlockIV)
 		{
 			for (int i = mCiphers.length; --i >= 0;)
 			{
-				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, Math.min(mUnitSize, aLength), mIV[i], aIV, mTweakCipher);
+				mCipherMode.decrypt(aBuffer, aOffset, aLength, mCiphers[i], aBlockIndex, Math.min(mUnitSize, aLength), mMasterIV[i], aBlockIV, mTweakCipher);
 			}
 		}
 
@@ -520,9 +526,9 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 				}
 			}
 
-			for (int i = 0; i < mIV.length; i++)
+			for (int i = 0; i < mMasterIV.length; i++)
 			{
-				mIV[i][0] = mIV[i][1] = 0L;
+				mMasterIV[i][0] = mMasterIV[i][1] = 0L;
 			}
 
 			fill(mCiphers, null);

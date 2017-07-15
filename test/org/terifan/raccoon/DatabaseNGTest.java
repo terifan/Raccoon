@@ -401,7 +401,7 @@ public class DatabaseNGTest
 	public void testEncryptedAccess() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
-		AccessCredentials accessCredentials = new AccessCredentials("password").setIterationCount(100);
+		AccessCredentials accessCredentials = new AccessCredentials("password").setIterationCount(1);
 
 		try (Database db = Database.open(device, OpenOption.CREATE_NEW, accessCredentials))
 		{
@@ -664,11 +664,11 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(100)))
+		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(1)))
 		{
 		}
 
-		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("bad-password").setIterationCount(100)))
+		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("bad-password").setIterationCount(1)))
 		{
 		}
 
@@ -681,7 +681,7 @@ public class DatabaseNGTest
 	{
 		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
 
-		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(100)))
+		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(1)))
 		{
 		}
 
@@ -695,7 +695,7 @@ public class DatabaseNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 		blockDevice.writeBlock(0, new byte[512], 0, 512, new long[2]);
 
-		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(100)))
+		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(1)))
 		{
 		}
 
@@ -706,7 +706,7 @@ public class DatabaseNGTest
 	@Test(expectedExceptions = FileAlreadyOpenException.class)
 	public void testFailOpenLockedDatabase() throws Exception
 	{
-		AccessCredentials ac = new AccessCredentials("password").setIterationCount(100);
+		AccessCredentials ac = new AccessCredentials("password").setIterationCount(1);
 
 		File file = File.createTempFile("raccoon", ".tmp");
 		file.deleteOnExit();

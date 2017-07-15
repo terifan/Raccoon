@@ -1287,7 +1287,7 @@ public final class Database implements AutoCloseable
 
 	private void reportStatus(LogLevel aLevel, String aMessage, Throwable aThrowable)
 	{
-		System.err.printf("%-6s%s%n", aLevel, aMessage);
+		System.out.printf("%-6s%s%n", aLevel, aMessage);
 
 		for (DatabaseStatusListener listener : mDatabaseStatusListener)
 		{

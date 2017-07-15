@@ -28,9 +28,7 @@ public class SCrypt
 		byte[] xy = new byte[256 * aRounds];
 		byte[] v = new byte[128 * aRounds * aCost];
 
-//		System.out.println((xy.length + v.length)/1024/1024);
-
-		byte[] buffer = PBKDF2.generateKeyBytes(aHmac, aSalt, aIterationCount, aParallelization * 128 * aRounds);
+		byte[] buffer = PBKDF2.generateKeyBytes(aHmac, aSalt, 1, aParallelization * 128 * aRounds);
 
 		for (int i = 0; i < aParallelization; i++)
 		{
@@ -45,17 +43,16 @@ public class SCrypt
 	{
 		int Xi = 0;
 		int Yi = 128 * r;
-		int i;
 
 		System.arraycopy(b, bi, xy, Xi, 128 * r);
 
-		for (i = 0; i < n; i++)
+		for (int i = 0; i < n; i++)
 		{
 			System.arraycopy(xy, Xi, v, i * (128 * r), 128 * r);
 			blockmix_salsa8(xy, Xi, Yi, r);
 		}
 
-		for (i = 0; i < n; i++)
+		for (int i = 0; i < n; i++)
 		{
 			int j = integerify(xy, Xi, r) & (n - 1);
 			blockxor(v, j * (128 * r), xy, Xi, 128 * r);
@@ -69,23 +66,22 @@ public class SCrypt
 	private static void blockmix_salsa8(byte[] by, int bi, int yi, int r)
 	{
 		byte[] X = new byte[64];
-		int i;
 
 		System.arraycopy(by, bi + (2 * r - 1) * 64, X, 0, 64);
 
-		for (i = 0; i < 2 * r; i++)
+		for (int i = 0; i < 2 * r; i++)
 		{
 			blockxor(by, i * 64, X, 0, 64);
 			salsa20_8(X);
 			System.arraycopy(X, 0, by, yi + (i * 64), 64);
 		}
 
-		for (i = 0; i < r; i++)
+		for (int i = 0; i < r; i++)
 		{
 			System.arraycopy(by, yi + (i * 2) * 64, by, bi + (i * 64), 64);
 		}
 
-		for (i = 0; i < r; i++)
+		for (int i = 0; i < r; i++)
 		{
 			System.arraycopy(by, yi + (i * 2 + 1) * 64, by, bi + (i + r) * 64, 64);
 		}
@@ -102,9 +98,8 @@ public class SCrypt
 	{
 		int[] B32 = new int[16];
 		int[] x = new int[16];
-		int i;
 
-		for (i = 0; i < 16; i++)
+		for (int i = 0; i < 16; i++)
 		{
 			B32[i] = (aBuffer[i * 4 + 0] & 0xff) << 0;
 			B32[i] |= (aBuffer[i * 4 + 1] & 0xff) << 8;
@@ -114,7 +109,7 @@ public class SCrypt
 
 		System.arraycopy(B32, 0, x, 0, 16);
 
-		for (i = 8; i > 0; i -= 2)
+		for (int i = 8; i > 0; i -= 2)
 		{
 			x[4] ^= R(x[0] + x[12], 7);
 			x[8] ^= R(x[4] + x[0], 9);
@@ -150,12 +145,12 @@ public class SCrypt
 			x[15] ^= R(x[14] + x[13], 18);
 		}
 
-		for (i = 0; i < 16; ++i)
+		for (int i = 0; i < 16; ++i)
 		{
 			B32[i] = x[i] + B32[i];
 		}
 
-		for (i = 0; i < 16; i++)
+		for (int i = 0; i < 16; i++)
 		{
 			aBuffer[i * 4 + 0] = (byte)(B32[i] >> 0 & 0xff);
 			aBuffer[i * 4 + 1] = (byte)(B32[i] >> 8 & 0xff);

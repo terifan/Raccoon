@@ -14,7 +14,7 @@ public class SecureBlockDeviceNGTest
 	public void testLoadBootBlock() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
-		AccessCredentials accessCredentials = new AccessCredentials("password").setIterationCount(100);
+		AccessCredentials accessCredentials = new AccessCredentials("password").setIterationCount(1);
 
 		try (SecureBlockDevice device = SecureBlockDevice.create(accessCredentials, blockDevice))
 		{
@@ -61,7 +61,7 @@ public class SecureBlockDeviceNGTest
 
 					long t0 = System.currentTimeMillis();
 
-					try (SecureBlockDevice device = SecureBlockDevice.create(new AccessCredentials("password".toCharArray(), ef, kgf, cmf).setIterationCount(100), blockDevice))
+					try (SecureBlockDevice device = SecureBlockDevice.create(new AccessCredentials("password".toCharArray(), ef, kgf, cmf).setIterationCount(1), blockDevice))
 					{
 						for (int i = 0; i < numUnits / blocksPerUnit; i++)
 						{
@@ -75,7 +75,7 @@ public class SecureBlockDeviceNGTest
 
 					byte[] output = new byte[numUnits * unitSize];
 
-					try (SecureBlockDevice device = SecureBlockDevice.open(blockDevice, new AccessCredentials("password".toCharArray()).setIterationCount(100)))
+					try (SecureBlockDevice device = SecureBlockDevice.open(blockDevice, new AccessCredentials("password".toCharArray()).setIterationCount(1)))
 					{
 						for (int i = 0; i < numUnits / blocksPerUnit; i++)
 						{

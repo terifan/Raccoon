@@ -14,7 +14,7 @@ public final class PCBCCipherMode extends CipherMode
 
 
 	@Override
-	public void encrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV, BlockCipher aTweakCipher)
+	public void encrypt(final byte[] aBuffer, int aOffset, final int aLength, final BlockCipher aCipher, long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV, BlockCipher aTweakCipher)
 	{
 		assert (aUnitSize & (BYTES_PER_BLOCK - 1)) == 0;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
@@ -25,19 +25,19 @@ public final class PCBCCipherMode extends CipherMode
 		int numUnits = aLength / aUnitSize;
 		int numBlocks = aUnitSize / BYTES_PER_BLOCK;
 
-		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
+		for (int unitIndex = 0; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aMasterIV, aBlockIV, bufferOffset, iv, aTweakCipher);
+			prepareIV(aMasterIV, aBlockIV, aStartDataUnitNo++, iv, aTweakCipher);
 
-			for (int block = 0; block < numBlocks; block++, bufferOffset += BYTES_PER_BLOCK)
+			for (int block = 0; block < numBlocks; block++, aOffset += BYTES_PER_BLOCK)
 			{
-				System.arraycopy(aBuffer, bufferOffset, iv, BYTES_PER_BLOCK, BYTES_PER_BLOCK);
+				System.arraycopy(aBuffer, aOffset, iv, BYTES_PER_BLOCK, BYTES_PER_BLOCK);
 
-				xor(iv, 0, BYTES_PER_BLOCK, aBuffer, bufferOffset);
+				xor(iv, 0, BYTES_PER_BLOCK, aBuffer, aOffset);
 
-				aCipher.engineEncryptBlock(iv, 0, aBuffer, bufferOffset);
+				aCipher.engineEncryptBlock(iv, 0, aBuffer, aOffset);
 
-				System.arraycopy(aBuffer, bufferOffset, iv, 0, BYTES_PER_BLOCK);
+				System.arraycopy(aBuffer, aOffset, iv, 0, BYTES_PER_BLOCK);
 
 				xor(iv, 0, BYTES_PER_BLOCK, iv, BYTES_PER_BLOCK);
 			}
@@ -46,7 +46,7 @@ public final class PCBCCipherMode extends CipherMode
 
 
 	@Override
-	public void decrypt(final byte[] aBuffer, final int aOffset, final int aLength, final BlockCipher aCipher, final long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV, BlockCipher aTweakCipher)
+	public void decrypt(final byte[] aBuffer, int aOffset, final int aLength, final BlockCipher aCipher, long aStartDataUnitNo, final int aUnitSize, final long[] aMasterIV, final long[] aBlockIV, BlockCipher aTweakCipher)
 	{
 		assert (aUnitSize & (BYTES_PER_BLOCK - 1)) == 0;
 		assert (aLength & (BYTES_PER_BLOCK - 1)) == 0;
@@ -57,19 +57,19 @@ public final class PCBCCipherMode extends CipherMode
 		int numUnits = aLength / aUnitSize;
 		int numBlocks = aUnitSize / BYTES_PER_BLOCK;
 
-		for (int unitIndex = 0, bufferOffset = aOffset; unitIndex < numUnits; unitIndex++)
+		for (int unitIndex = 0; unitIndex < numUnits; unitIndex++)
 		{
-			prepareIV(aMasterIV, aBlockIV, bufferOffset, iv, aTweakCipher);
+			prepareIV(aMasterIV, aBlockIV, aStartDataUnitNo++, iv, aTweakCipher);
 
-			for (int block = 0, ivOffset = 0; block < numBlocks; block++, ivOffset = BYTES_PER_BLOCK - ivOffset, bufferOffset += BYTES_PER_BLOCK)
+			for (int block = 0, ivOffset = 0; block < numBlocks; block++, ivOffset = BYTES_PER_BLOCK - ivOffset, aOffset += BYTES_PER_BLOCK)
 			{
-				System.arraycopy(aBuffer, bufferOffset, iv, BYTES_PER_BLOCK - ivOffset, BYTES_PER_BLOCK);
+				System.arraycopy(aBuffer, aOffset, iv, BYTES_PER_BLOCK - ivOffset, BYTES_PER_BLOCK);
 
-				aCipher.engineDecryptBlock(aBuffer, bufferOffset, aBuffer, bufferOffset);
+				aCipher.engineDecryptBlock(aBuffer, aOffset, aBuffer, aOffset);
 
-				xor(aBuffer, bufferOffset, BYTES_PER_BLOCK, iv, ivOffset);
+				xor(aBuffer, aOffset, BYTES_PER_BLOCK, iv, ivOffset);
 
-				xor(iv, BYTES_PER_BLOCK - ivOffset, BYTES_PER_BLOCK, aBuffer, bufferOffset);
+				xor(iv, BYTES_PER_BLOCK - ivOffset, BYTES_PER_BLOCK, aBuffer, aOffset);
 			}
 		}
 	}

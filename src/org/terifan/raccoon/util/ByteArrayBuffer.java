@@ -705,4 +705,22 @@ public final class ByteArrayBuffer
 			}
 		}
 	}
+
+
+	public static void readInt32(byte[] aIn, int aInOffset, int[] aOut, int aOutOffset, int aNumInts)
+	{
+		for (int i = 0; i < aNumInts; i++, aInOffset+=4)
+		{
+			aOut[aOutOffset++] = readInt32(aIn, aInOffset);
+		}
+	}
+
+
+	public static void writeInt32(int[] aIn, int aInOffset, byte[] aOut, int aOutOffset, int aNumInts)
+	{
+		for (int i = 0; i < aNumInts; i++, aOutOffset+=4)
+		{
+			writeInt32(aOut, aOutOffset, aIn[aInOffset++]);
+		}
+	}
 }
