@@ -23,6 +23,22 @@ public enum EncryptionFunction
 	KUZNECHIK_TWOFISH_AES;
 
 
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		for (String s : name().split("_"))
+		{
+			if (sb.length() > 0)
+			{
+				sb.append("-");
+			}
+			sb.append(s.substring(0,1)+s.substring(1).toLowerCase());
+		}
+		return sb.toString().replace("Aes","AES");
+	}
+
+
 	BlockCipher[] newInstance()
 	{
 		switch (this)

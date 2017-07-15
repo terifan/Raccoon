@@ -7,7 +7,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 /**
  * https://raw.githubusercontent.com/actorapp/actor-curve25519/master/src/main/java/im/actor/crypto/primitives/kuznechik/KuznechikFastEngine.java
  */
-public class Kuznechik implements BlockCipher
+public final class Kuznechik implements BlockCipher
 {
 	private static final byte[] kuz_pi = new byte[]
 	{
@@ -256,10 +256,6 @@ public class Kuznechik implements BlockCipher
 	private static final int BLOCK_SIZE = 16;
 
 	private int[][] key;
-	private int C0;
-	private int C1;
-	private int C2;
-	private int C3;
 
 
 	public Kuznechik()
@@ -289,18 +285,19 @@ public class Kuznechik implements BlockCipher
 	@Override
 	public void engineEncryptBlock(byte[] data, int offset, byte[] dest, int destOffset)
 	{
-
 		int A0, A1, A2, A3, T0, T1, T2, T3;
 
-		unpackBlock(data, offset);
+		int C0 = ByteArrayBuffer.readInt32(data, offset);
+		int C1 = ByteArrayBuffer.readInt32(data, offset + 4);
+		int C2 = ByteArrayBuffer.readInt32(data, offset + 8);
+		int C3 = ByteArrayBuffer.readInt32(data, offset + 12);
 
 		for (int i = 0; i < 9; i++)
 		{
-
-			C0 = C0 ^ key[i][0];
-			C1 = C1 ^ key[i][1];
-			C2 = C2 ^ key[i][2];
-			C3 = C3 ^ key[i][3];
+			C0 ^= key[i][0];
+			C1 ^= key[i][1];
+			C2 ^= key[i][2];
+			C3 ^= key[i][3];
 
 			C0 = (kuz_pi[C0 & 0xFF] & 0xFF)
 				+ ((kuz_pi[(C0 >> 8) & 0xFF] & 0xFF) << 8)
@@ -360,27 +357,32 @@ public class Kuznechik implements BlockCipher
 			C3 = A3 ^ gf256res[T0 + 3] ^ gf256res[T1 + 3] ^ gf256res[T2 + 3] ^ gf256res[T3 + 3];
 		}
 
-		C0 = C0 ^ key[9][0];
-		C1 = C1 ^ key[9][1];
-		C2 = C2 ^ key[9][2];
-		C3 = C3 ^ key[9][3];
+		C0 ^= key[9][0];
+		C1 ^= key[9][1];
+		C2 ^= key[9][2];
+		C3 ^= key[9][3];
 
-		packBlock(dest, destOffset);
+		ByteArrayBuffer.writeInt32(dest, destOffset, C0);
+		ByteArrayBuffer.writeInt32(dest, destOffset + 4, C1);
+		ByteArrayBuffer.writeInt32(dest, destOffset + 8, C2);
+		ByteArrayBuffer.writeInt32(dest, destOffset + 12, C3);
 	}
 
 
 	@Override
 	public void engineDecryptBlock(byte[] data, int offset, byte[] dest, int destOffset)
 	{
-
 		int A0, A1, A2, A3, T0, T1, T2, T3;
 
-		unpackBlock(data, offset);
+		int C0 = ByteArrayBuffer.readInt32(data, offset);
+		int C1 = ByteArrayBuffer.readInt32(data, offset + 4);
+		int C2 = ByteArrayBuffer.readInt32(data, offset + 8);
+		int C3 = ByteArrayBuffer.readInt32(data, offset + 12);
 
-		C0 = C0 ^ key[9][0];
-		C1 = C1 ^ key[9][1];
-		C2 = C2 ^ key[9][2];
-		C3 = C3 ^ key[9][3];
+		C0 ^= key[9][0];
+		C1 ^= key[9][1];
+		C2 ^= key[9][2];
+		C3 ^= key[9][3];
 
 		for (int i = 8; i >= 0; i--)
 		{
@@ -442,13 +444,16 @@ public class Kuznechik implements BlockCipher
 				+ ((kuz_pi_inv[(C3 >> 16) & 0xFF] & 0xFF) << 16)
 				+ ((kuz_pi_inv[(C3 >> 24) & 0xFF] & 0xFF) << 24);
 
-			C0 = C0 ^ key[i][0];
-			C1 = C1 ^ key[i][1];
-			C2 = C2 ^ key[i][2];
-			C3 = C3 ^ key[i][3];
+			C0 ^= key[i][0];
+			C1 ^= key[i][1];
+			C2 ^= key[i][2];
+			C3 ^= key[i][3];
 		}
 
-		packBlock(dest, destOffset);
+		ByteArrayBuffer.writeInt32(dest, destOffset, C0);
+		ByteArrayBuffer.writeInt32(dest, destOffset + 4, C1);
+		ByteArrayBuffer.writeInt32(dest, destOffset + 8, C2);
+		ByteArrayBuffer.writeInt32(dest, destOffset + 12, C3);
 	}
 
 
@@ -473,38 +478,10 @@ public class Kuznechik implements BlockCipher
 		{
 			Arrays.fill(k, 0);
 		}
-		C0 = 0;
-		C1 = 0;
-		C2 = 0;
-		C3 = 0;
 	}
 
 
-	private void unpackBlock(byte[] bytes, int off)
-	{
-		this.C0 = ByteArrayBuffer.readInt32(bytes, off);
-		this.C1 = ByteArrayBuffer.readInt32(bytes, off + 4);
-		this.C2 = ByteArrayBuffer.readInt32(bytes, off + 8);
-		this.C3 = ByteArrayBuffer.readInt32(bytes, off + 12);
-	}
-
-
-	private void packBlock(byte[] dest, int destOffset)
-	{
-		ByteArrayBuffer.writeInt32(dest, destOffset, C0);
-		ByteArrayBuffer.writeInt32(dest, destOffset + 4, C1);
-		ByteArrayBuffer.writeInt32(dest, destOffset + 8, C2);
-		ByteArrayBuffer.writeInt32(dest, destOffset + 12, C3);
-	}
-
-
-	int[][] getKey()
-	{
-		return key;
-	}
-
-
-	static int[][] convertKey(byte[] key)
+	private static int[][] convertKey(byte[] key)
 	{
 		if (key.length != 32)
 		{
