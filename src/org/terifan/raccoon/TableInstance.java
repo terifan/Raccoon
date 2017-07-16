@@ -83,10 +83,14 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 	}
 
 
-	public <T> List<T> list(Class<T> aType)
+	public <T> List<T> list(Class<T> aType, int aLimit)
 	{
 		ArrayList<T> list = new ArrayList<>();
-		iterator().forEachRemaining(e -> list.add((T)e));
+		for (Iterator<T> it = (Iterator<T>)iterator(); list.size() < aLimit && it.hasNext();)
+		{
+			list.add(it.next());
+		}
+//		iterator().forEachRemaining(e -> list.add((T)e));
 		return list;
 	}
 

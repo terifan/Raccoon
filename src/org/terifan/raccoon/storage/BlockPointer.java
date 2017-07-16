@@ -166,6 +166,13 @@ public class BlockPointer implements Serializable
 	}
 
 
+	public BlockPointer setIV(long[] aIV)
+	{
+		mIV = aIV;
+		return this;
+	}
+
+
 	public long getTransactionId()
 	{
 		return mTransactionId;

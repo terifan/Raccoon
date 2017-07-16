@@ -173,6 +173,7 @@ public class BlockAccessor
 			long blockIndex = mBlockDevice.allocBlock(blockCount);
 
 			long[] hash = MurmurHash3.hash128(aBuffer, 0, physicalSize, blockIndex);
+			long[] iv = {ISAAC.PRNG.nextLong(), ISAAC.PRNG.nextLong()};
 
 			blockPointer = new BlockPointer();
 			blockPointer.setCompressionAlgorithm(compressorId);
@@ -183,12 +184,12 @@ public class BlockAccessor
 			blockPointer.setBlockType(aType);
 			blockPointer.setRange(aRange);
 			blockPointer.setChecksum(hash);
-			blockPointer.setIV(ISAAC.PRNG.nextLong(),ISAAC.PRNG.nextLong());
+			blockPointer.setIV(iv);
 
 			Log.d("write block %s", blockPointer);
 			Log.inc();
 
-			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getIV());
+			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, iv);
 
 			assert PerformanceCounters.increment(BLOCK_ALLOC);
 			assert PerformanceCounters.increment(BLOCK_WRITE);

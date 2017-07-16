@@ -877,6 +877,12 @@ public final class Database implements AutoCloseable
 	}
 
 
+	public <T> List<T> listFirst(T aDiscriminator, int aLimit)
+	{
+		return list(aDiscriminator.getClass(), getDiscriminator(aDiscriminator));
+	}
+
+
 	public <T> List<T> list(Class<T> aType)
 	{
 		return list(aType, (T)null);
@@ -891,6 +897,12 @@ public final class Database implements AutoCloseable
 
 	public <T> List<T> list(Class<T> aType, T aEntity)
 	{
+		return listFirst(aType, aEntity, Integer.MAX_VALUE);
+	}
+
+
+	public <T> List<T> listFirst(Class<T> aType, T aEntity, int aLimit)
+	{
 		mReadLock.lock();
 		try
 		{
@@ -899,7 +911,7 @@ public final class Database implements AutoCloseable
 			{
 				return new ArrayList<>();
 			}
-			return table.list(aType);
+			return table.list(aType, aLimit);
 		}
 		catch (DatabaseException e)
 		{
@@ -1071,7 +1083,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return mSystemTable.list(Table.class);
+			return mSystemTable.list(Table.class, Integer.MAX_VALUE);
 		}
 		finally
 		{
@@ -1127,7 +1139,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return (Table)mSystemTable.list(Table.class).stream().filter(e ->
+			return (Table)mSystemTable.list(Table.class, Integer.MAX_VALUE).stream().filter(e ->
 			{
 				String tm = ((Table)e).getTypeName();
 				return tm.equals(aTypeName) || tm.endsWith("." + aTypeName);
@@ -1148,7 +1160,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return (List<Table>)mSystemTable.list(Table.class).stream().filter(e ->
+			return (List<Table>)mSystemTable.list(Table.class, Integer.MAX_VALUE).stream().filter(e ->
 			{
 				String tm = ((Table)e).getTypeName();
 				return tm.equals(aTypeName) || tm.endsWith("." + aTypeName);
@@ -1169,7 +1181,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return (List<Table<T>>)mSystemTable.list(Table.class).stream().filter(e -> e == aType).collect(Collectors.toList());
+			return (List<Table<T>>)mSystemTable.list(Table.class, Integer.MAX_VALUE).stream().filter(e -> e == aType).collect(Collectors.toList());
 		}
 		finally
 		{
@@ -1194,7 +1206,7 @@ public final class Database implements AutoCloseable
 
 			String name = aType.getName();
 
-			for (Table tableMetadata : (List<Table>)mSystemTable.list(Table.class))
+			for (Table tableMetadata : (List<Table>)mSystemTable.list(Table.class, Integer.MAX_VALUE))
 			{
 				if (name.equals(tableMetadata.getTypeName()))
 				{
