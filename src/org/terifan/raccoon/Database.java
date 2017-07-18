@@ -354,27 +354,32 @@ public final class Database implements AutoCloseable
 			Log.i("open table '%s' with option %s", aTableMetadata.getTypeName(), aOptions);
 			Log.inc();
 
-			boolean tableExists = mSystemTable.get(aTableMetadata);
-
-			if (!tableExists && (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY))
+			try
 			{
-				return null;
+				boolean tableExists = mSystemTable.get(aTableMetadata);
+
+				if (!tableExists && (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY))
+				{
+					return null;
+				}
+
+				table = new TableInstance(this, aTableMetadata, aTableMetadata.getTableHeader());
+
+				if (!tableExists)
+				{
+					mSystemTable.save(aTableMetadata);
+				}
+
+				mOpenTables.put(aTableMetadata, table);
+
+				if (aOptions == OpenOption.CREATE_NEW)
+				{
+					table.clear();
+				}
 			}
-
-			table = new TableInstance(this, aTableMetadata, aTableMetadata.getTableHeader());
-
-			if (!tableExists)
+			finally
 			{
-				mSystemTable.save(aTableMetadata);
-			}
-
-			mOpenTables.put(aTableMetadata, table);
-
-			Log.dec();
-
-			if (aOptions == OpenOption.CREATE_NEW)
-			{
-				table.clear();
+				Log.dec();
 			}
 
 			return table;
@@ -649,6 +654,8 @@ public final class Database implements AutoCloseable
 	 */
 	public boolean tryGet(Object aEntity)
 	{
+		System.out.println("tryGet "+aEntity);
+
 		mReadLock.lock();
 		try
 		{
@@ -885,70 +892,60 @@ public final class Database implements AutoCloseable
 
 	public <T> List<T> list(Class<T> aType)
 	{
-		return list(aType, (T)null);
+		return listFirst(aType, (T)null, -1);
 	}
 
 
 	public <T> List<T> list(Class<T> aType, DiscriminatorType<T> aDiscriminator)
 	{
-		return list(aType, aDiscriminator.getInstance());
+		return listFirst(aType, aDiscriminator.getInstance(), -1);
 	}
 
 
 	public <T> List<T> list(Class<T> aType, T aEntity)
 	{
-		return listFirst(aType, aEntity, Integer.MAX_VALUE);
+		return listFirst(aType, aEntity, -1);
 	}
 
 
 	public <T> List<T> listFirst(Class<T> aType, T aEntity, int aLimit)
 	{
+		List<T> list = null;
+
+		Log.i("list items %s", aType);
+		Log.inc();
+
 		mReadLock.lock();
 		try
 		{
-			TableInstance table = openTable(aType, new DiscriminatorType(aEntity), OpenOption.OPEN);
-			if (table == null)
+			TableInstance tableInstance = openTable(aType, new DiscriminatorType(aEntity), OpenOption.OPEN);
+			if (tableInstance == null)
 			{
-				return new ArrayList<>();
+				list = new ArrayList<>();
 			}
-			return table.list(aType, aLimit);
+			else
+			{
+				list = tableInstance.list(aType, aLimit <= 0 ? Integer.MAX_VALUE : aLimit);
+			}
 		}
 		catch (DatabaseException e)
 		{
+			list = new ArrayList<>();
 			forceClose(e);
 			throw e;
 		}
 		finally
 		{
 			mReadLock.unlock();
+
+			Log.i("list return %s %s entities", list == null ? 0 : list.size(), aType.getSimpleName());
+			Log.dec();
 		}
+
+		return list;
 	}
 
 
-//	public <T> Stream<T> stream(Class<T> aType, T aEntity)
-//	{
-//		mReadLock.lock();
-//		try
-//		{
-//			Table table = openTable(aType, aEntity, OpenOption.OPEN);
-//
-//			if (table == null)
-//			{
-//				mReadLock.unlock();
-//
-//				return new ArrayList<T>().stream();
-//			}
-//
-//			return table.stream(mReadLock);
-//		}
-//		catch (Throwable e)
-//		{
-//			mReadLock.unlock();
-//
-//			forceClose(e);
-//			throw e;
-//		}
-//	}
 	/**
 	 * Sets a Supplier associated with the specified type. The Supplier is used to create instances of specified types.
 	 *
@@ -1202,6 +1199,9 @@ public final class Database implements AutoCloseable
 
 		try
 		{
+			Log.i("get discriminators %s", aType);
+			Log.inc();
+
 			ArrayList<DiscriminatorType<T>> result = new ArrayList<>();
 
 			String name = aType.getName();
@@ -1228,6 +1228,8 @@ public final class Database implements AutoCloseable
 		finally
 		{
 			mReadLock.unlock();
+		
+			Log.dec();
 		}
 	}
 

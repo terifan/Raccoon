@@ -69,7 +69,7 @@ public enum EncryptionFunction
 				return new BlockCipher[]{new Kuznechik(), new Twofish(), new AES()};
 		}
 
-		throw new IllegalStateException();
+		throw new IllegalStateException(name());
 	}
 
 
@@ -90,9 +90,11 @@ public enum EncryptionFunction
 			case SERPENT_TWOFISH_AES:
 				return new Serpent();
 			case KUZNECHIK:
+			case KUZNECHIK_AES:
+			case KUZNECHIK_TWOFISH_AES:
 				return new Kuznechik();
 		}
 
-		throw new IllegalStateException();
+		throw new IllegalStateException(name());
 	}
 }

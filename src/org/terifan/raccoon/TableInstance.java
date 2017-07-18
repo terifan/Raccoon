@@ -63,21 +63,26 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 
 	public boolean get(T aEntity)
 	{
-		Log.i("get entity");
+		Log.i("get entity %s", aEntity);
 		Log.inc();
 
-		RecordEntry entry = new RecordEntry(getKeys(aEntity));
-
-		if (mTableImplementation.get(entry))
+		try
 		{
-			unmarshalToObjectValues(entry, aEntity);
+			RecordEntry entry = new RecordEntry(getKeys(aEntity));
 
-			Log.dec();
+			if (mTableImplementation.get(entry))
+			{
+				unmarshalToObjectValues(entry, aEntity);
 
-			return true;
+				Log.dec();
+
+				return true;
+			}
 		}
-
-		Log.dec();
+		finally
+		{
+			Log.dec();
+		}
 
 		return false;
 	}

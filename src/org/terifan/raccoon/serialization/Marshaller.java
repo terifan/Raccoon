@@ -124,12 +124,14 @@ public class Marshaller
 					}
 				}
 			}
-
-			Log.dec();
 		}
 		catch (IllegalAccessException | IOException | ClassNotFoundException e)
 		{
 			throw new DatabaseException(e);
+		}
+		finally
+		{
+			Log.dec();
 		}
 	}
 

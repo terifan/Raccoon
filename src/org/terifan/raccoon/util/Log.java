@@ -11,7 +11,7 @@ public class Log
 
 	public final static PrintStream out = System.out;
 
-	private static LogLevel mLevel = LogLevel.ERROR;
+	private static LogLevel mLevel = LogLevel.INFO;
 	private static int mIndent;
 
 

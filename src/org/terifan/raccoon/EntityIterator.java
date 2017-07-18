@@ -5,6 +5,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 import java.util.function.Supplier;
+import org.terifan.raccoon.util.Log;
 
 
 final class EntityIterator<T> implements Iterator<T>
@@ -30,6 +31,9 @@ final class EntityIterator<T> implements Iterator<T>
 	@Override
 	public T next()
 	{
+		Log.d("next entity");
+		Log.inc();
+
 		T outputEntity = (T)newEntityInstance();
 
 		RecordEntry entry = mIterator.next();
@@ -39,12 +43,17 @@ final class EntityIterator<T> implements Iterator<T>
 
 		initializeNewEntity(outputEntity);
 
+		Log.dec();
+
 		return outputEntity;
 	}
 
 
 	private Object newEntityInstance()
 	{
+		Log.d("new entity instance");
+		Log.inc();
+
 		try
 		{
 			Class type = mTable.getTable().getType();
@@ -66,6 +75,10 @@ final class EntityIterator<T> implements Iterator<T>
 		catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
 		{
 			throw new DatabaseException(e);
+		}
+		finally
+		{
+			Log.dec();
 		}
 	}
 
