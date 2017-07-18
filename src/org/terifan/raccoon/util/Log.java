@@ -7,8 +7,6 @@ import org.terifan.raccoon.LogLevel;
 
 public class Log
 {
-	private final static String [] DIGITS = {"0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"};
-
 	public final static PrintStream out = System.out;
 
 	private static LogLevel mLevel = LogLevel.INFO;

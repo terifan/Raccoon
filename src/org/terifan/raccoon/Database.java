@@ -938,6 +938,9 @@ public final class Database implements AutoCloseable
 		{
 			mReadLock.unlock();
 
+			System.setErr(System.out);
+			if(list.size()==3886)Thread.dumpStack();
+			
 			Log.i("list return %s %s entities", list == null ? 0 : list.size(), aType.getSimpleName());
 			Log.dec();
 		}
