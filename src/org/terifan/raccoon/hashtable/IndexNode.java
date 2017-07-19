@@ -1,10 +1,10 @@
 package org.terifan.raccoon.hashtable;
 
-import org.terifan.raccoon.core.Node;
+import org.terifan.raccoon.Node;
 import org.terifan.raccoon.PerformanceCounters;
 import static org.terifan.raccoon.PerformanceCounters.*;
 import org.terifan.raccoon.storage.BlockPointer;
-import org.terifan.raccoon.core.BlockType;
+import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 

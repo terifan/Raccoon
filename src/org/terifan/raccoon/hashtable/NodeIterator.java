@@ -4,9 +4,9 @@ import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayDeque;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import org.terifan.raccoon.core.ArrayMap;
-import org.terifan.raccoon.core.RecordEntry;
-import org.terifan.raccoon.core.BlockType;
+import org.terifan.raccoon.ArrayMap;
+import org.terifan.raccoon.RecordEntry;
+import org.terifan.raccoon.BlockType;
 
 
 final class NodeIterator implements Iterator<RecordEntry>

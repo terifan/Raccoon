@@ -1,6 +1,6 @@
 package org.terifan.raccoon.storage;
 
-import org.terifan.raccoon.core.BlockType;
+import org.terifan.raccoon.BlockType;
 import java.io.IOException;
 import java.io.OutputStream;
 import org.terifan.raccoon.TransactionGroup;

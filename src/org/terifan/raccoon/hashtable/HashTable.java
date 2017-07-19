@@ -1,22 +1,21 @@
 package org.terifan.raccoon.hashtable;
 
-import org.terifan.raccoon.core.Node;
-import org.terifan.raccoon.core.TableImplementation;
-import org.terifan.raccoon.core.RecordEntry;
+import org.terifan.raccoon.Node;
+import org.terifan.raccoon.TableImplementation;
+import org.terifan.raccoon.RecordEntry;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
-import org.terifan.raccoon.PerformanceCounters;
-import org.terifan.raccoon.core.ScanResult;
-import static org.terifan.raccoon.PerformanceCounters.*;
+import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.TransactionGroup;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
-import org.terifan.raccoon.core.BlockType;
+import org.terifan.raccoon.BlockType;
+import org.terifan.raccoon.Cost;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -26,6 +25,9 @@ import org.terifan.security.messagedigest.MurmurHash3;
 
 public final class HashTable extends TableImplementation
 {
+	private final Cost mCost;
+	private final String mTableName;
+	private final TransactionGroup mTransactionId;
 	private BlockAccessor mBlockAccessor;
 	private BlockPointer mRootBlockPointer;
 	private LeafNode mRootMap;
@@ -39,21 +41,22 @@ public final class HashTable extends TableImplementation
 	private boolean mClosed;
 	private boolean mChanged;
 	private boolean mCommitChangesToBlockDevice;
-	private TransactionGroup mTransactionId;
 
 
 	/**
 	 * Open an existing HashTable or create a new HashTable with default settings.
 	 */
-	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam) throws IOException
+	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost) throws IOException
 	{
+		mTableName = aTableName;
 		mTransactionId = aTransactionId;
+		mCost = aCost;
 		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
 		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam, aTableParam.getBlockReadCacheSize());
 
 		if (aTableHeader == null)
 		{
-			Log.i("create hash table");
+			Log.i("create table %s", mTableName);
 			Log.inc();
 
 			mNodeSize = aTableParam.getPagesPerNode() * aBlockDevice.getBlockSize();
@@ -68,7 +71,7 @@ public final class HashTable extends TableImplementation
 		}
 		else
 		{
-			Log.i("open hash table");
+			Log.i("open table %s", mTableName);
 			Log.inc();
 
 			unmarshalHeader(aTableHeader);
@@ -233,7 +236,7 @@ public final class HashTable extends TableImplementation
 
 		ArrayList<RecordEntry> list = new ArrayList<>();
 
-		for (Iterator<RecordEntry> it = iterator(); it.hasNext(); )
+		for (Iterator<RecordEntry> it = iterator(); it.hasNext();)
 		{
 			list.add(it.next());
 		}
@@ -280,7 +283,7 @@ public final class HashTable extends TableImplementation
 
 				mChanged = false;
 
-				Log.i("commit finished; new root %s", mRootBlockPointer);
+				Log.i("table commit finished; root block is %s", mRootBlockPointer);
 
 				Log.dec();
 				assert mModCount == modCount : "concurrent modification";
@@ -351,6 +354,8 @@ public final class HashTable extends TableImplementation
 		{
 			visit((aPointerIndex, aBlockPointer) ->
 			{
+				mCost.mTreeTraversal++;
+
 				if (aPointerIndex >= 0 && aBlockPointer != null && (aBlockPointer.getBlockType() == BlockType.INDEX || aBlockPointer.getBlockType() == BlockType.LEAF))
 				{
 					freeBlock(aBlockPointer);
@@ -390,8 +395,10 @@ public final class HashTable extends TableImplementation
 
 		Result<Integer> result = new Result<>(0);
 
-		visit((aPointerIndex, aBlockPointer)->
+		visit((aPointerIndex, aBlockPointer) ->
 		{
+			mCost.mTreeTraversal++;
+
 			if (aBlockPointer != null && aBlockPointer.getBlockType() == BlockType.LEAF)
 			{
 				result.set(result.get() + readLeaf(aBlockPointer).size());
@@ -404,8 +411,9 @@ public final class HashTable extends TableImplementation
 
 	private boolean getValue(byte[] aKey, int aLevel, RecordEntry aEntry, IndexNode aNode)
 	{
-		assert PerformanceCounters.increment(GET_VALUE);
-		Log.i("get value");
+		Log.i("get %s value", mTableName);
+
+		mCost.mTreeTraversal++;
 
 		BlockPointer blockPointer = aNode.getPointer(aNode.findPointer(computeIndex(aKey, aLevel)));
 
@@ -414,6 +422,8 @@ public final class HashTable extends TableImplementation
 			case INDEX:
 				return getValue(aKey, aLevel + 1, aEntry, readNode(blockPointer));
 			case LEAF:
+				mCost.mValueGet++;
+
 				return readLeaf(blockPointer).get(aEntry);
 			case HOLE:
 				return false;
@@ -426,9 +436,10 @@ public final class HashTable extends TableImplementation
 
 	private byte[] putValue(RecordEntry aEntry, byte[] aKey, int aLevel, IndexNode aNode)
 	{
-		assert PerformanceCounters.increment(PUT_VALUE);
-		Log.d("put value");
+		Log.d("put %s value", mTableName);
 		Log.inc();
+
+		mCost.mTreeTraversal++;
 
 		int index = aNode.findPointer(computeIndex(aKey, aLevel));
 		BlockPointer blockPointer = aNode.getPointer(index);
@@ -461,7 +472,7 @@ public final class HashTable extends TableImplementation
 
 	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, RecordEntry aEntry, int aLevel, IndexNode aNode, byte[] aKey)
 	{
-		assert PerformanceCounters.increment(PUT_VALUE_LEAF);
+		mCost.mTreeTraversal++;
 
 		LeafNode map = readLeaf(aBlockPointer);
 
@@ -474,6 +485,8 @@ public final class HashTable extends TableImplementation
 			freeBlock(aBlockPointer);
 
 			aNode.setPointer(aIndex, writeBlock(map, aBlockPointer.getRange()));
+
+			mCost.mValuePut++;
 		}
 		else if (splitLeaf(map, aBlockPointer, aIndex, aLevel, aNode))
 		{
@@ -494,9 +507,10 @@ public final class HashTable extends TableImplementation
 
 	private byte[] upgradeHoleToLeaf(RecordEntry aEntry, IndexNode aNode, BlockPointer aBlockPointer, int aIndex)
 	{
-		assert PerformanceCounters.increment(UPGRADE_HOLE_TO_LEAF);
 		Log.d("upgrade hole to leaf");
 		Log.inc();
+
+		mCost.mTreeTraversal++;
 
 		LeafNode map = new LeafNode(mLeafSize);
 
@@ -522,7 +536,8 @@ public final class HashTable extends TableImplementation
 		Log.d("split leaf");
 		Log.inc();
 
-		assert PerformanceCounters.increment(SPLIT_LEAF);
+		mCost.mTreeTraversal++;
+		mCost.mBlockSplit++;
 
 		freeBlock(aBlockPointer);
 
@@ -556,7 +571,9 @@ public final class HashTable extends TableImplementation
 
 		assert aBlockPointer.getRange() >= 2;
 
-		assert PerformanceCounters.increment(SPLIT_LEAF);
+		mCost.mTreeTraversal++;
+		mCost.mBlockSplit++;
+
 		Log.inc();
 		Log.d("split leaf");
 		Log.inc();
@@ -611,7 +628,7 @@ public final class HashTable extends TableImplementation
 
 	private boolean removeValue(byte[] aKey, int aLevel, RecordEntry aEntry, IndexNode aNode)
 	{
-		assert PerformanceCounters.increment(REMOVE_VALUE);
+		mCost.mTreeTraversal++;
 
 		int index = aNode.findPointer(computeIndex(aKey, aLevel));
 		BlockPointer blockPointer = aNode.getPointer(index);
@@ -632,6 +649,8 @@ public final class HashTable extends TableImplementation
 				LeafNode map = readLeaf(blockPointer);
 				if (map.remove(aEntry))
 				{
+					mCost.mEntityRemove++;
+
 					freeBlock(blockPointer);
 					BlockPointer newBlockPointer = writeBlock(map, blockPointer.getRange());
 					aNode.setPointer(index, newBlockPointer);
@@ -656,6 +675,8 @@ public final class HashTable extends TableImplementation
 			return mRootMap;
 		}
 
+		mCost.mReadBlockLeaf++;
+
 		return new LeafNode(readBlock(aBlockPointer));
 	}
 
@@ -668,6 +689,8 @@ public final class HashTable extends TableImplementation
 		{
 			return mRootNode;
 		}
+
+		mCost.mReadBlockNode++;
 
 		return new IndexNode(readBlock(aBlockPointer));
 	}
@@ -731,19 +754,30 @@ public final class HashTable extends TableImplementation
 
 	private void freeBlock(BlockPointer aBlockPointer)
 	{
+		mCost.mFreeBlock++;
+		mCost.mFreeBlockBytes += aBlockPointer.getAllocatedSize();
+
 		mBlockAccessor.freeBlock(aBlockPointer);
 	}
 
 
 	private byte[] readBlock(BlockPointer aBlockPointer)
 	{
+		mCost.mReadBlock++;
+		mCost.mReadBlockBytes += aBlockPointer.getAllocatedSize();
+
 		return mBlockAccessor.readBlock(aBlockPointer);
 	}
 
 
 	private BlockPointer writeBlock(Node aNode, int aRange)
 	{
-		return mBlockAccessor.writeBlock(aNode.array(), 0, aNode.array().length, mTransactionId.get(), aNode.getType(), aRange);
+		BlockPointer blockPointer = mBlockAccessor.writeBlock(aNode.array(), 0, aNode.array().length, mTransactionId.get(), aNode.getType(), aRange);
+
+		mCost.mWriteBlock++;
+		mCost.mWriteBlockBytes += blockPointer.getAllocatedSize();
+
+		return blockPointer;
 	}
 
 
@@ -824,7 +858,6 @@ public final class HashTable extends TableImplementation
 //						aScanResult.records++;
 //					}
 //				}
-
 				aScanResult.exitLeaf();
 
 				break;

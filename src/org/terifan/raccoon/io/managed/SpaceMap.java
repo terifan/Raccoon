@@ -2,7 +2,7 @@ package org.terifan.raccoon.io.managed;
 
 import java.io.IOException;
 import java.util.HashSet;
-import org.terifan.raccoon.core.BlockType;
+import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;

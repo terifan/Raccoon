@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.io.managed.DeviceHeader;
-import org.terifan.raccoon.core.ScanResult;
 import resources.entities._BlobKey1K;
 import resources.__FixedThreadExecutor;
 import resources.entities._Fruit2K;

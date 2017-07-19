@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.io.managed.DeviceHeader;
-import org.terifan.raccoon.core.ScanResult;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -147,7 +146,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private static Database init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, Object[] aParameters, OpenOption aOpenOptions) throws IOException
+	private static Database init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, Object[] aParameters, OpenOption aOpenOption) throws IOException
 	{
 		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aParameters, null);
 
@@ -214,7 +213,7 @@ public final class Database implements AutoCloseable
 		}
 		else
 		{
-			db = open(device, aParameters, aOpenOptions);
+			db = open(device, aParameters, aOpenOption);
 
 			if (tenantHeader != null && !tenantHeader.getLabel().equals(device.getTenantHeader().getLabel()))
 			{
@@ -581,9 +580,9 @@ public final class Database implements AutoCloseable
 
 			if (mSystemTable != null)
 			{
-				for (TableInstance table : mOpenTables.values())
+				for (TableInstance tableInstance : mOpenTables.values())
 				{
-					table.close();
+					tableInstance.close();
 				}
 
 				mOpenTables.clear();
@@ -654,8 +653,6 @@ public final class Database implements AutoCloseable
 	 */
 	public boolean tryGet(Object aEntity)
 	{
-		System.out.println("tryGet "+aEntity);
-
 		mReadLock.lock();
 		try
 		{
@@ -919,18 +916,16 @@ public final class Database implements AutoCloseable
 		try
 		{
 			TableInstance tableInstance = openTable(aType, new DiscriminatorType(aEntity), OpenOption.OPEN);
-			if (tableInstance == null)
-			{
-				list = new ArrayList<>();
-			}
-			else
+
+			if (tableInstance != null)
 			{
 				list = tableInstance.list(aType, aLimit <= 0 ? Integer.MAX_VALUE : aLimit);
+
+				Log.i("list %s %s", aType.getSimpleName(), tableInstance.getCost().toString());
 			}
 		}
 		catch (DatabaseException e)
 		{
-			list = new ArrayList<>();
 			forceClose(e);
 			throw e;
 		}
@@ -939,13 +934,12 @@ public final class Database implements AutoCloseable
 			mReadLock.unlock();
 
 			System.setErr(System.out);
-			if(list.size()==3886)Thread.dumpStack();
-			
-			Log.i("list return %s %s entities", list == null ? 0 : list.size(), aType.getSimpleName());
+			if(list!=null&&list.size()==3886)Thread.dumpStack();
+
 			Log.dec();
 		}
 
-		return list;
+		return list != null ? list : new ArrayList<>();
 	}
 
 
@@ -1231,7 +1225,7 @@ public final class Database implements AutoCloseable
 		finally
 		{
 			mReadLock.unlock();
-		
+
 			Log.dec();
 		}
 	}

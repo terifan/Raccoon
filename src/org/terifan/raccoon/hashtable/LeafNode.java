@@ -1,8 +1,8 @@
 package org.terifan.raccoon.hashtable;
 
-import org.terifan.raccoon.core.ArrayMap;
-import org.terifan.raccoon.core.BlockType;
-import org.terifan.raccoon.core.Node;
+import org.terifan.raccoon.ArrayMap;
+import org.terifan.raccoon.BlockType;
+import org.terifan.raccoon.Node;
 
 
 public class LeafNode extends ArrayMap implements Node

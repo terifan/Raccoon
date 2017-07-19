@@ -1,6 +1,6 @@
 package org.terifan.raccoon.storage;
 
-import org.terifan.raccoon.core.BlockType;
+import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import java.io.IOException;

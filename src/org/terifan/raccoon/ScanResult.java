@@ -1,4 +1,4 @@
-package org.terifan.raccoon.core;
+package org.terifan.raccoon;
 
 import org.terifan.raccoon.TableInstance;
 import org.terifan.raccoon.storage.BlockPointer;

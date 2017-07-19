@@ -1,4 +1,4 @@
-package org.terifan.raccoon.core;
+package org.terifan.raccoon;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;

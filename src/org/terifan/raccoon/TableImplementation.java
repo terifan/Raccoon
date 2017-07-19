@@ -1,10 +1,11 @@
-package org.terifan.raccoon.core;
+package org.terifan.raccoon;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 
 
-public abstract class TableImplementation implements AutoCloseable, Iterable<RecordEntry>
+public abstract class TableImplementation implements Closeable, Iterable<RecordEntry>
 {
 	abstract public boolean get(RecordEntry aEntry);
 
@@ -43,7 +44,4 @@ public abstract class TableImplementation implements AutoCloseable, Iterable<Rec
 
 
 	abstract public String integrityCheck();
-
-
-	abstract public void close();
 }

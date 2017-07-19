@@ -1,10 +1,8 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.core.ScanResult;
-import org.terifan.raccoon.core.RecordEntry;
-import org.terifan.raccoon.core.TableImplementation;
 import org.terifan.raccoon.hashtable.HashTable;
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -27,7 +25,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public final class TableInstance<T> implements Iterable<T>, AutoCloseable
+public final class TableInstance<T> implements Closeable
 {
 	public static final byte FLAG_BLOB = 1;
 
@@ -35,18 +33,23 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 	private final Table mTable;
 	private final HashSet<BlobOutputStream> mOpenOutputStreams;
 	private final TableImplementation mTableImplementation;
+	private final Cost mCost;
 
 
-	TableInstance(Database aDatabase, Table aTableMetadata, byte[] aPointer)
+	TableInstance(Database aDatabase, Table aTable, byte[] aPointer)
 	{
 		try
 		{
+			mCost = new Cost();
 			mOpenOutputStreams = new HashSet<>();
 
 			mDatabase = aDatabase;
-			mTable = aTableMetadata;
+			mTable = aTable;
 
-			mTableImplementation = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, mDatabase.getParameter(CompressionParam.class, CompressionParam.NO_COMPRESSION), mDatabase.getParameter(TableParam.class, TableParam.DEFAULT));
+			CompressionParam compression = mDatabase.getParameter(CompressionParam.class, CompressionParam.NO_COMPRESSION);
+			TableParam parameter = mDatabase.getParameter(TableParam.class, TableParam.DEFAULT);
+
+			mTableImplementation = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost);
 		}
 		catch (IOException e)
 		{
@@ -58,6 +61,12 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 	public Database getDatabase()
 	{
 		return mDatabase;
+	}
+
+
+	public Cost getCost()
+	{
+		return mCost;
 	}
 
 
@@ -94,8 +103,8 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 		for (Iterator<T> it = (Iterator<T>)iterator(); list.size() < aLimit && it.hasNext();)
 		{
 			list.add(it.next());
+			mCost.mEntityReturn++;
 		}
-//		iterator().forEachRemaining(e -> list.add((T)e));
 		return list;
 	}
 
@@ -129,7 +138,7 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 
 	public boolean save(T aEntity)
 	{
-		Log.i("save entity");
+		Log.i("save %s", aEntity.getClass());
 		Log.inc();
 
 		byte[] key = getKeys(aEntity);
@@ -261,7 +270,6 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 	/**
 	 * Creates an iterator over all items in this table. This iterator will reconstruct entities.
 	 */
-	@Override
 	public Iterator<T> iterator()
 	{
 		return new EntityIterator(this, getLeafIterator());
@@ -284,9 +292,16 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 	 * Clean-up resources only
 	 */
 	@Override
-	public void close() throws IOException
+	public void close()
 	{
-		mTableImplementation.close();
+		try
+		{
+			mTableImplementation.close();
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
@@ -354,6 +369,8 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getKey());
 
 		mTable.getMarshaller().unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_KEY);
+
+		mCost.mUnmarshalKeys++;
 	}
 
 
@@ -376,6 +393,8 @@ public final class TableInstance<T> implements Iterable<T>, AutoCloseable
 
 		Marshaller marshaller = mTable.getMarshaller();
 		marshaller.unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_DISCRIMINATOR | Table.FIELD_CATEGORY_VALUE);
+
+		mCost.mUnmarshalValues++;
 	}
 
 

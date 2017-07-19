@@ -1,6 +1,5 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.core.RecordEntry;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;

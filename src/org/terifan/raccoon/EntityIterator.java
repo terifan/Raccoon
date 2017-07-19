@@ -1,6 +1,5 @@
 	package org.terifan.raccoon;
 
-import org.terifan.raccoon.core.RecordEntry;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
@@ -42,6 +41,8 @@ final class EntityIterator<T> implements Iterator<T>
 		mTable.unmarshalToObjectValues(entry, outputEntity);
 
 		initializeNewEntity(outputEntity);
+
+		mTable.getCost().mUnmarshalEntity++;
 
 		Log.dec();
 

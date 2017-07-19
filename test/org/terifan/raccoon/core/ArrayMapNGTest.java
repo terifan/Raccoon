@@ -1,5 +1,7 @@
 package org.terifan.raccoon.core;
 
+import org.terifan.raccoon.RecordEntry;
+import org.terifan.raccoon.ArrayMap;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
