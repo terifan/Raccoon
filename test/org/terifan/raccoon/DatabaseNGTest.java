@@ -34,6 +34,9 @@ import static resources.__TestUtils.t;
 import resources.entities._Fruit1K1D;
 import resources.entities._Number1K2D;
 import static resources.__TestUtils.createRandomBuffer;
+import resources.entities._Base1K1C;
+import resources.entities._BaseInherit1_1K1C;
+import resources.entities._BaseInherit2_1K1C;
 import resources.entities._Number1K1DS;
 
 
@@ -1333,4 +1336,25 @@ public class DatabaseNGTest
 			assertEquals(scan.blobData, 0);
 		}
 	}
+
+
+//	@Test
+//	public void testClassifier() throws IOException
+//	{
+//		MemoryBlockDevice device = new MemoryBlockDevice(512);
+//
+//		try (Database db = Database.open(device, OpenOption.CREATE))
+//		{
+//			db.save(new _BaseInherit1_1K1C(1, "apple", 35.7));
+//			db.save(new _BaseInherit1_1K1C(2, "carrot", 23.1));
+//			db.save(new _BaseInherit2_1K1C(3, "volvo", "red"));
+//			db.save(new _BaseInherit2_1K1C(4, "nissan", "yellow"));
+//			db.commit();
+//		}
+//
+//		try (Database db = Database.open(device, OpenOption.READ_ONLY))
+//		{
+//			db.list(_Base1K1C.class).stream().forEach(System.out::println);
+//		}
+//	}
 }

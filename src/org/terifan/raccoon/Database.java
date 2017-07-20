@@ -23,6 +23,7 @@ import org.terifan.raccoon.io.managed.UnsupportedVersionException;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.storage.BlobOutputStream;
 import org.terifan.raccoon.io.physical.FileBlockDevice;
+import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -37,6 +38,7 @@ public final class Database implements AutoCloseable
 
 	private IManagedBlockDevice mBlockDevice;
 	private final HashMap<Class, Supplier> mFactories;
+	private final HashMap<Class, ClassifiedSupplier> mClassifiers;
 	private final HashMap<Class, Initializer> mInitializers;
 	private final ConcurrentHashMap<Table, TableInstance> mOpenTables;
 	private final TableMetadataProvider mTableMetadatas;
@@ -55,6 +57,7 @@ public final class Database implements AutoCloseable
 		mOpenTables = new ConcurrentHashMap<>();
 		mTableMetadatas = new TableMetadataProvider();
 		mFactories = new HashMap<>();
+		mClassifiers = new HashMap<>();
 		mInitializers = new HashMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
 	}
@@ -958,6 +961,24 @@ public final class Database implements AutoCloseable
 	<T> Supplier<T> getSupplier(Class<T> aType)
 	{
 		return mFactories.get(aType);
+	}
+
+
+	/**
+	 * Sets a Supplier associated with the specified type. The Supplier is used to create instances of specified types.
+	 *
+	 * E.g:
+	 * mDatabase.setSupplier(Photo.class, ()-&gt;new Photo(PhotoAlbum.this));
+	 */
+	public <T> void setClassifier(Class<T> aType, ClassifiedSupplier<T> aClassifier)
+	{
+		mClassifiers.put(aType, aClassifier);
+	}
+
+
+	<T> ClassifiedSupplier<T> getClassifier(Class<T> aType)
+	{
+		return mClassifiers.get(aType);
 	}
 
 

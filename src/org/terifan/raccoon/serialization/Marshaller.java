@@ -20,6 +20,12 @@ public class Marshaller
 	}
 
 
+	public EntityDescriptor getEntityDescriptor()
+	{
+		return mEntityDescriptor;
+	}
+
+
 	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer, Object aObject, int aCategory)
 	{
 		return marshalImpl(aBuffer, aObject, aCategory);

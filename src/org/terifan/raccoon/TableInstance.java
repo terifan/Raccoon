@@ -364,6 +364,20 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
+	ResultSet unmarshalDiscriminators(RecordEntry aBuffer)
+	{
+		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getKey());
+
+		ResultSet resultSet = new ResultSet(mTable.getMarshaller().getEntityDescriptor());
+
+		mTable.getMarshaller().unmarshal(buffer, resultSet, Table.FIELD_CATEGORY_DISCRIMINATOR);
+
+		mCost.mUnmarshalDiscriminator++;
+
+		return resultSet;
+	}
+
+
 	void unmarshalToObjectKeys(RecordEntry aBuffer, Object aOutput)
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getKey());

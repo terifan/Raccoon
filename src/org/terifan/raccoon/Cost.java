@@ -12,6 +12,7 @@ public class Cost
 	public int mUnmarshalEntity;
 	public int mUnmarshalValues;
 	public int mUnmarshalKeys;
+	public int mUnmarshalDiscriminator;
 	public int mFreeBlock;
 	public int mReadBlock;
 	public int mWriteBlockBytes;

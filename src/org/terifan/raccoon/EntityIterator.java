@@ -33,9 +33,9 @@ final class EntityIterator<T> implements Iterator<T>
 		Log.d("next entity");
 		Log.inc();
 
-		T outputEntity = (T)newEntityInstance();
-
 		RecordEntry entry = mIterator.next();
+
+		T outputEntity = (T)newEntityInstance(entry);
 
 		mTable.unmarshalToObjectKeys(entry, outputEntity);
 		mTable.unmarshalToObjectValues(entry, outputEntity);
@@ -50,7 +50,7 @@ final class EntityIterator<T> implements Iterator<T>
 	}
 
 
-	private Object newEntityInstance()
+	private Object newEntityInstance(RecordEntry aEntry)
 	{
 		Log.d("new entity instance");
 		Log.inc();
@@ -59,19 +59,28 @@ final class EntityIterator<T> implements Iterator<T>
 		{
 			Class type = mTable.getTable().getType();
 
+//			ClassifiedSupplier classifiedSupplier = mTable.getDatabase().getClassifier(type);
+//
+//			if (classifiedSupplier != null)
+//			{
+//				System.out.println("#");
+//
+//				ResultSet discriminators = mTable.unmarshalDiscriminators(aEntry);
+//
+//				System.out.println(discriminators);
+//			}
+
 			Supplier supplier = mTable.getDatabase().getSupplier(type);
 
 			if (supplier != null)
 			{
 				return supplier.get();
 			}
-			else
-			{
-				Constructor constructor = type.getDeclaredConstructor();
-				constructor.setAccessible(true);
 
-				return constructor.newInstance();
-			}
+			Constructor constructor = type.getDeclaredConstructor();
+			constructor.setAccessible(true);
+
+			return constructor.newInstance();
 		}
 		catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
 		{
