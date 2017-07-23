@@ -498,7 +498,6 @@ public final class Database implements AutoCloseable
 			}
 
 			mSystemTable.rollback();
-
 			mBlockDevice.rollback();
 
 			Log.dec();

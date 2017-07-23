@@ -689,4 +689,16 @@ public class ArrayMap implements Iterable<RecordEntry>
 
 		return new ArrayMap(buffer);
 	}
+	
+	
+	public void gc()
+	{
+		mBuffer = null;
+		mStartOffset = 0;
+		mCapacity = 0;
+		mPointerListOffset = 0;
+		mFreeSpaceOffset = 0;
+		mEntryCount = 0;
+		mModCount = 0;
+	}
 }

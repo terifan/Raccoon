@@ -65,7 +65,7 @@ public interface IBlockDevice extends AutoCloseable
 	 * @return
 	 *   the size of each block on this device.
 	 */
-	int getBlockSize() throws IOException;
+	int getBlockSize();
 
 
 	/**

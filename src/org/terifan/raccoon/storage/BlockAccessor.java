@@ -1,16 +1,14 @@
 package org.terifan.raccoon.storage;
 
 import org.terifan.raccoon.BlockType;
-import org.terifan.raccoon.util.Cache;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.zip.Deflater;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
-import org.terifan.raccoon.PerformanceCounters;
-import static org.terifan.raccoon.PerformanceCounters.*;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
+import org.terifan.raccoon.util.ByteBlockOutputStream;
 import org.terifan.raccoon.util.Log;
 import org.terifan.security.cryptography.ISAAC;
 import org.terifan.security.messagedigest.MurmurHash3;
@@ -19,8 +17,6 @@ import org.terifan.security.messagedigest.MurmurHash3;
 public class BlockAccessor
 {
 	private final IManagedBlockDevice mBlockDevice;
-	private final Cache<Long,byte[]> mCache;
-	private final int mBlockSize;
 	private CompressionParam mCompressionParam;
 
 
@@ -28,8 +24,6 @@ public class BlockAccessor
 	{
 		mBlockDevice = aBlockDevice;
 		mCompressionParam = aCompressionParam;
-		mBlockSize = mBlockDevice.getBlockSize();
-		mCache = aCacheSize == 0 ? null : new Cache<>(aCacheSize);
 	}
 
 
@@ -60,14 +54,7 @@ public class BlockAccessor
 
 			mBlockDevice.freeBlock(aBlockPointer.getBlockIndex0(), roundUp(aBlockPointer.getPhysicalSize()) / mBlockDevice.getBlockSize());
 
-			if (mCache != null)
-			{
-				mCache.remove(aBlockPointer.getBlockIndex0());
-			}
-
 			Log.dec();
-
-			assert PerformanceCounters.increment(BLOCK_FREE);
 		}
 		catch (Exception | Error e)
 		{
@@ -83,20 +70,7 @@ public class BlockAccessor
 			Log.d("read block %s", aBlockPointer);
 			Log.inc();
 
-			if (mCache != null)
-			{
-				byte[] copy = mCache.get(aBlockPointer.getBlockIndex0());
-
-				if (copy != null)
-				{
-					Log.dec();
-
-					return copy.clone();
-				}
-			}
-
-			// TODO: use allocatedSize
-			byte[] buffer = new byte[roundUp(aBlockPointer.getPhysicalSize())];
+			byte[] buffer = new byte[aBlockPointer.getAllocatedSize() * mBlockDevice.getBlockSize()];
 
 			mBlockDevice.readBlock(aBlockPointer.getBlockIndex0(), buffer, 0, buffer.length, aBlockPointer.getIV());
 
@@ -120,8 +94,6 @@ public class BlockAccessor
 
 			Log.dec();
 
-			assert PerformanceCounters.increment(BLOCK_READ);
-
 			return buffer;
 		}
 		catch (Exception | Error e)
@@ -137,69 +109,51 @@ public class BlockAccessor
 
 		try
 		{
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ByteBlockOutputStream compressedBlock = null;
+			int compressor = mCompressionParam.getCompressorId(aType);
+			boolean compressed = false;
+
+			if (compressor != CompressionParam.NONE)
+			{
+				compressedBlock = new ByteBlockOutputStream(mBlockDevice.getBlockSize());
+				compressed = getCompressor(compressor).compress(aBuffer, aOffset, aLength, compressedBlock);
+			}
 
 			int physicalSize;
-			boolean result = false;
-			int compressorId = mCompressionParam.getCompressorId(aType);
 
-			if (compressorId != CompressionParam.NONE)
+			if (compressed && roundUp(compressedBlock.size()) < roundUp(aBuffer.length)) // use the compressed result only if we actual save one block or more
 			{
-				result = getCompressor(compressorId).compress(aBuffer, aOffset, aLength, baos);
-			}
-
-			byte[] copy = null;
-			if (mCache != null)
-			{
-				copy = Arrays.copyOfRange(aBuffer, aOffset, aOffset + aLength);
-			}
-
-			if (result && roundUp(baos.size()) < roundUp(aBuffer.length)) // use the compressed result only if we actual save one block or more
-			{
-				physicalSize = baos.size();
-				baos.write(new byte[roundUp(physicalSize) - physicalSize]); // padding
-				aBuffer = baos.toByteArray();
+				physicalSize = compressedBlock.size();
+				aBuffer = compressedBlock.getBuffer();
 			}
 			else
 			{
 				physicalSize = aLength;
 				aBuffer = Arrays.copyOfRange(aBuffer, aOffset, aOffset + roundUp(aLength));
-				compressorId = CompressionParam.NONE;
+				compressor = CompressionParam.NONE;
 			}
 
-			assert aBuffer.length % mBlockSize == 0;
-
-			int blockCount = aBuffer.length / mBlockSize;
-			long blockIndex = mBlockDevice.allocBlock(blockCount);
-
-			long[] hash = MurmurHash3.hash128(aBuffer, 0, physicalSize, blockIndex);
-			long[] iv = {ISAAC.PRNG.nextLong(), ISAAC.PRNG.nextLong()};
+			int allocatedSize = aBuffer.length / mBlockDevice.getBlockSize();
+			long blockIndex = mBlockDevice.allocBlock(allocatedSize);
 
 			blockPointer = new BlockPointer();
-			blockPointer.setCompressionAlgorithm(compressorId);
+			blockPointer.setCompressionAlgorithm(compressor);
 			blockPointer.setBlockIndex(blockIndex);
+			blockPointer.setAllocatedSize(allocatedSize);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
 			blockPointer.setTransactionId(aTransactionId);
 			blockPointer.setBlockType(aType);
 			blockPointer.setRange(aRange);
-			blockPointer.setChecksum(hash);
-			blockPointer.setIV(iv);
+			blockPointer.setChecksum(MurmurHash3.hash128(aBuffer, 0, physicalSize, blockIndex));
+			blockPointer.setIV(ISAAC.PRNG.nextLong(), ISAAC.PRNG.nextLong());
 
 			Log.d("write block %s", blockPointer);
 			Log.inc();
 
-			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, iv);
-
-			assert PerformanceCounters.increment(BLOCK_ALLOC);
-			assert PerformanceCounters.increment(BLOCK_WRITE);
+			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getIV());
 
 			Log.dec();
-
-			if (mCache != null)
-			{
-				mCache.put(blockPointer.getBlockIndex0(), copy);
-			}
 
 			return blockPointer;
 		}
@@ -215,7 +169,7 @@ public class BlockAccessor
 		switch (aCompressorId)
 		{
 			case CompressionParam.ZLE:
-				return new ZeroCompressor(mBlockSize);
+				return new ZeroCompressor(mBlockDevice.getBlockSize());
 			case CompressionParam.DEFLATE_FAST:
 				return new DeflateCompressor(Deflater.BEST_SPEED);
 			case CompressionParam.DEFLATE_DEFAULT:
@@ -230,6 +184,7 @@ public class BlockAccessor
 
 	private int roundUp(int aSize)
 	{
-		return aSize + ((mBlockSize - (aSize % mBlockSize)) % mBlockSize);
+		int s = mBlockDevice.getBlockSize();
+		return aSize + ((s - (aSize % s)) % s);
 	}
 }

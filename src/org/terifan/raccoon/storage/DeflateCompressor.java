@@ -1,11 +1,11 @@
 package org.terifan.raccoon.storage;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
+import org.terifan.raccoon.util.ByteBlockOutputStream;
 import org.terifan.raccoon.util.Log;
 
 
@@ -21,7 +21,7 @@ class DeflateCompressor implements Compressor
 
 
 	@Override
-	public boolean compress(byte[] aInput, int aInputOffset, int aInputLength, ByteArrayOutputStream aOutputStream)
+	public boolean compress(byte[] aInput, int aInputOffset, int aInputLength, ByteBlockOutputStream aOutputStream)
 	{
 		try
 		{

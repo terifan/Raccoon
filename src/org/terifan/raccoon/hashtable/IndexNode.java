@@ -1,8 +1,6 @@
 package org.terifan.raccoon.hashtable;
 
 import org.terifan.raccoon.Node;
-import org.terifan.raccoon.PerformanceCounters;
-import static org.terifan.raccoon.PerformanceCounters.*;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -12,16 +10,15 @@ final class IndexNode implements Node
 {
 	private final static BlockPointer EMPTY_POINTER = new BlockPointer();
 
-	private final byte[] mBuffer;
-	private final int mPointerCount;
+	private byte[] mBuffer;
+	private int mPointerCount;
+	private boolean mLocked;
 
 
 	public IndexNode(byte[] aBuffer)
 	{
 		mPointerCount = aBuffer.length / BlockPointer.SIZE;
 		mBuffer = aBuffer;
-
-		assert PerformanceCounters.increment(INDEX_NODE_CREATION);
 	}
 
 
@@ -169,5 +166,22 @@ final class IndexNode implements Node
 		}
 
 		return null;
+	}
+
+
+	void gc()
+	{
+		if (!mLocked)
+		{
+			mBuffer = null;
+			mPointerCount = 0;
+		}
+	}
+
+
+	IndexNode setLocked(boolean aLocked)
+	{
+		mLocked = aLocked;
+		return this;
 	}
 }

@@ -1,9 +1,9 @@
 package org.terifan.raccoon.storage;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
+import org.terifan.raccoon.util.ByteBlockOutputStream;
 import static org.testng.AssertJUnit.assertEquals;
 import org.testng.annotations.Test;
 
@@ -37,10 +37,10 @@ public class ZeroCompressorNGTest
 			}
 		}
 
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ByteBlockOutputStream baos = new ByteBlockOutputStream(512);
 		new ZeroCompressor(0).compress(input, srcOffset, length, baos);
 
-		new ZeroCompressor(0).decompress(baos.toByteArray(), 0, baos.size(), output, dstOffset, length);
+		new ZeroCompressor(0).decompress(baos.getBuffer(), 0, baos.size(), output, dstOffset, length);
 
 		assertEquals(Arrays.copyOfRange(input, srcOffset, srcOffset + length), Arrays.copyOfRange(output, dstOffset, dstOffset + length));
 	}

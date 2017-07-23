@@ -35,12 +35,12 @@ public final class HashTable extends TableImplementation
 	private int mNodeSize;
 	private int mLeafSize;
 	private int mPointersPerNode;
-	/*private*/ int mModCount;
 	private int mHashSeed;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mChanged;
 	private boolean mCommitChangesToBlockDevice;
+	/*private*/ int mModCount;
 
 
 	/**
@@ -127,7 +127,7 @@ public final class HashTable extends TableImplementation
 		}
 		else
 		{
-			mRootNode = readNode(mRootBlockPointer);
+			mRootNode = readNode(mRootBlockPointer).setLocked(true);
 		}
 	}
 
@@ -170,7 +170,7 @@ public final class HashTable extends TableImplementation
 			{
 				Log.d("upgrade root leaf to node");
 
-				mRootNode = splitLeaf(mRootBlockPointer, mRootMap, 0);
+				mRootNode = splitLeaf(mRootBlockPointer, mRootMap, 0).setLocked(true);
 
 				mRootBlockPointer = writeBlock(mRootNode, mPointersPerNode);
 				mRootMap = null;
@@ -220,7 +220,7 @@ public final class HashTable extends TableImplementation
 		{
 			return new NodeIterator(this, mRootBlockPointer);
 		}
-		else if (!mRootMap.isEmpty())
+		if (!mRootMap.isEmpty())
 		{
 			return new NodeIterator(this, mRootMap);
 		}
@@ -290,7 +290,8 @@ public final class HashTable extends TableImplementation
 
 				return true;
 			}
-			else if (mWasEmptyInstance && mCommitChangesToBlockDevice)
+
+			if (mWasEmptyInstance && mCommitChangesToBlockDevice)
 			{
 				mBlockAccessor.getBlockDevice().commit();
 			}
@@ -423,8 +424,10 @@ public final class HashTable extends TableImplementation
 				return getValue(aKey, aLevel + 1, aEntry, readNode(blockPointer));
 			case LEAF:
 				mCost.mValueGet++;
-
-				return readLeaf(blockPointer).get(aEntry);
+				LeafNode leaf = readLeaf(blockPointer);
+				boolean result = leaf.get(aEntry);
+				leaf.gc();
+				return result;
 			case HOLE:
 				return false;
 			case FREE:
@@ -452,6 +455,7 @@ public final class HashTable extends TableImplementation
 				oldValue = putValue(aEntry, aKey, aLevel + 1, node);
 				freeBlock(blockPointer);
 				aNode.setPointer(index, writeBlock(node, blockPointer.getRange()));
+				node.gc();
 				break;
 			case LEAF:
 				oldValue = putValueLeaf(blockPointer, index, aEntry, aLevel, aNode, aKey);
@@ -499,6 +503,8 @@ public final class HashTable extends TableImplementation
 			oldValue = putValue(aEntry, aKey, aLevel + 1, node); // recursive put
 
 			aNode.setPointer(aIndex, writeBlock(node, aBlockPointer.getRange()));
+
+			node.gc();
 		}
 
 		return oldValue;
@@ -512,17 +518,19 @@ public final class HashTable extends TableImplementation
 
 		mCost.mTreeTraversal++;
 
-		LeafNode map = new LeafNode(mLeafSize);
+		LeafNode node = new LeafNode(mLeafSize);
 
-		if (!map.put(aEntry))
+		if (!node.put(aEntry))
 		{
 			throw new DatabaseException("Failed to upgrade hole to leaf");
 		}
 
 		byte[] oldValue = aEntry.getValue();
 
-		BlockPointer blockPointer = writeBlock(map, aBlockPointer.getRange());
+		BlockPointer blockPointer = writeBlock(node, aBlockPointer.getRange());
 		aNode.setPointer(aIndex, blockPointer);
+
+		node.gc();
 
 		Log.dec();
 
@@ -554,6 +562,9 @@ public final class HashTable extends TableImplementation
 		IndexNode node = new IndexNode(new byte[mNodeSize]);
 		node.setPointer(0, lowIndex);
 		node.setPointer(halfRange, highIndex);
+
+		lowLeaf.gc();
+		highLeaf.gc();
 
 		Log.dec();
 		Log.dec();
@@ -592,6 +603,9 @@ public final class HashTable extends TableImplementation
 
 		aNode.split(aIndex, lowIndex, highIndex);
 
+		lowLeaf.gc();
+		highLeaf.gc();
+		
 		Log.dec();
 		Log.dec();
 
@@ -636,6 +650,7 @@ public final class HashTable extends TableImplementation
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
+			{
 				IndexNode node = readNode(blockPointer);
 				if (removeValue(aKey, aLevel + 1, aEntry, node))
 				{
@@ -645,18 +660,24 @@ public final class HashTable extends TableImplementation
 					return true;
 				}
 				return false;
+			}
 			case LEAF:
-				LeafNode map = readLeaf(blockPointer);
-				if (map.remove(aEntry))
+			{
+				LeafNode node = readLeaf(blockPointer);
+				boolean found = node.remove(aEntry);
+
+				if (found)
 				{
 					mCost.mEntityRemove++;
 
 					freeBlock(blockPointer);
-					BlockPointer newBlockPointer = writeBlock(map, blockPointer.getRange());
+					BlockPointer newBlockPointer = writeBlock(node, blockPointer.getRange());
 					aNode.setPointer(index, newBlockPointer);
-					return true;
 				}
-				return false;
+
+				node.gc();
+				return found;
+			}
 			case HOLE:
 				return false;
 			case FREE:
@@ -749,6 +770,8 @@ public final class HashTable extends TableImplementation
 
 			aVisitor.visit(i, next);
 		}
+
+		node.gc();
 	}
 
 
