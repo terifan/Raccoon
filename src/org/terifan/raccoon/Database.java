@@ -65,11 +65,11 @@ public final class Database implements AutoCloseable
 	 * Create a new or open an existing database
 	 *
 	 * @param aFile
-	 *   the database file
+	 * the database file
 	 * @param aOpenOptions
-	 *   OpenOption enum constant describing the options for creating the database instance
+	 * OpenOption enum constant describing the options for creating the database instance
 	 * @param aParameters
-	 *   parameters for the database
+	 * parameters for the database
 	 */
 	public Database(File aFile, OpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
 	{
@@ -128,11 +128,11 @@ public final class Database implements AutoCloseable
 	 * Create a new or open an existing database
 	 *
 	 * @param aBlockDevice
-	 *   a block device containing a database
+	 * a block device containing a database
 	 * @param aOpenOptions
-	 *   OpenOptions enum constant describing the options for creating the database instance
+	 * OpenOptions enum constant describing the options for creating the database instance
 	 * @param aParameters
-	 *   parameters for the database
+	 * parameters for the database
 	 */
 	public Database(IPhysicalBlockDevice aBlockDevice, OpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
 	{
@@ -150,11 +150,11 @@ public final class Database implements AutoCloseable
 	 * Create a new or open an existing database
 	 *
 	 * @param aBlockDevice
-	 *   a block device containing a database
+	 * a block device containing a database
 	 * @param aOpenOptions
-	 *   OpenOptions enum constant describing the options for creating the database instance
+	 * OpenOptions enum constant describing the options for creating the database instance
 	 * @param aParameters
-	 *   parameters for the database
+	 * parameters for the database
 	 */
 	public Database(IManagedBlockDevice aBlockDevice, OpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
 	{
@@ -232,7 +232,7 @@ public final class Database implements AutoCloseable
 
 			if (tenantHeader != null && !tenantHeader.getLabel().equals(device.getTenantHeader().getLabel()))
 			{
-				throw new UnsupportedVersionException("Device tenant header labels don't match: expected: "+tenantHeader+", actual:" + device.getTenantHeader());
+				throw new UnsupportedVersionException("Device tenant header labels don't match: expected: " + tenantHeader + ", actual:" + device.getTenantHeader());
 			}
 		}
 
@@ -936,7 +936,10 @@ public final class Database implements AutoCloseable
 			mReadLock.unlock();
 
 			System.setErr(System.out);
-			if(list!=null&&list.size()==3886)Thread.dumpStack();
+			if (list != null && list.size() == 3886)
+			{
+				Thread.dumpStack();
+			}
 
 			Log.dec();
 		}

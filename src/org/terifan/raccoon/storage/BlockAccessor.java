@@ -1,7 +1,6 @@
 package org.terifan.raccoon.storage;
 
 import org.terifan.raccoon.BlockType;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.zip.Deflater;
@@ -47,6 +46,8 @@ public class BlockAccessor
 
 	public void freeBlock(BlockPointer aBlockPointer)
 	{
+		System.out.println("free  " + aBlockPointer);
+
 		try
 		{
 			Log.d("free block %s", aBlockPointer);
@@ -65,6 +66,8 @@ public class BlockAccessor
 
 	public byte[] readBlock(BlockPointer aBlockPointer)
 	{
+		System.out.println("read  " + aBlockPointer);
+
 		try
 		{
 			Log.d("read block %s", aBlockPointer);
@@ -155,6 +158,8 @@ public class BlockAccessor
 
 			Log.dec();
 
+			System.out.println("write " + blockPointer);
+			
 			return blockPointer;
 		}
 		catch (Exception | Error e)
