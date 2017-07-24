@@ -127,7 +127,7 @@ public final class HashTable extends TableImplementation
 		}
 		else
 		{
-			mRootNode = readNode(mRootBlockPointer).setLocked(true);
+			mRootNode = readNode(mRootBlockPointer).setGCEnabled(false);
 		}
 	}
 
@@ -170,7 +170,7 @@ public final class HashTable extends TableImplementation
 			{
 				Log.d("upgrade root leaf to node");
 
-				mRootNode = splitLeaf(mRootBlockPointer, mRootMap, 0).setLocked(true);
+				mRootNode = splitLeaf(mRootBlockPointer, mRootMap, 0).setGCEnabled(false);
 
 				mRootBlockPointer = writeBlock(mRootNode, mPointersPerNode);
 				mRootMap = null;
@@ -605,7 +605,7 @@ public final class HashTable extends TableImplementation
 
 		lowLeaf.gc();
 		highLeaf.gc();
-		
+
 		Log.dec();
 		Log.dec();
 

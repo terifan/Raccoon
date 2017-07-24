@@ -12,13 +12,14 @@ final class IndexNode implements Node
 
 	private byte[] mBuffer;
 	private int mPointerCount;
-	private boolean mLocked;
+	private boolean mGCEnabled;
 
 
 	public IndexNode(byte[] aBuffer)
 	{
 		mPointerCount = aBuffer.length / BlockPointer.SIZE;
 		mBuffer = aBuffer;
+		mGCEnabled = true;
 	}
 
 
@@ -171,7 +172,7 @@ final class IndexNode implements Node
 
 	void gc()
 	{
-		if (!mLocked)
+		if (mGCEnabled)
 		{
 			mBuffer = null;
 			mPointerCount = 0;
@@ -179,9 +180,9 @@ final class IndexNode implements Node
 	}
 
 
-	IndexNode setLocked(boolean aLocked)
+	IndexNode setGCEnabled(boolean aGCEnabled)
 	{
-		mLocked = aLocked;
+		mGCEnabled = aGCEnabled;
 		return this;
 	}
 }
