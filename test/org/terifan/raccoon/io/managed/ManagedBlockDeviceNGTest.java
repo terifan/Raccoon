@@ -110,7 +110,7 @@ public class ManagedBlockDeviceNGTest
 			blockDevice.commit();
 		}
 
-		try (Database db = Database.open(device, OpenOption.OPEN)) // throws exception
+		try (Database db = new Database(device, OpenOption.OPEN)) // throws exception
 		{
 			fail();
 		}
@@ -124,11 +124,11 @@ public class ManagedBlockDeviceNGTest
 //
 //		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice, "AnimalFarm");
 //
-//		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
+//		try (Database db = new Database(managedBlockDevice, OpenOption.CREATE))
 //		{
 //		}
 //
-//		try (Database db = Database.open(blockDevice, OpenOption.CREATE)) // default empty label won't match the "AnimalFarm" label causing an exception
+//		try (Database db = new Database(blockDevice, OpenOption.CREATE)) // default empty label won't match the "AnimalFarm" label causing an exception
 //		{
 //		}
 //

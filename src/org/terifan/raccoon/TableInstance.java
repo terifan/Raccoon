@@ -1,6 +1,5 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.hashtable.HashTable;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -32,7 +31,7 @@ public final class TableInstance<T> implements Closeable
 	private final Database mDatabase;
 	private final Table mTable;
 	private final HashSet<BlobOutputStream> mOpenOutputStreams;
-	private final TableImplementation mTableImplementation;
+	private final HashTable mHashTable;
 	private final Cost mCost;
 
 
@@ -46,10 +45,10 @@ public final class TableInstance<T> implements Closeable
 			mDatabase = aDatabase;
 			mTable = aTable;
 
-			CompressionParam compression = mDatabase.getParameter(CompressionParam.class, CompressionParam.NO_COMPRESSION);
-			TableParam parameter = mDatabase.getParameter(TableParam.class, TableParam.DEFAULT);
+			CompressionParam compression = mDatabase.getCompressionParameter();
+			TableParam parameter = mDatabase.getTableParameter();
 
-			mTableImplementation = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost);
+			mHashTable = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost);
 		}
 		catch (IOException e)
 		{
@@ -79,7 +78,7 @@ public final class TableInstance<T> implements Closeable
 		{
 			RecordEntry entry = new RecordEntry(getKeys(aEntity));
 
-			if (mTableImplementation.get(entry))
+			if (mHashTable.get(entry))
 			{
 				unmarshalToObjectValues(entry, aEntity);
 
@@ -113,7 +112,7 @@ public final class TableInstance<T> implements Closeable
 	{
 		RecordEntry entry = new RecordEntry(getKeys(aEntity));
 
-		if (!mTableImplementation.get(entry))
+		if (!mHashTable.get(entry))
 		{
 			return null;
 		}
@@ -145,7 +144,7 @@ public final class TableInstance<T> implements Closeable
 		byte[] value = getNonKeys(aEntity);
 		byte type = 0;
 
-		if (key.length + value.length + 1 > mTableImplementation.getEntryMaximumLength() / 4)
+		if (key.length + value.length + 1 > mHashTable.getEntryMaximumLength() / 4)
 		{
 			type = FLAG_BLOB;
 
@@ -162,7 +161,7 @@ public final class TableInstance<T> implements Closeable
 
 		RecordEntry entry = new RecordEntry(key, value, type);
 
-		if (mTableImplementation.put(entry))
+		if (mHashTable.put(entry))
 		{
 			deleteIfBlob(entry);
 		}
@@ -201,7 +200,7 @@ public final class TableInstance<T> implements Closeable
 
 				RecordEntry entry = new RecordEntry(key, aHeader, FLAG_BLOB);
 
-				if (mTableImplementation.put(entry))
+				if (mHashTable.put(entry))
 				{
 					deleteIfBlob(entry);
 				}
@@ -238,7 +237,7 @@ public final class TableInstance<T> implements Closeable
 
 			RecordEntry entry = new RecordEntry(key, bos.finish(), FLAG_BLOB);
 
-			if (mTableImplementation.put(entry))
+			if (mHashTable.put(entry))
 			{
 				deleteIfBlob(entry);
 			}
@@ -256,7 +255,7 @@ public final class TableInstance<T> implements Closeable
 	{
 		RecordEntry entry = new RecordEntry(getKeys(aEntity));
 
-		if (mTableImplementation.remove(entry))
+		if (mHashTable.remove(entry))
 		{
 			deleteIfBlob(entry);
 
@@ -278,36 +277,26 @@ public final class TableInstance<T> implements Closeable
 
 	Iterator<RecordEntry> getLeafIterator()
 	{
-		return mTableImplementation.iterator();
+		return mHashTable.iterator();
 	}
 
 
 	public void clear()
 	{
-		mTableImplementation.clear();
+		mHashTable.clear();
 	}
 
 
-	/**
-	 * Clean-up resources only
-	 */
 	@Override
 	public void close()
 	{
-		try
-		{
-			mTableImplementation.close();
-		}
-		catch (IOException e)
-		{
-			throw new DatabaseException(e);
-		}
+		mHashTable.close();
 	}
 
 
 	boolean isModified()
 	{
-		return mTableImplementation.isChanged();
+		return mHashTable.isChanged();
 	}
 
 
@@ -323,7 +312,7 @@ public final class TableInstance<T> implements Closeable
 
 		try
 		{
-			if (!mTableImplementation.commit())
+			if (!mHashTable.commit())
 			{
 				return false;
 			}
@@ -333,7 +322,7 @@ public final class TableInstance<T> implements Closeable
 			throw new DatabaseIOException(e);
 		}
 
-		byte[] newPointer = mTableImplementation.marshalHeader();
+		byte[] newPointer = mHashTable.marshalHeader();
 
 		if (Arrays.equals(newPointer, mTable.getTableHeader()))
 		{
@@ -348,19 +337,19 @@ public final class TableInstance<T> implements Closeable
 
 	void rollback() throws IOException
 	{
-		mTableImplementation.rollback();
+		mHashTable.rollback();
 	}
 
 
 	int size()
 	{
-		return mTableImplementation.size();
+		return mHashTable.size();
 	}
 
 
 	String integrityCheck()
 	{
-		return mTableImplementation.integrityCheck();
+		return mHashTable.integrityCheck();
 	}
 
 
@@ -430,7 +419,7 @@ public final class TableInstance<T> implements Closeable
 
 	void scan(ScanResult aScanResult)
 	{
-		mTableImplementation.scan(aScanResult);
+		mHashTable.scan(aScanResult);
 	}
 
 
@@ -440,7 +429,7 @@ public final class TableInstance<T> implements Closeable
 		{
 			Stream<T> tmp = StreamSupport.stream(new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
 			{
-				EntityIterator entityIterator = new EntityIterator(TableInstance.this, mTableImplementation.iterator());
+				EntityIterator entityIterator = new EntityIterator(TableInstance.this, mHashTable.iterator());
 
 				@Override
 				public boolean tryAdvance(Consumer<? super T> aConsumer)
@@ -469,6 +458,6 @@ public final class TableInstance<T> implements Closeable
 
 	private synchronized BlockAccessor getBlockAccessor() throws IOException
 	{
-		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getParameter(CompressionParam.class, CompressionParam.NO_COMPRESSION), 0);
+		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter(), 0);
 	}
 }

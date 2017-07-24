@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
 
-public final class BlockSizeParam
+public final class BlockSizeParam implements OpenParam
 {
 	private int mValue;
 

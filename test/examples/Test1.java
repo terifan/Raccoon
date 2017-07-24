@@ -27,7 +27,7 @@ public class Test1
 		byte[] writeAll = new byte[10 * 1024 * 1024];
 		new Random().nextBytes(writeAll);
 
-		try (Database db = Database.open(blockDevice, OpenOption.CREATE_NEW, CompressionParam.NONE))
+		try (Database db = new Database(blockDevice, OpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION))
 		{
 			_BlobKey1K key = new _BlobKey1K("test");
 
@@ -36,7 +36,7 @@ public class Test1
 			db.commit();
 		}
 
-		try (Database db = Database.open(blockDevice, OpenOption.OPEN, CompressionParam.NONE))
+		try (Database db = new Database(blockDevice, OpenOption.OPEN, CompressionParam.NO_COMPRESSION))
 		{
 			_BlobKey1K key = new _BlobKey1K("test");
 

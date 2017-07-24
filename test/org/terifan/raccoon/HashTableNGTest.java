@@ -1,13 +1,8 @@
-package org.terifan.raccoon.hashtable;
+package org.terifan.raccoon;
 
-import org.terifan.raccoon.RecordEntry;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.terifan.raccoon.CompressionParam;
-import org.terifan.raccoon.Cost;
-import org.terifan.raccoon.TableParam;
-import org.terifan.raccoon.TransactionGroup;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import static resources.__TestUtils.*;

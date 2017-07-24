@@ -43,11 +43,12 @@ public final class Database implements AutoCloseable
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 	private TableInstance mSystemTable;
 	private boolean mModified;
-	private Object[] mProperties;
 	private Table mSystemTableMetadata;
 	private boolean mCloseDeviceOnCloseDatabase;
 	private Thread mShutdownHook;
 	private boolean mReadOnly;
+	private CompressionParam mCompressionParam;
+	private TableParam mTableParam;
 
 
 	private Database()
@@ -61,12 +62,19 @@ public final class Database implements AutoCloseable
 
 
 	/**
+	 * Create a new or open an existing database
 	 *
+	 * @param aFile
+	 *   the database file
+	 * @param aOpenOptions
+	 *   OpenOption enum constant describing the options for creating the database instance
 	 * @param aParameters
-	 * supports: AccessCredentials, DeviceLabel
+	 *   parameters for the database
 	 */
-	public static Database open(File aFile, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
+	public Database(File aFile, OpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
 	{
+		this();
+
 		FileBlockDevice fileBlockDevice = null;
 
 		try
@@ -96,7 +104,7 @@ public final class Database implements AutoCloseable
 
 			fileBlockDevice = new FileBlockDevice(aFile, blockSizeParam.getValue(), aOpenOptions == OpenOption.READ_ONLY);
 
-			return init(fileBlockDevice, newFile, true, aParameters, aOpenOptions);
+			init(fileBlockDevice, newFile, true, aOpenOptions, aParameters);
 		}
 		catch (Throwable e)
 		{
@@ -117,49 +125,58 @@ public final class Database implements AutoCloseable
 
 
 	/**
+	 * Create a new or open an existing database
 	 *
+	 * @param aBlockDevice
+	 *   a block device containing a database
+	 * @param aOpenOptions
+	 *   OpenOptions enum constant describing the options for creating the database instance
 	 * @param aParameters
-	 * supports: AccessCredentials, DeviceLabel, CompressionParam, TableParam
+	 *   parameters for the database
 	 */
-	public static Database open(IPhysicalBlockDevice aBlockDevice, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
+	public Database(IPhysicalBlockDevice aBlockDevice, OpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
 	{
+		this();
+
 		Assert.fail((aOpenOptions == OpenOption.READ_ONLY || aOpenOptions == OpenOption.OPEN) && aBlockDevice.length() == 0, "Block device is empty.");
 
 		boolean create = aBlockDevice.length() == 0 || aOpenOptions == OpenOption.CREATE_NEW;
 
-		return init(aBlockDevice, create, false, aParameters, aOpenOptions);
+		init(aBlockDevice, create, false, aOpenOptions, aParameters);
 	}
 
 
 	/**
+	 * Create a new or open an existing database
 	 *
+	 * @param aBlockDevice
+	 *   a block device containing a database
+	 * @param aOpenOptions
+	 *   OpenOptions enum constant describing the options for creating the database instance
 	 * @param aParameters
-	 * supports: AccessCredentials, DeviceLabel, CompressionParam, TableParam
+	 *   parameters for the database
 	 */
-	public static Database open(IManagedBlockDevice aBlockDevice, OpenOption aOpenOptions, Object... aParameters) throws IOException, UnsupportedVersionException
+	public Database(IManagedBlockDevice aBlockDevice, OpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
 	{
+		this();
+
 		Assert.fail((aOpenOptions == OpenOption.READ_ONLY || aOpenOptions == OpenOption.OPEN) && aBlockDevice.length() == 0, "Block device is empty.");
 
 		boolean create = aBlockDevice.length() == 0 || aOpenOptions == OpenOption.CREATE_NEW;
 
-		return init(aBlockDevice, create, false, aParameters, aOpenOptions);
+		init(aBlockDevice, create, false, aOpenOptions, aParameters);
 	}
 
 
-	private static Database init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, Object[] aParameters, OpenOption aOpenOption) throws IOException
+	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, OpenOption aOpenOption, OpenParam[] aOpenParams) throws IOException
 	{
-		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aParameters, null);
+		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aOpenParams, null);
+		DeviceHeader tenantHeader = getParameter(DeviceHeader.class, aOpenParams, null);
+
+		mCompressionParam = getParameter(CompressionParam.class, aOpenParams, CompressionParam.NO_COMPRESSION);
+		mTableParam = getParameter(TableParam.class, aOpenParams, TableParam.DEFAULT);
 
 		IManagedBlockDevice device;
-		DeviceHeader tenantHeader = null;
-
-		for (Object o : aParameters)
-		{
-			if (o instanceof DeviceHeader)
-			{
-				tenantHeader = (DeviceHeader)o;
-			}
-		}
 
 		if (aBlockDevice instanceof IManagedBlockDevice)
 		{
@@ -200,8 +217,6 @@ public final class Database implements AutoCloseable
 			device = new ManagedBlockDevice(secureDevice);
 		}
 
-		Database db;
-
 		if (aCreate)
 		{
 			if (tenantHeader != null)
@@ -209,11 +224,11 @@ public final class Database implements AutoCloseable
 				device.setTenantHeader(tenantHeader);
 			}
 
-			db = create(device, aParameters);
+			create(device, aOpenParams);
 		}
 		else
 		{
-			db = open(device, aParameters, aOpenOption);
+			open(device, aOpenOption == OpenOption.READ_ONLY, aOpenParams);
 
 			if (tenantHeader != null && !tenantHeader.getLabel().equals(device.getTenantHeader().getLabel()))
 			{
@@ -221,9 +236,9 @@ public final class Database implements AutoCloseable
 			}
 		}
 
-		db.mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
+		mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
 
-		db.mShutdownHook = new Thread()
+		mShutdownHook = new Thread()
 		{
 			@Override
 			public void run()
@@ -233,7 +248,7 @@ public final class Database implements AutoCloseable
 
 				try
 				{
-					db.close();
+					close();
 				}
 				catch (IOException e)
 				{
@@ -244,13 +259,11 @@ public final class Database implements AutoCloseable
 			}
 		};
 
-		Runtime.getRuntime().addShutdownHook(db.mShutdownHook);
-
-		return db;
+		Runtime.getRuntime().addShutdownHook(mShutdownHook);
 	}
 
 
-	private static Database create(IManagedBlockDevice aBlockDevice, Object[] aParameters) throws IOException
+	private void create(IManagedBlockDevice aBlockDevice, OpenParam[] aParameters) throws IOException
 	{
 		Log.i("create database");
 		Log.inc();
@@ -262,26 +275,19 @@ public final class Database implements AutoCloseable
 			aBlockDevice.commit();
 		}
 
-		Database db = new Database();
+		mBlockDevice = aBlockDevice;
+		mSystemTableMetadata = new Table(this, Table.class, null);
+		mSystemTable = new TableInstance(this, mSystemTableMetadata, null);
+		mModified = true;
 
-		db.mProperties = aParameters;
-		db.mBlockDevice = aBlockDevice;
-		db.mSystemTableMetadata = new Table(db, Table.class, null);
-		db.mSystemTable = new TableInstance(db, db.mSystemTableMetadata, null);
-		db.mModified = true;
-
-		db.commit();
+		commit();
 
 		Log.dec();
-
-		return db;
 	}
 
 
-	private static Database open(IManagedBlockDevice aBlockDevice, Object[] aParameters, OpenOption aOpenOptions) throws IOException, UnsupportedVersionException
+	private void open(IManagedBlockDevice aBlockDevice, boolean aReadOnly, OpenParam[] aParameters) throws IOException, UnsupportedVersionException
 	{
-		Database db = new Database();
-
 		Log.i("open database");
 		Log.inc();
 
@@ -304,15 +310,12 @@ public final class Database implements AutoCloseable
 			throw new UnsupportedVersionException("The application pointer is too short: " + applicationPointer.length);
 		}
 
-		db.mProperties = aParameters;
-		db.mBlockDevice = aBlockDevice;
-		db.mSystemTableMetadata = new Table(db, Table.class, null);
-		db.mSystemTable = new TableInstance(db, db.mSystemTableMetadata, applicationPointer);
-		db.mReadOnly = aOpenOptions == OpenOption.READ_ONLY;
+		mBlockDevice = aBlockDevice;
+		mSystemTableMetadata = new Table(this, Table.class, null);
+		mSystemTable = new TableInstance(this, mSystemTableMetadata, applicationPointer);
+		mReadOnly = aReadOnly;
 
 		Log.dec();
-
-		return db;
 	}
 
 
@@ -1045,26 +1048,20 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private static <E> E getParameter(Class aType, Object[] aParameters, E aDefaultValue)
+	private static <T extends OpenParam> T getParameter(Class<T> aType, OpenParam[] aParameters, T aDefaultValue)
 	{
 		if (aParameters != null)
 		{
-			for (Object param : aParameters)
+			for (OpenParam param : aParameters)
 			{
 				if (param != null && aType.isAssignableFrom(param.getClass()))
 				{
-					return (E)param;
+					return (T)param;
 				}
 			}
 		}
 
 		return aDefaultValue;
-	}
-
-
-	<E> E getParameter(Class<E> aType, E aDefaultParam)
-	{
-		return getParameter(aType, mProperties, aDefaultParam);
 	}
 
 
@@ -1315,5 +1312,17 @@ public final class Database implements AutoCloseable
 	Lock getReadLock()
 	{
 		return mReadLock;
+	}
+
+
+	CompressionParam getCompressionParameter()
+	{
+		return mCompressionParam;
+	}
+
+
+	TableParam getTableParameter()
+	{
+		return mTableParam;
 	}
 }

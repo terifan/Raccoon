@@ -1,21 +1,11 @@
-package org.terifan.raccoon.hashtable;
+package org.terifan.raccoon;
 
-import org.terifan.raccoon.Node;
-import org.terifan.raccoon.TableImplementation;
-import org.terifan.raccoon.RecordEntry;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
-import org.terifan.raccoon.CompressionParam;
-import org.terifan.raccoon.DatabaseException;
-import org.terifan.raccoon.ScanResult;
-import org.terifan.raccoon.TableParam;
-import org.terifan.raccoon.TransactionGroup;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
-import org.terifan.raccoon.BlockType;
-import org.terifan.raccoon.Cost;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -23,15 +13,15 @@ import org.terifan.raccoon.util.Result;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-public final class HashTable extends TableImplementation
+final class HashTable implements AutoCloseable, Iterable<RecordEntry>
 {
 	private final Cost mCost;
 	private final String mTableName;
 	private final TransactionGroup mTransactionId;
 	private BlockAccessor mBlockAccessor;
 	private BlockPointer mRootBlockPointer;
-	private LeafNode mRootMap;
-	private IndexNode mRootNode;
+	private HashTableLeaf mRootMap;
+	private HashTableNode mRootNode;
 	private int mNodeSize;
 	private int mLeafSize;
 	private int mPointersPerNode;
@@ -64,7 +54,7 @@ public final class HashTable extends TableImplementation
 			mHashSeed = new SecureRandom().nextInt();
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
-			mRootMap = new LeafNode(mLeafSize);
+			mRootMap = new HashTableLeaf(mLeafSize);
 			mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode);
 			mWasEmptyInstance = true;
 			mChanged = true;
@@ -85,7 +75,6 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	@Override
 	public byte[] marshalHeader()
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(BlockPointer.SIZE + 4 + 4 + 4 + 3);
@@ -132,7 +121,6 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	@Override
 	public boolean get(RecordEntry aEntry)
 	{
 		checkOpen();
@@ -146,7 +134,6 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	@Override
 	public boolean put(RecordEntry aEntry)
 	{
 		checkOpen();
@@ -189,7 +176,6 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	@Override
 	public boolean remove(RecordEntry aEntry)
 	{
 		checkOpen();
@@ -218,18 +204,17 @@ public final class HashTable extends TableImplementation
 
 		if (mRootNode != null)
 		{
-			return new NodeIterator(this, mRootBlockPointer);
+			return new HashTableNodeIterator(this, mRootBlockPointer);
 		}
 		if (!mRootMap.isEmpty())
 		{
-			return new NodeIterator(this, mRootMap);
+			return new HashTableNodeIterator(this, mRootMap);
 		}
 
 		return new ArrayList<RecordEntry>().iterator();
 	}
 
 
-	@Override
 	public ArrayList<RecordEntry> list()
 	{
 		checkOpen();
@@ -245,14 +230,12 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	@Override
 	public boolean isChanged()
 	{
 		return mChanged;
 	}
 
 
-	@Override
 	public boolean commit() throws IOException
 	{
 		checkOpen();
@@ -305,7 +288,6 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	@Override
 	public void rollback() throws IOException
 	{
 		checkOpen();
@@ -326,7 +308,7 @@ public final class HashTable extends TableImplementation
 			Log.d("rollback empty");
 
 			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
-			mRootMap = new LeafNode(mLeafSize);
+			mRootMap = new HashTableLeaf(mLeafSize);
 		}
 		else
 		{
@@ -337,7 +319,6 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	@Override
 	public void clear()
 	{
 		checkOpen();
@@ -364,7 +345,7 @@ public final class HashTable extends TableImplementation
 			});
 
 			mRootNode = null;
-			mRootMap = new LeafNode(mLeafSize);
+			mRootMap = new HashTableLeaf(mLeafSize);
 		}
 
 		freeBlock(mRootBlockPointer);
@@ -389,7 +370,6 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	@Override
 	public int size()
 	{
 		checkOpen();
@@ -410,7 +390,7 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	private boolean getValue(byte[] aKey, int aLevel, RecordEntry aEntry, IndexNode aNode)
+	private boolean getValue(byte[] aKey, int aLevel, RecordEntry aEntry, HashTableNode aNode)
 	{
 		Log.i("get %s value", mTableName);
 
@@ -424,7 +404,7 @@ public final class HashTable extends TableImplementation
 				return getValue(aKey, aLevel + 1, aEntry, readNode(blockPointer));
 			case LEAF:
 				mCost.mValueGet++;
-				LeafNode leaf = readLeaf(blockPointer);
+				HashTableLeaf leaf = readLeaf(blockPointer);
 				boolean result = leaf.get(aEntry);
 				leaf.gc();
 				return result;
@@ -437,7 +417,7 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	private byte[] putValue(RecordEntry aEntry, byte[] aKey, int aLevel, IndexNode aNode)
+	private byte[] putValue(RecordEntry aEntry, byte[] aKey, int aLevel, HashTableNode aNode)
 	{
 		Log.d("put %s value", mTableName);
 		Log.inc();
@@ -451,7 +431,7 @@ public final class HashTable extends TableImplementation
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				IndexNode node = readNode(blockPointer);
+				HashTableNode node = readNode(blockPointer);
 				oldValue = putValue(aEntry, aKey, aLevel + 1, node);
 				freeBlock(blockPointer);
 				aNode.setPointer(index, writeBlock(node, blockPointer.getRange()));
@@ -474,11 +454,11 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, RecordEntry aEntry, int aLevel, IndexNode aNode, byte[] aKey)
+	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, RecordEntry aEntry, int aLevel, HashTableNode aNode, byte[] aKey)
 	{
 		mCost.mTreeTraversal++;
 
-		LeafNode map = readLeaf(aBlockPointer);
+		HashTableLeaf map = readLeaf(aBlockPointer);
 
 		byte[] oldValue;
 
@@ -498,7 +478,7 @@ public final class HashTable extends TableImplementation
 		}
 		else
 		{
-			IndexNode node = splitLeaf(aBlockPointer, map, aLevel + 1);
+			HashTableNode node = splitLeaf(aBlockPointer, map, aLevel + 1);
 
 			oldValue = putValue(aEntry, aKey, aLevel + 1, node); // recursive put
 
@@ -511,14 +491,14 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	private byte[] upgradeHoleToLeaf(RecordEntry aEntry, IndexNode aNode, BlockPointer aBlockPointer, int aIndex)
+	private byte[] upgradeHoleToLeaf(RecordEntry aEntry, HashTableNode aNode, BlockPointer aBlockPointer, int aIndex)
 	{
 		Log.d("upgrade hole to leaf");
 		Log.inc();
 
 		mCost.mTreeTraversal++;
 
-		LeafNode node = new LeafNode(mLeafSize);
+		HashTableLeaf node = new HashTableLeaf(mLeafSize);
 
 		if (!node.put(aEntry))
 		{
@@ -538,7 +518,7 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	private IndexNode splitLeaf(BlockPointer aBlockPointer, LeafNode aLeafNode, int aLevel)
+	private HashTableNode splitLeaf(BlockPointer aBlockPointer, HashTableLeaf aLeafNode, int aLevel)
 	{
 		Log.inc();
 		Log.d("split leaf");
@@ -549,8 +529,8 @@ public final class HashTable extends TableImplementation
 
 		freeBlock(aBlockPointer);
 
-		LeafNode lowLeaf = new LeafNode(mLeafSize);
-		LeafNode highLeaf = new LeafNode(mLeafSize);
+		HashTableLeaf lowLeaf = new HashTableLeaf(mLeafSize);
+		HashTableLeaf highLeaf = new HashTableLeaf(mLeafSize);
 		int halfRange = mPointersPerNode / 2;
 
 		divideLeafEntries(aLeafNode, aLevel, halfRange, lowLeaf, highLeaf);
@@ -559,7 +539,7 @@ public final class HashTable extends TableImplementation
 		BlockPointer lowIndex = writeIfNotEmpty(lowLeaf, halfRange);
 		BlockPointer highIndex = writeIfNotEmpty(highLeaf, halfRange);
 
-		IndexNode node = new IndexNode(new byte[mNodeSize]);
+		HashTableNode node = new HashTableNode(new byte[mNodeSize]);
 		node.setPointer(0, lowIndex);
 		node.setPointer(halfRange, highIndex);
 
@@ -573,7 +553,7 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	private boolean splitLeaf(LeafNode aMap, BlockPointer aBlockPointer, int aIndex, int aLevel, IndexNode aNode)
+	private boolean splitLeaf(HashTableLeaf aMap, BlockPointer aBlockPointer, int aIndex, int aLevel, HashTableNode aNode)
 	{
 		if (aBlockPointer.getRange() == 1)
 		{
@@ -591,8 +571,8 @@ public final class HashTable extends TableImplementation
 
 		freeBlock(aBlockPointer);
 
-		LeafNode lowLeaf = new LeafNode(mLeafSize);
-		LeafNode highLeaf = new LeafNode(mLeafSize);
+		HashTableLeaf lowLeaf = new HashTableLeaf(mLeafSize);
+		HashTableLeaf highLeaf = new HashTableLeaf(mLeafSize);
 		int halfRange = aBlockPointer.getRange() / 2;
 
 		divideLeafEntries(aMap, aLevel, aIndex + halfRange, lowLeaf, highLeaf);
@@ -613,7 +593,7 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	private void divideLeafEntries(LeafNode aMap, int aLevel, int aHalfRange, LeafNode aLowLeaf, LeafNode aHighLeaf)
+	private void divideLeafEntries(HashTableLeaf aMap, int aLevel, int aHalfRange, HashTableLeaf aLowLeaf, HashTableLeaf aHighLeaf)
 	{
 		for (RecordEntry entry : aMap)
 		{
@@ -629,7 +609,7 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	private BlockPointer writeIfNotEmpty(LeafNode aLeaf, int aRange)
+	private BlockPointer writeIfNotEmpty(HashTableLeaf aLeaf, int aRange)
 	{
 		if (aLeaf.isEmpty())
 		{
@@ -640,7 +620,7 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	private boolean removeValue(byte[] aKey, int aLevel, RecordEntry aEntry, IndexNode aNode)
+	private boolean removeValue(byte[] aKey, int aLevel, RecordEntry aEntry, HashTableNode aNode)
 	{
 		mCost.mTreeTraversal++;
 
@@ -651,7 +631,7 @@ public final class HashTable extends TableImplementation
 		{
 			case INDEX:
 			{
-				IndexNode node = readNode(blockPointer);
+				HashTableNode node = readNode(blockPointer);
 				if (removeValue(aKey, aLevel + 1, aEntry, node))
 				{
 					freeBlock(blockPointer);
@@ -663,7 +643,7 @@ public final class HashTable extends TableImplementation
 			}
 			case LEAF:
 			{
-				LeafNode node = readLeaf(blockPointer);
+				HashTableLeaf node = readLeaf(blockPointer);
 				boolean found = node.remove(aEntry);
 
 				if (found)
@@ -687,7 +667,7 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	LeafNode readLeaf(BlockPointer aBlockPointer)
+	HashTableLeaf readLeaf(BlockPointer aBlockPointer)
 	{
 		assert aBlockPointer.getBlockType() == BlockType.LEAF;
 
@@ -698,11 +678,11 @@ public final class HashTable extends TableImplementation
 
 		mCost.mReadBlockLeaf++;
 
-		return new LeafNode(readBlock(aBlockPointer));
+		return new HashTableLeaf(readBlock(aBlockPointer));
 	}
 
 
-	IndexNode readNode(BlockPointer aBlockPointer)
+	HashTableNode readNode(BlockPointer aBlockPointer)
 	{
 		assert aBlockPointer.getBlockType() == BlockType.INDEX;
 
@@ -713,7 +693,7 @@ public final class HashTable extends TableImplementation
 
 		mCost.mReadBlockNode++;
 
-		return new IndexNode(readBlock(aBlockPointer));
+		return new HashTableNode(readBlock(aBlockPointer));
 	}
 
 
@@ -723,7 +703,6 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	@Override
 	public String integrityCheck()
 	{
 		Log.i("integrity check");
@@ -737,14 +716,13 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	@Override
 	public int getEntryMaximumLength()
 	{
-		return mLeafSize - LeafNode.OVERHEAD;
+		return mLeafSize - HashTableLeaf.OVERHEAD;
 	}
 
 
-	private void visit(Visitor aVisitor)
+	private void visit(HashTableVisitor aVisitor)
 	{
 		if (mRootNode != null)
 		{
@@ -755,9 +733,9 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	private void visitNode(Visitor aVisitor, BlockPointer aBlockPointer)
+	private void visitNode(HashTableVisitor aVisitor, BlockPointer aBlockPointer)
 	{
-		IndexNode node = readNode(aBlockPointer);
+		HashTableNode node = readNode(aBlockPointer);
 
 		for (int i = 0; i < mPointersPerNode; i++)
 		{
@@ -813,7 +791,6 @@ public final class HashTable extends TableImplementation
 	}
 
 
-	@Override
 	public void scan(ScanResult aScanResult)
 	{
 		aScanResult.tables++;
@@ -832,7 +809,7 @@ public final class HashTable extends TableImplementation
 				aScanResult.enterNode(aBlockPointer);
 				aScanResult.indexBlocks++;
 
-				IndexNode indexNode = new IndexNode(buffer);
+				HashTableNode indexNode = new HashTableNode(buffer);
 
 				for (int i = 0; i < indexNode.getPointerCount(); i++)
 				{
@@ -853,7 +830,7 @@ public final class HashTable extends TableImplementation
 				aScanResult.exitNode();
 				break;
 			case LEAF:
-				LeafNode leafNode = new LeafNode(buffer);
+				HashTableLeaf leafNode = new HashTableLeaf(buffer);
 
 				aScanResult.enterLeaf(aBlockPointer, buffer);
 

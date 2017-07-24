@@ -51,7 +51,7 @@ public class DatabaseBuilder
 
 	private Database build(OpenOption aOpenOption) throws IOException
 	{
-		ArrayList<Object> params = new ArrayList<>();
+		ArrayList<OpenParam> params = new ArrayList<>();
 
 		params.add(new CompressionParam(mCompressionOfNodes, mCompressionOfLeafs, mCompressionOfBlobs));
 		params.add(new TableParam(mPagesPerNode, mPagesPerLeaf, mBlockReadCacheSize));
@@ -81,7 +81,7 @@ public class DatabaseBuilder
 
 		IManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(mBlockDevice, Constants.DEVICE_HEADER, mDeviceHeader);
 
-		return Database.open(managedBlockDevice, aOpenOption, params.toArray());
+		return new Database(managedBlockDevice, aOpenOption, params.toArray(new OpenParam[params.size()]));
 	}
 
 

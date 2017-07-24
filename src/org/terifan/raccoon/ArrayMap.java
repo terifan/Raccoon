@@ -5,8 +5,6 @@ import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import org.terifan.raccoon.PerformanceCounters;
-import static org.terifan.raccoon.PerformanceCounters.*;
 
 
 /**
@@ -76,8 +74,6 @@ public class ArrayMap implements Iterable<RecordEntry>
 		mBuffer = new byte[aCapacity];
 		mFreeSpaceOffset = HEADER_SIZE;
 		mPointerListOffset = mCapacity;
-
-		assert PerformanceCounters.increment(LEAF_NODE_CREATION);
 	}
 
 
@@ -126,8 +122,6 @@ public class ArrayMap implements Iterable<RecordEntry>
 		{
 			throw new IllegalArgumentException("Entry count exceeds maximum possible entries: " + mEntryCount + ", allowed: " + limit);
 		}
-
-		assert PerformanceCounters.increment(LEAF_NODE_CREATION);
 
 		assert integrityCheck() == null : integrityCheck();
 	}
@@ -689,8 +683,8 @@ public class ArrayMap implements Iterable<RecordEntry>
 
 		return new ArrayMap(buffer);
 	}
-	
-	
+
+
 	public void gc()
 	{
 		mBuffer = null;

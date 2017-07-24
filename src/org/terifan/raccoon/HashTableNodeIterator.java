@@ -1,15 +1,12 @@
-package org.terifan.raccoon.hashtable;
+package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayDeque;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import org.terifan.raccoon.ArrayMap;
-import org.terifan.raccoon.RecordEntry;
-import org.terifan.raccoon.BlockType;
 
 
-final class NodeIterator implements Iterator<RecordEntry>
+final class HashTableNodeIterator implements Iterator<RecordEntry>
 {
 	private long mModCount;
 	private ArrayDeque<BlockPointer> mNodes;
@@ -19,7 +16,7 @@ final class NodeIterator implements Iterator<RecordEntry>
 	private boolean mHasEntry;
 
 
-	NodeIterator(HashTable aHashTable, BlockPointer aBlockPointer)
+	HashTableNodeIterator(HashTable aHashTable, BlockPointer aBlockPointer)
 	{
 		mNodes = new ArrayDeque<>();
 
@@ -30,7 +27,7 @@ final class NodeIterator implements Iterator<RecordEntry>
 	}
 
 
-	NodeIterator(HashTable aHashTable, ArrayMap aDataPage)
+	HashTableNodeIterator(HashTable aHashTable, ArrayMap aDataPage)
 	{
 		mNodes = new ArrayDeque<>();
 
@@ -71,7 +68,7 @@ final class NodeIterator implements Iterator<RecordEntry>
 
 		if (pointer.getBlockType() == BlockType.LEAF)
 		{
-			LeafNode leaf = mHashTable.readLeaf(pointer);
+			HashTableLeaf leaf = mHashTable.readLeaf(pointer);
 
 			mMap = leaf.iterator();
 
@@ -83,7 +80,7 @@ final class NodeIterator implements Iterator<RecordEntry>
 			return hasNext();
 		}
 
-		IndexNode node = mHashTable.readNode(pointer);
+		HashTableNode node = mHashTable.readNode(pointer);
 
 		for (int i = 0; i < node.getPointerCount(); i++)
 		{
@@ -94,7 +91,7 @@ final class NodeIterator implements Iterator<RecordEntry>
 				mNodes.addLast(next);
 			}
 		}
-		
+
 		node.gc();
 
 		return hasNext();

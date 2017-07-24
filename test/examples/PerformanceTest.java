@@ -19,7 +19,7 @@ public class PerformanceTest
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
 
-		try (Database db = Database.open(blockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_SPEED))
+		try (Database db = new Database(blockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_SPEED))
 		{
 			for (int i = 0; i < 1000000;)
 			{

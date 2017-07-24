@@ -1,12 +1,10 @@
-package org.terifan.raccoon.hashtable;
+package org.terifan.raccoon;
 
-import org.terifan.raccoon.Node;
 import org.terifan.raccoon.storage.BlockPointer;
-import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-final class IndexNode implements Node
+final class HashTableNode implements Node
 {
 	private final static BlockPointer EMPTY_POINTER = new BlockPointer();
 
@@ -15,7 +13,7 @@ final class IndexNode implements Node
 	private boolean mGCEnabled;
 
 
-	public IndexNode(byte[] aBuffer)
+	public HashTableNode(byte[] aBuffer)
 	{
 		mPointerCount = aBuffer.length / BlockPointer.SIZE;
 		mBuffer = aBuffer;
@@ -180,7 +178,7 @@ final class IndexNode implements Node
 	}
 
 
-	IndexNode setGCEnabled(boolean aGCEnabled)
+	HashTableNode setGCEnabled(boolean aGCEnabled)
 	{
 		mGCEnabled = aGCEnabled;
 		return this;

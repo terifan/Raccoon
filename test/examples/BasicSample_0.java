@@ -16,13 +16,13 @@ public class BasicSample_0
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		try (Database db = Database.open(blockDevice, OpenOption.CREATE_NEW, new AccessCredentials("password")))
+		try (Database db = new Database(blockDevice, OpenOption.CREATE_NEW, new AccessCredentials("password")))
 		{
 			db.save(new MyEntity(1, "apple"));
 			db.commit();
 		}
 
-		try (Database db = Database.open(blockDevice, OpenOption.OPEN, new AccessCredentials("password")))
+		try (Database db = new Database(blockDevice, OpenOption.OPEN, new AccessCredentials("password")))
 		{
 			db.list(MyEntity.class).forEach(System.out::println);
 		}

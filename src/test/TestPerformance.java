@@ -38,7 +38,7 @@ public class TestPerformance
 				}
 			}
 
-//			try (Database db = Database.open(new File("d:\\test.db"), OpenOption.OPEN, new AccessCredentials("password")))
+//			try (Database db = new Database(new File("d:\\test.db"), OpenOption.OPEN, new AccessCredentials("password")))
 //			{
 //				db.list(MyEntity.class).forEach(System.out::println);
 //			}

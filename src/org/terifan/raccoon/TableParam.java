@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
 
-public final class TableParam
+public final class TableParam implements OpenParam
 {
 	public final static int DEFAULT_PAGES_PER_NODE = 2;
 	public final static int DEFAULT_PAGES_PER_LEAF = 4;
@@ -23,7 +23,7 @@ public final class TableParam
 		{
 			throw new IllegalArgumentException("Illegal aPagesPerLeaf");
 		}
-		
+
 		mPagesPerNode = aPagesPerNode;
 		mPagesPerLeaf = aPagesPerLeaf;
 		mBlockReadCacheSize = aBlockReadCacheSize;

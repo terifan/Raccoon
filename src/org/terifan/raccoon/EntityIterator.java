@@ -10,13 +10,13 @@ import org.terifan.raccoon.util.Log;
 final class EntityIterator<T> implements Iterator<T>
 {
 	private final Iterator<RecordEntry> mIterator;
-	private final TableInstance mTable;
+	private final TableInstance mTableInstance;
 
 
 	EntityIterator(TableInstance aTable, Iterator<RecordEntry> aIterator)
 	{
 		mIterator = aIterator;
-		mTable = aTable;
+		mTableInstance = aTable;
 	}
 
 
@@ -37,12 +37,12 @@ final class EntityIterator<T> implements Iterator<T>
 
 		RecordEntry entry = mIterator.next();
 
-		mTable.unmarshalToObjectKeys(entry, outputEntity);
-		mTable.unmarshalToObjectValues(entry, outputEntity);
+		mTableInstance.unmarshalToObjectKeys(entry, outputEntity);
+		mTableInstance.unmarshalToObjectValues(entry, outputEntity);
 
 		initializeNewEntity(outputEntity);
 
-		mTable.getCost().mUnmarshalEntity++;
+		mTableInstance.getCost().mUnmarshalEntity++;
 
 		Log.dec();
 
@@ -57,9 +57,9 @@ final class EntityIterator<T> implements Iterator<T>
 
 		try
 		{
-			Class type = mTable.getTable().getType();
+			Class type = mTableInstance.getTable().getType();
 
-			Supplier supplier = mTable.getDatabase().getSupplier(type);
+			Supplier supplier = mTableInstance.getDatabase().getSupplier(type);
 
 			if (supplier != null)
 			{
@@ -86,15 +86,15 @@ final class EntityIterator<T> implements Iterator<T>
 
 	private void initializeNewEntity(T aEntity)
 	{
-		Class type = mTable.getTable().getType();
+		Class type = mTableInstance.getTable().getType();
 
 		if (type == Table.class)
 		{
-			((Table)aEntity).initialize(mTable.getDatabase());
+			((Table)aEntity).initialize(mTableInstance.getDatabase());
 		}
 		else
 		{
-			Initializer initializer = mTable.getDatabase().getInitializer(type);
+			Initializer initializer = mTableInstance.getDatabase().getInitializer(type);
 
 			if (initializer != null)
 			{

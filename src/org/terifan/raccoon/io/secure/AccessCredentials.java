@@ -1,10 +1,11 @@
 package org.terifan.raccoon.io.secure;
 
+import org.terifan.raccoon.OpenParam;
 import org.terifan.security.cryptography.SCrypt;
 import org.terifan.security.messagedigest.HMAC;
 
 
-public final class AccessCredentials
+public final class AccessCredentials implements OpenParam
 {
 	public final static EncryptionFunction DEFAULT_ENCRYPTION = EncryptionFunction.AES;
 	public final static CipherModeFunction DEFAULT_CIPHER_MODE = CipherModeFunction.XTS;

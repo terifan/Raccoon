@@ -1,10 +1,13 @@
 package test;
 
+import java.io.File;
 import org.terifan.raccoon.Database;
+import org.terifan.raccoon.DatabaseBuilder;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.OpenOption;
+import org.terifan.raccoon.io.managed.ManagedBlockDevice;
+import org.terifan.raccoon.io.physical.FileBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
-import org.terifan.raccoon.io.secure.AccessCredentials;
 
 
 public class Test
@@ -15,13 +18,13 @@ public class Test
 		{
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-			try (Database db = Database.open(blockDevice, OpenOption.CREATE_NEW, new AccessCredentials("password")))
+			try (Database db = new Database(blockDevice, OpenOption.CREATE_NEW))
 			{
 				db.save(new MyEntity(1, "apple"));
 				db.commit();
 			}
 
-			try (Database db = Database.open(blockDevice, OpenOption.OPEN, new AccessCredentials("password")))
+			try (Database db = new Database(blockDevice, OpenOption.OPEN))
 			{
 				db.list(MyEntity.class).forEach(System.out::println);
 			}

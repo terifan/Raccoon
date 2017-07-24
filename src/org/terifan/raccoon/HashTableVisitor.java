@@ -1,9 +1,9 @@
-package org.terifan.raccoon.hashtable;
+package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
 
 
-interface Visitor
+interface HashTableVisitor
 {
 	void visit(int aPointerIndex, BlockPointer aBlockPointer);
 }

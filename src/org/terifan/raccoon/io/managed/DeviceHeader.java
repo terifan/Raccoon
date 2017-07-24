@@ -2,10 +2,11 @@ package org.terifan.raccoon.io.managed;
 
 import java.io.UnsupportedEncodingException;
 import java.util.UUID;
+import org.terifan.raccoon.OpenParam;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-public class DeviceHeader
+public class DeviceHeader implements OpenParam
 {
 	private byte[] mLabel;
 	private int mMajorVersion;

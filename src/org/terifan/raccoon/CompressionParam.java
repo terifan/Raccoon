@@ -3,7 +3,7 @@ package org.terifan.raccoon;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-public final class CompressionParam
+public final class CompressionParam implements OpenParam
 {
 	public final static int NONE = 0;
 	public final static int ZLE = 1;

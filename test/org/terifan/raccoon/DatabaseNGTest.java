@@ -44,13 +44,13 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Fruit1K("apple", 123.0));
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			_Fruit1K apple = new _Fruit1K("apple");
 
@@ -66,14 +66,14 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Fruit2K("red", "apple", 123));
 			database.save(new _Fruit2K("green", "apple", 456));
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			_Fruit2K redApple = new _Fruit2K("red", "apple");
 			assertTrue(database.tryGet(redApple));
@@ -93,7 +93,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Fruit1K("apple", 123));
 			database.commit();
@@ -102,7 +102,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			assertEquals(database.size(_Fruit1K.class), 1);
 			assertEquals((int)database.get(new _Fruit1K("apple")).calories, 456);
@@ -115,7 +115,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Fruit1K("apple"));
 			database.save(new _Fruit1K("banana"));
@@ -126,7 +126,7 @@ public class DatabaseNGTest
 			assertEquals(database.size(_Fruit1K.class), 3);
 		}
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			assertEquals(database.list(_Fruit1K.class).size(), 0);
 			assertEquals(database.size(_Fruit1K.class), 0);
@@ -139,7 +139,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			for (int i = 0; i < 10000; i++)
 			{
@@ -149,7 +149,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			for (int i = 0; i < 10000; i++)
 			{
@@ -174,7 +174,7 @@ public class DatabaseNGTest
 
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			for (int i = 0; i < 10; i++)
 			{
@@ -185,7 +185,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			for (_Fruit2K entry : list)
 			{
@@ -207,7 +207,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			try (__FixedThreadExecutor executor = new __FixedThreadExecutor(1f))
 			{
@@ -231,7 +231,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			try (__FixedThreadExecutor executor = new __FixedThreadExecutor(1f))
 			{
@@ -259,7 +259,7 @@ public class DatabaseNGTest
 
 		String[] numberNames = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			for (int i = 0; i < numberNames.length; i++)
 			{
@@ -268,7 +268,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			for (int i = 0; i < numberNames.length; i++)
 			{
@@ -289,7 +289,7 @@ public class DatabaseNGTest
 
 		String[] numberNames = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			for (int i = 0; i < numberNames.length; i++)
 			{
@@ -310,7 +310,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			for (int j = 0; j < 3; j++)
 			{
@@ -331,7 +331,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			_Number1K1DS a = new _Number1K1DS("a", 1, 9);
 			_Number1K1DS b = new _Number1K1DS("a", 2, 9);
@@ -353,7 +353,7 @@ public class DatabaseNGTest
 
 		String[] numberNames = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			for (int i = 0; i < numberNames.length; i++)
 			{
@@ -362,7 +362,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			_Number1K1D d = new _Number1K1D();
 			d._odd = true;
@@ -380,7 +380,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Number1K1D("a", 1));
 			database.save(new _Number1K1D("b", 2));
@@ -388,7 +388,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			assertEquals(database.getTable(new _Number1K1D(true)).size(), 2);
 			assertEquals(database.getTable(new _Number1K1D(false)).size(), 1);
@@ -402,13 +402,13 @@ public class DatabaseNGTest
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 		AccessCredentials accessCredentials = new AccessCredentials("password").setIterationCount(1);
 
-		try (Database db = Database.open(device, OpenOption.CREATE_NEW, accessCredentials))
+		try (Database db = new Database(device, OpenOption.CREATE_NEW, accessCredentials))
 		{
 			db.save(new _Fruit2K("red", "apple", 3467));
 			db.commit();
 		}
 
-		try (Database db = Database.open(device, OpenOption.OPEN, accessCredentials))
+		try (Database db = new Database(device, OpenOption.OPEN, accessCredentials))
 		{
 			_Fruit2K fruit = new _Fruit2K("red", "apple");
 			assertTrue(db.tryGet(fruit));
@@ -423,13 +423,13 @@ public class DatabaseNGTest
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 		byte[] content = createRandomBuffer(0, 10*1024*1024);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _KeyValue1K("my blob", content));
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			_KeyValue1K blob = new _KeyValue1K("my blob");
 			assertTrue(database.tryGet(blob));
@@ -445,13 +445,13 @@ public class DatabaseNGTest
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 		byte[] content = createRandomBuffer(0, 10*1024*1024);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			try (InputStream in = database.read(new _BlobKey1K("my blob")))
 			{
@@ -468,7 +468,7 @@ public class DatabaseNGTest
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 		byte[] content = createRandomBuffer(0, 10*1024*1024);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
 
@@ -491,7 +491,7 @@ public class DatabaseNGTest
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 		byte[] content = createRandomBuffer(0, 10*1024*1024);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
 			database.commit();
@@ -502,7 +502,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			try (InputStream in = database.read(new _BlobKey1K("my blob")))
 			{
@@ -522,13 +522,13 @@ public class DatabaseNGTest
 		_KeyValue1K in = new _KeyValue1K("apple", createRandomBuffer(0, 1000_000));
 		_KeyValue1K out = new _KeyValue1K("apple");
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_COMPRESSION))
+		try (Database db = new Database(managedBlockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_COMPRESSION))
 		{
 			db.save(in);
 			db.commit();
 		}
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+		try (Database db = new Database(managedBlockDevice, OpenOption.OPEN))
 		{
 			db.tryGet(out);
 
@@ -550,7 +550,7 @@ public class DatabaseNGTest
 
 		_Animal1K item = new _Animal1K("banana");
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
+		try (Database db = new Database(managedBlockDevice, OpenOption.CREATE_NEW))
 		{
 			assertFalse(db.remove(item));
 			assertFalse(db.commit());
@@ -566,13 +566,13 @@ public class DatabaseNGTest
 
 		byte[] content = createRandomBuffer(0, 10*1024*1024);
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_COMPRESSION))
+		try (Database db = new Database(managedBlockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_COMPRESSION))
 		{
 			db.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
 			db.commit();
 		}
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+		try (Database db = new Database(managedBlockDevice, OpenOption.OPEN))
 		{
 			db.remove(new _BlobKey1K("my blob"));
 			db.commit();
@@ -591,7 +591,7 @@ public class DatabaseNGTest
 
 		_KeyValue1K in = new _KeyValue1K("apple", createRandomBuffer(0, 1000_000));
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_COMPRESSION))
+		try (Database db = new Database(managedBlockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_COMPRESSION))
 		{
 			db.save(in);
 			db.commit();
@@ -599,7 +599,7 @@ public class DatabaseNGTest
 
 		in.content = null;
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+		try (Database db = new Database(managedBlockDevice, OpenOption.OPEN))
 		{
 			db.save(in);
 			db.commit();
@@ -611,48 +611,48 @@ public class DatabaseNGTest
 
 
 	@Test
-	public void openCloseTest() throws IOException
+	public void testOpenClose() throws IOException
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
+		try (Database db = new Database(managedBlockDevice, OpenOption.CREATE_NEW))
 		{
 		}
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
+		try (Database db = new Database(managedBlockDevice, OpenOption.CREATE))
 		{
 		}
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+		try (Database db = new Database(managedBlockDevice, OpenOption.OPEN))
 		{
 		}
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
-		{
-			db.commit();
-		}
-
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
+		try (Database db = new Database(managedBlockDevice, OpenOption.CREATE_NEW))
 		{
 			db.commit();
 		}
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+		try (Database db = new Database(managedBlockDevice, OpenOption.CREATE))
+		{
+			db.commit();
+		}
+
+		try (Database db = new Database(managedBlockDevice, OpenOption.OPEN))
 		{
 		}
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE_NEW))
+		try (Database db = new Database(managedBlockDevice, OpenOption.CREATE_NEW))
 		{
 			db.rollback();
 		}
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
+		try (Database db = new Database(managedBlockDevice, OpenOption.CREATE))
 		{
 			db.rollback();
 		}
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+		try (Database db = new Database(managedBlockDevice, OpenOption.OPEN))
 		{
 		}
 	}
@@ -663,11 +663,11 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(1)))
+		try (Database db = new Database(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(1)))
 		{
 		}
 
-		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("bad-password").setIterationCount(1)))
+		try (Database db = new Database(blockDevice, OpenOption.CREATE, new AccessCredentials("bad-password").setIterationCount(1)))
 		{
 		}
 
@@ -680,7 +680,7 @@ public class DatabaseNGTest
 	{
 		IManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockDevice(512));
 
-		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(1)))
+		try (Database db = new Database(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(1)))
 		{
 		}
 
@@ -694,7 +694,7 @@ public class DatabaseNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 		blockDevice.writeBlock(0, new byte[512], 0, 512, new long[2]);
 
-		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(1)))
+		try (Database db = new Database(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(1)))
 		{
 		}
 
@@ -710,9 +710,9 @@ public class DatabaseNGTest
 		File file = File.createTempFile("raccoon", ".tmp");
 		file.deleteOnExit();
 
-		try (Database db = Database.open(file, OpenOption.CREATE_NEW, ac))
+		try (Database db = new Database(file, OpenOption.CREATE_NEW, ac))
 		{
-			try (Database unused = Database.open(file, OpenOption.OPEN, ac))
+			try (Database unused = new Database(file, OpenOption.OPEN, ac))
 			{
 				fail("unreachable");
 			}
@@ -736,7 +736,7 @@ public class DatabaseNGTest
 //		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 //		blockDevice.writeBlock(0, buf, 0, buf.length, 0);
 //
-//		try (Database db = Database.open(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(100)))
+//		try (Database db = new Database(blockDevice, OpenOption.CREATE, new AccessCredentials("password").setIterationCount(100)))
 //		{
 //		}
 //
@@ -749,7 +749,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Fruit2K("red", "apple", 123));
 			database.save(new _Animal1K("dog"));
@@ -757,7 +757,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			List<Table> tableMetadatas = database.getTables();
 
@@ -776,7 +776,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Fruit1K1D("red", "a", 1));
 			database.save(new _Fruit1K1D("green", "b", 2));
@@ -787,7 +787,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			List<DiscriminatorType<_Fruit1K1D>> list = database.getDiscriminators(_Fruit1K1D.class);
 
@@ -801,7 +801,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Number1K1D("a", 1));
 			database.save(new _Number1K1D("b", 2));
@@ -811,7 +811,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			assertEquals(database.size(new DiscriminatorType(new _Number1K1D(true))), 3);
 			assertEquals(database.size(new DiscriminatorType(new _Number1K1D(false))), 2);
@@ -824,13 +824,13 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Animal1K("dog"));
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			database.get(new _Animal1K("dog"));
 		}
@@ -842,13 +842,13 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Animal1K("dog"));
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			database.get(new _Animal1K("cat"));
 		}
@@ -860,7 +860,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			for (int i = 0; i < 10000; i++)
 			{
@@ -869,7 +869,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			for (int i = 0; i < 10000; i++)
 			{
@@ -886,7 +886,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			assertEquals(database.size(_Animal1K.class), 0);
 		}
@@ -898,7 +898,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			for (int i = 0; i < 10000; i++)
 			{
@@ -907,7 +907,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			for (int i = 0; i < 10000; i++)
 			{
@@ -924,7 +924,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			assertEquals(database.size(new DiscriminatorType(new _Number1K1D(false))), 0);
 			assertEquals(database.size(new DiscriminatorType(new _Number1K1D(true))), 5000);
@@ -940,7 +940,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			for (int i = 0; i < 10000; i++)
 			{
@@ -949,7 +949,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			for (int i = 0; i < 10000; i++)
 			{
@@ -966,7 +966,7 @@ public class DatabaseNGTest
 			database.commit();
 		}
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			assertEquals(database.size(_Animal1K.class), 0);
 		}
@@ -980,7 +980,7 @@ public class DatabaseNGTest
 //
 //		TreeSet<String> keys = new TreeSet<>();
 //
-//		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+//		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 //		{
 //			for (int i = 0; i < 10000; i++)
 //			{
@@ -990,7 +990,7 @@ public class DatabaseNGTest
 //			database.commit();
 //		}
 //
-//		try (Database database = Database.open(device, OpenOption.OPEN))
+//		try (Database database = new Database(device, OpenOption.OPEN))
 //		{
 //			TreeSet<String> found = new TreeSet<>();
 //			database.stream(_Animal1K.class).forEach(e->found.add(e._name));
@@ -1005,7 +1005,7 @@ public class DatabaseNGTest
 //	{
 //		MemoryBlockDevice device = new MemoryBlockDevice(512);
 //
-//		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+//		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 //		{
 //			database.stream(_Fruit1K.class).forEach(e->fail());
 //		}
@@ -1017,7 +1017,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			assertEquals(null, database.read(new _BlobKey1K("test")));
 			database.commit();
@@ -1030,7 +1030,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			assertEquals(null, database.get(new _Fruit1K("test")));
 			database.commit();
@@ -1043,7 +1043,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			assertEquals(database.list(_Fruit1K.class).size(), 0);
 			assertEquals(database.size(_Fruit1K.class), 0);
@@ -1057,7 +1057,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			database.save(new _Fruit1K("test"));
 			assertTrue(database.isModified());
@@ -1072,7 +1072,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			assertEquals(database.size(new DiscriminatorType(new _BlobKey1K("apple"))), 0);
 			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
@@ -1087,7 +1087,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION))
 		{
 			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
 			database.commit();
@@ -1098,7 +1098,7 @@ public class DatabaseNGTest
 		buffer[0] ^= 1;
 		device.writeBlock(100, buffer, 0, buffer.length, new long[2]);
 
-		try (Database database = Database.open(device, OpenOption.OPEN))
+		try (Database database = new Database(device, OpenOption.OPEN))
 		{
 			assertEquals(new byte[1000_000], Streams.readAll(database.read(new _BlobKey1K("good"))));
 		}
@@ -1110,7 +1110,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW, new CompressionParam(CompressionParam.NONE, CompressionParam.NONE, CompressionParam.DEFLATE_BEST)))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW, new CompressionParam(CompressionParam.NONE, CompressionParam.NONE, CompressionParam.DEFLATE_BEST)))
 		{
 			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
 			database.commit();
@@ -1126,7 +1126,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW, new CompressionParam(CompressionParam.NONE, CompressionParam.DEFLATE_BEST, CompressionParam.DEFLATE_BEST)))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW, new CompressionParam(CompressionParam.NONE, CompressionParam.DEFLATE_BEST, CompressionParam.DEFLATE_BEST)))
 		{
 			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
 			database.commit();
@@ -1141,7 +1141,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = Database.open(device, OpenOption.CREATE_NEW))
+		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
 			try (BlobOutputStream bos = database.saveBlob(new _BlobKey1K("test")))
 			{
@@ -1160,7 +1160,7 @@ public class DatabaseNGTest
 
 		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
+		try (Database db = new Database(managedBlockDevice, OpenOption.CREATE))
 		{
 			try (__FixedThreadExecutor executor = new __FixedThreadExecutor(8))
 			{
@@ -1177,7 +1177,7 @@ public class DatabaseNGTest
 
 		Random r = new Random();
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.CREATE))
+		try (Database db = new Database(managedBlockDevice, OpenOption.CREATE))
 		{
 			try (__FixedThreadExecutor executor = new __FixedThreadExecutor(8))
 			{
@@ -1194,7 +1194,7 @@ public class DatabaseNGTest
 			db.commit();
 		}
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+		try (Database db = new Database(managedBlockDevice, OpenOption.OPEN))
 		{
 			try (__FixedThreadExecutor executor = new __FixedThreadExecutor(8))
 			{
@@ -1210,7 +1210,7 @@ public class DatabaseNGTest
 			// changes will rollback on close because missing commit
 		}
 
-		try (Database db = Database.open(managedBlockDevice, OpenOption.OPEN))
+		try (Database db = new Database(managedBlockDevice, OpenOption.OPEN))
 		{
 			List<String> items = db.list(_Fruit1K.class).stream().map(e->e._name).collect(Collectors.toList());
 
@@ -1232,13 +1232,13 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database db = Database.open(device, OpenOption.CREATE))
+		try (Database db = new Database(device, OpenOption.CREATE))
 		{
 			db.save(new _Fruit1K("apple"));
 			db.commit();
 		}
 
-		try (Database db = Database.open(device, OpenOption.READ_ONLY))
+		try (Database db = new Database(device, OpenOption.READ_ONLY))
 		{
 			db.save(new _Fruit1K("banana"));
 			db.commit();
@@ -1252,7 +1252,7 @@ public class DatabaseNGTest
 		File file = new File(UUID.randomUUID().toString());
 		file.deleteOnExit();
 
-		try (Database db = Database.open(file, OpenOption.READ_ONLY))
+		try (Database db = new Database(file, OpenOption.READ_ONLY))
 		{
 		}
 	}
@@ -1264,9 +1264,9 @@ public class DatabaseNGTest
 		File file = new File(UUID.randomUUID().toString());
 		file.deleteOnExit();
 
-		try (Database db = Database.open(file, OpenOption.CREATE))
+		try (Database db = new Database(file, OpenOption.CREATE))
 		{
-			try (Database db2 = Database.open(file, OpenOption.CREATE))
+			try (Database db2 = new Database(file, OpenOption.CREATE))
 			{
 			}
 		}
@@ -1278,7 +1278,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database db = Database.open(device, OpenOption.READ_ONLY))
+		try (Database db = new Database(device, OpenOption.READ_ONLY))
 		{
 		}
 	}
@@ -1289,12 +1289,12 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database db = Database.open(device, OpenOption.CREATE, new DeviceHeader("test")))
+		try (Database db = new Database(device, OpenOption.CREATE, new DeviceHeader("test")))
 		{
 			db.commit();
 		}
 
-		try (Database db = Database.open(device, OpenOption.READ_ONLY, new DeviceHeader("test2")))
+		try (Database db = new Database(device, OpenOption.READ_ONLY, new DeviceHeader("test2")))
 		{
 		}
 	}
@@ -1305,7 +1305,7 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database db = Database.open(device, OpenOption.CREATE))
+		try (Database db = new Database(device, OpenOption.CREATE))
 		{
 			for (int i = 0; i < 10_000; i++)
 			{
@@ -1322,7 +1322,7 @@ public class DatabaseNGTest
 			db.commit();
 		}
 
-		try (Database db = Database.open(device, OpenOption.OPEN))
+		try (Database db = new Database(device, OpenOption.OPEN))
 		{
 			ScanResult scan = db.scan();
 
