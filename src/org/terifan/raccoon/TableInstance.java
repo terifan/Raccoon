@@ -76,7 +76,7 @@ public final class TableInstance<T> implements Closeable
 
 		try
 		{
-			RecordEntry entry = new RecordEntry(getKeys(aEntity));
+			ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
 
 			if (mHashTable.get(entry))
 			{
@@ -110,7 +110,7 @@ public final class TableInstance<T> implements Closeable
 
 	public synchronized InputStream read(T aEntity)
 	{
-		RecordEntry entry = new RecordEntry(getKeys(aEntity));
+		ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
 
 		if (!mHashTable.get(entry))
 		{
@@ -159,7 +159,7 @@ public final class TableInstance<T> implements Closeable
 			}
 		}
 
-		RecordEntry entry = new RecordEntry(key, value, type);
+		ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
 
 		if (mHashTable.put(entry))
 		{
@@ -172,7 +172,7 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	private void deleteIfBlob(RecordEntry aEntry) throws DatabaseException
+	private void deleteIfBlob(ArrayMapEntry aEntry) throws DatabaseException
 	{
 		if (aEntry.hasFlag(FLAG_BLOB))
 		{
@@ -198,7 +198,7 @@ public final class TableInstance<T> implements Closeable
 
 				byte[] key = getKeys(aEntityKey);
 
-				RecordEntry entry = new RecordEntry(key, aHeader, FLAG_BLOB);
+				ArrayMapEntry entry = new ArrayMapEntry(key, aHeader, FLAG_BLOB);
 
 				if (mHashTable.put(entry))
 				{
@@ -235,7 +235,7 @@ public final class TableInstance<T> implements Closeable
 
 			byte[] key = getKeys(aEntity);
 
-			RecordEntry entry = new RecordEntry(key, bos.finish(), FLAG_BLOB);
+			ArrayMapEntry entry = new ArrayMapEntry(key, bos.finish(), FLAG_BLOB);
 
 			if (mHashTable.put(entry))
 			{
@@ -253,7 +253,7 @@ public final class TableInstance<T> implements Closeable
 
 	public boolean remove(T aEntity)
 	{
-		RecordEntry entry = new RecordEntry(getKeys(aEntity));
+		ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
 
 		if (mHashTable.remove(entry))
 		{
@@ -275,7 +275,7 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	Iterator<RecordEntry> getLeafIterator()
+	Iterator<ArrayMapEntry> getLeafIterator()
 	{
 		return mHashTable.iterator();
 	}
@@ -353,7 +353,7 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	void unmarshalToObjectKeys(RecordEntry aBuffer, Object aOutput)
+	void unmarshalToObjectKeys(ArrayMapEntry aBuffer, Object aOutput)
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getKey());
 
@@ -363,7 +363,7 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	void unmarshalToObjectValues(RecordEntry aBuffer, Object aOutput)
+	void unmarshalToObjectValues(ArrayMapEntry aBuffer, Object aOutput)
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getValue());
 
@@ -371,7 +371,7 @@ public final class TableInstance<T> implements Closeable
 		{
 			try
 			{
-				buffer.wrap(Streams.readAll(new BlobInputStream(getBlockAccessor(), buffer)));
+				buffer.wrap(Streams.readAll(new BlobInputStream(getBlockAccessor(), buffer)), false);
 				buffer.position(0);
 			}
 			catch (IOException e)

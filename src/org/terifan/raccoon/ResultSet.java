@@ -17,7 +17,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 public class ResultSet
 {
 	private final TableInstance mTable;
-	private final Iterator<RecordEntry> mIterator;
+	private final Iterator<ArrayMapEntry> mIterator;
 	private final Marshaller mMarshaller;
 	private final FieldDescriptor[] mTypes;
 	private final Object[] mValues;
@@ -38,7 +38,7 @@ public class ResultSet
 	}
 
 
-	ResultSet(TableInstance aTable, Iterator<RecordEntry> aIterator)
+	ResultSet(TableInstance aTable, Iterator<ArrayMapEntry> aIterator)
 	{
 		mTable = aTable;
 		mIterator = aIterator;
@@ -102,7 +102,7 @@ public class ResultSet
 			return false;
 		}
 
-		RecordEntry entry = mIterator.next();
+		ArrayMapEntry entry = mIterator.next();
 
 		mMarshaller.unmarshal(new ByteArrayBuffer(entry.getKey()), this, Table.FIELD_CATEGORY_KEY);
 		mMarshaller.unmarshal(new ByteArrayBuffer(entry.getValue()), this, Table.FIELD_CATEGORY_DISCRIMINATOR + Table.FIELD_CATEGORY_VALUE);

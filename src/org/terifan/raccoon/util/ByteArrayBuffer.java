@@ -10,7 +10,8 @@ public final class ByteArrayBuffer
 	private final static boolean FORCE_FIXED = false;
 	private final static int NO_LIMIT = Integer.MAX_VALUE;
 
-	private byte readBuffer[] = new byte[8];
+	private final byte[] mReadBuffer = new byte[8];
+
 	private byte[] mBuffer;
 	private int mOffset;
 	private int mLimit;
@@ -37,7 +38,7 @@ public final class ByteArrayBuffer
 	 */
 	public ByteArrayBuffer(byte[] aBuffer)
 	{
-		wrap(aBuffer);
+		wrap(aBuffer, false);
 	}
 
 
@@ -97,14 +98,19 @@ public final class ByteArrayBuffer
 
 	private ByteArrayBuffer ensureCapacity(int aIncrement)
 	{
-		if (mBuffer.length < mOffset + aIncrement)
+		if (mBuffer.length <= mOffset + aIncrement) // important: increase the size before it's full, ie remaining() should not return zero when buffer can grow
 		{
 			if (mLocked)
 			{
+				if (mBuffer.length == mOffset + aIncrement)
+				{
+					return this;
+				}
+
 				throw new EOFException("Buffer capacity cannot be increased, capacity " + mBuffer.length + ", offset " + mOffset + ", increment " + aIncrement);
 			}
 
-			mBuffer = Arrays.copyOfRange(mBuffer, 0, (mOffset + aIncrement) * 3 / 2);
+			mBuffer = Arrays.copyOfRange(mBuffer, 0, Math.min(mLimit == NO_LIMIT ? Integer.MAX_VALUE : mLimit, (mOffset + aIncrement) * 3 / 2));
 		}
 
 		return this;
@@ -138,7 +144,7 @@ public final class ByteArrayBuffer
 	}
 
 
-	public ByteArrayBuffer wrap(byte[] aBuffer)
+	public ByteArrayBuffer wrap(byte[] aBuffer, boolean aLimitSize)
 	{
 		if (aBuffer == null)
 		{
@@ -365,12 +371,12 @@ public final class ByteArrayBuffer
 
 	public long readInt40()
 	{
-		read(readBuffer, 0, 5);
-		return ((long)(readBuffer[0] & 255) << 32)
-			+ ((long)(readBuffer[1] & 255) << 24)
-			+ ((readBuffer[2] & 255) << 16)
-			+ ((readBuffer[3] & 255) << 8)
-			+ (readBuffer[4] & 255);
+		read(mReadBuffer, 0, 5);
+		return ((long)(mReadBuffer[0] & 255) << 32)
+			+ ((long)(mReadBuffer[1] & 255) << 24)
+			+ ((mReadBuffer[2] & 255) << 16)
+			+ ((mReadBuffer[3] & 255) << 8)
+			+ (mReadBuffer[4] & 255);
 	}
 
 
@@ -388,15 +394,15 @@ public final class ByteArrayBuffer
 
 	public long readInt64()
 	{
-		read(readBuffer, 0, 8);
-		return (((long)readBuffer[0] << 56)
-			+ ((long)(readBuffer[1] & 255) << 48)
-			+ ((long)(readBuffer[2] & 255) << 40)
-			+ ((long)(readBuffer[3] & 255) << 32)
-			+ ((long)(readBuffer[4] & 255) << 24)
-			+ ((readBuffer[5] & 255) << 16)
-			+ ((readBuffer[6] & 255) << 8)
-			+ (readBuffer[7] & 255));
+		read(mReadBuffer, 0, 8);
+		return (((long)mReadBuffer[0] << 56)
+			+ ((long)(mReadBuffer[1] & 255) << 48)
+			+ ((long)(mReadBuffer[2] & 255) << 40)
+			+ ((long)(mReadBuffer[3] & 255) << 32)
+			+ ((long)(mReadBuffer[4] & 255) << 24)
+			+ ((mReadBuffer[5] & 255) << 16)
+			+ ((mReadBuffer[6] & 255) << 8)
+			+ (mReadBuffer[7] & 255));
 	}
 
 

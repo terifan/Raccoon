@@ -9,11 +9,11 @@ import org.terifan.raccoon.util.Log;
 
 final class EntityIterator<T> implements Iterator<T>
 {
-	private final Iterator<RecordEntry> mIterator;
+	private final Iterator<ArrayMapEntry> mIterator;
 	private final TableInstance mTableInstance;
 
 
-	EntityIterator(TableInstance aTable, Iterator<RecordEntry> aIterator)
+	EntityIterator(TableInstance aTable, Iterator<ArrayMapEntry> aIterator)
 	{
 		mIterator = aIterator;
 		mTableInstance = aTable;
@@ -35,7 +35,7 @@ final class EntityIterator<T> implements Iterator<T>
 
 		T outputEntity = (T)newEntityInstance();
 
-		RecordEntry entry = mIterator.next();
+		ArrayMapEntry entry = mIterator.next();
 
 		mTableInstance.unmarshalToObjectKeys(entry, outputEntity);
 		mTableInstance.unmarshalToObjectValues(entry, outputEntity);

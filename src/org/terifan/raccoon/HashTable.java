@@ -1,11 +1,11 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.storage.BlockPointer;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockAccessor;
-import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -13,7 +13,7 @@ import org.terifan.raccoon.util.Result;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-final class HashTable implements AutoCloseable, Iterable<RecordEntry>
+final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 {
 	private final Cost mCost;
 	private final String mTableName;
@@ -121,7 +121,7 @@ final class HashTable implements AutoCloseable, Iterable<RecordEntry>
 	}
 
 
-	public boolean get(RecordEntry aEntry)
+	public boolean get(ArrayMapEntry aEntry)
 	{
 		checkOpen();
 
@@ -134,7 +134,7 @@ final class HashTable implements AutoCloseable, Iterable<RecordEntry>
 	}
 
 
-	public boolean put(RecordEntry aEntry)
+	public boolean put(ArrayMapEntry aEntry)
 	{
 		checkOpen();
 
@@ -176,7 +176,7 @@ final class HashTable implements AutoCloseable, Iterable<RecordEntry>
 	}
 
 
-	public boolean remove(RecordEntry aEntry)
+	public boolean remove(ArrayMapEntry aEntry)
 	{
 		checkOpen();
 
@@ -198,7 +198,7 @@ final class HashTable implements AutoCloseable, Iterable<RecordEntry>
 
 
 	@Override
-	public Iterator<RecordEntry> iterator()
+	public Iterator<ArrayMapEntry> iterator()
 	{
 		checkOpen();
 
@@ -211,17 +211,17 @@ final class HashTable implements AutoCloseable, Iterable<RecordEntry>
 			return new HashTableNodeIterator(this, mRootMap);
 		}
 
-		return new ArrayList<RecordEntry>().iterator();
+		return new ArrayList<ArrayMapEntry>().iterator();
 	}
 
 
-	public ArrayList<RecordEntry> list()
+	public ArrayList<ArrayMapEntry> list()
 	{
 		checkOpen();
 
-		ArrayList<RecordEntry> list = new ArrayList<>();
+		ArrayList<ArrayMapEntry> list = new ArrayList<>();
 
-		for (Iterator<RecordEntry> it = iterator(); it.hasNext();)
+		for (Iterator<ArrayMapEntry> it = iterator(); it.hasNext();)
 		{
 			list.add(it.next());
 		}
@@ -390,7 +390,7 @@ final class HashTable implements AutoCloseable, Iterable<RecordEntry>
 	}
 
 
-	private boolean getValue(byte[] aKey, int aLevel, RecordEntry aEntry, HashTableNode aNode)
+	private boolean getValue(byte[] aKey, int aLevel, ArrayMapEntry aEntry, HashTableNode aNode)
 	{
 		Log.i("get %s value", mTableName);
 
@@ -417,7 +417,7 @@ final class HashTable implements AutoCloseable, Iterable<RecordEntry>
 	}
 
 
-	private byte[] putValue(RecordEntry aEntry, byte[] aKey, int aLevel, HashTableNode aNode)
+	private byte[] putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel, HashTableNode aNode)
 	{
 		Log.d("put %s value", mTableName);
 		Log.inc();
@@ -454,7 +454,7 @@ final class HashTable implements AutoCloseable, Iterable<RecordEntry>
 	}
 
 
-	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, RecordEntry aEntry, int aLevel, HashTableNode aNode, byte[] aKey)
+	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, ArrayMapEntry aEntry, int aLevel, HashTableNode aNode, byte[] aKey)
 	{
 		mCost.mTreeTraversal++;
 
@@ -491,7 +491,7 @@ final class HashTable implements AutoCloseable, Iterable<RecordEntry>
 	}
 
 
-	private byte[] upgradeHoleToLeaf(RecordEntry aEntry, HashTableNode aNode, BlockPointer aBlockPointer, int aIndex)
+	private byte[] upgradeHoleToLeaf(ArrayMapEntry aEntry, HashTableNode aNode, BlockPointer aBlockPointer, int aIndex)
 	{
 		Log.d("upgrade hole to leaf");
 		Log.inc();
@@ -595,7 +595,7 @@ final class HashTable implements AutoCloseable, Iterable<RecordEntry>
 
 	private void divideLeafEntries(HashTableLeaf aMap, int aLevel, int aHalfRange, HashTableLeaf aLowLeaf, HashTableLeaf aHighLeaf)
 	{
-		for (RecordEntry entry : aMap)
+		for (ArrayMapEntry entry : aMap)
 		{
 			if (computeIndex(entry.getKey(), aLevel) < aHalfRange)
 			{
@@ -620,7 +620,7 @@ final class HashTable implements AutoCloseable, Iterable<RecordEntry>
 	}
 
 
-	private boolean removeValue(byte[] aKey, int aLevel, RecordEntry aEntry, HashTableNode aNode)
+	private boolean removeValue(byte[] aKey, int aLevel, ArrayMapEntry aEntry, HashTableNode aNode)
 	{
 		mCost.mTreeTraversal++;
 

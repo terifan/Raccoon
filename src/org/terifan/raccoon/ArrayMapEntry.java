@@ -1,25 +1,25 @@
 package org.terifan.raccoon;
 
 
-public final class RecordEntry
+public final class ArrayMapEntry
 {
 	private byte mFlags;
 	private byte[] mKey;
 	private byte[] mValue;
 
 
-	public RecordEntry()
+	public ArrayMapEntry()
 	{
 	}
 
 
-	public RecordEntry(byte[] aKey)
+	public ArrayMapEntry(byte[] aKey)
 	{
 		mKey = aKey;
 	}
 
 
-	public RecordEntry(byte[] aKey, byte[] aValue, byte aFlags)
+	public ArrayMapEntry(byte[] aKey, byte[] aValue, byte aFlags)
 	{
 		mKey = aKey;
 		mValue = aValue;

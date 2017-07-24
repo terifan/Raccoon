@@ -10,7 +10,8 @@ import org.terifan.raccoon.util.Log;
 
 public class BlobOutputStream extends OutputStream
 {
-	private final static int FRAGMENT_SIZE = 1024 * 1024;
+	private final static int FRAGMENT_START_SIZE = 16384;
+	private final static int FRAGMENT_MAX_SIZE = 1024 * 1024;
 	private final static int POINTER_MAX_LENGTH = 4 * BlockPointer.SIZE;
 
 	private final BlockAccessor mBlockAccessor;
@@ -27,7 +28,7 @@ public class BlobOutputStream extends OutputStream
 	{
 		mBlockAccessor = aBlockAccessor;
 		mTransactionId = aTransactionId;
-		mBuffer = new ByteArrayBuffer(FRAGMENT_SIZE);
+		mBuffer = new ByteArrayBuffer(FRAGMENT_START_SIZE).limit(FRAGMENT_MAX_SIZE);
 		mPointerBuffer = new ByteArrayBuffer(mBlockAccessor.getBlockDevice().getBlockSize());
 		mOnCloseListener = aOnCloseListener;
 		mHeader = null;
@@ -132,8 +133,6 @@ public class BlobOutputStream extends OutputStream
 		bp.marshal(mPointerBuffer);
 
 		mBuffer.position(0);
-
-//		Arrays.fill(mBuffer.array(), (byte)0);
 	}
 
 

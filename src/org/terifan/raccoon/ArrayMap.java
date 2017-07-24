@@ -32,7 +32,7 @@ import java.util.NoSuchElementException;
  *   (pointer 1..n)
  *   2 bytes - offset
  */
-public class ArrayMap implements Iterable<RecordEntry>
+public class ArrayMap implements Iterable<ArrayMapEntry>
 {
 	private final static int MAX_CAPACITY = 1 << 16;
 	private final static int HEADER_SIZE = 2 + 2;
@@ -145,7 +145,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 	}
 
 
-	public boolean put(RecordEntry aEntry)
+	public boolean put(ArrayMapEntry aEntry)
 	{
 		byte[] key = aEntry.getKey();
 		byte[] value = aEntry.getValue();
@@ -229,7 +229,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 	}
 
 
-	public boolean get(RecordEntry aEntry)
+	public boolean get(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());
 
@@ -250,7 +250,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 	 * @return
 	 *   one of NEAR, EXACT or LAST depending on what entry was found. LAST indicated no identical or smaller key was found.
 	 */
-	public int nearest(RecordEntry aEntry)
+	public int nearest(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());
 
@@ -271,7 +271,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 	}
 
 
-	private void loadValue(int aIndex, RecordEntry aEntry)
+	private void loadValue(int aIndex, ArrayMapEntry aEntry)
 	{
 		int valueOffset = mStartOffset + readValueOffset(aIndex);
 
@@ -280,7 +280,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 	}
 
 
-	public boolean remove(RecordEntry aEntry)
+	public boolean remove(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());
 
@@ -295,7 +295,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 	}
 
 
-	private void remove(int aIndex, RecordEntry aEntry)
+	private void remove(int aIndex, ArrayMapEntry aEntry)
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount : "index="+aIndex+", count="+mEntryCount;
 
@@ -341,7 +341,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 	}
 
 
-	public RecordEntry get(int aIndex, RecordEntry aEntry)
+	public ArrayMapEntry get(int aIndex, ArrayMapEntry aEntry)
 	{
 		int keyOffset = mStartOffset + readKeyOffset(aIndex);
 		int valueOffset = mStartOffset + readValueOffset(aIndex);
@@ -570,7 +570,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 		try
 		{
 			StringBuilder sb = new StringBuilder();
-			for (RecordEntry entry : this)
+			for (ArrayMapEntry entry : this)
 			{
 				if (sb.length() > 0)
 				{
@@ -588,13 +588,13 @@ public class ArrayMap implements Iterable<RecordEntry>
 
 
 	@Override
-	public Iterator<RecordEntry> iterator()
+	public Iterator<ArrayMapEntry> iterator()
 	{
 		return new EntryIterator();
 	}
 
 
-	public class EntryIterator implements Iterator<RecordEntry>
+	public class EntryIterator implements Iterator<ArrayMapEntry>
 	{
 		private final int mExpectedModCount = mModCount;
 		private int mIndex;
@@ -608,7 +608,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 
 
 		@Override
-		public RecordEntry next()
+		public ArrayMapEntry next()
 		{
 			if (mExpectedModCount != mModCount)
 			{
@@ -623,7 +623,7 @@ public class ArrayMap implements Iterable<RecordEntry>
 			int keyLength = readInt16(entryOffset);
 			int offset = mStartOffset + entryOffset + ENTRY_HEADER_SIZE;
 
-			RecordEntry entry = new RecordEntry();
+			ArrayMapEntry entry = new ArrayMapEntry();
 			entry.setKey(Arrays.copyOfRange(mBuffer, offset, offset + keyLength));
 			loadValue(mIndex, entry);
 
@@ -641,33 +641,33 @@ public class ArrayMap implements Iterable<RecordEntry>
 	}
 
 
-	public RecordEntry getFirst()
+	public ArrayMapEntry getFirst()
 	{
-		RecordEntry entry = new RecordEntry();
+		ArrayMapEntry entry = new ArrayMapEntry();
 		get(0, entry);
 		return entry;
 	}
 
 
-	public RecordEntry getLast()
+	public ArrayMapEntry getLast()
 	{
-		RecordEntry entry = new RecordEntry();
+		ArrayMapEntry entry = new ArrayMapEntry();
 		get(mEntryCount - 1, entry);
 		return entry;
 	}
 
 
-	public RecordEntry removeFirst()
+	public ArrayMapEntry removeFirst()
 	{
-		RecordEntry entry = new RecordEntry();
+		ArrayMapEntry entry = new ArrayMapEntry();
 		remove(0, entry);
 		return entry;
 	}
 
 
-	public RecordEntry removeLast()
+	public ArrayMapEntry removeLast()
 	{
-		RecordEntry entry = new RecordEntry();
+		ArrayMapEntry entry = new ArrayMapEntry();
 		remove(mEntryCount - 1, entry);
 		return entry;
 	}

@@ -1,10 +1,7 @@
 package org.terifan.raccoon.util;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Random;
-import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.util.EOFException;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
@@ -44,6 +41,10 @@ public class ByteArrayBufferNGTest
 			out.writeString("hello world");
 			out.write(buf);
 		}
+
+		assertEquals(out.position(), 2607);
+//		assertEquals(out.capacity(), 2779);
+//		assertEquals(out.remaining(), 2779 - 2607);
 
 		ByteArrayBuffer in = new ByteArrayBuffer(out.trim().array());
 		rnd = new Random(1);

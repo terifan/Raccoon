@@ -6,12 +6,12 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 
 
-final class HashTableNodeIterator implements Iterator<RecordEntry>
+final class HashTableNodeIterator implements Iterator<ArrayMapEntry>
 {
 	private long mModCount;
 	private ArrayDeque<BlockPointer> mNodes;
-	private Iterator<RecordEntry> mMap;
-	private RecordEntry mNextEntry;
+	private Iterator<ArrayMapEntry> mMap;
+	private ArrayMapEntry mNextEntry;
 	private HashTable mHashTable;
 	private boolean mHasEntry;
 
@@ -99,7 +99,7 @@ final class HashTableNodeIterator implements Iterator<RecordEntry>
 
 
 	@Override
-	public RecordEntry next()
+	public ArrayMapEntry next()
 	{
 		if (mModCount != mHashTable.mModCount)
 		{

@@ -1,6 +1,6 @@
 package org.terifan.raccoon.core;
 
-import org.terifan.raccoon.RecordEntry;
+import org.terifan.raccoon.ArrayMapEntry;
 import org.terifan.raccoon.ArrayMap;
 import java.io.IOException;
 import java.util.HashMap;
@@ -20,9 +20,9 @@ public class ArrayMapNGTest
 		byte[] key = tb();
 		byte[] value = tb();
 
-		map.put(new RecordEntry(key, value, (byte)77));
+		map.put(new ArrayMapEntry(key, value, (byte)77));
 
-		RecordEntry entry = new RecordEntry(key);
+		ArrayMapEntry entry = new ArrayMapEntry(key);
 
 		assertTrue(map.get(entry));
 		assertEquals(entry.getValue(), value);
@@ -42,7 +42,7 @@ public class ArrayMapNGTest
 			byte[] key = tb();
 			byte[] value = tb();
 
-			if (!map.put(new RecordEntry(key, value, (byte)0)))
+			if (!map.put(new ArrayMapEntry(key, value, (byte)0)))
 			{
 				break;
 			}
@@ -52,7 +52,7 @@ public class ArrayMapNGTest
 
 		for (Map.Entry<String, byte[]> entry : values.entrySet())
 		{
-			RecordEntry entry1 = new RecordEntry(entry.getKey().getBytes());
+			ArrayMapEntry entry1 = new ArrayMapEntry(entry.getKey().getBytes());
 			assertTrue(map.get(entry1));
 			assertEquals(entry1.getValue(), entry.getValue());
 		}
@@ -69,7 +69,7 @@ public class ArrayMapNGTest
 		byte[] key = createRandomBuffer(0, 32767);
 		byte[] value = createRandomBuffer(1, 32759);
 
-		map.put(new RecordEntry(key, value, (byte)0));
+		map.put(new ArrayMapEntry(key, value, (byte)0));
 
 		values.put(key, value);
 
@@ -96,7 +96,7 @@ public class ArrayMapNGTest
 			byte[] value = tb();
 			byte[] key = keys[j];
 
-			if (map.put(new RecordEntry(key, value, (byte)0)))
+			if (map.put(new ArrayMapEntry(key, value, (byte)0)))
 			{
 				values.put(new String(key), value);
 			}
@@ -106,7 +106,7 @@ public class ArrayMapNGTest
 
 		for (Map.Entry<String, byte[]> entry : values.entrySet())
 		{
-			RecordEntry entry1 = new RecordEntry(entry.getKey().getBytes());
+			ArrayMapEntry entry1 = new ArrayMapEntry(entry.getKey().getBytes());
 			assertTrue(map.get(entry1));
 			assertEquals(entry1.getValue(), entry.getValue());
 		}
@@ -120,14 +120,14 @@ public class ArrayMapNGTest
 		byte[] d = "456".getBytes();
 
 		ArrayMap map = new ArrayMap(new byte[512]);
-		map.put(new RecordEntry("b".getBytes(), b, (byte)0));
-		map.put(new RecordEntry("d".getBytes(), d, (byte)0));
+		map.put(new ArrayMapEntry("b".getBytes(), b, (byte)0));
+		map.put(new ArrayMapEntry("d".getBytes(), d, (byte)0));
 
-		RecordEntry A = new RecordEntry("a".getBytes());
-		RecordEntry B = new RecordEntry("b".getBytes());
-		RecordEntry C = new RecordEntry("c".getBytes());
-		RecordEntry D = new RecordEntry("d".getBytes());
-		RecordEntry E = new RecordEntry("e".getBytes());
+		ArrayMapEntry A = new ArrayMapEntry("a".getBytes());
+		ArrayMapEntry B = new ArrayMapEntry("b".getBytes());
+		ArrayMapEntry C = new ArrayMapEntry("c".getBytes());
+		ArrayMapEntry D = new ArrayMapEntry("d".getBytes());
+		ArrayMapEntry E = new ArrayMapEntry("e".getBytes());
 
 		assertEquals(map.nearest(A), ArrayMap.NEAR);
 		assertEquals(A.getValue(), b);

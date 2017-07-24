@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.TableInstance;
 import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.TableInstance;
 
 
 public class ScanResult

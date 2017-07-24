@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.io.managed.DeviceHeader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -23,7 +24,6 @@ import org.terifan.raccoon.io.managed.UnsupportedVersionException;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.storage.BlobOutputStream;
 import org.terifan.raccoon.io.physical.FileBlockDevice;
-import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;

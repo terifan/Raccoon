@@ -4,6 +4,9 @@ import java.io.OutputStream;
 import java.util.Arrays;
 
 
+/**
+ * OutputStream will grow buffer in steps of a defined size
+ */
 public class ByteBlockOutputStream extends OutputStream
 {
 	private int mOffset;
@@ -11,6 +14,11 @@ public class ByteBlockOutputStream extends OutputStream
 	private int mBlockSize;
 
 
+	/**
+	 *
+	 * @param aBlockSize
+	 *   initial size as well as the size the internal buffer will grow with when becoming full
+	 */
 	public ByteBlockOutputStream(int aBlockSize)
 	{
 		mBuffer = new byte[aBlockSize];
@@ -55,8 +63,8 @@ public class ByteBlockOutputStream extends OutputStream
 	{
 		return mBuffer;
 	}
-	
-	
+
+
 	public int size()
 	{
 		return mOffset;

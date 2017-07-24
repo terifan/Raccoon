@@ -1,7 +1,7 @@
 package org.terifan.raccoon.storage;
 
-import org.terifan.raccoon.BlockType;
 import java.io.Serializable;
+import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
