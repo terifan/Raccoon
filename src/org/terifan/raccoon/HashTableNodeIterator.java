@@ -27,14 +27,14 @@ final class HashTableNodeIterator implements Iterator<ArrayMapEntry>
 	}
 
 
-	HashTableNodeIterator(HashTable aHashTable, ArrayMap aDataPage)
+	HashTableNodeIterator(HashTable aHashTable, Iterator<ArrayMapEntry> aMap)
 	{
 		mNodes = new ArrayDeque<>();
 
 		mHashTable = aHashTable;
 		mModCount = mHashTable.mModCount;
 
-		mMap = aDataPage.iterator();
+		mMap = aMap;
 	}
 
 

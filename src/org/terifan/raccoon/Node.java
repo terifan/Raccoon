@@ -1,9 +1,9 @@
 package org.terifan.raccoon;
 
 
-public interface Node
+public abstract class Node
 {
-	byte[] array();
+	abstract byte[] array();
 
-	BlockType getType();
+	abstract BlockType getType();
 }
