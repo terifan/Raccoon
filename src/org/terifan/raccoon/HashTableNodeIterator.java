@@ -68,7 +68,7 @@ final class HashTableNodeIterator implements Iterator<ArrayMapEntry>
 
 		if (pointer.getBlockType() == BlockType.LEAF)
 		{
-			HashTableLeaf leaf = mHashTable.readLeaf(pointer);
+			HashTableLeaf leaf = mHashTable.readLeaf(pointer, null);
 
 			mMap = leaf.iterator();
 
@@ -80,7 +80,7 @@ final class HashTableNodeIterator implements Iterator<ArrayMapEntry>
 			return hasNext();
 		}
 
-		HashTableNode node = mHashTable.readNode(pointer);
+		HashTableNode node = mHashTable.readNode(pointer, null);
 
 		for (int i = 0; i < node.getPointerCount(); i++)
 		{
@@ -91,8 +91,6 @@ final class HashTableNodeIterator implements Iterator<ArrayMapEntry>
 				mNodes.addLast(next);
 			}
 		}
-
-		node.gc();
 
 		return hasNext();
 	}

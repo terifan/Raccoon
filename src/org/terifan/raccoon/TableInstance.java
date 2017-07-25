@@ -419,7 +419,7 @@ public final class TableInstance<T> implements Closeable
 
 	void scan(ScanResult aScanResult)
 	{
-		mHashTable.scan(aScanResult);
+		mHashTable.scan(aScanResult, null);
 	}
 
 

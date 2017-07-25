@@ -19,49 +19,51 @@ public class Log
 	}
 
 
-	public static void inc()
+	public static boolean inc()
 	{
 		mIndent++;
+		return true;
 	}
 
 
-	public static void dec()
+	public static boolean dec()
 	{
 		mIndent--;
+		return true;
 	}
 
 
-	public static void s(String aMessage, Object... aParams)
+	public static boolean s(String aMessage, Object... aParams)
 	{
-		logImpl(LogLevel.FATAL, aMessage, aParams);
+		return logImpl(LogLevel.FATAL, aMessage, aParams);
 	}
 
 
-	public static void e(String aMessage, Object... aParams)
+	public static boolean e(String aMessage, Object... aParams)
 	{
-		logImpl(LogLevel.ERROR, aMessage, aParams);
+		return logImpl(LogLevel.ERROR, aMessage, aParams);
 	}
 
 
-	public static void w(String aMessage, Object... aParams)
+	public static boolean w(String aMessage, Object... aParams)
 	{
-		logImpl(LogLevel.WARN, aMessage, aParams);
+		return logImpl(LogLevel.WARN, aMessage, aParams);
 	}
 
 
-	public static void i(String aMessage, Object... aParams)
+	public static boolean i(String aMessage, Object... aParams)
 	{
-		logImpl(LogLevel.INFO, aMessage, aParams);
+		return logImpl(LogLevel.INFO, aMessage, aParams);
 	}
 
 
-	public static void d(String aMessage, Object... aParams)
+	public static boolean d(String aMessage, Object... aParams)
 	{
-		logImpl(LogLevel.DEBUG, aMessage, aParams);
+		return logImpl(LogLevel.DEBUG, aMessage, aParams);
 	}
 
 
-	private static void logImpl(LogLevel aLevel, String aMessage, Object... aParams)
+	private static boolean logImpl(LogLevel aLevel, String aMessage, Object... aParams)
 	{
 		if (aLevel.ordinal() >= mLevel.ordinal() && aMessage != null)
 		{
@@ -80,6 +82,8 @@ public class Log
 
 			System.out.printf("%-30s%-30s%-30s%-7s %s%n", loggerName, className, methodName, aLevel, message.toString());
 		}
+		
+		return true;
 	}
 
 

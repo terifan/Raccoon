@@ -11,27 +11,23 @@ final class HashTableNode extends Node
 
 	private byte[] mBuffer;
 	private int mPointerCount;
-	private boolean mGCEnabled;
-	private HashTable mHashTable;
-	private BlockPointer mBlockPointer;
 
 
-	public HashTableNode(HashTable aHashTable, BlockPointer aBlockPointer)
+	public HashTableNode(HashTable aHashTable, HashTableNode aParent, BlockPointer aBlockPointer)
 	{
+		super(aHashTable, aParent, aBlockPointer);
+
 		mBuffer = aHashTable.getBlockAccessor().readBlock(aBlockPointer);
 		mPointerCount = mBuffer.length / BlockPointer.SIZE;
-		mGCEnabled = true;
-		mHashTable = aHashTable;
-		mBlockPointer = aBlockPointer;
 	}
 
 
-	public HashTableNode(HashTable aHashTable)
+	public HashTableNode(HashTable aHashTable, HashTableNode aParent)
 	{
-		mHashTable = aHashTable;
+		super(aHashTable, aParent, null);
+
 		mBuffer = new byte[mHashTable.getNodeSize()];
 		mPointerCount = mHashTable.getNodeSize() / BlockPointer.SIZE;
-		mGCEnabled = true;
 	}
 
 
@@ -43,7 +39,7 @@ final class HashTableNode extends Node
 
 
 	@Override
-	public BlockType getType()
+	public BlockType getBlockType()
 	{
 		return BlockType.INDEX;
 	}
@@ -57,7 +53,7 @@ final class HashTableNode extends Node
 
 	void setPointer(int aIndex, BlockPointer aBlockPointer)
 	{
-		assert get(aIndex).getBlockType() == BlockType.FREE || get(aIndex).getRange() == aBlockPointer.getRange() : get(aIndex).getBlockType() + " " + get(aIndex).getRange() +"=="+ aBlockPointer.getRange();
+		assert HashTableNode.this.get(aIndex).getBlockType() == BlockType.FREE || HashTableNode.this.get(aIndex).getRange() == aBlockPointer.getRange() : HashTableNode.this.get(aIndex).getBlockType() + " " + HashTableNode.this.get(aIndex).getRange() + "==" + aBlockPointer.getRange();
 
 		set(aIndex, aBlockPointer);
 	}
@@ -70,7 +66,7 @@ final class HashTableNode extends Node
 			return null;
 		}
 
-		BlockPointer blockPointer = get(aIndex);
+		BlockPointer blockPointer = HashTableNode.this.get(aIndex);
 
 		assert blockPointer.getRange() != 0;
 
@@ -90,7 +86,7 @@ final class HashTableNode extends Node
 
 	void split(int aIndex, BlockPointer aLowPointer, BlockPointer aHighPointer)
 	{
-		assert aLowPointer.getRange() + aHighPointer.getRange() == get(aIndex).getRange();
+		assert aLowPointer.getRange() + aHighPointer.getRange() == HashTableNode.this.get(aIndex).getRange();
 		assert ensureEmpty(aIndex + 1, aLowPointer.getRange() + aHighPointer.getRange() - 1);
 
 		set(aIndex, aLowPointer);
@@ -100,8 +96,8 @@ final class HashTableNode extends Node
 
 	void merge(int aIndex, BlockPointer aBlockPointer)
 	{
-		BlockPointer bp1 = get(aIndex);
-		BlockPointer bp2 = get(aIndex + aBlockPointer.getRange());
+		BlockPointer bp1 = HashTableNode.this.get(aIndex);
+		BlockPointer bp2 = HashTableNode.this.get(aIndex + aBlockPointer.getRange());
 
 		assert bp1.getRange() + bp2.getRange() == aBlockPointer.getRange();
 		assert ensureEmpty(aIndex + 1, bp1.getRange() - 1);
@@ -152,13 +148,14 @@ final class HashTableNode extends Node
 	}
 
 
+	@Override
 	String integrityCheck()
 	{
 		int rangeRemain = 0;
 
 		for (int i = 0; i < mPointerCount; i++)
 		{
-			BlockPointer bp = get(i);
+			BlockPointer bp = HashTableNode.this.get(i);
 
 			if (rangeRemain > 0)
 			{
@@ -182,35 +179,19 @@ final class HashTableNode extends Node
 	}
 
 
-	void gc()
-	{
-		if (mGCEnabled)
-		{
-			mBuffer = null;
-			mPointerCount = 0;
-		}
-	}
-
-
-	HashTableNode setGCEnabled(boolean aGCEnabled)
-	{
-		mGCEnabled = aGCEnabled;
-		return this;
-	}
-
-
-	boolean getValue(byte[] aKey, int aLevel, ArrayMapEntry aEntry)
+	@Override
+	boolean get(ArrayMapEntry aEntry, int aLevel)
 	{
 		Log.i("get %s value", mHashTable.getTableName());
 
-		BlockPointer blockPointer = getPointer(findPointer(mHashTable.computeIndex(aKey, aLevel)));
+		BlockPointer blockPointer = getPointer(findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel)));
 
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				return mHashTable.readNode(blockPointer).getValue(aKey, aLevel + 1, aEntry);
+				return mHashTable.readNode(blockPointer, this).get(aEntry, aLevel + 1);
 			case LEAF:
-				return mHashTable.readLeaf(blockPointer).get(aEntry);
+				return mHashTable.readLeaf(blockPointer, this).get(aEntry, aLevel + 1);
 			case HOLE:
 				return false;
 			case FREE:
@@ -220,6 +201,7 @@ final class HashTableNode extends Node
 	}
 
 
+	@Override
 	void freeBlock()
 	{
 		mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
@@ -232,32 +214,34 @@ final class HashTableNode extends Node
 	}
 
 
+	@Override
 	BlockPointer writeBlock(int aRange)
 	{
-		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId().get(), getType(), aRange);
+		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId().get(), getBlockType(), aRange);
 		return mBlockPointer;
 	}
 
 
-	boolean remove(byte[] aKey, int aLevel, ArrayMapEntry aEntry)
+	@Override
+	boolean remove(ArrayMapEntry aEntry, int aLevel)
 	{
-		int index = findPointer(mHashTable.computeIndex(aKey, aLevel));
+		int index = findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel));
 		BlockPointer blockPointer = getPointer(index);
 		BlockPointer newBlockPointer = null;
 
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				HashTableNode node = mHashTable.readNode(blockPointer);
-				if (node.remove(aKey, aLevel + 1, aEntry))
+				HashTableNode node = mHashTable.readNode(blockPointer, this);
+				if (node.remove(aEntry, aLevel + 1))
 				{
 					node.freeBlock();
 					newBlockPointer = node.writeBlock(blockPointer.getRange());
 				}
 				break;
 			case LEAF:
-				HashTableLeaf leaf = mHashTable.readLeaf(blockPointer);
-				if (leaf.remove(aEntry))
+				HashTableLeaf leaf = mHashTable.readLeaf(blockPointer, this);
+				if (leaf.remove(aEntry, aLevel + 1))
 				{
 					leaf.freeBlock();
 					newBlockPointer = leaf.writeBlock(blockPointer.getRange());
@@ -279,31 +263,30 @@ final class HashTableNode extends Node
 	}
 
 
-	byte[] putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
+	@Override
+	boolean put(ArrayMapEntry aEntry, int aLevel)
 	{
 		Log.d("put %s value", mHashTable.getTableName());
 		Log.inc();
 
-		int index = findPointer(mHashTable.computeIndex(aKey, aLevel));
+		int index = findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel));
 		BlockPointer blockPointer = getPointer(index);
-		byte[] oldValue;
 
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				HashTableNode node = mHashTable.readNode(blockPointer);
-				oldValue = node.putValue(aEntry, aKey, aLevel + 1);
+				HashTableNode node = mHashTable.readNode(blockPointer, this);
+				node.put(aEntry, aLevel + 1);
 				node.freeBlock();
 				BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRange());
 				setPointer(index, newBlockPointer);
-				node.gc();
 				break;
 			case LEAF:
-				HashTableLeaf map = mHashTable.readLeaf(blockPointer);
-				oldValue = putValueLeaf(map, blockPointer, index, aEntry, aLevel, aKey);
+				HashTableLeaf map = mHashTable.readLeaf(blockPointer, this);
+				putValueLeaf(map, blockPointer, index, aEntry, aLevel);
 				break;
 			case HOLE:
-				oldValue = upgradeHoleToLeaf(aEntry, this, blockPointer, index);
+				upgradeHoleToLeaf(aEntry, this, blockPointer, index, aLevel);
 				break;
 			case FREE:
 			default:
@@ -312,64 +295,54 @@ final class HashTableNode extends Node
 
 		Log.dec();
 
-		return oldValue;
+		return true;
 	}
 
 
-	byte[] putValueLeaf(HashTableLeaf map, BlockPointer aBlockPointer, int aIndex, ArrayMapEntry aEntry, int aLevel, byte[] aKey)
+	void putValueLeaf(HashTableLeaf aLeaf, BlockPointer aBlockPointer, int aIndex, ArrayMapEntry aEntry, int aLevel)
 	{
 		BlockPointer newBlockPointer;
-		byte[] oldValue;
 
-		if (map.put(aEntry))
+		if (aLeaf.put(aEntry, aLevel))
 		{
-			oldValue = aEntry.getValue();
+			aLeaf.freeBlock();
 
-			map.freeBlock();
-
-			newBlockPointer = map.writeBlock(aBlockPointer.getRange());
+			newBlockPointer = aLeaf.writeBlock(aBlockPointer.getRange());
 		}
-		else if (map.splitLeaf(aIndex, aLevel, this))
+		else if (aLeaf.splitLeaf(aIndex, aLevel, this))
 		{
-			return putValue(aEntry, aKey, aLevel); // recursive put
+			put(aEntry, aLevel); // recursive put
+			return;
 		}
 		else
 		{
-			HashTableNode node = map.splitLeaf(aLevel + 1);
+			HashTableNode newNode = aLeaf.splitLeaf(aLevel + 1);
 
-			oldValue = node.putValue(aEntry, aKey, aLevel + 1); // recursive put
+			newNode.put(aEntry, aLevel + 1); // recursive put
 
-			newBlockPointer = node.writeBlock(aBlockPointer.getRange());
+			newBlockPointer = newNode.writeBlock(aBlockPointer.getRange());
 		}
 
 		setPointer(aIndex, newBlockPointer);
-
-		return oldValue;
 	}
 
 
-	private byte[] upgradeHoleToLeaf(ArrayMapEntry aEntry, HashTableNode aParent, BlockPointer aBlockPointer, int aIndex)
+	private void upgradeHoleToLeaf(ArrayMapEntry aEntry, HashTableNode aParent, BlockPointer aBlockPointer, int aIndex, int aLevel)
 	{
 		Log.d("upgrade hole to leaf");
 		Log.inc();
 
-		HashTableLeaf node = new HashTableLeaf(mHashTable);
+		HashTableLeaf node = new HashTableLeaf(mHashTable, aParent);
 
-		if (!node.put(aEntry))
+		if (!node.put(aEntry, aLevel))
 		{
 			throw new DatabaseException("Failed to upgrade hole to leaf");
 		}
-
-		byte[] oldValue = aEntry.getValue();
 
 		BlockPointer newBlockPointer = node.writeBlock(aBlockPointer.getRange());
 
 		aParent.setPointer(aIndex, newBlockPointer);
 
-		node.gc();
-
 		Log.dec();
-
-		return oldValue;
 	}
 }

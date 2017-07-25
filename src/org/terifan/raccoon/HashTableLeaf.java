@@ -9,21 +9,20 @@ import org.terifan.security.messagedigest.MurmurHash3;
 class HashTableLeaf extends Node
 {
 	private ArrayMap mMap;
-	private HashTable mHashTable;
-	private BlockPointer mBlockPointer;
 
 
-	public HashTableLeaf(HashTable aHashTable, BlockPointer aBlockPointer)
+	public HashTableLeaf(HashTable aHashTable, HashTableNode aParent, BlockPointer aBlockPointer)
 	{
-		mHashTable = aHashTable;
-		mBlockPointer = aBlockPointer;
+		super(aHashTable, aParent, aBlockPointer);
+
 		mMap = new ArrayMap(mHashTable.getBlockAccessor().readBlock(mBlockPointer));
 	}
 
 
-	public HashTableLeaf(HashTable aHashTable)
+	public HashTableLeaf(HashTable aHashTable, HashTableNode aParent)
 	{
-		mHashTable = aHashTable;
+		super(aHashTable, aParent, null);
+
 		mMap = new ArrayMap(mHashTable.getLeafSize());
 	}
 
@@ -36,7 +35,7 @@ class HashTableLeaf extends Node
 
 
 	@Override
-	public BlockType getType()
+	public BlockType getBlockType()
 	{
 		return BlockType.LEAF;
 	}
@@ -48,8 +47,10 @@ class HashTableLeaf extends Node
 		Log.d("split leaf");
 		Log.inc();
 
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable);
+		HashTableNode node = new HashTableNode(mHashTable, mParent);
+
+		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, node);
+		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, node);
 		int halfRange = mHashTable.getPointersPerNode() / 2;
 
 		divideLeafEntries(aLevel, halfRange, lowLeaf, highLeaf);
@@ -58,12 +59,8 @@ class HashTableLeaf extends Node
 		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(halfRange);
 		BlockPointer highIndex = highLeaf.writeIfNotEmpty(halfRange);
 
-		HashTableNode node = new HashTableNode(mHashTable);
 		node.setPointer(0, lowIndex);
 		node.setPointer(halfRange, highIndex);
-
-		lowLeaf.gc();
-		highLeaf.gc();
 
 		Log.dec();
 		Log.dec();
@@ -87,8 +84,8 @@ class HashTableLeaf extends Node
 
 		freeBlock();
 
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable);
+		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, aParent);
+		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, aParent);
 		int halfRange = mBlockPointer.getRange() / 2;
 
 		divideLeafEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
@@ -98,9 +95,6 @@ class HashTableLeaf extends Node
 		BlockPointer highIndex = highLeaf.writeIfNotEmpty(halfRange);
 
 		aParent.split(aIndex, lowIndex, highIndex);
-
-		lowLeaf.gc();
-		highLeaf.gc();
 
 		Log.dec();
 		Log.dec();
@@ -140,15 +134,17 @@ class HashTableLeaf extends Node
 	}
 
 
+	@Override
 	void freeBlock()
 	{
 		mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
 	}
 
 
+	@Override
 	BlockPointer writeBlock(int aRange)
 	{
-		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(mMap.array(), 0, mMap.array().length, mHashTable.getTransactionId().get(), getType(), aRange);
+		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(mMap.array(), 0, mMap.array().length, mHashTable.getTransactionId().get(), getBlockType(), aRange);
 
 		return mBlockPointer;
 	}
@@ -157,12 +153,6 @@ class HashTableLeaf extends Node
 	int computeIndex(byte[] aKey, int aLevel)
 	{
 		return MurmurHash3.hash32(aKey, mHashTable.getHashSeed() ^ aLevel) & (mHashTable.getPointersPerNode() - 1);
-	}
-
-
-	void gc()
-	{
-		mMap.gc();
 	}
 
 
@@ -178,19 +168,22 @@ class HashTableLeaf extends Node
 	}
 
 
-	boolean get(ArrayMapEntry aEntry)
+	@Override
+	boolean get(ArrayMapEntry aEntry, int aLevel)
 	{
 		return mMap.get(aEntry);
 	}
 
 
-	boolean put(ArrayMapEntry aEntry)
+	@Override
+	boolean put(ArrayMapEntry aEntry, int aLevel)
 	{
 		return mMap.put(aEntry);
 	}
 
 
-	boolean remove(ArrayMapEntry aEntry)
+	@Override
+	boolean remove(ArrayMapEntry aEntry, int aLevel)
 	{
 		return mMap.remove(aEntry);
 	}
@@ -202,6 +195,7 @@ class HashTableLeaf extends Node
 	}
 
 
+	@Override
 	String integrityCheck()
 	{
 		return mMap.integrityCheck();

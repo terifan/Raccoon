@@ -20,18 +20,22 @@ public class Test
 			{
 				for (int i = 0; i < 1000; i++)
 				{
-					System.out.println("-------save--------");
-					db.save(new MyEntity(i, "01234567890123456789"));
+//					System.out.println("-------save--------");
+					db.save(new MyEntity(i, "01234567890123456789012345678901234567890123456789"));
 				}
 
-				System.out.println("------commit-------");
+//				System.out.println("------commit-------");
 				db.commit();
 			}
 
-//			try (Database db = new Database(blockDevice, OpenOption.OPEN))
-//			{
+			try (Database db = new Database(blockDevice, OpenOption.OPEN))
+			{
+				System.out.println("--------get--------");
+				db.get(new MyEntity(888));
+				System.out.println("-------------------");
+
 //				db.list(MyEntity.class).forEach(System.out::println);
-//			}
+			}
 		}
 		catch (Throwable e)
 		{
@@ -47,6 +51,11 @@ public class Test
 
 		public MyEntity()
 		{
+		}
+
+		public MyEntity(int aId)
+		{
+			this.id = aId;
 		}
 
 		public MyEntity(int aId, String aName)
