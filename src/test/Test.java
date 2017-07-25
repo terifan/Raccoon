@@ -14,6 +14,8 @@ public class Test
 	{
 		try
 		{
+			System.setErr(System.out);
+			
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 			try (Database db = new Database(blockDevice, OpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION, new TableParam(1, 1, 0)))

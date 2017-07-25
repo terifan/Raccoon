@@ -154,141 +154,139 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		mChanged = true;
 
-//		BlockPointer blockPointer = mRootBlockPointer;
-//		Node node = mRoot;
-//		int level = 0;
-//		int index = 0;
-//
-//		while (node.getBlockType() == BlockType.INDEX)
+		
+		
+		
+		BlockPointer blockPointer = mRootBlockPointer;
+		Node node = mRoot;
+		int level = 0;
+		int index = 0;
+
+		while (node.getBlockType() == BlockType.INDEX)
+		{
+			HashTableNode parent = (HashTableNode)node;
+			
+			index = computeIndex(aEntry.getKey(), level++);
+
+			blockPointer = parent.getPointer(parent.findPointer(index));
+
+			if (blockPointer.getBlockType() == BlockType.HOLE)
+			{
+				break;
+			}
+			
+			node = read(blockPointer, parent);
+		}
+
+		for (;;)
+		{
+			if (blockPointer.getBlockType() == BlockType.HOLE)
+			{
+				node = new HashTableLeaf(this, (HashTableNode)node);
+
+				if (!node.put(aEntry, level))
+				{
+					throw new DatabaseException("Failed to upgrade hole to leaf");
+				}
+
+				BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRange());
+
+				node.getParent().setPointer(index, newBlockPointer);
+
+				break;
+			}
+			else if (node.put(aEntry, level))
+			{
+				if (level != 0)
+				{
+					node.freeBlock();
+
+					BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRange());
+
+					node.getParent().setPointer(index, newBlockPointer);
+				}
+
+				break;
+			}
+			else if (level == 0)
+			{
+				node.freeBlock();
+
+				mRoot = ((HashTableLeaf)node).splitLeaf(0);
+
+				mRootBlockPointer = mRoot.writeBlock(mPointersPerNode);
+
+				node = null;
+
+				break;
+			}
+			else
+			{
+				if (node.getBlockPointer().getRange() > 1)
+				{
+					((HashTableLeaf)node).splitLeaf(index, level, node.getParent());
+
+					node = node.getParent();
+				}
+				else
+				{
+					level++;
+
+					node = ((HashTableLeaf)node).splitLeaf(level);
+				}
+
+				index = computeIndex(aEntry.getKey(), level);
+
+				blockPointer = ((HashTableNode)node).getPointer(((HashTableNode)node).findPointer(index));
+
+				if (blockPointer.getBlockType() != BlockType.HOLE)
+				{
+					node = read(blockPointer, ((HashTableNode)node));
+				}
+			}
+		}
+
+		
+
+
+		while (node != null && node.getParent() != null)
+		{
+			node.freeBlock();
+
+			BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRange());
+
+			node.getParent().setPointer(index, newBlockPointer);
+
+			node = node.getParent();
+		}
+		
+
+		
+
+
+
+//		if (mRoot.getBlockType() == BlockType.LEAF)
 //		{
-//			HashTableNode parent = (HashTableNode)node;
-//			
-//			index = computeIndex(aEntry.getKey(), level++);
+//			Log.d("put root value");
 //
-//			blockPointer = parent.getPointer(parent.findPointer(index));
-//
-//			if (blockPointer.getBlockType() == BlockType.HOLE)
+//			if (mRoot.put(aEntry, 0))
 //			{
-//				break;
-//			}
-//			
-//			node = read(blockPointer, parent);
-//		}
-//
-//		if (blockPointer.getBlockType() == BlockType.HOLE)
-//		{
-//			node = new HashTableLeaf(this, (HashTableNode)node);
-//
-//			if (!node.put(aEntry, level))
-//			{
-//				throw new DatabaseException("Failed to upgrade hole to leaf");
-//			}
-//
-//			BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRange());
-//
-//			parent.setPointer(index, newBlockPointer);
-//		}
-//
-//		if (!node.put(aEntry, level))
-//		{
-//			if (level == 0)
-//			{
-//				Log.d("upgrade root leaf to node");
-//
-//				node.freeBlock();
-//
-//				mRoot = ((HashTableLeaf)mRoot).splitLeaf(0);
-//
-//				mRootBlockPointer = mRoot.writeBlock(mPointersPerNode);
+//				Log.dec();
+//				assert mModCount == modCount : "concurrent modification";
 //
 //				return aEntry.getValue() != null;
 //			}
-//
-//			if (((HashTableLeaf)node).splitLeaf(index, level, node))
-//			{
-//				put(aEntry, level); // recursive put
-//			}
-//			else
-//			{
-//				HashTableNode newNode = node.splitLeaf(aLevel + 1);
-//
-//				newNode.put(aEntry, level + 1); // recursive put
-//
-//				BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRange());
-//
-//				((HashTableNode)node).setPointer(index, newBlockPointer);
-//			}
-//
 //			
+//			Log.d("upgrade root leaf to node");
+//
+//			mRoot.freeBlock();
+//
+//			mRoot = ((HashTableLeaf)mRoot).splitLeaf(0);
+//
+//			mRootBlockPointer = mRoot.writeBlock(mPointersPerNode);
 //		}
-//		else
-//		{
-//			node.freeBlock();
 //
-//			BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRange());
-//
-//			((HashTableNode)node).setPointer(index, newBlockPointer);
-//		}
-//
-//
-//				node.freeBlock();
-//				BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRange());
-//				((HashTableNode)node).setPointer(index, newBlockPointer);
-//
-//				
-//
-//				BlockPointer newBlockPointer;
-//
-//				if (node.put(aEntry, level))
-//				{
-//					node.freeBlock();
-//
-//					newBlockPointer = map.writeBlock(aBlockPointer.getRange());
-//				}
-//				else if (node.splitLeaf(aIndex, aLevel, this))
-//				{
-//					put(aEntry, aLevel); // recursive put
-//					return;
-//				}
-//				else
-//				{
-//					HashTableNode newNode = node.splitLeaf(aLevel + 1);
-//
-//					newNode.put(aEntry, level + 1); // recursive put
-//
-//					newBlockPointer = node.writeBlock(blockPointer.getRange());
-//				}
-//
-//				((HashTableNode)node).setPointer(index, newBlockPointer);
-//				
-		
-		
-
-
-
-
-		if (mRoot.getBlockType() == BlockType.LEAF)
-		{
-			Log.d("put root value");
-
-			if (mRoot.put(aEntry, 0))
-			{
-				Log.dec();
-				assert mModCount == modCount : "concurrent modification";
-
-				return aEntry.getValue() != null;
-			}
-			
-			Log.d("upgrade root leaf to node");
-
-			mRoot.freeBlock();
-
-			mRoot = ((HashTableLeaf)mRoot).splitLeaf(0);
-
-			mRootBlockPointer = mRoot.writeBlock(mPointersPerNode);
-		}
-
-		mRoot.put(aEntry, 0);
+//		mRoot.put(aEntry, 0);
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";

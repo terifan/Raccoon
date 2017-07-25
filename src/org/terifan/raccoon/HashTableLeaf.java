@@ -76,8 +76,6 @@ class HashTableLeaf extends Node
 			return false;
 		}
 
-		assert mBlockPointer.getRange() >= 2;
-
 		Log.inc();
 		Log.d("split leaf");
 		Log.inc();

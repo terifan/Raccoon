@@ -37,4 +37,16 @@ public abstract class Node
 
 
 	abstract String integrityCheck();
+
+
+	public HashTableNode getParent()
+	{
+		return mParent;
+	}
+
+
+	public BlockPointer getBlockPointer()
+	{
+		return mBlockPointer;
+	}
 }
