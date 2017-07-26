@@ -24,20 +24,22 @@ public class Test
 				{
 					for (int i = 0; i < test; i++)
 					{
-						System.out.println("-------save--------");
-						db.save(new MyEntity(i, "01234567890123456789012345678901234567890123456789"));
+						System.out.println("------- save --------");
+						db.save(new MyEntity(""+i, "01234567890123456789012345678901234567890123456789"));
 					}
 
-					System.out.println("------commit-------");
+					System.out.println("------ commit -------");
 					db.commit();
 				}
 
 				try (Database db = new Database(blockDevice, OpenOption.OPEN))
 				{
+					db.getTable(MyEntity.class).scan();
+					
 					for (int i = 0; i < test; i++)
 					{
-						System.out.println("--------get--------");
-						db.get(new MyEntity(i));
+						System.out.println("-------- get "+i+" --------");
+						db.get(new MyEntity(""+i));
 					}
 
 //					db.list(MyEntity.class).forEach(System.out::println);
@@ -55,19 +57,19 @@ public class Test
 
 	static class MyEntity
 	{
-		@Key int id;
+		@Key String id;
 		String name;
 
 		public MyEntity()
 		{
 		}
 
-		public MyEntity(int aId)
+		public MyEntity(String aId)
 		{
 			this.id = aId;
 		}
 
-		public MyEntity(int aId, String aName)
+		public MyEntity(String aId, String aName)
 		{
 			this.id = aId;
 			this.name = aName;

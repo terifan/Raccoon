@@ -58,6 +58,5 @@ abstract class Node
 		System.out.println("free  " + mBlockPointer);
 
 		mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
-		mBlockPointer = null;
 	}
 }

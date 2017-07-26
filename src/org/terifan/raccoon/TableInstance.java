@@ -460,4 +460,10 @@ public final class TableInstance<T> implements Closeable
 	{
 		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter(), 0);
 	}
+
+
+	void scan2()
+	{
+		mHashTable.scan2();
+	}
 }

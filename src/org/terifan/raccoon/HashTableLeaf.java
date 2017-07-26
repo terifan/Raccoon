@@ -194,4 +194,10 @@ class HashTableLeaf extends Node
 	{
 		return ArrayMap.OVERHEAD;
 	}
+
+
+	public ArrayMap getMap()
+	{
+		return mMap;
+	}
 }
