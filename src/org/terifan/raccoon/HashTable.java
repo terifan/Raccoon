@@ -535,7 +535,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	int computeIndex(byte[] aKey, int aLevel)
 	{
-		return MurmurHash3.hash32(aKey, mHashSeed ^ aLevel) & (mPointersPerNode - 1);
+//		return MurmurHash3.hash32(aKey, mHashSeed ^ aLevel) & (mPointersPerNode - 1);
+		return MurmurHash3.hash32(aKey, 4) & (mPointersPerNode - 1);
 	}
 
 
