@@ -102,7 +102,7 @@ public class BlockAccessor
 	}
 
 
-	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType, int aRangeOffset, int aRangeSize)
+	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType, int aRangeOffset, int aRangeSize, int aLevel)
 	{
 		BlockPointer blockPointer = null;
 
@@ -145,6 +145,7 @@ public class BlockAccessor
 			blockPointer.setBlockType(aType);
 			blockPointer.setRangeOffset(aRangeOffset);
 			blockPointer.setRangeSize(aRangeSize);
+			blockPointer.setLevel(aLevel);
 			blockPointer.setChecksum(MurmurHash3.hash128(aBuffer, 0, physicalSize, blockIndex));
 			blockPointer.setIV(ISAAC.PRNG.nextLong(), ISAAC.PRNG.nextLong());
 

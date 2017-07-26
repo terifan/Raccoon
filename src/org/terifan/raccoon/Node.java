@@ -43,9 +43,9 @@ abstract class Node
 	}
 
 
-	BlockPointer writeBlock(int aRangeOffset, int aRangeSize)
+	BlockPointer writeBlock(int aRangeOffset, int aRangeSize, int aLevel)
 	{
-		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId().get(), getBlockType(), aRangeOffset, aRangeSize);
+		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId().get(), getBlockType(), aRangeOffset, aRangeSize, aLevel);
 
 		System.out.println("write " + mBlockPointer);
 

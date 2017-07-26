@@ -113,19 +113,6 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public int getRangeOffset()
-	{
-		return mRangeOffset;
-	}
-
-
-	public BlockPointer setRangeOffset(int aRangeOffset)
-	{
-		mRangeOffset = aRangeOffset;
-		return this;
-	}
-
-
 	public int getRangeSize()
 	{
 		return mRangeSize;
@@ -135,6 +122,19 @@ public class BlockPointer implements Serializable
 	public BlockPointer setRangeSize(int aRangeSize)
 	{
 		mRangeSize = aRangeSize;
+		return this;
+	}
+
+
+	public int getRangeOffset()
+	{
+		return mRangeOffset;
+	}
+
+
+	public BlockPointer setRangeOffset(int aRangeOffset)
+	{
+		mRangeOffset = aRangeOffset;
 		return this;
 	}
 
@@ -317,6 +317,6 @@ public class BlockPointer implements Serializable
 	@Override
 	public String toString()
 	{
-		return "{type=" + getBlockType() + ", level=" + mLevel + ", offset=" + mBlockIndex0 + ", alloc=" + mAllocatedSize + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRangeOffset + "/" + mRangeSize + ", tx=" + mTransactionId + ")";
+		return "{type=" + getBlockType() + ", level=" + mLevel + ", offset=" + mBlockIndex0 + ", alloc=" + mAllocatedSize + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRangeOffset + ":" + mRangeSize + ", tx=" + mTransactionId + ")";
 	}
 }
