@@ -54,7 +54,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 			mRoot = new HashTableLeaf(this, null);
-			mRootBlockPointer = mRoot.writeBlock(mPointersPerNode);
+			mRootBlockPointer = mRoot.writeBlock(0, mPointersPerNode);
 			mWasEmptyInstance = true;
 			mChanged = true;
 		}
@@ -192,7 +192,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 					throw new DatabaseException("Failed to upgrade hole to leaf");
 				}
 
-				BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRange());
+				BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRangeOffset(), blockPointer.getRangeSize());
 
 				node.getParent().setPointer(index, newBlockPointer);
 
@@ -204,7 +204,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				{
 					node.freeBlock();
 
-					BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRange());
+					BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRangeOffset(), blockPointer.getRangeSize());
 
 					node.getParent().setPointer(index, newBlockPointer);
 				}
@@ -221,11 +221,11 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 					node = mRoot = ((HashTableLeaf)node).splitLeaf(level);
 
-					mRootBlockPointer = mRoot.writeBlock(mPointersPerNode);
+					mRootBlockPointer = mRoot.writeBlock(0, mPointersPerNode);
 
 					level++;
 				}
-				else if (node.getBlockPointer().getRange() > 1)
+				else if (node.getBlockPointer().getRangeOffset() > 1)
 				{
 					System.out.println("split");
 
@@ -260,7 +260,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		{
 			node.freeBlock();
 
-			BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRange());
+			BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRangeOffset(), blockPointer.getRangeSize());
 
 			index = indices.remove(indices.size() - 1);
 
@@ -369,7 +369,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				Log.inc();
 
 				mRoot.freeBlock();
-				mRootBlockPointer = mRoot.writeBlock(mPointersPerNode);
+				mRootBlockPointer = mRoot.writeBlock(0, mPointersPerNode);
 
 				if (mCommitChangesToBlockDevice)
 				{
@@ -461,7 +461,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			mRoot = new HashTableLeaf(this, null);
 		}
 
-		mRootBlockPointer = mRoot.writeBlock(mPointersPerNode);
+		mRootBlockPointer = mRoot.writeBlock(0, mPointersPerNode);
 
 		assert mModCount == modCount : "concurrent modification";
 	}

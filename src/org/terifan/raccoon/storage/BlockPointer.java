@@ -12,16 +12,18 @@ public class BlockPointer implements Serializable
 	public final static int SIZE = 64;
 
 	private int mBlockType;
+	private int mLevel;
 	private int mChecksumAlgorithm;
 	private int mCompressionAlgorithm;
-	private int mRange;
+	private int mRangeOffset;
+	private int mRangeSize;
 	private int mAllocatedSize;
 	private int mLogicalSize;
 	private int mPhysicalSize;
-	private long mBlockIndex0;
-	private long mBlockIndex1;
-	private long mBlockIndex2;
-	private long mTransactionId;
+	private int mBlockIndex0;
+	private int mBlockIndex1;
+	private int mBlockIndex2;
+	private int mTransactionId;
 	private long[] mChecksum;
 	private long[] mIV;
 
@@ -30,6 +32,19 @@ public class BlockPointer implements Serializable
 	{
 		mIV = new long[2];
 		mChecksum = new long[2];
+	}
+
+
+	public int getLevel()
+	{
+		return mLevel;
+	}
+
+
+	public BlockPointer setLevel(int aLevel)
+	{
+		mLevel = aLevel;
+		return this;
 	}
 
 
@@ -98,15 +113,28 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public int getRange()
+	public int getRangeOffset()
 	{
-		return mRange;
+		return mRangeOffset;
 	}
 
 
-	public BlockPointer setRange(int aRange)
+	public BlockPointer setRangeOffset(int aRangeOffset)
 	{
-		mRange = aRange;
+		mRangeOffset = aRangeOffset;
+		return this;
+	}
+
+
+	public int getRangeSize()
+	{
+		return mRangeSize;
+	}
+
+
+	public BlockPointer setRangeSize(int aRangeSize)
+	{
+		mRangeSize = aRangeSize;
 		return this;
 	}
 
@@ -119,7 +147,7 @@ public class BlockPointer implements Serializable
 
 	public BlockPointer setBlockIndex(long aBlockIndex)
 	{
-		mBlockIndex0 = aBlockIndex;
+		mBlockIndex0 = (int)aBlockIndex;
 		return this;
 	}
 
@@ -179,7 +207,7 @@ public class BlockPointer implements Serializable
 
 	public BlockPointer setTransactionId(long aTransactionId)
 	{
-		mTransactionId = aTransactionId;
+		mTransactionId = (int)aTransactionId;
 		return this;
 	}
 
@@ -187,27 +215,32 @@ public class BlockPointer implements Serializable
 	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer)
 	{
 		assert mBlockType >= 0 && mBlockType <= 0xff;
+		assert mLevel >= 0 && mLevel <= 0xff;
 		assert mCompressionAlgorithm >= 0 && mCompressionAlgorithm <= 0xff;
 		assert mChecksumAlgorithm >= 0 && mChecksumAlgorithm <= 0x0f;
+		assert mRangeOffset >= 0 && mRangeOffset <= 0xffff;
+		assert mRangeSize >= 0 && mRangeSize <= 0xffff;
 		assert mAllocatedSize >= 0 && mAllocatedSize <= 0xffff;
 		assert mPhysicalSize >= 0 && mPhysicalSize <= 0xffffff;
 		assert mLogicalSize >= 0 && mPhysicalSize <= 0xffffff;
-		assert mBlockIndex0 >= 0 && mBlockIndex0 <= 0xffffffffffL;
-		assert mBlockIndex1 >= 0 && mBlockIndex1 <= 0xffffffffffL;
-		assert mBlockIndex2 >= 0 && mBlockIndex2 <= 0xffffffffffL;
-		assert mTransactionId >= 0 && mTransactionId <= 0xffffffffffL;
-		assert mRange >= 0 && mRange <= 0xfff;
+		assert mBlockIndex0 >= 0 && mBlockIndex0 <= 0xffffffffL;
+		assert mBlockIndex1 >= 0 && mBlockIndex1 <= 0xffffffffL;
+		assert mBlockIndex2 >= 0 && mBlockIndex2 <= 0xffffffffL;
+		assert mTransactionId >= 0 && mTransactionId <= 0xffffffffL;
 
 		aBuffer.writeInt8(mBlockType);
+		aBuffer.writeInt8(mLevel);
 		aBuffer.writeInt8(mCompressionAlgorithm);
-		aBuffer.writeInt16((mChecksumAlgorithm << 12) + mRange);
+		aBuffer.writeInt8(mChecksumAlgorithm);
+		aBuffer.writeInt16(mRangeOffset);
+		aBuffer.writeInt16(mRangeSize);
 		aBuffer.writeInt16(mAllocatedSize);
 		aBuffer.writeInt24(mLogicalSize);
 		aBuffer.writeInt24(mPhysicalSize);
-		aBuffer.writeInt40(mBlockIndex0);
-		aBuffer.writeInt40(mBlockIndex1);
-		aBuffer.writeInt40(mBlockIndex2);
-		aBuffer.writeInt40(mTransactionId);
+		aBuffer.writeInt32(mBlockIndex0);
+		aBuffer.writeInt32(mBlockIndex1);
+		aBuffer.writeInt32(mBlockIndex2);
+		aBuffer.writeInt32(mTransactionId);
 		aBuffer.writeInt64(mIV[0]);
 		aBuffer.writeInt64(mIV[1]);
 		aBuffer.writeInt64(mChecksum[0]);
@@ -220,17 +253,18 @@ public class BlockPointer implements Serializable
 	public BlockPointer unmarshal(ByteArrayBuffer aBuffer)
 	{
 		mBlockType = aBuffer.readInt8();
+		mLevel = aBuffer.readInt8();
 		mCompressionAlgorithm = aBuffer.readInt8();
-		int tmp = aBuffer.readInt16();
-		mChecksumAlgorithm = tmp >>> 12;
-		mRange = tmp & 0xfff;
+		mChecksumAlgorithm = aBuffer.readInt8();
+		mRangeOffset = aBuffer.readInt16();
+		mRangeSize = aBuffer.readInt16();
 		mAllocatedSize = aBuffer.readInt16();
 		mLogicalSize = aBuffer.readInt24();
 		mPhysicalSize = aBuffer.readInt24();
-		mBlockIndex0 = aBuffer.readInt40();
-		mBlockIndex1 = aBuffer.readInt40();
-		mBlockIndex2 = aBuffer.readInt40();
-		mTransactionId = aBuffer.readInt40();
+		mBlockIndex0 = aBuffer.readInt32();
+		mBlockIndex1 = aBuffer.readInt32();
+		mBlockIndex2 = aBuffer.readInt32();
+		mTransactionId = aBuffer.readInt32();
 		mIV[0] = aBuffer.readInt64();
 		mIV[1] = aBuffer.readInt64();
 		mChecksum[0] = aBuffer.readInt64();
@@ -283,6 +317,6 @@ public class BlockPointer implements Serializable
 	@Override
 	public String toString()
 	{
-		return "{type=" + getBlockType() + ", offset=" + mBlockIndex0 + ", alloc=" + mAllocatedSize + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRange + ", tx=" + mTransactionId + ")";
+		return "{type=" + getBlockType() + ", level=" + mLevel + ", offset=" + mBlockIndex0 + ", alloc=" + mAllocatedSize + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRangeOffset + "/" + mRangeSize + ", tx=" + mTransactionId + ")";
 	}
 }

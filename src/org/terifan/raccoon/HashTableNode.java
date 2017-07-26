@@ -53,7 +53,7 @@ final class HashTableNode extends Node
 
 	void setPointer(int aIndex, BlockPointer aBlockPointer)
 	{
-		assert HashTableNode.this.get(aIndex).getBlockType() == BlockType.FREE || HashTableNode.this.get(aIndex).getRange() == aBlockPointer.getRange() : HashTableNode.this.get(aIndex).getBlockType() + " " + HashTableNode.this.get(aIndex).getRange() + "==" + aBlockPointer.getRange();
+		assert get(aIndex).getBlockType() == BlockType.FREE || get(aIndex).getRangeOffset() == aBlockPointer.getRangeOffset() : get(aIndex).getBlockType() + " " + get(aIndex).getRangeOffset() + "==" + aBlockPointer.getRangeOffset();
 
 		set(aIndex, aBlockPointer);
 	}
@@ -66,9 +66,10 @@ final class HashTableNode extends Node
 			return null;
 		}
 
-		BlockPointer blockPointer = HashTableNode.this.get(aIndex);
+		BlockPointer blockPointer = get(aIndex);
 
-		assert blockPointer.getRange() != 0;
+		assert blockPointer.getRangeOffset() != 0;
+		assert blockPointer.getRangeSize() != 0;
 
 		return blockPointer;
 	}
@@ -86,25 +87,25 @@ final class HashTableNode extends Node
 
 	void split(int aIndex, BlockPointer aLowPointer, BlockPointer aHighPointer)
 	{
-		assert aLowPointer.getRange() + aHighPointer.getRange() == HashTableNode.this.get(aIndex).getRange();
-		assert ensureEmpty(aIndex + 1, aLowPointer.getRange() + aHighPointer.getRange() - 1);
+		assert aLowPointer.getRangeOffset() + aHighPointer.getRangeOffset() == get(aIndex).getRangeOffset();
+		assert ensureEmpty(aIndex + 1, aLowPointer.getRangeOffset() + aHighPointer.getRangeOffset() - 1);
 
 		set(aIndex, aLowPointer);
-		set(aIndex + aLowPointer.getRange(), aHighPointer);
+		set(aIndex + aLowPointer.getRangeOffset(), aHighPointer);
 	}
 
 
 	void merge(int aIndex, BlockPointer aBlockPointer)
 	{
-		BlockPointer bp1 = HashTableNode.this.get(aIndex);
-		BlockPointer bp2 = HashTableNode.this.get(aIndex + aBlockPointer.getRange());
+		BlockPointer bp1 = get(aIndex);
+		BlockPointer bp2 = get(aIndex + aBlockPointer.getRangeOffset());
 
-		assert bp1.getRange() + bp2.getRange() == aBlockPointer.getRange();
-		assert ensureEmpty(aIndex + 1, bp1.getRange() - 1);
-		assert ensureEmpty(aIndex + bp1.getRange() + 1, bp2.getRange() - 1);
+		assert bp1.getRangeOffset() + bp2.getRangeOffset() == aBlockPointer.getRangeOffset();
+		assert ensureEmpty(aIndex + 1, bp1.getRangeOffset() - 1);
+		assert ensureEmpty(aIndex + bp1.getRangeOffset() + 1, bp2.getRangeOffset() - 1);
 
 		set(aIndex, aBlockPointer);
-		set(aIndex + bp1.getRange(), EMPTY_POINTER);
+		set(aIndex + bp1.getRangeOffset(), EMPTY_POINTER);
 	}
 
 
@@ -159,18 +160,18 @@ final class HashTableNode extends Node
 
 			if (rangeRemain > 0)
 			{
-				if (bp.getRange() != 0)
+				if (bp.getRangeOffset() != 0)
 				{
 					return "Pointer inside range: ranges: " + printRanges();
 				}
 			}
 			else
 			{
-				if (bp.getRange() == 0)
+				if (bp.getRangeOffset() == 0)
 				{
 					return "Zero range";
 				}
-				rangeRemain = bp.getRange();
+				rangeRemain = bp.getRangeOffset();
 			}
 			rangeRemain--;
 		}
@@ -188,7 +189,7 @@ final class HashTableNode extends Node
 			{
 				sb.append(", ");
 			}
-			sb.append(get(j).getRange());
+			sb.append(get(j).getRangeOffset());
 		}
 
 		return sb.toString();
@@ -237,7 +238,7 @@ final class HashTableNode extends Node
 				if (node.remove(aEntry, aLevel + 1))
 				{
 					node.freeBlock();
-					newBlockPointer = node.writeBlock(blockPointer.getRange());
+					newBlockPointer = node.writeBlock(blockPointer.getRangeOffset(), blockPointer.getRangeSize());
 				}
 				break;
 			case LEAF:
@@ -245,7 +246,7 @@ final class HashTableNode extends Node
 				if (leaf.remove(aEntry, aLevel + 1))
 				{
 					leaf.freeBlock();
-					newBlockPointer = leaf.writeBlock(blockPointer.getRange());
+					newBlockPointer = leaf.writeBlock(blockPointer.getRangeOffset(), blockPointer.getRangeSize());
 				}
 				break;
 			case HOLE:
@@ -279,7 +280,7 @@ final class HashTableNode extends Node
 				HashTableNode node = mHashTable.readNode(blockPointer, this);
 				node.put(aEntry, aLevel + 1);
 				node.freeBlock();
-				BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRange());
+				BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRangeOffset(), blockPointer.getRangeSize());
 				setPointer(index, newBlockPointer);
 				break;
 			case LEAF:
@@ -308,7 +309,7 @@ final class HashTableNode extends Node
 		{
 			aLeaf.freeBlock();
 
-			newBlockPointer = aLeaf.writeBlock(aBlockPointer.getRange());
+			newBlockPointer = aLeaf.writeBlock(aBlockPointer.getRangeOffset(), aBlockPointer.getRangeSize());
 		}
 		else if (aLeaf.splitLeaf(aIndex, aLevel, this))
 		{
@@ -321,7 +322,7 @@ final class HashTableNode extends Node
 
 			newNode.put(aEntry, aLevel + 1); // recursive put
 
-			newBlockPointer = newNode.writeBlock(aBlockPointer.getRange());
+			newBlockPointer = newNode.writeBlock(aBlockPointer.getRangeOffset(), aBlockPointer.getRangeSize());
 		}
 
 		setPointer(aIndex, newBlockPointer);
@@ -340,7 +341,7 @@ final class HashTableNode extends Node
 			throw new DatabaseException("Failed to upgrade hole to leaf");
 		}
 
-		BlockPointer newBlockPointer = node.writeBlock(aBlockPointer.getRange());
+		BlockPointer newBlockPointer = node.writeBlock(aBlockPointer.getRangeOffset(), aBlockPointer.getRangeSize());
 
 		aParent.setPointer(aIndex, newBlockPointer);
 
