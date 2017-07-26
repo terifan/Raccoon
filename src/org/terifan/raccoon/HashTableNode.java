@@ -155,13 +155,13 @@ final class HashTableNode extends Node
 
 		for (int i = 0; i < mPointerCount; i++)
 		{
-			BlockPointer bp = HashTableNode.this.get(i);
+			BlockPointer bp = get(i);
 
 			if (rangeRemain > 0)
 			{
 				if (bp.getRange() != 0)
 				{
-					return "Pointer inside range";
+					return "Pointer inside range: ranges: " + printRanges();
 				}
 			}
 			else
@@ -176,6 +176,22 @@ final class HashTableNode extends Node
 		}
 
 		return null;
+	}
+
+
+	String printRanges()
+	{
+		StringBuilder sb = new StringBuilder();
+		for (int j = 0; j < mPointerCount; j++)
+		{
+			if (j > 0)
+			{
+				sb.append(", ");
+			}
+			sb.append(get(j).getRange());
+		}
+
+		return sb.toString();
 	}
 
 
@@ -201,24 +217,9 @@ final class HashTableNode extends Node
 	}
 
 
-	@Override
-	void freeBlock()
-	{
-		mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
-	}
-
-
 	byte[] readBlock()
 	{
 		return mHashTable.getBlockAccessor().readBlock(mBlockPointer);
-	}
-
-
-	@Override
-	BlockPointer writeBlock(int aRange)
-	{
-		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId().get(), getBlockType(), aRange);
-		return mBlockPointer;
 	}
 
 

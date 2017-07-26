@@ -15,28 +15,35 @@ public class Test
 		try
 		{
 			System.setErr(System.out);
-			
-			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-			try (Database db = new Database(blockDevice, OpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION, new TableParam(1, 1, 0)))
+			for (int test = 1; test < 1000; test++)
 			{
-				for (int i = 0; i < 1000; i++)
+				MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+
+				try (Database db = new Database(blockDevice, OpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION, new TableParam(1, 1, 0)))
 				{
-//					System.out.println("-------save--------");
-					db.save(new MyEntity(i, "01234567890123456789012345678901234567890123456789"));
+					for (int i = 0; i < test; i++)
+					{
+						System.out.println("-------save--------");
+						db.save(new MyEntity(i, "01234567890123456789012345678901234567890123456789"));
+					}
+
+					System.out.println("------commit-------");
+					db.commit();
 				}
 
-//				System.out.println("------commit-------");
-				db.commit();
-			}
+				try (Database db = new Database(blockDevice, OpenOption.OPEN))
+				{
+					for (int i = 0; i < test; i++)
+					{
+						System.out.println("--------get--------");
+						db.get(new MyEntity(i));
+					}
 
-			try (Database db = new Database(blockDevice, OpenOption.OPEN))
-			{
-				System.out.println("--------get--------");
-				db.get(new MyEntity(888));
-				System.out.println("-------------------");
-
-//				db.list(MyEntity.class).forEach(System.out::println);
+//					db.list(MyEntity.class).forEach(System.out::println);
+				}
+				
+				System.out.println();
 			}
 		}
 		catch (Throwable e)

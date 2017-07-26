@@ -132,22 +132,6 @@ class HashTableLeaf extends Node
 	}
 
 
-	@Override
-	void freeBlock()
-	{
-		mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
-	}
-
-
-	@Override
-	BlockPointer writeBlock(int aRange)
-	{
-		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(mMap.array(), 0, mMap.array().length, mHashTable.getTransactionId().get(), getBlockType(), aRange);
-
-		return mBlockPointer;
-	}
-
-
 	int computeIndex(byte[] aKey, int aLevel)
 	{
 		return MurmurHash3.hash32(aKey, mHashTable.getHashSeed() ^ aLevel) & (mHashTable.getPointersPerNode() - 1);

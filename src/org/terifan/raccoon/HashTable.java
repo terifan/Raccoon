@@ -131,7 +131,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			{
 				return false;
 			}
-			
+
 			node = read(blockPointer, (HashTableNode)node);
 		}
 
@@ -154,27 +154,30 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		mChanged = true;
 
-		
-		
-		
+
+
+
 		BlockPointer blockPointer = mRootBlockPointer;
 		Node node = mRoot;
 		int level = 0;
 		int index = 0;
+		ArrayList<Integer> indices = new ArrayList<>();
 
 		while (node.getBlockType() == BlockType.INDEX)
 		{
 			HashTableNode parent = (HashTableNode)node;
-			
-			index = computeIndex(aEntry.getKey(), level++);
 
-			blockPointer = parent.getPointer(parent.findPointer(index));
+			index = parent.findPointer(computeIndex(aEntry.getKey(), level++));
+
+			indices.add(parent.findPointer(index));
+
+			blockPointer = parent.getPointer(index);
 
 			if (blockPointer.getBlockType() == BlockType.HOLE)
 			{
 				break;
 			}
-			
+
 			node = read(blockPointer, parent);
 		}
 
@@ -208,22 +211,24 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 				break;
 			}
-			else if (level == 0)
-			{
-				node.freeBlock();
-
-				mRoot = ((HashTableLeaf)node).splitLeaf(0);
-
-				mRootBlockPointer = mRoot.writeBlock(mPointersPerNode);
-
-				node = null;
-
-				break;
-			}
 			else
 			{
-				if (node.getBlockPointer().getRange() > 1)
+				if (level == 0)
 				{
+					System.out.println("expand");
+
+					node.freeBlock();
+
+					node = mRoot = ((HashTableLeaf)node).splitLeaf(level);
+
+					mRootBlockPointer = mRoot.writeBlock(mPointersPerNode);
+
+					level++;
+				}
+				else if (node.getBlockPointer().getRange() > 1)
+				{
+					System.out.println("split");
+
 					((HashTableLeaf)node).splitLeaf(index, level, node.getParent());
 
 					node = node.getParent();
@@ -235,9 +240,11 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 					node = ((HashTableLeaf)node).splitLeaf(level);
 				}
 
-				index = computeIndex(aEntry.getKey(), level);
+				index = ((HashTableNode)node).findPointer(computeIndex(aEntry.getKey(), level));
 
-				blockPointer = ((HashTableNode)node).getPointer(((HashTableNode)node).findPointer(index));
+				indices.add(index);
+
+				blockPointer = ((HashTableNode)node).getPointer(index);
 
 				if (blockPointer.getBlockType() != BlockType.HOLE)
 				{
@@ -246,7 +253,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			}
 		}
 
-		
+
 
 
 		while (node != null && node.getParent() != null)
@@ -255,13 +262,14 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 			BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRange());
 
+			index = indices.remove(indices.size() - 1);
+
 			node.getParent().setPointer(index, newBlockPointer);
 
 			node = node.getParent();
 		}
-		
 
-		
+
 
 
 
@@ -276,7 +284,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 //
 //				return aEntry.getValue() != null;
 //			}
-//			
+//
 //			Log.d("upgrade root leaf to node");
 //
 //			mRoot.freeBlock();
