@@ -31,6 +31,12 @@ abstract class Node
 	abstract String integrityCheck();
 
 
+	BlockPointer writeBlock()
+	{
+		return writeBlock(mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
+	}
+
+
 	HashTableNode getParent()
 	{
 		return mParent;
@@ -58,6 +64,5 @@ abstract class Node
 		System.out.println("free  " + mBlockPointer);
 
 		mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
-		mBlockPointer = null;
 	}
 }

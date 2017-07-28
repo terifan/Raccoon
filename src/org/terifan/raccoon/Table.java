@@ -252,6 +252,12 @@ public final class Table<T>
 	}
 
 
+	public void scan()
+	{
+		getTableInstance().scan2();
+	}
+
+
 	public static String getCategoryName(int aCategory)
 	{
 		if ((aCategory & FIELD_CATEGORY_KEY) != 0)
@@ -268,11 +274,11 @@ public final class Table<T>
 
 	public int size()
 	{
-		return getTableType().size();
+		return getTableInstance().size();
 	}
 
 
-	private TableInstance getTableType()
+	private TableInstance getTableInstance()
 	{
 		return mDatabase.openTable(this, OpenOption.OPEN);
 	}
@@ -284,7 +290,7 @@ public final class Table<T>
 
 		try
 		{
-			for (Iterator<T> it = new EntityIterator(getTableType(), getTableType().getLeafIterator()); it.hasNext();)
+			for (Iterator<T> it = new EntityIterator(getTableInstance(), getTableInstance().getLeafIterator()); it.hasNext();)
 			{
 				aConsumer.accept(it.next());
 			}
@@ -308,7 +314,7 @@ public final class Table<T>
 
 		try
 		{
-			ResultSet resultSet = new ResultSet(getTableType(), getTableType().getLeafIterator());
+			ResultSet resultSet = new ResultSet(getTableInstance(), getTableInstance().getLeafIterator());
 
 			while (resultSet.next())
 			{
