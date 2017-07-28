@@ -105,7 +105,7 @@ class HashTableLeaf extends Node
 	{
 		for (ArrayMapEntry entry : mMap)
 		{
-			if (computeIndex(entry.getKey(), aLevel) < aHalfRange)
+			if (mHashTable.computeIndex(entry.getKey(), aLevel) < aHalfRange)
 			{
 				aLowLeaf.mMap.put(entry);
 			}
@@ -129,12 +129,6 @@ class HashTableLeaf extends Node
 		}
 
 		return mBlockPointer;
-	}
-
-
-	int computeIndex(byte[] aKey, int aLevel)
-	{
-		return MurmurHash3.hash32(aKey, mHashTable.getHashSeed() ^ aLevel) & (mHashTable.getPointersPerNode() - 1);
 	}
 
 
