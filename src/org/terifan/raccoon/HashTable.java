@@ -23,8 +23,9 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	private int mNodeSize;
 	private int mLeafSize;
-	private int mHashSeed;
-	private int mPointersPerNode;
+	private long mHashSeed;
+	private final int mPointersPerNode;
+	private final int mBitsPerNode;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mChanged;
@@ -54,6 +55,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			mHashSeed = 4; //new SecureRandom().nextInt();
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
+			mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
 			mRoot = new HashTableLeaf(this, null);
 			mRoot.writeBlock(0, mPointersPerNode, 0);
 			mWasEmptyInstance = true;
@@ -67,7 +69,10 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			unmarshalHeader();
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
+			mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
 		}
+
+		assert mPointersPerNode == (1 << mBitsPerNode);
 
 		Log.dec();
 	}
@@ -75,9 +80,9 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	public byte[] marshalHeader()
 	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(BlockPointer.SIZE + 4 + 4 + 4 + 3);
+		ByteArrayBuffer buffer = new ByteArrayBuffer(BlockPointer.SIZE + 8 + 4 + 4 + 3);
 		mRoot.getBlockPointer().marshal(buffer);
-		buffer.writeInt32(mHashSeed);
+		buffer.writeInt64(mHashSeed);
 		buffer.writeVar32(mNodeSize);
 		buffer.writeVar32(mLeafSize);
 		mBlockAccessor.getCompressionParam().marshal(buffer);
@@ -93,7 +98,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		ByteArrayBuffer buffer = new ByteArrayBuffer(mTableHeader);
 		bp.unmarshal(buffer);
 
-		mHashSeed = buffer.readInt32();
+		mHashSeed = buffer.readInt64();
 		mNodeSize = buffer.readVar32();
 		mLeafSize = buffer.readVar32();
 
@@ -120,7 +125,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		while (node.getBlockType() == BlockType.INDEX)
 		{
 			HashTableNode parent = (HashTableNode)node;
-			
+
 			System.out.println(computeIndex(aEntry.getKey(), node.getBlockPointer().getLevel()));
 
 			BlockPointer blockPointer = parent.getPointer(parent.findPointer(computeIndex(aEntry.getKey(), node.getBlockPointer().getLevel())));
@@ -205,7 +210,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				System.out.println("expand");
 
 				node.freeBlock();
-				node = ((HashTableLeaf)node).splitLeaf(node.getBlockPointer().getLevel() + 1);
+				node = ((HashTableLeaf)node).expandLeaf(node.getBlockPointer().getLevel());
 				node.writeBlock(0, mPointersPerNode, mRoot.getBlockPointer().getLevel());
 			}
 			else if (node.getBlockPointer().getRangeSize() > 1)
@@ -218,11 +223,19 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			}
 			else
 			{
-				node = ((HashTableLeaf)node).splitLeaf(node.getBlockPointer().getLevel());
+				System.out.println("expand 2");
+
+				BlockPointer bp = node.getBlockPointer();
+
+				node.freeBlock();
+
+				node = ((HashTableLeaf)node).expandLeaf(node.getBlockPointer().getLevel());
+
+				node.writeBlock(bp.getRangeOffset(), bp.getRangeSize(), bp.getLevel());
 			}
 
-			System.out.println(computeIndex(aEntry.getKey(), node.getBlockPointer().getLevel()));
-			
+			System.out.println(node.getBlockPointer().getLevel());
+
 			HashTableNode parent = (HashTableNode)node;
 
 			BlockPointer blockPointer = parent.getPointer(parent.findPointer(computeIndex(aEntry.getKey(), node.getBlockPointer().getLevel())));
@@ -519,8 +532,9 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	int computeIndex(byte[] aKey, int aLevel)
 	{
-//		return MurmurHash3.hash32(aKey, mHashSeed ^ aLevel) & (mPointersPerNode - 1);
-		return MurmurHash3.hash32(aKey, 4) & (mPointersPerNode - 1);
+		System.out.printf("%d %64s %s%n", aLevel, Long.toBinaryString(MurmurHash3.hash64(aKey, mHashSeed)), Long.toBinaryString(Long.rotateRight(MurmurHash3.hash64(aKey, mHashSeed), mBitsPerNode * aLevel) & (mPointersPerNode - 1)));
+
+		return (int)Long.rotateRight(MurmurHash3.hash64(aKey, mHashSeed), mBitsPerNode * aLevel) & (mPointersPerNode - 1);
 	}
 
 
@@ -675,12 +689,6 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	public int getHashSeed()
-	{
-		return mHashSeed;
-	}
-
-
 	public int getLeafSize()
 	{
 		return mLeafSize;
@@ -734,7 +742,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				else if (bp.getBlockType() == BlockType.LEAF)
 				{
 					HashTableLeaf leaf = readLeaf(bp, aNode);
-					
+
 					for (ArrayMapEntry entry : leaf.getMap())
 					{
 						for (int j = 0; j <= aIndent; j++)

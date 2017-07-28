@@ -319,7 +319,7 @@ final class HashTableNode extends Node
 		}
 		else
 		{
-			HashTableNode newNode = aLeaf.splitLeaf(aLevel + 1);
+			HashTableNode newNode = aLeaf.expandLeaf(aLevel + 1);
 
 			newNode.put(aEntry, aLevel + 1); // recursive put
 

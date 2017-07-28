@@ -41,8 +41,10 @@ class HashTableLeaf extends Node
 	}
 
 
-	HashTableNode splitLeaf(int aLevel)
+	HashTableNode expandLeaf(int aLevel)
 	{
+		assert aLevel == 0 || mBlockPointer.getRangeSize() == 1;
+
 		Log.inc();
 		Log.d("split leaf");
 		Log.inc();
@@ -55,9 +57,8 @@ class HashTableLeaf extends Node
 
 		divideLeafEntries(aLevel, halfRange, lowLeaf, highLeaf);
 
-		// create nodes pointing to leafs
-		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(0, halfRange, aLevel);
-		BlockPointer highIndex = highLeaf.writeIfNotEmpty(halfRange, halfRange, aLevel);
+		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(0, halfRange, aLevel + 1);
+		BlockPointer highIndex = highLeaf.writeIfNotEmpty(halfRange, halfRange, aLevel + 1);
 
 		node.setPointer(0, lowIndex);
 		node.setPointer(halfRange, highIndex);
@@ -71,10 +72,7 @@ class HashTableLeaf extends Node
 
 	boolean splitLeaf(int aIndex, int aLevel, HashTableNode aParent)
 	{
-		if (mBlockPointer.getRangeSize() == 1)
-		{
-			return false;
-		}
+		assert mBlockPointer.getRangeSize() > 1;
 
 		Log.inc();
 		Log.d("split leaf");
@@ -88,7 +86,6 @@ class HashTableLeaf extends Node
 
 		divideLeafEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
 
-		// create nodes pointing to leafs
 		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(aIndex, halfRange, aLevel);
 		BlockPointer highIndex = highLeaf.writeIfNotEmpty(aIndex + halfRange, halfRange, aLevel);
 
