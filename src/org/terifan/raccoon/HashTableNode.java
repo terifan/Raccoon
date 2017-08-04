@@ -2,7 +2,6 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.util.Log;
 
 
 final class HashTableNode extends Node
@@ -51,11 +50,19 @@ final class HashTableNode extends Node
 	}
 
 
-	void setPointer(int aIndex, BlockPointer aBlockPointer)
+	void setPointer(BlockPointer aBlockPointer)
 	{
-		assert get(aIndex).getBlockType() == BlockType.FREE || (get(aIndex).getRangeSize() == aBlockPointer.getRangeSize() && get(aIndex).getRangeOffset() == aBlockPointer.getRangeOffset()) : get(aIndex).getBlockType() + " " + get(aIndex).getRangeOffset()+":"+get(aIndex).getRangeSize() + " != " + aBlockPointer.getRangeOffset()+":"+aBlockPointer.getRangeSize();
+		int index = aBlockPointer.getRangeOffset();
 
-		set(aIndex, aBlockPointer);
+		assert get(index).getBlockType() == BlockType.FREE || (get(index).getRangeSize() == aBlockPointer.getRangeSize() && get(index).getRangeOffset() == index) : get(index).getBlockType() + " " + get(index).getRangeOffset()+":"+get(index).getRangeSize() + " != " + index+":"+aBlockPointer.getRangeSize();
+
+		set(index, aBlockPointer);
+	}
+
+
+	BlockPointer getPointerByHash(long aHashCode)
+	{
+		return getPointer(findPointer(mHashTable.computeIndex(aHashCode, mBlockPointer.getLevel())));
 	}
 
 
@@ -66,11 +73,7 @@ final class HashTableNode extends Node
 			return null;
 		}
 
-		BlockPointer blockPointer = get(aIndex);
-
-		assert blockPointer.getRangeSize() != 0;
-
-		return blockPointer;
+		return get(aIndex);
 	}
 
 
@@ -198,160 +201,44 @@ final class HashTableNode extends Node
 
 
 	@Override
-	boolean get(ArrayMapEntry aEntry, int aLevel)
+	boolean remove(ArrayMapEntry aEntry)
 	{
 		assert false;
-		
-//		Log.i("get %s value", mHashTable.getTableName());
-//
-//		BlockPointer blockPointer = getPointer(findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel)));
-//
-//		switch (blockPointer.getBlockType())
-//		{
-//			case INDEX:
-//				return mHashTable.readNode(blockPointer, this).get(aEntry, aLevel + 1);
-//			case LEAF:
-//				return mHashTable.readLeaf(blockPointer, this).get(aEntry, aLevel + 1);
-//			case HOLE:
-//				return false;
-//			case FREE:
-//			default:
-//				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
-//		}
-
 		return false;
-	}
-
-
-	@Override
-	boolean remove(ArrayMapEntry aEntry, int aLevel)
-	{
-		int index = findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel));
-		BlockPointer blockPointer = getPointer(index);
-		BlockPointer newBlockPointer = null;
-
-		switch (blockPointer.getBlockType())
-		{
-			case INDEX:
-				HashTableNode node = mHashTable.readNode(blockPointer, this);
-				if (node.remove(aEntry, aLevel + 1))
-				{
-					node.freeBlock();
-					newBlockPointer = node.writeBlock(blockPointer.getRangeOffset(), blockPointer.getRangeSize(), aLevel);
-				}
-				break;
-			case LEAF:
-				HashTableLeaf leaf = mHashTable.readLeaf(blockPointer, this);
-				if (leaf.remove(aEntry, aLevel + 1))
-				{
-					leaf.freeBlock();
-					newBlockPointer = leaf.writeBlock(blockPointer.getRangeOffset(), blockPointer.getRangeSize(), aLevel);
-				}
-				break;
-			case HOLE:
-				break;
-			case FREE:
-			default:
-				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
-		}
-
-		if (newBlockPointer != null)
-		{
-			setPointer(index, newBlockPointer);
-		}
-
-		return newBlockPointer != null;
-	}
-
-
-	@Override
-	boolean put(ArrayMapEntry aEntry, int aLevel)
-	{
-		assert false;
-		
-//		Log.d("put %s value", mHashTable.getTableName());
-//		Log.inc();
-//
 //		int index = findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel));
 //		BlockPointer blockPointer = getPointer(index);
+//		BlockPointer newBlockPointer = null;
 //
 //		switch (blockPointer.getBlockType())
 //		{
 //			case INDEX:
 //				HashTableNode node = mHashTable.readNode(blockPointer, this);
-//				node.put(aEntry, aLevel + 1);
-//				node.freeBlock();
-//				BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRangeOffset(), blockPointer.getRangeSize(), aLevel);
-//				setPointer(index, newBlockPointer);
+//				if (node.remove(aEntry, aLevel + 1))
+//				{
+//					node.freeBlock();
+//					newBlockPointer = node.writeBlock();
+//				}
 //				break;
 //			case LEAF:
-//				HashTableLeaf map = mHashTable.readLeaf(blockPointer, this);
-//				putValueLeaf(map, blockPointer, index, aEntry, aLevel);
+//				HashTableLeaf leaf = mHashTable.readLeaf(blockPointer, this);
+//				if (leaf.remove(aEntry, aLevel + 1))
+//				{
+//					leaf.freeBlock();
+//					newBlockPointer = leaf.writeBlock();
+//				}
 //				break;
 //			case HOLE:
-//				upgradeHoleToLeaf(aEntry, blockPointer, index, aLevel);
 //				break;
 //			case FREE:
 //			default:
 //				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
 //		}
 //
-//		Log.dec();
-
-		return true;
+//		if (newBlockPointer != null)
+//		{
+//			setPointer(newBlockPointer);
+//		}
+//
+//		return newBlockPointer != null;
 	}
-
-
-//	void putValueLeaf(HashTableLeaf aLeaf, BlockPointer aBlockPointer, int aIndex, ArrayMapEntry aEntry, int aLevel)
-//	{
-//		BlockPointer newBlockPointer;
-//
-//		if (aLeaf.put(aEntry, aLevel))
-//		{
-//			aLeaf.freeBlock();
-//
-//			newBlockPointer = aLeaf.writeBlock(aBlockPointer.getRangeOffset(), aBlockPointer.getRangeSize(), aLevel);
-//		}
-//		else if (aLeaf.splitLeaf(aIndex, aLevel, this))
-//		{
-//			put(aEntry, aLevel); // recursive put
-//			return;
-//		}
-//		else
-//		{
-//			HashTableNode newNode = aLeaf.expandLeaf(aLevel + 1);
-//
-//			newNode.put(aEntry, aLevel + 1); // recursive put
-//
-//			newBlockPointer = newNode.writeBlock(aBlockPointer.getRangeOffset(), aBlockPointer.getRangeSize(), aLevel);
-//		}
-//
-//		setPointer(aIndex, newBlockPointer);
-//	}
-//
-//
-//	private void upgradeHoleToLeaf(ArrayMapEntry aEntry, BlockPointer aBlockPointer, int aIndex, int aLevel)
-//	{
-//		Log.d("upgrade hole to leaf");
-//		Log.inc();
-//
-//		HashTableLeaf leaf = new HashTableLeaf(mHashTable, this);
-//
-//		if (!leaf.put(aEntry, aLevel))
-//		{
-//			throw new DatabaseException("Failed to upgrade hole to leaf");
-//		}
-//
-//		BlockPointer newBlockPointer = leaf.writeBlock(aBlockPointer.getRangeOffset(), aBlockPointer.getRangeSize(), aLevel);
-//
-//		setPointer(aIndex, newBlockPointer);
-//
-//		Log.dec();
-//	}
-//
-//
-//	byte[] readBlock()
-//	{
-//		return mHashTable.getBlockAccessor().readBlock(mBlockPointer);
-//	}
 }

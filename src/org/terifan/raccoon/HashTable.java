@@ -2,7 +2,6 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockAccessor;
@@ -116,25 +115,22 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	{
 		checkOpen();
 
-//		return mRoot.get(aEntry, 0);
-
+		long hashCode = computeHashCode(aEntry.getKey());
 		Node node = mRoot;
 
 		while (node.getBlockType() == BlockType.INDEX)
 		{
-			HashTableNode parent = (HashTableNode)node;
-
-			BlockPointer blockPointer = parent.getPointer(parent.findPointer(computeIndex(aEntry.getKey(), node.getBlockPointer().getLevel())));
+			BlockPointer blockPointer = ((HashTableNode)node).getPointerByHash(hashCode);
 
 			if (blockPointer.getBlockType() == BlockType.HOLE)
 			{
 				return false;
 			}
 
-			node = read(blockPointer, parent);
+			node = ((HashTableNode)node).readBlock(blockPointer);
 		}
 
-		return node.get(aEntry, node.getBlockPointer().getLevel());
+		return ((HashTableLeaf)node).get(aEntry);
 	}
 
 
@@ -153,93 +149,53 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		mChanged = true;
 		
+		long hashCode = computeHashCode(aEntry.getKey());
 		Node node = mRoot;
 
 		BlockPointer blockPointer = mRoot.getBlockPointer();
-		
-		while (node.getBlockType() == BlockType.INDEX)
+
+		while (blockPointer.getBlockType() == BlockType.INDEX)
 		{
 			HashTableNode parent = (HashTableNode)node;
 
-			blockPointer = parent.getPointer(parent.findPointer(computeIndex(aEntry.getKey(), blockPointer.getLevel())));
+			blockPointer = parent.getPointerByHash(hashCode);
 
 			if (blockPointer.getBlockType() == BlockType.HOLE)
 			{
 				break;
 			}
 
-			node = read(blockPointer, parent);
-
-			assert blockPointer.getLevel() > node.getParent().getBlockPointer().getLevel();
+			node = parent.readBlock(blockPointer);
 		}
 
 		for (;;)
 		{
-			if (node == null || blockPointer.getBlockType() == BlockType.HOLE)
+			if (blockPointer.getBlockType() == BlockType.HOLE)
 			{
-//				System.out.println("upgrade hole to leaf");
-
 				node = new HashTableLeaf(this, (HashTableNode)node);
 				node.setBlockPointer(blockPointer);
 
-				if (!node.put(aEntry, blockPointer.getLevel()))
+				if (!((HashTableLeaf)node).put(aEntry))
 				{
 					throw new DatabaseException("Failed to upgrade hole to leaf");
 				}
 
 				node.writeBlock();
-				node.getParent().setPointer(node.getBlockPointer().getRangeOffset(), node.getBlockPointer());
-
+				node.getParent().setPointer(node.getBlockPointer());
 				break;
 			}
-			if (((HashTableLeaf)node).put(aEntry, node.getBlockPointer().getLevel()))
+			if (((HashTableLeaf)node).put(aEntry))
 			{
-				if (node.getBlockPointer().getLevel() != 0)
-				{
-					node.freeBlock();
-					node.writeBlock();
-					node.getParent().setPointer(node.getBlockPointer().getRangeOffset(), node.getBlockPointer());
-				}
-
 				break;
 			}
 
-			if (node.getBlockPointer().getLevel() == 0)
-			{
-//				System.out.println("upgrade");
-				
-				node.freeBlock();
-				node = ((HashTableLeaf)node).expandLeaf(0);
-				node.writeBlock(0, mPointersPerNode, 0);
-				
-				mRoot = node;
-			}
-			else if (node.getBlockPointer().getRangeSize() > 1)
-			{
-//				System.out.println("split");
+			node = ((HashTableLeaf)node).split();
 
-				((HashTableLeaf)node).splitLeaf(node.getBlockPointer().getRangeOffset(), node.getBlockPointer().getLevel() - 1, node.getParent());
-
-				node = node.getParent();
-			}
-			else
-			{
-//				System.out.println("expand"s);
-
-				BlockPointer bp = node.getBlockPointer();
-
-				node.freeBlock();
-				node = ((HashTableLeaf)node).expandLeaf(node.getBlockPointer().getLevel());
-				node.writeBlock(bp.getRangeOffset(), bp.getRangeSize(), bp.getLevel());
-			}
-
-			HashTableNode parent = (HashTableNode)node;
-			
-			blockPointer = parent.getPointer(parent.findPointer(computeIndex(aEntry.getKey(), node.getBlockPointer().getLevel())));
+			blockPointer = ((HashTableNode)node).getPointerByHash(hashCode);
 
 			if (blockPointer.getBlockType() != BlockType.HOLE)
 			{
-				node = read(blockPointer, parent);
+				node = ((HashTableNode)node).readBlock(blockPointer);
 			}
 		}
 
@@ -247,38 +203,12 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		{
 			node.freeBlock();
 			node.writeBlock();
-
-			node.getParent().setPointer(node.getBlockPointer().getRangeOffset(), node.getBlockPointer());
-
+			node.getParent().setPointer(node.getBlockPointer());
 			node = node.getParent();
 		}
 
 		mRoot = node;
 
-//		System.out.println("root=" + mRoot.getBlockPointer());
-
-//		if (mRoot.getBlockType() == BlockType.LEAF)
-//		{
-//			Log.d("put root value");
-//
-//			if (mRoot.put(aEntry, 0))
-//			{
-//				Log.dec();
-//				assert mModCount == modCount : "concurrent modification";
-//
-//				return aEntry.getValue() != null;
-//			}
-//
-//			Log.d("upgrade root leaf to node");
-//
-//			mRoot.freeBlock();
-//
-//			mRoot = ((HashTableLeaf)mRoot).splitLeaf(0);
-//
-//			mRootBlockPointer = mRoot.writeBlock(mPointersPerNode);
-//		}
-//
-//		mRoot.put(aEntry, 0);
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
@@ -292,7 +222,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		boolean modified;
 
-		modified = mRoot.remove(aEntry, 0);
+		modified = mRoot.remove(aEntry);
 
 		mChanged |= modified;
 
@@ -352,7 +282,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				Log.inc();
 
 				mRoot.freeBlock();
-				mRoot.writeBlock(0, mPointersPerNode, 0);
+				mRoot.writeBlock();
 
 				if (mCommitChangesToBlockDevice)
 				{
@@ -477,7 +407,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		{
 			if (aBlockPointer != null && aBlockPointer.getBlockType() == BlockType.LEAF)
 			{
-				result.set(result.get() + readLeaf(aBlockPointer, aParent).size());
+				result.set(result.get() + ((HashTableLeaf)aParent.readBlock(aBlockPointer)).size());
 			}
 		}, null);
 
@@ -485,55 +415,26 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	HashTableLeaf readLeaf(BlockPointer aBlockPointer, HashTableNode aParent)
+	Node read(BlockPointer aBlockPointer, HashTableNode aParent)
 	{
-		assert aBlockPointer.getBlockType() == BlockType.LEAF;
-
-		if (mRoot != null && aBlockPointer.getBlockIndex0() == mRoot.getBlockPointer().getBlockIndex0())
+		if (aBlockPointer.getBlockType() == BlockType.LEAF)
 		{
-			return (HashTableLeaf)mRoot;
-		}
-
-		return new HashTableLeaf(this, aParent, aBlockPointer);
-	}
-
-
-	HashTableNode readNode(BlockPointer aBlockPointer, HashTableNode aParent)
-	{
-		assert aBlockPointer.getBlockType() == BlockType.INDEX;
-
-		if (mRoot != null && aBlockPointer.getBlockIndex0() == mRoot.getBlockPointer().getBlockIndex0())
-		{
-			return (HashTableNode)mRoot;
+			return new HashTableLeaf(this, aParent, aBlockPointer);
 		}
 
 		return new HashTableNode(this, aParent, aBlockPointer);
 	}
 
 
-	Node read(BlockPointer aBlockPointer, HashTableNode aParent)
+	long computeHashCode(byte[] aKey)
 	{
-		if (mRoot != null && aBlockPointer.getBlockIndex0() == mRoot.getBlockPointer().getBlockIndex0() && mRoot.getBlockType() == aBlockPointer.getBlockType())
-		{
-			return mRoot;
-		}
-
-//		System.out.println("read  " + aBlockPointer);
-
-		if (aBlockPointer.getBlockType() == BlockType.INDEX)
-		{
-			return new HashTableNode(this, aParent, aBlockPointer);
-		}
-
-		return new HashTableLeaf(this, aParent, aBlockPointer);
+		return MurmurHash3.hash64(aKey, mHashSeed);
 	}
 
 
-	int computeIndex(byte[] aKey, int aLevel)
+	int computeIndex(long aHashCode, int aLevel)
 	{
-//		System.out.printf("%d %64s %s%n", aLevel, Long.toBinaryString(MurmurHash3.hash64(aKey, mHashSeed)), Long.toBinaryString(Long.rotateRight(MurmurHash3.hash64(aKey, mHashSeed), mBitsPerNode * aLevel) & (mPointersPerNode - 1)));
-
-		return (int)Long.rotateRight(MurmurHash3.hash64(aKey, mHashSeed), mBitsPerNode * aLevel) & (mPointersPerNode - 1);
+		return (int)Long.rotateRight(aHashCode, mBitsPerNode * aLevel) & (mPointersPerNode - 1);
 	}
 
 
@@ -564,7 +465,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	private void visitNode(HashTableVisitor aVisitor, BlockPointer aBlockPointer, HashTableNode aParent)
 	{
-		HashTableNode node = readNode(aBlockPointer, aParent);
+		HashTableNode node = (HashTableNode)aParent.readBlock(aBlockPointer);
 
 		for (int i = 0; i < mPointersPerNode; i++)
 		{
@@ -736,30 +637,30 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	{
 		for (int i = 0; i < aNode.getPointerCount(); i++)
 		{
-			BlockPointer bp = aNode.getPointer(i);
+			BlockPointer blockPointer = aNode.getPointer(i);
 			
-			if (bp != null && bp.getLevel() != aLevel)
+			if (blockPointer != null && blockPointer.getLevel() != aLevel)
 			{
-				throw new IllegalStateException(bp.getLevel()+" != "+aLevel);
+				throw new IllegalStateException(blockPointer.getLevel()+" != "+aLevel);
 			}
 
 			for (int j = 0; j < aLevel; j++)
 			{
 				System.out.print("... ");
 			}
-			System.out.println(bp == null ? "-" : bp);
+			System.out.println(blockPointer == null ? "-" : blockPointer);
 
-			if (bp != null)
+			if (blockPointer != null)
 			{
-				if (bp.getBlockType() == BlockType.INDEX)
+				if (blockPointer.getBlockType() == BlockType.INDEX)
 				{
-					HashTableNode node = readNode(bp, aNode);
+					HashTableNode node = (HashTableNode)aNode.readBlock(blockPointer);
 
 					scanNode(node, aLevel + 1);
 				}
-				else if (bp.getBlockType() == BlockType.LEAF)
+				else if (blockPointer.getBlockType() == BlockType.LEAF)
 				{
-					HashTableLeaf leaf = readLeaf(bp, aNode);
+					HashTableLeaf leaf = (HashTableLeaf)aNode.readBlock(blockPointer);
 
 					for (ArrayMapEntry entry : leaf.getMap())
 					{
@@ -774,7 +675,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 							{
 								System.out.print("-");
 							}
-							System.out.print(computeIndex(entry.getKey(), j));
+							System.out.print(computeIndex(computeHashCode(entry.getKey()), j));
 						}
 						System.out.print("] ");
 						System.out.println(new String(entry.getKey()));

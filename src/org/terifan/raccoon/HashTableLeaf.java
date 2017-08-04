@@ -3,7 +3,6 @@ package org.terifan.raccoon;
 import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Log;
-import org.terifan.security.messagedigest.MurmurHash3;
 
 
 class HashTableLeaf extends Node
@@ -41,27 +40,46 @@ class HashTableLeaf extends Node
 	}
 
 
-	HashTableNode expandLeaf(int aLevel)
+	Node split()
 	{
-		assert aLevel == 0 || mBlockPointer.getRangeSize() == 1;
+		if (mBlockPointer.getLevel() > 0 && mBlockPointer.getRangeSize() > 1)
+		{
+			splitImpl();
+			return mParent;
+		}
+
+		return growImpl();
+	}
+
+
+	private HashTableNode growImpl()
+	{
+		int level = mBlockPointer.getLevel();
+
+		assert level == 0 || mBlockPointer.getRangeSize() == 1;
 
 		Log.inc();
-		Log.d("split leaf");
+		Log.d("grow leaf");
 		Log.inc();
 
+		freeBlock();
+		
 		HashTableNode node = new HashTableNode(mHashTable, mParent);
+		node.setBlockPointer(mBlockPointer);
 
 		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, node);
 		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, node);
-		int halfRange = mHashTable.getPointersPerNode() / 2;
+		int rangeSize = mHashTable.getPointersPerNode() / 2;
 
-		divideLeafEntries(aLevel, halfRange, lowLeaf, highLeaf);
+		divideLeafEntries(level, rangeSize, lowLeaf, highLeaf);
 
-		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(0, halfRange, aLevel + 1);
-		BlockPointer highIndex = highLeaf.writeIfNotEmpty(halfRange, halfRange, aLevel + 1);
+		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(0, rangeSize, level + 1);
+		BlockPointer highIndex = highLeaf.writeIfNotEmpty(rangeSize, rangeSize, level + 1);
 
-		node.setPointer(0, lowIndex);
-		node.setPointer(halfRange, highIndex);
+		node.setPointer(lowIndex);
+		node.setPointer(highIndex);
+
+		node.writeBlock();
 
 		Log.dec();
 		Log.dec();
@@ -70,7 +88,7 @@ class HashTableLeaf extends Node
 	}
 
 
-	boolean splitLeaf(int aIndex, int aLevel, HashTableNode aParent)
+	private void splitImpl()
 	{
 		assert mBlockPointer.getRangeSize() > 1;
 
@@ -80,21 +98,22 @@ class HashTableLeaf extends Node
 
 		freeBlock();
 
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, aParent);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, aParent);
-		int halfRange = mBlockPointer.getRangeSize() / 2;
+		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, mParent);
+		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, mParent);
 
-		divideLeafEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
+		int rangeOffset = mBlockPointer.getRangeOffset();
+		int rangeSize = mBlockPointer.getRangeSize() / 2;
+		int level = mBlockPointer.getLevel();
 
-		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(aIndex, halfRange, aLevel + 1);
-		BlockPointer highIndex = highLeaf.writeIfNotEmpty(aIndex + halfRange, halfRange, aLevel + 1);
+		divideLeafEntries(level - 1, rangeOffset + rangeSize, lowLeaf, highLeaf);
 
-		aParent.split(aIndex, lowIndex, highIndex);
+		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(rangeOffset, rangeSize, level);
+		BlockPointer highIndex = highLeaf.writeIfNotEmpty(rangeOffset + rangeSize, rangeSize, level);
+
+		mParent.split(rangeOffset, lowIndex, highIndex);
 
 		Log.dec();
 		Log.dec();
-
-		return true;
 	}
 
 
@@ -102,7 +121,7 @@ class HashTableLeaf extends Node
 	{
 		for (ArrayMapEntry entry : mMap)
 		{
-			if (mHashTable.computeIndex(entry.getKey(), aLevel) < aHalfRange)
+			if (mHashTable.computeIndex(mHashTable.computeHashCode(entry.getKey()), aLevel) < aHalfRange)
 			{
 				aLowLeaf.mMap.put(entry);
 			}
@@ -118,7 +137,7 @@ class HashTableLeaf extends Node
 	{
 		if (mMap.isEmpty())
 		{
-			mBlockPointer = new BlockPointer().setBlockType(BlockType.HOLE).setLevel(aLevel).setRangeOffset(aRangeOffset).setRangeSize(aRangeSize);
+			mBlockPointer = new BlockPointer().setBlockType(BlockType.HOLE).setRangeOffset(aRangeOffset).setRangeSize(aRangeSize).setLevel(aLevel);
 		}
 		else
 		{
@@ -143,22 +162,20 @@ class HashTableLeaf extends Node
 	}
 
 
-	@Override
-	boolean get(ArrayMapEntry aEntry, int aLevel)
+	boolean get(ArrayMapEntry aEntry)
 	{
 		return mMap.get(aEntry);
 	}
 
 
-	@Override
-	boolean put(ArrayMapEntry aEntry, int aLevel)
+	boolean put(ArrayMapEntry aEntry)
 	{
 		return mMap.put(aEntry);
 	}
 
 
 	@Override
-	boolean remove(ArrayMapEntry aEntry, int aLevel)
+	boolean remove(ArrayMapEntry aEntry)
 	{
 		return mMap.remove(aEntry);
 	}

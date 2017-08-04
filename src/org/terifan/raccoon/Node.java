@@ -22,19 +22,10 @@ abstract class Node
 
 	abstract BlockType getBlockType();
 
-	abstract boolean get(ArrayMapEntry aEntry, int aLevel);
-
-	abstract boolean put(ArrayMapEntry aEntry, int aLevel);
-
-	abstract boolean remove(ArrayMapEntry aEntry, int aLevel);
+	@Deprecated
+	abstract boolean remove(ArrayMapEntry aEntry);
 
 	abstract String integrityCheck();
-
-
-	BlockPointer writeBlock()
-	{
-		return writeBlock(mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
-	}
 
 
 	HashTableNode getParent()
@@ -51,7 +42,21 @@ abstract class Node
 
 	void setBlockPointer(BlockPointer aBlockPointer)
 	{
-		this.mBlockPointer = aBlockPointer;
+		mBlockPointer = aBlockPointer;
+	}
+
+
+	Node readBlock(BlockPointer aBlockPointer)
+	{
+//		System.out.println("read  " + aBlockPointer);
+
+		return mHashTable.read(aBlockPointer, (HashTableNode)this);
+	}
+
+
+	BlockPointer writeBlock()
+	{
+		return writeBlock(mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
 	}
 
 
