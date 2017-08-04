@@ -179,7 +179,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		for (;;)
 		{
-			if (node.getBlockPointer().getBlockType() == BlockType.HOLE)
+			if (node == null || node.getBlockPointer().getBlockType() == BlockType.HOLE)
 			{
 				node = new HashTableLeaf(this, (HashTableNode)node);
 
@@ -228,9 +228,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				BlockPointer bp = node.getBlockPointer();
 
 				node.freeBlock();
-
 				node = ((HashTableLeaf)node).expandLeaf(node.getBlockPointer().getLevel());
-
 				node.writeBlock(bp.getRangeOffset(), bp.getRangeSize(), bp.getLevel());
 			}
 
@@ -240,7 +238,11 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 			BlockPointer blockPointer = parent.getPointer(parent.findPointer(computeIndex(aEntry.getKey(), node.getBlockPointer().getLevel())));
 
-			if (blockPointer.getBlockType() != BlockType.HOLE)
+			if (blockPointer.getBlockType() == BlockType.HOLE)
+			{
+				node = null;
+			}
+			else
 			{
 				node = read(blockPointer, parent);
 			}

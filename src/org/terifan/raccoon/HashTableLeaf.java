@@ -55,7 +55,7 @@ class HashTableLeaf extends Node
 		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, node);
 		int halfRange = mHashTable.getPointersPerNode() / 2;
 
-		divideLeafEntries(aLevel, halfRange, lowLeaf, highLeaf);
+		divideLeafEntries(aLevel + 1, halfRange, lowLeaf, highLeaf);
 
 		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(0, halfRange, aLevel + 1);
 		BlockPointer highIndex = highLeaf.writeIfNotEmpty(halfRange, halfRange, aLevel + 1);
