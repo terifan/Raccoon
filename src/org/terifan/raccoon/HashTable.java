@@ -156,32 +156,21 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		while (blockPointer.getBlockType() == BlockType.INDEX)
 		{
-			HashTableNode parent = (HashTableNode)node;
-
-			blockPointer = parent.getPointerByHash(hashCode);
+			blockPointer = ((HashTableNode)node).getPointerByHash(hashCode);
 
 			if (blockPointer.getBlockType() == BlockType.HOLE)
 			{
 				break;
 			}
 
-			node = parent.readBlock(blockPointer);
+			node = ((HashTableNode)node).readBlock(blockPointer);
 		}
 
 		for (;;)
 		{
 			if (blockPointer.getBlockType() == BlockType.HOLE)
 			{
-				node = new HashTableLeaf(this, (HashTableNode)node);
-				node.setBlockPointer(blockPointer);
-
-				if (!((HashTableLeaf)node).put(aEntry))
-				{
-					throw new DatabaseException("Failed to upgrade hole to leaf");
-				}
-
-				node.writeBlock();
-				node.getParent().setPointer(node.getBlockPointer());
+				node = ((HashTableNode)node).upgrade(blockPointer, aEntry);
 				break;
 			}
 			if (((HashTableLeaf)node).put(aEntry))
@@ -199,12 +188,9 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			}
 		}
 
-		while (node != null && node.getParent() != null)
+		for (;node != null && node.getParent() != null; node = node.getParent())
 		{
-			node.freeBlock();
 			node.writeBlock();
-			node.getParent().setPointer(node.getBlockPointer());
-			node = node.getParent();
 		}
 
 		mRoot = node;
@@ -281,7 +267,6 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				Log.i("commit hash table");
 				Log.inc();
 
-				mRoot.freeBlock();
 				mRoot.writeBlock();
 
 				if (mCommitChangesToBlockDevice)

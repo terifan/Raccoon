@@ -26,11 +26,11 @@ public class Test
 				{
 					for (int i = 0; i < test; i++)
 					{
-//						System.out.println("------- save "+i+" --------");
+						System.out.println("------- save "+i+" --------");
 						db.save(new MyEntity(""+i, "01234567890123456789012345678901234567890123456789"));
 					}
 
-//					System.out.println("------ commit -------");
+					System.out.println("------ commit -------");
 					db.commit();
 				}
 
@@ -43,7 +43,7 @@ public class Test
 					
 					for (int i = 0; i < test; i++)
 					{
-//						System.out.println("-------- get "+i+" --------");
+						System.out.println("-------- get "+i+" --------");
 						db.get(new MyEntity(""+i));
 					}
 

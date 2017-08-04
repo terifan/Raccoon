@@ -54,7 +54,7 @@ final class HashTableNode extends Node
 	{
 		int index = aBlockPointer.getRangeOffset();
 
-		assert get(index).getBlockType() == BlockType.FREE || (get(index).getRangeSize() == aBlockPointer.getRangeSize() && get(index).getRangeOffset() == index) : get(index).getBlockType() + " " + get(index).getRangeOffset()+":"+get(index).getRangeSize() + " != " + index+":"+aBlockPointer.getRangeSize();
+//		assert get(index).getBlockType() == BlockType.FREE || (get(index).getRangeSize() == aBlockPointer.getRangeSize() && get(index).getRangeOffset() == index) : get(index).getBlockType() + " " + get(index).getRangeOffset()+":"+get(index).getRangeSize() + " != " + index+":"+aBlockPointer.getRangeSize();
 
 		set(index, aBlockPointer);
 	}
@@ -87,14 +87,14 @@ final class HashTableNode extends Node
 	}
 
 
-	void split(int aIndex, BlockPointer aLowPointer, BlockPointer aHighPointer)
-	{
-		assert aLowPointer.getRangeSize() + aHighPointer.getRangeSize() == get(aIndex).getRangeSize();
-		assert ensureEmpty(aIndex + 1, aLowPointer.getRangeSize() + aHighPointer.getRangeSize() - 1);
-
-		set(aIndex, aLowPointer);
-		set(aIndex + aLowPointer.getRangeSize(), aHighPointer);
-	}
+//	void split(int aIndex, BlockPointer aLowPointer, BlockPointer aHighPointer)
+//	{
+//		assert aLowPointer.getRangeSize() + aHighPointer.getRangeSize() == get(aIndex).getRangeSize();
+//		assert ensureEmpty(aIndex + 1, aLowPointer.getRangeSize() + aHighPointer.getRangeSize() - 1);
+//
+//		set(aIndex, aLowPointer);
+//		set(aIndex + aLowPointer.getRangeSize(), aHighPointer);
+//	}
 
 
 	void merge(int aIndex, BlockPointer aBlockPointer)
@@ -143,7 +143,7 @@ final class HashTableNode extends Node
 	}
 
 
-	private void set(int aIndex, BlockPointer aBlockPointer)
+	void set(int aIndex, BlockPointer aBlockPointer)
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 
@@ -240,5 +240,21 @@ final class HashTableNode extends Node
 //		}
 //
 //		return newBlockPointer != null;
+	}
+
+
+	HashTableLeaf upgrade(BlockPointer aBlockPointer, ArrayMapEntry aEntry)
+	{
+		HashTableLeaf leaf = new HashTableLeaf(mHashTable, this);
+		leaf.setBlockPointer(new BlockPointer().setLevel(aBlockPointer.getLevel()).setRangeOffset(aBlockPointer.getRangeOffset()).setRangeSize(aBlockPointer.getRangeSize()));
+
+		if (!leaf.put(aEntry))
+		{
+			throw new DatabaseException("Failed to upgrade hole to leaf");
+		}
+
+		leaf.writeBlock();
+		
+		return leaf;
 	}
 }

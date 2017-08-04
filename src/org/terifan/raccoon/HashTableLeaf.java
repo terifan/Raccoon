@@ -65,16 +65,16 @@ class HashTableLeaf extends Node
 		freeBlock();
 		
 		HashTableNode node = new HashTableNode(mHashTable, mParent);
-		node.setBlockPointer(mBlockPointer);
+		node.setBlockPointer(new BlockPointer().setLevel(mBlockPointer.getLevel()).setRangeOffset(mBlockPointer.getRangeOffset()).setRangeSize(mBlockPointer.getRangeSize()));
 
 		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, node);
 		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, node);
-		int rangeSize = mHashTable.getPointersPerNode() / 2;
+		int halfRange = mHashTable.getPointersPerNode() / 2;
 
-		divideLeafEntries(level, rangeSize, lowLeaf, highLeaf);
+		divideLeafEntries(level, halfRange, lowLeaf, highLeaf);
 
-		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(0, rangeSize, level + 1);
-		BlockPointer highIndex = highLeaf.writeIfNotEmpty(rangeSize, rangeSize, level + 1);
+		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(0, halfRange, level + 1);
+		BlockPointer highIndex = highLeaf.writeIfNotEmpty(halfRange, halfRange, level + 1);
 
 		node.setPointer(lowIndex);
 		node.setPointer(highIndex);
@@ -102,15 +102,16 @@ class HashTableLeaf extends Node
 		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, mParent);
 
 		int rangeOffset = mBlockPointer.getRangeOffset();
-		int rangeSize = mBlockPointer.getRangeSize() / 2;
+		int halfRange = mBlockPointer.getRangeSize() / 2;
 		int level = mBlockPointer.getLevel();
 
-		divideLeafEntries(level - 1, rangeOffset + rangeSize, lowLeaf, highLeaf);
+		divideLeafEntries(level - 1, rangeOffset + halfRange, lowLeaf, highLeaf);
 
-		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(rangeOffset, rangeSize, level);
-		BlockPointer highIndex = highLeaf.writeIfNotEmpty(rangeOffset + rangeSize, rangeSize, level);
+		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(rangeOffset, halfRange, level);
+		BlockPointer highIndex = highLeaf.writeIfNotEmpty(rangeOffset + halfRange, halfRange, level);
 
-		mParent.split(rangeOffset, lowIndex, highIndex);
+		mParent.set(rangeOffset, lowIndex);
+		mParent.set(rangeOffset + halfRange, highIndex);
 
 		Log.dec();
 		Log.dec();

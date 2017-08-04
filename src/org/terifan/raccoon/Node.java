@@ -8,6 +8,7 @@ abstract class Node
 	protected final HashTable mHashTable;
 	protected final HashTableNode mParent;
 	protected BlockPointer mBlockPointer;
+	private boolean mFree;
 
 
 	Node(HashTable aHashTable, HashTableNode aParent, BlockPointer aBlockPointer)
@@ -15,6 +16,8 @@ abstract class Node
 		mHashTable = aHashTable;
 		mBlockPointer = aBlockPointer;
 		mParent = aParent;
+
+		mFree = mBlockPointer == null;
 	}
 
 
@@ -48,7 +51,7 @@ abstract class Node
 
 	Node readBlock(BlockPointer aBlockPointer)
 	{
-//		System.out.println("read  " + aBlockPointer);
+		System.out.println("read  " + aBlockPointer);
 
 		return mHashTable.read(aBlockPointer, (HashTableNode)this);
 	}
@@ -62,11 +65,22 @@ abstract class Node
 
 	BlockPointer writeBlock(int aRangeOffset, int aRangeSize, int aLevel)
 	{
+		assert aLevel != 0 || aRangeOffset == 0 && aRangeSize * BlockPointer.SIZE == mHashTable.getNodeSize();
+
+		if (!mFree && mBlockPointer != null)
+		{
+			freeBlock();
+		}
+
 		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId().get(), getBlockType(), aRangeOffset, aRangeSize, aLevel);
+		mFree = false;
 
-//		System.out.println("write " + mBlockPointer);
+		System.out.println("write " + mBlockPointer);
 
-		assert mBlockPointer.getLevel() != 0 || mBlockPointer.getRangeOffset() == 0 && mBlockPointer.getRangeSize() == mHashTable.getNodeSize() / BlockPointer.SIZE : "Illegal pointer: " + mBlockPointer;
+		if (mParent != null)
+		{
+			mParent.setPointer(mBlockPointer);
+		}
 
 		return mBlockPointer;
 	}
@@ -74,8 +88,13 @@ abstract class Node
 
 	void freeBlock()
 	{
-//		System.out.println("free  " + mBlockPointer);
+		if (!mFree)
+		{
+			System.out.println("free  " + mBlockPointer);
 
-		mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
+			mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
+
+			mFree = true;
+		}
 	}
 }
