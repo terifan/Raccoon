@@ -464,6 +464,6 @@ public final class TableInstance<T> implements Closeable
 
 	void scan2()
 	{
-		mHashTable.scan2();
+		mHashTable.scan();
 	}
 }

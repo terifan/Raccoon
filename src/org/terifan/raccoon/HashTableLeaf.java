@@ -55,7 +55,7 @@ class HashTableLeaf extends Node
 		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, node);
 		int halfRange = mHashTable.getPointersPerNode() / 2;
 
-		divideLeafEntries(aLevel + 1, halfRange, lowLeaf, highLeaf);
+		divideLeafEntries(aLevel, halfRange, lowLeaf, highLeaf);
 
 		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(0, halfRange, aLevel + 1);
 		BlockPointer highIndex = highLeaf.writeIfNotEmpty(halfRange, halfRange, aLevel + 1);
@@ -86,8 +86,8 @@ class HashTableLeaf extends Node
 
 		divideLeafEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
 
-		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(aIndex, halfRange, aLevel);
-		BlockPointer highIndex = highLeaf.writeIfNotEmpty(aIndex + halfRange, halfRange, aLevel);
+		BlockPointer lowIndex = lowLeaf.writeIfNotEmpty(aIndex, halfRange, aLevel + 1);
+		BlockPointer highIndex = highLeaf.writeIfNotEmpty(aIndex + halfRange, halfRange, aLevel + 1);
 
 		aParent.split(aIndex, lowIndex, highIndex);
 
@@ -118,12 +118,14 @@ class HashTableLeaf extends Node
 	{
 		if (mMap.isEmpty())
 		{
-			mBlockPointer = new BlockPointer().setBlockType(BlockType.HOLE).setRangeOffset(aRangeOffset).setRangeSize(aRangeSize);
+			mBlockPointer = new BlockPointer().setBlockType(BlockType.HOLE).setLevel(aLevel).setRangeOffset(aRangeOffset).setRangeSize(aRangeSize);
 		}
 		else
 		{
 			mBlockPointer = writeBlock(aRangeOffset, aRangeSize, aLevel);
 		}
+		
+		assert mBlockPointer.getLevel() != 0 || mBlockPointer.getRangeOffset() == 0 && mBlockPointer.getRangeSize() == mHashTable.getNodeSize() / BlockPointer.SIZE : "Illegal pointer: " + mBlockPointer;
 
 		return mBlockPointer;
 	}

@@ -200,28 +200,26 @@ final class HashTableNode extends Node
 	@Override
 	boolean get(ArrayMapEntry aEntry, int aLevel)
 	{
-		Log.i("get %s value", mHashTable.getTableName());
+		assert false;
+		
+//		Log.i("get %s value", mHashTable.getTableName());
+//
+//		BlockPointer blockPointer = getPointer(findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel)));
+//
+//		switch (blockPointer.getBlockType())
+//		{
+//			case INDEX:
+//				return mHashTable.readNode(blockPointer, this).get(aEntry, aLevel + 1);
+//			case LEAF:
+//				return mHashTable.readLeaf(blockPointer, this).get(aEntry, aLevel + 1);
+//			case HOLE:
+//				return false;
+//			case FREE:
+//			default:
+//				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
+//		}
 
-		BlockPointer blockPointer = getPointer(findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel)));
-
-		switch (blockPointer.getBlockType())
-		{
-			case INDEX:
-				return mHashTable.readNode(blockPointer, this).get(aEntry, aLevel + 1);
-			case LEAF:
-				return mHashTable.readLeaf(blockPointer, this).get(aEntry, aLevel + 1);
-			case HOLE:
-				return false;
-			case FREE:
-			default:
-				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
-		}
-	}
-
-
-	byte[] readBlock()
-	{
-		return mHashTable.getBlockAccessor().readBlock(mBlockPointer);
+		return false;
 	}
 
 
@@ -269,83 +267,91 @@ final class HashTableNode extends Node
 	@Override
 	boolean put(ArrayMapEntry aEntry, int aLevel)
 	{
-		Log.d("put %s value", mHashTable.getTableName());
-		Log.inc();
-
-		int index = findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel));
-		BlockPointer blockPointer = getPointer(index);
-
-		switch (blockPointer.getBlockType())
-		{
-			case INDEX:
-				HashTableNode node = mHashTable.readNode(blockPointer, this);
-				node.put(aEntry, aLevel + 1);
-				node.freeBlock();
-				BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRangeOffset(), blockPointer.getRangeSize(), aLevel);
-				setPointer(index, newBlockPointer);
-				break;
-			case LEAF:
-				HashTableLeaf map = mHashTable.readLeaf(blockPointer, this);
-				putValueLeaf(map, blockPointer, index, aEntry, aLevel);
-				break;
-			case HOLE:
-				upgradeHoleToLeaf(aEntry, this, blockPointer, index, aLevel);
-				break;
-			case FREE:
-			default:
-				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
-		}
-
-		Log.dec();
+		assert false;
+		
+//		Log.d("put %s value", mHashTable.getTableName());
+//		Log.inc();
+//
+//		int index = findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel));
+//		BlockPointer blockPointer = getPointer(index);
+//
+//		switch (blockPointer.getBlockType())
+//		{
+//			case INDEX:
+//				HashTableNode node = mHashTable.readNode(blockPointer, this);
+//				node.put(aEntry, aLevel + 1);
+//				node.freeBlock();
+//				BlockPointer newBlockPointer = node.writeBlock(blockPointer.getRangeOffset(), blockPointer.getRangeSize(), aLevel);
+//				setPointer(index, newBlockPointer);
+//				break;
+//			case LEAF:
+//				HashTableLeaf map = mHashTable.readLeaf(blockPointer, this);
+//				putValueLeaf(map, blockPointer, index, aEntry, aLevel);
+//				break;
+//			case HOLE:
+//				upgradeHoleToLeaf(aEntry, blockPointer, index, aLevel);
+//				break;
+//			case FREE:
+//			default:
+//				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
+//		}
+//
+//		Log.dec();
 
 		return true;
 	}
 
 
-	void putValueLeaf(HashTableLeaf aLeaf, BlockPointer aBlockPointer, int aIndex, ArrayMapEntry aEntry, int aLevel)
-	{
-		BlockPointer newBlockPointer;
-
-		if (aLeaf.put(aEntry, aLevel))
-		{
-			aLeaf.freeBlock();
-
-			newBlockPointer = aLeaf.writeBlock(aBlockPointer.getRangeOffset(), aBlockPointer.getRangeSize(), aLevel);
-		}
-		else if (aLeaf.splitLeaf(aIndex, aLevel, this))
-		{
-			put(aEntry, aLevel); // recursive put
-			return;
-		}
-		else
-		{
-			HashTableNode newNode = aLeaf.expandLeaf(aLevel + 1);
-
-			newNode.put(aEntry, aLevel + 1); // recursive put
-
-			newBlockPointer = newNode.writeBlock(aBlockPointer.getRangeOffset(), aBlockPointer.getRangeSize(), aLevel);
-		}
-
-		setPointer(aIndex, newBlockPointer);
-	}
-
-
-	private void upgradeHoleToLeaf(ArrayMapEntry aEntry, HashTableNode aParent, BlockPointer aBlockPointer, int aIndex, int aLevel)
-	{
-		Log.d("upgrade hole to leaf");
-		Log.inc();
-
-		HashTableLeaf node = new HashTableLeaf(mHashTable, aParent);
-
-		if (!node.put(aEntry, aLevel))
-		{
-			throw new DatabaseException("Failed to upgrade hole to leaf");
-		}
-
-		BlockPointer newBlockPointer = node.writeBlock(aBlockPointer.getRangeOffset(), aBlockPointer.getRangeSize(), aLevel);
-
-		aParent.setPointer(aIndex, newBlockPointer);
-
-		Log.dec();
-	}
+//	void putValueLeaf(HashTableLeaf aLeaf, BlockPointer aBlockPointer, int aIndex, ArrayMapEntry aEntry, int aLevel)
+//	{
+//		BlockPointer newBlockPointer;
+//
+//		if (aLeaf.put(aEntry, aLevel))
+//		{
+//			aLeaf.freeBlock();
+//
+//			newBlockPointer = aLeaf.writeBlock(aBlockPointer.getRangeOffset(), aBlockPointer.getRangeSize(), aLevel);
+//		}
+//		else if (aLeaf.splitLeaf(aIndex, aLevel, this))
+//		{
+//			put(aEntry, aLevel); // recursive put
+//			return;
+//		}
+//		else
+//		{
+//			HashTableNode newNode = aLeaf.expandLeaf(aLevel + 1);
+//
+//			newNode.put(aEntry, aLevel + 1); // recursive put
+//
+//			newBlockPointer = newNode.writeBlock(aBlockPointer.getRangeOffset(), aBlockPointer.getRangeSize(), aLevel);
+//		}
+//
+//		setPointer(aIndex, newBlockPointer);
+//	}
+//
+//
+//	private void upgradeHoleToLeaf(ArrayMapEntry aEntry, BlockPointer aBlockPointer, int aIndex, int aLevel)
+//	{
+//		Log.d("upgrade hole to leaf");
+//		Log.inc();
+//
+//		HashTableLeaf leaf = new HashTableLeaf(mHashTable, this);
+//
+//		if (!leaf.put(aEntry, aLevel))
+//		{
+//			throw new DatabaseException("Failed to upgrade hole to leaf");
+//		}
+//
+//		BlockPointer newBlockPointer = leaf.writeBlock(aBlockPointer.getRangeOffset(), aBlockPointer.getRangeSize(), aLevel);
+//
+//		setPointer(aIndex, newBlockPointer);
+//
+//		Log.dec();
+//	}
+//
+//
+//	byte[] readBlock()
+//	{
+//		return mHashTable.getBlockAccessor().readBlock(mBlockPointer);
+//	}
 }

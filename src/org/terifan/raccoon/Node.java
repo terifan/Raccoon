@@ -49,11 +49,19 @@ abstract class Node
 	}
 
 
+	void setBlockPointer(BlockPointer aBlockPointer)
+	{
+		this.mBlockPointer = aBlockPointer;
+	}
+
+
 	BlockPointer writeBlock(int aRangeOffset, int aRangeSize, int aLevel)
 	{
 		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId().get(), getBlockType(), aRangeOffset, aRangeSize, aLevel);
 
-		System.out.println("write " + mBlockPointer);
+//		System.out.println("write " + mBlockPointer);
+
+		assert mBlockPointer.getLevel() != 0 || mBlockPointer.getRangeOffset() == 0 && mBlockPointer.getRangeSize() == mHashTable.getNodeSize() / BlockPointer.SIZE : "Illegal pointer: " + mBlockPointer;
 
 		return mBlockPointer;
 	}
@@ -61,7 +69,7 @@ abstract class Node
 
 	void freeBlock()
 	{
-		System.out.println("free  " + mBlockPointer);
+//		System.out.println("free  " + mBlockPointer);
 
 		mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
 	}

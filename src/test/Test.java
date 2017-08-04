@@ -16,29 +16,34 @@ public class Test
 		{
 			System.setErr(System.out);
 
-			for (int test = 1; test < 1000; test++)
+			for (int test = 1; test <= 1000; test++)
 			{
+				System.out.println("--------- "+test+" ----------");
+
 				MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 				try (Database db = new Database(blockDevice, OpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION, new TableParam(1, 1, 0)))
 				{
 					for (int i = 0; i < test; i++)
 					{
-						System.out.println("------- save --------");
+//						System.out.println("------- save "+i+" --------");
 						db.save(new MyEntity(""+i, "01234567890123456789012345678901234567890123456789"));
 					}
 
-					System.out.println("------ commit -------");
+//					System.out.println("------ commit -------");
 					db.commit();
 				}
 
 				try (Database db = new Database(blockDevice, OpenOption.OPEN))
 				{
-					db.getTable(MyEntity.class).scan();
+					if (test == 1000)
+					{
+						db.getTable(MyEntity.class).scan();
+					}
 					
 					for (int i = 0; i < test; i++)
 					{
-						System.out.println("-------- get "+i+" --------");
+//						System.out.println("-------- get "+i+" --------");
 						db.get(new MyEntity(""+i));
 					}
 
