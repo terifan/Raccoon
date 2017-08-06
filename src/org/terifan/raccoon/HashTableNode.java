@@ -87,16 +87,6 @@ final class HashTableNode extends Node
 	}
 
 
-//	void split(int aIndex, BlockPointer aLowPointer, BlockPointer aHighPointer)
-//	{
-//		assert aLowPointer.getRangeSize() + aHighPointer.getRangeSize() == get(aIndex).getRangeSize();
-//		assert ensureEmpty(aIndex + 1, aLowPointer.getRangeSize() + aHighPointer.getRangeSize() - 1);
-//
-//		set(aIndex, aLowPointer);
-//		set(aIndex + aLowPointer.getRangeSize(), aHighPointer);
-//	}
-
-
 	void merge(int aIndex, BlockPointer aBlockPointer)
 	{
 		BlockPointer bp1 = get(aIndex);
@@ -129,7 +119,7 @@ final class HashTableNode extends Node
 
 	private BlockType getPointerType(int aIndex)
 	{
-		assert aIndex >= 0 && aIndex < mPointerCount;
+		assert aIndex >= 0 && aIndex < mPointerCount : aIndex;
 
 		return BlockPointer.getBlockType(mBuffer, aIndex * BlockPointer.SIZE);
 	}
@@ -137,7 +127,7 @@ final class HashTableNode extends Node
 
 	private BlockPointer get(int aIndex)
 	{
-		assert aIndex >= 0 && aIndex < mPointerCount;
+		assert aIndex >= 0 && aIndex < mPointerCount : aIndex;
 
 		return new BlockPointer().unmarshal(new ByteArrayBuffer(mBuffer).position(aIndex * BlockPointer.SIZE));
 	}

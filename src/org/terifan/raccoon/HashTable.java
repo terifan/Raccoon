@@ -148,7 +148,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		Log.inc();
 
 		mChanged = true;
-		
+
 		long hashCode = computeHashCode(aEntry.getKey());
 		Node node = mRoot;
 
@@ -190,6 +190,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		for (;node != null && node.getParent() != null; node = node.getParent())
 		{
+			node.freeBlock();
 			node.writeBlock();
 		}
 
@@ -267,7 +268,10 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				Log.i("commit hash table");
 				Log.inc();
 
+				mRoot.freeBlock();
 				mRoot.writeBlock();
+				
+				mRoot.flush();
 
 				if (mCommitChangesToBlockDevice)
 				{
@@ -493,9 +497,9 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	public TransactionGroup getTransactionId()
+	public long getTransactionId()
 	{
-		return mTransactionId;
+		return mTransactionId.get();
 	}
 
 

@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.util.HashMap;
 import org.terifan.raccoon.storage.BlockPointer;
 
 
@@ -8,7 +9,7 @@ abstract class Node
 	protected final HashTable mHashTable;
 	protected final HashTableNode mParent;
 	protected BlockPointer mBlockPointer;
-	private boolean mFree;
+	HashMap<Integer,Node> mChildren = new HashMap<>();
 
 
 	Node(HashTable aHashTable, HashTableNode aParent, BlockPointer aBlockPointer)
@@ -16,8 +17,6 @@ abstract class Node
 		mHashTable = aHashTable;
 		mBlockPointer = aBlockPointer;
 		mParent = aParent;
-
-		mFree = mBlockPointer == null;
 	}
 
 
@@ -52,49 +51,75 @@ abstract class Node
 	Node readBlock(BlockPointer aBlockPointer)
 	{
 		System.out.println("read  " + aBlockPointer);
+		
+		Node node = mChildren.get(aBlockPointer.getRangeOffset());
+		
+		if (node == null)
+		{
+			node = mHashTable.read(aBlockPointer, (HashTableNode)this);
+			
+			mChildren.put(aBlockPointer.getRangeOffset(), node);
+		}
 
-		return mHashTable.read(aBlockPointer, (HashTableNode)this);
+		return node;
 	}
 
 
-	BlockPointer writeBlock()
+	void writeBlock()
 	{
-		return writeBlock(mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
+		writeBlock(mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
 	}
 
 
-	BlockPointer writeBlock(int aRangeOffset, int aRangeSize, int aLevel)
+	void writeBlock(int aRangeOffset, int aRangeSize, int aLevel)
 	{
 		assert aLevel != 0 || aRangeOffset == 0 && aRangeSize * BlockPointer.SIZE == mHashTable.getNodeSize();
 
-		if (!mFree && mBlockPointer != null)
-		{
-			freeBlock();
-		}
-
-		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId().get(), getBlockType(), aRangeOffset, aRangeSize, aLevel);
-		mFree = false;
-
-		System.out.println("write " + mBlockPointer);
+		mBlockPointer = new BlockPointer();
+		mBlockPointer.setRangeOffset(aRangeOffset);
+		mBlockPointer.setRangeSize(aRangeSize);
+		mBlockPointer.setLevel(aLevel);
+		
+//		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId().get(), getBlockType(), aRangeOffset, aRangeSize, aLevel);
 
 		if (mParent != null)
 		{
+			mParent.mChildren.put(aRangeOffset, this);
 			mParent.setPointer(mBlockPointer);
 		}
 
-		return mBlockPointer;
+		System.out.println("write " + mBlockPointer);
 	}
 
 
 	void freeBlock()
 	{
-		if (!mFree)
+		if (mBlockPointer.getBlockType() != BlockType.FREE)
 		{
 			System.out.println("free  " + mBlockPointer);
 
 			mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
 
-			mFree = true;
+			mBlockPointer.setBlockType(BlockType.FREE);
+
+			mChildren.remove(mBlockPointer.getRangeOffset());
+		}
+	}
+
+
+	void flush()
+	{
+		for (Node node : mChildren.values())
+		{
+			node.flush();
+		}
+		
+		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId(), getBlockType(), mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
+
+		if (mParent != null)
+		{
+			mParent.mChildren.put(mBlockPointer.getRangeOffset(), this);
+			mParent.setPointer(mBlockPointer);
 		}
 	}
 }
