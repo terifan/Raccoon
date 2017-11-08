@@ -563,24 +563,24 @@ public final class Database implements AutoCloseable
 				}
 			}
 
-			if (mModified)
-			{
-				Log.w("rollback on close");
-				Log.inc();
-
-				for (TableInstance table : mOpenTables.values())
-				{
-					table.rollback();
-				}
-
-				mSystemTable.rollback();
-				mBlockDevice.rollback();
-
-				Log.dec();
-			}
-
 			if (mSystemTable != null)
 			{
+				if (mModified)
+				{
+					Log.w("rollback on close");
+					Log.inc();
+
+					for (TableInstance table : mOpenTables.values())
+					{
+						table.rollback();
+					}
+
+					mSystemTable.rollback();
+					mBlockDevice.rollback();
+
+					Log.dec();
+				}
+
 				for (TableInstance tableInstance : mOpenTables.values())
 				{
 					tableInstance.close();

@@ -317,6 +317,6 @@ public class BlockPointer implements Serializable
 	@Override
 	public String toString()
 	{
-		return "{type=" + getBlockType() + ", level=" + mLevel + ", offset=" + mBlockIndex0 + ", alloc=" + mAllocatedSize + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRangeOffset + ":" + mRangeSize + ", tx=" + mTransactionId + ")";
+		return "{type=" + getBlockType() + ", level=" + mLevel + ", offset=[" + mBlockIndex0+","+mBlockIndex1+","+mBlockIndex2 + "], alloc=" + mAllocatedSize + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRangeOffset + ":" + mRangeSize + ", tx=" + mTransactionId + ")";
 	}
 }

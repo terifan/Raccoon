@@ -64,6 +64,11 @@ public class BlockAccessor
 
 	public byte[] readBlock(BlockPointer aBlockPointer)
 	{
+		if (aBlockPointer.getBlockType() == BlockType.FREE || aBlockPointer.getBlockType() == BlockType.HOLE)
+		{
+			throw new IllegalArgumentException("Illegal block type: " + aBlockPointer.getBlockType());
+		}
+
 		try
 		{
 			Log.d("read block %s", aBlockPointer);
@@ -136,8 +141,8 @@ public class BlockAccessor
 			long blockIndex = mBlockDevice.allocBlock(allocatedSize);
 
 			blockPointer = new BlockPointer();
-			blockPointer.setCompressionAlgorithm(compressor);
 			blockPointer.setBlockIndex(blockIndex);
+			blockPointer.setCompressionAlgorithm(compressor);
 			blockPointer.setAllocatedSize(allocatedSize);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
