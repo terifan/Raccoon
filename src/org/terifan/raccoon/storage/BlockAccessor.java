@@ -139,9 +139,9 @@ public class BlockAccessor
 
 			int allocatedSize = aBuffer.length / mBlockDevice.getBlockSize();
 			long blockIndex = mBlockDevice.allocBlock(allocatedSize);
-
+			
 			blockPointer = new BlockPointer();
-			blockPointer.setBlockIndex(blockIndex);
+			blockPointer.setBlockIndex0(blockIndex);
 			blockPointer.setCompressionAlgorithm(compressor);
 			blockPointer.setAllocatedSize(allocatedSize);
 			blockPointer.setPhysicalSize(physicalSize);
