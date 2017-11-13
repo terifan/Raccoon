@@ -69,7 +69,16 @@ public class BlockAccessor
 			Log.d("read block %s", aBlockPointer);
 			Log.inc();
 
-			byte[] buffer = new byte[aBlockPointer.getAllocatedSize() * mBlockDevice.getBlockSize()];
+// TODO: remove
+byte[] buffer;
+if (aBlockPointer.getAllocatedSize() == 0)
+{
+	buffer = new byte[roundUp(aBlockPointer.getLogicalSize())];
+}
+else
+{
+	buffer = new byte[aBlockPointer.getAllocatedSize() * mBlockDevice.getBlockSize()];
+}
 
 			mBlockDevice.readBlock(aBlockPointer.getBlockIndex0(), buffer, 0, buffer.length, aBlockPointer.getIV());
 
