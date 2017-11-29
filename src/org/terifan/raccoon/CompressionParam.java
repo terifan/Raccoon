@@ -10,6 +10,7 @@ public final class CompressionParam implements OpenParam
 	public final static int DEFLATE_FAST = 2;
 	public final static int DEFLATE_DEFAULT = 3;
 	public final static int DEFLATE_BEST = 4;
+	public final static int LZJB = 5;
 
 	public final static CompressionParam BEST_SPEED = new CompressionParam(DEFLATE_FAST, ZLE, NONE);
 	public final static CompressionParam BEST_COMPRESSION = new CompressionParam(DEFLATE_DEFAULT, DEFLATE_DEFAULT, DEFLATE_BEST);

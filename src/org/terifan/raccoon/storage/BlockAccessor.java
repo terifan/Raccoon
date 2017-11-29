@@ -175,7 +175,9 @@ public class BlockAccessor
 		switch (aCompressorId)
 		{
 			case CompressionParam.ZLE:
-				return new ZeroCompressor(mBlockDevice.getBlockSize());
+				return new ZeroCompressor();
+			case CompressionParam.LZJB:
+				return new LZJB();
 			case CompressionParam.DEFLATE_FAST:
 				return new DeflateCompressor(Deflater.BEST_SPEED);
 			case CompressionParam.DEFLATE_DEFAULT:

@@ -12,7 +12,7 @@ import org.terifan.raccoon.util.Log;
  */
 class ZeroCompressor implements Compressor
 {
-	public ZeroCompressor(int aPageSize)
+	public ZeroCompressor()
 	{
 	}
 
