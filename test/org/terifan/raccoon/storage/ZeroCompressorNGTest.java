@@ -38,9 +38,9 @@ public class ZeroCompressorNGTest
 		}
 
 		ByteBlockOutputStream baos = new ByteBlockOutputStream(512);
-		new ZeroCompressor(0).compress(input, srcOffset, length, baos);
+		new ZeroCompressor().compress(input, srcOffset, length, baos);
 
-		new ZeroCompressor(0).decompress(baos.getBuffer(), 0, baos.size(), output, dstOffset, length);
+		new ZeroCompressor().decompress(baos.getBuffer(), 0, baos.size(), output, dstOffset, length);
 
 		assertEquals(Arrays.copyOfRange(input, srcOffset, srcOffset + length), Arrays.copyOfRange(output, dstOffset, dstOffset + length));
 	}
