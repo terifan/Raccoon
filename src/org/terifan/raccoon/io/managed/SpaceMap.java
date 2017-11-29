@@ -122,7 +122,7 @@ class SpaceMap
 
 		aSpaceMapBlockPointer.setBlockType(BlockType.SPACEMAP);
 		aSpaceMapBlockPointer.setAllocatedSize((buffer.position() + blockSize - 1) / blockSize);
-		aSpaceMapBlockPointer.setBlockIndex(aBlockDevice.allocBlockInternal(aSpaceMapBlockPointer.getAllocatedSize()));
+		aSpaceMapBlockPointer.setBlockIndex0(aBlockDevice.allocBlockInternal(aSpaceMapBlockPointer.getAllocatedSize()));
 		aSpaceMapBlockPointer.setLogicalSize(buffer.position());
 		aSpaceMapBlockPointer.setPhysicalSize(blockSize * aSpaceMapBlockPointer.getAllocatedSize());
 		aSpaceMapBlockPointer.setChecksum(MurmurHash3.hash128(buffer.array(), 0, buffer.position(), 0L));

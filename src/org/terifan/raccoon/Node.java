@@ -76,11 +76,10 @@ abstract class Node
 		assert aLevel != 0 || aRangeOffset == 0 && aRangeSize * BlockPointer.SIZE == mHashTable.getNodeSize();
 
 		mBlockPointer = new BlockPointer();
+		mBlockPointer.setBlockType(BlockType.PENDING_WRITE);
 		mBlockPointer.setRangeOffset(aRangeOffset);
 		mBlockPointer.setRangeSize(aRangeSize);
 		mBlockPointer.setLevel(aLevel);
-		
-//		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId().get(), getBlockType(), aRangeOffset, aRangeSize, aLevel);
 
 		if (mParent != null)
 		{
@@ -88,15 +87,15 @@ abstract class Node
 			mParent.setPointer(mBlockPointer);
 		}
 
-		System.out.println("write " + mBlockPointer);
+		System.out.println("reserve {level=" + aLevel + ", range=" + aRangeOffset + ":" + aRangeSize + "}");
 	}
 
 
 	void freeBlock()
 	{
-		if (mBlockPointer.getBlockType() != BlockType.FREE)
+		if (mBlockPointer.getBlockType() != BlockType.FREE && mBlockPointer.getBlockType() != BlockType.PENDING_WRITE)
 		{
-			System.out.println("free  " + mBlockPointer);
+			System.out.println("free    " + mBlockPointer);
 
 			mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
 
@@ -113,8 +112,10 @@ abstract class Node
 		{
 			node.flush();
 		}
-		
+
 		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId(), getBlockType(), mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
+		
+		System.out.println("flush   " + mBlockPointer);
 
 		if (mParent != null)
 		{

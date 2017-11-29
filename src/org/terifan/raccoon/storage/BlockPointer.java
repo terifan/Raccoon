@@ -145,7 +145,7 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public BlockPointer setBlockIndex(long aBlockIndex)
+	public BlockPointer setBlockIndex0(long aBlockIndex)
 	{
 		mBlockIndex0 = (int)aBlockIndex;
 		return this;
@@ -223,10 +223,10 @@ public class BlockPointer implements Serializable
 		assert mAllocatedSize >= 0 && mAllocatedSize <= 0xffff;
 		assert mPhysicalSize >= 0 && mPhysicalSize <= 0xffffff;
 		assert mLogicalSize >= 0 && mPhysicalSize <= 0xffffff;
-		assert mBlockIndex0 >= 0 && mBlockIndex0 <= 0xffffffffL;
-		assert mBlockIndex1 >= 0 && mBlockIndex1 <= 0xffffffffL;
-		assert mBlockIndex2 >= 0 && mBlockIndex2 <= 0xffffffffL;
-		assert mTransactionId >= 0 && mTransactionId <= 0xffffffffL;
+		assert mBlockIndex0 >= 0;
+		assert mBlockIndex1 >= 0;
+		assert mBlockIndex2 >= 0;
+		assert mTransactionId >= 0;
 
 		aBuffer.writeInt8(mBlockType);
 		aBuffer.writeInt8(mLevel);
@@ -284,11 +284,11 @@ public class BlockPointer implements Serializable
 	 * Return the 'type' field from a BlockPointer stored in the buffer provided.
 	 *
 	 * @param aBuffer
-	 *   a buffer containing a BlockPointer
+	 * a buffer containing a BlockPointer
 	 * @param aOffset
-	 *   start offset of the BlockPointer in the buffer
+	 * start offset of the BlockPointer in the buffer
 	 * @return
-	 *   the 'type' field
+	 * the 'type' field
 	 */
 	public static BlockType getBlockType(byte[] aBuffer, int aOffset)
 	{
@@ -299,7 +299,7 @@ public class BlockPointer implements Serializable
 	@Override
 	public int hashCode()
 	{
-		return (int)(mBlockIndex0 ^ (mBlockIndex0 >>> 32));
+		return mBlockIndex0;
 	}
 
 
@@ -317,6 +317,6 @@ public class BlockPointer implements Serializable
 	@Override
 	public String toString()
 	{
-		return "{type=" + getBlockType() + ", level=" + mLevel + ", offset=[" + mBlockIndex0+","+mBlockIndex1+","+mBlockIndex2 + "], alloc=" + mAllocatedSize + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRangeOffset + ":" + mRangeSize + ", tx=" + mTransactionId + ")";
+		return "{type=" + getBlockType() + ", offset=[" + mBlockIndex0 + "," + mBlockIndex1 + "," + mBlockIndex2 + "], alloc=" + mAllocatedSize + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", level=" + mLevel + ", range=" + mRangeOffset + ":" + mRangeSize + ", tx=" + mTransactionId + ")";
 	}
 }
