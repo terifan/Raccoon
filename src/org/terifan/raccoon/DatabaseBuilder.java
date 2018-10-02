@@ -70,7 +70,7 @@ public class DatabaseBuilder
 			}
 			else
 			{
-				mBlockDevice = SecureBlockDevice.open(mBlockDevice, accessCredentials);
+				mBlockDevice = SecureBlockDevice.open(accessCredentials, mBlockDevice);
 			}
 
 			if (mBlockDevice == null)

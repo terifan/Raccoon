@@ -23,7 +23,7 @@ public class SecureBlockDeviceNGTest
 
 		assertEquals(blockDevice.length(), 3);
 
-		try (SecureBlockDevice device = SecureBlockDevice.open(blockDevice, accessCredentials))
+		try (SecureBlockDevice device = SecureBlockDevice.open(accessCredentials, blockDevice))
 		{
 			device.validateBootBlocks(accessCredentials);
 		}
@@ -75,7 +75,7 @@ public class SecureBlockDeviceNGTest
 
 					byte[] output = new byte[numUnits * unitSize];
 
-					try (SecureBlockDevice device = SecureBlockDevice.open(blockDevice, new AccessCredentials("password".toCharArray()).setIterationCount(1)))
+					try (SecureBlockDevice device = SecureBlockDevice.open(new AccessCredentials("password".toCharArray()).setIterationCount(1), blockDevice))
 					{
 						for (int i = 0; i < numUnits / blocksPerUnit; i++)
 						{

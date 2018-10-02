@@ -161,13 +161,13 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	public static SecureBlockDevice open(IPhysicalBlockDevice aBlockDevice, AccessCredentials aAccessCredentials) throws IOException
+	public static SecureBlockDevice open(AccessCredentials aAccessCredentials, IPhysicalBlockDevice aBlockDevice) throws IOException
 	{
-		return open(aBlockDevice, aAccessCredentials, 0);
+		return open(aAccessCredentials, aBlockDevice, 0);
 	}
 
 
-	public static SecureBlockDevice open(IPhysicalBlockDevice aBlockDevice, AccessCredentials aAccessCredentials, long aBlockIndex) throws IOException
+	public static SecureBlockDevice open(AccessCredentials aAccessCredentials, IPhysicalBlockDevice aBlockDevice, long aBlockIndex) throws IOException
 	{
 		if (aBlockDevice == null)
 		{
@@ -428,7 +428,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 			try
 			{
-				SecureBlockDevice tmp = SecureBlockDevice.open(mBlockDevice, aAccessCredentials, i);
+				SecureBlockDevice tmp = SecureBlockDevice.open(aAccessCredentials, mBlockDevice, i);
 				cipher = tmp.mCipherImplementation;
 			}
 			catch (Exception e)

@@ -206,7 +206,7 @@ public final class Database implements AutoCloseable
 			}
 			else
 			{
-				secureDevice = SecureBlockDevice.open(physicalDevice, accessCredentials);
+				secureDevice = SecureBlockDevice.open(accessCredentials, physicalDevice);
 			}
 
 			if (secureDevice == null)
