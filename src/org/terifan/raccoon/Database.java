@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
@@ -420,6 +421,12 @@ public final class Database implements AutoCloseable
 		}
 
 		return false;
+	}
+	
+	
+	public boolean isOpen()
+	{
+		return mSystemTable != null;
 	}
 
 
@@ -1327,5 +1334,20 @@ public final class Database implements AutoCloseable
 	TableParam getTableParameter()
 	{
 		return mTableParam;
+	}
+
+
+	public void execute(Consumer<Database> aConsumer)
+	{
+		mWriteLock.lock(); // note: allow this lock even on read-only databases
+
+		try
+		{
+			aConsumer.accept(this);
+		}
+		finally
+		{
+			mWriteLock.unlock();
+		}
 	}
 }
