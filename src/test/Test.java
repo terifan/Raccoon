@@ -1,5 +1,6 @@
 package test;
 
+import java.awt.Dimension;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.Key;
@@ -28,10 +29,10 @@ public class Test
 				db.commit();
 			}
 
-//			try (Database db = new Database(blockDevice, OpenOption.OPEN))
-//			{
-//				db.list(MyEntity.class).forEach(System.out::println);
-//			}
+			try (Database db = new Database(blockDevice, OpenOption.OPEN))
+			{
+				db.list(MyEntity.class).forEach(System.out::println);
+			}
 		}
 		catch (Throwable e)
 		{
@@ -44,6 +45,7 @@ public class Test
 	{
 		@Key int id;
 		String name;
+		Dimension dim;
 
 		public MyEntity()
 		{
@@ -53,12 +55,13 @@ public class Test
 		{
 			this.id = aId;
 			this.name = aName;
+			dim = new Dimension(aId,-aId);
 		}
 
 		@Override
 		public String toString()
 		{
-			return "X{" + "id=" + id + ", name=" + name + '}';
+			return "X{" + "id=" + id + ", name=" + name + '}'+dim;
 		}
 	}
 }
