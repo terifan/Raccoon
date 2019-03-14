@@ -3,9 +3,11 @@ package test;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.Key;
+import org.terifan.raccoon.LogLevel;
 import org.terifan.raccoon.OpenOption;
 import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.util.Log;
 
 
 public class Test
@@ -15,6 +17,8 @@ public class Test
 		try
 		{
 			System.setErr(System.out);
+
+			Log.setLevel(LogLevel.DEBUG);
 
 			for (int test = 1; test <= 1000; test++)
 			{
@@ -40,7 +44,7 @@ public class Test
 					{
 						db.getTable(MyEntity.class).scan();
 					}
-					
+
 					for (int i = 0; i < test; i++)
 					{
 						System.out.println("-------- get "+i+" --------");
@@ -49,7 +53,7 @@ public class Test
 
 //					db.list(MyEntity.class).forEach(System.out::println);
 				}
-				
+
 				System.out.println();
 			}
 		}

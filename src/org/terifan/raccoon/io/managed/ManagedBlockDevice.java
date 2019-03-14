@@ -318,7 +318,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
 	{
-		assert aBufferLength > 0;
+		assert aBufferLength > 0 : aBufferLength;
 		assert (aBufferLength % mBlockSize) == 0;
 
 		mSpaceMap.assertUsed(aBlockIndex, aBufferLength / mBlockSize);

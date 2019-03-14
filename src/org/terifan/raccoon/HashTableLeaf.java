@@ -61,7 +61,7 @@ class HashTableLeaf extends Node
 		Log.inc();
 
 		freeBlock();
-		
+
 		HashTableNode node = new HashTableNode(mHashTable, mParent);
 		node.setBlockPointer(new BlockPointer().setLevel(mBlockPointer.getLevel()).setRangeOffset(mBlockPointer.getRangeOffset()).setRangeSize(mBlockPointer.getRangeSize()));
 

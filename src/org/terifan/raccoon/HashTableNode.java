@@ -11,6 +11,8 @@ final class HashTableNode extends Node
 	private byte[] mBuffer;
 	private int mPointerCount;
 
+	private BlockPointer[] mPendingPointers;
+
 
 	public HashTableNode(HashTable aHashTable, HashTableNode aParent, BlockPointer aBlockPointer)
 	{
@@ -18,6 +20,8 @@ final class HashTableNode extends Node
 
 		mBuffer = aHashTable.getBlockAccessor().readBlock(aBlockPointer);
 		mPointerCount = mBuffer.length / BlockPointer.SIZE;
+
+		mPendingPointers = new BlockPointer[mPointerCount];
 	}
 
 
@@ -27,6 +31,8 @@ final class HashTableNode extends Node
 
 		mBuffer = new byte[mHashTable.getNodeSize()];
 		mPointerCount = mHashTable.getNodeSize() / BlockPointer.SIZE;
+
+		mPendingPointers = new BlockPointer[mPointerCount];
 	}
 
 
@@ -129,7 +135,12 @@ final class HashTableNode extends Node
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount : aIndex;
 
-		return new BlockPointer().unmarshal(new ByteArrayBuffer(mBuffer).position(aIndex * BlockPointer.SIZE));
+		if (mPendingPointers[aIndex] == null)
+		{
+			mPendingPointers[aIndex] = new BlockPointer().unmarshal(new ByteArrayBuffer(mBuffer).position(aIndex * BlockPointer.SIZE));
+		}
+
+		return mPendingPointers[aIndex];
 	}
 
 
@@ -137,7 +148,24 @@ final class HashTableNode extends Node
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 
-		aBlockPointer.marshal(new ByteArrayBuffer(mBuffer).position(aIndex * BlockPointer.SIZE));
+		mPendingPointers[aIndex] = aBlockPointer;
+	}
+
+
+	@Override
+	void flush()
+	{
+		for (int i = 0; i < mPendingPointers.length; i++)
+		{
+			if (mPendingPointers[i] != null)
+			{
+				mPendingPointers[i].marshal(new ByteArrayBuffer(mBuffer).position(i * BlockPointer.SIZE));
+
+				mPendingPointers[i] = null;
+			}
+		}
+
+		super.writeBlock();
 	}
 
 
@@ -244,7 +272,7 @@ final class HashTableNode extends Node
 		}
 
 		leaf.writeBlock();
-		
+
 		return leaf;
 	}
 }
