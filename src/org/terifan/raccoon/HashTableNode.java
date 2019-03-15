@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.util.HashMap;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
@@ -11,28 +12,18 @@ final class HashTableNode extends Node
 	private byte[] mBuffer;
 	private int mPointerCount;
 
-	private BlockPointer[] mPendingPointers;
+	private BlockPointer[] mPointers;
+	private Node[] mChildren;
 
 
-	public HashTableNode(HashTable aHashTable, HashTableNode aParent, BlockPointer aBlockPointer)
-	{
-		super(aHashTable, aParent, aBlockPointer);
-
-		mBuffer = aHashTable.getBlockAccessor().readBlock(aBlockPointer);
-		mPointerCount = mBuffer.length / BlockPointer.SIZE;
-
-		mPendingPointers = new BlockPointer[mPointerCount];
-	}
-
-
-	public HashTableNode(HashTable aHashTable, HashTableNode aParent)
+	public HashTableNode(HashTable aHashTable, HashTableNode aParent, byte[] aBuffer)
 	{
 		super(aHashTable, aParent, null);
 
-		mBuffer = new byte[mHashTable.getNodeSize()];
-		mPointerCount = mHashTable.getNodeSize() / BlockPointer.SIZE;
+		mBuffer = aBuffer;
+		mPointerCount = aBuffer.length / BlockPointer.SIZE;
 
-		mPendingPointers = new BlockPointer[mPointerCount];
+		mPointers = new BlockPointer[mPointerCount];
 	}
 
 
@@ -58,11 +49,7 @@ final class HashTableNode extends Node
 
 	void setPointer(BlockPointer aBlockPointer)
 	{
-		int index = aBlockPointer.getRangeOffset();
-
-//		assert get(index).getBlockType() == BlockType.FREE || (get(index).getRangeSize() == aBlockPointer.getRangeSize() && get(index).getRangeOffset() == index) : get(index).getBlockType() + " " + get(index).getRangeOffset()+":"+get(index).getRangeSize() + " != " + index+":"+aBlockPointer.getRangeSize();
-
-		set(index, aBlockPointer);
+		set(aBlockPointer.getRangeOffset(), aBlockPointer);
 	}
 
 
@@ -135,12 +122,12 @@ final class HashTableNode extends Node
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount : aIndex;
 
-		if (mPendingPointers[aIndex] == null)
+		if (mPointers[aIndex] == null)
 		{
-			mPendingPointers[aIndex] = new BlockPointer().unmarshal(new ByteArrayBuffer(mBuffer).position(aIndex * BlockPointer.SIZE));
+			mPointers[aIndex] = new BlockPointer().unmarshal(new ByteArrayBuffer(mBuffer).position(aIndex * BlockPointer.SIZE));
 		}
 
-		return mPendingPointers[aIndex];
+		return mPointers[aIndex];
 	}
 
 
@@ -148,25 +135,67 @@ final class HashTableNode extends Node
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 
-		mPendingPointers[aIndex] = aBlockPointer;
+		mPointers[aIndex] = aBlockPointer;
+	}
+
+
+	Node getChildNode(BlockPointer aBlockPointer)
+	{
+		int i = 0;
+
+		if (mPointers[i] == null)
+		{
+			mPointers[i] = aBlockPointer;
+
+			if (aBlockPointer.getBlockType() == BlockType.LEAF)
+			{
+				mChildren[i] = new HashTableLeaf(mHashTable, this, mHashTable.getBlockAccessor().readBlock(aBlockPointer));
+			}
+			else
+			{
+				mChildren[i] = new HashTableNode(mHashTable, this, mHashTable.getBlockAccessor().readBlock(aBlockPointer));
+			}
+		}
+
+		return mChildren[i];
 	}
 
 
 	@Override
 	void flush()
 	{
-		for (int i = 0; i < mPendingPointers.length; i++)
+		for (int i = 0; i < mPointers.length; i++)
 		{
-			if (mPendingPointers[i] != null)
+			if (mPointers[i] != null)
 			{
-				mPendingPointers[i].marshal(new ByteArrayBuffer(mBuffer).position(i * BlockPointer.SIZE));
+				mPointers[i].marshal(new ByteArrayBuffer(mBuffer).position(i * BlockPointer.SIZE));
 
-				mPendingPointers[i] = null;
+				mPointers[i] = null;
 			}
 		}
 
-		super.writeBlock();
+		writeBlock();
 	}
+
+
+//	@Override
+//	void flush()
+//	{
+//		for (Node node : mChildren.values())
+//		{
+//			node.flush();
+//		}
+//
+//		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId(), getBlockType(), mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
+//
+//		System.out.println("flush   " + mBlockPointer);
+//
+//		if (mParent != null)
+//		{
+//			mParent.mChildren.put(mBlockPointer.getRangeOffset(), this);
+//			mParent.setPointer(mBlockPointer);
+//		}
+//	}
 
 
 	@Override
@@ -261,9 +290,10 @@ final class HashTableNode extends Node
 	}
 
 
+	@Deprecated
 	HashTableLeaf upgrade(BlockPointer aBlockPointer, ArrayMapEntry aEntry)
 	{
-		HashTableLeaf leaf = new HashTableLeaf(mHashTable, this);
+		HashTableLeaf leaf = new HashTableLeaf(mHashTable, this, new byte[mHashTable.getLeafSize()]);
 		leaf.setBlockPointer(new BlockPointer().setLevel(aBlockPointer.getLevel()).setRangeOffset(aBlockPointer.getRangeOffset()).setRangeSize(aBlockPointer.getRangeSize()));
 
 		if (!leaf.put(aEntry))
@@ -274,5 +304,66 @@ final class HashTableNode extends Node
 		leaf.writeBlock();
 
 		return leaf;
+	}
+
+
+	@Override
+	void freeBlock()
+	{
+		if (mBlockPointer.getBlockType() != BlockType.FREE && mBlockPointer.getBlockType() != BlockType.PENDING_WRITE)
+		{
+			System.out.println("free    " + mBlockPointer);
+
+			mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
+
+			mBlockPointer.setBlockType(BlockType.FREE);
+
+			mPointers[mBlockPointer.getRangeOffset()] = null;
+			mChildren[mBlockPointer.getRangeOffset()] = null;
+		}
+	}
+
+
+	@Override
+	void writeBlock()
+	{
+		writeBlock(mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
+	}
+
+
+	@Override
+	void writeBlock(int aRangeOffset, int aRangeSize, int aLevel)
+	{
+		assert aLevel != 0 || aRangeOffset == 0 && aRangeSize * BlockPointer.SIZE == mHashTable.getNodeSize();
+
+		mBlockPointer = new BlockPointer();
+		mBlockPointer.setBlockType(BlockType.PENDING_WRITE);
+		mBlockPointer.setRangeOffset(aRangeOffset);
+		mBlockPointer.setRangeSize(aRangeSize);
+		mBlockPointer.setLevel(aLevel);
+
+		if (mParent != null)
+		{
+			mParent.setPointer(mBlockPointer);
+		}
+
+		System.out.println("reserve {level=" + aLevel + ", range=" + aRangeOffset + ":" + aRangeSize + "}");
+	}
+
+
+	Node readBlock(BlockPointer aBlockPointer)
+	{
+		System.out.println("read  " + aBlockPointer);
+
+		Node node = mChildren[aBlockPointer.getRangeOffset()];
+
+		if (node == null)
+		{
+			node = getChildNode(aBlockPointer);
+
+			mChildren[aBlockPointer.getRangeOffset()] = node;
+		}
+
+		return node;
 	}
 }

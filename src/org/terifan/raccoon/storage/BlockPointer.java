@@ -4,7 +4,25 @@ import java.io.Serializable;
 import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
-
+/*
+ * +------+------+------+------+------+------+------+------+
+ * | type |level | comp |  chk | rangeOffset |  rangeSize  |
+ * |------+------+------+------+------+------+------+------+
+ * |  allocAize  |    logicalSize     |    physicalSize    |
+ * |------+------+------+------+------+------+------+------+
+ * |          offset1          |          offset2          |
+ * +------+------+------+------+------+------+------+------+
+ * |          offset3          |        transaction        |
+ * +------+------+------+------+------+------+------+------+
+ * |                          iv                           |
+ * +------+------+------+------+------+------+------+------+
+ * |                          iv                           |
+ * +------+------+------+------+------+------+------+------+
+ * |                       checksum                        |
+ * +------+------+------+------+------+------+------+------+
+ * |                       checksum                        |
+ * +------+------+------+------+------+------+------+------+
+ */
 public class BlockPointer implements Serializable
 {
 	private final static long serialVersionUID = 1;

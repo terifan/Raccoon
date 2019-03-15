@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Log;
@@ -8,21 +9,14 @@ import org.terifan.raccoon.util.Log;
 class HashTableLeaf extends Node
 {
 	private ArrayMap mMap;
+	HashMap<Integer, Node> mChildren = new HashMap<>();
 
 
-	public HashTableLeaf(HashTable aHashTable, HashTableNode aParent, BlockPointer aBlockPointer)
-	{
-		super(aHashTable, aParent, aBlockPointer);
-
-		mMap = new ArrayMap(mHashTable.getBlockAccessor().readBlock(mBlockPointer));
-	}
-
-
-	public HashTableLeaf(HashTable aHashTable, HashTableNode aParent)
+	public HashTableLeaf(HashTable aHashTable, HashTableNode aParent, byte[] aBuffer)
 	{
 		super(aHashTable, aParent, null);
 
-		mMap = new ArrayMap(mHashTable.getLeafSize());
+		mMap = new ArrayMap(aBuffer);
 	}
 
 
@@ -62,11 +56,11 @@ class HashTableLeaf extends Node
 
 		freeBlock();
 
-		HashTableNode node = new HashTableNode(mHashTable, mParent);
+		HashTableNode node = new HashTableNode(mHashTable, mParent, new byte[mHashTable.getNodeSize()]);
 		node.setBlockPointer(new BlockPointer().setLevel(mBlockPointer.getLevel()).setRangeOffset(mBlockPointer.getRangeOffset()).setRangeSize(mBlockPointer.getRangeSize()));
 
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, node);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, node);
+		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, node, new byte[mHashTable.getLeafSize()]);
+		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, node, new byte[mHashTable.getLeafSize()]);
 		int halfRange = mHashTable.getPointersPerNode() / 2;
 		int level = mBlockPointer.getLevel();
 
@@ -94,8 +88,8 @@ class HashTableLeaf extends Node
 
 		freeBlock();
 
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, mParent);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, mParent);
+		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, mParent, new byte[mHashTable.getLeafSize()]);
+		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, mParent, new byte[mHashTable.getLeafSize()]);
 
 		int rangeOffset = mBlockPointer.getRangeOffset();
 		int halfRange = mBlockPointer.getRangeSize() / 2;
@@ -197,5 +191,67 @@ class HashTableLeaf extends Node
 	public ArrayMap getMap()
 	{
 		return mMap;
+	}
+
+
+	@Override
+	void freeBlock()
+	{
+		if (mBlockPointer.getBlockType() != BlockType.FREE && mBlockPointer.getBlockType() != BlockType.PENDING_WRITE)
+		{
+			System.out.println("free    " + mBlockPointer);
+
+			mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
+
+			mBlockPointer.setBlockType(BlockType.FREE);
+
+			mChildren.remove(mBlockPointer.getRangeOffset());
+		}
+	}
+
+
+	@Override
+	void flush()
+	{
+		for (Node node : mChildren.values())
+		{
+			node.flush();
+		}
+
+		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId(), getBlockType(), mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
+
+		System.out.println("flush   " + mBlockPointer);
+
+		if (mParent != null)
+		{
+			mParent.setPointer(mBlockPointer);
+		}
+	}
+
+
+	@Override
+	void writeBlock()
+	{
+		writeBlock(mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
+	}
+
+
+	@Override
+	void writeBlock(int aRangeOffset, int aRangeSize, int aLevel)
+	{
+		assert aLevel != 0 || aRangeOffset == 0 && aRangeSize * BlockPointer.SIZE == mHashTable.getNodeSize();
+
+		mBlockPointer = new BlockPointer();
+		mBlockPointer.setBlockType(BlockType.PENDING_WRITE);
+		mBlockPointer.setRangeOffset(aRangeOffset);
+		mBlockPointer.setRangeSize(aRangeSize);
+		mBlockPointer.setLevel(aLevel);
+
+		if (mParent != null)
+		{
+			mParent.setPointer(mBlockPointer);
+		}
+
+		System.out.println("reserve {level=" + aLevel + ", range=" + aRangeOffset + ":" + aRangeSize + "}");
 	}
 }
