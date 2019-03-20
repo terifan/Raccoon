@@ -1,18 +1,28 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.storage.IBlockAccessor;
 
 
-abstract class Node
+abstract class HashTableAbstractNode
 {
 	protected final HashTable mHashTable;
+	protected final IBlockAccessor mBlockAccessor;
 	protected final HashTableNode mParent;
 	protected BlockPointer mBlockPointer;
+	protected FlushAction mFlushAction;
 
+	enum FlushAction
+	{
+		DO_NOTHING,
+		WRITE,
+		DELETE
+	}
 
-	Node(HashTable aHashTable, HashTableNode aParent, BlockPointer aBlockPointer)
+	HashTableAbstractNode(HashTable aHashTable, IBlockAccessor aBlockAccessor, HashTableNode aParent, BlockPointer aBlockPointer)
 	{
 		mHashTable = aHashTable;
+		mBlockAccessor = aBlockAccessor;
 		mBlockPointer = aBlockPointer;
 		mParent = aParent;
 	}
@@ -36,6 +46,7 @@ abstract class Node
 	abstract void writeBlock();
 
 
+	@Deprecated
 	abstract void writeBlock(int aRangeOffset, int aRangeSize, int aLevel);
 
 

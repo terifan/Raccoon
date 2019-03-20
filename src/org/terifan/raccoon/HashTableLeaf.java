@@ -3,18 +3,19 @@ package org.terifan.raccoon;
 import java.util.HashMap;
 import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.storage.IBlockAccessor;
 import org.terifan.raccoon.util.Log;
 
 
-class HashTableLeaf extends Node
+class HashTableLeaf extends HashTableAbstractNode
 {
 	private ArrayMap mMap;
-	HashMap<Integer, Node> mChildren = new HashMap<>();
+	HashMap<Integer, HashTableAbstractNode> mChildren = new HashMap<>();
 
 
-	public HashTableLeaf(HashTable aHashTable, HashTableNode aParent, byte[] aBuffer)
+	public HashTableLeaf(HashTable aHashTable, IBlockAccessor aBlockAccessor, HashTableNode aParent, byte[] aBuffer)
 	{
-		super(aHashTable, aParent, null);
+		super(aHashTable, aBlockAccessor, aParent, null);
 
 		mMap = new ArrayMap(aBuffer);
 	}
@@ -34,7 +35,7 @@ class HashTableLeaf extends Node
 	}
 
 
-	Node split()
+	HashTableAbstractNode split()
 	{
 		if (mBlockPointer.getLevel() > 0 && mBlockPointer.getRangeSize() > 1)
 		{
@@ -56,11 +57,11 @@ class HashTableLeaf extends Node
 
 		freeBlock();
 
-		HashTableNode node = new HashTableNode(mHashTable, mParent, new byte[mHashTable.getNodeSize()]);
+		HashTableNode node = new HashTableNode(mHashTable, mBlockAccessor, mParent, new byte[mHashTable.getNodeSize()]);
 		node.setBlockPointer(new BlockPointer().setLevel(mBlockPointer.getLevel()).setRangeOffset(mBlockPointer.getRangeOffset()).setRangeSize(mBlockPointer.getRangeSize()));
 
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, node, new byte[mHashTable.getLeafSize()]);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, node, new byte[mHashTable.getLeafSize()]);
+		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, mBlockAccessor, node, new byte[mHashTable.getLeafSize()]);
+		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, mBlockAccessor, node, new byte[mHashTable.getLeafSize()]);
 		int halfRange = mHashTable.getPointersPerNode() / 2;
 		int level = mBlockPointer.getLevel();
 
@@ -88,8 +89,8 @@ class HashTableLeaf extends Node
 
 		freeBlock();
 
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, mParent, new byte[mHashTable.getLeafSize()]);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, mParent, new byte[mHashTable.getLeafSize()]);
+		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, mBlockAccessor, mParent, new byte[mHashTable.getLeafSize()]);
+		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, mBlockAccessor, mParent, new byte[mHashTable.getLeafSize()]);
 
 		int rangeOffset = mBlockPointer.getRangeOffset();
 		int halfRange = mBlockPointer.getRangeSize() / 2;
@@ -97,8 +98,8 @@ class HashTableLeaf extends Node
 
 		divideLeafEntries(level - 1, rangeOffset + halfRange, lowLeaf, highLeaf);
 
-		mParent.set(rangeOffset, lowLeaf.updatePointer(rangeOffset, halfRange, level));
-		mParent.set(rangeOffset + halfRange, highLeaf.updatePointer(rangeOffset + halfRange, halfRange, level));
+		mParent.setPointerImpl(rangeOffset, lowLeaf.updatePointer(rangeOffset, halfRange, level));
+		mParent.setPointerImpl(rangeOffset + halfRange, highLeaf.updatePointer(rangeOffset + halfRange, halfRange, level));
 
 		Log.dec();
 		Log.dec();
@@ -201,7 +202,7 @@ class HashTableLeaf extends Node
 		{
 			System.out.println("free    " + mBlockPointer);
 
-			mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
+			mBlockAccessor.freeBlock(mBlockPointer);
 
 			mBlockPointer.setBlockType(BlockType.FREE);
 
@@ -213,12 +214,12 @@ class HashTableLeaf extends Node
 	@Override
 	void flush()
 	{
-		for (Node node : mChildren.values())
+		for (HashTableAbstractNode node : mChildren.values())
 		{
 			node.flush();
 		}
 
-		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId(), getBlockType(), mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
+		mBlockPointer = mBlockAccessor.writeBlock(array(), 0, array().length, mHashTable.getTransactionId(), getBlockType(), mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
 
 		System.out.println("flush   " + mBlockPointer);
 

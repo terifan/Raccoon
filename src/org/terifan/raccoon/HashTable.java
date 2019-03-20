@@ -16,9 +16,9 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 {
 	private final String mTableName;
 	private final TransactionGroup mTransactionId;
-	private BlockAccessor mBlockAccessor;
+	private final BlockAccessor mBlockAccessor;
 
-	private Node mRoot;
+	private HashTableAbstractNode mRoot;
 
 	private int mNodeSize;
 	private int mLeafSize;
@@ -55,7 +55,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 			mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
-			mRoot = new HashTableLeaf(this, null, new byte[getLeafSize()]);
+			mRoot = new HashTableLeaf(this, mBlockAccessor, null, new byte[getLeafSize()]);
 			mRoot.writeBlock(0, mPointersPerNode, 0);
 			mWasEmptyInstance = true;
 			mChanged = true;
@@ -108,11 +108,11 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		if (bp.getBlockType() == BlockType.LEAF)
 		{
-			mRoot = new HashTableLeaf(this, null, getBlockAccessor().readBlock(bp));
+			mRoot = new HashTableLeaf(this, mBlockAccessor, null, getBlockAccessor().readBlock(bp));
 		}
 		else
 		{
-			mRoot = new HashTableNode(this, null, getBlockAccessor().readBlock(bp));
+			mRoot = new HashTableNode(this, mBlockAccessor, null, getBlockAccessor().readBlock(bp));
 		}
 	}
 
@@ -122,7 +122,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		checkOpen();
 
 		long hashCode = computeHashCode(aEntry.getKey());
-		Node node = mRoot;
+		HashTableAbstractNode node = mRoot;
 
 		while (node.getBlockType() == BlockType.INDEX)
 		{
@@ -156,7 +156,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		mChanged = true;
 
 		long hashCode = computeHashCode(aEntry.getKey());
-		Node node = mRoot;
+		HashTableAbstractNode node = mRoot;
 
 		BlockPointer blockPointer = mRoot.getBlockPointer();
 
@@ -326,7 +326,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			Log.d("rollback empty");
 
 			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
-			mRoot = new HashTableLeaf(this, null, new byte[getLeafSize()]);
+			mRoot = new HashTableLeaf(this, mBlockAccessor, null, new byte[getLeafSize()]);
 		}
 		else
 		{
@@ -359,18 +359,18 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				{
 					if (aBlockPointer.getBlockType() == BlockType.INDEX)
 					{
-						new HashTableNode(this, aParent, getBlockAccessor().readBlock(aBlockPointer)).freeBlock();
+						new HashTableNode(this, mBlockAccessor, aParent, getBlockAccessor().readBlock(aBlockPointer)).freeBlock();
 					}
 					else
 					{
-						new HashTableLeaf(this, aParent, getBlockAccessor().readBlock(aBlockPointer)).freeBlock();
+						new HashTableLeaf(this, mBlockAccessor, aParent, getBlockAccessor().readBlock(aBlockPointer)).freeBlock();
 					}
 				}
 			}, null);
 
 			mRoot.freeBlock();
 
-			mRoot = new HashTableLeaf(this, null, new byte[getLeafSize()]);
+			mRoot = new HashTableLeaf(this, mBlockAccessor, null, new byte[getLeafSize()]);
 		}
 
 		mRoot.writeBlock(0, mPointersPerNode, 0);
@@ -387,7 +387,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	{
 		mClosed = true;
 
-		mBlockAccessor = null;
+//		mBlockAccessor = null; // ???
 		mRoot = null;
 	}
 
@@ -410,7 +410,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	long computeHashCode(byte[] aKey)
+	final long computeHashCode(byte[] aKey)
 	{
 		return MurmurHash3.hash64(aKey, mHashSeed);
 	}
@@ -526,7 +526,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				aScanResult.enterNode(aBlockPointer);
 				aScanResult.indexBlocks++;
 
-				HashTableNode indexNode = new HashTableNode(this, aParent, getBlockAccessor().readBlock(aBlockPointer));
+				HashTableNode indexNode = new HashTableNode(this, mBlockAccessor, aParent, getBlockAccessor().readBlock(aBlockPointer));
 
 				for (int i = 0; i < indexNode.getPointerCount(); i++)
 				{
@@ -547,7 +547,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				aScanResult.exitNode();
 				break;
 			case LEAF:
-				HashTableLeaf leafNode = new HashTableLeaf(this, aParent, getBlockAccessor().readBlock(aBlockPointer));
+				HashTableLeaf leafNode = new HashTableLeaf(this, mBlockAccessor, aParent, getBlockAccessor().readBlock(aBlockPointer));
 
 				aScanResult.enterLeaf(aBlockPointer, leafNode.array());
 

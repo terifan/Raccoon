@@ -1,11 +1,20 @@
 package org.terifan.raccoon;
 
-import java.util.HashMap;
 import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.storage.IBlockAccessor;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-final class HashTableNode extends Node
+/*
+
+read pointers:    [a][ ][c][ ]       pointers have been requested and have been decoded
+read blocks:      [ ][ ][ ][ ]       blocks in memory, blocks pending to be written are removed
+
+pending pointers: [ ][b][c][ ]       new pointers exists, a pointer can point to an already written block
+pending blocks:   [ ][ ][c][ ]       blocks pending to be written, some blocks might already have been written
+
+*/
+final class HashTableNode extends HashTableAbstractNode
 {
 	private final static BlockPointer EMPTY_POINTER = new BlockPointer();
 
@@ -13,17 +22,18 @@ final class HashTableNode extends Node
 	private int mPointerCount;
 
 	private BlockPointer[] mPointers;
-	private Node[] mChildren;
+	private HashTableAbstractNode[] mChildren;
 
 
-	public HashTableNode(HashTable aHashTable, HashTableNode aParent, byte[] aBuffer)
+	public HashTableNode(HashTable aHashTable, IBlockAccessor aBlockAccessor, HashTableNode aParent, byte[] aBuffer)
 	{
-		super(aHashTable, aParent, null);
+		super(aHashTable, aBlockAccessor, aParent, null);
 
 		mBuffer = aBuffer;
 		mPointerCount = aBuffer.length / BlockPointer.SIZE;
 
 		mPointers = new BlockPointer[mPointerCount];
+		mChildren = new HashTableAbstractNode[mPointerCount];
 	}
 
 
@@ -49,13 +59,13 @@ final class HashTableNode extends Node
 
 	void setPointer(BlockPointer aBlockPointer)
 	{
-		set(aBlockPointer.getRangeOffset(), aBlockPointer);
+		setPointerImpl(aBlockPointer.getRangeOffset(), aBlockPointer);
 	}
 
 
 	BlockPointer getPointerByHash(long aHashCode)
 	{
-		return getPointer(findPointer(mHashTable.computeIndex(aHashCode, mBlockPointer.getLevel())));
+		return getPointer(findPointerIndex(mHashTable.computeIndex(aHashCode, mBlockPointer.getLevel())));
 	}
 
 
@@ -66,11 +76,11 @@ final class HashTableNode extends Node
 			return null;
 		}
 
-		return get(aIndex);
+		return getPointerImpl(aIndex);
 	}
 
 
-	int findPointer(int aIndex)
+	private int findPointerIndex(int aIndex)
 	{
 		for (; getPointerType(aIndex) == BlockType.FREE; aIndex--)
 		{
@@ -82,15 +92,15 @@ final class HashTableNode extends Node
 
 	void merge(int aIndex, BlockPointer aBlockPointer)
 	{
-		BlockPointer bp1 = get(aIndex);
-		BlockPointer bp2 = get(aIndex + aBlockPointer.getRangeSize());
+		BlockPointer bp1 = getPointerImpl(aIndex);
+		BlockPointer bp2 = getPointerImpl(aIndex + aBlockPointer.getRangeSize());
 
 		assert bp1.getRangeSize() + bp2.getRangeSize() == aBlockPointer.getRangeSize();
 		assert ensureEmpty(aIndex + 1, bp1.getRangeSize() - 1);
 		assert ensureEmpty(aIndex + bp1.getRangeSize() + 1, bp2.getRangeSize() - 1);
 
-		set(aIndex, aBlockPointer);
-		set(aIndex + bp1.getRangeSize(), EMPTY_POINTER);
+		setPointerImpl(aIndex, aBlockPointer);
+		setPointerImpl(aIndex + bp1.getRangeSize(), EMPTY_POINTER);
 	}
 
 
@@ -114,11 +124,16 @@ final class HashTableNode extends Node
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount : aIndex;
 
+		if (mPointers[aIndex] != null)
+		{
+			return mPointers[aIndex].getBlockType();
+		}
+
 		return BlockPointer.getBlockType(mBuffer, aIndex * BlockPointer.SIZE);
 	}
 
 
-	private BlockPointer get(int aIndex)
+	private BlockPointer getPointerImpl(int aIndex)
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount : aIndex;
 
@@ -131,33 +146,12 @@ final class HashTableNode extends Node
 	}
 
 
-	void set(int aIndex, BlockPointer aBlockPointer)
+	void setPointerImpl(int aIndex, BlockPointer aBlockPointer)
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 
+		mFlushAction = FlushAction.WRITE;
 		mPointers[aIndex] = aBlockPointer;
-	}
-
-
-	Node getChildNode(BlockPointer aBlockPointer)
-	{
-		int i = 0;
-
-		if (mPointers[i] == null)
-		{
-			mPointers[i] = aBlockPointer;
-
-			if (aBlockPointer.getBlockType() == BlockType.LEAF)
-			{
-				mChildren[i] = new HashTableLeaf(mHashTable, this, mHashTable.getBlockAccessor().readBlock(aBlockPointer));
-			}
-			else
-			{
-				mChildren[i] = new HashTableNode(mHashTable, this, mHashTable.getBlockAccessor().readBlock(aBlockPointer));
-			}
-		}
-
-		return mChildren[i];
 	}
 
 
@@ -186,7 +180,7 @@ final class HashTableNode extends Node
 //			node.flush();
 //		}
 //
-//		mBlockPointer = mHashTable.getBlockAccessor().writeBlock(array(), 0, array().length, mHashTable.getTransactionId(), getBlockType(), mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
+//		mBlockPointer = mBlockAccessor.writeBlock(array(), 0, array().length, mHashTable.getTransactionId(), getBlockType(), mBlockPointer.getRangeOffset(), mBlockPointer.getRangeSize(), mBlockPointer.getLevel());
 //
 //		System.out.println("flush   " + mBlockPointer);
 //
@@ -205,7 +199,7 @@ final class HashTableNode extends Node
 
 		for (int i = 0; i < mPointerCount; i++)
 		{
-			BlockPointer bp = get(i);
+			BlockPointer bp = getPointerImpl(i);
 
 			if (rangeRemain > 0)
 			{
@@ -233,14 +227,31 @@ final class HashTableNode extends Node
 	{
 		StringBuilder sb = new StringBuilder();
 
-		for (int j = 0; j < mPointerCount; j++)
+		for (int j = 0; j < mPointerCount; )
 		{
-			if (j > 0)
+			if (sb.length() > 0)
 			{
-				sb.append(", ");
+				sb.append(",");
 			}
 
-			sb.append(get(j).getRangeSize());
+			BlockPointer ptr = getPointerImpl(j);
+
+			sb.append("[");
+			sb.append(ptr.getBlockIndex0());
+
+			j++;
+
+			for (; j < mPointerCount; j++)
+			{
+				if (getPointerImpl(j).getRangeSize() != 0)
+				{
+					break;
+				}
+
+				sb.append(",0");
+			}
+
+			sb.append("]");
 		}
 
 		return sb.toString();
@@ -293,7 +304,7 @@ final class HashTableNode extends Node
 	@Deprecated
 	HashTableLeaf upgrade(BlockPointer aBlockPointer, ArrayMapEntry aEntry)
 	{
-		HashTableLeaf leaf = new HashTableLeaf(mHashTable, this, new byte[mHashTable.getLeafSize()]);
+		HashTableLeaf leaf = new HashTableLeaf(mHashTable, mBlockAccessor, this, new byte[mHashTable.getLeafSize()]);
 		leaf.setBlockPointer(new BlockPointer().setLevel(aBlockPointer.getLevel()).setRangeOffset(aBlockPointer.getRangeOffset()).setRangeSize(aBlockPointer.getRangeSize()));
 
 		if (!leaf.put(aEntry))
@@ -314,7 +325,7 @@ final class HashTableNode extends Node
 		{
 			System.out.println("free    " + mBlockPointer);
 
-			mHashTable.getBlockAccessor().freeBlock(mBlockPointer);
+			mBlockAccessor.freeBlock(mBlockPointer);
 
 			mBlockPointer.setBlockType(BlockType.FREE);
 
@@ -351,19 +362,38 @@ final class HashTableNode extends Node
 	}
 
 
-	Node readBlock(BlockPointer aBlockPointer)
+	HashTableAbstractNode readBlock(BlockPointer aBlockPointer)
 	{
 		System.out.println("read  " + aBlockPointer);
 
-		Node node = mChildren[aBlockPointer.getRangeOffset()];
+		int offset = aBlockPointer.getRangeOffset();
+		HashTableAbstractNode node = mChildren[offset];
 
-		if (node == null)
+		if (node != null)
 		{
-			node = getChildNode(aBlockPointer);
-
-			mChildren[aBlockPointer.getRangeOffset()] = node;
+			return node;
 		}
 
-		return node;
+		if (mChildren[offset] == null)
+		{
+			if (mPointers[offset] == null) //////// ???
+			{
+				mPointers[offset] = aBlockPointer;
+			}
+
+			switch (aBlockPointer.getBlockType())
+			{
+				case LEAF:
+					mChildren[offset] = new HashTableLeaf(mHashTable, mBlockAccessor, this, mBlockAccessor.readBlock(aBlockPointer));
+					break;
+				case INDEX:
+					mChildren[offset] = new HashTableNode(mHashTable, mBlockAccessor, this, mBlockAccessor.readBlock(aBlockPointer));
+					break;
+				default:
+					throw new IllegalStateException();
+			}
+		}
+
+		return mChildren[offset];
 	}
 }

@@ -5,23 +5,33 @@ import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 /*
- * +------+------+------+------+------+------+------+------+
- * | type |level | comp |  chk | rangeOffset |  rangeSize  |
- * |------+------+------+------+------+------+------+------+
- * |  allocAize  |    logicalSize     |    physicalSize    |
- * |------+------+------+------+------+------+------+------+
- * |          offset1          |          offset2          |
- * +------+------+------+------+------+------+------+------+
- * |          offset3          |        transaction        |
- * +------+------+------+------+------+------+------+------+
- * |                          iv                           |
- * +------+------+------+------+------+------+------+------+
- * |                          iv                           |
- * +------+------+------+------+------+------+------+------+
- * |                       checksum                        |
- * +------+------+------+------+------+------+------+------+
- * |                       checksum                        |
- * +------+------+------+------+------+------+------+------+
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ * | type  | level |  comp |  chk  |  rangeOffset  |   rangeSize   |
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ * |   allocSize   |      logicalSize      |      physicalSize     |
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ * |            offset1            |            offset2            |
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ * |            offset3            |          transaction          |
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ * |                              iv                               |
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ * |                              iv                               |
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ * |                           checksum                            |
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ * |                           checksum                            |
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ *
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ * | type  | level |  comp |  chck |rangeOffset| rangeSize | alloc |
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ * | physicalSize  |  logicalSize  |            offset1            |
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ * |            offset2            |          transaction          |
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ * |                           checksum                            |
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
  */
 public class BlockPointer implements Serializable
 {
@@ -166,6 +176,32 @@ public class BlockPointer implements Serializable
 	public BlockPointer setBlockIndex0(long aBlockIndex)
 	{
 		mBlockIndex0 = (int)aBlockIndex;
+		return this;
+	}
+
+
+	public long getBlockIndex1()
+	{
+		return mBlockIndex1;
+	}
+
+
+	public BlockPointer setBlockIndex1(long aBlockIndex)
+	{
+		mBlockIndex1 = (int)aBlockIndex;
+		return this;
+	}
+
+
+	public long getBlockIndex2()
+	{
+		return mBlockIndex2;
+	}
+
+
+	public BlockPointer setBlockIndex2(long aBlockIndex)
+	{
+		mBlockIndex2 = (int)aBlockIndex;
 		return this;
 	}
 
