@@ -255,4 +255,11 @@ class HashTableLeaf extends HashTableAbstractNode
 
 		System.out.println("reserve {level=" + aLevel + ", range=" + aRangeOffset + ":" + aRangeSize + "}");
 	}
+
+
+	@Override
+	public String toString()
+	{
+		return "(" + mMap.size() + ", " + String.format("%d%%", 100-mMap.getFreeSpace()*100/(mMap.getCapacity()-4))+ ")";
+	}
 }

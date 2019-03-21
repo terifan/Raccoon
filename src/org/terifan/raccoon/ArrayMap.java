@@ -374,6 +374,12 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
+	public int getCapacity()
+	{
+		return mCapacity;
+	}
+
+
 	public int indexOf(byte[] aKey)
 	{
 		int low = 0;

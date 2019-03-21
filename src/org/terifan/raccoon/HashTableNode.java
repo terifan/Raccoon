@@ -205,7 +205,7 @@ final class HashTableNode extends HashTableAbstractNode
 			{
 				if (bp.getRangeSize() != 0)
 				{
-					return "Pointer inside range: ranges: " + printRanges();
+					return "Pointer inside range: ranges: " + toRangesString();
 				}
 			}
 			else
@@ -220,41 +220,6 @@ final class HashTableNode extends HashTableAbstractNode
 		}
 
 		return null;
-	}
-
-
-	String printRanges()
-	{
-		StringBuilder sb = new StringBuilder();
-
-		for (int j = 0; j < mPointerCount; )
-		{
-			if (sb.length() > 0)
-			{
-				sb.append(",");
-			}
-
-			BlockPointer ptr = getPointerImpl(j);
-
-			sb.append("[");
-			sb.append(ptr.getBlockIndex0());
-
-			j++;
-
-			for (; j < mPointerCount; j++)
-			{
-				if (getPointerImpl(j).getRangeSize() != 0)
-				{
-					break;
-				}
-
-				sb.append(",0");
-			}
-
-			sb.append("]");
-		}
-
-		return sb.toString();
 	}
 
 
@@ -395,5 +360,74 @@ final class HashTableNode extends HashTableAbstractNode
 		}
 
 		return mChildren[offset];
+	}
+
+
+	public String toRangesString()
+	{
+		StringBuilder sb = new StringBuilder("[");
+
+		for (int j = 0; j < mPointerCount; j++)
+		{
+			BlockPointer ptr = getPointerImpl(j);
+
+			if (ptr.getRangeSize() != 0)
+			{
+				if (sb.length() > 1)
+				{
+					sb.append(",");
+				}
+
+				sb.append(ptr.getRangeSize());
+			}
+		}
+
+		return sb.append("]").toString();
+	}
+
+
+	public String toPointersString()
+	{
+		StringBuilder sb = new StringBuilder();
+
+		for (int j = 0; j < mPointerCount; )
+		{
+			if (sb.length() > 0)
+			{
+				sb.append(",");
+			}
+
+			BlockPointer ptr = getPointerImpl(j);
+
+			sb.append("[");
+			if (ptr.getBlockType() == BlockType.LEAF)
+			{
+				sb.append("*");
+			}
+			sb.append(ptr.getBlockIndex0());
+
+			j++;
+
+			for (; j < mPointerCount; j++)
+			{
+				if (getPointerImpl(j).getRangeSize() != 0)
+				{
+					break;
+				}
+
+				sb.append(",0");
+			}
+
+			sb.append("]");
+		}
+
+		return sb.toString();
+	}
+
+
+	@Override
+	public String toString()
+	{
+		return toRangesString();
 	}
 }

@@ -1,7 +1,16 @@
 package org.terifan.raccoon;
 
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.storage.IBlockAccessor;
+import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.raccoon.util.GraphTreeNode;
+import org.terifan.raccoon.util.GraphTreeRenderer;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
@@ -9,29 +18,110 @@ import org.testng.annotations.Test;
 public class HashTableNodeNGTest
 {
 	@Test
-	public void testPrintRanges()
+	public void testPointersString()
 	{
-		HashTableNode node = createSimpleNode();
+		HashTableNode node = (HashTableNode)createNode(null, new int[][]
+		{
+			{
+				0, 9789, 0, 4
+			},
+			{
+				1, 3467, 4, 2
+			},
+			{
+				0, 5679, 6, 1
+			},
+			{
+				0, 2349, 7, 1
+			}
+		});
 
-		assertEquals(node.printRanges(), "[97897,0,0,0],[3467,0],[5679],[2349]");
+		assertEquals(node.toPointersString(), "[9789,0,0,0],[*3467,0],[5679],[2349]");
 	}
 
 
 	@Test
 	public void testReadNode()
 	{
-		HashTableNode node = createSimpleNode();
+		HashTableAbstractNode root = createSampleTree();
 
-		HashTableAbstractNode child = node.readBlock(node.getPointer(0));
+		JFrame frame = new JFrame();
+		frame.add(new JPanel()
+		{
+			@Override
+			protected void paintComponent(Graphics aGraphics)
+			{
+				Graphics2D g = (Graphics2D)aGraphics;
+				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				g.setColor(Color.WHITE);
+				g.fillRect(0, 0, getWidth(), getHeight());
 
-		System.out.println(child);
+				new GraphTreeRenderer<Node>().render(g, new Node(root, new BlockPointer()), Node::children);
+			}
+		});
+		frame.setSize(1024, 768);
+		frame.setLocationRelativeTo(null);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setVisible(true);
+
+		try
+		{
+			Thread.sleep(100000);
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace(System.out);
+		}
 
 //		assertEquals(node.printRanges(), "[97897,0,0,0],[3467,0],[5679],[2349]");
 	}
 
-
-	private HashTableNode createSimpleNode()
+	private static class Node extends GraphTreeNode
 	{
+		HashTableAbstractNode mNode;
+
+		private Node(HashTableAbstractNode aNode, BlockPointer aBlockPointer)
+		{
+			mNode = aNode;
+			mLabel = aBlockPointer.getBlockIndex0() + ": " + mNode.toString();
+		}
+
+		Node[] children()
+		{
+			if (mNode instanceof HashTableNode)
+			{
+				HashTableNode node = (HashTableNode)mNode;
+				Node[] nodes = new Node[node.getPointerCount()];
+				for (int i = 0; i < node.getPointerCount(); i++)
+				{
+					BlockPointer ptr = node.getPointer(i);
+					if (ptr != null)
+					{
+						nodes[i] = new Node(node.readBlock(ptr), ptr);
+					}
+				}
+				return nodes;
+			}
+
+			return null;
+		}
+	}
+
+
+	/*
+		              [0]
+	       /       /      \           \
+		 [1]     [2]      [3]         [4]
+	     / \            /  |  \       /  \
+	   [5] [6]        [7] [8] [9]   [10] [11]
+	       /  \
+	     [12] [13]
+
+	 */
+	private HashTableAbstractNode createSampleTree()
+	{
+		final HashTableAbstractNode[] nodes = new HashTableAbstractNode[14];
+
 		IBlockAccessor ba = new IBlockAccessor()
 		{
 			@Override
@@ -44,7 +134,7 @@ public class HashTableNodeNGTest
 			@Override
 			public byte[] readBlock(BlockPointer aBlockPointer)
 			{
-				return new ArrayMap(aBlockPointer.getAllocatedSize() * Constants.DEFAULT_BLOCK_SIZE).array();
+				return nodes[(int)aBlockPointer.getBlockIndex0()].array();
 			}
 
 
@@ -55,52 +145,119 @@ public class HashTableNodeNGTest
 			}
 		};
 
-		HashTableNode node = new HashTableNode(null, ba, null, new byte[8 * BlockPointer.SIZE]);
+//		HashTableAbstractNode[] tmp =
+//		{
+//			createNode(ba, new int[][]{{0,1,0,4}, {1,2,4,2}}),
+//			createNode(ba, new int[][]{{1,3,0,4}, {1,4,4,2}}),
+//			createNode(ba),
+//			createNode(ba),
+//			createNode(ba)
+//		};
+		HashTableAbstractNode[] tmp =
+		{
+			createNode(ba, new int[][]
+			{
+				{
+					0, 1, 0, 4
+				},
+				{
+					1, 2, 4, 2
+				},
+				{
+					0, 3, 6, 1
+				},
+				{
+					0, 4, 7, 1
+				}
+			}),
+			createNode(ba, new int[][]
+			{
+				{
+					1, 5, 0, 4
+				},
+				{
+					0, 6, 4, 4
+				}
+			}),
+			createNode(ba),
+			createNode(ba, new int[][]
+			{
+				{
+					1, 7, 0, 2
+				},
+				{
+					1, 8, 2, 4
+				},
+				{
+					1, 9, 6, 2
+				}
+			}),
+			createNode(ba, new int[][]
+			{
+				{
+					1, 10, 0, 4
+				},
+				{
+					1, 11, 4, 4
+				}
+			}),
+			createNode(ba),
+			createNode(ba, new int[][]
+			{
+				{
+					1, 12, 0, 7
+				},
+				{
+					1, 13, 7, 1
+				}
+			}),
+			createNode(ba),
+			createNode(ba),
+			createNode(ba),
+			createNode(ba),
+			createNode(ba),
+			createNode(ba),
+			createNode(ba)
+		};
 
-		BlockPointer bp0 = new BlockPointer();
-		bp0.setBlockType(BlockType.LEAF);
-		bp0.setAllocatedSize(4);
-		bp0.setLevel(4);
-		bp0.setLogicalSize(15000);
-		bp0.setPhysicalSize(15000);
-		bp0.setBlockIndex0(97897);
-		bp0.setRangeOffset(0);
-		bp0.setRangeSize(4);
-		node.setPointer(bp0);
+		System.arraycopy(tmp, 0, nodes, 0, tmp.length);
 
-		BlockPointer bp1 = new BlockPointer();
-		bp1.setBlockType(BlockType.LEAF);
-		bp1.setAllocatedSize(4);
-		bp1.setLevel(4);
-		bp1.setLogicalSize(15000);
-		bp1.setPhysicalSize(15000);
-		bp1.setBlockIndex0(3467);
-		bp1.setRangeOffset(4);
-		bp1.setRangeSize(2);
-		node.setPointer(bp1);
+		return nodes[0];
+	}
 
-		BlockPointer bp2 = new BlockPointer();
-		bp2.setBlockType(BlockType.LEAF);
-		bp2.setAllocatedSize(4);
-		bp2.setLevel(4);
-		bp2.setLogicalSize(15000);
-		bp2.setPhysicalSize(15000);
-		bp2.setBlockIndex0(5679);
-		bp2.setRangeOffset(6);
-		bp2.setRangeSize(1);
-		node.setPointer(bp2);
 
-		BlockPointer bp3 = new BlockPointer();
-		bp3.setBlockType(BlockType.LEAF);
-		bp3.setAllocatedSize(4);
-		bp3.setLevel(4);
-		bp3.setLogicalSize(15000);
-		bp3.setPhysicalSize(15000);
-		bp3.setBlockIndex0(2349);
-		bp3.setRangeOffset(7);
-		bp3.setRangeSize(1);
-		node.setPointer(bp3);
+	private HashTableAbstractNode createNode(IBlockAccessor aAccessor, int[]... aParams)
+	{
+		if (aParams.length == 0)
+		{
+			return new HashTableLeaf(null, aAccessor, null, new byte[8 * BlockPointer.SIZE]);
+		}
 
-		return node;
+		ByteArrayBuffer buf = new ByteArrayBuffer(8 * BlockPointer.SIZE);
+
+		for (int[] params : aParams)
+		{
+			createPointer(params[0] == 1 ? BlockType.LEAF : BlockType.INDEX, params[1], params[2], params[3], buf);
+		}
+
+		return new HashTableNode(null, aAccessor, null, buf.array());
+	}
+
+
+	private BlockPointer createPointer(BlockType aBlockType, long aBlockIndex, int aRangeOffset, int aRangeSize, ByteArrayBuffer aBuffer)
+	{
+		BlockPointer bp = new BlockPointer();
+		bp.setBlockType(aBlockType);
+		bp.setAllocatedSize(1);
+		bp.setLevel(1);
+		bp.setLogicalSize(1000);
+		bp.setPhysicalSize(1000);
+		bp.setBlockIndex0(aBlockIndex);
+		bp.setRangeOffset(aRangeOffset);
+		bp.setRangeSize(aRangeSize);
+
+		bp.marshal(aBuffer.position(aRangeOffset * BlockPointer.SIZE));
+
+		return bp;
 	}
 }
