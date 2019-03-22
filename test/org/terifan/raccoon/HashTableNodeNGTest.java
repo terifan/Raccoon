@@ -108,16 +108,6 @@ public class HashTableNodeNGTest
 	}
 
 
-	/*
-		              [0]
-	       /       /      \           \
-		 [1]     [2]      [3]         [4]
-	     / \            /  |  \       /  \
-	   [5] [6]        [7] [8] [9]   [10] [11]
-	       /  \
-	     [12] [13]
-
-	 */
 	private HashTableAbstractNode createSampleTree()
 	{
 		final HashTableAbstractNode[] nodes = new HashTableAbstractNode[14];
@@ -145,14 +135,6 @@ public class HashTableNodeNGTest
 			}
 		};
 
-//		HashTableAbstractNode[] tmp =
-//		{
-//			createNode(ba, new int[][]{{0,1,0,4}, {1,2,4,2}}),
-//			createNode(ba, new int[][]{{1,3,0,4}, {1,4,4,2}}),
-//			createNode(ba),
-//			createNode(ba),
-//			createNode(ba)
-//		};
 		HashTableAbstractNode[] tmp =
 		{
 			createNode(ba, new int[][]
