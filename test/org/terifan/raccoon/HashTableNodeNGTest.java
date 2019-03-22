@@ -4,8 +4,15 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.util.Arrays;
+import java.util.Random;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import org.terifan.nodeeditor.Direction;
+import org.terifan.nodeeditor.NodeEditor;
+import org.terifan.nodeeditor.NodeItem;
+import org.terifan.nodeeditor.NodeModel;
+import org.terifan.nodeeditor.TextNodeItem;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.storage.IBlockAccessor;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -45,24 +52,42 @@ public class HashTableNodeNGTest
 	{
 		HashTableAbstractNode root = createSampleTree();
 
-		JFrame frame = new JFrame();
-		frame.add(new JPanel()
+		if (true)
 		{
-			@Override
-			protected void paintComponent(Graphics aGraphics)
+			JFrame frame = new JFrame();
+			frame.add(new JPanel()
 			{
-				Graphics2D g = (Graphics2D)aGraphics;
-				g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-				g.setColor(Color.WHITE);
-				g.fillRect(0, 0, getWidth(), getHeight());
+				@Override
+				protected void paintComponent(Graphics aGraphics)
+				{
+					Graphics2D g = (Graphics2D)aGraphics;
+					g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+					g.setColor(Color.WHITE);
+					g.fillRect(0, 0, getWidth(), getHeight());
 
-				new GraphTreeRenderer<Node>().render(g, new Node(root, new BlockPointer()), Node::children);
-			}
-		});
-		frame.setSize(1024, 768);
-		frame.setLocationRelativeTo(null);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setVisible(true);
+					new GraphTreeRenderer<Node>().render(g, new Node(root, new BlockPointer()), Node::children);
+				}
+			});
+			frame.setSize(1024, 768);
+			frame.setLocationRelativeTo(null);
+			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			frame.setVisible(true);
+		}
+
+		if (false)
+		{
+			NodeModel model = new NodeModel();
+			visit(model, root, new BlockPointer());
+			NodeEditor editor = new NodeEditor(model);
+			editor.center();
+			editor.setScale(1);
+			JFrame frame = new JFrame();
+			frame.add(editor);
+			frame.setSize((int)(1600 * editor.getScale()), (int)(1000 * editor.getScale()));
+			frame.setLocationRelativeTo(null);
+			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			frame.setVisible(true);
+		}
 
 		try
 		{
@@ -74,6 +99,47 @@ public class HashTableNodeNGTest
 		}
 
 //		assertEquals(node.printRanges(), "[97897,0,0,0],[3467,0],[5679],[2349]");
+	}
+
+
+	private NodeItem visit(NodeModel aModel, HashTableAbstractNode aNode, BlockPointer aBlockPointer)
+	{
+		NodeItem nodeInItem = new TextNodeItem(""+aBlockPointer.getBlockIndex0()).addConnector(Direction.IN);
+
+		if (aNode instanceof HashTableNode)
+		{
+			HashTableNode tableNode = (HashTableNode)aNode;
+
+			NodeItem[] items = new NodeItem[1 + tableNode.getPointerCount()];
+			items[0] = nodeInItem;
+
+			int count = 1;
+			for (int i = 0; i < tableNode.getPointerCount(); i++)
+			{
+				BlockPointer ptr = tableNode.getPointer(i);
+				if (ptr != null)
+				{
+					NodeItem outItem = new TextNodeItem(""+ptr.getBlockIndex0()).addConnector(Direction.OUT);
+					items[count++] = outItem;
+
+					NodeItem inItem = visit(aModel, tableNode.readBlock(ptr), ptr);
+
+					aModel.addConnection(outItem, inItem);
+				}
+			}
+
+			items = Arrays.copyOfRange(items, 0, count);
+
+			aModel.addNode(new org.terifan.nodeeditor.Node(""+aBlockPointer.getBlockIndex0(),
+				items
+			).setLocation(new Random().nextInt(500), new Random().nextInt(500)));
+		}
+		else
+		{
+			aModel.addNode(new org.terifan.nodeeditor.Node(""+aBlockPointer.getBlockIndex0(), nodeInItem).setLocation(new Random().nextInt(500), new Random().nextInt(500)));
+		}
+
+		return nodeInItem;
 	}
 
 	private static class Node extends GraphTreeNode
