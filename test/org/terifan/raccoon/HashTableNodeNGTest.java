@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Random;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import org.terifan.nodeeditor.AutoLayout;
 import org.terifan.nodeeditor.Direction;
 import org.terifan.nodeeditor.NodeEditor;
 import org.terifan.nodeeditor.NodeItem;
@@ -52,7 +53,7 @@ public class HashTableNodeNGTest
 	{
 		HashTableAbstractNode root = createSampleTree();
 
-		if (true)
+		if (!true)
 		{
 			JFrame frame = new JFrame();
 			frame.add(new JPanel()
@@ -74,10 +75,13 @@ public class HashTableNodeNGTest
 			frame.setVisible(true);
 		}
 
-		if (false)
+		if (!false)
 		{
 			NodeModel model = new NodeModel();
-			visit(model, root, new BlockPointer());
+			NodeItem visit = visit(model, root, new BlockPointer());
+
+			new AutoLayout().layout(model, visit.getNode());
+
 			NodeEditor editor = new NodeEditor(model);
 			editor.center();
 			editor.setScale(1);
@@ -132,7 +136,7 @@ public class HashTableNodeNGTest
 
 			aModel.addNode(new org.terifan.nodeeditor.Node(""+aBlockPointer.getBlockIndex0(),
 				items
-			).setLocation(new Random().nextInt(500), new Random().nextInt(500)));
+			));
 		}
 		else
 		{
