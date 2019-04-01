@@ -22,7 +22,7 @@ public class Test
 				for (int i = 0; i < 1000; i++)
 				{
 					System.out.println("-------save--------");
-					db.save(new MyEntity(i, "01234567890123456789"));
+					db.save(new MyEntity(i, -i, "01234567890123456789"));
 				}
 
 				System.out.println("------commit-------");
@@ -43,7 +43,8 @@ public class Test
 
 	static class MyEntity
 	{
-		@Key int id;
+		@Key Integer id1;
+		@Key Integer id2;
 		String name;
 		Dimension dim;
 
@@ -51,17 +52,19 @@ public class Test
 		{
 		}
 
-		public MyEntity(int aId, String aName)
+		public MyEntity(Integer aId1, Integer aId2, String aName)
 		{
-			this.id = aId;
+			this.id1 = aId1;
+			this.id2 = aId2;
 			this.name = aName;
-			dim = new Dimension(aId,-aId);
+			dim = new Dimension(aId1,aId2);
 		}
+
 
 		@Override
 		public String toString()
 		{
-			return "X{" + "id=" + id + ", name=" + name + '}'+dim;
+			return "MyEntity{" + "id1=" + id1 + ", id2=" + id2 + ", name=" + name + ", dim=" + dim + '}';
 		}
 	}
 }

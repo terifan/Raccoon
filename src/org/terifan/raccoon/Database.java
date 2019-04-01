@@ -884,13 +884,10 @@ public final class Database implements AutoCloseable
 	}
 
 
+	/**
+	 * List entities matching the provided discriminator.
+	 */
 	public <T> List<T> list(T aDiscriminator)
-	{
-		return list(aDiscriminator.getClass(), getDiscriminator(aDiscriminator));
-	}
-
-
-	public <T> List<T> listFirst(T aDiscriminator, int aLimit)
 	{
 		return list(aDiscriminator.getClass(), getDiscriminator(aDiscriminator));
 	}
