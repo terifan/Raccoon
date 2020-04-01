@@ -30,14 +30,16 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	private boolean mClosed;
 	private boolean mChanged;
 	private boolean mCommitChangesToBlockDevice;
+	private final PerformanceTool mPerformanceTool;
 	/*private*/ int mModCount;
 
 
 	/**
 	 * Open an existing HashTable or create a new HashTable with default settings.
 	 */
-	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost) throws IOException
+	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool) throws IOException
 	{
+		mPerformanceTool = aPerformanceTool;
 		mTableName = aTableName;
 		mTransactionId = aTransactionId;
 		mCost = aCost;
@@ -143,6 +145,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().length + ", value: " + aEntry.getValue().length + ", maximum: " + getEntryMaximumLength());
 		}
 
+		assert mPerformanceTool.tick("put");
+
 		int modCount = ++mModCount;
 		Log.i("put");
 		Log.inc();
@@ -238,6 +242,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	public boolean commit() throws IOException
 	{
+		assert mPerformanceTool.tick("commit");
+
 		checkOpen();
 
 		try
@@ -392,6 +398,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	private boolean getValue(byte[] aKey, int aLevel, ArrayMapEntry aEntry, HashTableNode aNode)
 	{
+		assert mPerformanceTool.tick("getValue");
+
 		Log.i("get %s value", mTableName);
 
 		mCost.mTreeTraversal++;
@@ -419,6 +427,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	private byte[] putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel, HashTableNode aNode)
 	{
+		assert mPerformanceTool.tick("putValue");
+
 		Log.d("put %s value", mTableName);
 		Log.inc();
 
@@ -456,6 +466,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, ArrayMapEntry aEntry, int aLevel, HashTableNode aNode, byte[] aKey)
 	{
+		assert mPerformanceTool.tick("putValueLeaf");
+
 		mCost.mTreeTraversal++;
 
 		HashTableLeaf map = readLeaf(aBlockPointer);
@@ -493,6 +505,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	private byte[] upgradeHoleToLeaf(ArrayMapEntry aEntry, HashTableNode aNode, BlockPointer aBlockPointer, int aIndex)
 	{
+		assert mPerformanceTool.tick("upgradeHoleToLeaf");
+
 		Log.d("upgrade hole to leaf");
 		Log.inc();
 
@@ -520,6 +534,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	private HashTableNode splitLeaf(BlockPointer aBlockPointer, HashTableLeaf aLeafNode, int aLevel)
 	{
+		assert mPerformanceTool.tick("splitLeaf");
+
 		Log.inc();
 		Log.d("split leaf");
 		Log.inc();
@@ -555,6 +571,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	private boolean splitLeaf(HashTableLeaf aMap, BlockPointer aBlockPointer, int aIndex, int aLevel, HashTableNode aNode)
 	{
+		assert mPerformanceTool.tick("splitLeaf");
+
 		if (aBlockPointer.getRange() == 1)
 		{
 			return false;
@@ -595,6 +613,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	private void divideLeafEntries(HashTableLeaf aMap, int aLevel, int aHalfRange, HashTableLeaf aLowLeaf, HashTableLeaf aHighLeaf)
 	{
+		assert mPerformanceTool.tick("divideLeafEntries");
+
 		for (ArrayMapEntry entry : aMap)
 		{
 			if (computeIndex(entry.getKey(), aLevel) < aHalfRange)
@@ -622,6 +642,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	private boolean removeValue(byte[] aKey, int aLevel, ArrayMapEntry aEntry, HashTableNode aNode)
 	{
+		assert mPerformanceTool.tick("removeValue");
+
 		mCost.mTreeTraversal++;
 
 		int index = aNode.findPointer(computeIndex(aKey, aLevel));
@@ -669,6 +691,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	HashTableLeaf readLeaf(BlockPointer aBlockPointer)
 	{
+		assert mPerformanceTool.tick("readLeaf");
+
 		assert aBlockPointer.getBlockType() == BlockType.LEAF;
 
 		if (aBlockPointer.getBlockIndex0() == mRootBlockPointer.getBlockIndex0() && mRootMap != null)
@@ -684,6 +708,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	HashTableNode readNode(BlockPointer aBlockPointer)
 	{
+		assert mPerformanceTool.tick("readNode");
+
 		assert aBlockPointer.getBlockType() == BlockType.INDEX;
 
 		if (aBlockPointer.getBlockIndex0() == mRootBlockPointer.getBlockIndex0() && mRootNode != null)
@@ -764,6 +790,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	private byte[] readBlock(BlockPointer aBlockPointer)
 	{
+		assert mPerformanceTool.tick("readBlock");
+
 		mCost.mReadBlock++;
 		mCost.mReadBlockBytes += aBlockPointer.getAllocatedSize();
 
@@ -773,6 +801,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	private BlockPointer writeBlock(Node aNode, int aRange)
 	{
+		assert mPerformanceTool.tick("writeBlock");
+
 		BlockPointer blockPointer = mBlockAccessor.writeBlock(aNode.array(), 0, aNode.array().length, mTransactionId.get(), aNode.getType(), aRange);
 
 		mCost.mWriteBlock++;
@@ -801,6 +831,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	void scan(ScanResult aScanResult, BlockPointer aBlockPointer)
 	{
+		assert mPerformanceTool.tick("scan");
+
 		byte[] buffer = mBlockAccessor.readBlock(aBlockPointer);
 
 		switch (aBlockPointer.getBlockType())

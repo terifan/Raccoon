@@ -11,7 +11,7 @@ public final class AccessCredentials implements OpenParam
 	public final static CipherModeFunction DEFAULT_CIPHER_MODE = CipherModeFunction.XTS;
 	public final static KeyGenerationFunction DEFAULT_KEY_GENERATOR = KeyGenerationFunction.SHA512;
 
-	public final static int DEFAULT_ITERATION_COUNT = 32768;
+	public final static int DEFAULT_ITERATION_COUNT = 1024;
 
 	private EncryptionFunction mEncryptionFunction;
 	private KeyGenerationFunction mKeyGeneratorFunction;
@@ -32,14 +32,6 @@ public final class AccessCredentials implements OpenParam
 	}
 
 
-	/**
-	 *
-	 * @param aIterationCount
-	 * Passwords are expanded into cryptographic keys by iterating a hash function this many times.
-	 * A larger number means more security but also longer time to open a database. WARNING: this
-	 * value is not recorded in the database file and must always be provided if different from the
-	 * default value!
-	 */
 	public AccessCredentials(char[] aPassword, EncryptionFunction aEncryptionFunction, KeyGenerationFunction aKeyFunction, CipherModeFunction aCipherModeFunction)
 	{
 		mIterationCount = DEFAULT_ITERATION_COUNT;

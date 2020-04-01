@@ -356,7 +356,7 @@ public class HashTableNGTest
 
 	private HashTable newHashTable(byte[] aRoot, TransactionGroup aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
 	{
-		return new HashTable(new ManagedBlockDevice(aBlockDevice), aRoot, aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", new Cost());
+		return new HashTable(new ManagedBlockDevice(aBlockDevice), aRoot, aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", new Cost(), new PerformanceTool(null));
 	}
 
 

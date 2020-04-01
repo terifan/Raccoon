@@ -48,7 +48,7 @@ public final class TableInstance<T> implements Closeable
 			CompressionParam compression = mDatabase.getCompressionParameter();
 			TableParam parameter = mDatabase.getTableParameter();
 
-			mHashTable = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost);
+			mHashTable = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());
 		}
 		catch (IOException e)
 		{
@@ -371,7 +371,7 @@ public final class TableInstance<T> implements Closeable
 		{
 			try
 			{
-				buffer.wrap(Streams.readAll(new BlobInputStream(getBlockAccessor(), buffer)), false);
+				buffer.wrap(Streams.readAll(new BlobInputStream(getBlockAccessor(), buffer)), true);
 				buffer.position(0);
 			}
 			catch (IOException e)

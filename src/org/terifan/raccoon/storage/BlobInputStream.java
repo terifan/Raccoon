@@ -4,6 +4,7 @@ import org.terifan.raccoon.BlockType;
 import java.io.IOException;
 import java.io.InputStream;
 import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.raccoon.util.Log;
 
 
 public class BlobInputStream extends InputStream

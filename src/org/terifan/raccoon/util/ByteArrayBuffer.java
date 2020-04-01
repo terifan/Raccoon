@@ -153,7 +153,7 @@ public final class ByteArrayBuffer
 
 		mBuffer = aBuffer;
 		mLocked = true;
-		mLimit = NO_LIMIT;
+		mLimit = aLimitSize ? aBuffer.length : NO_LIMIT;
 		mBitBuffer = 0;
 		mWriteBitsToGo = 8;
 		return this;

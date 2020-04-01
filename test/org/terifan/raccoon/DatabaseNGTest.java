@@ -453,7 +453,7 @@ public class DatabaseNGTest
 
 		try (Database database = new Database(device, OpenOption.OPEN))
 		{
-			try (InputStream in = database.read(new _BlobKey1K("my blob")))
+			try (InputStream in = database.load(new _BlobKey1K("my blob")))
 			{
 				assertNotNull(in);
 				assertEquals(Streams.readAll(in), content);
@@ -476,7 +476,7 @@ public class DatabaseNGTest
 
 			database.save(new _BlobKey1K("my blob"), new ByteArrayInputStream(content));
 
-			try (InputStream in = database.read(new _BlobKey1K("my blob")))
+			try (InputStream in = database.load(new _BlobKey1K("my blob")))
 			{
 				assertNotNull(in);
 				assertEquals(Streams.readAll(in), content);
@@ -504,7 +504,7 @@ public class DatabaseNGTest
 
 		try (Database database = new Database(device, OpenOption.OPEN))
 		{
-			try (InputStream in = database.read(new _BlobKey1K("my blob")))
+			try (InputStream in = database.load(new _BlobKey1K("my blob")))
 			{
 				assertNotNull(in);
 				assertEquals(Streams.readAll(in), content);
@@ -1019,7 +1019,7 @@ public class DatabaseNGTest
 
 		try (Database database = new Database(device, OpenOption.CREATE_NEW))
 		{
-			assertEquals(null, database.read(new _BlobKey1K("test")));
+			assertEquals(null, database.load(new _BlobKey1K("test")));
 			database.commit();
 		}
 	}
@@ -1076,7 +1076,7 @@ public class DatabaseNGTest
 		{
 			assertEquals(database.size(new DiscriminatorType(new _BlobKey1K("apple"))), 0);
 			database.save(new _BlobKey1K("good"), new ByteArrayInputStream(new byte[1000_000]));
-			assertEquals(null, database.read(new _BlobKey1K("bad")));
+			assertEquals(null, database.load(new _BlobKey1K("bad")));
 			database.commit();
 		}
 	}
@@ -1100,7 +1100,7 @@ public class DatabaseNGTest
 
 		try (Database database = new Database(device, OpenOption.OPEN))
 		{
-			assertEquals(new byte[1000_000], Streams.readAll(database.read(new _BlobKey1K("good"))));
+			assertEquals(new byte[1000_000], Streams.readAll(database.load(new _BlobKey1K("good"))));
 		}
 	}
 

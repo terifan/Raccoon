@@ -40,7 +40,7 @@ public class Test1
 		{
 			_BlobKey1K key = new _BlobKey1K("test");
 
-			byte[] readAll = __TestUtils.readAll(db.read(key));
+			byte[] readAll = __TestUtils.readAll(db.load(key));
 
 			assertEquals(writeAll, readAll);
 		}
