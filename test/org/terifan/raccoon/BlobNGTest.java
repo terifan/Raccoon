@@ -1,14 +1,14 @@
 package org.terifan.raccoon;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.file.OpenOption;
+import static java.lang.System.in;
+import java.util.Random;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
-import org.terifan.raccoon.util.Log;
 import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -159,7 +159,9 @@ public class BlobNGTest
 		{
 			try (Blob blob = database.openBlob(new _BlobKey1K("good"), BlobOpenOption.READ))
 			{
-				assertEquals(blob.readAllBytes(), out);
+				byte[] in = blob.readAllBytes();
+
+				assertEquals(in, out);
 			}
 		}
 	}
@@ -172,23 +174,34 @@ public class BlobNGTest
 
 		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
 		{
-			byte[] out = __TestUtils.createRandomBuffer(0, 10000);
+			byte[] out = __TestUtils.createRandomBuffer(0, 10_000_000);
 
 			try (Blob blob = database.openBlob(new _BlobKey1K("good"), BlobOpenOption.CREATE))
 			{
 				blob.writeAllBytes(out);
 			}
 
-			try (InputStream is = database.openBlob(new _BlobKey1K("good"), BlobOpenOption.READ).newInputStream())
+			try (InputStream blob = database.openBlob(new _BlobKey1K("good"), BlobOpenOption.READ).newInputStream())
 			{
-				byte[] in = new byte[out.length];
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				Random rnd = new Random(1);
+				byte[] buf = new byte[2_000_000];
+				for (;;)
+				{
+					if (rnd.nextBoolean())
+					{
+						int c = blob.read();
+						if (c != -1) baos.write(c);
+					}
+					else
+					{
+						int len = blob.read(buf, 0, rnd.nextInt(buf.length));
+						if (len <= 0) break;
+						baos.write(buf, 0, len);
+					}
+				}
 
-				is.read(in, 0, 100);
-				is.read(in, 100, 9800);
-				in[9900] = (byte)is.read();
-				is.read(in, 9901, 99);
-
-				assertEquals(in, out);
+				assertEquals(baos.toByteArray(), out);
 			}
 
 			database.commit();
@@ -203,21 +216,34 @@ public class BlobNGTest
 
 		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
 		{
-			byte[] out = __TestUtils.createRandomBuffer(0, 10000);
+			byte[] out = __TestUtils.createRandomBuffer(0, 10_000_000);
 
 			try (OutputStream blob = database.openBlob(new _BlobKey1K("good"), BlobOpenOption.CREATE).newOutputStream())
 			{
-				blob.write(out, 0, 100);
-				blob.write(out, 100, 9800);
-				blob.write(0xff & out[9900]);
-				blob.write(out, 9901, 99);
+				ByteArrayInputStream bais = new ByteArrayInputStream(out);
+				Random rnd = new Random(1);
+				byte[] buf = new byte[2_000_000];
+				for (;;)
+				{
+					if (rnd.nextBoolean())
+					{
+						int c = bais.read();
+						if (c != -1) blob.write(c);
+					}
+					else
+					{
+						int len = bais.read(buf, 0, rnd.nextInt(buf.length));
+						if (len <= 0) break;
+						blob.write(buf, 0, len);
+					}
+				}
 			}
 
-			try (Blob in = database.openBlob(new _BlobKey1K("good"), BlobOpenOption.READ))
+			try (Blob blob = database.openBlob(new _BlobKey1K("good"), BlobOpenOption.READ))
 			{
-				byte[] buf = in.readAllBytes();
+				byte[] in = blob.readAllBytes();
 
-				assertEquals(buf, out);
+				assertEquals(in, out);
 			}
 
 			database.commit();
