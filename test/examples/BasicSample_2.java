@@ -7,7 +7,7 @@ import resources.entities._Fruit1K;
 import java.io.IOException;
 import java.util.GregorianCalendar;
 import org.terifan.raccoon.Database;
-import org.terifan.raccoon.OpenOption;
+import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.testng.annotations.Test;
@@ -22,7 +22,7 @@ public class BasicSample_2
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		try (Database db = new Database(blockDevice, OpenOption.CREATE_NEW, accessCredentials))
+		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, accessCredentials))
 		{
 			db.save(new _Fruit1K("apple", 52.12));
 			db.save(new _Fruit1K("orange", 47.78));
@@ -34,7 +34,7 @@ public class BasicSample_2
 			db.commit();
 		}
 
-		try (Database db = new Database(blockDevice, OpenOption.OPEN, accessCredentials))
+		try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN, accessCredentials))
 		{
 			System.out.println("fruits:");
 			db.list(_Fruit1K.class).forEach(System.out::println);

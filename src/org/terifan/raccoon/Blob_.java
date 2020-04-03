@@ -1,17 +1,13 @@
-package org.terifan.raccoon.storage;
+package org.terifan.raccoon;
 
-import org.terifan.raccoon.BlockType;
 import java.io.IOException;
+import org.terifan.raccoon.storage.BlockAccessor;
+import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-public final class Blob
+class Blob_
 {
-	private Blob()
-	{
-	}
-
-
 	public static void deleteBlob(BlockAccessor aBlockAccessor, byte[] aHeader) throws IOException
 	{
 		ByteArrayBuffer buffer = new ByteArrayBuffer(aHeader);

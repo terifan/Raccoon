@@ -23,7 +23,6 @@ import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.secure.SecureBlockDevice;
 import org.terifan.raccoon.io.managed.UnsupportedVersionException;
 import org.terifan.raccoon.io.secure.AccessCredentials;
-import org.terifan.raccoon.storage.BlobOutputStream;
 import org.terifan.raccoon.io.physical.FileBlockDevice;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -74,7 +73,7 @@ public final class Database implements AutoCloseable
 	 * @param aParameters
 	 * parameters for the database
 	 */
-	public Database(File aFile, OpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
+	public Database(File aFile, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
 	{
 		this();
 
@@ -84,19 +83,19 @@ public final class Database implements AutoCloseable
 		{
 			if (aFile.exists())
 			{
-				if (aOpenOptions == OpenOption.CREATE_NEW)
+				if (aOpenOptions == DatabaseOpenOption.CREATE_NEW)
 				{
 					if (!aFile.delete())
 					{
 						throw new IOException("Failed to delete existing file: " + aFile);
 					}
 				}
-				else if ((aOpenOptions == OpenOption.READ_ONLY || aOpenOptions == OpenOption.OPEN) && aFile.length() == 0)
+				else if ((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aFile.length() == 0)
 				{
 					throw new IOException("File is empty.");
 				}
 			}
-			else if (aOpenOptions == OpenOption.OPEN || aOpenOptions == OpenOption.READ_ONLY)
+			else if (aOpenOptions == DatabaseOpenOption.OPEN || aOpenOptions == DatabaseOpenOption.READ_ONLY)
 			{
 				throw new FileNotFoundException("File not found: " + aFile);
 			}
@@ -105,7 +104,7 @@ public final class Database implements AutoCloseable
 
 			BlockSizeParam blockSizeParam = getParameter(BlockSizeParam.class, aParameters, new BlockSizeParam(Constants.DEFAULT_BLOCK_SIZE));
 
-			fileBlockDevice = new FileBlockDevice(aFile, blockSizeParam.getValue(), aOpenOptions == OpenOption.READ_ONLY);
+			fileBlockDevice = new FileBlockDevice(aFile, blockSizeParam.getValue(), aOpenOptions == DatabaseOpenOption.READ_ONLY);
 
 			init(fileBlockDevice, newFile, true, aOpenOptions, aParameters);
 		}
@@ -137,13 +136,13 @@ public final class Database implements AutoCloseable
 	 * @param aParameters
 	 * parameters for the database
 	 */
-	public Database(IPhysicalBlockDevice aBlockDevice, OpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
+	public Database(IPhysicalBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
 	{
 		this();
 
-		Assert.fail((aOpenOptions == OpenOption.READ_ONLY || aOpenOptions == OpenOption.OPEN) && aBlockDevice.length() == 0, "Block device is empty.");
+		Assert.fail((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.length() == 0, "Block device is empty.");
 
-		boolean create = aBlockDevice.length() == 0 || aOpenOptions == OpenOption.CREATE_NEW;
+		boolean create = aBlockDevice.length() == 0 || aOpenOptions == DatabaseOpenOption.CREATE_NEW;
 
 		init(aBlockDevice, create, false, aOpenOptions, aParameters);
 	}
@@ -159,19 +158,19 @@ public final class Database implements AutoCloseable
 	 * @param aParameters
 	 * parameters for the database
 	 */
-	public Database(IManagedBlockDevice aBlockDevice, OpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
+	public Database(IManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
 	{
 		this();
 
-		Assert.fail((aOpenOptions == OpenOption.READ_ONLY || aOpenOptions == OpenOption.OPEN) && aBlockDevice.length() == 0, "Block device is empty.");
+		Assert.fail((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.length() == 0, "Block device is empty.");
 
-		boolean create = aBlockDevice.length() == 0 || aOpenOptions == OpenOption.CREATE_NEW;
+		boolean create = aBlockDevice.length() == 0 || aOpenOptions == DatabaseOpenOption.CREATE_NEW;
 
 		init(aBlockDevice, create, false, aOpenOptions, aParameters);
 	}
 
 
-	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, OpenOption aOpenOption, OpenParam[] aOpenParams) throws IOException
+	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption, OpenParam[] aOpenParams) throws IOException
 	{
 		mPerformanceTool = getParameter(PerformanceTool.class, aOpenParams, mPerformanceTool);
 
@@ -237,7 +236,7 @@ public final class Database implements AutoCloseable
 			}
 			else
 			{
-				open(device, aOpenOption == OpenOption.READ_ONLY, aOpenParams);
+				open(device, aOpenOption == DatabaseOpenOption.READ_ONLY, aOpenParams);
 
 				if (tenantHeader != null && !tenantHeader.getLabel().equals(device.getTenantHeader().getLabel()))
 				{
@@ -333,7 +332,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	protected TableInstance openTable(Class aType, DiscriminatorType aDiscriminator, OpenOption aOptions)
+	protected TableInstance openTable(Class aType, DiscriminatorType aDiscriminator, DatabaseOpenOption aOptions)
 	{
 		checkOpen();
 
@@ -343,7 +342,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	protected TableInstance openTable(Table aTableMetadata, OpenOption aOptions)
+	protected TableInstance openTable(Table aTableMetadata, DatabaseOpenOption aOptions)
 	{
 		checkOpen();
 
@@ -374,7 +373,7 @@ public final class Database implements AutoCloseable
 			{
 				boolean tableExists = mSystemTable.get(aTableMetadata);
 
-				if (!tableExists && (aOptions == OpenOption.OPEN || aOptions == OpenOption.READ_ONLY))
+				if (!tableExists && (aOptions == DatabaseOpenOption.OPEN || aOptions == DatabaseOpenOption.READ_ONLY))
 				{
 					return null;
 				}
@@ -388,7 +387,7 @@ public final class Database implements AutoCloseable
 
 				mOpenTables.put(aTableMetadata, table);
 
-				if (aOptions == OpenOption.CREATE_NEW)
+				if (aOptions == DatabaseOpenOption.CREATE_NEW)
 				{
 					table.clear();
 				}
@@ -654,7 +653,7 @@ public final class Database implements AutoCloseable
 			aquireWriteLock();
 			try
 			{
-				TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.CREATE);
+				TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.CREATE);
 
 				return table.save(aEntity);
 			}
@@ -675,7 +674,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private void aquireWriteLock()
+	void aquireWriteLock()
 	{
 		if (mReadOnly)
 		{
@@ -683,6 +682,12 @@ public final class Database implements AutoCloseable
 		}
 
 		mWriteLock.lock();
+	}
+
+
+	void releaseWriteLock()
+	{
+		mWriteLock.unlock();
 	}
 
 
@@ -697,7 +702,7 @@ public final class Database implements AutoCloseable
 		mReadLock.lock();
 		try
 		{
-			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.OPEN);
+			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
 			if (table == null)
 			{
 				return false;
@@ -728,7 +733,7 @@ public final class Database implements AutoCloseable
 		mReadLock.lock();
 		try
 		{
-			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.OPEN);
+			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
 
 			if (table == null)
 			{
@@ -764,7 +769,7 @@ public final class Database implements AutoCloseable
 		aquireWriteLock();
 		try
 		{
-			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.OPEN);
+			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
 			if (table == null)
 			{
 				return false;
@@ -806,7 +811,7 @@ public final class Database implements AutoCloseable
 		aquireWriteLock();
 		try
 		{
-			TableInstance table = openTable(aType, new DiscriminatorType(aEntity), OpenOption.OPEN);
+			TableInstance table = openTable(aType, new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
 			if (table != null)
 			{
 				table.clear();
@@ -827,93 +832,80 @@ public final class Database implements AutoCloseable
 	/**
 	 * The contents of the stream is associated with the key found in the entity provided. The stream will persist the entity when it's closed.
 	 */
-	public BlobOutputStream saveBlob(Object aEntity)
+	public Blob openBlob(Object aEntity, BlobOpenOption aOpenOption)
 	{
-		aquireWriteLock();
-		try
-		{
-			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.CREATE);
-			return table.saveBlob(aEntity);
-		}
-		catch (DatabaseException e)
-		{
-			forceClose(e);
-			throw e;
-		}
-		finally
-		{
-			mWriteLock.unlock();
-		}
+		TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.CREATE);
+		return table.openBlob(aEntity, aOpenOption);
 	}
 
 
 	/**
 	 * Save the contents of the stream with the key defined by the entity provided.
 	 */
-	public boolean save(Object aKeyEntity, InputStream aInputStream)
-	{
-		aquireWriteLock();
-		try
-		{
-			TableInstance table = openTable(aKeyEntity.getClass(), new DiscriminatorType(aKeyEntity), OpenOption.CREATE);
-			return table.save(aKeyEntity, aInputStream);
-		}
-		catch (DatabaseException e)
-		{
-			forceClose(e);
-			throw e;
-		}
-		finally
-		{
-			mWriteLock.unlock();
-		}
-	}
+//	public boolean save(Object aKeyEntity, InputStream aInputStream)
+//	{
+//		aquireWriteLock();
+//		try
+//		{
+//			TableInstance table = openTable(aKeyEntity.getClass(), new DiscriminatorType(aKeyEntity), OpenOption.CREATE);
+//			return table.save(aKeyEntity, aInputStream);
+//		}
+//		catch (DatabaseException e)
+//		{
+//			forceClose(e);
+//			throw e;
+//		}
+//		finally
+//		{
+//			mWriteLock.unlock();
+//		}
+//	}
 
 
 	/**
 	 * Return an InputStream to the value associated to the key defined by the entity provided.
 	 */
-	public InputStream load(Object aEntity)
-	{
-		if ((aEntity instanceof String) || (aEntity instanceof Number))
-		{
-			throw new IllegalArgumentException("Provided object must be an Entity instance!");
-		}
-
-		mReadLock.lock();
-		try
-		{
-			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.OPEN);
-			if (table == null)
-			{
-				return null;
-			}
-
-			try (InputStream in = table.read(aEntity))
-			{
-				if (in == null)
-				{
-					return null;
-				}
-
-				return new ByteArrayInputStream(Streams.readAll(in));
-			}
-		}
-		catch (DatabaseException e)
-		{
-			forceClose(e);
-			throw e;
-		}
-		catch (IOException e)
-		{
-			forceClose(e);
-			throw new DatabaseIOException(e);
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
-	}
+//	public InputStream load(Object aEntity)
+//	{
+//		if ((aEntity instanceof String) || (aEntity instanceof Number))
+//		{
+//			throw new IllegalArgumentException("Provided object must be an Entity instance!");
+//		}
+//
+//		mReadLock.lock();
+//		try
+//		{
+//			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), OpenOption.OPEN);
+//			if (table == null)
+//			{
+//				return null;
+//			}
+//
+//			try (InputStream in = table.read(aEntity))
+//			{
+//				if (in == null)
+//				{
+//					return null;
+//				}
+//
+//				return new ByteArrayInputStream(Streams.readAll(in));
+//			}
+//		}
+//		catch (DatabaseException e)
+//		{
+//			forceClose(e);
+//			throw e;
+//		}
+//		catch (IOException e)
+//		{
+//			forceClose(e);
+//			throw new DatabaseIOException(e);
+//		}
+//		finally
+//		{
+//			mReadLock.unlock();
+//		}
+//	}
 
 
 	/**
@@ -953,7 +945,7 @@ public final class Database implements AutoCloseable
 		mReadLock.lock();
 		try
 		{
-			TableInstance tableInstance = openTable(aType, new DiscriminatorType(aEntity), OpenOption.OPEN);
+			TableInstance tableInstance = openTable(aType, new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
 
 			if (tableInstance != null)
 			{
@@ -1031,7 +1023,7 @@ public final class Database implements AutoCloseable
 		mReadLock.lock();
 		try
 		{
-			TableInstance table = openTable(aType, null, OpenOption.OPEN);
+			TableInstance table = openTable(aType, null, DatabaseOpenOption.OPEN);
 			if (table == null)
 			{
 				return 0;
@@ -1050,7 +1042,7 @@ public final class Database implements AutoCloseable
 		mReadLock.lock();
 		try
 		{
-			TableInstance table = openTable(aDiscriminator.getType(), aDiscriminator, OpenOption.OPEN);
+			TableInstance table = openTable(aDiscriminator.getType(), aDiscriminator, DatabaseOpenOption.OPEN);
 			if (table == null)
 			{
 				return 0;
@@ -1123,7 +1115,7 @@ public final class Database implements AutoCloseable
 
 	public <T> Table<T> getTable(T aObject)
 	{
-		TableInstance table = openTable(aObject.getClass(), getDiscriminator(aObject), OpenOption.OPEN);
+		TableInstance table = openTable(aObject.getClass(), getDiscriminator(aObject), DatabaseOpenOption.OPEN);
 
 		if (table == null)
 		{
@@ -1136,7 +1128,7 @@ public final class Database implements AutoCloseable
 
 	public <T> Table<T> getTable(Class<T> aType)
 	{
-		TableInstance table = openTable(aType, null, OpenOption.OPEN);
+		TableInstance table = openTable(aType, null, DatabaseOpenOption.OPEN);
 
 		if (table == null)
 		{
@@ -1149,7 +1141,7 @@ public final class Database implements AutoCloseable
 
 	public <T> Table<T> getTable(Class<T> aType, DiscriminatorType aDiscriminator)
 	{
-		TableInstance table = openTable(aType, aDiscriminator, OpenOption.OPEN);
+		TableInstance table = openTable(aType, aDiscriminator, DatabaseOpenOption.OPEN);
 
 		if (table == null)
 		{
@@ -1278,7 +1270,7 @@ public final class Database implements AutoCloseable
 
 		for (Table tableMetadata : getTables())
 		{
-			try (TableInstance table = openTable(tableMetadata, OpenOption.OPEN))
+			try (TableInstance table = openTable(tableMetadata, DatabaseOpenOption.OPEN))
 			{
 				scanResult.enterTable(table);
 

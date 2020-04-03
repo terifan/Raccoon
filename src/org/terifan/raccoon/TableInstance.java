@@ -1,9 +1,9 @@
 package org.terifan.raccoon;
 
-import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -15,9 +15,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.terifan.raccoon.storage.Blob;
-import org.terifan.raccoon.storage.BlobInputStream;
-import org.terifan.raccoon.storage.BlobOutputStream;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -30,7 +27,7 @@ public final class TableInstance<T> implements Closeable
 
 	private final Database mDatabase;
 	private final Table mTable;
-	private final HashSet<BlobOutputStream> mOpenOutputStreams;
+	private final HashSet<CommitLock> mCommitLocks;
 	private final HashTable mHashTable;
 	private final Cost mCost;
 
@@ -40,7 +37,7 @@ public final class TableInstance<T> implements Closeable
 		try
 		{
 			mCost = new Cost();
-			mOpenOutputStreams = new HashSet<>();
+			mCommitLocks = new HashSet<>();
 
 			mDatabase = aDatabase;
 			mTable = aTable;
@@ -108,31 +105,31 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	public synchronized InputStream read(T aEntity)
-	{
-		ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
-
-		if (!mHashTable.get(entry))
-		{
-			return null;
-		}
-
-		if (entry.hasFlag(FLAG_BLOB))
-		{
-			try
-			{
-				ByteArrayBuffer buffer = new ByteArrayBuffer(entry.getValue());
-
-				return new BlobInputStream(getBlockAccessor(), buffer);
-			}
-			catch (IOException e)
-			{
-				throw new DatabaseException(e);
-			}
-		}
-
-		return new ByteArrayInputStream(entry.getValue());
-	}
+//	public synchronized InputStream read(T aEntity)
+//	{
+//		ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
+//
+//		if (!mHashTable.get(entry))
+//		{
+//			return null;
+//		}
+//
+//		if (entry.hasFlag(FLAG_BLOB))
+//		{
+//			try
+//			{
+//				ByteArrayBuffer buffer = new ByteArrayBuffer(entry.getValue());
+//
+//				return new BlobInputStream(getBlockAccessor(), buffer);
+//			}
+//			catch (IOException e)
+//			{
+//				throw new DatabaseException(e);
+//			}
+//		}
+//
+//		return new ByteArrayInputStream(entry.getValue());
+//	}
 
 
 	public boolean save(T aEntity)
@@ -148,10 +145,12 @@ public final class TableInstance<T> implements Closeable
 		{
 			type = FLAG_BLOB;
 
-			try (BlobOutputStream bos = new BlobOutputStream(getBlockAccessor(), mDatabase.getTransactionId(), null))
+			try
 			{
-				bos.write(value);
-				value = bos.finish();
+				Blob blob = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), new ByteArrayBuffer(0), BlobOpenOption.WRITE);
+				blob.write(ByteBuffer.wrap(value));
+				blob.close();
+				value = blob.getHeader();
 			}
 			catch (IOException e)
 			{
@@ -178,7 +177,7 @@ public final class TableInstance<T> implements Closeable
 		{
 			try
 			{
-				Blob.deleteBlob(getBlockAccessor(), aEntry.getValue());
+				Blob_.deleteBlob(getBlockAccessor(), aEntry.getValue());
 			}
 			catch (IOException e)
 			{
@@ -188,34 +187,85 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	public BlobOutputStream saveBlob(T aEntityKey)
+	public Blob openBlob(T aEntityKey, BlobOpenOption aOpenOption)
 	{
 		try
 		{
-			BlobOutputStream.OnCloseListener onCloseListener = (aBlobOutputStream, aHeader) ->
+			CommitLock lock = new CommitLock(new Exception());
+
+			byte[] key = getKeys(aEntityKey);
+			ArrayMapEntry entry = new ArrayMapEntry(key);
+
+			ByteArrayBuffer header;
+
+			if (mHashTable.get(entry))
 			{
-				Log.d("write blob entry");
+				if (!entry.hasFlag(FLAG_BLOB))
+				{
+					throw new IllegalArgumentException("Not a blob");
+				}
 
-				byte[] key = getKeys(aEntityKey);
+				if (aOpenOption == BlobOpenOption.CREATE)
+				{
+					throw new IllegalArgumentException("A blob already exists with this key.");
+				}
 
-				ArrayMapEntry entry = new ArrayMapEntry(key, aHeader, FLAG_BLOB);
-
-				if (mHashTable.put(entry))
+				if (aOpenOption == BlobOpenOption.REPLACE)
 				{
 					deleteIfBlob(entry);
 				}
 
-				synchronized (TableInstance.this)
+				header = new ByteArrayBuffer(entry.getValue());
+			}
+			else
+			{
+				header = new ByteArrayBuffer(0);
+			}
+
+			Blob out = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), header, aOpenOption)
+			{
+				@Override
+				void onException(Exception aException)
 				{
-					mOpenOutputStreams.remove(aBlobOutputStream);
+				}
+
+				@Override
+				void onClose()
+				{
+					Log.d("write blob entry");
+
+					mDatabase.aquireWriteLock();
+					try
+					{
+						ArrayMapEntry entry = new ArrayMapEntry(key, getHeader(), FLAG_BLOB);
+
+						if (mHashTable.put(entry))
+						{
+							deleteIfBlob(entry);
+						}
+					}
+					catch (DatabaseException e)
+					{
+						mDatabase.forceClose(e);
+						throw e;
+					}
+					finally
+					{
+						mDatabase.releaseWriteLock();
+
+						synchronized (TableInstance.this)
+						{
+							mCommitLocks.remove(lock);
+						}
+					}
 				}
 			};
 
-			BlobOutputStream out = new BlobOutputStream(getBlockAccessor(), mDatabase.getTransactionId(), onCloseListener);
+			lock.setBlob(out);
 
 			synchronized (this)
 			{
-				mOpenOutputStreams.add(out);
+				mCommitLocks.add(lock);
 			}
 
 			return out;
@@ -227,28 +277,28 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	public boolean save(T aEntity, InputStream aInputStream)
-	{
-		try (BlobOutputStream bos = new BlobOutputStream(getBlockAccessor(), mDatabase.getTransactionId(), null))
-		{
-			Streams.transfer(aInputStream, bos);
-
-			byte[] key = getKeys(aEntity);
-
-			ArrayMapEntry entry = new ArrayMapEntry(key, bos.finish(), FLAG_BLOB);
-
-			if (mHashTable.put(entry))
-			{
-				deleteIfBlob(entry);
-			}
-
-			return entry.getValue() == null;
-		}
-		catch (IOException e)
-		{
-			throw new DatabaseException(e);
-		}
-	}
+//	public boolean save(T aEntity, InputStream aInputStream)
+//	{
+//		try (BlobOutputStream bos = new BlobOutputStream(getBlockAccessor(), mDatabase.getTransactionId(), null))
+//		{
+//			Streams.transfer(aInputStream, bos);
+//
+//			byte[] key = getKeys(aEntity);
+//
+//			ArrayMapEntry entry = new ArrayMapEntry(key, bos.finish(), FLAG_BLOB);
+//
+//			if (mHashTable.put(entry))
+//			{
+//				deleteIfBlob(entry);
+//			}
+//
+//			return entry.getValue() == null;
+//		}
+//		catch (IOException e)
+//		{
+//			throw new DatabaseException(e);
+//		}
+//	}
 
 
 	public boolean remove(T aEntity)
@@ -304,9 +354,9 @@ public final class TableInstance<T> implements Closeable
 	{
 		synchronized (this)
 		{
-			if (!mOpenOutputStreams.isEmpty())
+			if (!mCommitLocks.isEmpty())
 			{
-				throw new DatabaseException("A table cannot be commited while a stream is open.");
+				throw new CommitBlockedException("A table cannot be commited while a stream is open.");
 			}
 		}
 
@@ -369,9 +419,11 @@ public final class TableInstance<T> implements Closeable
 
 		if (aBuffer.hasFlag(FLAG_BLOB))
 		{
-			try
+			try (Blob blob = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), new ByteArrayBuffer(aBuffer.getValue()), BlobOpenOption.READ))
 			{
-				buffer.wrap(Streams.readAll(new BlobInputStream(getBlockAccessor(), buffer)), true);
+				byte[] buf = new byte[(int)blob.size()];
+				blob.read(ByteBuffer.wrap(buf));
+				buffer.write(buf);
 				buffer.position(0);
 			}
 			catch (IOException e)

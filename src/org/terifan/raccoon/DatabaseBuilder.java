@@ -49,7 +49,7 @@ public class DatabaseBuilder
 	}
 
 
-	private Database build(OpenOption aOpenOption) throws IOException
+	private Database build(DatabaseOpenOption aOpenOption) throws IOException
 	{
 		ArrayList<OpenParam> params = new ArrayList<>();
 
@@ -90,7 +90,7 @@ public class DatabaseBuilder
 	 */
 	public Database create() throws IOException
 	{
-		return build(OpenOption.CREATE);
+		return build(DatabaseOpenOption.CREATE);
 	}
 
 
@@ -99,7 +99,7 @@ public class DatabaseBuilder
 	 */
 	public Database reset() throws IOException
 	{
-		return build(OpenOption.CREATE_NEW);
+		return build(DatabaseOpenOption.CREATE_NEW);
 	}
 
 
@@ -108,7 +108,7 @@ public class DatabaseBuilder
 	 */
 	public Database open() throws IOException
 	{
-		return build(mReadOnly ? OpenOption.READ_ONLY : OpenOption.OPEN);
+		return build(mReadOnly ? DatabaseOpenOption.READ_ONLY : DatabaseOpenOption.OPEN);
 	}
 
 

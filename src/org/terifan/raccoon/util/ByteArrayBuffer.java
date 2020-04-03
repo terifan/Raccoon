@@ -729,4 +729,18 @@ public final class ByteArrayBuffer
 			writeInt32(aOut, aOutOffset, aIn[aInOffset++]);
 		}
 	}
+
+
+	public void copyTo(ByteArrayBuffer aDestination, int aLength)
+	{
+		for (int i = 0; i < aLength; i++)
+		{
+			int c = readInt8();
+			if (c == -1)
+			{
+				throw new IllegalStateException("Premature end of stream");
+			}
+			aDestination.writeInt8(c);
+		}
+	}
 }

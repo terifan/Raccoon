@@ -25,6 +25,8 @@ public class BlockPointer implements Serializable
 	private long[] mChecksum;
 	private long[] mIV;
 
+	private transient Object mUserObject;
+
 
 	public BlockPointer()
 	{
@@ -277,6 +279,18 @@ public class BlockPointer implements Serializable
 			return ((BlockPointer)aBlockPointer).getBlockIndex0() == mBlockIndex0;
 		}
 		return false;
+	}
+
+
+	public Object getUserObject()
+	{
+		return mUserObject;
+	}
+
+
+	public void setUserObject(Object aUserObject)
+	{
+		mUserObject = aUserObject;
 	}
 
 

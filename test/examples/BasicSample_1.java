@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.Key;
-import org.terifan.raccoon.OpenOption;
+import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.testng.annotations.Test;
@@ -18,7 +18,7 @@ public class BasicSample_1
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		try (Database db = new Database(blockDevice, OpenOption.CREATE_NEW, new TableParam(8,1,0), CompressionParam.BEST_SPEED))
+		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, new TableParam(8,1,0), CompressionParam.BEST_SPEED))
 		{
 			db.save(new MyEntity(1, "apple"));
 			for (int i = 0; i < 100000;i++)
@@ -28,7 +28,7 @@ public class BasicSample_1
 			db.commit();
 		}
 
-		try (Database db = new Database(blockDevice, OpenOption.OPEN))
+		try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 		{
 			String scan = db.scan().sb.toString();
 

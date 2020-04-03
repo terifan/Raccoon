@@ -6,7 +6,7 @@ import org.terifan.ganttchart.SimpleGanttWindow;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.Key;
-import org.terifan.raccoon.OpenOption;
+import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.PerformanceTool;
 import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
@@ -26,7 +26,7 @@ public class Test
 
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-			try (Database db = new Database(blockDevice, OpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION, new TableParam(1, 1, 0), new PerformanceTool(chart)))
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION, new TableParam(1, 1, 0), new PerformanceTool(chart)))
 			{
 				for (int i = 0; i < 1000; i++)
 				{

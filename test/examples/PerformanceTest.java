@@ -4,7 +4,7 @@ import resources.entities._Fruit1K;
 import java.io.IOException;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
-import org.terifan.raccoon.OpenOption;
+import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.testng.annotations.Test;
 
@@ -19,7 +19,7 @@ public class PerformanceTest
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
 
-		try (Database db = new Database(blockDevice, OpenOption.CREATE_NEW, CompressionParam.BEST_SPEED))
+		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.BEST_SPEED))
 		{
 			for (int i = 0; i < 1000000;)
 			{

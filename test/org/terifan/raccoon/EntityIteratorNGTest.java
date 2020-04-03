@@ -21,7 +21,7 @@ public class EntityIteratorNGTest
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		try (Database db = new Database(blockDevice, OpenOption.CREATE))
+		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE))
 		{
 			db.save(new _Fruit1K("apple", 52.12));
 			db.save(new _Fruit1K("banana", 42.12));
@@ -29,7 +29,7 @@ public class EntityIteratorNGTest
 			db.commit();
 		}
 
-		try (Database db = new Database(blockDevice, OpenOption.OPEN))
+		try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 		{
 			db.setInitializer(_Fruit1K.class, e->{e.calories=-e.calories;});
 
@@ -50,7 +50,7 @@ public class EntityIteratorNGTest
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		try (Database db = new Database(blockDevice, OpenOption.CREATE))
+		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE))
 		{
 			db.save(new _Fruit1KInit("apple", 52.12));
 			db.save(new _Fruit1KInit("banana", 42.12));
@@ -58,7 +58,7 @@ public class EntityIteratorNGTest
 			db.commit();
 		}
 
-		try (Database db = new Database(blockDevice, OpenOption.OPEN))
+		try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 		{
 			List<_Fruit1KInit> list = db.list(_Fruit1KInit.class);
 

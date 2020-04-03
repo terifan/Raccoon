@@ -3,7 +3,7 @@ package org.terifan.raccoon.io.secure;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import java.io.IOException;
 import java.util.Random;
-import org.terifan.raccoon.OpenOption;
+import org.terifan.raccoon.DatabaseOpenOption;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 

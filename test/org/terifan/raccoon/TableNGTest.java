@@ -132,7 +132,7 @@ public class TableNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = new Database(device, OpenOption.CREATE))
+		try (Database database = new Database(device, DatabaseOpenOption.CREATE))
 		{
 			database.save(new _Animal1K("cat", 1));
 			database.save(new _Animal1K("dog", 2));
@@ -158,7 +158,7 @@ public class TableNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = new Database(device, OpenOption.CREATE))
+		try (Database database = new Database(device, DatabaseOpenOption.CREATE))
 		{
 			database.save(new _Animal1K("cat", 1));
 			database.save(new _Animal1K("dog", 2));
@@ -186,7 +186,7 @@ public class TableNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = new Database(device, OpenOption.CREATE))
+		try (Database database = new Database(device, DatabaseOpenOption.CREATE))
 		{
 			database.save(new _Animal1K("cat", 1));
 			database.save(new _Animal1K("dog", 2));
@@ -212,7 +212,7 @@ public class TableNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = new Database(device, OpenOption.CREATE))
+		try (Database database = new Database(device, DatabaseOpenOption.CREATE))
 		{
 			database.save(new _Animal1K("cat", 1));
 			database.save(new _Animal1K("dog", 2));
