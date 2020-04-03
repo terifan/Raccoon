@@ -79,7 +79,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	public byte[] marshalHeader()
 	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(BlockPointer.SIZE + 4 + 4 + 4 + 3);
+		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(BlockPointer.SIZE + 4 + 4 + 4 + 3);
 		mRootBlockPointer.marshal(buffer);
 		buffer.writeInt32(mHashSeed);
 		buffer.writeVar32(mNodeSize);
@@ -94,7 +94,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	{
 		mRootBlockPointer = new BlockPointer();
 
-		ByteArrayBuffer buffer = new ByteArrayBuffer(aTableHeader);
+		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aTableHeader);
 		mRootBlockPointer.unmarshal(buffer);
 
 		mHashSeed = buffer.readInt32();
@@ -876,7 +876,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 //					{
 //						aScanResult.blobs++;
 //
-//						ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(entry.getValue());
+//						ByteArrayBuffer byteArrayBuffer = ByteArrayBuffer.wrap(entry.getValue());
 //						byteArrayBuffer.readInt8();
 //						long len = byteArrayBuffer.readVar64();
 //
@@ -896,7 +896,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			case BLOB_INDEX:
 				aScanResult.blobIndices++;
 
-				ByteArrayBuffer byteArrayBuffer = new ByteArrayBuffer(buffer);
+				ByteArrayBuffer byteArrayBuffer = ByteArrayBuffer.wrap(buffer);
 				while (byteArrayBuffer.remaining() > 0)
 				{
 					aScanResult.enterBlob();

@@ -1,7 +1,10 @@
 package org.terifan.raccoon;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SeekableByteChannel;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -16,18 +19,17 @@ public class Blob implements SeekableByteChannel
 {
 	private final static boolean LOG = false;
 
-	final static int CHUNK_SIZE = 1024;
-	private static final int HEADER_SIZE = 8;
+	private final static int CHUNK_SIZE = 1024 * 1024;
+	private final static int HEADER_SIZE = 8;
 	private final static int INDIRECT_POINTER_THRESHOLD = 4;
 
 	private BlockAccessor mBlockAccessor;
 	private TransactionGroup mTransactionId;
-	private ByteArrayBuffer mOriginalPointerBuffer;
-	private ByteArrayBuffer mOldIndirectPointerBuffer;
+	private ByteArrayBuffer mPersistedPointerBuffer;
+	private ByteArrayBuffer mPersistedIndirectPointerBuffer;
 	private HashMap<Integer,BlockPointer> mBlockPointsers;
 	private HashSet<Integer> mEmptyBlocks;
 	private boolean mClosed;
-	private byte[] mHeader;
 
 	private long mTotalSize;
 	private long mPosition;
@@ -38,27 +40,27 @@ public class Blob implements SeekableByteChannel
 	private BlockPointer mBlockPointer;
 
 
-	Blob(BlockAccessor aBlockAccessor, TransactionGroup aTransactionId, ByteArrayBuffer aPointerBuffer, BlobOpenOption aOpenOption) throws IOException
+	Blob(BlockAccessor aBlockAccessor, TransactionGroup aTransactionId, byte[] aHeader, BlobOpenOption aOpenOption) throws IOException
 	{
 		mBlockAccessor = aBlockAccessor;
 		mTransactionId = aTransactionId;
-		mOriginalPointerBuffer = aPointerBuffer;
 
 		mBuffer = new byte[CHUNK_SIZE];
 		mBlockPointsers = new HashMap<>();
 		mEmptyBlocks = new HashSet<>();
 
-		if (mOriginalPointerBuffer.capacity() > 0)
+		if (aHeader != null)
 		{
-			mTotalSize = mOriginalPointerBuffer.readInt64();
+			mPersistedPointerBuffer = ByteArrayBuffer.wrap(aHeader);
+			mTotalSize = mPersistedPointerBuffer.readInt64();
 
 			BlockPointer bp = new BlockPointer();
-			bp.unmarshal(mOriginalPointerBuffer);
+			bp.unmarshal(mPersistedPointerBuffer);
 
 			if (bp.getBlockType() == BlockType.BLOB_INDEX)
 			{
-				mOldIndirectPointerBuffer = mOriginalPointerBuffer;
-				mOriginalPointerBuffer = new ByteArrayBuffer(mBlockAccessor.readBlock(bp));
+				mPersistedIndirectPointerBuffer = mPersistedPointerBuffer;
+				mPersistedPointerBuffer = ByteArrayBuffer.wrap(mBlockAccessor.readBlock(bp)).limit(bp.getLogicalSize());
 			}
 		}
 
@@ -72,6 +74,11 @@ public class Blob implements SeekableByteChannel
 	@Override
 	public int read(ByteBuffer aDst) throws IOException
 	{
+		if (mClosed)
+		{
+			throw new ClosedChannelException();
+		}
+
 		int limit = aDst.limit() - aDst.position();
 
 		int total = (int)Math.min(limit, mTotalSize - mPosition);
@@ -107,6 +114,11 @@ public class Blob implements SeekableByteChannel
 	@Override
 	public int write(ByteBuffer aSrc) throws IOException
 	{
+		if (mClosed)
+		{
+			throw new ClosedChannelException();
+		}
+
 		int total = aSrc.limit() - aSrc.position();
 
 		if (LOG) System.out.println("WRITE " + mPosition + " +" + total);
@@ -146,7 +158,12 @@ public class Blob implements SeekableByteChannel
 	@Override
 	public SeekableByteChannel position(long aNewPosition) throws IOException
 	{
-		mPosition = (int)aNewPosition;
+		if (mClosed)
+		{
+			throw new ClosedChannelException();
+		}
+
+		mPosition = aNewPosition;
 		return this;
 	}
 
@@ -161,6 +178,11 @@ public class Blob implements SeekableByteChannel
 	@Override
 	public SeekableByteChannel truncate(long aSize) throws IOException
 	{
+		if (mClosed)
+		{
+			throw new ClosedChannelException();
+		}
+
 //		if (aSize < mSize)
 //		{
 //			sync(true);
@@ -199,77 +221,81 @@ public class Blob implements SeekableByteChannel
 	}
 
 
-	@Override
-	public synchronized void close() throws IOException
+	synchronized byte[] finish() throws IOException
 	{
-		if (mModified)
+		if (mClosed)
 		{
-			sync(true);
+			return null;
+		}
 
-			Log.d("closing blob");
+		sync(true);
+
+		Log.d("closing blob");
+		Log.inc();
+
+		int pointerCount = (int)((mTotalSize + CHUNK_SIZE - 1) / CHUNK_SIZE);
+		ByteArrayBuffer buf = ByteArrayBuffer.alloc(HEADER_SIZE + BlockPointer.SIZE * pointerCount, true);
+		buf.limit(buf.capacity());
+
+		buf.writeInt64(mTotalSize);
+
+		for (int i = 0; i < pointerCount; i++)
+		{
+			if (mEmptyBlocks.contains(i))
+			{
+				buf.write(new byte[BlockPointer.SIZE]);
+			}
+			else
+			{
+				BlockPointer bp = mBlockPointsers.get(i);
+				if (bp != null)
+				{
+					bp.marshal(buf);
+				}
+				else if (mPersistedPointerBuffer != null && mPersistedPointerBuffer.capacity() > buf.position())
+				{
+					mPersistedPointerBuffer.position(HEADER_SIZE + i * BlockPointer.SIZE).copyTo(buf, BlockPointer.SIZE);
+				}
+			}
+		}
+
+		if (pointerCount > INDIRECT_POINTER_THRESHOLD)
+		{
+			Log.d("created indirect blob pointer block");
 			Log.inc();
 
-			int pointerCount = (int)((mTotalSize + CHUNK_SIZE - 1) / CHUNK_SIZE);
-			ByteArrayBuffer buf = new ByteArrayBuffer(HEADER_SIZE + BlockPointer.SIZE * pointerCount);
-			buf.limit(buf.capacity());
+			buf.position(HEADER_SIZE);
+			BlockPointer bp = mBlockAccessor.writeBlock(buf.array(), 0, buf.capacity(), mTransactionId.get(), BlockType.BLOB_INDEX, 0);
+			bp.marshal(buf);
+			buf.trim();
 
-			buf.writeInt64(mTotalSize);
+			Log.dec();
+		}
 
-			for (int i = 0; i < pointerCount; i++)
-			{
-				if (mEmptyBlocks.contains(i))
-				{
-					buf.write(new byte[BlockPointer.SIZE]);
-				}
-				else
-				{
-					BlockPointer bp = mBlockPointsers.get(i);
-					if (bp != null)
-					{
-						bp.marshal(buf);
-					}
-					else if (mOriginalPointerBuffer.capacity() > buf.position())
-					{
-						mOriginalPointerBuffer.position(HEADER_SIZE + i * BlockPointer.SIZE).copyTo(buf, BlockPointer.SIZE);
-					}
-				}
-			}
+		if (mPersistedIndirectPointerBuffer != null)
+		{
+			Log.d("freed indirect block");
+			Log.inc();
 
-			if (pointerCount > INDIRECT_POINTER_THRESHOLD)
-			{
-				Log.d("created indirect blob pointer block");
-				Log.inc();
-
-				buf.position(HEADER_SIZE);
-				BlockPointer bp = mBlockAccessor.writeBlock(buf.array(), 0, buf.capacity(), mTransactionId.get(), BlockType.BLOB_INDEX, 0);
-				bp.marshal(buf);
-				buf.trim();
-
-				Log.dec();
-			}
-
-			if (mOldIndirectPointerBuffer != null)
-			{
-				Log.d("freed indirect block");
-				Log.inc();
-
-				BlockPointer bp = new BlockPointer();
-				bp.unmarshal(mOldIndirectPointerBuffer.position(HEADER_SIZE));
-				mBlockAccessor.freeBlock(bp);
-
-				Log.dec();
-			}
-
-			mHeader = buf.array();
-
-			mModified = false;
-
-			onClose();
+			BlockPointer bp = new BlockPointer();
+			bp.unmarshal(mPersistedIndirectPointerBuffer.position(HEADER_SIZE));
+			mBlockAccessor.freeBlock(bp);
 
 			Log.dec();
 		}
 
 		mClosed = true;
+
+		Log.dec();
+
+		return buf.array();
+	}
+
+
+	@Override
+	public synchronized void close() throws IOException
+	{
+		onClose();
 	}
 
 
@@ -316,10 +342,10 @@ public class Blob implements SeekableByteChannel
 				{
 					int o = HEADER_SIZE + mChunkIndex * BlockPointer.SIZE;
 
-					if (mOriginalPointerBuffer.capacity() > o)
+					if (mPersistedPointerBuffer != null && mPersistedPointerBuffer.capacity() > o)
 					{
 						mBlockPointer = new BlockPointer();
-						mBlockPointer.unmarshal(mOriginalPointerBuffer.position(o));
+						mBlockPointer.unmarshal(mPersistedPointerBuffer.position(o));
 					}
 				}
 
@@ -348,13 +374,210 @@ public class Blob implements SeekableByteChannel
 	}
 
 
-	byte[] getHeader()
+	static void deleteBlob(BlockAccessor aBlockAccessor, byte[] aHeader) throws IOException
 	{
-		return mHeader;
+		freeBlocks(aBlockAccessor, ByteArrayBuffer.wrap(aHeader).position(HEADER_SIZE));
 	}
 
 
-	void onClose()
+	private static void freeBlocks(BlockAccessor aBlockAccessor, ByteArrayBuffer aBuffer)
+	{
+		while (aBuffer.remaining() > 0)
+		{
+			BlockPointer bp = new BlockPointer().unmarshal(aBuffer);
+
+			if (bp.getBlockType() == BlockType.BLOB_INDEX)
+			{
+				freeBlocks(aBlockAccessor, ByteArrayBuffer.wrap(aBlockAccessor.readBlock(bp)).limit(bp.getLogicalSize()).position(HEADER_SIZE));
+			}
+
+			aBlockAccessor.freeBlock(bp);
+		}
+	}
+
+
+	public byte[] readAllBytes() throws IOException
+	{
+		ByteBuffer buf = ByteBuffer.allocate((int)size());
+		read(buf);
+		return buf.array();
+	}
+
+
+	public Blob readAllBytes(OutputStream aDst) throws IOException
+	{
+		ByteBuffer buf = ByteBuffer.allocate(1024);
+
+		for (long remaining = size(); remaining > 0;)
+		{
+			int len = read(buf);
+			if (len == -1)
+			{
+				throw new IOException("Unexpected end of stream");
+			}
+			aDst.write(buf.array(), 0, len);
+		}
+
+		return this;
+	}
+
+
+	public Blob writeAllBytes(byte[] aSrc) throws IOException
+	{
+		write(ByteBuffer.wrap(aSrc));
+		return this;
+	}
+
+
+	public Blob writeAllBytes(InputStream aSrc) throws IOException
+	{
+		ByteBuffer buf = ByteBuffer.allocate(1024);
+
+		for (int len; (len = aSrc.read(buf.array())) > 0;)
+		{
+			buf.position(0).limit(len);
+			write(buf);
+		}
+
+		return this;
+	}
+
+
+	public InputStream newInputStream()
+	{
+		return new InputStream()
+		{
+			long streamPosition = mPosition;
+			ByteBuffer buffer = (ByteBuffer)ByteBuffer.allocate(4096).position(4096);
+
+
+			@Override
+			public int read() throws IOException
+			{
+				if (buffer.position() == buffer.limit())
+				{
+					if (streamPosition == size())
+					{
+						return -1;
+					}
+
+					position(streamPosition);
+					buffer.position(0);
+					Blob.this.read(buffer);
+					buffer.flip();
+					streamPosition = position();
+				}
+
+				return 0xff & buffer.get();
+			}
+
+
+			@Override
+			public int read(byte[] aBuffer, int aOffset, int aLength) throws IOException
+			{
+				int total = 0;
+
+				for (int remaining = aLength; remaining > 0;)
+				{
+					if (buffer.position() == buffer.limit())
+					{
+						if (streamPosition == size())
+						{
+							break;
+						}
+
+						position(streamPosition);
+						buffer.position(0);
+						Blob.this.read(buffer);
+						buffer.flip();
+						streamPosition = position();
+					}
+
+					int len = Math.min(remaining, buffer.remaining());
+
+					buffer.get(aBuffer, aOffset + total, len);
+					remaining -= len;
+					total += len;
+				}
+
+				return total;
+			}
+
+
+			@Override
+			public void close() throws IOException
+			{
+				Blob.this.close();
+			}
+		};
+	}
+
+
+	public OutputStream newOutputStream()
+	{
+		return new OutputStream()
+		{
+			ByteBuffer buffer = (ByteBuffer)ByteBuffer.allocate(4096);
+
+
+			@Override
+			public void write(int aByte) throws IOException
+			{
+				buffer.put((byte)aByte);
+
+				if (buffer.position() == buffer.capacity())
+				{
+					buffer.flip();
+					Blob.this.write(buffer);
+					buffer.clear();
+				}
+			}
+
+
+			@Override
+			public void write(byte[] aBuffer, int aOffset, int aLength) throws IOException
+			{
+				for (int remaining = aLength; remaining > 0;)
+				{
+					int len = Math.min(remaining, buffer.remaining());
+
+					buffer.put(aBuffer, aOffset, len);
+
+					remaining -= len;
+					aOffset += len;
+
+					if (buffer.position() == buffer.capacity())
+					{
+						buffer.flip();
+						Blob.this.write(buffer);
+						buffer.clear();
+					}
+				}
+			}
+
+
+			@Override
+			public void close() throws IOException
+			{
+				if (buffer.position() > 0)
+				{
+					buffer.flip();
+					Blob.this.write(buffer);
+				}
+
+				Blob.this.close();
+			}
+		};
+	}
+
+
+	boolean isModified()
+	{
+		return mModified;
+	}
+
+
+	void onClose() throws IOException
 	{
 	}
 

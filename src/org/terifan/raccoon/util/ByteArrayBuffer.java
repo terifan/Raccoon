@@ -21,24 +21,50 @@ public final class ByteArrayBuffer
 	private int mReadBitCount;
 
 
-	/**
-	 * Read/write from a variable length buffer. Writing beyond the buffer will grow the buffer while reading will cause an exception.
-	 */
-	public ByteArrayBuffer(int aInitialSize)
+	private ByteArrayBuffer()
 	{
-		mBuffer = new byte[aInitialSize];
-		mLimit = NO_LIMIT;
-		mBitBuffer = 0;
-		mWriteBitsToGo = 8;
 	}
 
 
-	/**
-	 * Read/write from a fixed size buffer. Writing beyond the buffer will cause an exception.
-	 */
-	public ByteArrayBuffer(byte[] aBuffer)
+	public static ByteArrayBuffer alloc(int aInitialSize)
 	{
-		wrap(aBuffer, false);
+		return alloc(aInitialSize, false);
+	}
+
+
+	public static ByteArrayBuffer alloc(int aInitialSize, boolean aLimitSize)
+	{
+		ByteArrayBuffer instance = new ByteArrayBuffer();
+		instance.mBuffer = new byte[aInitialSize];
+		instance.mLocked = aLimitSize;
+		instance.mLimit = aLimitSize ? aInitialSize : NO_LIMIT;
+		instance.mBitBuffer = 0;
+		instance.mWriteBitsToGo = 8;
+		return instance;
+	}
+
+
+	public static ByteArrayBuffer wrap(byte[] aBuffer)
+	{
+		return wrap(aBuffer, true);
+	}
+
+
+	public static ByteArrayBuffer wrap(byte[] aBuffer, boolean aLimitSize)
+	{
+		if (aBuffer == null)
+		{
+			throw new IllegalArgumentException("Buffer provided is null.");
+		}
+
+		ByteArrayBuffer instance = new ByteArrayBuffer();
+		instance.mBuffer = aBuffer;
+		instance.mLocked = aLimitSize;
+		instance.mLimit = aLimitSize ? aBuffer.length : NO_LIMIT;
+		instance.mBitBuffer = 0;
+		instance.mWriteBitsToGo = 8;
+
+		return instance;
 	}
 
 
@@ -48,10 +74,14 @@ public final class ByteArrayBuffer
 	}
 
 
-	public ByteArrayBuffer capacity(int aNewLength)
+	public ByteArrayBuffer capacity(int aNewCapacity)
 	{
-		mBuffer = Arrays.copyOfRange(mBuffer, 0, aNewLength);
-		mOffset = Math.min(mOffset, aNewLength);
+		mBuffer = Arrays.copyOfRange(mBuffer, 0, aNewCapacity);
+		mOffset = Math.min(mOffset, aNewCapacity);
+		if (mLocked)
+		{
+			mLimit = aNewCapacity;
+		}
 		return this;
 	}
 
@@ -141,22 +171,6 @@ public final class ByteArrayBuffer
 		flushBits();
 
 		return mBuffer;
-	}
-
-
-	public ByteArrayBuffer wrap(byte[] aBuffer, boolean aLimitSize)
-	{
-		if (aBuffer == null)
-		{
-			throw new IllegalArgumentException("Buffer provided is null.");
-		}
-
-		mBuffer = aBuffer;
-		mLocked = true;
-		mLimit = aLimitSize ? aBuffer.length : NO_LIMIT;
-		mBitBuffer = 0;
-		mWriteBitsToGo = 8;
-		return this;
 	}
 
 

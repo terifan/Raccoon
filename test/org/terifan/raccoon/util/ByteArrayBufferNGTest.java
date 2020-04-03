@@ -17,7 +17,7 @@ public class ByteArrayBufferNGTest
 
 		rnd = new Random(1);
 
-		ByteArrayBuffer out = new ByteArrayBuffer(50);
+		ByteArrayBuffer out = ByteArrayBuffer.alloc(50);
 		for (int j = 0; j < 10; j++)
 		{
 			for (int i = rnd.nextInt(100); --i >= 0; )
@@ -46,7 +46,7 @@ public class ByteArrayBufferNGTest
 //		assertEquals(out.capacity(), 2779);
 //		assertEquals(out.remaining(), 2779 - 2607);
 
-		ByteArrayBuffer in = new ByteArrayBuffer(out.trim().array());
+		ByteArrayBuffer in = ByteArrayBuffer.wrap(out.trim().array());
 		rnd = new Random(1);
 
 		for (int j = 0; j < 10; j++)
@@ -79,7 +79,7 @@ public class ByteArrayBufferNGTest
 	@Test(expectedExceptions = EOFException.class)
 	public void testWriteOverflow1() throws IOException
 	{
-		ByteArrayBuffer out = new ByteArrayBuffer(new byte[5]);
+		ByteArrayBuffer out = ByteArrayBuffer.wrap(new byte[5]);
 		out.writeInt64(0);
 	}
 
@@ -87,7 +87,7 @@ public class ByteArrayBufferNGTest
 	@Test(expectedExceptions = EOFException.class)
 	public void testWriteOverflow2() throws IOException
 	{
-		ByteArrayBuffer out = new ByteArrayBuffer(new byte[5]);
+		ByteArrayBuffer out = ByteArrayBuffer.wrap(new byte[5]);
 		out.writeInt8(1);
 		out.writeInt8(2);
 		out.writeInt8(3);
@@ -100,7 +100,7 @@ public class ByteArrayBufferNGTest
 	@Test
 	public void testBitBuffering1() throws IOException
 	{
-		ByteArrayBuffer out = new ByteArrayBuffer(10);
+		ByteArrayBuffer out = ByteArrayBuffer.alloc(10);
 		out.writeBit(1);
 		out.writeBits(0b1010101, 7);
 		out.writeBits(0b1001, 4);
@@ -112,7 +112,7 @@ public class ByteArrayBufferNGTest
 		assertEquals(0xff & buf[1], 0b10011111);
 		assertEquals(0xff & buf[2], 0b01000000);
 
-		ByteArrayBuffer in = new ByteArrayBuffer(buf);
+		ByteArrayBuffer in = ByteArrayBuffer.wrap(buf);
 		assertEquals(in.readBit(), 1);
 		assertEquals(in.readBits(7), 0b1010101);
 		assertEquals(in.readBits(4), 0b1001);
@@ -123,7 +123,7 @@ public class ByteArrayBufferNGTest
 	@Test
 	public void testBitBuffering2() throws IOException
 	{
-		ByteArrayBuffer out = new ByteArrayBuffer(4);
+		ByteArrayBuffer out = ByteArrayBuffer.alloc(4);
 		out.writeBit(1);
 		out.writeBit(0);
 		out.writeBit(1);
@@ -135,7 +135,7 @@ public class ByteArrayBufferNGTest
 
 		assertEquals(buf, new byte[]{(byte)0b10110000, (byte)0b10101010, 0,0});
 
-		ByteArrayBuffer in = new ByteArrayBuffer(buf);
+		ByteArrayBuffer in = ByteArrayBuffer.wrap(buf);
 		assertEquals(in.readBits(4), 0b1011);
 		out.align();
 		assertEquals(in.readInt8(), 0b10101010);
@@ -145,7 +145,7 @@ public class ByteArrayBufferNGTest
 	@Test
 	public void testBitBuffering3() throws IOException
 	{
-		ByteArrayBuffer out = new ByteArrayBuffer(4);
+		ByteArrayBuffer out = ByteArrayBuffer.alloc(4);
 		out.writeBit(1);
 		out.align();
 		out.writeInt8(0b10101010);

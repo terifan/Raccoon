@@ -12,7 +12,7 @@ public class RangeMapNGTest
 	@Test
 	public void testSerialization1() throws IOException
 	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
+		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(16);
 
 		RangeMap inMap = new RangeMap();
 		inMap.add(0, Integer.MAX_VALUE);
@@ -22,7 +22,7 @@ public class RangeMapNGTest
 //		Log.hexDump(baos.toByteArray());
 
 		RangeMap outMap = new RangeMap();
-		outMap.unmarshal(new ByteArrayBuffer(buffer.array()));
+		outMap.unmarshal(ByteArrayBuffer.wrap(buffer.array()));
 
 		assertEquals(inMap.toString(), outMap.toString());
 	}
@@ -31,7 +31,7 @@ public class RangeMapNGTest
 	@Test
 	public void testSerialization2() throws IOException
 	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
+		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(16);
 
 		int limit = Integer.MAX_VALUE;
 
@@ -49,7 +49,7 @@ public class RangeMapNGTest
 		inMap.marshal(buffer);
 
 		RangeMap outMap = new RangeMap();
-		outMap.unmarshal(new ByteArrayBuffer(buffer.array()));
+		outMap.unmarshal(ByteArrayBuffer.wrap(buffer.array()));
 
 		assertEquals(inMap.toString(), outMap.toString());
 	}

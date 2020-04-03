@@ -101,7 +101,7 @@ public final class Table<T>
 	{
 		if (aDiscriminator != null && aDiscriminator.getInstance() != null)
 		{
-			return mMarshaller.marshal(new ByteArrayBuffer(16), aDiscriminator.getInstance(), Table.FIELD_CATEGORY_DISCRIMINATOR).trim().array();
+			return mMarshaller.marshal(ByteArrayBuffer.alloc(16), aDiscriminator.getInstance(), Table.FIELD_CATEGORY_DISCRIMINATOR).trim().array();
 		}
 
 		return new byte[0];
@@ -186,7 +186,7 @@ public final class Table<T>
 			return null;
 		}
 
-		ResultSet resultSet = new ResultSet(mEntityDescriptor).unmarshal(new ByteArrayBuffer(mDiscriminatorKey), FIELD_CATEGORY_DISCRIMINATOR);
+		ResultSet resultSet = new ResultSet(mEntityDescriptor).unmarshal(ByteArrayBuffer.wrap(mDiscriminatorKey), FIELD_CATEGORY_DISCRIMINATOR);
 
 		StringBuilder result = new StringBuilder();
 

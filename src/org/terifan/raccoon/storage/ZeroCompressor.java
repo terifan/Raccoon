@@ -64,7 +64,7 @@ class ZeroCompressor implements Compressor
 	@Override
 	public void decompress(byte[] aInput, int aInputOffset, int aInputLength, byte[] aOutput, int aOutputOffset, int aOutputLength) throws IOException
 	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(aInput).position(aInputOffset);
+		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aInput).position(aInputOffset);
 
 		for (int position = 0; buffer.position() < aInputOffset + aInputLength;)
 		{

@@ -143,7 +143,7 @@ class SuperBlock
 	{
 		int blockSize = aBlockDevice.getBlockSize();
 
-		ByteArrayBuffer buffer = new ByteArrayBuffer(blockSize);
+		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(blockSize, true);
 
 		if (aBlockDevice instanceof SecureBlockDevice)
 		{
@@ -178,7 +178,7 @@ class SuperBlock
 
 		int blockSize = aBlockDevice.getBlockSize();
 
-		ByteArrayBuffer buffer = new ByteArrayBuffer(blockSize);
+		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(blockSize, true);
 		buffer.position(CHECKSUM_SIZE); // reserve space for checksum
 
 		marshal(buffer);

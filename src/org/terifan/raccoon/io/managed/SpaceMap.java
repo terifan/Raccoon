@@ -62,7 +62,7 @@ class SpaceMap
 		}
 
 		mPendingRangeMap.remove(blockIndex, aBlockCount);
-		
+
 		return blockIndex;
 	}
 
@@ -116,7 +116,7 @@ class SpaceMap
 			aBlockDevice.freeBlockInternal(aSpaceMapBlockPointer.getBlockIndex0(), aSpaceMapBlockPointer.getAllocatedSize());
 		}
 
-		ByteArrayBuffer buffer = new ByteArrayBuffer(blockSize);
+		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(blockSize);
 
 		mPendingRangeMap.marshal(buffer);
 
@@ -134,7 +134,7 @@ class SpaceMap
 		aBlockDeviceDirect.writeBlock(aSpaceMapBlockPointer.getBlockIndex0(), buffer.array(), 0, buffer.capacity(), aSpaceMapBlockPointer.getIV());
 
 		mRangeMap = mPendingRangeMap.clone();
-		
+
 		Log.dec();
 	}
 
@@ -162,7 +162,7 @@ class SpaceMap
 
 			int blockSize = aBlockDevice.getBlockSize();
 
-			ByteArrayBuffer buffer = new ByteArrayBuffer(blockSize * blockPointer.getAllocatedSize());
+			ByteArrayBuffer buffer = ByteArrayBuffer.alloc(blockSize * blockPointer.getAllocatedSize());
 
 			aBlockDeviceDirect.readBlock(blockPointer.getBlockIndex0(), buffer.array(), 0, blockSize * blockPointer.getAllocatedSize(), blockPointer.getIV());
 

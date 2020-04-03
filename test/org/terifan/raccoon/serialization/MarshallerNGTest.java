@@ -20,7 +20,7 @@ public class MarshallerNGTest
 
 		EntityDescriptor entityDescriptor = new EntityDescriptor(_BigObject2K1D.class, mCategorizer);
 
-		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
+		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(16);
 
 		Marshaller marshaller = new Marshaller(entityDescriptor);
 		marshaller.marshal(buffer, in, 1);
@@ -44,7 +44,7 @@ public class MarshallerNGTest
 
 		EntityDescriptor entityDescriptor = new EntityDescriptor(_BigObject2K1D.class, mCategorizer);
 
-		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
+		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(16);
 
 		Marshaller marshaller = new Marshaller(entityDescriptor);
 		marshaller.marshal(buffer, in, 2 + 4);
@@ -72,7 +72,7 @@ public class MarshallerNGTest
 //
 //		EntityDescriptor entityDescriptor = new EntityDescriptor(in.getClass(), mCategorizer);
 //
-//		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
+//		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(16);
 //
 //		Marshaller marshaller = new Marshaller(entityDescriptor);
 //		marshaller.marshal(buffer, in, 1 + 2 + 4);

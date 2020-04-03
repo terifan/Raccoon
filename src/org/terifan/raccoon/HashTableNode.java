@@ -126,7 +126,7 @@ final class HashTableNode implements Node
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 
-		return new BlockPointer().unmarshal(new ByteArrayBuffer(mBuffer).position(aIndex * BlockPointer.SIZE));
+		return new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
 	}
 
 
@@ -134,7 +134,7 @@ final class HashTableNode implements Node
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 
-		aBlockPointer.marshal(new ByteArrayBuffer(mBuffer).position(aIndex * BlockPointer.SIZE));
+		aBlockPointer.marshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
 	}
 
 

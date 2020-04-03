@@ -23,6 +23,7 @@ import org.terifan.raccoon.util.Log;
 
 public final class TableInstance<T> implements Closeable
 {
+	public static final byte FLAG_NONE = 0;
 	public static final byte FLAG_BLOB = 1;
 
 	private final Database mDatabase;
@@ -118,7 +119,7 @@ public final class TableInstance<T> implements Closeable
 //		{
 //			try
 //			{
-//				ByteArrayBuffer buffer = new ByteArrayBuffer(entry.getValue());
+//				ByteArrayBuffer buffer = ByteArrayBuffer.wrap(entry.getValue());
 //
 //				return new BlobInputStream(getBlockAccessor(), buffer);
 //			}
@@ -139,18 +140,16 @@ public final class TableInstance<T> implements Closeable
 
 		byte[] key = getKeys(aEntity);
 		byte[] value = getNonKeys(aEntity);
-		byte type = 0;
+		byte type = FLAG_NONE;
 
 		if (key.length + value.length + 1 > mHashTable.getEntryMaximumLength() / 4)
 		{
 			type = FLAG_BLOB;
 
-			try
+			try (Blob blob = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), null, BlobOpenOption.WRITE))
 			{
-				Blob blob = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), new ByteArrayBuffer(0), BlobOpenOption.WRITE);
 				blob.write(ByteBuffer.wrap(value));
-				blob.close();
-				value = blob.getHeader();
+				value = blob.finish();
 			}
 			catch (IOException e)
 			{
@@ -177,7 +176,7 @@ public final class TableInstance<T> implements Closeable
 		{
 			try
 			{
-				Blob_.deleteBlob(getBlockAccessor(), aEntry.getValue());
+				Blob.deleteBlob(getBlockAccessor(), aEntry.getValue());
 			}
 			catch (IOException e)
 			{
@@ -196,7 +195,7 @@ public final class TableInstance<T> implements Closeable
 			byte[] key = getKeys(aEntityKey);
 			ArrayMapEntry entry = new ArrayMapEntry(key);
 
-			ByteArrayBuffer header;
+			byte[] header;
 
 			if (mHashTable.get(entry))
 			{
@@ -213,13 +212,17 @@ public final class TableInstance<T> implements Closeable
 				if (aOpenOption == BlobOpenOption.REPLACE)
 				{
 					deleteIfBlob(entry);
-				}
 
-				header = new ByteArrayBuffer(entry.getValue());
+					header = null;
+				}
+				else
+				{
+					header = entry.getValue();
+				}
 			}
 			else
 			{
-				header = new ByteArrayBuffer(0);
+				header = null;
 			}
 
 			Blob out = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), header, aOpenOption)
@@ -230,29 +233,40 @@ public final class TableInstance<T> implements Closeable
 				}
 
 				@Override
-				void onClose()
+				void onClose() throws IOException
 				{
-					Log.d("write blob entry");
-
-					mDatabase.aquireWriteLock();
 					try
 					{
-						ArrayMapEntry entry = new ArrayMapEntry(key, getHeader(), FLAG_BLOB);
+						byte[] header = finish();
 
-						if (mHashTable.put(entry))
+						if (isModified())
 						{
-							deleteIfBlob(entry);
+							Log.d("write blob entry");
+
+							mDatabase.aquireWriteLock();
+							try
+							{
+								ArrayMapEntry entry = new ArrayMapEntry(key, header, FLAG_BLOB);
+
+								if (mHashTable.put(entry))
+								{
+									deleteIfBlob(entry);
+								}
+							}
+							catch (DatabaseException e)
+							{
+								mDatabase.forceClose(e);
+								throw e;
+							}
+							finally
+							{
+								mDatabase.releaseWriteLock();
+
+							}
 						}
-					}
-					catch (DatabaseException e)
-					{
-						mDatabase.forceClose(e);
-						throw e;
 					}
 					finally
 					{
-						mDatabase.releaseWriteLock();
-
 						synchronized (TableInstance.this)
 						{
 							mCommitLocks.remove(lock);
@@ -405,7 +419,7 @@ public final class TableInstance<T> implements Closeable
 
 	void unmarshalToObjectKeys(ArrayMapEntry aBuffer, Object aOutput)
 	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getKey());
+		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aBuffer.getKey());
 
 		mTable.getMarshaller().unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_KEY);
 
@@ -415,11 +429,11 @@ public final class TableInstance<T> implements Closeable
 
 	void unmarshalToObjectValues(ArrayMapEntry aBuffer, Object aOutput)
 	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(aBuffer.getValue());
+		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aBuffer.getValue(), false);
 
 		if (aBuffer.hasFlag(FLAG_BLOB))
 		{
-			try (Blob blob = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), new ByteArrayBuffer(aBuffer.getValue()), BlobOpenOption.READ))
+			try (Blob blob = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), aBuffer.getValue(), BlobOpenOption.READ))
 			{
 				byte[] buf = new byte[(int)blob.size()];
 				blob.read(ByteBuffer.wrap(buf));
@@ -441,13 +455,13 @@ public final class TableInstance<T> implements Closeable
 
 	private byte[] getKeys(Object aInput)
 	{
-		return mTable.getMarshaller().marshal(new ByteArrayBuffer(16), aInput, Table.FIELD_CATEGORY_KEY).trim().array();
+		return mTable.getMarshaller().marshal(ByteArrayBuffer.alloc(16), aInput, Table.FIELD_CATEGORY_KEY).trim().array();
 	}
 
 
 	private byte[] getNonKeys(Object aInput)
 	{
-		ByteArrayBuffer buffer = new ByteArrayBuffer(16);
+		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(16);
 
 		Marshaller marshaller = mTable.getMarshaller();
 		marshaller.marshal(buffer, aInput, Table.FIELD_CATEGORY_DISCRIMINATOR | Table.FIELD_CATEGORY_VALUE);

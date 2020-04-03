@@ -545,7 +545,7 @@ public final class Database implements AutoCloseable
 		Log.i("updating super block");
 		Log.inc();
 
-		ByteArrayBuffer buffer = new ByteArrayBuffer(IManagedBlockDevice.APPLICATION_POINTER_MAX_SIZE);
+		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(IManagedBlockDevice.APPLICATION_POINTER_MAX_SIZE);
 		if (mSystemTableMetadata.getTableHeader() != null)
 		{
 			buffer.write(mSystemTableMetadata.getTableHeader());
@@ -654,7 +654,6 @@ public final class Database implements AutoCloseable
 			try
 			{
 				TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.CREATE);
-
 				return table.save(aEntity);
 			}
 			catch (DatabaseException e)
@@ -834,7 +833,18 @@ public final class Database implements AutoCloseable
 	 */
 	public Blob openBlob(Object aEntity, BlobOpenOption aOpenOption)
 	{
-		TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.CREATE);
+		TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), aOpenOption == BlobOpenOption.READ ? DatabaseOpenOption.OPEN : DatabaseOpenOption.CREATE);
+
+		if (table == null)
+		{
+			if (aOpenOption == BlobOpenOption.READ)
+			{
+				return null;
+			}
+
+			throw new DatabaseException("Failed to create table");
+		}
+
 		return table.openBlob(aEntity, aOpenOption);
 	}
 
@@ -1237,7 +1247,7 @@ public final class Database implements AutoCloseable
 					try
 					{
 						T instance = (T)aType.newInstance();
-						tableMetadata.getMarshaller().unmarshal(new ByteArrayBuffer(tableMetadata.getDiscriminatorKey()), instance, Table.FIELD_CATEGORY_DISCRIMINATOR);
+						tableMetadata.getMarshaller().unmarshal(ByteArrayBuffer.wrap(tableMetadata.getDiscriminatorKey()), instance, Table.FIELD_CATEGORY_DISCRIMINATOR);
 						result.add(new DiscriminatorType<>(instance));
 					}
 					catch (InstantiationException | IllegalAccessException e)
