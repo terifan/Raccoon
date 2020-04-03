@@ -228,7 +228,7 @@ public final class TableInstance<T> implements Closeable
 			Blob out = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), header, aOpenOption)
 			{
 				@Override
-				void onClose() throws IOException
+				public void close() throws IOException
 				{
 					try
 					{
@@ -266,6 +266,8 @@ public final class TableInstance<T> implements Closeable
 						{
 							mCommitLocks.remove(lock);
 						}
+
+						super.close();
 					}
 				}
 			};

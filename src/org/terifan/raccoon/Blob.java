@@ -41,12 +41,14 @@ public class Blob implements SeekableByteChannel
 	private boolean mChunkModified;
 	private int mChunkIndex;
 	private BlockPointer mBlockPointer;
+	private byte[] mHeader;
 
 
 	Blob(BlockAccessor aBlockAccessor, TransactionGroup aTransactionId, byte[] aHeader, BlobOpenOption aOpenOption) throws IOException
 	{
 		mBlockAccessor = aBlockAccessor;
 		mTransactionId = aTransactionId;
+		mHeader = aHeader;
 
 		mBuffer = new byte[CHUNK_SIZE];
 		mBlockPointsers = new HashMap<>();
@@ -228,9 +230,9 @@ public class Blob implements SeekableByteChannel
 
 	synchronized byte[] finish() throws IOException
 	{
-		if (mClosed)
+		if (mClosed || !mModified)
 		{
-			return null;
+			return mHeader;
 		}
 
 		sync(true);
@@ -289,19 +291,18 @@ public class Blob implements SeekableByteChannel
 			Log.dec();
 		}
 
+		mHeader = buf.array();
 		mClosed = true;
 
 		Log.dec();
 
-		return buf.array();
+		return mHeader;
 	}
 
 
 	@Override
-	public synchronized void close() throws IOException
+	public void close() throws IOException
 	{
-		onClose();
-
 		if (mCloseListener != null)
 		{
 			mCloseListener.call(this);
@@ -584,11 +585,6 @@ public class Blob implements SeekableByteChannel
 	public boolean isModified()
 	{
 		return mModified;
-	}
-
-
-	void onClose() throws IOException
-	{
 	}
 
 
