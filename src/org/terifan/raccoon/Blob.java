@@ -9,10 +9,12 @@ import java.nio.channels.SeekableByteChannel;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.function.Consumer;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.util.Listener;
 
 
 public class Blob implements SeekableByteChannel
@@ -30,6 +32,7 @@ public class Blob implements SeekableByteChannel
 	private HashMap<Integer,BlockPointer> mBlockPointsers;
 	private HashSet<Integer> mEmptyBlocks;
 	private boolean mClosed;
+	private Listener<Blob> mCloseListener;
 
 	private long mTotalSize;
 	private long mPosition;
@@ -183,6 +186,8 @@ public class Blob implements SeekableByteChannel
 			throw new ClosedChannelException();
 		}
 
+		throw new UnsupportedOperationException();
+
 //		if (aSize < mSize)
 //		{
 //			sync(true);
@@ -210,7 +215,7 @@ public class Blob implements SeekableByteChannel
 //				mPosition = mSize;
 //			}
 //		}
-		return this;
+//		return this;
 	}
 
 
@@ -296,6 +301,11 @@ public class Blob implements SeekableByteChannel
 	public synchronized void close() throws IOException
 	{
 		onClose();
+
+		if (mCloseListener != null)
+		{
+			mCloseListener.call(this);
+		}
 	}
 
 
@@ -500,7 +510,7 @@ public class Blob implements SeekableByteChannel
 					total += len;
 				}
 
-				return total;
+				return total == 0 ? -1 : total;
 			}
 
 
@@ -571,7 +581,7 @@ public class Blob implements SeekableByteChannel
 	}
 
 
-	boolean isModified()
+	public boolean isModified()
 	{
 		return mModified;
 	}
@@ -582,7 +592,15 @@ public class Blob implements SeekableByteChannel
 	}
 
 
-	void onException(Exception aException)
+	public Listener<Blob> getCloseListener()
 	{
+		return mCloseListener;
+	}
+
+
+	public Blob setCloseListener(Listener<Blob> aListener)
+	{
+		mCloseListener = aListener;
+		return this;
 	}
 }

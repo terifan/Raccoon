@@ -9,15 +9,45 @@ class CommitLock
 	private Blob mBlob;
 
 
-	public CommitLock(Exception aOwner)
+	public CommitLock()
 	{
-		mOwner = aOwner;
+		mOwner = new Exception();
 	}
 
 
 	public void setBlob(Blob aBlob)
 	{
 		mBlob = aBlob;
+	}
+
+
+	public String getOwner()
+	{
+		StringBuilder sb = new StringBuilder();
+
+		try
+		{
+			boolean found = false;
+			StackTraceElement prev = null;
+			for (StackTraceElement el : mOwner.getStackTrace())
+			{
+				if (found || !el.getClassName().startsWith("org.terifan.raccoon."))
+				{
+					if (!found && prev != null)
+					{
+						sb.append(prev.getClassName() + "." + prev.getMethodName() + "(..)");
+					}
+					found = true;
+					sb.append("\n\tat " + el.toString());
+				}
+				prev = el;
+			}
+		}
+		catch (Throwable e)
+		{
+		}
+
+		return sb.length() == 0 ? "unknown" : sb.toString();
 	}
 
 

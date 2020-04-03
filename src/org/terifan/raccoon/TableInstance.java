@@ -190,7 +190,7 @@ public final class TableInstance<T> implements Closeable
 	{
 		try
 		{
-			CommitLock lock = new CommitLock(new Exception());
+			CommitLock lock = new CommitLock();
 
 			byte[] key = getKeys(aEntityKey);
 			ArrayMapEntry entry = new ArrayMapEntry(key);
@@ -227,11 +227,6 @@ public final class TableInstance<T> implements Closeable
 
 			Blob out = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), header, aOpenOption)
 			{
-				@Override
-				void onException(Exception aException)
-				{
-				}
-
 				@Override
 				void onClose() throws IOException
 				{
@@ -370,7 +365,13 @@ public final class TableInstance<T> implements Closeable
 		{
 			if (!mCommitLocks.isEmpty())
 			{
-				throw new CommitBlockedException("A table cannot be commited while a stream is open.");
+				StringBuilder sb = new StringBuilder();
+				for (CommitLock cl : mCommitLocks)
+				{
+					sb.append("\nCaused by calling method: " + cl.getOwner());
+				}
+
+				throw new CommitBlockedException("A table cannot be committed while a stream is open." + sb.toString());
 			}
 		}
 
