@@ -9,7 +9,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.function.Consumer;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -72,6 +71,10 @@ public class Blob implements SeekableByteChannel
 		if (aOpenOption == BlobOpenOption.APPEND)
 		{
 			mPosition = mTotalSize;
+		}
+		if (aOpenOption == BlobOpenOption.APPEND || aOpenOption == BlobOpenOption.WRITE)
+		{
+			mChunkIndex = -1; // force sync to load the block at mPosition
 		}
 	}
 

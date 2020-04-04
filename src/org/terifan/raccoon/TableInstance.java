@@ -106,33 +106,6 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-//	public synchronized InputStream read(T aEntity)
-//	{
-//		ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
-//
-//		if (!mHashTable.get(entry))
-//		{
-//			return null;
-//		}
-//
-//		if (entry.hasFlag(FLAG_BLOB))
-//		{
-//			try
-//			{
-//				ByteArrayBuffer buffer = ByteArrayBuffer.wrap(entry.getValue());
-//
-//				return new BlobInputStream(getBlockAccessor(), buffer);
-//			}
-//			catch (IOException e)
-//			{
-//				throw new DatabaseException(e);
-//			}
-//		}
-//
-//		return new ByteArrayInputStream(entry.getValue());
-//	}
-
-
 	public boolean save(T aEntity)
 	{
 		Log.i("save %s", aEntity.getClass());
@@ -232,11 +205,11 @@ public final class TableInstance<T> implements Closeable
 				{
 					try
 					{
-						byte[] header = finish();
-
 						if (isModified())
 						{
 							Log.d("write blob entry");
+
+							byte[] header = finish();
 
 							mDatabase.aquireWriteLock();
 							try
@@ -286,30 +259,6 @@ public final class TableInstance<T> implements Closeable
 			throw new DatabaseIOException(e);
 		}
 	}
-
-
-//	public boolean save(T aEntity, InputStream aInputStream)
-//	{
-//		try (BlobOutputStream bos = new BlobOutputStream(getBlockAccessor(), mDatabase.getTransactionId(), null))
-//		{
-//			Streams.transfer(aInputStream, bos);
-//
-//			byte[] key = getKeys(aEntity);
-//
-//			ArrayMapEntry entry = new ArrayMapEntry(key, bos.finish(), FLAG_BLOB);
-//
-//			if (mHashTable.put(entry))
-//			{
-//				deleteIfBlob(entry);
-//			}
-//
-//			return entry.getValue() == null;
-//		}
-//		catch (IOException e)
-//		{
-//			throw new DatabaseException(e);
-//		}
-//	}
 
 
 	public boolean remove(T aEntity)
