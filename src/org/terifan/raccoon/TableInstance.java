@@ -2,7 +2,6 @@ package org.terifan.raccoon;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -215,11 +214,7 @@ public final class TableInstance<T> implements Closeable
 							try
 							{
 								ArrayMapEntry entry = new ArrayMapEntry(key, header, FLAG_BLOB);
-
-								if (mHashTable.put(entry))
-								{
-									deleteIfBlob(entry);
-								}
+								mHashTable.put(entry);
 							}
 							catch (DatabaseException e)
 							{

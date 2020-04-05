@@ -87,7 +87,7 @@ class SpaceMap
 	{
 		if (!mRangeMap.isFree((int)aBlockIndex, aBlockCount))
 		{
-			throw new IOException("Range not allocted: " + aBlockIndex + " +" + aBlockCount);
+			throw new IOException("Range not allocated: " + aBlockIndex + " +" + aBlockCount);
 		}
 	}
 

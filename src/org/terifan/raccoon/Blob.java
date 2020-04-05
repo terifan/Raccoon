@@ -28,7 +28,7 @@ public class Blob implements SeekableByteChannel
 	private TransactionGroup mTransactionId;
 	private ByteArrayBuffer mPersistedPointerBuffer;
 	private ByteArrayBuffer mPersistedIndirectPointerBuffer;
-	private HashMap<Integer,BlockPointer> mBlockPointsers;
+	private HashMap<Integer,BlockPointer> mPendingBlockPointsers;
 	private HashSet<Integer> mEmptyBlocks;
 	private boolean mClosed;
 	private Listener<Blob> mCloseListener;
@@ -50,7 +50,7 @@ public class Blob implements SeekableByteChannel
 		mHeader = aHeader;
 
 		mBuffer = new byte[CHUNK_SIZE];
-		mBlockPointsers = new HashMap<>();
+		mPendingBlockPointsers = new HashMap<>();
 		mEmptyBlocks = new HashSet<>();
 
 		if (aHeader != null)
@@ -247,24 +247,29 @@ public class Blob implements SeekableByteChannel
 		ByteArrayBuffer buf = ByteArrayBuffer.alloc(HEADER_SIZE + BlockPointer.SIZE * pointerCount, true);
 		buf.limit(buf.capacity());
 
+		if (LOG) System.out.println("CLOSE +" + mTotalSize);
+
 		buf.writeInt64(mTotalSize);
 
 		for (int i = 0; i < pointerCount; i++)
 		{
 			if (mEmptyBlocks.contains(i))
 			{
+				if (LOG) System.out.println("\tempty");
 				buf.write(new byte[BlockPointer.SIZE]);
 			}
 			else
 			{
-				BlockPointer bp = mBlockPointsers.get(i);
+				BlockPointer bp = mPendingBlockPointsers.get(i);
 				if (bp != null)
 				{
 					bp.marshal(buf);
+					if (LOG) System.out.println("\tnew " + bp);
 				}
 				else if (mPersistedPointerBuffer != null && mPersistedPointerBuffer.capacity() > buf.position())
 				{
 					mPersistedPointerBuffer.position(HEADER_SIZE + i * BlockPointer.SIZE).copyTo(buf, BlockPointer.SIZE);
+					if (LOG) System.out.println("\told " + new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mPersistedPointerBuffer.array()).position(HEADER_SIZE + i * BlockPointer.SIZE)));
 				}
 			}
 		}
@@ -315,7 +320,7 @@ public class Blob implements SeekableByteChannel
 
 	private void sync(boolean aFinal) throws IOException
 	{
-		if (LOG) System.out.println("\tsync pos: " + mPosition + ", size: " + mTotalSize + ", final: " + aFinal + ", posChunk: " + (mPosition % CHUNK_SIZE) + ", indexChunk:" + mPosition / CHUNK_SIZE);
+		if (LOG) System.out.println("\tsync pos: " + mPosition + ", size: " + mTotalSize + ", final: " + aFinal + ", posChunk: " + (mPosition % CHUNK_SIZE) + ", indexChunk:" + mPosition / CHUNK_SIZE + ", mod: " + mChunkModified);
 
 		if ((mPosition % CHUNK_SIZE) == 0 || mPosition / CHUNK_SIZE != mChunkIndex || aFinal)
 		{
@@ -325,7 +330,7 @@ public class Blob implements SeekableByteChannel
 
 				if (LOG) System.out.println("\tWriting chunk " + mChunkIndex + " " + len + " bytes");
 
-				BlockPointer old = mBlockPointsers.remove(mChunkIndex);
+				BlockPointer old = mPendingBlockPointsers.remove(mChunkIndex);
 				if (old != null)
 				{
 					mBlockAccessor.freeBlock(old);
@@ -339,7 +344,7 @@ public class Blob implements SeekableByteChannel
 				else
 				{
 					BlockPointer bp = mBlockAccessor.writeBlock(mBuffer, 0, len, mTransactionId.get(), BlockType.BLOB_DATA, 0);
-					mBlockPointsers.put(mChunkIndex, bp);
+					mPendingBlockPointsers.put(mChunkIndex, bp);
 				}
 			}
 
@@ -350,7 +355,7 @@ public class Blob implements SeekableByteChannel
 				mChunkIndex = (int)(mPosition / CHUNK_SIZE);
 				mChunkModified = false;
 
-				mBlockPointer = mBlockPointsers.get(mChunkIndex);
+				mBlockPointer = mPendingBlockPointsers.get(mChunkIndex);
 
 				if (mBlockPointer == null && !mEmptyBlocks.contains(mChunkIndex))
 				{
