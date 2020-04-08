@@ -32,6 +32,12 @@ final class HashTableNode implements Node
 		mPointerCount = mBuffer.length / BlockPointer.SIZE;
 		mGCEnabled = true;
 		mBlockPointer = aBlockPointer;
+
+		assert mHashTable.mPerformanceTool.tick("readNode");
+
+		assert aBlockPointer.getBlockType() == BlockType.INDEX;
+
+		mHashTable.mCost.mReadBlockNode++;
 	}
 
 
@@ -212,10 +218,10 @@ final class HashTableNode implements Node
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				return mHashTable.readNode(blockPointer).getValue(aKey, aLevel + 1, aEntry);
+				return new HashTableNode(mHashTable, blockPointer).getValue(aKey, aLevel + 1, aEntry);
 			case LEAF:
 				mHashTable.mCost.mValueGet++;
-				HashTableLeaf leaf = mHashTable.readLeaf(blockPointer);
+				HashTableLeaf leaf = new HashTableLeaf(mHashTable, blockPointer);
 				boolean result = leaf.get(aEntry);
 				leaf.gc();
 				return result;
@@ -244,14 +250,15 @@ final class HashTableNode implements Node
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				HashTableNode node = readNode(blockPointer);
+				HashTableNode node = mHashTable.mProvider.read(blockPointer);
 				oldValue = node.putValue(aEntry, aKey, aLevel + 1);
 				mHashTable.freeBlock(blockPointer);
 				setPointer(index, mHashTable.writeBlock(node, blockPointer.getRange()));
 				node.gc();
 				break;
 			case LEAF:
-				oldValue = readLeaf(blockPointer).putValueLeaf(this, blockPointer, index, aEntry, aLevel, aKey);
+				HashTableLeaf leaf = mHashTable.mProvider.read(blockPointer);
+				oldValue = leaf.putValueLeaf(this, blockPointer, index, aEntry, aLevel, aKey);
 				break;
 			case HOLE:
 				oldValue = upgradeHoleToLeaf(aEntry, blockPointer, index);
@@ -264,18 +271,6 @@ final class HashTableNode implements Node
 		Log.dec();
 
 		return oldValue;
-	}
-
-
-	HashTableLeaf readLeaf(BlockPointer aBlockPointer)
-	{
-		return new HashTableLeaf(mHashTable, aBlockPointer);
-	}
-
-
-	HashTableNode readNode(BlockPointer aBlockPointer)
-	{
-		return new HashTableNode(mHashTable, aBlockPointer);
 	}
 
 
@@ -321,7 +316,7 @@ final class HashTableNode implements Node
 		{
 			case INDEX:
 			{
-				HashTableNode node = readNode(blockPointer);
+				HashTableNode node = mHashTable.mProvider.read(blockPointer);
 				if (node.removeValue(aKey, aLevel + 1, aEntry))
 				{
 					mHashTable.freeBlock(blockPointer);
@@ -333,7 +328,7 @@ final class HashTableNode implements Node
 			}
 			case LEAF:
 			{
-				HashTableLeaf node = readLeaf(blockPointer);
+				HashTableLeaf node = mHashTable.mProvider.read(blockPointer);
 				boolean found = node.remove(aEntry);
 
 				if (found)
@@ -365,7 +360,8 @@ final class HashTableNode implements Node
 
 			if (next != null && next.getBlockType() == BlockType.INDEX)
 			{
-				readNode(next).visitNode(aVisitor);
+				HashTableNode node = mHashTable.mProvider.read(next);
+				node.visitNode(aVisitor);
 			}
 
 			aVisitor.visit(i, next);

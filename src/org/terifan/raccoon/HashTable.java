@@ -19,7 +19,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	/*private*/ final String mTableName;
 	final TransactionGroup mTransactionId;
 	/*private*/ BlockAccessor mBlockAccessor;
-	private HashTableRootNode mRoot;
+	private HashTableRoot mRoot;
 	int mNodeSize;
 	int mLeafSize;
 	int mPointersPerNode;
@@ -30,6 +30,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	private boolean mCommitChangesToBlockDevice;
 	/*private*/ final PerformanceTool mPerformanceTool;
 	/*private*/ int mModCount;
+	HashTableNodeProvider mProvider;
 
 
 	/**
@@ -44,6 +45,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
 		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam, aTableParam.getBlockReadCacheSize());
 
+		mProvider = new HashTableNodeProvider(this);
+
 		if (aTableHeader == null)
 		{
 			Log.i("create table %s", mTableName);
@@ -54,7 +57,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			mHashSeed = new SecureRandom().nextInt();
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 
-			mRoot = new HashTableRootNode(this, mNodeSize, mLeafSize, mPointersPerNode);
+			mRoot = new HashTableRoot(this, mNodeSize, mLeafSize, mPointersPerNode);
 			mWasEmptyInstance = true;
 			mChanged = true;
 		}
@@ -63,7 +66,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			Log.i("open table %s", mTableName);
 			Log.inc();
 
-			mRoot = new HashTableRootNode(this);
+			mRoot = new HashTableRoot(this);
 
 			unmarshalHeader(aTableHeader);
 
@@ -283,35 +286,21 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 			if (aBlockPointer != null && aBlockPointer.getBlockType() == BlockType.LEAF)
 			{
-				result.set(result.get() + readLeaf(aBlockPointer).size());
+				HashTableLeaf leaf;
+				if (aBlockPointer.getBlockIndex0() == mRoot.mRootBlockPointer.getBlockIndex0() && mRoot.mRootMap != null)
+				{
+					leaf = mRoot.mRootMap;
+				}
+				else
+				{
+					leaf = new HashTableLeaf(this, aBlockPointer);
+				}
+
+				result.set(result.get() + leaf.size());
 			}
 		});
 
 		return result.get();
-	}
-
-
-	HashTableLeaf readLeaf(BlockPointer aBlockPointer)
-	{
-		assert mPerformanceTool.tick("readLeaf");
-
-		assert aBlockPointer.getBlockType() == BlockType.LEAF;
-
-		mCost.mReadBlockLeaf++;
-
-		return mRoot.readLeaf(aBlockPointer);
-	}
-
-
-	HashTableNode readNode(BlockPointer aBlockPointer)
-	{
-		assert mPerformanceTool.tick("readNode");
-
-		assert aBlockPointer.getBlockType() == BlockType.INDEX;
-
-		mCost.mReadBlockNode++;
-
-		return mRoot.readNode(aBlockPointer);
 	}
 
 

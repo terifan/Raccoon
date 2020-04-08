@@ -7,24 +7,24 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public class HashTableRootNode
+public class HashTableRoot
 {
-	private HashTableLeaf mRootMap;
+	HashTableLeaf mRootMap;
 	private HashTableNode mRootNode;
-	private BlockPointer mRootBlockPointer;
+	BlockPointer mRootBlockPointer;
 	private HashTable mHashTable;
 	private int mLeafSize;
 	private int mPointersPerNode;
 	private int mNodeSize;
 
 
-	HashTableRootNode(HashTable aHashTable)
+	HashTableRoot(HashTable aHashTable)
 	{
 		mHashTable = aHashTable;
 	}
 
 
-	HashTableRootNode(HashTable aHashTable, int aNodeSize, int aLeafSize, int aPointersPerNode)
+	HashTableRoot(HashTable aHashTable, int aNodeSize, int aLeafSize, int aPointersPerNode)
 	{
 		mHashTable = aHashTable;
 		mNodeSize = aNodeSize;
@@ -41,11 +41,11 @@ public class HashTableRootNode
 
 		if (mRootBlockPointer.getBlockType() == BlockType.LEAF)
 		{
-			mRootMap = mHashTable.readLeaf(mRootBlockPointer);
+			mRootMap = new HashTableLeaf(mHashTable, mRootBlockPointer);
 		}
 		else
 		{
-			mRootNode = mHashTable.readNode(mRootBlockPointer).setGCEnabled(false);
+			mRootNode = new HashTableNode(mHashTable, mRootBlockPointer).setGCEnabled(false);
 		}
 	}
 
@@ -55,17 +55,6 @@ public class HashTableRootNode
 		mNodeSize = aNodeSize;
 		mLeafSize = aLeafSize;
 		mPointersPerNode = aPointersPerNode;
-	}
-
-
-	public boolean get(ArrayMapEntry aEntry)
-	{
-		if (mRootMap != null)
-		{
-			return mRootMap.get(aEntry);
-		}
-
-		return mRootNode.getValue(aEntry.getKey(), 0, aEntry);
 	}
 
 
@@ -79,6 +68,17 @@ public class HashTableRootNode
 	{
 		mRootBlockPointer = new BlockPointer();
 		mRootBlockPointer.unmarshal(aBuffer);
+	}
+
+
+	public boolean get(ArrayMapEntry aEntry)
+	{
+		if (mRootMap != null)
+		{
+			return mRootMap.get(aEntry);
+		}
+
+		return mRootNode.getValue(aEntry.getKey(), 0, aEntry);
 	}
 
 
@@ -230,32 +230,10 @@ public class HashTableRootNode
 	{
 		if (mRootNode != null)
 		{
-			readNode(mRootBlockPointer).visitNode(aVisitor);
+			mRootNode.visitNode(aVisitor);
 		}
 
 		aVisitor.visit(-1, mRootBlockPointer); // start visit at root level
-	}
-
-
-	HashTableLeaf readLeaf(BlockPointer aBlockPointer)
-	{
-		if (aBlockPointer.getBlockIndex0() == mRootBlockPointer.getBlockIndex0() && mRootMap != null)
-		{
-			return mRootMap;
-		}
-
-		return new HashTableLeaf(mHashTable, aBlockPointer);
-	}
-
-
-	HashTableNode readNode(BlockPointer aBlockPointer)
-	{
-		if (aBlockPointer.getBlockIndex0() == mRootBlockPointer.getBlockIndex0() && mRootNode != null)
-		{
-			return mRootNode;
-		}
-
-		return new HashTableNode(mHashTable, aBlockPointer);
 	}
 
 

@@ -25,6 +25,12 @@ class HashTableLeaf extends ArrayMap implements Node
 
 		mHashTable = aHashTable;
 		mBlockPointer = aBlockPointer;
+
+		assert mHashTable.mPerformanceTool.tick("readLeaf");
+
+		assert aBlockPointer.getBlockType() == BlockType.LEAF;
+
+		mHashTable.mCost.mReadBlockLeaf++;
 	}
 
 
