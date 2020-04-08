@@ -480,4 +480,22 @@ final class HashTableNode implements Node
 				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
 		}
 	}
+
+
+	void visitNode(HashTableVisitor aVisitor)
+	{
+		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
+		{
+			BlockPointer next = getPointer(i);
+
+			if (next != null && next.getBlockType() == BlockType.INDEX)
+			{
+				readNode(next).visitNode(aVisitor);
+			}
+
+			aVisitor.visit(i, next);
+		}
+
+		gc();
+	}
 }

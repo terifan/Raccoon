@@ -230,30 +230,10 @@ public class HashTableRootNode
 	{
 		if (mRootNode != null)
 		{
-			visitNode(aVisitor, mRootBlockPointer);
+			readNode(mRootBlockPointer).visitNode(aVisitor);
 		}
 
 		aVisitor.visit(-1, mRootBlockPointer); // start visit at root level
-	}
-
-
-	void visitNode(HashTableVisitor aVisitor, BlockPointer aBlockPointer)
-	{
-		HashTableNode node = readNode(aBlockPointer);
-
-		for (int i = 0; i < mPointersPerNode; i++)
-		{
-			BlockPointer next = node.getPointer(i);
-
-			if (next != null && next.getBlockType() == BlockType.INDEX)
-			{
-				visitNode(aVisitor, next);
-			}
-
-			aVisitor.visit(i, next);
-		}
-
-		node.gc();
 	}
 
 
