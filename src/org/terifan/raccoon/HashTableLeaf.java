@@ -70,6 +70,48 @@ class HashTableLeaf extends ArrayMap implements Node
 	}
 
 
+	boolean splitLeaf(BlockPointer aBlockPointer, int aIndex, int aLevel, HashTableNode aNode)
+	{
+		assert mHashTable.mPerformanceTool.tick("splitLeaf");
+
+		if (aBlockPointer.getRange() == 1)
+		{
+			return false;
+		}
+
+		assert aBlockPointer.getRange() >= 2;
+
+		mHashTable.mCost.mTreeTraversal++;
+		mHashTable.mCost.mBlockSplit++;
+
+		Log.inc();
+		Log.d("split leaf");
+		Log.inc();
+
+		mHashTable.freeBlock(aBlockPointer);
+
+		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, mHashTable.mLeafSize);
+		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, mHashTable.mLeafSize);
+		int halfRange = aBlockPointer.getRange() / 2;
+
+		divideLeafEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
+
+		// create nodes pointing to leafs
+		BlockPointer lowIndex = mHashTable.writeIfNotEmpty(lowLeaf, halfRange);
+		BlockPointer highIndex = mHashTable.writeIfNotEmpty(highLeaf, halfRange);
+
+		aNode.split(aIndex, lowIndex, highIndex);
+
+		lowLeaf.gc();
+		highLeaf.gc();
+
+		Log.dec();
+		Log.dec();
+
+		return true;
+	}
+
+
 	private void divideLeafEntries(int aLevel, int aHalfRange, HashTableLeaf aLowLeaf, HashTableLeaf aHighLeaf)
 	{
 		assert mHashTable.mPerformanceTool.tick("divideLeafEntries");

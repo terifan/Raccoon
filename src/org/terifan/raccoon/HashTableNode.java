@@ -276,13 +276,13 @@ final class HashTableNode implements Node
 
 			mHashTable.mCost.mValuePut++;
 		}
-		else if (splitLeaf(map, aBlockPointer, aIndex, aLevel, this))
+		else if (map.splitLeaf(aBlockPointer, aIndex, aLevel, this))
 		{
 			oldValue = putValue(aEntry, aKey, aLevel); // recursive put
 		}
 		else
 		{
-			HashTableNode node = splitLeaf(aBlockPointer, map, aLevel + 1);
+			HashTableNode node = map.splitLeaf(aBlockPointer, aLevel + 1);
 
 			oldValue = node.putValue(aEntry, aKey, aLevel + 1); // recursive put
 
@@ -333,103 +333,6 @@ final class HashTableNode implements Node
 		Log.dec();
 
 		return oldValue;
-	}
-
-
-	HashTableNode splitLeaf(BlockPointer aBlockPointer, HashTableLeaf aLeafNode, int aLevel)
-	{
-		assert mHashTable.mPerformanceTool.tick("splitLeaf");
-
-		Log.inc();
-		Log.d("split leaf");
-		Log.inc();
-
-		mHashTable.mCost.mTreeTraversal++;
-		mHashTable.mCost.mBlockSplit++;
-
-		mHashTable.freeBlock(aBlockPointer);
-
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, mHashTable.mLeafSize);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, mHashTable.mLeafSize);
-		int halfRange = mHashTable.mPointersPerNode / 2;
-
-		divideLeafEntries(aLeafNode, aLevel, halfRange, lowLeaf, highLeaf);
-
-		// create nodes pointing to leafs
-		BlockPointer lowIndex = mHashTable.writeIfNotEmpty(lowLeaf, halfRange);
-		BlockPointer highIndex = mHashTable.writeIfNotEmpty(highLeaf, halfRange);
-
-		HashTableNode node = new HashTableNode(mHashTable, new byte[mHashTable.mNodeSize]);
-		node.setPointer(0, lowIndex);
-		node.setPointer(halfRange, highIndex);
-
-		lowLeaf.gc();
-		highLeaf.gc();
-
-		Log.dec();
-		Log.dec();
-
-		return node;
-	}
-
-
-	boolean splitLeaf(HashTableLeaf aMap, BlockPointer aBlockPointer, int aIndex, int aLevel, HashTableNode aNode)
-	{
-		assert mHashTable.mPerformanceTool.tick("splitLeaf");
-
-		if (aBlockPointer.getRange() == 1)
-		{
-			return false;
-		}
-
-		assert aBlockPointer.getRange() >= 2;
-
-		mHashTable.mCost.mTreeTraversal++;
-		mHashTable.mCost.mBlockSplit++;
-
-		Log.inc();
-		Log.d("split leaf");
-		Log.inc();
-
-		mHashTable.freeBlock(aBlockPointer);
-
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, mHashTable.mLeafSize);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, mHashTable.mLeafSize);
-		int halfRange = aBlockPointer.getRange() / 2;
-
-		divideLeafEntries(aMap, aLevel, aIndex + halfRange, lowLeaf, highLeaf);
-
-		// create nodes pointing to leafs
-		BlockPointer lowIndex = mHashTable.writeIfNotEmpty(lowLeaf, halfRange);
-		BlockPointer highIndex = mHashTable.writeIfNotEmpty(highLeaf, halfRange);
-
-		aNode.split(aIndex, lowIndex, highIndex);
-
-		lowLeaf.gc();
-		highLeaf.gc();
-
-		Log.dec();
-		Log.dec();
-
-		return true;
-	}
-
-
-	private void divideLeafEntries(HashTableLeaf aMap, int aLevel, int aHalfRange, HashTableLeaf aLowLeaf, HashTableLeaf aHighLeaf)
-	{
-		assert mHashTable.mPerformanceTool.tick("divideLeafEntries");
-
-		for (ArrayMapEntry entry : aMap)
-		{
-			if (mHashTable.computeIndex(entry.getKey(), aLevel) < aHalfRange)
-			{
-				aLowLeaf.put(entry);
-			}
-			else
-			{
-				aHighLeaf.put(entry);
-			}
-		}
 	}
 
 
