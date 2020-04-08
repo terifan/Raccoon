@@ -101,86 +101,8 @@ public class HashTableRootNode
 
 		if (mRootMap == null)
 		{
-			putValue(aEntry, aEntry.getKey(), 0, mRootNode);
+			mRootNode.putValue(aEntry, aEntry.getKey(), 0);
 		}
-	}
-
-
-	byte[] putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel, HashTableNode aNode)
-	{
-		assert mHashTable.mPerformanceTool.tick("putValue");
-
-		Log.d("put %s value", mHashTable.mTableName);
-		Log.inc();
-
-		mHashTable.mCost.mTreeTraversal++;
-
-		int index = aNode.findPointer(mHashTable.computeIndex(aKey, aLevel));
-		BlockPointer blockPointer = aNode.getPointer(index);
-		byte[] oldValue;
-
-		switch (blockPointer.getBlockType())
-		{
-			case INDEX:
-				HashTableNode node = readNode(blockPointer);
-				oldValue = putValue(aEntry, aKey, aLevel + 1, node);
-				mHashTable.freeBlock(blockPointer);
-				aNode.setPointer(index, mHashTable.writeBlock(node, blockPointer.getRange()));
-				node.gc();
-				break;
-			case LEAF:
-				oldValue = putValueLeaf(blockPointer, index, aEntry, aLevel, aNode, aKey);
-				break;
-			case HOLE:
-				oldValue = upgradeHoleToLeaf(aEntry, aNode, blockPointer, index);
-				break;
-			case FREE:
-			default:
-				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
-		}
-
-		Log.dec();
-
-		return oldValue;
-	}
-
-
-	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, ArrayMapEntry aEntry, int aLevel, HashTableNode aNode, byte[] aKey)
-	{
-		assert mHashTable.mPerformanceTool.tick("putValueLeaf");
-
-		mHashTable.mCost.mTreeTraversal++;
-
-		HashTableLeaf map = readLeaf(aBlockPointer);
-
-		byte[] oldValue;
-
-		if (map.put(aEntry))
-		{
-			oldValue = aEntry.getValue();
-
-			mHashTable.freeBlock(aBlockPointer);
-
-			aNode.setPointer(aIndex, mHashTable.writeBlock(map, aBlockPointer.getRange()));
-
-			mHashTable.mCost.mValuePut++;
-		}
-		else if (splitLeaf(map, aBlockPointer, aIndex, aLevel, aNode))
-		{
-			oldValue = putValue(aEntry, aKey, aLevel, aNode); // recursive put
-		}
-		else
-		{
-			HashTableNode node = splitLeaf(aBlockPointer, map, aLevel + 1);
-
-			oldValue = putValue(aEntry, aKey, aLevel + 1, node); // recursive put
-
-			aNode.setPointer(aIndex, mHashTable.writeBlock(node, aBlockPointer.getRange()));
-
-			node.gc();
-		}
-
-		return oldValue;
 	}
 
 
@@ -193,87 +115,9 @@ public class HashTableRootNode
 		}
 		else
 		{
-			modified = removeValue(aEntry.getKey(), 0, aEntry, mRootNode);
+			modified = mRootNode.removeValue(aEntry.getKey(), 0, aEntry);
 		}
 		return modified;
-	}
-
-
-	boolean removeValue(byte[] aKey, int aLevel, ArrayMapEntry aEntry, HashTableNode aNode)
-	{
-		assert mHashTable.mPerformanceTool.tick("removeValue");
-
-		mHashTable.mCost.mTreeTraversal++;
-
-		int index = aNode.findPointer(mHashTable.computeIndex(aKey, aLevel));
-		BlockPointer blockPointer = aNode.getPointer(index);
-
-		switch (blockPointer.getBlockType())
-		{
-			case INDEX:
-			{
-				HashTableNode node = readNode(blockPointer);
-				if (removeValue(aKey, aLevel + 1, aEntry, node))
-				{
-					mHashTable.freeBlock(blockPointer);
-					BlockPointer newBlockPointer = mHashTable.writeBlock(node, blockPointer.getRange());
-					aNode.setPointer(index, newBlockPointer);
-					return true;
-				}
-				return false;
-			}
-			case LEAF:
-			{
-				HashTableLeaf node = readLeaf(blockPointer);
-				boolean found = node.remove(aEntry);
-
-				if (found)
-				{
-					mHashTable.mCost.mEntityRemove++;
-
-					mHashTable.freeBlock(blockPointer);
-					BlockPointer newBlockPointer = mHashTable.writeBlock(node, blockPointer.getRange());
-					aNode.setPointer(index, newBlockPointer);
-				}
-
-				node.gc();
-				return found;
-			}
-			case HOLE:
-				return false;
-			case FREE:
-			default:
-				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
-		}
-	}
-
-
-	byte[] upgradeHoleToLeaf(ArrayMapEntry aEntry, HashTableNode aNode, BlockPointer aBlockPointer, int aIndex)
-	{
-		assert mHashTable.mPerformanceTool.tick("upgradeHoleToLeaf");
-
-		Log.d("upgrade hole to leaf");
-		Log.inc();
-
-		mHashTable.mCost.mTreeTraversal++;
-
-		HashTableLeaf node = new HashTableLeaf(mLeafSize);
-
-		if (!node.put(aEntry))
-		{
-			throw new DatabaseException("Failed to upgrade hole to leaf");
-		}
-
-		byte[] oldValue = aEntry.getValue();
-
-		BlockPointer blockPointer = mHashTable.writeBlock(node, aBlockPointer.getRange());
-		aNode.setPointer(aIndex, blockPointer);
-
-		node.gc();
-
-		Log.dec();
-
-		return oldValue;
 	}
 
 
@@ -311,48 +155,6 @@ public class HashTableRootNode
 		Log.dec();
 
 		return node;
-	}
-
-
-	boolean splitLeaf(HashTableLeaf aMap, BlockPointer aBlockPointer, int aIndex, int aLevel, HashTableNode aNode)
-	{
-		assert mHashTable.mPerformanceTool.tick("splitLeaf");
-
-		if (aBlockPointer.getRange() == 1)
-		{
-			return false;
-		}
-
-		assert aBlockPointer.getRange() >= 2;
-
-		mHashTable.mCost.mTreeTraversal++;
-		mHashTable.mCost.mBlockSplit++;
-
-		Log.inc();
-		Log.d("split leaf");
-		Log.inc();
-
-		mHashTable.freeBlock(aBlockPointer);
-
-		HashTableLeaf lowLeaf = new HashTableLeaf(mLeafSize);
-		HashTableLeaf highLeaf = new HashTableLeaf(mLeafSize);
-		int halfRange = aBlockPointer.getRange() / 2;
-
-		divideLeafEntries(aMap, aLevel, aIndex + halfRange, lowLeaf, highLeaf);
-
-		// create nodes pointing to leafs
-		BlockPointer lowIndex = mHashTable.writeIfNotEmpty(lowLeaf, halfRange);
-		BlockPointer highIndex = mHashTable.writeIfNotEmpty(highLeaf, halfRange);
-
-		aNode.split(aIndex, lowIndex, highIndex);
-
-		lowLeaf.gc();
-		highLeaf.gc();
-
-		Log.dec();
-		Log.dec();
-
-		return true;
 	}
 
 
