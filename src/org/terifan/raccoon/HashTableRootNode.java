@@ -30,7 +30,7 @@ public class HashTableRootNode
 		mNodeSize = aNodeSize;
 		mLeafSize = aLeafSize;
 		mPointersPerNode = aPointersPerNode;
-		mRootMap = new HashTableLeaf(mHashTable, aLeafSize);
+		mRootMap = new HashTableLeaf(mHashTable);
 		mRootBlockPointer = mHashTable.writeBlock(mRootMap, aPointersPerNode);
 	}
 
@@ -167,7 +167,7 @@ public class HashTableRootNode
 			Log.d("rollback empty");
 
 			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
-			mRootMap = new HashTableLeaf(mHashTable, mLeafSize);
+			mRootMap = new HashTableLeaf(mHashTable);
 		}
 		else
 		{
@@ -197,7 +197,7 @@ public class HashTableRootNode
 			});
 
 			mRootNode = null;
-			mRootMap = new HashTableLeaf(mHashTable, mLeafSize);
+			mRootMap = new HashTableLeaf(mHashTable);
 		}
 
 		mHashTable.freeBlock(mRootBlockPointer);
@@ -244,7 +244,7 @@ public class HashTableRootNode
 			return mRootMap;
 		}
 
-		return new HashTableLeaf(mHashTable, mHashTable.readBlock(aBlockPointer));
+		return new HashTableLeaf(mHashTable, aBlockPointer);
 	}
 
 
@@ -255,7 +255,7 @@ public class HashTableRootNode
 			return mRootNode;
 		}
 
-		return new HashTableNode(mHashTable, mHashTable.readBlock(aBlockPointer));
+		return new HashTableNode(mHashTable, aBlockPointer);
 	}
 
 
@@ -269,15 +269,14 @@ public class HashTableRootNode
 	{
 		assert mHashTable.mPerformanceTool.tick("scan");
 
-		byte[] buffer = mHashTable.mBlockAccessor.readBlock(aBlockPointer);
-
 		switch (aBlockPointer.getBlockType())
 		{
 			case INDEX:
+			{
 				aScanResult.enterNode(aBlockPointer);
 				aScanResult.indexBlocks++;
 
-				HashTableNode indexNode = new HashTableNode(mHashTable, buffer);
+				HashTableNode indexNode = new HashTableNode(mHashTable, aBlockPointer);
 
 				for (int i = 0; i < indexNode.getPointerCount(); i++)
 				{
@@ -297,10 +296,12 @@ public class HashTableRootNode
 				}
 				aScanResult.exitNode();
 				break;
+			}
 			case LEAF:
-				HashTableLeaf leafNode = new HashTableLeaf(mHashTable, buffer);
+			{
+				HashTableLeaf leafNode = new HashTableLeaf(mHashTable, aBlockPointer);
 
-				aScanResult.enterLeaf(aBlockPointer, buffer);
+				aScanResult.enterLeaf(aBlockPointer, leafNode.array());
 
 				aScanResult.records += leafNode.size();
 
@@ -329,8 +330,12 @@ public class HashTableRootNode
 				aScanResult.exitLeaf();
 
 				break;
+			}
 			case BLOB_INDEX:
+			{
 				aScanResult.blobIndices++;
+
+				byte[] buffer = mHashTable.mBlockAccessor.readBlock(aBlockPointer);
 
 				ByteArrayBuffer byteArrayBuffer = ByteArrayBuffer.wrap(buffer);
 				while (byteArrayBuffer.remaining() > 0)
@@ -342,12 +347,15 @@ public class HashTableRootNode
 					aScanResult.exitBlob();
 				}
 				break;
+			}
 			case BLOB_DATA:
+			{
 				aScanResult.blobData++;
 
 				aScanResult.blobData();
 
 				break;
+			}
 			default:
 				throw new IllegalStateException();
 		}

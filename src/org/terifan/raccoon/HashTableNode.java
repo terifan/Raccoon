@@ -13,14 +13,25 @@ final class HashTableNode implements Node
 	private int mPointerCount;
 	private boolean mGCEnabled;
 	private HashTable mHashTable;
+	private BlockPointer mBlockPointer;
 
 
-	public HashTableNode(HashTable aHashTable, byte[] aBuffer)
+	public HashTableNode(HashTable aHashTable)
 	{
 		mHashTable = aHashTable;
-		mPointerCount = aBuffer.length / BlockPointer.SIZE;
-		mBuffer = aBuffer;
+		mPointerCount = mHashTable.mNodeSize / BlockPointer.SIZE;
+		mBuffer = new byte[mHashTable.mNodeSize];
 		mGCEnabled = true;
+	}
+
+
+	public HashTableNode(HashTable aHashTable, BlockPointer aBlockPointer)
+	{
+		mHashTable = aHashTable;
+		mBuffer = mHashTable.readBlock(aBlockPointer);
+		mPointerCount = mBuffer.length / BlockPointer.SIZE;
+		mGCEnabled = true;
+		mBlockPointer = aBlockPointer;
 	}
 
 
@@ -240,7 +251,7 @@ final class HashTableNode implements Node
 				node.gc();
 				break;
 			case LEAF:
-				oldValue = putValueLeaf(blockPointer, index, aEntry, aLevel, aKey);
+				oldValue = readLeaf(blockPointer).putValueLeaf(this, blockPointer, index, aEntry, aLevel, aKey);
 				break;
 			case HOLE:
 				oldValue = upgradeHoleToLeaf(aEntry, blockPointer, index);
@@ -256,54 +267,15 @@ final class HashTableNode implements Node
 	}
 
 
-	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, ArrayMapEntry aEntry, int aLevel, byte[] aKey)
-	{
-		assert mHashTable.mPerformanceTool.tick("putValueLeaf");
-
-		mHashTable.mCost.mTreeTraversal++;
-
-		HashTableLeaf map = readLeaf(aBlockPointer);
-
-		byte[] oldValue;
-
-		if (map.put(aEntry))
-		{
-			oldValue = aEntry.getValue();
-
-			mHashTable.freeBlock(aBlockPointer);
-
-			setPointer(aIndex, mHashTable.writeBlock(map, aBlockPointer.getRange()));
-
-			mHashTable.mCost.mValuePut++;
-		}
-		else if (map.splitLeaf(aBlockPointer, aIndex, aLevel, this))
-		{
-			oldValue = putValue(aEntry, aKey, aLevel); // recursive put
-		}
-		else
-		{
-			HashTableNode node = map.splitLeaf(aBlockPointer, aLevel + 1);
-
-			oldValue = node.putValue(aEntry, aKey, aLevel + 1); // recursive put
-
-			setPointer(aIndex, mHashTable.writeBlock(node, aBlockPointer.getRange()));
-
-			node.gc();
-		}
-
-		return oldValue;
-	}
-
-
 	HashTableLeaf readLeaf(BlockPointer aBlockPointer)
 	{
-		return new HashTableLeaf(mHashTable, mHashTable.readBlock(aBlockPointer));
+		return new HashTableLeaf(mHashTable, aBlockPointer);
 	}
 
 
 	HashTableNode readNode(BlockPointer aBlockPointer)
 	{
-		return new HashTableNode(mHashTable, mHashTable.readBlock(aBlockPointer));
+		return new HashTableNode(mHashTable, aBlockPointer);
 	}
 
 
@@ -316,7 +288,7 @@ final class HashTableNode implements Node
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		HashTableLeaf node = new HashTableLeaf(mHashTable, mHashTable.mLeafSize);
+		HashTableLeaf node = new HashTableLeaf(mHashTable);
 
 		if (!node.put(aEntry))
 		{

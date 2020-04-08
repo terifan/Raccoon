@@ -52,8 +52,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			mNodeSize = aTableParam.getPagesPerNode() * aBlockDevice.getBlockSize();
 			mLeafSize = aTableParam.getPagesPerLeaf() * aBlockDevice.getBlockSize();
 			mHashSeed = new SecureRandom().nextInt();
-
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
+
 			mRoot = new HashTableRootNode(this, mNodeSize, mLeafSize, mPointersPerNode);
 			mWasEmptyInstance = true;
 			mChanged = true;
@@ -386,6 +386,11 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		mCost.mWriteBlock++;
 		mCost.mWriteBlockBytes += blockPointer.getAllocatedSize();
+
+		if (aNode instanceof HashTableLeaf)
+		{
+			((HashTableLeaf)aNode).mBlockPointer = blockPointer;
+		}
 
 		return blockPointer;
 	}
