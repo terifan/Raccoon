@@ -10,6 +10,7 @@ import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
+import org.terifan.security.messagedigest.MurmurHash3;
 
 
 final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
@@ -18,10 +19,10 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	/*private*/ final String mTableName;
 	final TransactionGroup mTransactionId;
 	/*private*/ BlockAccessor mBlockAccessor;
-	private HashTableRoot mRoot;
-	private int mNodeSize;
-	private int mLeafSize;
-	private int mPointersPerNode;
+	private HashTableRootNode mRoot;
+	int mNodeSize;
+	int mLeafSize;
+	int mPointersPerNode;
 	int mHashSeed;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
@@ -53,7 +54,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			mHashSeed = new SecureRandom().nextInt();
 
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
-			mRoot = new HashTableRoot(this, mNodeSize, mLeafSize, mPointersPerNode);
+			mRoot = new HashTableRootNode(this, mNodeSize, mLeafSize, mPointersPerNode);
 			mWasEmptyInstance = true;
 			mChanged = true;
 		}
@@ -62,7 +63,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			Log.i("open table %s", mTableName);
 			Log.inc();
 
-			mRoot = new HashTableRoot(this);
+			mRoot = new HashTableRootNode(this);
 
 			unmarshalHeader(aTableHeader);
 
@@ -348,5 +349,55 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		aScanResult.tables++;
 
 		mRoot.scan(aScanResult);
+	}
+
+
+	int computeIndex(byte[] aKey, int aLevel)
+	{
+		return MurmurHash3.hash32(aKey, mHashSeed ^ aLevel) & (mPointersPerNode - 1);
+	}
+
+
+	void freeBlock(BlockPointer aBlockPointer)
+	{
+		mCost.mFreeBlock++;
+		mCost.mFreeBlockBytes += aBlockPointer.getAllocatedSize();
+
+		mBlockAccessor.freeBlock(aBlockPointer);
+	}
+
+
+	byte[] readBlock(BlockPointer aBlockPointer)
+	{
+		assert mPerformanceTool.tick("readBlock");
+
+		mCost.mReadBlock++;
+		mCost.mReadBlockBytes += aBlockPointer.getAllocatedSize();
+
+		return mBlockAccessor.readBlock(aBlockPointer);
+	}
+
+
+	BlockPointer writeBlock(Node aNode, int aRange)
+	{
+		assert mPerformanceTool.tick("writeBlock");
+
+		BlockPointer blockPointer = mBlockAccessor.writeBlock(aNode.array(), 0, aNode.array().length, mTransactionId.get(), aNode.getType(), aRange);
+
+		mCost.mWriteBlock++;
+		mCost.mWriteBlockBytes += blockPointer.getAllocatedSize();
+
+		return blockPointer;
+	}
+
+
+	BlockPointer writeIfNotEmpty(HashTableLeaf aLeaf, int aRange)
+	{
+		if (aLeaf.isEmpty())
+		{
+			return new BlockPointer().setBlockType(BlockType.HOLE).setRange(aRange);
+		}
+
+		return writeBlock(aLeaf, aRange);
 	}
 }

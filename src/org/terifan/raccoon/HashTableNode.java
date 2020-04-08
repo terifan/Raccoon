@@ -2,6 +2,7 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.raccoon.util.Log;
 
 
 final class HashTableNode implements Node
@@ -11,10 +12,12 @@ final class HashTableNode implements Node
 	private byte[] mBuffer;
 	private int mPointerCount;
 	private boolean mGCEnabled;
+	private HashTable mHashTable;
 
 
-	public HashTableNode(byte[] aBuffer)
+	public HashTableNode(HashTable aHashTable, byte[] aBuffer)
 	{
+		mHashTable = aHashTable;
 		mPointerCount = aBuffer.length / BlockPointer.SIZE;
 		mBuffer = aBuffer;
 		mGCEnabled = true;
@@ -182,5 +185,34 @@ final class HashTableNode implements Node
 	{
 		mGCEnabled = aGCEnabled;
 		return this;
+	}
+
+
+	boolean getValue(byte[] aKey, int aLevel, ArrayMapEntry aEntry)
+	{
+		assert mHashTable.mPerformanceTool.tick("getValue");
+
+		Log.i("get %s value", mHashTable.mTableName);
+
+		mHashTable.mCost.mTreeTraversal++;
+
+		BlockPointer blockPointer = getPointer(findPointer(mHashTable.computeIndex(aKey, aLevel)));
+
+		switch (blockPointer.getBlockType())
+		{
+			case INDEX:
+				return mHashTable.readNode(blockPointer).getValue(aKey, aLevel + 1, aEntry);
+			case LEAF:
+				mHashTable.mCost.mValueGet++;
+				HashTableLeaf leaf = mHashTable.readLeaf(blockPointer);
+				boolean result = leaf.get(aEntry);
+				leaf.gc();
+				return result;
+			case HOLE:
+				return false;
+			case FREE:
+			default:
+				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
+		}
 	}
 }
