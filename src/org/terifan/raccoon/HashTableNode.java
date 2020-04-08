@@ -297,7 +297,7 @@ final class HashTableNode implements Node
 
 	HashTableLeaf readLeaf(BlockPointer aBlockPointer)
 	{
-		return new HashTableLeaf(mHashTable.readBlock(aBlockPointer));
+		return new HashTableLeaf(mHashTable, mHashTable.readBlock(aBlockPointer));
 	}
 
 
@@ -316,7 +316,7 @@ final class HashTableNode implements Node
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		HashTableLeaf node = new HashTableLeaf(mHashTable.mLeafSize);
+		HashTableLeaf node = new HashTableLeaf(mHashTable, mHashTable.mLeafSize);
 
 		if (!node.put(aEntry))
 		{
@@ -349,8 +349,8 @@ final class HashTableNode implements Node
 
 		mHashTable.freeBlock(aBlockPointer);
 
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable.mLeafSize);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable.mLeafSize);
+		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, mHashTable.mLeafSize);
+		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, mHashTable.mLeafSize);
 		int halfRange = mHashTable.mPointersPerNode / 2;
 
 		divideLeafEntries(aLeafNode, aLevel, halfRange, lowLeaf, highLeaf);
@@ -393,8 +393,8 @@ final class HashTableNode implements Node
 
 		mHashTable.freeBlock(aBlockPointer);
 
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable.mLeafSize);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable.mLeafSize);
+		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, mHashTable.mLeafSize);
+		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, mHashTable.mLeafSize);
 		int halfRange = aBlockPointer.getRange() / 2;
 
 		divideLeafEntries(aMap, aLevel, aIndex + halfRange, lowLeaf, highLeaf);

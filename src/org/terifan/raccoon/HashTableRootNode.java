@@ -30,7 +30,7 @@ public class HashTableRootNode
 		mNodeSize = aNodeSize;
 		mLeafSize = aLeafSize;
 		mPointersPerNode = aPointersPerNode;
-		mRootMap = new HashTableLeaf(aLeafSize);
+		mRootMap = new HashTableLeaf(mHashTable, aLeafSize);
 		mRootBlockPointer = mHashTable.writeBlock(mRootMap, aPointersPerNode);
 	}
 
@@ -92,7 +92,7 @@ public class HashTableRootNode
 			{
 				Log.d("upgrade root leaf to node");
 
-				mRootNode = splitLeaf(mRootBlockPointer, mRootMap, 0).setGCEnabled(false);
+				mRootNode = mRootMap.splitLeaf(mRootBlockPointer, 0).setGCEnabled(false);
 
 				mRootBlockPointer = mHashTable.writeBlock(mRootNode, mPointersPerNode);
 				mRootMap = null;
@@ -118,61 +118,6 @@ public class HashTableRootNode
 			modified = mRootNode.removeValue(aEntry.getKey(), 0, aEntry);
 		}
 		return modified;
-	}
-
-
-	HashTableNode splitLeaf(BlockPointer aBlockPointer, HashTableLeaf aLeafNode, int aLevel)
-	{
-		assert mHashTable.mPerformanceTool.tick("splitLeaf");
-
-		Log.inc();
-		Log.d("split leaf");
-		Log.inc();
-
-		mHashTable.mCost.mTreeTraversal++;
-		mHashTable.mCost.mBlockSplit++;
-
-		mHashTable.freeBlock(aBlockPointer);
-
-		HashTableLeaf lowLeaf = new HashTableLeaf(mLeafSize);
-		HashTableLeaf highLeaf = new HashTableLeaf(mLeafSize);
-		int halfRange = mPointersPerNode / 2;
-
-		divideLeafEntries(aLeafNode, aLevel, halfRange, lowLeaf, highLeaf);
-
-		// create nodes pointing to leafs
-		BlockPointer lowIndex = mHashTable.writeIfNotEmpty(lowLeaf, halfRange);
-		BlockPointer highIndex = mHashTable.writeIfNotEmpty(highLeaf, halfRange);
-
-		HashTableNode node = new HashTableNode(mHashTable, new byte[mNodeSize]);
-		node.setPointer(0, lowIndex);
-		node.setPointer(halfRange, highIndex);
-
-		lowLeaf.gc();
-		highLeaf.gc();
-
-		Log.dec();
-		Log.dec();
-
-		return node;
-	}
-
-
-	private void divideLeafEntries(HashTableLeaf aMap, int aLevel, int aHalfRange, HashTableLeaf aLowLeaf, HashTableLeaf aHighLeaf)
-	{
-		assert mHashTable.mPerformanceTool.tick("divideLeafEntries");
-
-		for (ArrayMapEntry entry : aMap)
-		{
-			if (mHashTable.computeIndex(entry.getKey(), aLevel) < aHalfRange)
-			{
-				aLowLeaf.put(entry);
-			}
-			else
-			{
-				aHighLeaf.put(entry);
-			}
-		}
 	}
 
 
@@ -222,7 +167,7 @@ public class HashTableRootNode
 			Log.d("rollback empty");
 
 			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
-			mRootMap = new HashTableLeaf(mLeafSize);
+			mRootMap = new HashTableLeaf(mHashTable, mLeafSize);
 		}
 		else
 		{
@@ -252,7 +197,7 @@ public class HashTableRootNode
 			});
 
 			mRootNode = null;
-			mRootMap = new HashTableLeaf(mLeafSize);
+			mRootMap = new HashTableLeaf(mHashTable, mLeafSize);
 		}
 
 		mHashTable.freeBlock(mRootBlockPointer);
@@ -319,7 +264,7 @@ public class HashTableRootNode
 			return mRootMap;
 		}
 
-		return new HashTableLeaf(mHashTable.readBlock(aBlockPointer));
+		return new HashTableLeaf(mHashTable, mHashTable.readBlock(aBlockPointer));
 	}
 
 
@@ -373,7 +318,7 @@ public class HashTableRootNode
 				aScanResult.exitNode();
 				break;
 			case LEAF:
-				HashTableLeaf leafNode = new HashTableLeaf(buffer);
+				HashTableLeaf leafNode = new HashTableLeaf(mHashTable, buffer);
 
 				aScanResult.enterLeaf(aBlockPointer, buffer);
 
