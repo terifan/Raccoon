@@ -10,20 +10,19 @@ import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
-import org.terifan.security.messagedigest.MurmurHash3;
 
 
 final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 {
 	/*private*/ final Cost mCost;
 	/*private*/ final String mTableName;
-	private final TransactionGroup mTransactionId;
+	final TransactionGroup mTransactionId;
 	/*private*/ BlockAccessor mBlockAccessor;
 	private HashTableRoot mRoot;
 	private int mNodeSize;
 	private int mLeafSize;
 	private int mPointersPerNode;
-	private int mHashSeed;
+	int mHashSeed;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mChanged;
@@ -315,12 +314,6 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	int computeIndex(byte[] aKey, int aLevel)
-	{
-		return MurmurHash3.hash32(aKey, mHashSeed ^ aLevel) & (mPointersPerNode - 1);
-	}
-
-
 	public String integrityCheck()
 	{
 		Log.i("integrity check");
@@ -338,39 +331,6 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	void visit(HashTableVisitor aVisitor)
 	{
 		mRoot.visit(aVisitor);
-	}
-
-
-	void freeBlock(BlockPointer aBlockPointer)
-	{
-		mCost.mFreeBlock++;
-		mCost.mFreeBlockBytes += aBlockPointer.getAllocatedSize();
-
-		mBlockAccessor.freeBlock(aBlockPointer);
-	}
-
-
-	byte[] readBlock(BlockPointer aBlockPointer)
-	{
-		assert mPerformanceTool.tick("readBlock");
-
-		mCost.mReadBlock++;
-		mCost.mReadBlockBytes += aBlockPointer.getAllocatedSize();
-
-		return mBlockAccessor.readBlock(aBlockPointer);
-	}
-
-
-	BlockPointer writeBlock(Node aNode, int aRange)
-	{
-		assert mPerformanceTool.tick("writeBlock");
-
-		BlockPointer blockPointer = mBlockAccessor.writeBlock(aNode.array(), 0, aNode.array().length, mTransactionId.get(), aNode.getType(), aRange);
-
-		mCost.mWriteBlock++;
-		mCost.mWriteBlockBytes += blockPointer.getAllocatedSize();
-
-		return blockPointer;
 	}
 
 

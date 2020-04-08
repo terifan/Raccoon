@@ -5,6 +5,7 @@ import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+import org.terifan.security.messagedigest.MurmurHash3;
 
 
 public class HashTableRoot
@@ -31,7 +32,7 @@ public class HashTableRoot
 		mLeafSize = aLeafSize;
 		mPointersPerNode = aPointersPerNode;
 		mRootMap = new HashTableLeaf(aLeafSize);
-		mRootBlockPointer = mHashTable.writeBlock(mRootMap, aPointersPerNode);
+		mRootBlockPointer = writeBlock(mRootMap, aPointersPerNode);
 	}
 
 
@@ -77,7 +78,7 @@ public class HashTableRoot
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		BlockPointer blockPointer = aNode.getPointer(aNode.findPointer(mHashTable.computeIndex(aKey, aLevel)));
+		BlockPointer blockPointer = aNode.getPointer(aNode.findPointer(computeIndex(aKey, aLevel)));
 
 		switch (blockPointer.getBlockType())
 		{
@@ -123,7 +124,7 @@ public class HashTableRoot
 
 				mRootNode = splitLeaf(mRootBlockPointer, mRootMap, 0).setGCEnabled(false);
 
-				mRootBlockPointer = mHashTable.writeBlock(mRootNode, mPointersPerNode);
+				mRootBlockPointer = writeBlock(mRootNode, mPointersPerNode);
 				mRootMap = null;
 			}
 		}
@@ -144,7 +145,7 @@ public class HashTableRoot
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		int index = aNode.findPointer(mHashTable.computeIndex(aKey, aLevel));
+		int index = aNode.findPointer(computeIndex(aKey, aLevel));
 		BlockPointer blockPointer = aNode.getPointer(index);
 		byte[] oldValue;
 
@@ -153,8 +154,8 @@ public class HashTableRoot
 			case INDEX:
 				HashTableNode node = readNode(blockPointer);
 				oldValue = putValue(aEntry, aKey, aLevel + 1, node);
-				mHashTable.freeBlock(blockPointer);
-				aNode.setPointer(index, mHashTable.writeBlock(node, blockPointer.getRange()));
+				freeBlock(blockPointer);
+				aNode.setPointer(index, writeBlock(node, blockPointer.getRange()));
 				node.gc();
 				break;
 			case LEAF:
@@ -188,9 +189,9 @@ public class HashTableRoot
 		{
 			oldValue = aEntry.getValue();
 
-			mHashTable.freeBlock(aBlockPointer);
+			freeBlock(aBlockPointer);
 
-			aNode.setPointer(aIndex, mHashTable.writeBlock(map, aBlockPointer.getRange()));
+			aNode.setPointer(aIndex, writeBlock(map, aBlockPointer.getRange()));
 
 			mHashTable.mCost.mValuePut++;
 		}
@@ -204,7 +205,7 @@ public class HashTableRoot
 
 			oldValue = putValue(aEntry, aKey, aLevel + 1, node); // recursive put
 
-			aNode.setPointer(aIndex, mHashTable.writeBlock(node, aBlockPointer.getRange()));
+			aNode.setPointer(aIndex, writeBlock(node, aBlockPointer.getRange()));
 
 			node.gc();
 		}
@@ -234,7 +235,7 @@ public class HashTableRoot
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		int index = aNode.findPointer(mHashTable.computeIndex(aKey, aLevel));
+		int index = aNode.findPointer(computeIndex(aKey, aLevel));
 		BlockPointer blockPointer = aNode.getPointer(index);
 
 		switch (blockPointer.getBlockType())
@@ -244,8 +245,8 @@ public class HashTableRoot
 				HashTableNode node = readNode(blockPointer);
 				if (removeValue(aKey, aLevel + 1, aEntry, node))
 				{
-					mHashTable.freeBlock(blockPointer);
-					BlockPointer newBlockPointer = mHashTable.writeBlock(node, blockPointer.getRange());
+					freeBlock(blockPointer);
+					BlockPointer newBlockPointer = writeBlock(node, blockPointer.getRange());
 					aNode.setPointer(index, newBlockPointer);
 					return true;
 				}
@@ -260,8 +261,8 @@ public class HashTableRoot
 				{
 					mHashTable.mCost.mEntityRemove++;
 
-					mHashTable.freeBlock(blockPointer);
-					BlockPointer newBlockPointer = mHashTable.writeBlock(node, blockPointer.getRange());
+					freeBlock(blockPointer);
+					BlockPointer newBlockPointer = writeBlock(node, blockPointer.getRange());
 					aNode.setPointer(index, newBlockPointer);
 				}
 
@@ -295,7 +296,7 @@ public class HashTableRoot
 
 		byte[] oldValue = aEntry.getValue();
 
-		BlockPointer blockPointer = mHashTable.writeBlock(node, aBlockPointer.getRange());
+		BlockPointer blockPointer = writeBlock(node, aBlockPointer.getRange());
 		aNode.setPointer(aIndex, blockPointer);
 
 		node.gc();
@@ -317,7 +318,7 @@ public class HashTableRoot
 		mHashTable.mCost.mTreeTraversal++;
 		mHashTable.mCost.mBlockSplit++;
 
-		mHashTable.freeBlock(aBlockPointer);
+		freeBlock(aBlockPointer);
 
 		HashTableLeaf lowLeaf = new HashTableLeaf(mLeafSize);
 		HashTableLeaf highLeaf = new HashTableLeaf(mLeafSize);
@@ -361,7 +362,7 @@ public class HashTableRoot
 		Log.d("split leaf");
 		Log.inc();
 
-		mHashTable.freeBlock(aBlockPointer);
+		freeBlock(aBlockPointer);
 
 		HashTableLeaf lowLeaf = new HashTableLeaf(mLeafSize);
 		HashTableLeaf highLeaf = new HashTableLeaf(mLeafSize);
@@ -391,7 +392,7 @@ public class HashTableRoot
 
 		for (ArrayMapEntry entry : aMap)
 		{
-			if (mHashTable.computeIndex(entry.getKey(), aLevel) < aHalfRange)
+			if (computeIndex(entry.getKey(), aLevel) < aHalfRange)
 			{
 				aLowLeaf.put(entry);
 			}
@@ -426,15 +427,15 @@ public class HashTableRoot
 
 	void writeBlock()
 	{
-		mHashTable.freeBlock(mRootBlockPointer);
+		freeBlock(mRootBlockPointer);
 
 		if (mRootMap != null)
 		{
-			mRootBlockPointer = mHashTable.writeBlock(mRootMap, mPointersPerNode);
+			mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode);
 		}
 		else
 		{
-			mRootBlockPointer = mHashTable.writeBlock(mRootNode, mPointersPerNode);
+			mRootBlockPointer = writeBlock(mRootNode, mPointersPerNode);
 		}
 	}
 
@@ -474,7 +475,7 @@ public class HashTableRoot
 
 				if (aPointerIndex >= 0 && aBlockPointer != null && (aBlockPointer.getBlockType() == BlockType.INDEX || aBlockPointer.getBlockType() == BlockType.LEAF))
 				{
-					mHashTable.freeBlock(aBlockPointer);
+					freeBlock(aBlockPointer);
 				}
 			});
 
@@ -482,9 +483,9 @@ public class HashTableRoot
 			mRootMap = new HashTableLeaf(mLeafSize);
 		}
 
-		mHashTable.freeBlock(mRootBlockPointer);
+		freeBlock(mRootBlockPointer);
 
-		mRootBlockPointer = mHashTable.writeBlock(mRootMap, mPointersPerNode);
+		mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode);
 	}
 
 
@@ -546,7 +547,7 @@ public class HashTableRoot
 			return mRootMap;
 		}
 
-		return new HashTableLeaf(mHashTable.readBlock(aBlockPointer));
+		return new HashTableLeaf(readBlock(aBlockPointer));
 	}
 
 
@@ -557,7 +558,7 @@ public class HashTableRoot
 			return mRootNode;
 		}
 
-		return new HashTableNode(mHashTable.readBlock(aBlockPointer));
+		return new HashTableNode(readBlock(aBlockPointer));
 	}
 
 
@@ -568,7 +569,7 @@ public class HashTableRoot
 			return new BlockPointer().setBlockType(BlockType.HOLE).setRange(aRange);
 		}
 
-		return mHashTable.writeBlock(aLeaf, aRange);
+		return writeBlock(aLeaf, aRange);
 	}
 
 
@@ -664,5 +665,44 @@ public class HashTableRoot
 			default:
 				throw new IllegalStateException();
 		}
+	}
+
+
+	int computeIndex(byte[] aKey, int aLevel)
+	{
+		return MurmurHash3.hash32(aKey, mHashTable.mHashSeed ^ aLevel) & (mPointersPerNode - 1);
+	}
+
+
+	void freeBlock(BlockPointer aBlockPointer)
+	{
+		mHashTable.mCost.mFreeBlock++;
+		mHashTable.mCost.mFreeBlockBytes += aBlockPointer.getAllocatedSize();
+
+		mHashTable.mBlockAccessor.freeBlock(aBlockPointer);
+	}
+
+
+	byte[] readBlock(BlockPointer aBlockPointer)
+	{
+		assert mHashTable.mPerformanceTool.tick("readBlock");
+
+		mHashTable.mCost.mReadBlock++;
+		mHashTable.mCost.mReadBlockBytes += aBlockPointer.getAllocatedSize();
+
+		return mHashTable.mBlockAccessor.readBlock(aBlockPointer);
+	}
+
+
+	BlockPointer writeBlock(Node aNode, int aRange)
+	{
+		assert mHashTable.mPerformanceTool.tick("writeBlock");
+
+		BlockPointer blockPointer = mHashTable.mBlockAccessor.writeBlock(aNode.array(), 0, aNode.array().length, mHashTable.mTransactionId.get(), aNode.getType(), aRange);
+
+		mHashTable.mCost.mWriteBlock++;
+		mHashTable.mCost.mWriteBlockBytes += blockPointer.getAllocatedSize();
+
+		return blockPointer;
 	}
 }
