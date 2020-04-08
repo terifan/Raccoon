@@ -66,7 +66,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	{
 		if (aCapacity <= HEADER_SIZE || aCapacity > MAX_CAPACITY)
 		{
-			throw new IllegalArgumentException("Illegal bucket size.");
+			throw new IllegalArgumentException("Illegal bucket size: " + aCapacity);
 		}
 
 		mStartOffset = 0;

@@ -116,7 +116,7 @@ final class HashTableNode implements Node
 
 	private BlockType getPointerType(int aIndex)
 	{
-		assert aIndex >= 0 && aIndex < mPointerCount;
+		assert aIndex >= 0 && aIndex < mPointerCount : "0 >= " + aIndex + " < " + mPointerCount;
 
 		return BlockPointer.getBlockType(mBuffer, aIndex * BlockPointer.SIZE);
 	}
