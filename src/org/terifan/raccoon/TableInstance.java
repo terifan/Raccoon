@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.DatabaseIOException;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;

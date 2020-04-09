@@ -1,7 +1,7 @@
 package org.terifan.raccoon.io.managed;
 
 import java.io.IOException;
-import org.terifan.raccoon.DatabaseIOException;
+import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.secure.SecureBlockDevice;
 import org.terifan.raccoon.storage.BlockPointer;

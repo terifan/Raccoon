@@ -1,10 +1,11 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.io.managed.DeviceHeader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -85,17 +86,17 @@ public final class Database implements AutoCloseable
 				{
 					if (!aFile.delete())
 					{
-						throw new IOException("Failed to delete existing file: " + aFile);
+						throw new DatabaseIOException("Failed to delete existing file: " + aFile);
 					}
 				}
 				else if ((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aFile.length() == 0)
 				{
-					throw new IOException("File is empty.");
+					throw new DatabaseIOException("File is empty.");
 				}
 			}
 			else if (aOpenOptions == DatabaseOpenOption.OPEN || aOpenOptions == DatabaseOpenOption.READ_ONLY)
 			{
-				throw new FileNotFoundException("File not found: " + aFile);
+				throw new DatabaseIOException("File not found: " + aFile);
 			}
 
 			boolean newFile = !aFile.exists();
@@ -105,6 +106,21 @@ public final class Database implements AutoCloseable
 			fileBlockDevice = new FileBlockDevice(aFile, blockSizeParam.getValue(), aOpenOptions == DatabaseOpenOption.READ_ONLY);
 
 			init(fileBlockDevice, newFile, true, aOpenOptions, aParameters);
+		}
+		catch (DatabaseException | DatabaseIOException | DatabaseClosedException e)
+		{
+			if (fileBlockDevice != null)
+			{
+				try
+				{
+					fileBlockDevice.close();
+				}
+				catch (Exception ee)
+				{
+				}
+			}
+
+			throw e;
 		}
 		catch (Throwable e)
 		{

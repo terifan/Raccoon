@@ -11,7 +11,7 @@ import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.security.cryptography.SecretKey;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
-import org.terifan.raccoon.DatabaseIOException;
+import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.security.cryptography.CipherMode;
 import org.terifan.security.cryptography.ISAAC;
 import static org.terifan.raccoon.util.ByteArrayUtil.*;

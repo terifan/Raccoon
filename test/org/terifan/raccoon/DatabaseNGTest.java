@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.io.managed.DeviceHeader;
 import resources.__FixedThreadExecutor;
 import resources.entities._Fruit2K;
@@ -1031,7 +1032,7 @@ public class DatabaseNGTest
 	}
 
 
-	@Test(expectedExceptions = FileNotFoundException.class)
+	@Test(expectedExceptions = DatabaseIOException.class)
 	public void testWriteReadOnly() throws Exception
 	{
 		File file = new File(UUID.randomUUID().toString());

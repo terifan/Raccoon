@@ -5,9 +5,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.StandardOpenOption;
-import org.terifan.raccoon.DatabaseIOException;
+import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.util.Log;
 
 
@@ -47,7 +48,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 				{
 					mFileLock = mFile.tryLock();
 				}
-				catch (IOException e)
+				catch (IOException | OverlappingFileLockException e)
 				{
 					throw new FileAlreadyOpenException("Failed to lock file: " + aFile, e);
 				}

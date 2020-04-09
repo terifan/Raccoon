@@ -1,6 +1,6 @@
 package org.terifan.raccoon.io.physical;
 
-import org.terifan.raccoon.DatabaseIOException;
+import org.terifan.raccoon.io.DatabaseIOException;
 
 
 public class FileAlreadyOpenException extends DatabaseIOException

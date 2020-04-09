@@ -1,6 +1,6 @@
 package org.terifan.raccoon.io.managed;
 
-import org.terifan.raccoon.DatabaseIOException;
+import org.terifan.raccoon.io.DatabaseIOException;
 
 
 public class UnsupportedVersionException extends DatabaseIOException
