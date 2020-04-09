@@ -81,16 +81,7 @@ public class HashTableRoot implements Node
 
 	Iterator<ArrayMapEntry> iterator()
 	{
-		if (mRootNode != null)
-		{
-			return new HashTableNodeIterator(mHashTable, mRootBlockPointer);
-		}
-		if (!mRootMap.isEmpty())
-		{
-			return new HashTableNodeIterator(mHashTable, mRootMap);
-		}
-
-		return new ArrayList<ArrayMapEntry>().iterator();
+		return new HashTableNodeIterator(mHashTable, node());
 	}
 
 

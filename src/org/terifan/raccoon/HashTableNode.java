@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -326,5 +327,48 @@ final class HashTableNode implements Node
 		}
 
 		aScanResult.exitNode();
+	}
+
+
+	public Iterator<Node> iterator()
+	{
+		return new Iterator<Node>()
+		{
+			int index;
+			Node next;
+
+
+			@Override
+			public boolean hasNext()
+			{
+				if (next == null)
+				{
+					if (index >= mHashTable.mPointersPerNode)
+					{
+						return false;
+					}
+
+					while (next == null && index < mHashTable.mPointersPerNode)
+					{
+						next = getNode(index++);
+					}
+				}
+
+				return next != null;
+			}
+
+
+			@Override
+			public Node next()
+			{
+				if (next == null)
+				{
+					throw new IllegalStateException();
+				}
+				Node tmp = next;
+				next = null;
+				return tmp;
+			}
+		};
 	}
 }
