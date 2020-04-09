@@ -100,7 +100,8 @@ final class HashTableNode implements Node
 	}
 
 
-	String integrityCheck()
+	@Override
+	public String integrityCheck()
 	{
 		int rangeRemain = 0;
 

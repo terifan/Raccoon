@@ -55,17 +55,6 @@ public class HashTableRoot implements Node
 	}
 
 
-	public boolean get(ArrayMapEntry aEntry)
-	{
-		if (mRootMap != null)
-		{
-			return mRootMap.getValue(aEntry, 0);
-		}
-
-		return mRootNode.getValue(aEntry, 0);
-	}
-
-
 	void put(ArrayMapEntry aEntry)
 	{
 		if (mRootMap != null)
@@ -87,21 +76,6 @@ public class HashTableRoot implements Node
 		{
 			mRootNode.putValue(aEntry, aEntry.getKey(), 0);
 		}
-	}
-
-
-	boolean remove(ArrayMapEntry aEntry)
-	{
-		boolean modified;
-		if (mRootMap != null)
-		{
-			modified = mRootMap.remove(aEntry);
-		}
-		else
-		{
-			modified = mRootNode.removeValue(aEntry, aEntry.getKey(), 0);
-		}
-		return modified;
 	}
 
 
@@ -130,14 +104,7 @@ public class HashTableRoot implements Node
 	{
 		mHashTable.freeBlock(mRootBlockPointer);
 
-		if (mRootMap != null)
-		{
-			mRootBlockPointer = mHashTable.writeBlock(mRootMap, mHashTable.mPointersPerNode);
-		}
-		else
-		{
-			mRootBlockPointer = mHashTable.writeBlock(mRootNode, mHashTable.mPointersPerNode);
-		}
+		mRootBlockPointer = mHashTable.writeBlock(node(), mHashTable.mPointersPerNode);
 	}
 
 
@@ -197,16 +164,12 @@ public class HashTableRoot implements Node
 	}
 
 
+	@Override
 	public String integrityCheck()
 	{
 		Log.i("integrity check");
 
-		if (mRootMap != null)
-		{
-			return mRootMap.integrityCheck();
-		}
-
-		return mRootNode.integrityCheck();
+		return node().integrityCheck();
 	}
 
 
@@ -224,7 +187,7 @@ public class HashTableRoot implements Node
 	@Override
 	public byte[] array()
 	{
-		return mRootNode != null ? mRootNode.array() : mRootMap.array();
+		return node().array();
 	}
 
 
@@ -238,21 +201,27 @@ public class HashTableRoot implements Node
 	@Override
 	public boolean getValue(ArrayMapEntry aEntry, int aLevel)
 	{
-		return mRootNode != null ? mRootNode.getValue(aEntry, aLevel) : mRootMap.getValue(aEntry, aLevel);
+		return node().getValue(aEntry, aLevel);
 	}
 
 
 	@Override
 	public boolean putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
 	{
-		return mRootNode != null ? mRootNode.putValue(aEntry, aKey, aLevel) : mRootMap.putValue(aEntry, aKey, aLevel);
+		return node().putValue(aEntry, aKey, aLevel);
 	}
 
 
 	@Override
 	public boolean removeValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
 	{
-		return mRootNode != null ? mRootNode.removeValue(aEntry, aKey, aLevel) : mRootMap.removeValue(aEntry, aKey, aLevel);
+		return node().removeValue(aEntry, aKey, aLevel);
+	}
+
+
+	private Node node()
+	{
+		return mRootNode != null ? mRootNode : mRootMap;
 	}
 
 
