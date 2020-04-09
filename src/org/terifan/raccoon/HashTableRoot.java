@@ -9,9 +9,8 @@ import org.terifan.raccoon.util.Result;
 
 class HashTableRoot implements Node
 {
-	HashTableLeaf mRootMap;
-	HashTableNode mRootNode;
-	BlockPointer mBlockPointer;
+	private Node mRoot;
+	private BlockPointer mBlockPointer;
 	private HashTable mHashTable;
 
 
@@ -21,8 +20,8 @@ class HashTableRoot implements Node
 
 		if (aCreate)
 		{
-			mRootMap = new HashTableLeaf(mHashTable, null);
-			mBlockPointer = mHashTable.writeBlock(mRootMap, mHashTable.mPointersPerNode);
+			mRoot = new HashTableLeaf(mHashTable, null);
+			mBlockPointer = mHashTable.writeBlock(mRoot, mHashTable.mPointersPerNode);
 		}
 	}
 
@@ -33,11 +32,11 @@ class HashTableRoot implements Node
 
 		if (mBlockPointer.getBlockType() == BlockType.LEAF)
 		{
-			mRootMap = new HashTableLeaf(mHashTable, null, mBlockPointer);
+			mRoot = new HashTableLeaf(mHashTable, null, mBlockPointer);
 		}
 		else
 		{
-			mRootNode = new HashTableNode(mHashTable, mBlockPointer);
+			mRoot = new HashTableNode(mHashTable, mBlockPointer);
 		}
 	}
 
@@ -57,32 +56,31 @@ class HashTableRoot implements Node
 
 	void put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry)
 	{
-		if (node() instanceof HashTableLeaf)
+		if (mRoot instanceof HashTableLeaf)
 		{
 			Log.d("put root value");
 
-			if (!node().putValue(aEntry, oOldEntry, 0))
+			if (!mRoot.putValue(aEntry, oOldEntry, 0))
 			{
 				Log.d("upgrade root leaf to node");
 
-				mRootNode = ((HashTableLeaf)node()).splitLeaf(0);
+				mRoot = ((HashTableLeaf)mRoot).splitLeaf(0);
 
-				mBlockPointer = mHashTable.writeBlock(mRootNode, mHashTable.mPointersPerNode);
-				mRootMap = null;
+				mBlockPointer = mHashTable.writeBlock(mRoot, mHashTable.mPointersPerNode);
 
-				node().putValue(aEntry, oOldEntry, 0);
+				mRoot.putValue(aEntry, oOldEntry, 0);
 			}
 		}
 		else
 		{
-			node().putValue(aEntry, oOldEntry, 0);
+			mRoot.putValue(aEntry, oOldEntry, 0);
 		}
 	}
 
 
 	Iterator<ArrayMapEntry> iterator()
 	{
-		return new HashTableNodeIterator(mHashTable, node());
+		return new HashTableNodeIterator(mHashTable, mRoot);
 	}
 
 
@@ -97,21 +95,20 @@ class HashTableRoot implements Node
 	{
 		mHashTable.freeBlock(mBlockPointer);
 
-		mBlockPointer = mHashTable.writeBlock(node(), mHashTable.mPointersPerNode);
+		mBlockPointer = mHashTable.writeBlock(mRoot, mHashTable.mPointersPerNode);
 	}
 
 
 	void rollback(boolean aWasEmptyInstance)
 	{
-		mRootNode = null;
-		mRootMap = null;
+		mRoot = null;
 
 		if (aWasEmptyInstance)
 		{
 			Log.d("rollback empty");
 
 			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
-			mRootMap = new HashTableLeaf(mHashTable, null);
+			mRoot = new HashTableLeaf(mHashTable, null);
 		}
 		else
 		{
@@ -124,71 +121,62 @@ class HashTableRoot implements Node
 
 	void close()
 	{
-		mRootMap = null;
-		mRootNode = null;
+		mRoot = null;
 	}
 
 
 	@Override
 	public String integrityCheck()
 	{
-		Log.i("integrity check");
-
-		return node().integrityCheck();
+		return mRoot.integrityCheck();
 	}
 
 
 	@Override
 	public void visit(HashTableVisitor aVisitor)
 	{
-		node().visit(aVisitor);
+		mRoot.visit(aVisitor);
 	}
 
 
 	@Override
 	public byte[] array()
 	{
-		return node().array();
+		return mRoot.array();
 	}
 
 
 	@Override
 	public BlockType getType()
 	{
-		return node() instanceof HashTableNode ? BlockType.INDEX : BlockType.LEAF;
+		return mRoot.getType();
 	}
 
 
 	@Override
 	public boolean getValue(ArrayMapEntry aEntry, int aLevel)
 	{
-		return node().getValue(aEntry, aLevel);
+		return mRoot.getValue(aEntry, aLevel);
 	}
 
 
 	@Override
 	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
 	{
-		return node().putValue(aEntry, oOldEntry, aLevel);
+		return mRoot.putValue(aEntry, oOldEntry, aLevel);
 	}
 
 
 	@Override
 	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
 	{
-		return node().removeValue(aEntry, oOldEntry, aLevel);
-	}
-
-
-	Node node()
-	{
-		return mRootNode != null ? mRootNode : mRootMap;
+		return mRoot.removeValue(aEntry, oOldEntry, aLevel);
 	}
 
 
 	@Override
 	public void scan(ScanResult aScanResult)
 	{
-		node().scan(aScanResult);
+		mRoot.scan(aScanResult);
 	}
 }
