@@ -167,7 +167,7 @@ final class HashTableNode implements Node
 
 
 	@Override
-	public boolean putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
+	public boolean putValue(ArrayMapEntry aEntry, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("putValue");
 
@@ -176,26 +176,26 @@ final class HashTableNode implements Node
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		int index = findPointer(mHashTable.computeIndex(aKey, aLevel));
+		int index = findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel));
 		BlockPointer blockPointer = getPointer(index);
 
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
 				HashTableNode node = getNode(index);
-				node.putValue(aEntry, aKey, aLevel + 1);
+				node.putValue(aEntry, aLevel + 1);
 				freeBlock(index, node);
 				writeBlock(index, node, blockPointer.getRange());
 				break;
 			case LEAF:
 			{
 				HashTableLeaf leaf = getNode(index);
-				aEntry.setOldValue(leaf.putValueLeaf(this, index, aEntry, aLevel, aKey));
+				aEntry.setOldValue(leaf.putValueLeaf(this, index, aEntry, aLevel));
 				break;
 			}
 			case HOLE:
 				HashTableLeaf leaf = getNode(index);
-				aEntry.setOldValue(leaf.putValueHole(this, index, aEntry, aLevel, aKey, blockPointer.getRange()));
+				aEntry.setOldValue(leaf.putValueHole(this, index, aEntry, aLevel, blockPointer.getRange()));
 				break;
 			case FREE:
 			default:
@@ -209,20 +209,20 @@ final class HashTableNode implements Node
 
 
 	@Override
-	public boolean removeValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
+	public boolean removeValue(ArrayMapEntry aEntry, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("removeValue");
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		int index = findPointer(mHashTable.computeIndex(aKey, aLevel));
+		int index = findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel));
 		BlockPointer blockPointer = getPointer(index);
 
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
 				HashTableNode node = getNode(index);
-				if (node.removeValue(aEntry, aKey, aLevel + 1))
+				if (node.removeValue(aEntry, aLevel + 1))
 				{
 					freeBlock(index, node);
 					writeBlock(index, node, blockPointer.getRange());

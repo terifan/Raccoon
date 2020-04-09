@@ -141,7 +141,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	{
 		checkOpen();
 
-		boolean modified = mRoot.removeValue(aEntry, aEntry.getKey(), 0);
+		boolean modified = mRoot.removeValue(aEntry, 0);
 
 		mChanged |= modified;
 

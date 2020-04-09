@@ -59,14 +59,14 @@ class HashTableLeaf extends ArrayMap implements Node
 
 
 	@Override
-	public boolean putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
+	public boolean putValue(ArrayMapEntry aEntry, int aLevel)
 	{
 		return put(aEntry);
 	}
 
 
 	@Override
-	public boolean removeValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
+	public boolean removeValue(ArrayMapEntry aEntry, int aLevel)
 	{
 		return remove(aEntry);
 	}
@@ -156,7 +156,7 @@ class HashTableLeaf extends ArrayMap implements Node
 	}
 
 
-	byte[] putValueLeaf(HashTableNode aNode, int aIndex, ArrayMapEntry aEntry, int aLevel, byte[] aKey)
+	byte[] putValueLeaf(HashTableNode aNode, int aIndex, ArrayMapEntry aEntry, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("putValueLeaf");
 
@@ -179,14 +179,14 @@ class HashTableLeaf extends ArrayMap implements Node
 		}
 		else if (splitLeaf(aIndex, aLevel, aNode))
 		{
-			aNode.putValue(aEntry, aKey, aLevel); // recursive put
+			aNode.putValue(aEntry, aLevel); // recursive put
 			oldValue = aEntry.getOldValue();
 		}
 		else
 		{
 			HashTableNode node = splitLeaf(aLevel + 1);
 
-			node.putValue(aEntry, aKey, aLevel + 1); // recursive put
+			node.putValue(aEntry, aLevel + 1); // recursive put
 			oldValue = aEntry.getOldValue();
 
 			aNode.writeBlock(aIndex, node, mBlockPointer.getRange());
@@ -196,7 +196,7 @@ class HashTableLeaf extends ArrayMap implements Node
 	}
 
 
-	byte[] putValueHole(HashTableNode aNode, int aIndex, ArrayMapEntry aEntry, int aLevel, byte[] aKey, int aRange)
+	byte[] putValueHole(HashTableNode aNode, int aIndex, ArrayMapEntry aEntry, int aLevel, int aRange)
 	{
 		assert mHashTable.mPerformanceTool.tick("putValueLeaf");
 

@@ -60,7 +60,7 @@ class HashTableRoot implements Node
 		{
 			Log.d("put root value");
 
-			if (!mRootMap.putValue(aEntry, aEntry.getKey(), 0))
+			if (!mRootMap.putValue(aEntry, 0))
 			{
 				Log.d("upgrade root leaf to node");
 
@@ -73,7 +73,7 @@ class HashTableRoot implements Node
 
 		if (mRootMap == null)
 		{
-			mRootNode.putValue(aEntry, aEntry.getKey(), 0);
+			mRootNode.putValue(aEntry, 0);
 		}
 	}
 
@@ -165,16 +165,16 @@ class HashTableRoot implements Node
 
 
 	@Override
-	public boolean putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
+	public boolean putValue(ArrayMapEntry aEntry, int aLevel)
 	{
-		return node().putValue(aEntry, aKey, aLevel);
+		return node().putValue(aEntry, aLevel);
 	}
 
 
 	@Override
-	public boolean removeValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
+	public boolean removeValue(ArrayMapEntry aEntry, int aLevel)
 	{
-		return node().removeValue(aEntry, aKey, aLevel);
+		return node().removeValue(aEntry, aLevel);
 	}
 
 	Node node()

@@ -17,10 +17,10 @@ interface Node
 	boolean getValue(ArrayMapEntry aEntry, int aLevel);
 
 
-	boolean putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel);
+	boolean putValue(ArrayMapEntry aEntry, int aLevel);
 
 
-	boolean removeValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel);
+	boolean removeValue(ArrayMapEntry aEntry, int aLevel);
 
 
 	void scan(ScanResult aScanResult);
