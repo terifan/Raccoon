@@ -1,29 +1,32 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
-
 
 
 class HashTableLeaf extends ArrayMap implements Node
 {
 	private HashTable mHashTable;
+	private HashTableNode mParent;
 	BlockPointer mBlockPointer;
 
 
-	public HashTableLeaf(HashTable aHashTable)
+	public HashTableLeaf(HashTable aHashTable, HashTableNode aParent)
 	{
 		super(aHashTable.mLeafSize);
 
 		mHashTable = aHashTable;
+		mParent = aParent;
 	}
 
 
-	public HashTableLeaf(HashTable aHashTable, BlockPointer aBlockPointer)
+	public HashTableLeaf(HashTable aHashTable, HashTableNode aParent, BlockPointer aBlockPointer)
 	{
 		super(aHashTable.readBlock(aBlockPointer));
 
 		mHashTable = aHashTable;
+		mParent = aParent;
 		mBlockPointer = aBlockPointer;
 
 		assert mHashTable.mPerformanceTool.tick("readLeaf");
@@ -41,6 +44,14 @@ class HashTableLeaf extends ArrayMap implements Node
 	}
 
 
+	@Override
+	public boolean getValue(ArrayMapEntry aEntry, int aLevel)
+	{
+		mHashTable.mCost.mValueGet++;
+		return super.get(aEntry);
+	}
+
+
 	HashTableNode splitLeaf(int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("splitLeaf");
@@ -54,8 +65,8 @@ class HashTableLeaf extends ArrayMap implements Node
 
 		mHashTable.freeBlock(mBlockPointer);
 
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable);
+		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, mParent);
+		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, mParent);
 		int halfRange = mHashTable.mPointersPerNode / 2;
 
 		divideLeafEntries(aLevel, halfRange, lowLeaf, highLeaf);
@@ -91,8 +102,8 @@ class HashTableLeaf extends ArrayMap implements Node
 
 		mHashTable.freeBlock(mBlockPointer);
 
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable);
+		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, aNode);
+		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, aNode);
 		int halfRange = mBlockPointer.getRange() / 2;
 
 		divideLeafEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
@@ -137,7 +148,10 @@ class HashTableLeaf extends ArrayMap implements Node
 		{
 			oldValue = aEntry.getValue();
 
-			mHashTable.freeBlock(mBlockPointer);
+			if (mBlockPointer.getBlockType() != BlockType.HOLE)
+			{
+				mHashTable.freeBlock(mBlockPointer);
+			}
 
 			aNode.writeBlock(aIndex, this, mBlockPointer.getRange());
 
@@ -157,5 +171,34 @@ class HashTableLeaf extends ArrayMap implements Node
 		}
 
 		return oldValue;
+	}
+
+
+	byte[] putValueHole(HashTableNode aNode, int aIndex, ArrayMapEntry aEntry, int aLevel, byte[] aKey, int aRange)
+	{
+		assert mHashTable.mPerformanceTool.tick("putValueLeaf");
+
+		mHashTable.mCost.mTreeTraversal++;
+
+		put(aEntry);
+
+		byte[] oldValue = aEntry.getValue();
+
+		aNode.writeBlock(aIndex, this, aRange);
+
+		mHashTable.mCost.mValuePut++;
+
+		return oldValue;
+	}
+
+
+	@Override
+	public void scan(ScanResult aScanResult)
+	{
+		assert mHashTable.mPerformanceTool.tick("scan");
+
+		aScanResult.enterLeaf(mBlockPointer, mBuffer);
+		aScanResult.records += size();
+		aScanResult.exitLeaf();
 	}
 }

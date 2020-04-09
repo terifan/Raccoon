@@ -7,10 +7,10 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public class HashTableRoot
+public class HashTableRoot implements Node
 {
 	HashTableLeaf mRootMap;
-	private HashTableNode mRootNode;
+	HashTableNode mRootNode;
 	BlockPointer mRootBlockPointer;
 	private HashTable mHashTable;
 
@@ -21,7 +21,7 @@ public class HashTableRoot
 
 		if (aCreate)
 		{
-			mRootMap = new HashTableLeaf(mHashTable);
+			mRootMap = new HashTableLeaf(mHashTable, null);
 			mRootBlockPointer = mHashTable.writeBlock(mRootMap, mHashTable.mPointersPerNode);
 		}
 	}
@@ -33,7 +33,7 @@ public class HashTableRoot
 
 		if (mRootBlockPointer.getBlockType() == BlockType.LEAF)
 		{
-			mRootMap = new HashTableLeaf(mHashTable, mRootBlockPointer);
+			mRootMap = new HashTableLeaf(mHashTable, null, mRootBlockPointer);
 		}
 		else
 		{
@@ -59,10 +59,10 @@ public class HashTableRoot
 	{
 		if (mRootMap != null)
 		{
-			return mRootMap.get(aEntry);
+			return mRootMap.getValue(aEntry, 0);
 		}
 
-		return mRootNode.getValue(aEntry.getKey(), 0, aEntry);
+		return mRootNode.getValue(aEntry, 0);
 	}
 
 
@@ -151,7 +151,7 @@ public class HashTableRoot
 			Log.d("rollback empty");
 
 			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
-			mRootMap = new HashTableLeaf(mHashTable);
+			mRootMap = new HashTableLeaf(mHashTable, null);
 		}
 		else
 		{
@@ -181,7 +181,7 @@ public class HashTableRoot
 			});
 
 			mRootNode = null;
-			mRootMap = new HashTableLeaf(mHashTable);
+			mRootMap = new HashTableLeaf(mHashTable, null);
 		}
 
 		mHashTable.freeBlock(mRootBlockPointer);
@@ -221,105 +221,30 @@ public class HashTableRoot
 	}
 
 
-	void scan(ScanResult aScanResult)
+	@Override
+	public byte[] array()
 	{
-		scan(aScanResult, mRootBlockPointer);
+		return mRootNode != null ? mRootNode.array() : mRootMap.array();
 	}
 
 
-	void scan(ScanResult aScanResult, BlockPointer aBlockPointer)
+	@Override
+	public BlockType getType()
 	{
-		assert mHashTable.mPerformanceTool.tick("scan");
+		return mRootNode != null ? BlockType.INDEX : BlockType.LEAF;
+	}
 
-		switch (aBlockPointer.getBlockType())
-		{
-			case INDEX:
-			{
-				aScanResult.enterNode(aBlockPointer);
-				aScanResult.indexBlocks++;
 
-				HashTableNode indexNode = new HashTableNode(mHashTable, aBlockPointer);
+	@Override
+	public boolean getValue(ArrayMapEntry aEntry, int aLevel)
+	{
+		return mRootNode != null ? mRootNode.getValue(aEntry, aLevel) : mRootMap.getValue(aEntry, aLevel);
+	}
 
-				for (int i = 0; i < mHashTable.mPointersPerNode; i++)
-				{
-					BlockPointer pointer = indexNode.getPointer(i);
 
-					if (pointer != null)
-					{
-						if (pointer.getBlockType() == BlockType.HOLE)
-						{
-							aScanResult.holes++;
-						}
-						else
-						{
-							scan(aScanResult, pointer);
-						}
-					}
-				}
-				aScanResult.exitNode();
-				break;
-			}
-			case LEAF:
-			{
-				HashTableLeaf leafNode = new HashTableLeaf(mHashTable, aBlockPointer);
-
-				aScanResult.enterLeaf(aBlockPointer, leafNode.array());
-
-				aScanResult.records += leafNode.size();
-
-//				for (RecordEntry entry : leafNode)
-//				{
-//					aScanResult.entry();
-//
-//					if (entry.hasFlag(LeafEntry.FLAG_BLOB))
-//					{
-//						aScanResult.blobs++;
-//
-//						ByteArrayBuffer byteArrayBuffer = ByteArrayBuffer.wrap(entry.getValue());
-//						byteArrayBuffer.readInt8();
-//						long len = byteArrayBuffer.readVar64();
-//
-//						while (byteArrayBuffer.remaining() > 0)
-//						{
-//							scan(aScanResult, new BlockPointer().unmarshal(byteArrayBuffer));
-//						}
-//					}
-//					else
-//					{
-//						aScanResult.records++;
-//					}
-//				}
-				aScanResult.exitLeaf();
-
-				break;
-			}
-			case BLOB_INDEX:
-			{
-				aScanResult.blobIndices++;
-
-				byte[] buffer = mHashTable.mBlockAccessor.readBlock(aBlockPointer);
-
-				ByteArrayBuffer byteArrayBuffer = ByteArrayBuffer.wrap(buffer);
-				while (byteArrayBuffer.remaining() > 0)
-				{
-					aScanResult.enterBlob();
-
-					scan(aScanResult, new BlockPointer().unmarshal(byteArrayBuffer));
-
-					aScanResult.exitBlob();
-				}
-				break;
-			}
-			case BLOB_DATA:
-			{
-				aScanResult.blobData++;
-
-				aScanResult.blobData();
-
-				break;
-			}
-			default:
-				throw new IllegalStateException();
-		}
+	@Override
+	public void scan(ScanResult aScanResult)
+	{
+		mRootNode.scan(aScanResult);
 	}
 }

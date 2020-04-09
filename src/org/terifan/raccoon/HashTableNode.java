@@ -10,12 +10,14 @@ final class HashTableNode implements Node
 	private byte[] mBuffer;
 	private HashTable mHashTable;
 	private BlockPointer mBlockPointer;
+	private PointerArray mBlockPointers;
 
 
 	public HashTableNode(HashTable aHashTable)
 	{
 		mHashTable = aHashTable;
 		mBuffer = new byte[mHashTable.mNodeSize];
+		mBlockPointers = new PointerArray(mHashTable.mPointersPerNode);
 	}
 
 
@@ -24,6 +26,8 @@ final class HashTableNode implements Node
 		mHashTable = aHashTable;
 		mBuffer = mHashTable.readBlock(aBlockPointer);
 		mBlockPointer = aBlockPointer;
+
+		mBlockPointers = new PointerArray(mHashTable.mPointersPerNode);
 
 		assert mHashTable.mPerformanceTool.tick("readNode");
 
@@ -54,7 +58,9 @@ final class HashTableNode implements Node
 			return null;
 		}
 
-		BlockPointer blockPointer = get(aIndex);
+		assert aIndex >= 0 && aIndex < mHashTable.mPointersPerNode;
+
+		BlockPointer blockPointer = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
 
 		assert blockPointer.getRange() != 0;
 
@@ -94,21 +100,13 @@ final class HashTableNode implements Node
 	}
 
 
-	BlockPointer get(int aIndex)
-	{
-		assert aIndex >= 0 && aIndex < mHashTable.mPointersPerNode;
-
-		return new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
-	}
-
-
 	String integrityCheck()
 	{
 		int rangeRemain = 0;
 
 		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{
-			BlockPointer bp = get(i);
+			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mBuffer).position(i * BlockPointer.SIZE));
 
 			if (rangeRemain > 0)
 			{
@@ -132,7 +130,8 @@ final class HashTableNode implements Node
 	}
 
 
-	boolean getValue(byte[] aKey, int aLevel, ArrayMapEntry aEntry)
+	@Override
+	public boolean getValue(ArrayMapEntry aEntry, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("getValue");
 
@@ -140,17 +139,15 @@ final class HashTableNode implements Node
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		BlockPointer blockPointer = getPointer(findPointer(mHashTable.computeIndex(aKey, aLevel)));
+		int index = findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel));
+		BlockPointer blockPointer = getPointer(index);
 
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				return new HashTableNode(mHashTable, blockPointer).getValue(aKey, aLevel + 1, aEntry);
 			case LEAF:
-				mHashTable.mCost.mValueGet++;
-				HashTableLeaf leaf = new HashTableLeaf(mHashTable, blockPointer);
-				boolean result = leaf.get(aEntry);
-				return result;
+				Node node = getNode(index);
+				return node.getValue(aEntry, aLevel + 1);
 			case HOLE:
 				return false;
 			case FREE:
@@ -176,20 +173,20 @@ final class HashTableNode implements Node
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				HashTableNode node = new HashTableNode(mHashTable, blockPointer);
+				HashTableNode node = getNode(index);
 				oldValue = node.putValue(aEntry, aKey, aLevel + 1);
-				mHashTable.freeBlock(blockPointer);
+				freeBlock(index, node);
 				writeBlock(index, node, blockPointer.getRange());
 				break;
 			case LEAF:
 			{
-				HashTableLeaf leaf = new HashTableLeaf(mHashTable, blockPointer);
+				HashTableLeaf leaf = getNode(index);
 				oldValue = leaf.putValueLeaf(this, index, aEntry, aLevel, aKey);
 				break;
 			}
 			case HOLE:
-				HashTableLeaf leaf = new HashTableLeaf(mHashTable);
-				oldValue = leaf.putValueLeaf(this, index, aEntry, aLevel, aKey);
+				HashTableLeaf leaf = getNode(index);
+				oldValue = leaf.putValueHole(this, index, aEntry, aLevel, aKey, blockPointer.getRange());
 				break;
 			case FREE:
 			default:
@@ -214,23 +211,23 @@ final class HashTableNode implements Node
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				HashTableNode node = new HashTableNode(mHashTable, blockPointer);
+				HashTableNode node = getNode(index);
 				if (node.removeValue(aKey, aLevel + 1, aEntry))
 				{
-					mHashTable.freeBlock(blockPointer);
+					freeBlock(index, node);
 					writeBlock(index, node, blockPointer.getRange());
 					return true;
 				}
 				return false;
 			case LEAF:
-				HashTableLeaf leaf = new HashTableLeaf(mHashTable, blockPointer);
+				HashTableLeaf leaf = getNode(index);
 				boolean found = leaf.remove(aEntry);
 
 				if (found)
 				{
 					mHashTable.mCost.mEntityRemove++;
 
-					mHashTable.freeBlock(blockPointer);
+					freeBlock(index, leaf);
 					writeBlock(index, leaf, blockPointer.getRange());
 				}
 
@@ -252,12 +249,18 @@ final class HashTableNode implements Node
 
 			if (next != null && next.getBlockType() == BlockType.INDEX)
 			{
-				HashTableNode node = new HashTableNode(mHashTable, next);
+				HashTableNode node = getNode(i);
 				node.visitNode(aVisitor);
 			}
 
 			aVisitor.visit(i, next);
 		}
+	}
+
+
+	void freeBlock(int aIndex, Node aNode)
+	{
+		mHashTable.freeBlock(getPointer(aIndex));
 	}
 
 
@@ -277,5 +280,49 @@ final class HashTableNode implements Node
 		}
 
 		blockPointer.marshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
+	}
+
+
+	private <T extends Node> T getNode(int aIndex)
+	{
+		BlockPointer blockPointer = getPointer(aIndex);
+
+		if (blockPointer == null)
+		{
+			return null;
+		}
+
+		switch (blockPointer.getBlockType())
+		{
+			case INDEX:
+				return (T)new HashTableNode(mHashTable, blockPointer);
+			case LEAF:
+				return (T)new HashTableLeaf(mHashTable, this, blockPointer);
+			case HOLE:
+				return (T)new HashTableLeaf(mHashTable, this);
+			case FREE:
+			default:
+				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
+		}
+	}
+
+
+	@Override
+	public void scan(ScanResult aScanResult)
+	{
+		aScanResult.enterNode(mBlockPointer);
+		aScanResult.indexBlocks++;
+
+		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
+		{
+			Node node = getNode(i);
+
+			if (node != null)
+			{
+				node.scan(aScanResult);
+			}
+		}
+
+		aScanResult.exitNode();
 	}
 }

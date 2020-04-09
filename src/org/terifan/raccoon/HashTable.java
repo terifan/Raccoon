@@ -288,7 +288,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				}
 				else
 				{
-					leaf = new HashTableLeaf(this, aBlockPointer);
+					leaf = new HashTableLeaf(this, null, aBlockPointer);
 				}
 
 				result.set(result.get() + leaf.size());

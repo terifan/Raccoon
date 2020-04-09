@@ -68,7 +68,7 @@ final class HashTableNodeIterator implements Iterator<ArrayMapEntry>
 
 		if (pointer.getBlockType() == BlockType.LEAF)
 		{
-			HashTableLeaf leaf = new HashTableLeaf(mHashTable, pointer);
+			HashTableLeaf leaf = new HashTableLeaf(mHashTable, null, pointer);
 
 			mMap = leaf.iterator();
 
