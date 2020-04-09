@@ -54,30 +54,6 @@ class HashTableRoot implements Node
 	}
 
 
-	void put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry)
-	{
-		if (mRoot instanceof HashTableLeaf)
-		{
-			Log.d("put root value");
-
-			if (!mRoot.putValue(aEntry, oOldEntry, 0))
-			{
-				Log.d("upgrade root leaf to node");
-
-				mRoot = ((HashTableLeaf)mRoot).splitLeaf(0);
-
-				mBlockPointer = mHashTable.writeBlock(mRoot, mHashTable.mPointersPerNode);
-
-				mRoot.putValue(aEntry, oOldEntry, 0);
-			}
-		}
-		else
-		{
-			mRoot.putValue(aEntry, oOldEntry, 0);
-		}
-	}
-
-
 	Iterator<ArrayMapEntry> iterator()
 	{
 		return new HashTableNodeIterator(mHashTable, mRoot);
@@ -163,7 +139,23 @@ class HashTableRoot implements Node
 	@Override
 	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
 	{
-		return mRoot.putValue(aEntry, oOldEntry, aLevel);
+		if (mRoot instanceof HashTableLeaf)
+		{
+			Log.d("put root value");
+
+			if (mRoot.putValue(aEntry, oOldEntry, 0))
+			{
+				return true;
+			}
+
+			Log.d("upgrade root from leaf to node");
+
+			mRoot = ((HashTableLeaf)mRoot).splitLeaf(0);
+
+			mBlockPointer = mHashTable.writeBlock(mRoot, mHashTable.mPointersPerNode);
+		}
+
+		return mRoot.putValue(aEntry, oOldEntry, 0);
 	}
 
 
