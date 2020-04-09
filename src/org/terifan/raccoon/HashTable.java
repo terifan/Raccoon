@@ -54,7 +54,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			mHashSeed = new SecureRandom().nextInt();
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 
-			mRoot = new HashTableRoot(this, mNodeSize, mLeafSize, mPointersPerNode);
+			mRoot = new HashTableRoot(this, true);
 			mWasEmptyInstance = true;
 			mChanged = true;
 		}
@@ -63,7 +63,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			Log.i("open table %s", mTableName);
 			Log.inc();
 
-			mRoot = new HashTableRoot(this);
+			mRoot = new HashTableRoot(this, false);
 
 			unmarshalHeader(aTableHeader);
 
@@ -97,8 +97,6 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		mNodeSize = buffer.readVar32();
 		mLeafSize = buffer.readVar32();
 		mPointersPerNode = mNodeSize / BlockPointer.SIZE;
-
-		mRoot.init(mNodeSize, mLeafSize, mPointersPerNode);
 
 		CompressionParam compressionParam = new CompressionParam();
 		compressionParam.unmarshal(buffer);

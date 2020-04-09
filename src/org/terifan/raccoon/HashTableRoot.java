@@ -13,25 +13,17 @@ public class HashTableRoot
 	private HashTableNode mRootNode;
 	BlockPointer mRootBlockPointer;
 	private HashTable mHashTable;
-	private int mLeafSize;
-	private int mPointersPerNode;
-	private int mNodeSize;
 
 
-	HashTableRoot(HashTable aHashTable)
+	HashTableRoot(HashTable aHashTable, boolean aCreate)
 	{
 		mHashTable = aHashTable;
-	}
 
-
-	HashTableRoot(HashTable aHashTable, int aNodeSize, int aLeafSize, int aPointersPerNode)
-	{
-		mHashTable = aHashTable;
-		mNodeSize = aNodeSize;
-		mLeafSize = aLeafSize;
-		mPointersPerNode = aPointersPerNode;
-		mRootMap = new HashTableLeaf(mHashTable);
-		mRootBlockPointer = mHashTable.writeBlock(mRootMap, aPointersPerNode);
+		if (aCreate)
+		{
+			mRootMap = new HashTableLeaf(mHashTable);
+			mRootBlockPointer = mHashTable.writeBlock(mRootMap, mHashTable.mPointersPerNode);
+		}
 	}
 
 
@@ -47,14 +39,6 @@ public class HashTableRoot
 		{
 			mRootNode = new HashTableNode(mHashTable, mRootBlockPointer);
 		}
-	}
-
-
-	void init(int aNodeSize, int aLeafSize, int aPointersPerNode)
-	{
-		mNodeSize = aNodeSize;
-		mLeafSize = aLeafSize;
-		mPointersPerNode = aPointersPerNode;
 	}
 
 
@@ -94,7 +78,7 @@ public class HashTableRoot
 
 				mRootNode = mRootMap.splitLeaf(0);
 
-				mRootBlockPointer = mHashTable.writeBlock(mRootNode, mPointersPerNode);
+				mRootBlockPointer = mHashTable.writeBlock(mRootNode, mHashTable.mPointersPerNode);
 				mRootMap = null;
 			}
 		}
@@ -148,11 +132,11 @@ public class HashTableRoot
 
 		if (mRootMap != null)
 		{
-			mRootBlockPointer = mHashTable.writeBlock(mRootMap, mPointersPerNode);
+			mRootBlockPointer = mHashTable.writeBlock(mRootMap, mHashTable.mPointersPerNode);
 		}
 		else
 		{
-			mRootBlockPointer = mHashTable.writeBlock(mRootNode, mPointersPerNode);
+			mRootBlockPointer = mHashTable.writeBlock(mRootNode, mHashTable.mPointersPerNode);
 		}
 	}
 
@@ -202,7 +186,7 @@ public class HashTableRoot
 
 		mHashTable.freeBlock(mRootBlockPointer);
 
-		mRootBlockPointer = mHashTable.writeBlock(mRootMap, mPointersPerNode);
+		mRootBlockPointer = mHashTable.writeBlock(mRootMap, mHashTable.mPointersPerNode);
 	}
 
 
@@ -256,7 +240,7 @@ public class HashTableRoot
 
 				HashTableNode indexNode = new HashTableNode(mHashTable, aBlockPointer);
 
-				for (int i = 0; i < indexNode.getPointerCount(); i++)
+				for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 				{
 					BlockPointer pointer = indexNode.getPointer(i);
 

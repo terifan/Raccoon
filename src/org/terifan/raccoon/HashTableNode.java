@@ -8,7 +8,6 @@ import org.terifan.raccoon.util.Log;
 final class HashTableNode implements Node
 {
 	private byte[] mBuffer;
-	private int mPointerCount;
 	private HashTable mHashTable;
 	private BlockPointer mBlockPointer;
 
@@ -16,7 +15,6 @@ final class HashTableNode implements Node
 	public HashTableNode(HashTable aHashTable)
 	{
 		mHashTable = aHashTable;
-		mPointerCount = mHashTable.mNodeSize / BlockPointer.SIZE;
 		mBuffer = new byte[mHashTable.mNodeSize];
 	}
 
@@ -25,7 +23,6 @@ final class HashTableNode implements Node
 	{
 		mHashTable = aHashTable;
 		mBuffer = mHashTable.readBlock(aBlockPointer);
-		mPointerCount = mBuffer.length / BlockPointer.SIZE;
 		mBlockPointer = aBlockPointer;
 
 		assert mHashTable.mPerformanceTool.tick("readNode");
@@ -47,12 +44,6 @@ final class HashTableNode implements Node
 	public BlockType getType()
 	{
 		return BlockType.INDEX;
-	}
-
-
-	int getPointerCount()
-	{
-		return mPointerCount;
 	}
 
 
@@ -97,7 +88,7 @@ final class HashTableNode implements Node
 
 	private boolean isFree(int aIndex)
 	{
-		assert aIndex >= 0 && aIndex < mPointerCount : "0 >= " + aIndex + " < " + mPointerCount;
+		assert aIndex >= 0 && aIndex < mHashTable.mPointersPerNode : "0 >= " + aIndex + " < " + mHashTable.mPointersPerNode;
 
 		return BlockPointer.getBlockType(mBuffer, aIndex * BlockPointer.SIZE) == BlockType.FREE;
 	}
@@ -105,7 +96,7 @@ final class HashTableNode implements Node
 
 	BlockPointer get(int aIndex)
 	{
-		assert aIndex >= 0 && aIndex < mPointerCount;
+		assert aIndex >= 0 && aIndex < mHashTable.mPointersPerNode;
 
 		return new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
 	}
@@ -115,7 +106,7 @@ final class HashTableNode implements Node
 	{
 		int rangeRemain = 0;
 
-		for (int i = 0; i < mPointerCount; i++)
+		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{
 			BlockPointer bp = get(i);
 
@@ -191,42 +182,19 @@ final class HashTableNode implements Node
 				writeBlock(index, node, blockPointer.getRange());
 				break;
 			case LEAF:
+			{
 				HashTableLeaf leaf = new HashTableLeaf(mHashTable, blockPointer);
 				oldValue = leaf.putValueLeaf(this, index, aEntry, aLevel, aKey);
 				break;
+			}
 			case HOLE:
-				oldValue = upgradeHoleToLeaf(aEntry, blockPointer, index);
+				HashTableLeaf leaf = new HashTableLeaf(mHashTable);
+				oldValue = leaf.putValueLeaf(this, index, aEntry, aLevel, aKey);
 				break;
 			case FREE:
 			default:
 				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
 		}
-
-		Log.dec();
-
-		return oldValue;
-	}
-
-
-	byte[] upgradeHoleToLeaf(ArrayMapEntry aEntry, BlockPointer aBlockPointer, int aIndex)
-	{
-		assert mHashTable.mPerformanceTool.tick("upgradeHoleToLeaf");
-
-		Log.d("upgrade hole to leaf");
-		Log.inc();
-
-		mHashTable.mCost.mTreeTraversal++;
-
-		HashTableLeaf node = new HashTableLeaf(mHashTable);
-
-		if (!node.put(aEntry))
-		{
-			throw new DatabaseException("Failed to upgrade hole to leaf");
-		}
-
-		byte[] oldValue = aEntry.getValue();
-
-		writeBlock(aIndex, node, aBlockPointer.getRange());
 
 		Log.dec();
 
@@ -303,7 +271,7 @@ final class HashTableNode implements Node
 		}
 		else
 		{
-			assert aIndex >= 0 && aIndex < mPointerCount;
+			assert aIndex >= 0 && aIndex < mHashTable.mPointersPerNode;
 
 			blockPointer = mHashTable.writeBlock(aNode, aRange);
 		}

@@ -82,7 +82,7 @@ final class HashTableNodeIterator implements Iterator<ArrayMapEntry>
 
 		HashTableNode node = new HashTableNode(mHashTable, pointer);
 
-		for (int i = 0; i < node.getPointerCount(); i++)
+		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{
 			BlockPointer next = node.getPointer(i);
 
