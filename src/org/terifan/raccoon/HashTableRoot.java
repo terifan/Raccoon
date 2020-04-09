@@ -92,7 +92,7 @@ public class HashTableRoot
 			{
 				Log.d("upgrade root leaf to node");
 
-				mRootNode = mRootMap.splitLeaf(mRootBlockPointer, 0).setGCEnabled(false);
+				mRootNode = mRootMap.splitLeaf(0).setGCEnabled(false);
 
 				mRootBlockPointer = mHashTable.writeBlock(mRootNode, mPointersPerNode);
 				mRootMap = null;

@@ -71,7 +71,7 @@ final class HashTableNode implements Node
 
 	BlockPointer getPointer(int aIndex)
 	{
-		if (getPointerType(aIndex) == BlockType.FREE)
+		if (isFree(aIndex))
 		{
 			return null;
 		}
@@ -86,7 +86,7 @@ final class HashTableNode implements Node
 
 	int findPointer(int aIndex)
 	{
-		for (; getPointerType(aIndex) == BlockType.FREE; aIndex--)
+		for (; isFree(aIndex); aIndex--)
 		{
 		}
 
@@ -134,11 +134,11 @@ final class HashTableNode implements Node
 	}
 
 
-	private BlockType getPointerType(int aIndex)
+	private boolean isFree(int aIndex)
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount : "0 >= " + aIndex + " < " + mPointerCount;
 
-		return BlockPointer.getBlockType(mBuffer, aIndex * BlockPointer.SIZE);
+		return BlockPointer.getBlockType(mBuffer, aIndex * BlockPointer.SIZE) == BlockType.FREE;
 	}
 
 
@@ -258,7 +258,7 @@ final class HashTableNode implements Node
 				break;
 			case LEAF:
 				HashTableLeaf leaf = new HashTableLeaf(mHashTable, blockPointer);
-				oldValue = leaf.putValueLeaf(this, blockPointer, index, aEntry, aLevel, aKey);
+				oldValue = leaf.putValueLeaf(this, index, aEntry, aLevel, aKey);
 				break;
 			case HOLE:
 				oldValue = upgradeHoleToLeaf(aEntry, blockPointer, index);
