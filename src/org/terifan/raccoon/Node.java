@@ -1,8 +1,12 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.storage.BlockPointer;
 
-public interface Node
+
+interface Node
 {
+	BlockPointer getBlockPointer();
+
 	byte[] array();
 
 	BlockType getType();
@@ -16,4 +20,6 @@ public interface Node
 	void scan(ScanResult aScanResult);
 
 	String integrityCheck();
+
+	void visit(HashTableVisitor aVisitor) throws Exception;
 }

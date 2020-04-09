@@ -706,6 +706,9 @@ public class DatabaseNGTest
 		try (Database database = new Database(device, DatabaseOpenOption.OPEN))
 		{
 			assertEquals(database.size(_Animal1K.class), 0);
+
+			// TODO: check free space
+			// TODO: check blob deletion
 		}
 	}
 

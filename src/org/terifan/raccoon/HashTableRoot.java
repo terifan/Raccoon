@@ -1,13 +1,12 @@
 package org.terifan.raccoon;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public class HashTableRoot implements Node
+class HashTableRoot implements Node
 {
 	HashTableLeaf mRootMap;
 	HashTableNode mRootNode;
@@ -120,34 +119,6 @@ public class HashTableRoot implements Node
 	}
 
 
-	void clear()
-	{
-		if (mRootMap != null)
-		{
-			mRootMap.clear();
-		}
-		else
-		{
-			mHashTable.visit((aPointerIndex, aBlockPointer) ->
-			{
-				mHashTable.mCost.mTreeTraversal++;
-
-				if (aPointerIndex >= 0 && aBlockPointer != null && (aBlockPointer.getBlockType() == BlockType.INDEX || aBlockPointer.getBlockType() == BlockType.LEAF))
-				{
-					mHashTable.freeBlock(aBlockPointer);
-				}
-			});
-
-			mRootNode = null;
-			mRootMap = new HashTableLeaf(mHashTable, null);
-		}
-
-		mHashTable.freeBlock(mRootBlockPointer);
-
-		mRootBlockPointer = mHashTable.writeBlock(mRootMap, mHashTable.mPointersPerNode);
-	}
-
-
 	void close()
 	{
 		mRootMap = null;
@@ -164,14 +135,10 @@ public class HashTableRoot implements Node
 	}
 
 
-	void visit(HashTableVisitor aVisitor)
+	@Override
+	public void visit(HashTableVisitor aVisitor) throws Exception
 	{
-		if (mRootNode != null)
-		{
-			mRootNode.visitNode(aVisitor);
-		}
-
-		aVisitor.visit(-1, mRootBlockPointer); // start visit at root level
+		node().visit(aVisitor);
 	}
 
 
@@ -210,7 +177,14 @@ public class HashTableRoot implements Node
 	}
 
 
-	private Node node()
+	@Override
+	public BlockPointer getBlockPointer()
+	{
+		return node().getBlockPointer();
+	}
+
+
+	Node node()
 	{
 		return mRootNode != null ? mRootNode : mRootMap;
 	}

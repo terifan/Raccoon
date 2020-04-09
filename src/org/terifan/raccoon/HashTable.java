@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -250,7 +252,25 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		int modCount = ++mModCount;
 		mChanged = true;
 
-		mRoot.clear();
+		visit(node ->
+		{
+			mCost.mTreeTraversal++;
+
+			if (node instanceof HashTableLeaf)
+			{
+				for (ArrayMapEntry entry : (HashTableLeaf)node)
+				{
+					if (entry.getFlags() == TableInstance.FLAG_BLOB)
+					{
+						Blob.deleteBlob(mBlockAccessor, entry.getValue());
+					}
+				}
+			}
+
+			freeBlock(node.getBlockPointer());
+		});
+
+		mRoot = new HashTableRoot(this, true);
 
 		assert mModCount == modCount : "concurrent modification";
 	}
@@ -275,22 +295,13 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		Result<Integer> result = new Result<>(0);
 
-		visit((aPointerIndex, aBlockPointer) ->
+		visit(node ->
 		{
 			mCost.mTreeTraversal++;
 
-			if (aBlockPointer != null && aBlockPointer.getBlockType() == BlockType.LEAF)
+			if (node instanceof HashTableLeaf)
 			{
-				HashTableLeaf leaf;
-				if (aBlockPointer.getBlockIndex0() == mRoot.mRootBlockPointer.getBlockIndex0() && mRoot.mRootMap != null)
-				{
-					leaf = mRoot.mRootMap;
-				}
-				else
-				{
-					leaf = new HashTableLeaf(this, null, aBlockPointer);
-				}
-
+				HashTableLeaf leaf = (HashTableLeaf)node;
 				result.set(result.get() + leaf.size());
 			}
 		});

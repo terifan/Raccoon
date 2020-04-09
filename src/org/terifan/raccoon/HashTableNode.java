@@ -39,6 +39,13 @@ final class HashTableNode implements Node
 
 
 	@Override
+	public BlockPointer getBlockPointer()
+	{
+		return mBlockPointer;
+	}
+
+
+	@Override
 	public byte[] array()
 	{
 		return mBuffer;
@@ -244,20 +251,20 @@ final class HashTableNode implements Node
 	}
 
 
-	void visitNode(HashTableVisitor aVisitor)
+	@Override
+	public void visit(HashTableVisitor aVisitor) throws Exception
 	{
 		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{
-			BlockPointer next = getPointer(i);
+			Node node = getNode(i);
 
-			if (next != null && next.getBlockType() == BlockType.INDEX)
+			if (node != null)
 			{
-				HashTableNode node = getNode(i);
-				node.visitNode(aVisitor);
+				node.visit(aVisitor);
 			}
-
-			aVisitor.visit(i, next);
 		}
+
+		aVisitor.visit(this);
 	}
 
 

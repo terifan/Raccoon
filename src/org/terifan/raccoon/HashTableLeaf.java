@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
-import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
@@ -34,6 +33,13 @@ class HashTableLeaf extends ArrayMap implements Node
 		assert aBlockPointer.getBlockType() == BlockType.LEAF;
 
 		mHashTable.mCost.mReadBlockLeaf++;
+	}
+
+
+	@Override
+	public BlockPointer getBlockPointer()
+	{
+		return mBlockPointer;
 	}
 
 
@@ -216,5 +222,12 @@ class HashTableLeaf extends ArrayMap implements Node
 		aScanResult.enterLeaf(mBlockPointer, mBuffer);
 		aScanResult.records += size();
 		aScanResult.exitLeaf();
+	}
+
+
+	@Override
+	public void visit(HashTableVisitor aVisitor) throws Exception
+	{
+		aVisitor.visit(this);
 	}
 }
