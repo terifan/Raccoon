@@ -64,9 +64,6 @@ class HashTableLeaf extends ArrayMap implements Node
 		node.writeBlock(0, lowLeaf, halfRange);
 		node.writeBlock(halfRange, highLeaf, halfRange);
 
-		lowLeaf.gc();
-		highLeaf.gc();
-
 		Log.dec();
 		Log.dec();
 
@@ -102,9 +99,6 @@ class HashTableLeaf extends ArrayMap implements Node
 
 		aNode.writeBlock(aIndex, lowLeaf, halfRange);
 		aNode.writeBlock(aIndex + halfRange, highLeaf, halfRange);
-
-		lowLeaf.gc();
-		highLeaf.gc();
 
 		Log.dec();
 		Log.dec();
@@ -160,8 +154,6 @@ class HashTableLeaf extends ArrayMap implements Node
 			oldValue = node.putValue(aEntry, aKey, aLevel + 1); // recursive put
 
 			aNode.writeBlock(aIndex, node, mBlockPointer.getRange());
-
-			node.gc();
 		}
 
 		return oldValue;

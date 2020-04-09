@@ -9,7 +9,6 @@ final class HashTableNode implements Node
 {
 	private byte[] mBuffer;
 	private int mPointerCount;
-	private boolean mGCEnabled;
 	private HashTable mHashTable;
 	private BlockPointer mBlockPointer;
 
@@ -19,7 +18,6 @@ final class HashTableNode implements Node
 		mHashTable = aHashTable;
 		mPointerCount = mHashTable.mNodeSize / BlockPointer.SIZE;
 		mBuffer = new byte[mHashTable.mNodeSize];
-		mGCEnabled = true;
 	}
 
 
@@ -28,7 +26,6 @@ final class HashTableNode implements Node
 		mHashTable = aHashTable;
 		mBuffer = mHashTable.readBlock(aBlockPointer);
 		mPointerCount = mBuffer.length / BlockPointer.SIZE;
-		mGCEnabled = true;
 		mBlockPointer = aBlockPointer;
 
 		assert mHashTable.mPerformanceTool.tick("readNode");
@@ -144,23 +141,6 @@ final class HashTableNode implements Node
 	}
 
 
-	void gc()
-	{
-		if (mGCEnabled)
-		{
-			mBuffer = null;
-			mPointerCount = 0;
-		}
-	}
-
-
-	HashTableNode setGCEnabled(boolean aGCEnabled)
-	{
-		mGCEnabled = aGCEnabled;
-		return this;
-	}
-
-
 	boolean getValue(byte[] aKey, int aLevel, ArrayMapEntry aEntry)
 	{
 		assert mHashTable.mPerformanceTool.tick("getValue");
@@ -179,7 +159,6 @@ final class HashTableNode implements Node
 				mHashTable.mCost.mValueGet++;
 				HashTableLeaf leaf = new HashTableLeaf(mHashTable, blockPointer);
 				boolean result = leaf.get(aEntry);
-				leaf.gc();
 				return result;
 			case HOLE:
 				return false;
@@ -210,7 +189,6 @@ final class HashTableNode implements Node
 				oldValue = node.putValue(aEntry, aKey, aLevel + 1);
 				mHashTable.freeBlock(blockPointer);
 				writeBlock(index, node, blockPointer.getRange());
-				node.gc();
 				break;
 			case LEAF:
 				HashTableLeaf leaf = new HashTableLeaf(mHashTable, blockPointer);
@@ -250,8 +228,6 @@ final class HashTableNode implements Node
 
 		writeBlock(aIndex, node, aBlockPointer.getRange());
 
-		node.gc();
-
 		Log.dec();
 
 		return oldValue;
@@ -290,7 +266,6 @@ final class HashTableNode implements Node
 					writeBlock(index, leaf, blockPointer.getRange());
 				}
 
-				leaf.gc();
 				return found;
 			case HOLE:
 				return false;
@@ -315,8 +290,6 @@ final class HashTableNode implements Node
 
 			aVisitor.visit(i, next);
 		}
-
-		gc();
 	}
 
 

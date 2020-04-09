@@ -92,8 +92,6 @@ final class HashTableNodeIterator implements Iterator<ArrayMapEntry>
 			}
 		}
 
-		node.gc();
-
 		return hasNext();
 	}
 
