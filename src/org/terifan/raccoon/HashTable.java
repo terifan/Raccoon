@@ -30,7 +30,6 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	private boolean mCommitChangesToBlockDevice;
 	/*private*/ final PerformanceTool mPerformanceTool;
 	/*private*/ int mModCount;
-	HashTableNodeProvider mProvider;
 
 
 	/**
@@ -44,8 +43,6 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		mCost = aCost;
 		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
 		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam, aTableParam.getBlockReadCacheSize());
-
-		mProvider = new HashTableNodeProvider(this);
 
 		if (aTableHeader == null)
 		{

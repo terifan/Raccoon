@@ -250,14 +250,14 @@ final class HashTableNode implements Node
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				HashTableNode node = mHashTable.mProvider.read(blockPointer);
+				HashTableNode node = new HashTableNode(mHashTable, blockPointer);
 				oldValue = node.putValue(aEntry, aKey, aLevel + 1);
 				mHashTable.freeBlock(blockPointer);
 				setPointer(index, mHashTable.writeBlock(node, blockPointer.getRange()));
 				node.gc();
 				break;
 			case LEAF:
-				HashTableLeaf leaf = mHashTable.mProvider.read(blockPointer);
+				HashTableLeaf leaf = new HashTableLeaf(mHashTable, blockPointer);
 				oldValue = leaf.putValueLeaf(this, blockPointer, index, aEntry, aLevel, aKey);
 				break;
 			case HOLE:
@@ -315,8 +315,7 @@ final class HashTableNode implements Node
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-			{
-				HashTableNode node = mHashTable.mProvider.read(blockPointer);
+				HashTableNode node = new HashTableNode(mHashTable, blockPointer);
 				if (node.removeValue(aKey, aLevel + 1, aEntry))
 				{
 					mHashTable.freeBlock(blockPointer);
@@ -325,24 +324,21 @@ final class HashTableNode implements Node
 					return true;
 				}
 				return false;
-			}
 			case LEAF:
-			{
-				HashTableLeaf node = mHashTable.mProvider.read(blockPointer);
-				boolean found = node.remove(aEntry);
+				HashTableLeaf leaf = new HashTableLeaf(mHashTable, blockPointer);
+				boolean found = leaf.remove(aEntry);
 
 				if (found)
 				{
 					mHashTable.mCost.mEntityRemove++;
 
 					mHashTable.freeBlock(blockPointer);
-					BlockPointer newBlockPointer = mHashTable.writeBlock(node, blockPointer.getRange());
+					BlockPointer newBlockPointer = mHashTable.writeBlock(leaf, blockPointer.getRange());
 					setPointer(index, newBlockPointer);
 				}
 
-				node.gc();
+				leaf.gc();
 				return found;
-			}
 			case HOLE:
 				return false;
 			case FREE:
@@ -360,7 +356,7 @@ final class HashTableNode implements Node
 
 			if (next != null && next.getBlockType() == BlockType.INDEX)
 			{
-				HashTableNode node = mHashTable.mProvider.read(next);
+				HashTableNode node = new HashTableNode(mHashTable, next);
 				node.visitNode(aVisitor);
 			}
 
