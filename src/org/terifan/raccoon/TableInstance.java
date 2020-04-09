@@ -34,23 +34,16 @@ public final class TableInstance<T> implements Closeable
 
 	TableInstance(Database aDatabase, Table aTable, byte[] aPointer)
 	{
-		try
-		{
-			mCost = new Cost();
-			mCommitLocks = new HashSet<>();
+		mCost = new Cost();
+		mCommitLocks = new HashSet<>();
 
-			mDatabase = aDatabase;
-			mTable = aTable;
+		mDatabase = aDatabase;
+		mTable = aTable;
 
-			CompressionParam compression = mDatabase.getCompressionParameter();
-			TableParam parameter = mDatabase.getTableParameter();
+		CompressionParam compression = mDatabase.getCompressionParameter();
+		TableParam parameter = mDatabase.getTableParameter();
 
-			mHashTable = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());
-		}
-		catch (IOException e)
-		{
-			throw new DatabaseIOException(e);
-		}
+		mHashTable = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());
 	}
 
 
@@ -142,18 +135,11 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	private void deleteIfBlob(ArrayMapEntry aEntry) throws DatabaseException
+	private void deleteIfBlob(ArrayMapEntry aEntry)
 	{
 		if (aEntry.hasFlag(FLAG_BLOB))
 		{
-			try
-			{
-				Blob.deleteBlob(getBlockAccessor(), aEntry.getValue());
-			}
-			catch (IOException e)
-			{
-				throw new DatabaseException(e);
-			}
+			Blob.deleteBlob(getBlockAccessor(), aEntry.getValue());
 		}
 	}
 
@@ -200,42 +186,48 @@ public final class TableInstance<T> implements Closeable
 			Blob out = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), header, aOpenOption)
 			{
 				@Override
-				public void close() throws IOException
+				public void close()
 				{
 					try
 					{
-						if (isModified())
+						try
 						{
-							Log.d("write blob entry");
-
-							byte[] header = finish();
-
-							mDatabase.aquireWriteLock();
-							try
+							if (isModified())
 							{
-								ArrayMapEntry entry = new ArrayMapEntry(key, header, FLAG_BLOB);
-								mHashTable.put(entry);
-							}
-							catch (DatabaseException e)
-							{
-								mDatabase.forceClose(e);
-								throw e;
-							}
-							finally
-							{
-								mDatabase.releaseWriteLock();
+									Log.d("write blob entry");
 
+									byte[] header = finish();
+
+									mDatabase.aquireWriteLock();
+									try
+									{
+										ArrayMapEntry entry = new ArrayMapEntry(key, header, FLAG_BLOB);
+										mHashTable.put(entry);
+									}
+									catch (DatabaseException e)
+									{
+										mDatabase.forceClose(e);
+										throw e;
+									}
+									finally
+									{
+										mDatabase.releaseWriteLock();
+									}
 							}
+						}
+						finally
+						{
+							synchronized (TableInstance.this)
+							{
+								mCommitLocks.remove(lock);
+							}
+
+							super.close();
 						}
 					}
-					finally
+					catch (IOException e)
 					{
-						synchronized (TableInstance.this)
-						{
-							mCommitLocks.remove(lock);
-						}
-
-						super.close();
+						throw new DatabaseIOException(e);
 					}
 				}
 			};
@@ -321,16 +313,9 @@ public final class TableInstance<T> implements Closeable
 			}
 		}
 
-		try
+		if (!mHashTable.commit())
 		{
-			if (!mHashTable.commit())
-			{
-				return false;
-			}
-		}
-		catch (IOException e)
-		{
-			throw new DatabaseIOException(e);
+			return false;
 		}
 
 		byte[] newPointer = mHashTable.marshalHeader();
@@ -346,7 +331,7 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	void rollback() throws IOException
+	void rollback()
 	{
 		mHashTable.rollback();
 	}
@@ -469,7 +454,7 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	private synchronized BlockAccessor getBlockAccessor() throws IOException
+	private synchronized BlockAccessor getBlockAccessor()
 	{
 		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter(), 0);
 	}

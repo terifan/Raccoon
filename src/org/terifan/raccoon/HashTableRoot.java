@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.io.IOException;
 import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -136,7 +137,7 @@ class HashTableRoot implements Node
 
 
 	@Override
-	public void visit(HashTableVisitor aVisitor) throws Exception
+	public void visit(HashTableVisitor aVisitor)
 	{
 		node().visit(aVisitor);
 	}

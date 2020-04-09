@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -37,7 +35,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	/**
 	 * Open an existing HashTable or create a new HashTable with default settings.
 	 */
-	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool) throws IOException
+	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool)
 	{
 		mPerformanceTool = aPerformanceTool;
 		mTableName = aTableName;
@@ -181,7 +179,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	public boolean commit() throws IOException
+	public boolean commit()
 	{
 		assert mPerformanceTool.tick("commit");
 
@@ -226,7 +224,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	public void rollback() throws IOException
+	public void rollback()
 	{
 		checkOpen();
 
@@ -330,7 +328,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	void checkOpen() throws IllegalStateException
+	void checkOpen()
 	{
 		if (mClosed)
 		{

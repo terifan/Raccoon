@@ -393,7 +393,7 @@ public class Blob implements SeekableByteChannel
 	}
 
 
-	static void deleteBlob(BlockAccessor aBlockAccessor, byte[] aHeader) throws IOException
+	static void deleteBlob(BlockAccessor aBlockAccessor, byte[] aHeader)
 	{
 		freeBlocks(aBlockAccessor, ByteArrayBuffer.wrap(aHeader).position(HEADER_SIZE));
 	}

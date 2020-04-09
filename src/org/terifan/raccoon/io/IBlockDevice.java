@@ -1,7 +1,5 @@
 package org.terifan.raccoon.io;
 
-import java.io.IOException;
-
 
 public interface IBlockDevice extends AutoCloseable
 {
@@ -19,7 +17,7 @@ public interface IBlockDevice extends AutoCloseable
 	 * @param aIV
 	 *   128 bit seed value that may be used by block device implementations performing cryptography
 	 */
-	void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException;
+	void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV);
 
 
 	/**
@@ -36,7 +34,7 @@ public interface IBlockDevice extends AutoCloseable
 	 * @param aBlockKey
 	 *   128 bit seed value that may be used by block device implementations performing cryptography
 	 */
-	void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException;
+	void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV);
 
 
 	/**
@@ -45,20 +43,20 @@ public interface IBlockDevice extends AutoCloseable
 	 * @param aMetadata
 	 *   force update of metadata
 	 */
-	void commit(boolean aMetadata) throws IOException;
+	void commit(boolean aMetadata);
 
 
 	/**
 	 * Close the block device. Information not previously committed will be lost.
 	 */
 	@Override
-	void close() throws IOException;
+	void close();
 
 
 	/**
 	 * Return number of blocks available on this device.
 	 */
-	long length() throws IOException;
+	long length();
 
 
 	/**
@@ -74,7 +72,7 @@ public interface IBlockDevice extends AutoCloseable
 	 * @param aNewLength
 	 *   number of blocks
 	 */
-	void setLength(long aNewLength) throws IOException;
+	void setLength(long aNewLength);
 
 
 	/**
@@ -82,7 +80,7 @@ public interface IBlockDevice extends AutoCloseable
 	 *
 	 * Default implementation calls close.
 	 */
-	default void forceClose() throws IOException
+	default void forceClose()
 	{
 		close();
 	}

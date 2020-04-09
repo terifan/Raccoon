@@ -1,12 +1,12 @@
 package org.terifan.raccoon.io.physical;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import org.terifan.raccoon.DatabaseIOException;
 import org.terifan.raccoon.util.Log;
 
 
@@ -35,7 +35,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 
 
 	@Override
-	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
+	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
 	{
 		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
@@ -51,7 +51,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 
 
 	@Override
-	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
+	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
 	{
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
@@ -65,7 +65,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 			}
 			else
 			{
-				throw new IOException("Reading a free block: " + aBlockIndex);
+				throw new DatabaseIOException("Reading a free block: " + aBlockIndex);
 			}
 
 			aBlockIndex++;
@@ -76,13 +76,13 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 
 
 	@Override
-	public void commit(boolean aMetadata) throws IOException
+	public void commit(boolean aMetadata)
 	{
 	}
 
 
 	@Override
-	public void close() throws IOException
+	public void close()
 	{
 	}
 
@@ -102,7 +102,7 @@ public class MemoryBlockDevice implements IPhysicalBlockDevice
 
 
 	@Override
-	public synchronized void setLength(long aNewLength) throws IOException
+	public synchronized void setLength(long aNewLength)
 	{
 		Long[] offsets = mStorage.keySet().toArray(new Long[mStorage.size()]);
 

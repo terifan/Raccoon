@@ -11,6 +11,7 @@ import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.security.cryptography.SecretKey;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
+import org.terifan.raccoon.DatabaseIOException;
 import org.terifan.security.cryptography.CipherMode;
 import org.terifan.security.cryptography.ISAAC;
 import static org.terifan.raccoon.util.ByteArrayUtil.*;
@@ -47,7 +48,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	public static SecureBlockDevice create(AccessCredentials aAccessCredentials, IPhysicalBlockDevice aBlockDevice) throws IOException
+	public static SecureBlockDevice create(AccessCredentials aAccessCredentials, IPhysicalBlockDevice aBlockDevice)
 	{
 		if (aBlockDevice == null)
 		{
@@ -108,7 +109,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	private static boolean createImpl(AccessCredentials aAccessCredentials, SecureBlockDevice aDevice, byte[] aPayload, long aBlockIndex) throws IOException
+	private static boolean createImpl(AccessCredentials aAccessCredentials, SecureBlockDevice aDevice, byte[] aPayload, long aBlockIndex)
 	{
 		byte[] blockData = createBootBlock(aAccessCredentials, aPayload, aBlockIndex, aDevice.mBlockDevice.getBlockSize());
 
@@ -127,7 +128,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	private static byte[] createBootBlock(AccessCredentials aAccessCredentials, byte[] aPayload, long aBlockIndex, int aBlockSize) throws IOException
+	private static byte[] createBootBlock(AccessCredentials aAccessCredentials, byte[] aPayload, long aBlockIndex, int aBlockSize)
 	{
 		byte[] salt = new byte[SALT_SIZE];
 		byte[] padding = new byte[aBlockSize - SALT_SIZE - PAYLOAD_SIZE];
@@ -161,13 +162,13 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	public static SecureBlockDevice open(AccessCredentials aAccessCredentials, IPhysicalBlockDevice aBlockDevice) throws IOException
+	public static SecureBlockDevice open(AccessCredentials aAccessCredentials, IPhysicalBlockDevice aBlockDevice)
 	{
 		return open(aAccessCredentials, aBlockDevice, 0);
 	}
 
 
-	public static SecureBlockDevice open(AccessCredentials aAccessCredentials, IPhysicalBlockDevice aBlockDevice, long aBlockIndex) throws IOException
+	public static SecureBlockDevice open(AccessCredentials aAccessCredentials, IPhysicalBlockDevice aBlockDevice, long aBlockIndex)
 	{
 		if (aBlockDevice == null)
 		{
@@ -270,11 +271,11 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 
 	@Override
-	public void writeBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long[] aIV) throws IOException
+	public void writeBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long[] aIV)
 	{
 		if (aBlockIndex < 0)
 		{
-			throw new IOException("Illegal offset: " + aBlockIndex);
+			throw new DatabaseIOException("Illegal offset: " + aBlockIndex);
 		}
 
 		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
@@ -291,11 +292,11 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 
 	@Override
-	public void readBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long[] aIV) throws IOException
+	public void readBlock(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength, final long[] aIV)
 	{
 		if (aBlockIndex < 0)
 		{
-			throw new IOException("Illegal offset: " + aBlockIndex);
+			throw new DatabaseIOException("Illegal offset: " + aBlockIndex);
 		}
 
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
@@ -309,7 +310,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	public void writeBlockWithIV(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength) throws IOException
+	public void writeBlockWithIV(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength)
 	{
 		// the buffer must end with 16 zero bytes reserved for the IV
 		assert getLong(aBuffer, aBuffer.length - 16) == 0;
@@ -317,7 +318,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		if (aBlockIndex < 0)
 		{
-			throw new IOException("Illegal offset: " + aBlockIndex);
+			throw new DatabaseIOException("Illegal offset: " + aBlockIndex);
 		}
 
 		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
@@ -344,11 +345,11 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	public void readBlockWithIV(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength) throws IOException
+	public void readBlockWithIV(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength)
 	{
 		if (aBlockIndex < 0)
 		{
-			throw new IOException("Illegal offset: " + aBlockIndex);
+			throw new DatabaseIOException("Illegal offset: " + aBlockIndex);
 		}
 
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockDevice.getBlockSize());
@@ -380,28 +381,28 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 
 	@Override
-	public long length() throws IOException
+	public long length()
 	{
 		return mBlockDevice.length() - RESERVED_BLOCKS;
 	}
 
 
 	@Override
-	public void commit(boolean aMetadata) throws IOException
+	public void commit(boolean aMetadata)
 	{
 		mBlockDevice.commit(aMetadata);
 	}
 
 
 	@Override
-	public void setLength(long aLength) throws IOException
+	public void setLength(long aLength)
 	{
 		mBlockDevice.setLength(aLength + RESERVED_BLOCKS);
 	}
 
 
 	@Override
-	public void close() throws IOException
+	public void close()
 	{
 		if (mCipherImplementation != null)
 		{
@@ -417,7 +418,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	}
 
 
-	protected void validateBootBlocks(AccessCredentials aAccessCredentials) throws IOException
+	protected void validateBootBlocks(AccessCredentials aAccessCredentials)
 	{
 		byte[] original = new byte[mBlockDevice.getBlockSize()];
 		byte[] encypted = original.clone();
@@ -433,7 +434,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			}
 			catch (Exception e)
 			{
-				throw new IOException("Failed to read boot block " + i);
+				throw new DatabaseIOException("Failed to read boot block " + i);
 			}
 
 			if (i == 0)
@@ -448,7 +449,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 				if (!Arrays.equals(original, decrypted))
 				{
-					throw new IOException("Boot blocks are incompatible");
+					throw new DatabaseIOException("Boot blocks are incompatible");
 				}
 			}
 		}

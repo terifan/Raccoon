@@ -24,8 +24,10 @@ import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.managed.UnsupportedVersionException;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
+import resources.__TestUtils;
 import resources.entities._Fruit1K;
 import static resources.__TestUtils.t;
+import resources.entities._BlobKey1K;
 import resources.entities._Fruit1K1D;
 import resources.entities._Number1K2D;
 import resources.entities._Number1K1DS;
@@ -147,14 +149,14 @@ public class DatabaseNGTest
 		{
 			for (int i = 0; i < 10000; i++)
 			{
-				_Fruit2K apple = new _Fruit2K("red", "apple-"+i);
+				_Fruit2K apple = new _Fruit2K("red", "apple-" + i);
 				assertTrue(database.tryGet(apple));
-				assertEquals(apple._name, "apple-"+i);
+				assertEquals(apple._name, "apple-" + i);
 				assertEquals(apple.value, i);
 
-				_Animal1K animal = new _Animal1K("dog-"+i);
+				_Animal1K animal = new _Animal1K("dog-" + i);
 				assertTrue(database.tryGet(animal));
-				assertEquals(animal._name, "dog-"+i);
+				assertEquals(animal._name, "dog-" + i);
 				assertEquals(animal.number, i);
 			}
 		}
@@ -208,7 +210,7 @@ public class DatabaseNGTest
 				AtomicInteger n = new AtomicInteger();
 				for (int i = 0; i < 10000; i++)
 				{
-					executor.submit(()->
+					executor.submit(() ->
 					{
 						try
 						{
@@ -232,12 +234,12 @@ public class DatabaseNGTest
 				AtomicInteger n = new AtomicInteger();
 				for (int i = 0; i < 10000; i++)
 				{
-					executor.submit(()->
+					executor.submit(() ->
 					{
 						int j = n.incrementAndGet();
-						_Fruit2K apple = new _Fruit2K("red", "apple-"+j);
+						_Fruit2K apple = new _Fruit2K("red", "apple-" + j);
 						assertTrue(database.tryGet(apple));
-						assertEquals(apple._name, "apple-"+j);
+						assertEquals(apple._name, "apple-" + j);
 						assertEquals(apple.value, j);
 					});
 				}
@@ -251,7 +253,10 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		String[] numberNames = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
+		String[] numberNames =
+		{
+			"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"
+		};
 
 		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
 		{
@@ -281,7 +286,10 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		String[] numberNames = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
+		String[] numberNames =
+		{
+			"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"
+		};
 
 		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
 		{
@@ -345,7 +353,10 @@ public class DatabaseNGTest
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		String[] numberNames = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"};
+		String[] numberNames =
+		{
+			"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"
+		};
 
 		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
 		{
@@ -559,8 +570,6 @@ public class DatabaseNGTest
 //
 //		fail();
 //	}
-
-
 	@Test
 	public void testGetTables() throws Exception
 	{
@@ -688,6 +697,8 @@ public class DatabaseNGTest
 
 		try (Database database = new Database(device, DatabaseOpenOption.OPEN))
 		{
+			assertEquals(database.getBlockDevice().getFreeSpace(), 5);
+
 			for (int i = 0; i < 10000; i++)
 			{
 				assertTrue(database.tryGet(new _Animal1K("dog_" + i)));
@@ -707,8 +718,57 @@ public class DatabaseNGTest
 		{
 			assertEquals(database.size(_Animal1K.class), 0);
 
-			// TODO: check free space
-			// TODO: check blob deletion
+			assertEquals(database.getBlockDevice().getUsedSpace(), 13);
+		}
+	}
+
+
+	@Test
+	public void testClearBlobs() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		byte[][] buf = new byte[10][];
+
+		for (int i = 0; i < 10; i++)
+		{
+			buf[i] = __TestUtils.createRandomBuffer(0, 1024 * 1024 * (i + 1) / 2);
+		}
+
+		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
+		{
+			for (int i = 0; i < 10; i++)
+			{
+				try (Blob blob = database.openBlob(new _BlobKey1K("dog_" + i), BlobOpenOption.CREATE))
+				{
+					blob.writeAllBytes(buf[i]);
+				}
+			}
+			database.commit();
+		}
+
+		try (Database database = new Database(device, DatabaseOpenOption.OPEN))
+		{
+			assertEquals(database.getBlockDevice().getFreeSpace(), 5);
+
+			for (int i = 0; i < 10; i++)
+			{
+				try (Blob blob = database.openBlob(new _BlobKey1K("dog_" + i), BlobOpenOption.READ))
+				{
+					assertEquals(blob.readAllBytes(), buf[i]);
+				}
+			}
+
+			database.clear(_BlobKey1K.class);
+
+			database.commit();
+		}
+
+		try (Database database = new Database(device, DatabaseOpenOption.OPEN))
+		{
+			assertEquals(database.size(_BlobKey1K.class), 0);
+
+			assertEquals(database.getBlockDevice().getUsedSpace(), 11);
 		}
 	}
 
@@ -764,7 +824,7 @@ public class DatabaseNGTest
 		{
 			for (int i = 0; i < 10000; i++)
 			{
-				database.save(new _Animal1K("dog_"+i));
+				database.save(new _Animal1K("dog_" + i));
 			}
 			database.commit();
 		}
@@ -773,14 +833,14 @@ public class DatabaseNGTest
 		{
 			for (int i = 0; i < 10000; i++)
 			{
-				assertTrue(database.tryGet(new _Animal1K("dog_"+i)));
+				assertTrue(database.tryGet(new _Animal1K("dog_" + i)));
 			}
 
 			assertFalse(database.remove(new _Animal1K("cat")));
 
 			for (int i = 0; i < 10000; i++)
 			{
-				assertTrue(database.remove(new _Animal1K("dog_"+i)));
+				assertTrue(database.remove(new _Animal1K("dog_" + i)));
 			}
 
 			database.commit();
@@ -830,8 +890,6 @@ public class DatabaseNGTest
 //			database.stream(_Fruit1K.class).forEach(e->fail());
 //		}
 //	}
-
-
 	@Test(expectedExceptions = NoSuchEntityException.class)
 	public void testGetNonExistingTable() throws Exception
 	{
@@ -888,9 +946,12 @@ public class DatabaseNGTest
 				for (int i = 0; i < 10000; i++)
 				{
 					int j = i;
-					executor.submit(()->db.save(new _Fruit1K("apple_" + j)));
-					executor.submit(()->db.save(new _Fruit1K("carrot_" + j)));
-					if ((i % 1000) == 0) executor.submit(()->db.commit());
+					executor.submit(() -> db.save(new _Fruit1K("apple_" + j)));
+					executor.submit(() -> db.save(new _Fruit1K("carrot_" + j)));
+					if ((i % 1000) == 0)
+					{
+						executor.submit(() -> db.commit());
+					}
 				}
 			}
 			db.commit();
@@ -905,11 +966,14 @@ public class DatabaseNGTest
 				for (int i = 0; i < 10000; i++)
 				{
 					int j = i;
-					executor.submit(()->db.save(new _Fruit1K("banana_" + j)));
-					executor.submit(()->db.save(new _Fruit1K("apple_" + r.nextInt(10000))));
-					executor.submit(()->db.get(new _Fruit1K("apple_" + j)));
-					executor.submit(()->db.remove(new _Fruit1K("carrot_" + j)));
-					if ((i % 1000) == 0) executor.submit(()->db.commit());
+					executor.submit(() -> db.save(new _Fruit1K("banana_" + j)));
+					executor.submit(() -> db.save(new _Fruit1K("apple_" + r.nextInt(10000))));
+					executor.submit(() -> db.get(new _Fruit1K("apple_" + j)));
+					executor.submit(() -> db.remove(new _Fruit1K("carrot_" + j)));
+					if ((i % 1000) == 0)
+					{
+						executor.submit(() -> db.commit());
+					}
 				}
 			}
 			db.commit();
@@ -922,10 +986,10 @@ public class DatabaseNGTest
 				for (int i = 0; i < 10000; i++)
 				{
 					int j = i;
-					executor.submit(()->db.save(new _Fruit1K("cocoa_" + j)));
-					executor.submit(()->db.get(new _Fruit1K("apple_" + r.nextInt(10000))));
-					executor.submit(()->db.get(new _Fruit1K("banana_" + r.nextInt(10000))));
-					executor.submit(()->db.remove(new _Fruit1K("apple_" + r.nextInt(10000))));
+					executor.submit(() -> db.save(new _Fruit1K("cocoa_" + j)));
+					executor.submit(() -> db.get(new _Fruit1K("apple_" + r.nextInt(10000))));
+					executor.submit(() -> db.get(new _Fruit1K("banana_" + r.nextInt(10000))));
+					executor.submit(() -> db.remove(new _Fruit1K("apple_" + r.nextInt(10000))));
 				}
 			}
 			// changes will rollback on close because missing commit
@@ -933,7 +997,7 @@ public class DatabaseNGTest
 
 		try (Database db = new Database(managedBlockDevice, DatabaseOpenOption.OPEN))
 		{
-			List<String> items = db.list(_Fruit1K.class).stream().map(e->e._name).collect(Collectors.toList());
+			List<String> items = db.list(_Fruit1K.class).stream().map(e -> e._name).collect(Collectors.toList());
 
 			assertEquals(items.size(), 20000);
 
@@ -1048,7 +1112,7 @@ public class DatabaseNGTest
 			ScanResult scan = db.scan();
 
 			assertEquals(scan.tables, 38);
-			assertEquals(scan.records, 1+1+5*7+10000+10000+10000);
+			assertEquals(scan.records, 1 + 1 + 5 * 7 + 10000 + 10000 + 10000);
 //			assertEquals(scan.indexBlocks, 156);
 			assertEquals(scan.blobIndices, 0);
 			assertEquals(scan.blobData, 0);

@@ -226,7 +226,7 @@ class HashTableLeaf extends ArrayMap implements Node
 
 
 	@Override
-	public void visit(HashTableVisitor aVisitor) throws Exception
+	public void visit(HashTableVisitor aVisitor)
 	{
 		aVisitor.visit(this);
 	}

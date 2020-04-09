@@ -1,6 +1,7 @@
 package org.terifan.raccoon.io.managed;
 
 import java.io.IOException;
+import org.terifan.raccoon.DatabaseIOException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.secure.SecureBlockDevice;
 import org.terifan.raccoon.storage.BlockPointer;
@@ -47,7 +48,7 @@ class SuperBlock
 	}
 
 
-	public SuperBlock(IPhysicalBlockDevice aBlockDevice, long aBlockIndex) throws IOException
+	public SuperBlock(IPhysicalBlockDevice aBlockDevice, long aBlockIndex)
 	{
 		this();
 
@@ -139,7 +140,7 @@ class SuperBlock
 	}
 
 
-	public void read(IPhysicalBlockDevice aBlockDevice, long aBlockIndex) throws IOException
+	public void read(IPhysicalBlockDevice aBlockDevice, long aBlockIndex)
 	{
 		int blockSize = aBlockDevice.getBlockSize();
 
@@ -160,18 +161,18 @@ class SuperBlock
 
 		if (buffer.readInt64() != hash[0] || buffer.readInt64() != hash[1])
 		{
-			throw new IOException("Checksum error at block index " + aBlockIndex);
+			throw new DatabaseIOException("Checksum error at block index " + aBlockIndex);
 		}
 
 		unmarshal(buffer);
 	}
 
 
-	public void write(IPhysicalBlockDevice aBlockDevice, long aBlockIndex) throws IOException
+	public void write(IPhysicalBlockDevice aBlockDevice, long aBlockIndex)
 	{
 		if (aBlockIndex < 0)
 		{
-			throw new IOException("Block at illegal offset: " + aBlockIndex);
+			throw new DatabaseIOException("Block at illegal offset: " + aBlockIndex);
 		}
 
 		mModifiedTime = System.currentTimeMillis();
@@ -185,7 +186,7 @@ class SuperBlock
 
 		if (buffer.remaining() < IV_SIZE)
 		{
-			throw new IOException("SuperBlock marshalled into a too large buffer");
+			throw new DatabaseIOException("SuperBlock marshalled into a too large buffer");
 		}
 
 		if (aBlockDevice instanceof SecureBlockDevice)
@@ -210,7 +211,7 @@ class SuperBlock
 	}
 
 
-	private void marshal(ByteArrayBuffer aBuffer) throws IOException
+	private void marshal(ByteArrayBuffer aBuffer)
 	{
 		if (mApplicationPointer == null)
 		{
@@ -233,7 +234,7 @@ class SuperBlock
 	}
 
 
-	private void unmarshal(ByteArrayBuffer aBuffer) throws IOException
+	private void unmarshal(ByteArrayBuffer aBuffer)
 	{
 		mFormatVersion = aBuffer.readInt8();
 

@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.io.IOException;
 import org.terifan.raccoon.storage.BlockPointer;
 
 
@@ -21,5 +22,5 @@ interface Node
 
 	String integrityCheck();
 
-	void visit(HashTableVisitor aVisitor) throws Exception;
+	void visit(HashTableVisitor aVisitor);
 }

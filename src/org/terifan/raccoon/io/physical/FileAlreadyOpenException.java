@@ -1,9 +1,9 @@
 package org.terifan.raccoon.io.physical;
 
-import java.io.IOException;
+import org.terifan.raccoon.DatabaseIOException;
 
 
-public class FileAlreadyOpenException extends IOException
+public class FileAlreadyOpenException extends DatabaseIOException
 {
 	private static final long serialVersionUID = 1L;
 

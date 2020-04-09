@@ -252,7 +252,7 @@ final class HashTableNode implements Node
 
 
 	@Override
-	public void visit(HashTableVisitor aVisitor) throws Exception
+	public void visit(HashTableVisitor aVisitor)
 	{
 		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{

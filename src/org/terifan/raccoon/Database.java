@@ -2,11 +2,9 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.io.managed.DeviceHeader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -73,7 +71,7 @@ public final class Database implements AutoCloseable
 	 * @param aParameters
 	 * parameters for the database
 	 */
-	public Database(File aFile, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
+	public Database(File aFile, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws UnsupportedVersionException
 	{
 		this();
 
@@ -121,7 +119,7 @@ public final class Database implements AutoCloseable
 				}
 			}
 
-			throw e;
+			throw new DatabaseException(e);
 		}
 	}
 
@@ -136,7 +134,7 @@ public final class Database implements AutoCloseable
 	 * @param aParameters
 	 * parameters for the database
 	 */
-	public Database(IPhysicalBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
+	public Database(IPhysicalBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws UnsupportedVersionException
 	{
 		this();
 
@@ -158,7 +156,7 @@ public final class Database implements AutoCloseable
 	 * @param aParameters
 	 * parameters for the database
 	 */
-	public Database(IManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws IOException, UnsupportedVersionException
+	public Database(IManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws UnsupportedVersionException
 	{
 		this();
 
@@ -170,7 +168,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption, OpenParam[] aOpenParams) throws IOException
+	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption, OpenParam[] aOpenParams)
 	{
 		mPerformanceTool = getParameter(PerformanceTool.class, aOpenParams, mPerformanceTool);
 
@@ -254,14 +252,7 @@ public final class Database implements AutoCloseable
 					Log.i("shutdown hook executing");
 					Log.inc();
 
-					try
-					{
-						close();
-					}
-					catch (IOException e)
-					{
-						throw new IllegalStateException(e);
-					}
+					close();
 
 					Log.dec();
 				}
@@ -276,7 +267,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private void create(IManagedBlockDevice aBlockDevice, OpenParam[] aParameters) throws IOException
+	private void create(IManagedBlockDevice aBlockDevice, OpenParam[] aParameters)
 	{
 		Log.i("create database");
 		Log.inc();
@@ -299,7 +290,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private void open(IManagedBlockDevice aBlockDevice, boolean aReadOnly, OpenParam[] aParameters) throws IOException, UnsupportedVersionException
+	private void open(IManagedBlockDevice aBlockDevice, boolean aReadOnly, OpenParam[] aParameters) throws UnsupportedVersionException
 	{
 		Log.i("open database");
 		Log.inc();
@@ -480,14 +471,7 @@ public final class Database implements AutoCloseable
 
 					updateSuperBlock();
 
-					try
-					{
-						mBlockDevice.commit();
-					}
-					catch (IOException e)
-					{
-						throw new DatabaseIOException(e);
-					}
+					mBlockDevice.commit();
 
 					mModified = false;
 
@@ -513,7 +497,7 @@ public final class Database implements AutoCloseable
 	/**
 	 * Reverts all pending changes.
 	 */
-	public void rollback() throws IOException
+	public void rollback()
 	{
 		checkOpen();
 
@@ -560,7 +544,7 @@ public final class Database implements AutoCloseable
 
 
 	@Override
-	public void close() throws IOException
+	public void close()
 	{
 		if (mBlockDevice == null)
 		{
@@ -1199,7 +1183,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public ScanResult scan() throws IOException
+	public ScanResult scan()
 	{
 		ScanResult scanResult = new ScanResult();
 
@@ -1234,15 +1218,8 @@ public final class Database implements AutoCloseable
 
 		reportStatus(LogLevel.FATAL, "an error was detected, forcefully closing block device to prevent damage, uncommitted changes were lost.", aException);
 
-		try
-		{
-			mBlockDevice.forceClose();
-			mSystemTable = null;
-		}
-		catch (IOException e)
-		{
-			throw new DatabaseException(e);
-		}
+		mBlockDevice.forceClose();
+		mSystemTable = null;
 	}
 
 

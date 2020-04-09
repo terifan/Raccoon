@@ -1,9 +1,9 @@
 package org.terifan.raccoon.io.managed;
 
-import java.io.IOException;
+import org.terifan.raccoon.DatabaseIOException;
 
 
-public class UnsupportedVersionException extends IOException
+public class UnsupportedVersionException extends DatabaseIOException
 {
 	private static final long serialVersionUID = 1L;
 
