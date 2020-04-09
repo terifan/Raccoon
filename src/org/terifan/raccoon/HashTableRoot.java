@@ -57,24 +57,25 @@ class HashTableRoot implements Node
 
 	void put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry)
 	{
-		if (mRootMap != null)
+		if (node() instanceof HashTableLeaf)
 		{
 			Log.d("put root value");
 
-			if (!mRootMap.putValue(aEntry, oOldEntry, 0))
+			if (!node().putValue(aEntry, oOldEntry, 0))
 			{
 				Log.d("upgrade root leaf to node");
 
-				mRootNode = mRootMap.splitLeaf(0);
+				mRootNode = ((HashTableLeaf)node()).splitLeaf(0);
 
 				mBlockPointer = mHashTable.writeBlock(mRootNode, mHashTable.mPointersPerNode);
 				mRootMap = null;
+
+				node().putValue(aEntry, oOldEntry, 0);
 			}
 		}
-
-		if (mRootMap == null)
+		else
 		{
-			mRootNode.putValue(aEntry, oOldEntry, 0);
+			node().putValue(aEntry, oOldEntry, 0);
 		}
 	}
 
@@ -154,7 +155,7 @@ class HashTableRoot implements Node
 	@Override
 	public BlockType getType()
 	{
-		return mRootNode != null ? BlockType.INDEX : BlockType.LEAF;
+		return node() instanceof HashTableNode ? BlockType.INDEX : BlockType.LEAF;
 	}
 
 
@@ -188,6 +189,6 @@ class HashTableRoot implements Node
 	@Override
 	public void scan(ScanResult aScanResult)
 	{
-		mRootNode.scan(aScanResult);
+		node().scan(aScanResult);
 	}
 }
