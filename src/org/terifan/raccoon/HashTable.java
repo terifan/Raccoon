@@ -202,7 +202,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 				mChanged = false;
 
-				Log.i("table commit finished; root block is %s", mRoot.getRootBlockPointer());
+				Log.i("table commit finished; root block is %s", mRoot.getBlockPointer());
 
 				Log.dec();
 				assert mModCount == modCount : "concurrent modification";

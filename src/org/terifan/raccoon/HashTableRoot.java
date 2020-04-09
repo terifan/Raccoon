@@ -1,6 +1,5 @@
 package org.terifan.raccoon;
 
-import java.io.IOException;
 import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -11,7 +10,7 @@ class HashTableRoot implements Node
 {
 	HashTableLeaf mRootMap;
 	HashTableNode mRootNode;
-	BlockPointer mRootBlockPointer;
+	BlockPointer mBlockPointer;
 	private HashTable mHashTable;
 
 
@@ -22,36 +21,36 @@ class HashTableRoot implements Node
 		if (aCreate)
 		{
 			mRootMap = new HashTableLeaf(mHashTable, null);
-			mRootBlockPointer = mHashTable.writeBlock(mRootMap, mHashTable.mPointersPerNode);
+			mBlockPointer = mHashTable.writeBlock(mRootMap, mHashTable.mPointersPerNode);
 		}
 	}
 
 
 	public void loadRoot()
 	{
-		Log.i("load root %s", mRootBlockPointer);
+		Log.i("load root %s", mBlockPointer);
 
-		if (mRootBlockPointer.getBlockType() == BlockType.LEAF)
+		if (mBlockPointer.getBlockType() == BlockType.LEAF)
 		{
-			mRootMap = new HashTableLeaf(mHashTable, null, mRootBlockPointer);
+			mRootMap = new HashTableLeaf(mHashTable, null, mBlockPointer);
 		}
 		else
 		{
-			mRootNode = new HashTableNode(mHashTable, mRootBlockPointer);
+			mRootNode = new HashTableNode(mHashTable, mBlockPointer);
 		}
 	}
 
 
 	void marshal(ByteArrayBuffer aBuffer)
 	{
-		mRootBlockPointer.marshal(aBuffer);
+		mBlockPointer.marshal(aBuffer);
 	}
 
 
 	void unmarshal(ByteArrayBuffer aBuffer)
 	{
-		mRootBlockPointer = new BlockPointer();
-		mRootBlockPointer.unmarshal(aBuffer);
+		mBlockPointer = new BlockPointer();
+		mBlockPointer.unmarshal(aBuffer);
 	}
 
 
@@ -61,13 +60,13 @@ class HashTableRoot implements Node
 		{
 			Log.d("put root value");
 
-			if (!mRootMap.put(aEntry))
+			if (!mRootMap.putValue(aEntry, aEntry.getKey(), 0))
 			{
 				Log.d("upgrade root leaf to node");
 
 				mRootNode = mRootMap.splitLeaf(0);
 
-				mRootBlockPointer = mHashTable.writeBlock(mRootNode, mHashTable.mPointersPerNode);
+				mBlockPointer = mHashTable.writeBlock(mRootNode, mHashTable.mPointersPerNode);
 				mRootMap = null;
 			}
 		}
@@ -85,17 +84,18 @@ class HashTableRoot implements Node
 	}
 
 
-	public BlockPointer getRootBlockPointer()
+	@Override
+	public BlockPointer getBlockPointer()
 	{
-		return mRootBlockPointer;
+		return mBlockPointer;
 	}
 
 
 	void writeBlock()
 	{
-		mHashTable.freeBlock(mRootBlockPointer);
+		mHashTable.freeBlock(mBlockPointer);
 
-		mRootBlockPointer = mHashTable.writeBlock(node(), mHashTable.mPointersPerNode);
+		mBlockPointer = mHashTable.writeBlock(node(), mHashTable.mPointersPerNode);
 	}
 
 
@@ -113,7 +113,7 @@ class HashTableRoot implements Node
 		}
 		else
 		{
-			Log.d("rollback %s", mRootBlockPointer.getBlockType() == BlockType.LEAF ? "root map" : "root node");
+			Log.d("rollback %s", mBlockPointer.getBlockType() == BlockType.LEAF ? "root map" : "root node");
 
 			loadRoot();
 		}
@@ -176,14 +176,6 @@ class HashTableRoot implements Node
 	{
 		return node().removeValue(aEntry, aKey, aLevel);
 	}
-
-
-	@Override
-	public BlockPointer getBlockPointer()
-	{
-		return node().getBlockPointer();
-	}
-
 
 	Node node()
 	{

@@ -8,8 +8,8 @@ import java.util.NoSuchElementException;
 
 
 /**
- * This is a fixed size buffer for key/value storage suitable for persistence on external media. The LeafNode wraps an array and reads and
- * writes entries directly to the array maintaining all necessary structural information inside the array at all time.
+ * This is a fixed size buffer for key/value storage suitable for persistence on external media. An array is wrapped and read and
+ * written to directly maintaining all necessary structural information inside the array at all time.
  *
  * implementation notes: an empty map will always consist of only zero value bytes, the map does not record the capacity, this must be
  * provided when an instance is created
@@ -346,7 +346,8 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		int keyOffset = mStartOffset + readKeyOffset(aIndex);
 		int valueOffset = mStartOffset + readValueOffset(aIndex);
 
-		aEntry.setKey(Arrays.copyOfRange(mBuffer, keyOffset, keyOffset + readKeyLength(aIndex)));
+		assert Arrays.equals(Arrays.copyOfRange(mBuffer, keyOffset, keyOffset + readKeyLength(aIndex)), aEntry.getKey());
+
 		aEntry.setFlags(mBuffer[valueOffset]);
 		aEntry.setValue(Arrays.copyOfRange(mBuffer, valueOffset + 1, valueOffset + readValueLength(aIndex)));
 
