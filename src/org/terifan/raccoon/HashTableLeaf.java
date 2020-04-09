@@ -60,13 +60,9 @@ class HashTableLeaf extends ArrayMap implements Node
 
 		divideLeafEntries(aLevel, halfRange, lowLeaf, highLeaf);
 
-		// create nodes pointing to leafs
-		BlockPointer lowIndex = mHashTable.writeIfNotEmpty(lowLeaf, halfRange);
-		BlockPointer highIndex = mHashTable.writeIfNotEmpty(highLeaf, halfRange);
-
 		HashTableNode node = new HashTableNode(mHashTable);
-		node.setPointer(0, lowIndex);
-		node.setPointer(halfRange, highIndex);
+		node.writeBlock(0, lowLeaf, halfRange);
+		node.writeBlock(halfRange, highLeaf, halfRange);
 
 		lowLeaf.gc();
 		highLeaf.gc();
@@ -104,11 +100,8 @@ class HashTableLeaf extends ArrayMap implements Node
 
 		divideLeafEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
 
-		// create nodes pointing to leafs
-		BlockPointer lowIndex = mHashTable.writeIfNotEmpty(lowLeaf, halfRange);
-		BlockPointer highIndex = mHashTable.writeIfNotEmpty(highLeaf, halfRange);
-
-		aNode.split(aIndex, lowIndex, highIndex);
+		aNode.writeBlock(aIndex, lowLeaf, halfRange);
+		aNode.writeBlock(aIndex + halfRange, highLeaf, halfRange);
 
 		lowLeaf.gc();
 		highLeaf.gc();
@@ -152,9 +145,7 @@ class HashTableLeaf extends ArrayMap implements Node
 
 			mHashTable.freeBlock(mBlockPointer);
 
-			mBlockPointer = mHashTable.writeBlock(this, mBlockPointer.getRange());
-
-			aNode.setPointer(aIndex, mBlockPointer);
+			aNode.writeBlock(aIndex, this, mBlockPointer.getRange());
 
 			mHashTable.mCost.mValuePut++;
 		}
@@ -168,9 +159,7 @@ class HashTableLeaf extends ArrayMap implements Node
 
 			oldValue = node.putValue(aEntry, aKey, aLevel + 1); // recursive put
 
-			mBlockPointer = mHashTable.writeBlock(node, mBlockPointer.getRange());
-
-			aNode.setPointer(aIndex, mBlockPointer);
+			aNode.writeBlock(aIndex, node, mBlockPointer.getRange());
 
 			node.gc();
 		}

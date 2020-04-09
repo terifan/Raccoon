@@ -7,8 +7,6 @@ import org.terifan.raccoon.util.Log;
 
 final class HashTableNode implements Node
 {
-	private final static BlockPointer EMPTY_POINTER = new BlockPointer();
-
 	private byte[] mBuffer;
 	private int mPointerCount;
 	private boolean mGCEnabled;
@@ -61,14 +59,6 @@ final class HashTableNode implements Node
 	}
 
 
-	void setPointer(int aIndex, BlockPointer aBlockPointer)
-	{
-		assert get(aIndex).getBlockType() == BlockType.FREE || get(aIndex).getRange() == aBlockPointer.getRange() : get(aIndex).getBlockType() + " " + get(aIndex).getRange() +"=="+ aBlockPointer.getRange();
-
-		set(aIndex, aBlockPointer);
-	}
-
-
 	BlockPointer getPointer(int aIndex)
 	{
 		if (isFree(aIndex))
@@ -94,44 +84,18 @@ final class HashTableNode implements Node
 	}
 
 
-	void split(int aIndex, BlockPointer aLowPointer, BlockPointer aHighPointer)
-	{
-		assert aLowPointer.getRange() + aHighPointer.getRange() == get(aIndex).getRange();
-		assert ensureEmpty(aIndex + 1, aLowPointer.getRange() + aHighPointer.getRange() - 1);
-
-		set(aIndex, aLowPointer);
-		set(aIndex + aLowPointer.getRange(), aHighPointer);
-	}
-
-
-	void merge(int aIndex, BlockPointer aBlockPointer)
-	{
-		BlockPointer bp1 = get(aIndex);
-		BlockPointer bp2 = get(aIndex + aBlockPointer.getRange());
-
-		assert bp1.getRange() + bp2.getRange() == aBlockPointer.getRange();
-		assert ensureEmpty(aIndex + 1, bp1.getRange() - 1);
-		assert ensureEmpty(aIndex + bp1.getRange() + 1, bp2.getRange() - 1);
-
-		set(aIndex, aBlockPointer);
-		set(aIndex + bp1.getRange(), EMPTY_POINTER);
-	}
-
-
-	private boolean ensureEmpty(int aIndex, int aRange)
-	{
-		byte[] array = mBuffer;
-
-		for (int i = aIndex * BlockPointer.SIZE, limit = (aIndex + aRange) * BlockPointer.SIZE; i < limit; i++)
-		{
-			if (array[i] != 0)
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
+//	void merge(int aIndex, BlockPointer aBlockPointer)
+//	{
+//		BlockPointer bp1 = get(aIndex);
+//		BlockPointer bp2 = get(aIndex + aBlockPointer.getRange());
+//
+//		assert bp1.getRange() + bp2.getRange() == aBlockPointer.getRange();
+//		assert ensureEmpty(aIndex + 1, bp1.getRange() - 1);
+//		assert ensureEmpty(aIndex + bp1.getRange() + 1, bp2.getRange() - 1);
+//
+//		set(aIndex, aBlockPointer);
+//		set(aIndex + bp1.getRange(), EMPTY_POINTER);
+//	}
 
 
 	private boolean isFree(int aIndex)
@@ -142,19 +106,11 @@ final class HashTableNode implements Node
 	}
 
 
-	private BlockPointer get(int aIndex)
+	BlockPointer get(int aIndex)
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount;
 
 		return new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
-	}
-
-
-	private void set(int aIndex, BlockPointer aBlockPointer)
-	{
-		assert aIndex >= 0 && aIndex < mPointerCount;
-
-		aBlockPointer.marshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
 	}
 
 
@@ -253,7 +209,7 @@ final class HashTableNode implements Node
 				HashTableNode node = new HashTableNode(mHashTable, blockPointer);
 				oldValue = node.putValue(aEntry, aKey, aLevel + 1);
 				mHashTable.freeBlock(blockPointer);
-				setPointer(index, mHashTable.writeBlock(node, blockPointer.getRange()));
+				writeBlock(index, node, blockPointer.getRange());
 				node.gc();
 				break;
 			case LEAF:
@@ -292,8 +248,7 @@ final class HashTableNode implements Node
 
 		byte[] oldValue = aEntry.getValue();
 
-		BlockPointer blockPointer = mHashTable.writeBlock(node, aBlockPointer.getRange());
-		setPointer(aIndex, blockPointer);
+		writeBlock(aIndex, node, aBlockPointer.getRange());
 
 		node.gc();
 
@@ -319,8 +274,7 @@ final class HashTableNode implements Node
 				if (node.removeValue(aKey, aLevel + 1, aEntry))
 				{
 					mHashTable.freeBlock(blockPointer);
-					BlockPointer newBlockPointer = mHashTable.writeBlock(node, blockPointer.getRange());
-					setPointer(index, newBlockPointer);
+					writeBlock(index, node, blockPointer.getRange());
 					return true;
 				}
 				return false;
@@ -333,8 +287,7 @@ final class HashTableNode implements Node
 					mHashTable.mCost.mEntityRemove++;
 
 					mHashTable.freeBlock(blockPointer);
-					BlockPointer newBlockPointer = mHashTable.writeBlock(leaf, blockPointer.getRange());
-					setPointer(index, newBlockPointer);
+					writeBlock(index, leaf, blockPointer.getRange());
 				}
 
 				leaf.gc();
@@ -364,5 +317,24 @@ final class HashTableNode implements Node
 		}
 
 		gc();
+	}
+
+
+	void writeBlock(int aIndex, Node aNode, int aRange)
+	{
+		BlockPointer blockPointer;
+
+		if (aNode instanceof HashTableLeaf && ((HashTableLeaf)aNode).isEmpty())
+		{
+			blockPointer = new BlockPointer().setBlockType(BlockType.HOLE).setRange(aRange);
+		}
+		else
+		{
+			assert aIndex >= 0 && aIndex < mPointerCount;
+
+			blockPointer = mHashTable.writeBlock(aNode, aRange);
+		}
+
+		blockPointer.marshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
 	}
 }
