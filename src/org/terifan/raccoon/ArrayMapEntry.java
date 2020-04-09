@@ -6,6 +6,7 @@ public final class ArrayMapEntry
 	private byte mFlags;
 	private byte[] mKey;
 	private byte[] mValue;
+	private byte[] mOldValue;
 
 
 	public ArrayMapEntry()
@@ -72,5 +73,17 @@ public final class ArrayMapEntry
 	public int size()
 	{
 		return mKey.length + mValue.length + 1;
+	}
+
+
+	public byte[] getOldValue()
+	{
+		return mOldValue;
+	}
+
+
+	public void setOldValue(byte[] aOldValue)
+	{
+		mOldValue = aOldValue;
 	}
 }

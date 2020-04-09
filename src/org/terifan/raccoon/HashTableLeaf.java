@@ -52,6 +52,20 @@ class HashTableLeaf extends ArrayMap implements Node
 	}
 
 
+	@Override
+	public boolean putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
+	{
+		return put(aEntry);
+	}
+
+
+	@Override
+	public boolean removeValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
+	{
+		return remove(aEntry);
+	}
+
+
 	HashTableNode splitLeaf(int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("splitLeaf");
@@ -159,13 +173,15 @@ class HashTableLeaf extends ArrayMap implements Node
 		}
 		else if (splitLeaf(aIndex, aLevel, aNode))
 		{
-			oldValue = aNode.putValue(aEntry, aKey, aLevel); // recursive put
+			aNode.putValue(aEntry, aKey, aLevel); // recursive put
+			oldValue = aEntry.getOldValue();
 		}
 		else
 		{
 			HashTableNode node = splitLeaf(aLevel + 1);
 
-			oldValue = node.putValue(aEntry, aKey, aLevel + 1); // recursive put
+			node.putValue(aEntry, aKey, aLevel + 1); // recursive put
+			oldValue = aEntry.getOldValue();
 
 			aNode.writeBlock(aIndex, node, mBlockPointer.getRange());
 		}

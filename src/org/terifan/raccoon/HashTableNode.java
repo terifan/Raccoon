@@ -157,7 +157,8 @@ final class HashTableNode implements Node
 	}
 
 
-	byte[] putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
+	@Override
+	public boolean putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("putValue");
 
@@ -168,25 +169,24 @@ final class HashTableNode implements Node
 
 		int index = findPointer(mHashTable.computeIndex(aKey, aLevel));
 		BlockPointer blockPointer = getPointer(index);
-		byte[] oldValue;
 
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
 				HashTableNode node = getNode(index);
-				oldValue = node.putValue(aEntry, aKey, aLevel + 1);
+				node.putValue(aEntry, aKey, aLevel + 1);
 				freeBlock(index, node);
 				writeBlock(index, node, blockPointer.getRange());
 				break;
 			case LEAF:
 			{
 				HashTableLeaf leaf = getNode(index);
-				oldValue = leaf.putValueLeaf(this, index, aEntry, aLevel, aKey);
+				aEntry.setOldValue(leaf.putValueLeaf(this, index, aEntry, aLevel, aKey));
 				break;
 			}
 			case HOLE:
 				HashTableLeaf leaf = getNode(index);
-				oldValue = leaf.putValueHole(this, index, aEntry, aLevel, aKey, blockPointer.getRange());
+				aEntry.setOldValue(leaf.putValueHole(this, index, aEntry, aLevel, aKey, blockPointer.getRange()));
 				break;
 			case FREE:
 			default:
@@ -195,11 +195,12 @@ final class HashTableNode implements Node
 
 		Log.dec();
 
-		return oldValue;
+		return true;
 	}
 
 
-	boolean removeValue(byte[] aKey, int aLevel, ArrayMapEntry aEntry)
+	@Override
+	public boolean removeValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("removeValue");
 
@@ -212,7 +213,7 @@ final class HashTableNode implements Node
 		{
 			case INDEX:
 				HashTableNode node = getNode(index);
-				if (node.removeValue(aKey, aLevel + 1, aEntry))
+				if (node.removeValue(aEntry, aKey, aLevel + 1))
 				{
 					freeBlock(index, node);
 					writeBlock(index, node, blockPointer.getRange());

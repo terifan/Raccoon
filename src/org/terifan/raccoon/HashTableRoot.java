@@ -99,7 +99,7 @@ public class HashTableRoot implements Node
 		}
 		else
 		{
-			modified = mRootNode.removeValue(aEntry.getKey(), 0, aEntry);
+			modified = mRootNode.removeValue(aEntry, aEntry.getKey(), 0);
 		}
 		return modified;
 	}
@@ -239,6 +239,20 @@ public class HashTableRoot implements Node
 	public boolean getValue(ArrayMapEntry aEntry, int aLevel)
 	{
 		return mRootNode != null ? mRootNode.getValue(aEntry, aLevel) : mRootMap.getValue(aEntry, aLevel);
+	}
+
+
+	@Override
+	public boolean putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
+	{
+		return mRootNode != null ? mRootNode.putValue(aEntry, aKey, aLevel) : mRootMap.putValue(aEntry, aKey, aLevel);
+	}
+
+
+	@Override
+	public boolean removeValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel)
+	{
+		return mRootNode != null ? mRootNode.removeValue(aEntry, aKey, aLevel) : mRootMap.removeValue(aEntry, aKey, aLevel);
 	}
 
 
