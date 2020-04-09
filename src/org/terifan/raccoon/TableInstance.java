@@ -125,9 +125,11 @@ public final class TableInstance<T> implements Closeable
 
 		ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
 
-		if (mHashTable.put(entry))
+		ArrayMapEntry oldEntry = mHashTable.put(entry);
+
+		if (oldEntry != null)
 		{
-			deleteIfBlob(entry);
+			deleteIfBlob(oldEntry);
 		}
 
 		Log.dec();
@@ -253,9 +255,11 @@ public final class TableInstance<T> implements Closeable
 	{
 		ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
 
-		if (mHashTable.remove(entry))
+		ArrayMapEntry oldEntry = mHashTable.remove(entry);
+
+		if (oldEntry != null)
 		{
-			deleteIfBlob(entry);
+			deleteIfBlob(oldEntry);
 
 			return true;
 		}
@@ -362,7 +366,7 @@ public final class TableInstance<T> implements Closeable
 
 	void unmarshalToObjectValues(ArrayMapEntry aBuffer, Object aOutput)
 	{
-		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aBuffer.getValue(), false);
+		ByteArrayBuffer buffer;
 
 		if (aBuffer.hasFlag(FLAG_BLOB))
 		{
@@ -370,13 +374,16 @@ public final class TableInstance<T> implements Closeable
 			{
 				byte[] buf = new byte[(int)blob.size()];
 				blob.read(ByteBuffer.wrap(buf));
-				buffer.write(buf);
-				buffer.position(0);
+				buffer = ByteArrayBuffer.wrap(buf);
 			}
 			catch (IOException e)
 			{
 				throw new DatabaseException(e);
 			}
+		}
+		else
+		{
+			buffer = ByteArrayBuffer.wrap(aBuffer.getValue(), false);
 		}
 
 		Marshaller marshaller = mTable.getMarshaller();

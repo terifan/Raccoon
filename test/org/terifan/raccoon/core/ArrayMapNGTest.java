@@ -20,7 +20,7 @@ public class ArrayMapNGTest
 		byte[] key = tb();
 		byte[] value = tb();
 
-		map.put(new ArrayMapEntry(key, value, (byte)77));
+		map.put(new ArrayMapEntry(key, value, (byte)77), null);
 
 		ArrayMapEntry entry = new ArrayMapEntry(key);
 
@@ -42,7 +42,7 @@ public class ArrayMapNGTest
 			byte[] key = tb();
 			byte[] value = tb();
 
-			if (!map.put(new ArrayMapEntry(key, value, (byte)0)))
+			if (!map.put(new ArrayMapEntry(key, value, (byte)0), null))
 			{
 				break;
 			}
@@ -69,7 +69,7 @@ public class ArrayMapNGTest
 		byte[] key = createRandomBuffer(0, 32767);
 		byte[] value = createRandomBuffer(1, 32759);
 
-		map.put(new ArrayMapEntry(key, value, (byte)0));
+		map.put(new ArrayMapEntry(key, value, (byte)0), null);
 
 		values.put(key, value);
 
@@ -96,7 +96,7 @@ public class ArrayMapNGTest
 			byte[] value = tb();
 			byte[] key = keys[j];
 
-			if (map.put(new ArrayMapEntry(key, value, (byte)0)))
+			if (map.put(new ArrayMapEntry(key, value, (byte)0), null))
 			{
 				values.put(new String(key), value);
 			}
@@ -120,8 +120,8 @@ public class ArrayMapNGTest
 		byte[] d = "456".getBytes();
 
 		ArrayMap map = new ArrayMap(new byte[512]);
-		map.put(new ArrayMapEntry("b".getBytes(), b, (byte)0));
-		map.put(new ArrayMapEntry("d".getBytes(), d, (byte)0));
+		map.put(new ArrayMapEntry("b".getBytes(), b, (byte)0), null);
+		map.put(new ArrayMapEntry("d".getBytes(), d, (byte)0), null);
 
 		ArrayMapEntry A = new ArrayMapEntry("a".getBytes());
 		ArrayMapEntry B = new ArrayMapEntry("b".getBytes());

@@ -27,7 +27,6 @@ final class HashTableNode implements Node
 		mHashTable = aHashTable;
 		mBuffer = mHashTable.readBlock(aBlockPointer);
 		mBlockPointer = aBlockPointer;
-
 		mBlockPointers = new PointerArray(mHashTable.mPointersPerNode);
 
 		assert mHashTable.mPerformanceTool.tick("readNode");
@@ -59,7 +58,7 @@ final class HashTableNode implements Node
 	}
 
 
-	BlockPointer getPointer(int aIndex)
+	private BlockPointer getPointer(int aIndex)
 	{
 		if (isFree(aIndex))
 		{
@@ -167,7 +166,7 @@ final class HashTableNode implements Node
 
 
 	@Override
-	public boolean putValue(ArrayMapEntry aEntry, int aLevel)
+	public boolean putValue(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("putValue");
 
@@ -183,19 +182,19 @@ final class HashTableNode implements Node
 		{
 			case INDEX:
 				HashTableNode node = getNode(index);
-				node.putValue(aEntry, aLevel + 1);
+				node.putValue(aEntry, oOldEntry, aLevel + 1);
 				freeBlock(index, node);
 				writeBlock(index, node, blockPointer.getRange());
 				break;
 			case LEAF:
 			{
 				HashTableLeaf leaf = getNode(index);
-				aEntry.setOldValue(leaf.putValueLeaf(this, index, aEntry, aLevel));
+				leaf.putValueLeaf(this, index, aEntry, oOldEntry, aLevel);
 				break;
 			}
 			case HOLE:
 				HashTableLeaf leaf = getNode(index);
-				aEntry.setOldValue(leaf.putValueHole(this, index, aEntry, aLevel, blockPointer.getRange()));
+				leaf.upgradeHole(this, index, aEntry, aLevel, blockPointer.getRange());
 				break;
 			case FREE:
 			default:
@@ -209,7 +208,7 @@ final class HashTableNode implements Node
 
 
 	@Override
-	public boolean removeValue(ArrayMapEntry aEntry, int aLevel)
+	public boolean removeValue(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("removeValue");
 
@@ -222,7 +221,7 @@ final class HashTableNode implements Node
 		{
 			case INDEX:
 				HashTableNode node = getNode(index);
-				if (node.removeValue(aEntry, aLevel + 1))
+				if (node.removeValue(aEntry, oOldEntry, aLevel + 1))
 				{
 					freeBlock(index, node);
 					writeBlock(index, node, blockPointer.getRange());
@@ -231,7 +230,7 @@ final class HashTableNode implements Node
 				return false;
 			case LEAF:
 				HashTableLeaf leaf = getNode(index);
-				boolean found = leaf.remove(aEntry);
+				boolean found = leaf.remove(aEntry, oOldEntry);
 
 				if (found)
 				{
@@ -268,7 +267,7 @@ final class HashTableNode implements Node
 	}
 
 
-	void freeBlock(int aIndex, Node aNode)
+	private void freeBlock(int aIndex, Node aNode)
 	{
 		mHashTable.freeBlock(getPointer(aIndex));
 	}

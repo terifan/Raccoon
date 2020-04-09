@@ -145,7 +145,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public boolean put(ArrayMapEntry aEntry)
+	public boolean put(ArrayMapEntry aEntry, ArrayMapEntry oExistingEntry)
 	{
 		byte[] key = aEntry.getKey();
 		byte[] value = aEntry.getValue();
@@ -171,8 +171,11 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 				int valueOffset = entryOffset + ENTRY_HEADER_SIZE + readKeyLength(index);
 				int offset = mStartOffset + valueOffset;
 
-				aEntry.setFlags(mBuffer[offset]);
-				aEntry.setValue(Arrays.copyOfRange(mBuffer, offset + 1, offset + oldValueLengthPlus1));
+				if (oExistingEntry != null)
+				{
+					oExistingEntry.setFlags(mBuffer[offset]);
+					oExistingEntry.setValue(Arrays.copyOfRange(mBuffer, offset + 1, offset + oldValueLengthPlus1));
+				}
 
 				System.arraycopy(value, 0, mBuffer, offset + 1, value.length);
 				mBuffer[offset] = format;
@@ -187,7 +190,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 				return false;
 			}
 
-			remove(index, aEntry); // old entry value is loaded here
+			removeImpl(index, oExistingEntry);
 
 			assert indexOf(key) == (-index) - 1;
 		}
@@ -199,8 +202,11 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		{
 			index = (-index) - 1;
 
-			aEntry.setFlags((byte)0);
-			aEntry.setValue(null);
+			if (oExistingEntry != null)
+			{
+				oExistingEntry.setFlags((byte)0);
+				oExistingEntry.setValue(null);
+			}
 		}
 
 		int modCount = ++mModCount;
@@ -280,7 +286,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public boolean remove(ArrayMapEntry aEntry)
+	public boolean remove(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry)
 	{
 		int index = indexOf(aEntry.getKey());
 
@@ -289,19 +295,22 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			return false;
 		}
 
-		remove(index, aEntry);
+		removeImpl(index, oOldEntry);
 
 		return true;
 	}
 
 
-	private void remove(int aIndex, ArrayMapEntry aEntry)
+	private void removeImpl(int aIndex, ArrayMapEntry oOldEntry)
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount : "index="+aIndex+", count="+mEntryCount;
 
 		int modCount = ++mModCount;
 
-		get(aIndex, aEntry);
+		if (oOldEntry != null)
+		{
+			get(aIndex, oOldEntry);
+		}
 
 		int offset = readEntryOffset(aIndex);
 		int length = readEntryLength(aIndex);
@@ -346,8 +355,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		int keyOffset = mStartOffset + readKeyOffset(aIndex);
 		int valueOffset = mStartOffset + readValueOffset(aIndex);
 
-		assert Arrays.equals(Arrays.copyOfRange(mBuffer, keyOffset, keyOffset + readKeyLength(aIndex)), aEntry.getKey());
-
+		aEntry.setKey(Arrays.copyOfRange(mBuffer, keyOffset, keyOffset + readKeyLength(aIndex)));
 		aEntry.setFlags(mBuffer[valueOffset]);
 		aEntry.setValue(Arrays.copyOfRange(mBuffer, valueOffset + 1, valueOffset + readValueLength(aIndex)));
 
@@ -661,7 +669,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	public ArrayMapEntry removeFirst()
 	{
 		ArrayMapEntry entry = new ArrayMapEntry();
-		remove(0, entry);
+		removeImpl(0, entry);
 		return entry;
 	}
 
@@ -669,7 +677,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	public ArrayMapEntry removeLast()
 	{
 		ArrayMapEntry entry = new ArrayMapEntry();
-		remove(mEntryCount - 1, entry);
+		removeImpl(mEntryCount - 1, entry);
 		return entry;
 	}
 

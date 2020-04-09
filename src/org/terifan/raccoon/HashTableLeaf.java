@@ -54,21 +54,21 @@ class HashTableLeaf extends ArrayMap implements Node
 	public boolean getValue(ArrayMapEntry aEntry, int aLevel)
 	{
 		mHashTable.mCost.mValueGet++;
-		return super.get(aEntry);
+		return get(aEntry);
 	}
 
 
 	@Override
-	public boolean putValue(ArrayMapEntry aEntry, int aLevel)
+	public boolean putValue(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel)
 	{
-		return put(aEntry);
+		return put(aEntry, oOldEntry);
 	}
 
 
 	@Override
-	public boolean removeValue(ArrayMapEntry aEntry, int aLevel)
+	public boolean removeValue(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel)
 	{
-		return remove(aEntry);
+		return remove(aEntry, oOldEntry);
 	}
 
 
@@ -102,7 +102,7 @@ class HashTableLeaf extends ArrayMap implements Node
 	}
 
 
-	boolean splitLeaf(int aIndex, int aLevel, HashTableNode aNode)
+	boolean splitLeaf(int aIndex, int aLevel, HashTableNode aParent)
 	{
 		assert mHashTable.mPerformanceTool.tick("splitLeaf");
 
@@ -122,14 +122,14 @@ class HashTableLeaf extends ArrayMap implements Node
 
 		mHashTable.freeBlock(mBlockPointer);
 
-		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, aNode);
-		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, aNode);
+		HashTableLeaf lowLeaf = new HashTableLeaf(mHashTable, aParent);
+		HashTableLeaf highLeaf = new HashTableLeaf(mHashTable, aParent);
 		int halfRange = mBlockPointer.getRange() / 2;
 
 		divideLeafEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
 
-		aNode.writeBlock(aIndex, lowLeaf, halfRange);
-		aNode.writeBlock(aIndex + halfRange, highLeaf, halfRange);
+		aParent.writeBlock(aIndex, lowLeaf, halfRange);
+		aParent.writeBlock(aIndex + halfRange, highLeaf, halfRange);
 
 		Log.dec();
 		Log.dec();
@@ -146,71 +146,59 @@ class HashTableLeaf extends ArrayMap implements Node
 		{
 			if (mHashTable.computeIndex(entry.getKey(), aLevel) < aHalfRange)
 			{
-				aLowLeaf.put(entry);
+				aLowLeaf.put(entry, null);
 			}
 			else
 			{
-				aHighLeaf.put(entry);
+				aHighLeaf.put(entry, null);
 			}
 		}
 	}
 
 
-	byte[] putValueLeaf(HashTableNode aNode, int aIndex, ArrayMapEntry aEntry, int aLevel)
+	void putValueLeaf(HashTableNode aParent, int aIndex, ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("putValueLeaf");
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		byte[] oldValue;
-
-		if (put(aEntry))
+		if (put(aEntry, null))
 		{
-			oldValue = aEntry.getValue();
-
 			if (mBlockPointer.getBlockType() != BlockType.HOLE)
 			{
 				mHashTable.freeBlock(mBlockPointer);
 			}
 
-			aNode.writeBlock(aIndex, this, mBlockPointer.getRange());
+			aParent.writeBlock(aIndex, this, mBlockPointer.getRange());
 
 			mHashTable.mCost.mValuePut++;
 		}
-		else if (splitLeaf(aIndex, aLevel, aNode))
+		else if (splitLeaf(aIndex, aLevel, aParent))
 		{
-			aNode.putValue(aEntry, aLevel); // recursive put
-			oldValue = aEntry.getOldValue();
+			aParent.putValue(aEntry, oOldEntry, aLevel); // recursive put
 		}
 		else
 		{
 			HashTableNode node = splitLeaf(aLevel + 1);
 
-			node.putValue(aEntry, aLevel + 1); // recursive put
-			oldValue = aEntry.getOldValue();
+			node.putValue(aEntry, oOldEntry, aLevel + 1); // recursive put
 
-			aNode.writeBlock(aIndex, node, mBlockPointer.getRange());
+			aParent.writeBlock(aIndex, node, mBlockPointer.getRange());
 		}
-
-		return oldValue;
 	}
 
 
-	byte[] putValueHole(HashTableNode aNode, int aIndex, ArrayMapEntry aEntry, int aLevel, int aRange)
+	void upgradeHole(HashTableNode aParent, int aIndex, ArrayMapEntry aEntry, int aLevel, int aRange)
 	{
 		assert mHashTable.mPerformanceTool.tick("putValueLeaf");
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		put(aEntry);
+		put(aEntry, null);
 
-		byte[] oldValue = aEntry.getValue();
-
-		aNode.writeBlock(aIndex, this, aRange);
+		aParent.writeBlock(aIndex, this, aRange);
 
 		mHashTable.mCost.mValuePut++;
-
-		return oldValue;
 	}
 
 
