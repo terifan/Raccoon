@@ -128,14 +128,14 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		mChanged = true;
 
-		ArrayMapEntry oldEntry = new ArrayMapEntry();
+		Result<ArrayMapEntry> oldEntry = new Result<>();
 
 		mRoot.put(aEntry, oldEntry);
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
-		return oldEntry;
+		return oldEntry.get();
 	}
 
 
@@ -143,13 +143,13 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	{
 		checkOpen();
 
-		ArrayMapEntry oldEntry = new ArrayMapEntry();
+		Result<ArrayMapEntry> oldEntry = new Result<>();
 
 		boolean modified = mRoot.removeValue(aEntry, oldEntry, 0);
 
 		mChanged |= modified;
 
-		return modified ? oldEntry : null;
+		return oldEntry.get();
 	}
 
 

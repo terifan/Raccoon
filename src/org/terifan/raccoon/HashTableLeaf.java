@@ -2,6 +2,7 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.util.Result;
 
 
 class HashTableLeaf extends ArrayMap implements Node
@@ -59,14 +60,14 @@ class HashTableLeaf extends ArrayMap implements Node
 
 
 	@Override
-	public boolean putValue(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel)
+	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
 	{
 		return put(aEntry, oOldEntry);
 	}
 
 
 	@Override
-	public boolean removeValue(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel)
+	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
 	{
 		return remove(aEntry, oOldEntry);
 	}
@@ -156,13 +157,13 @@ class HashTableLeaf extends ArrayMap implements Node
 	}
 
 
-	void putValueLeaf(HashTableNode aParent, int aIndex, ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel)
+	void putValueLeaf(HashTableNode aParent, int aIndex, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("putValueLeaf");
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		if (put(aEntry, null))
+		if (put(aEntry, oOldEntry))
 		{
 			if (mBlockPointer.getBlockType() != BlockType.HOLE)
 			{

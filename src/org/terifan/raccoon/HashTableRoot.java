@@ -4,6 +4,7 @@ import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.util.Result;
 
 
 class HashTableRoot implements Node
@@ -54,7 +55,7 @@ class HashTableRoot implements Node
 	}
 
 
-	void put(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry)
+	void put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry)
 	{
 		if (mRootMap != null)
 		{
@@ -165,14 +166,14 @@ class HashTableRoot implements Node
 
 
 	@Override
-	public boolean putValue(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel)
+	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
 	{
 		return node().putValue(aEntry, oOldEntry, aLevel);
 	}
 
 
 	@Override
-	public boolean removeValue(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel)
+	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
 	{
 		return node().removeValue(aEntry, oOldEntry, aLevel);
 	}

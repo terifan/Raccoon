@@ -4,6 +4,7 @@ import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.util.Result;
 
 
 final class HashTableNode implements Node
@@ -166,7 +167,7 @@ final class HashTableNode implements Node
 
 
 	@Override
-	public boolean putValue(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel)
+	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("putValue");
 
@@ -208,7 +209,7 @@ final class HashTableNode implements Node
 
 
 	@Override
-	public boolean removeValue(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel)
+	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("removeValue");
 

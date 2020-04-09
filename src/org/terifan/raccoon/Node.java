@@ -1,6 +1,7 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.util.Result;
 
 
 interface Node
@@ -17,10 +18,10 @@ interface Node
 	boolean getValue(ArrayMapEntry aEntry, int aLevel);
 
 
-	boolean putValue(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel);
+	boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel);
 
 
-	boolean removeValue(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry, int aLevel);
+	boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel);
 
 
 	void scan(ScanResult aScanResult);

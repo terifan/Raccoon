@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import org.terifan.raccoon.util.Result;
 
 
 /**
@@ -145,7 +146,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public boolean put(ArrayMapEntry aEntry, ArrayMapEntry oExistingEntry)
+	public boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
 		byte[] key = aEntry.getKey();
 		byte[] value = aEntry.getValue();
@@ -173,8 +174,11 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 				if (oExistingEntry != null)
 				{
-					oExistingEntry.setFlags(mBuffer[offset]);
-					oExistingEntry.setValue(Arrays.copyOfRange(mBuffer, offset + 1, offset + oldValueLengthPlus1));
+					ArrayMapEntry old = new ArrayMapEntry();
+					old.setKey(key);
+					old.setFlags(mBuffer[offset]);
+					old.setValue(Arrays.copyOfRange(mBuffer, offset + 1, offset + oldValueLengthPlus1));
+					oExistingEntry.set(old);
 				}
 
 				System.arraycopy(value, 0, mBuffer, offset + 1, value.length);
@@ -201,12 +205,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		else
 		{
 			index = (-index) - 1;
-
-			if (oExistingEntry != null)
-			{
-				oExistingEntry.setFlags((byte)0);
-				oExistingEntry.setValue(null);
-			}
 		}
 
 		int modCount = ++mModCount;
@@ -286,7 +284,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public boolean remove(ArrayMapEntry aEntry, ArrayMapEntry oOldEntry)
+	public boolean remove(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry)
 	{
 		int index = indexOf(aEntry.getKey());
 
@@ -301,7 +299,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	private void removeImpl(int aIndex, ArrayMapEntry oOldEntry)
+	private void removeImpl(int aIndex, Result<ArrayMapEntry> oOldEntry)
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount : "index="+aIndex+", count="+mEntryCount;
 
@@ -309,7 +307,9 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 		if (oOldEntry != null)
 		{
-			get(aIndex, oOldEntry);
+			ArrayMapEntry old = new ArrayMapEntry();
+			oOldEntry.set(old);
+			get(aIndex, old);
 		}
 
 		int offset = readEntryOffset(aIndex);
@@ -668,17 +668,17 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	public ArrayMapEntry removeFirst()
 	{
-		ArrayMapEntry entry = new ArrayMapEntry();
+		Result<ArrayMapEntry> entry = new Result<>();
 		removeImpl(0, entry);
-		return entry;
+		return entry.get();
 	}
 
 
 	public ArrayMapEntry removeLast()
 	{
-		ArrayMapEntry entry = new ArrayMapEntry();
+		Result<ArrayMapEntry> entry = new Result<>();
 		removeImpl(mEntryCount - 1, entry);
-		return entry;
+		return entry.get();
 	}
 
 
