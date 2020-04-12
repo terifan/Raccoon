@@ -130,7 +130,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		mRoot.put(aEntry, oldEntry);
+		mRoot.putValue(aEntry, oldEntry, 0);
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
