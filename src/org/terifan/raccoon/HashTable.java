@@ -30,6 +30,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	private boolean mCommitChangesToBlockDevice;
 	/*private*/ final PerformanceTool mPerformanceTool;
 	/*private*/ int mModCount;
+	private int mBitsPerNode;
 
 
 	/**
@@ -53,6 +54,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			mLeafSize = aTableParam.getPagesPerLeaf() * aBlockDevice.getBlockSize();
 			mHashSeed = new SecureRandom().nextInt();
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
+
+			mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
 
 			mRoot = new HashTableRoot(this, true);
 			mWasEmptyInstance = true;
@@ -98,6 +101,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		mLeafSize = buffer.readVar32();
 		mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 
+		mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
+
 		CompressionParam compressionParam = new CompressionParam();
 		compressionParam.unmarshal(buffer);
 
@@ -107,7 +112,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	public boolean get(ArrayMapEntry aEntry)
 	{
-		return mRoot.getValue(aEntry, 0);
+		return mRoot.getValue(aEntry, computeHash(aEntry.getKey()), 0);
 	}
 
 
@@ -130,7 +135,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		mRoot.putValue(aEntry, oldEntry, 0);
+		mRoot.putValue(aEntry, oldEntry, computeHash(aEntry.getKey()), 0);
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
@@ -145,7 +150,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		boolean modified = mRoot.removeValue(aEntry, oldEntry, 0);
+		boolean modified = mRoot.removeValue(aEntry, oldEntry, computeHash(aEntry.getKey()), 0);
 
 		mChanged |= modified;
 
@@ -349,9 +354,15 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	int computeIndex(byte[] aKey, int aLevel)
+	long computeHash(byte[] aKey)
 	{
-		return MurmurHash3.hash32(aKey, mHashSeed ^ aLevel) & (mPointersPerNode - 1);
+		return MurmurHash3.hash64(aKey, mHashSeed);
+	}
+
+
+	int computeIndex(long aHash, int aLevel)
+	{
+		return (int)(Long.rotateRight(aHash, aLevel * mBitsPerNode) & (mPointersPerNode - 1));
 	}
 
 

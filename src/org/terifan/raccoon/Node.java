@@ -15,13 +15,13 @@ interface Node
 	BlockType getType();
 
 
-	boolean getValue(ArrayMapEntry aEntry, int aLevel);
+	boolean getValue(ArrayMapEntry aEntry, long aHash, int aLevel);
 
 
-	boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel);
+	boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel);
 
 
-	boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel);
+	boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel);
 
 
 	void scan(ScanResult aScanResult);

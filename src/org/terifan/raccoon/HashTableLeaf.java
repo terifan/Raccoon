@@ -52,7 +52,7 @@ class HashTableLeaf extends ArrayMap implements Node
 
 
 	@Override
-	public boolean getValue(ArrayMapEntry aEntry, int aLevel)
+	public boolean getValue(ArrayMapEntry aEntry, long aHash, int aLevel)
 	{
 		mHashTable.mCost.mValueGet++;
 		return get(aEntry);
@@ -60,14 +60,14 @@ class HashTableLeaf extends ArrayMap implements Node
 
 
 	@Override
-	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
+	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
 		return put(aEntry, oOldEntry);
 	}
 
 
 	@Override
-	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
+	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
 		return remove(aEntry, oOldEntry);
 	}
@@ -145,7 +145,7 @@ class HashTableLeaf extends ArrayMap implements Node
 
 		for (ArrayMapEntry entry : this)
 		{
-			if (mHashTable.computeIndex(entry.getKey(), aLevel) < aHalfRange)
+			if (mHashTable.computeIndex(mHashTable.computeHash(entry.getKey()), aLevel) < aHalfRange)
 			{
 				aLowLeaf.put(entry, null);
 			}
@@ -157,7 +157,7 @@ class HashTableLeaf extends ArrayMap implements Node
 	}
 
 
-	void putValueLeaf(HashTableNode aParent, int aIndex, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
+	void putValueLeaf(HashTableNode aParent, int aIndex, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("putValueLeaf");
 
@@ -176,13 +176,13 @@ class HashTableLeaf extends ArrayMap implements Node
 		}
 		else if (splitLeaf(aIndex, aLevel, aParent))
 		{
-			aParent.putValue(aEntry, oOldEntry, aLevel); // recursive put
+			aParent.putValue(aEntry, oOldEntry, aHash, aLevel); // recursive put
 		}
 		else
 		{
 			HashTableNode node = splitLeaf(aLevel + 1);
 
-			node.putValue(aEntry, oOldEntry, aLevel + 1); // recursive put
+			node.putValue(aEntry, oOldEntry, aHash, aLevel + 1); // recursive put
 
 			aParent.writeBlock(aIndex, node, mBlockPointer.getRange());
 		}

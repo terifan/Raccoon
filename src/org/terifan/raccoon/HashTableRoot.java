@@ -130,20 +130,20 @@ class HashTableRoot implements Node
 
 
 	@Override
-	public boolean getValue(ArrayMapEntry aEntry, int aLevel)
+	public boolean getValue(ArrayMapEntry aEntry, long aHash, int aLevel)
 	{
-		return mRoot.getValue(aEntry, aLevel);
+		return mRoot.getValue(aEntry, aHash, aLevel);
 	}
 
 
 	@Override
-	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
+	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
 		if (mRoot instanceof HashTableLeaf)
 		{
 			Log.d("put root value");
 
-			if (mRoot.putValue(aEntry, oOldEntry, 0))
+			if (mRoot.putValue(aEntry, oOldEntry, aHash, 0))
 			{
 				return true;
 			}
@@ -155,14 +155,14 @@ class HashTableRoot implements Node
 			mBlockPointer = mHashTable.writeBlock(mRoot, mHashTable.mPointersPerNode);
 		}
 
-		return mRoot.putValue(aEntry, oOldEntry, 0);
+		return mRoot.putValue(aEntry, oOldEntry, aHash, 0);
 	}
 
 
 	@Override
-	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
+	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
-		return mRoot.removeValue(aEntry, oOldEntry, aLevel);
+		return mRoot.removeValue(aEntry, oOldEntry, aHash, aLevel);
 	}
 
 

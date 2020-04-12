@@ -140,7 +140,7 @@ final class HashTableNode implements Node
 
 
 	@Override
-	public boolean getValue(ArrayMapEntry aEntry, int aLevel)
+	public boolean getValue(ArrayMapEntry aEntry, long aHash, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("getValue");
 
@@ -148,7 +148,7 @@ final class HashTableNode implements Node
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		int index = findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel));
+		int index = findPointer(mHashTable.computeIndex(aHash, aLevel));
 		BlockPointer blockPointer = getPointer(index);
 
 		switch (blockPointer.getBlockType())
@@ -156,7 +156,7 @@ final class HashTableNode implements Node
 			case INDEX:
 			case LEAF:
 				Node node = getNode(index);
-				return node.getValue(aEntry, aLevel + 1);
+				return node.getValue(aEntry, aHash, aLevel + 1);
 			case HOLE:
 				return false;
 			case FREE:
@@ -167,7 +167,7 @@ final class HashTableNode implements Node
 
 
 	@Override
-	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
+	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("putValue");
 
@@ -176,21 +176,21 @@ final class HashTableNode implements Node
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		int index = findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel));
+		int index = findPointer(mHashTable.computeIndex(aHash, aLevel));
 		BlockPointer blockPointer = getPointer(index);
 
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
 				HashTableNode node = getNode(index);
-				node.putValue(aEntry, oOldEntry, aLevel + 1);
+				node.putValue(aEntry, oOldEntry, aHash, aLevel + 1);
 				freeBlock(index, node);
 				writeBlock(index, node, blockPointer.getRange());
 				break;
 			case LEAF:
 			{
 				HashTableLeaf leaf = getNode(index);
-				leaf.putValueLeaf(this, index, aEntry, oOldEntry, aLevel);
+				leaf.putValueLeaf(this, index, aEntry, oOldEntry, aHash, aLevel);
 				break;
 			}
 			case HOLE:
@@ -209,20 +209,20 @@ final class HashTableNode implements Node
 
 
 	@Override
-	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, int aLevel)
+	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("removeValue");
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		int index = findPointer(mHashTable.computeIndex(aEntry.getKey(), aLevel));
+		int index = findPointer(mHashTable.computeIndex(aHash, aLevel));
 		BlockPointer blockPointer = getPointer(index);
 
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
 				HashTableNode node = getNode(index);
-				if (node.removeValue(aEntry, oOldEntry, aLevel + 1))
+				if (node.removeValue(aEntry, oOldEntry, aHash, aLevel + 1))
 				{
 					freeBlock(index, node);
 					writeBlock(index, node, blockPointer.getRange());
