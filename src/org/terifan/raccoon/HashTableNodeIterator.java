@@ -8,26 +8,26 @@ import java.util.Iterator;
 final class HashTableNodeIterator implements Iterator<ArrayMapEntry>
 {
 	private final long mModCount;
-	private ArrayDeque<Iterator<Node>> mQueue;
+	private ArrayDeque<Iterator<HashTableNode>> mQueue;
 	private Iterator<ArrayMapEntry> mValueIt;
-	private Iterator<Node> mNodeIt;
+	private Iterator<HashTableNode> mNodeIt;
 	private ArrayMapEntry mNextEntry;
 	private HashTable mHashTable;
 
 
-	HashTableNodeIterator(HashTable aHashTable, Node aNode)
+	HashTableNodeIterator(HashTable aHashTable, HashTableNode aNode)
 	{
 		mHashTable = aHashTable;
 		mModCount = mHashTable.mModCount;
 
-		if (aNode instanceof HashTableLeaf)
+		if (aNode instanceof HashTableLeafNode)
 		{
-			mValueIt = ((HashTableLeaf)aNode).iterator();
+			mValueIt = ((HashTableLeafNode)aNode).iterator();
 		}
 		else
 		{
 			mQueue = new ArrayDeque<>();
-			mNodeIt = ((HashTableNode)aNode).iterator();
+			mNodeIt = ((HashTableInnerNode)aNode).iterator();
 		}
 	}
 
@@ -61,16 +61,16 @@ final class HashTableNodeIterator implements Iterator<ArrayMapEntry>
 
 			if (mNodeIt.hasNext())
 			{
-				Node node = mNodeIt.next();
+				HashTableNode node = mNodeIt.next();
 
-				if (node instanceof HashTableLeaf)
+				if (node instanceof HashTableLeafNode)
 				{
-					mValueIt = ((HashTableLeaf)node).iterator();
+					mValueIt = ((HashTableLeafNode)node).iterator();
 				}
-				else if (node instanceof HashTableNode)
+				else if (node instanceof HashTableInnerNode)
 				{
 					mQueue.addFirst(mNodeIt);
-					mNodeIt = ((HashTableNode)node).iterator();
+					mNodeIt = ((HashTableInnerNode)node).iterator();
 				}
 
 				return hasNext();

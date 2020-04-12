@@ -7,21 +7,21 @@ import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 
 
-class HashTableRoot implements Node
+class HashTableRootNode implements HashTableNode
 {
-	private Node mRoot;
+	private HashTableNode mInstance;
 	private BlockPointer mBlockPointer;
 	private HashTable mHashTable;
 
 
-	HashTableRoot(HashTable aHashTable, boolean aCreate)
+	HashTableRootNode(HashTable aHashTable, boolean aCreate)
 	{
 		mHashTable = aHashTable;
 
 		if (aCreate)
 		{
-			mRoot = new HashTableLeaf(mHashTable, null);
-			mBlockPointer = mHashTable.writeBlock(mRoot, mHashTable.mPointersPerNode);
+			mInstance = new HashTableLeafNode(mHashTable, null);
+			mBlockPointer = mHashTable.writeBlock(mInstance, mHashTable.mPointersPerNode);
 		}
 	}
 
@@ -32,11 +32,11 @@ class HashTableRoot implements Node
 
 		if (mBlockPointer.getBlockType() == BlockType.LEAF)
 		{
-			mRoot = new HashTableLeaf(mHashTable, null, mBlockPointer);
+			mInstance = new HashTableLeafNode(mHashTable, null, mBlockPointer);
 		}
 		else
 		{
-			mRoot = new HashTableNode(mHashTable, mBlockPointer);
+			mInstance = new HashTableInnerNode(mHashTable, mBlockPointer);
 		}
 	}
 
@@ -56,7 +56,7 @@ class HashTableRoot implements Node
 
 	Iterator<ArrayMapEntry> iterator()
 	{
-		return new HashTableNodeIterator(mHashTable, mRoot);
+		return new HashTableNodeIterator(mHashTable, mInstance);
 	}
 
 
@@ -71,20 +71,20 @@ class HashTableRoot implements Node
 	{
 		mHashTable.freeBlock(mBlockPointer);
 
-		mBlockPointer = mHashTable.writeBlock(mRoot, mHashTable.mPointersPerNode);
+		mBlockPointer = mHashTable.writeBlock(mInstance, mHashTable.mPointersPerNode);
 	}
 
 
 	void rollback(boolean aWasEmptyInstance)
 	{
-		mRoot = null;
+		mInstance = null;
 
 		if (aWasEmptyInstance)
 		{
 			Log.d("rollback empty");
 
 			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
-			mRoot = new HashTableLeaf(mHashTable, null);
+			mInstance = new HashTableLeafNode(mHashTable, null);
 		}
 		else
 		{
@@ -97,78 +97,78 @@ class HashTableRoot implements Node
 
 	void close()
 	{
-		mRoot = null;
+		mInstance = null;
 	}
 
 
 	@Override
 	public String integrityCheck()
 	{
-		return mRoot.integrityCheck();
+		return mInstance.integrityCheck();
 	}
 
 
 	@Override
 	public void visit(HashTableVisitor aVisitor)
 	{
-		mRoot.visit(aVisitor);
+		mInstance.visit(aVisitor);
 	}
 
 
 	@Override
 	public byte[] array()
 	{
-		return mRoot.array();
+		return mInstance.array();
 	}
 
 
 	@Override
 	public BlockType getType()
 	{
-		return mRoot.getType();
+		return mInstance.getType();
 	}
 
 
 	@Override
 	public boolean getValue(ArrayMapEntry aEntry, long aHash, int aLevel)
 	{
-		return mRoot.getValue(aEntry, aHash, aLevel);
+		return mInstance.getValue(aEntry, aHash, aLevel);
 	}
 
 
 	@Override
 	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
-		if (mRoot instanceof HashTableLeaf)
+		if (mInstance instanceof HashTableLeafNode)
 		{
 			Log.d("put root value");
 
-			if (mRoot.putValue(aEntry, oOldEntry, aHash, 0))
+			if (mInstance.putValue(aEntry, oOldEntry, aHash, 0))
 			{
 				return true;
 			}
 
 			Log.d("upgrade root from leaf to node");
 
-			mRoot = ((HashTableLeaf)mRoot).splitLeaf(0);
+			mInstance = ((HashTableLeafNode)mInstance).splitLeaf(0);
 
-			mBlockPointer = mHashTable.writeBlock(mRoot, mHashTable.mPointersPerNode);
+			mBlockPointer = mHashTable.writeBlock(mInstance, mHashTable.mPointersPerNode);
 		}
 
-		return mRoot.putValue(aEntry, oOldEntry, aHash, 0);
+		return mInstance.putValue(aEntry, oOldEntry, aHash, 0);
 	}
 
 
 	@Override
 	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
-		return mRoot.removeValue(aEntry, oOldEntry, aHash, aLevel);
+		return mInstance.removeValue(aEntry, oOldEntry, aHash, aLevel);
 	}
 
 
 	@Override
 	public void scan(ScanResult aScanResult)
 	{
-		mRoot.scan(aScanResult);
+		mInstance.scan(aScanResult);
 	}
 }

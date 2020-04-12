@@ -19,7 +19,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	/*private*/ final String mTableName;
 	final TransactionGroup mTransactionId;
 	/*private*/ BlockAccessor mBlockAccessor;
-	private HashTableRoot mRoot;
+	private HashTableRootNode mRoot;
 	int mNodeSize;
 	int mLeafSize;
 	int mPointersPerNode;
@@ -57,7 +57,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 			mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
 
-			mRoot = new HashTableRoot(this, true);
+			mRoot = new HashTableRootNode(this, true);
 			mWasEmptyInstance = true;
 			mChanged = true;
 		}
@@ -66,7 +66,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			Log.i("open table %s", mTableName);
 			Log.inc();
 
-			mRoot = new HashTableRoot(this, false);
+			mRoot = new HashTableRootNode(this, false);
 
 			unmarshalHeader(aTableHeader);
 
@@ -263,9 +263,9 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		{
 			mCost.mTreeTraversal++;
 
-			if (node instanceof HashTableLeaf)
+			if (node instanceof HashTableLeafNode)
 			{
-				for (ArrayMapEntry entry : (HashTableLeaf)node)
+				for (ArrayMapEntry entry : (HashTableLeafNode)node)
 				{
 					if (entry.getFlags() == TableInstance.FLAG_BLOB)
 					{
@@ -277,7 +277,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			freeBlock(node.getBlockPointer());
 		});
 
-		mRoot = new HashTableRoot(this, true);
+		mRoot = new HashTableRootNode(this, true);
 
 		assert mModCount == modCount : "concurrent modification";
 	}
@@ -306,9 +306,9 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		{
 			mCost.mTreeTraversal++;
 
-			if (node instanceof HashTableLeaf)
+			if (node instanceof HashTableLeafNode)
 			{
-				HashTableLeaf leaf = (HashTableLeaf)node;
+				HashTableLeafNode leaf = (HashTableLeafNode)node;
 				result.set(result.get() + leaf.size());
 			}
 		});
@@ -327,7 +327,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	public int getEntryMaximumLength()
 	{
-		return mLeafSize - HashTableLeaf.OVERHEAD;
+		return mLeafSize - HashTableLeafNode.OVERHEAD;
 	}
 
 
@@ -386,7 +386,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	BlockPointer writeBlock(Node aNode, int aRange)
+	BlockPointer writeBlock(HashTableNode aNode, int aRange)
 	{
 		assert mPerformanceTool.tick("writeBlock");
 
@@ -395,16 +395,16 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		mCost.mWriteBlock++;
 		mCost.mWriteBlockBytes += blockPointer.getAllocatedSize();
 
-		if (aNode instanceof HashTableLeaf)
+		if (aNode instanceof HashTableLeafNode)
 		{
-			((HashTableLeaf)aNode).mBlockPointer = blockPointer;
+			((HashTableLeafNode)aNode).mBlockPointer = blockPointer;
 		}
 
 		return blockPointer;
 	}
 
 
-	BlockPointer writeIfNotEmpty(HashTableLeaf aLeaf, int aRange)
+	BlockPointer writeIfNotEmpty(HashTableLeafNode aLeaf, int aRange)
 	{
 		if (aLeaf.isEmpty())
 		{
