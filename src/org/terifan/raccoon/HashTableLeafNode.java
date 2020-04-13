@@ -1,8 +1,6 @@
 package org.terifan.raccoon;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Log;
@@ -13,7 +11,7 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 {
 	private HashTable mHashTable;
 	private HashTableInnerNode mParent;
-	BlockPointer mBlockPointer;
+	private BlockPointer mBlockPointer;
 
 
 	public HashTableLeafNode(HashTable aHashTable, HashTableInnerNode aParent)
@@ -88,7 +86,10 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 		mHashTable.mCost.mTreeTraversal++;
 		mHashTable.mCost.mBlockSplit++;
 
-		mHashTable.freeBlock(mBlockPointer);
+		if (mBlockPointer != null)
+		{
+			mHashTable.freeBlock(mBlockPointer);
+		}
 
 		HashTableInnerNode node = new HashTableInnerNode(mHashTable, mParent);
 
@@ -242,5 +243,19 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 	public void visit(HashTableVisitor aVisitor)
 	{
 		aVisitor.visit(this);
+	}
+
+
+	@Override
+	public BlockPointer flush()
+	{
+		if (mBlockPointer != null)
+		{
+			mHashTable.freeBlock(mBlockPointer);
+		}
+
+		mBlockPointer = mHashTable.writeBlock(this, mHashTable.mPointersPerNode);
+
+		return mBlockPointer;
 	}
 }

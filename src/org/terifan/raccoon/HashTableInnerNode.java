@@ -382,4 +382,18 @@ final class HashTableInnerNode implements HashTableNode
 			}
 		};
 	}
+
+
+	@Override
+	public BlockPointer flush()
+	{
+		if (mBlockPointer != null)
+		{
+			mHashTable.freeBlock(mBlockPointer);
+		}
+
+		mBlockPointer = mHashTable.writeBlock(this, mHashTable.mPointersPerNode);
+
+		return mBlockPointer;
+	}
 }

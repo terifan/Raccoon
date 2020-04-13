@@ -30,5 +30,8 @@ interface HashTableNode
 	void visit(HashTableVisitor aVisitor);
 
 
+	BlockPointer flush();
+
+
 	String integrityCheck();
 }

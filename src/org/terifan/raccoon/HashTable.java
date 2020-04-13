@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
-import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -22,7 +21,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	int mNodeSize;
 	int mLeafSize;
 	int mPointersPerNode;
-	int mHashSeed;
+	private long mHashSeed;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mChanged;
@@ -34,9 +33,6 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	private BlockPointer mRootNodeBlockPointer;
 
 
-	/**
-	 * Open an existing HashTable or create a new HashTable with default settings.
-	 */
 	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool)
 	{
 		mPerformanceTool = aPerformanceTool;
@@ -55,12 +51,11 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 			mNodeSize = aTableParam.getPagesPerNode() * aBlockDevice.getBlockSize();
 			mLeafSize = aTableParam.getPagesPerLeaf() * aBlockDevice.getBlockSize();
-			mHashSeed = new SecureRandom().nextInt();
+			mHashSeed = new SecureRandom().nextLong();
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 			mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
 
 			mRootNode = new HashTableLeafNode(this, null);
-			mRootNodeBlockPointer = writeBlock(mRootNode, mPointersPerNode);
 
 			mWasEmptyInstance = true;
 			mChanged = true;
@@ -90,7 +85,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	{
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(BlockPointer.SIZE + 4 + 4 + 4 + 3);
 		mRootNodeBlockPointer.marshal(buffer);
-		buffer.writeInt32(mHashSeed);
+		buffer.writeInt64(mHashSeed);
 		buffer.writeVar32(mNodeSize);
 		buffer.writeVar32(mLeafSize);
 		mBlockAccessor.getCompressionParam().marshal(buffer);
@@ -106,7 +101,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		mRootNodeBlockPointer = new BlockPointer();
 		mRootNodeBlockPointer.unmarshal(buffer);
 
-		mHashSeed = buffer.readInt32();
+		mHashSeed = buffer.readInt64();
 		mNodeSize = buffer.readVar32();
 		mLeafSize = buffer.readVar32();
 		mPointersPerNode = mNodeSize / BlockPointer.SIZE;
@@ -162,8 +157,6 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			Log.d("upgrade root from leaf to node");
 
 			mRootNode = ((HashTableLeafNode)mRootNode).growTree(0);
-
-			mRootNodeBlockPointer = writeBlock(mRootNode, mPointersPerNode);
 		}
 
 		mRootNode.putValue(aEntry, oldEntry, hash, 0);
@@ -233,9 +226,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				Log.i("commit hash table");
 				Log.inc();
 
-				freeBlock(mRootNodeBlockPointer);
-
-				mRootNodeBlockPointer = writeBlock(mRootNode, mPointersPerNode);
+				mRootNodeBlockPointer = mRootNode.flush();
 
 				if (mCommitChangesToBlockDevice)
 				{
@@ -330,7 +321,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		});
 
 		mRootNode = new HashTableLeafNode(this, null);
-		mRootNodeBlockPointer = writeBlock(mRootNode, mPointersPerNode);
+		mRootNodeBlockPointer = null;
 
 		assert mModCount == modCount : "concurrent modification";
 	}
@@ -447,11 +438,6 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		mCost.mWriteBlock++;
 		mCost.mWriteBlockBytes += blockPointer.getAllocatedSize();
-
-		if (aNode instanceof HashTableLeafNode)
-		{
-			((HashTableLeafNode)aNode).mBlockPointer = blockPointer;
-		}
 
 		return blockPointer;
 	}
