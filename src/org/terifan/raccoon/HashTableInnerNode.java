@@ -13,30 +13,30 @@ final class HashTableInnerNode implements HashTableNode
 	private HashTable mHashTable;
 	private BlockPointer mBlockPointer;
 	private PointerArray mBlockPointers;
-	private HashTableInnerNode mParent;
+	private HashTableInnerNode mParentNode;
 
 
 	public HashTableInnerNode(HashTable aHashTable, HashTableInnerNode aParent)
 	{
 		mHashTable = aHashTable;
+		mParentNode = aParent;
+
 		mBuffer = new byte[mHashTable.mNodeSize];
 		mBlockPointers = new PointerArray(mHashTable.mPointersPerNode);
-		mParent = aParent;
 	}
 
 
-	public HashTableInnerNode(HashTable aHashTable, HashTableInnerNode aParent, BlockPointer aBlockPointer)
+	public HashTableInnerNode(HashTable aHashTable, HashTableInnerNode aParentNode, BlockPointer aBlockPointer)
 	{
+		assert aHashTable.mPerformanceTool.tick("readNode");
+		assert aBlockPointer.getBlockType() == BlockType.INDEX;
+
 		mHashTable = aHashTable;
+		mParentNode = aParentNode;
 		mBlockPointer = aBlockPointer;
-		mBlockPointers = new PointerArray(mHashTable.mPointersPerNode);
-		mParent = aParent;
 
 		mBuffer = mHashTable.readBlock(mBlockPointer);
-
-		assert mHashTable.mPerformanceTool.tick("readNode");
-
-		assert aBlockPointer.getBlockType() == BlockType.INDEX;
+		mBlockPointers = new PointerArray(mHashTable.mPointersPerNode);
 
 		mHashTable.mCost.mReadBlockNode++;
 	}

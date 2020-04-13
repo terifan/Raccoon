@@ -10,7 +10,7 @@ import org.terifan.raccoon.util.Result;
 class HashTableLeafNode extends ArrayMap implements HashTableNode
 {
 	private HashTable mHashTable;
-	private HashTableInnerNode mParent;
+	private HashTableInnerNode mParentNode;
 	private BlockPointer mBlockPointer;
 
 
@@ -19,21 +19,20 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 		super(aHashTable.mLeafSize);
 
 		mHashTable = aHashTable;
-		mParent = aParent;
+		mParentNode = aParent;
 	}
 
 
-	public HashTableLeafNode(HashTable aHashTable, HashTableInnerNode aParent, BlockPointer aBlockPointer)
+	public HashTableLeafNode(HashTable aHashTable, HashTableInnerNode aParentNode, BlockPointer aBlockPointer)
 	{
 		super(aHashTable.readBlock(aBlockPointer));
 
-		mHashTable = aHashTable;
-		mParent = aParent;
-		mBlockPointer = aBlockPointer;
-
-		assert mHashTable.mPerformanceTool.tick("readLeaf");
-
 		assert aBlockPointer.getBlockType() == BlockType.LEAF;
+		assert aHashTable.mPerformanceTool.tick("readLeaf");
+
+		mHashTable = aHashTable;
+		mParentNode = aParentNode;
+		mBlockPointer = aBlockPointer;
 
 		mHashTable.mCost.mReadBlockLeaf++;
 	}
@@ -91,11 +90,12 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 			mHashTable.freeBlock(mBlockPointer);
 		}
 
-		HashTableInnerNode node = new HashTableInnerNode(mHashTable, mParent);
+		int halfRange = mHashTable.mPointersPerNode / 2;
+
+		HashTableInnerNode node = new HashTableInnerNode(mHashTable, mParentNode);
 
 		HashTableLeafNode lowLeaf = new HashTableLeafNode(mHashTable, node);
 		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, node);
-		int halfRange = mHashTable.mPointersPerNode / 2;
 
 		divideEntries(aLevel, halfRange, lowLeaf, highLeaf);
 
