@@ -402,15 +402,4 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		return blockPointer;
 	}
-
-
-	BlockPointer writeIfNotEmpty(HashTableLeafNode aLeaf, int aRange)
-	{
-		if (aLeaf.isEmpty())
-		{
-			return new BlockPointer().setBlockType(BlockType.HOLE).setRange(aRange);
-		}
-
-		return writeBlock(aLeaf, aRange);
-	}
 }

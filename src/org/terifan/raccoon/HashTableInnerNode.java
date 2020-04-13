@@ -26,9 +26,10 @@ final class HashTableInnerNode implements HashTableNode
 	public HashTableInnerNode(HashTable aHashTable, BlockPointer aBlockPointer)
 	{
 		mHashTable = aHashTable;
-		mBuffer = mHashTable.readBlock(aBlockPointer);
 		mBlockPointer = aBlockPointer;
 		mBlockPointers = new PointerArray(mHashTable.mPointersPerNode);
+
+		mBuffer = mHashTable.readBlock(mBlockPointer);
 
 		assert mHashTable.mPerformanceTool.tick("readNode");
 

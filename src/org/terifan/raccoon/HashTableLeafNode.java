@@ -90,7 +90,7 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, mParent);
 		int halfRange = mHashTable.mPointersPerNode / 2;
 
-		divideLeafEntries(aLevel, halfRange, lowLeaf, highLeaf);
+		divideEntries(aLevel, halfRange, lowLeaf, highLeaf);
 
 		HashTableInnerNode node = new HashTableInnerNode(mHashTable);
 		node.writeBlock(0, lowLeaf, halfRange);
@@ -127,7 +127,7 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, aParent);
 		int halfRange = mBlockPointer.getRange() / 2;
 
-		divideLeafEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
+		divideEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
 
 		aParent.writeBlock(aIndex, lowLeaf, halfRange);
 		aParent.writeBlock(aIndex + halfRange, highLeaf, halfRange);
@@ -139,7 +139,7 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 	}
 
 
-	private void divideLeafEntries(int aLevel, int aHalfRange, HashTableLeafNode aLowLeaf, HashTableLeafNode aHighLeaf)
+	private void divideEntries(int aLevel, int aHalfRange, HashTableLeafNode aLowLeaf, HashTableLeafNode aHighLeaf)
 	{
 		assert mHashTable.mPerformanceTool.tick("divideLeafEntries");
 
