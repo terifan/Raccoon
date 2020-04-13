@@ -1,5 +1,9 @@
 package org.terifan.raccoon;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
@@ -73,12 +77,12 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 	}
 
 
-	HashTableInnerNode splitLeaf(int aLevel)
+	HashTableInnerNode growTree(int aLevel)
 	{
-		assert mHashTable.mPerformanceTool.tick("splitLeaf");
+		assert mHashTable.mPerformanceTool.tick("growTree");
 
 		Log.inc();
-		Log.d("split leaf");
+		Log.d("grow tree");
 		Log.inc();
 
 		mHashTable.mCost.mTreeTraversal++;
@@ -86,13 +90,14 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 
 		mHashTable.freeBlock(mBlockPointer);
 
-		HashTableLeafNode lowLeaf = new HashTableLeafNode(mHashTable, mParent);
-		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, mParent);
+		HashTableInnerNode node = new HashTableInnerNode(mHashTable, mParent);
+
+		HashTableLeafNode lowLeaf = new HashTableLeafNode(mHashTable, node);
+		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, node);
 		int halfRange = mHashTable.mPointersPerNode / 2;
 
 		divideEntries(aLevel, halfRange, lowLeaf, highLeaf);
 
-		HashTableInnerNode node = new HashTableInnerNode(mHashTable);
 		node.writeBlock(0, lowLeaf, halfRange);
 		node.writeBlock(halfRange, highLeaf, halfRange);
 
@@ -180,7 +185,7 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 		}
 		else
 		{
-			HashTableInnerNode node = splitLeaf(aLevel + 1);
+			HashTableInnerNode node = growTree(aLevel + 1);
 
 			node.putValue(aEntry, oOldEntry, aHash, aLevel + 1); // recursive put
 
@@ -208,9 +213,28 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 	{
 		assert mHashTable.mPerformanceTool.tick("scan");
 
-		aScanResult.enterLeaf(mBlockPointer, mBuffer);
-		aScanResult.records += size();
-		aScanResult.exitLeaf();
+		aScanResult.enterLeafNode(mBlockPointer, mBuffer);
+		aScanResult.leafNodes++;
+
+		for (ArrayMapEntry entry : this)
+		{
+			aScanResult.records++;
+			aScanResult.record();
+
+			if ((entry.getFlags() & TableInstance.FLAG_BLOB) != 0)
+			{
+				try
+				{
+					new Blob(mHashTable.mBlockAccessor, null, entry.getValue(), BlobOpenOption.READ).scan(aScanResult);
+				}
+				catch (IOException e)
+				{
+					throw new DatabaseIOException(e);
+				}
+			}
+		}
+
+		aScanResult.exitLeafNode();
 	}
 
 

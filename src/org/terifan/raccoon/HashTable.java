@@ -78,7 +78,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			}
 			else
 			{
-				mRootNode = new HashTableInnerNode(this, mRootNodeBlockPointer);
+				mRootNode = new HashTableInnerNode(this, null, mRootNodeBlockPointer);
 			}
 		}
 
@@ -161,7 +161,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 			Log.d("upgrade root from leaf to node");
 
-			mRootNode = ((HashTableLeafNode)mRootNode).splitLeaf(0);
+			mRootNode = ((HashTableLeafNode)mRootNode).growTree(0);
 
 			mRootNodeBlockPointer = writeBlock(mRootNode, mPointersPerNode);
 		}
@@ -294,7 +294,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			}
 			else
 			{
-				mRootNode = new HashTableInnerNode(this, mRootNodeBlockPointer);
+				mRootNode = new HashTableInnerNode(this, null, mRootNodeBlockPointer);
 			}
 		}
 
@@ -319,7 +319,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			{
 				for (ArrayMapEntry entry : (HashTableLeafNode)node)
 				{
-					if (entry.getFlags() == TableInstance.FLAG_BLOB)
+					if ((entry.getFlags() & TableInstance.FLAG_BLOB) != 0)
 					{
 						Blob.deleteBlob(mBlockAccessor, entry.getValue());
 					}

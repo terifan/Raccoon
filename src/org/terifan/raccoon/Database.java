@@ -1199,29 +1199,32 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public ScanResult scan()
+	public ScanResult scan(ScanResult aScanResult)
 	{
-		ScanResult scanResult = new ScanResult();
+		if (aScanResult == null)
+		{
+			aScanResult = new ScanResult();
+		}
 
-		scanResult.enterTable(mSystemTable);
+		aScanResult.enterTable(mSystemTable);
 
-		mSystemTable.scan(scanResult);
+		mSystemTable.scan(aScanResult);
 
-		scanResult.exitTable();
+		aScanResult.exitTable();
 
 		for (Table tableMetadata : getTables())
 		{
 			try (TableInstance table = openTable(tableMetadata, DatabaseOpenOption.OPEN))
 			{
-				scanResult.enterTable(table);
+				aScanResult.enterTable(table);
 
-				table.scan(scanResult);
+				table.scan(aScanResult);
 
-				scanResult.exitTable();
+				aScanResult.exitTable();
 			}
 		}
 
-		return scanResult;
+		return aScanResult;
 	}
 
 

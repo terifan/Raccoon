@@ -1110,13 +1110,58 @@ public class DatabaseNGTest
 
 		try (Database db = new Database(device, DatabaseOpenOption.OPEN))
 		{
-			ScanResult scan = db.scan();
+			ScanResult scan = db.scan(null);
+
+			System.out.println(scan);
 
 			assertEquals(scan.tables, 38);
 			assertEquals(scan.records, 1 + 1 + 5 * 7 + 10000 + 10000 + 10000);
-//			assertEquals(scan.indexBlocks, 156);
-			assertEquals(scan.blobIndices, 0);
-			assertEquals(scan.blobData, 0);
+		}
+	}
+
+
+	@Test
+	public void testGrowTreeRollback() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
+		{
+			for (int i = 0; i < 10; i++)
+			{
+				database.save(new _Fruit1K("a-" + i));
+			}
+
+			System.out.println(database.getTable(_Fruit1K.class).scan(null));
+
+			database.commit();
+
+			for (int i = 0; i < 10; i++)
+			{
+				assertTrue(database.tryGet(new _Fruit1K("a-" + i)));
+			}
+
+			for (int i = 0; i < 100; i++)
+			{
+				database.save(new _Fruit1K("b-" + i));
+			}
+
+			for (int i = 0; i < 100; i++)
+			{
+				assertTrue(database.tryGet(new _Fruit1K("b-" + i)));
+			}
+
+			database.rollback();
+
+			for (int i = 0; i < 10; i++)
+			{
+				assertTrue(database.tryGet(new _Fruit1K("a-" + i)));
+			}
+
+			for (int i = 0; i < 100; i++)
+			{
+				assertFalse(database.tryGet(new _Fruit1K("b-" + i)));
+			}
 		}
 	}
 }

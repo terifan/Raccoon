@@ -13,21 +13,24 @@ final class HashTableInnerNode implements HashTableNode
 	private HashTable mHashTable;
 	private BlockPointer mBlockPointer;
 	private PointerArray mBlockPointers;
+	private HashTableInnerNode mParent;
 
 
-	public HashTableInnerNode(HashTable aHashTable)
+	public HashTableInnerNode(HashTable aHashTable, HashTableInnerNode aParent)
 	{
 		mHashTable = aHashTable;
 		mBuffer = new byte[mHashTable.mNodeSize];
 		mBlockPointers = new PointerArray(mHashTable.mPointersPerNode);
+		mParent = aParent;
 	}
 
 
-	public HashTableInnerNode(HashTable aHashTable, BlockPointer aBlockPointer)
+	public HashTableInnerNode(HashTable aHashTable, HashTableInnerNode aParent, BlockPointer aBlockPointer)
 	{
 		mHashTable = aHashTable;
 		mBlockPointer = aBlockPointer;
 		mBlockPointers = new PointerArray(mHashTable.mPointersPerNode);
+		mParent = aParent;
 
 		mBuffer = mHashTable.readBlock(mBlockPointer);
 
@@ -306,7 +309,7 @@ final class HashTableInnerNode implements HashTableNode
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				return (T)new HashTableInnerNode(mHashTable, blockPointer);
+				return (T)new HashTableInnerNode(mHashTable, this, blockPointer);
 			case LEAF:
 				return (T)new HashTableLeafNode(mHashTable, this, blockPointer);
 			case HOLE:
@@ -321,8 +324,8 @@ final class HashTableInnerNode implements HashTableNode
 	@Override
 	public void scan(ScanResult aScanResult)
 	{
-		aScanResult.enterNode(mBlockPointer);
-		aScanResult.indexBlocks++;
+		aScanResult.enterInnerNode(mBlockPointer);
+		aScanResult.innerNodes++;
 
 		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{
@@ -334,7 +337,7 @@ final class HashTableInnerNode implements HashTableNode
 			}
 		}
 
-		aScanResult.exitNode();
+		aScanResult.exitInnerNode();
 	}
 
 
