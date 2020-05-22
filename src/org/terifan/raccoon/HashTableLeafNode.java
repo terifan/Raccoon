@@ -1,38 +1,41 @@
 package org.terifan.raccoon;
 
 import java.io.IOException;
+import java.util.Iterator;
 import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 
 
-class HashTableLeafNode extends ArrayMap implements HashTableNode
+class HashTableLeafNode implements HashTableNode
 {
+	final static int OVERHEAD = ArrayMap.OVERHEAD;
+
 	private HashTable mHashTable;
 	private HashTableInnerNode mParentNode;
 	private BlockPointer mBlockPointer;
+	private ArrayMap mMap;
 
 
-	public HashTableLeafNode(HashTable aHashTable, HashTableInnerNode aParent)
+	public HashTableLeafNode(HashTable aHashTable, HashTableInnerNode aParentNode)
 	{
-		super(aHashTable.mLeafSize);
-
 		mHashTable = aHashTable;
-		mParentNode = aParent;
+		mParentNode = aParentNode;
+		mMap = new ArrayMap(aHashTable.mLeafSize);
 	}
 
 
 	public HashTableLeafNode(HashTable aHashTable, HashTableInnerNode aParentNode, BlockPointer aBlockPointer)
 	{
-		super(aHashTable.readBlock(aBlockPointer));
-
 		assert aBlockPointer.getBlockType() == BlockType.LEAF;
 		assert aHashTable.mPerformanceTool.tick("readLeaf");
 
 		mHashTable = aHashTable;
 		mParentNode = aParentNode;
 		mBlockPointer = aBlockPointer;
+
+		mMap = new ArrayMap(aHashTable.readBlock(mBlockPointer));
 
 		mHashTable.mCost.mReadBlockLeaf++;
 	}
@@ -56,21 +59,21 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 	public boolean getValue(ArrayMapEntry aEntry, long aHash, int aLevel)
 	{
 		mHashTable.mCost.mValueGet++;
-		return get(aEntry);
+		return mMap.get(aEntry);
 	}
 
 
 	@Override
 	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
-		return put(aEntry, oOldEntry);
+		return mMap.put(aEntry, oOldEntry);
 	}
 
 
 	@Override
 	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
-		return remove(aEntry, oOldEntry);
+		return mMap.remove(aEntry, oOldEntry);
 	}
 
 
@@ -92,20 +95,54 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 
 		int halfRange = mHashTable.mPointersPerNode / 2;
 
-		HashTableInnerNode node = new HashTableInnerNode(mHashTable, mParentNode);
+		HashTableInnerNode parent = new HashTableInnerNode(mHashTable, mParentNode);
 
-		HashTableLeafNode lowLeaf = new HashTableLeafNode(mHashTable, node);
-		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, node);
+		HashTableLeafNode lowLeaf = new HashTableLeafNode(mHashTable, parent);
+		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, parent);
 
 		divideEntries(aLevel, halfRange, lowLeaf, highLeaf);
 
-		node.writeBlock(0, lowLeaf, halfRange);
-		node.writeBlock(halfRange, highLeaf, halfRange);
+//		mParentNode.addNode(parent);
+
+		parent.addNode(0, lowLeaf, halfRange);
+		parent.addNode(halfRange, highLeaf, halfRange);
 
 		Log.dec();
 		Log.dec();
 
-		return node;
+		return parent;
+	}
+
+
+	HashTableInnerNode splitRootLeaf()
+	{
+		assert mHashTable.mPerformanceTool.tick("growTree");
+
+		Log.inc();
+
+		mHashTable.mCost.mTreeTraversal++;
+		mHashTable.mCost.mBlockSplit++;
+
+		if (mBlockPointer != null)
+		{
+			mHashTable.freeBlock(mBlockPointer);
+		}
+
+		int halfRange = mHashTable.mPointersPerNode / 2;
+
+		HashTableInnerNode parent = new HashTableInnerNode(mHashTable, mParentNode);
+
+		HashTableLeafNode lowLeaf = new HashTableLeafNode(mHashTable, parent);
+		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, parent);
+
+		divideEntries(0, halfRange, lowLeaf, highLeaf);
+
+		parent.addNode(0, lowLeaf, halfRange);
+		parent.addNode(halfRange, highLeaf, halfRange);
+
+		Log.dec();
+
+		return parent;
 	}
 
 
@@ -135,8 +172,8 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 
 		divideEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
 
-		aParent.writeBlock(aIndex, lowLeaf, halfRange);
-		aParent.writeBlock(aIndex + halfRange, highLeaf, halfRange);
+		aParent.setNode(aIndex, lowLeaf, halfRange);
+		aParent.setNode(aIndex + halfRange, highLeaf, halfRange);
 
 		Log.dec();
 		Log.dec();
@@ -149,15 +186,15 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 	{
 		assert mHashTable.mPerformanceTool.tick("divideLeafEntries");
 
-		for (ArrayMapEntry entry : this)
+		for (ArrayMapEntry entry : mMap)
 		{
 			if (mHashTable.computeIndex(mHashTable.computeHash(entry.getKey()), aLevel) < aHalfRange)
 			{
-				aLowLeaf.put(entry, null);
+				aLowLeaf.mMap.put(entry, null);
 			}
 			else
 			{
-				aHighLeaf.put(entry, null);
+				aHighLeaf.mMap.put(entry, null);
 			}
 		}
 	}
@@ -169,14 +206,14 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		if (put(aEntry, oOldEntry))
+		if (mMap.put(aEntry, oOldEntry))
 		{
 			if (mBlockPointer.getBlockType() != BlockType.HOLE)
 			{
 				mHashTable.freeBlock(mBlockPointer);
 			}
 
-			aParent.writeBlock(aIndex, this, mBlockPointer.getRange());
+			aParent.setNode(aIndex, this, mBlockPointer.getRange());
 
 			mHashTable.mCost.mValuePut++;
 		}
@@ -190,7 +227,7 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 
 			node.putValue(aEntry, oOldEntry, aHash, aLevel + 1); // recursive put
 
-			aParent.writeBlock(aIndex, node, mBlockPointer.getRange());
+			aParent.setNode(aIndex, node, mBlockPointer.getRange());
 		}
 	}
 
@@ -201,9 +238,9 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 
 		mHashTable.mCost.mTreeTraversal++;
 
-		put(aEntry, null);
+		mMap.put(aEntry, null);
 
-		aParent.writeBlock(aIndex, this, aRange);
+		aParent.setNode(aIndex, this, aRange);
 
 		mHashTable.mCost.mValuePut++;
 	}
@@ -214,10 +251,10 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 	{
 		assert mHashTable.mPerformanceTool.tick("scan");
 
-		aScanResult.enterLeafNode(mBlockPointer, mBuffer);
+		aScanResult.enterLeafNode(mBlockPointer, mMap.array());
 		aScanResult.leafNodes++;
 
-		for (ArrayMapEntry entry : this)
+		for (ArrayMapEntry entry : mMap)
 		{
 			aScanResult.records++;
 			aScanResult.record();
@@ -257,5 +294,46 @@ class HashTableLeafNode extends ArrayMap implements HashTableNode
 		mBlockPointer = mHashTable.writeBlock(this, mHashTable.mPointersPerNode);
 
 		return mBlockPointer;
+	}
+
+
+	@Override
+	public void removeAll()
+	{
+		for (ArrayMapEntry entry : mMap)
+		{
+			if ((entry.getFlags() & TableInstance.FLAG_BLOB) != 0)
+			{
+				Blob.deleteBlob(mHashTable.mBlockAccessor, entry.getValue());
+			}
+		}
+
+		mHashTable.freeBlock(mBlockPointer);
+	}
+
+
+	@Override
+	public String integrityCheck()
+	{
+		return mMap.integrityCheck();
+	}
+
+
+	@Override
+	public byte[] array()
+	{
+		return mMap.array();
+	}
+
+
+	public int size()
+	{
+		return mMap.size();
+	}
+
+
+	public Iterator<ArrayMapEntry> iterator()
+	{
+		return mMap.iterator();
 	}
 }

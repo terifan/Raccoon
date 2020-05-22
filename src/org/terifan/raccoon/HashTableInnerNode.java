@@ -2,18 +2,16 @@ package org.terifan.raccoon;
 
 import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockPointer;
-import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 
 
 final class HashTableInnerNode implements HashTableNode
 {
-	private byte[] mBuffer;
 	private HashTable mHashTable;
 	private BlockPointer mBlockPointer;
-	private PointerArray mBlockPointers;
 	private HashTableInnerNode mParentNode;
+	private NodeArray mChildNodes;
 
 
 	public HashTableInnerNode(HashTable aHashTable, HashTableInnerNode aParent)
@@ -21,8 +19,7 @@ final class HashTableInnerNode implements HashTableNode
 		mHashTable = aHashTable;
 		mParentNode = aParent;
 
-		mBuffer = new byte[mHashTable.mNodeSize];
-		mBlockPointers = new PointerArray(mHashTable.mPointersPerNode);
+		mChildNodes = new NodeArray(mHashTable, this, new byte[mHashTable.mNodeSize]);
 	}
 
 
@@ -35,10 +32,15 @@ final class HashTableInnerNode implements HashTableNode
 		mParentNode = aParentNode;
 		mBlockPointer = aBlockPointer;
 
-		mBuffer = mHashTable.readBlock(mBlockPointer);
-		mBlockPointers = new PointerArray(mHashTable.mPointersPerNode);
+		mChildNodes = new NodeArray(mHashTable, this, mHashTable.readBlock(mBlockPointer));
 
 		mHashTable.mCost.mReadBlockNode++;
+	}
+
+
+	void addNode(int aIndex, HashTableNode aNode, int aRange)
+	{
+		mChildNodes.set(aIndex, aNode, aRange);
 	}
 
 
@@ -52,7 +54,7 @@ final class HashTableInnerNode implements HashTableNode
 	@Override
 	public byte[] array()
 	{
-		return mBuffer;
+		return mChildNodes.array();
 	}
 
 
@@ -63,26 +65,9 @@ final class HashTableInnerNode implements HashTableNode
 	}
 
 
-	private BlockPointer getPointer(int aIndex)
-	{
-		if (isFree(aIndex))
-		{
-			return null;
-		}
-
-		assert aIndex >= 0 && aIndex < mHashTable.mPointersPerNode;
-
-		BlockPointer blockPointer = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
-
-		assert blockPointer.getRange() != 0;
-
-		return blockPointer;
-	}
-
-
 	int findPointer(int aIndex)
 	{
-		for (; isFree(aIndex); aIndex--)
+		for (; mChildNodes.isFree(aIndex); aIndex--)
 		{
 		}
 
@@ -104,14 +89,6 @@ final class HashTableInnerNode implements HashTableNode
 //	}
 
 
-	private boolean isFree(int aIndex)
-	{
-		assert aIndex >= 0 && aIndex < mHashTable.mPointersPerNode : "0 >= " + aIndex + " < " + mHashTable.mPointersPerNode;
-
-		return BlockPointer.getBlockType(mBuffer, aIndex * BlockPointer.SIZE) == BlockType.FREE;
-	}
-
-
 	@Override
 	public String integrityCheck()
 	{
@@ -119,7 +96,7 @@ final class HashTableInnerNode implements HashTableNode
 
 		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{
-			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mBuffer).position(i * BlockPointer.SIZE));
+			BlockPointer bp = mChildNodes.getPointer2(i);
 
 			if (rangeRemain > 0)
 			{
@@ -153,13 +130,13 @@ final class HashTableInnerNode implements HashTableNode
 		mHashTable.mCost.mTreeTraversal++;
 
 		int index = findPointer(mHashTable.computeIndex(aHash, aLevel));
-		BlockPointer blockPointer = getPointer(index);
+		BlockPointer blockPointer = mChildNodes.getPointer(index);
 
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
 			case LEAF:
-				HashTableNode node = getNode(index);
+				HashTableNode node = mChildNodes.getNode(index);
 				return node.getValue(aEntry, aHash, aLevel + 1);
 			case HOLE:
 				return false;
@@ -181,25 +158,22 @@ final class HashTableInnerNode implements HashTableNode
 		mHashTable.mCost.mTreeTraversal++;
 
 		int index = findPointer(mHashTable.computeIndex(aHash, aLevel));
-		BlockPointer blockPointer = getPointer(index);
+		BlockPointer blockPointer = mChildNodes.getPointer(index);
 
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				HashTableInnerNode node = getNode(index);
+				HashTableInnerNode node = mChildNodes.getNode(index);
 				node.putValue(aEntry, oOldEntry, aHash, aLevel + 1);
-				freeBlock(index, node);
-				writeBlock(index, node, blockPointer.getRange());
+				mChildNodes.markDirty(index, node, blockPointer.getRange());
 				break;
 			case LEAF:
-			{
-				HashTableLeafNode leaf = getNode(index);
+				HashTableLeafNode leaf = mChildNodes.getNode(index);
 				leaf.putValueLeaf(this, index, aEntry, oOldEntry, aHash, aLevel);
 				break;
-			}
 			case HOLE:
-				HashTableLeafNode leaf = getNode(index);
-				leaf.upgradeHole(this, index, aEntry, aLevel, blockPointer.getRange());
+				HashTableLeafNode hole = mChildNodes.getNode(index);
+				hole.upgradeHole(this, index, aEntry, aLevel, blockPointer.getRange());
 				break;
 			case FREE:
 			default:
@@ -220,29 +194,26 @@ final class HashTableInnerNode implements HashTableNode
 		mHashTable.mCost.mTreeTraversal++;
 
 		int index = findPointer(mHashTable.computeIndex(aHash, aLevel));
-		BlockPointer blockPointer = getPointer(index);
+		BlockPointer blockPointer = mChildNodes.getPointer(index);
 
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				HashTableInnerNode node = getNode(index);
+				HashTableInnerNode node = mChildNodes.getNode(index);
 				if (node.removeValue(aEntry, oOldEntry, aHash, aLevel + 1))
 				{
-					freeBlock(index, node);
-					writeBlock(index, node, blockPointer.getRange());
+					mChildNodes.markDirty(index, node, blockPointer.getRange());
 					return true;
 				}
 				return false;
 			case LEAF:
-				HashTableLeafNode leaf = getNode(index);
-				boolean found = leaf.remove(aEntry, oOldEntry);
+				HashTableLeafNode leaf = mChildNodes.getNode(index);
+				boolean found = leaf.removeValue(aEntry, oOldEntry, aHash, aLevel);
 
 				if (found)
 				{
 					mHashTable.mCost.mEntityRemove++;
-
-					freeBlock(index, leaf);
-					writeBlock(index, leaf, blockPointer.getRange());
+					mChildNodes.markDirty(index, leaf, blockPointer.getRange());
 				}
 
 				return found;
@@ -260,7 +231,7 @@ final class HashTableInnerNode implements HashTableNode
 	{
 		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{
-			HashTableNode node = getNode(i);
+			HashTableNode node = mChildNodes.getNode(i);
 
 			if (node != null)
 			{
@@ -272,55 +243,6 @@ final class HashTableInnerNode implements HashTableNode
 	}
 
 
-	private void freeBlock(int aIndex, HashTableNode aNode)
-	{
-		mHashTable.freeBlock(getPointer(aIndex));
-	}
-
-
-	void writeBlock(int aIndex, HashTableNode aNode, int aRange)
-	{
-		BlockPointer blockPointer;
-
-		if (aNode instanceof HashTableLeafNode && ((HashTableLeafNode)aNode).isEmpty())
-		{
-			blockPointer = new BlockPointer().setBlockType(BlockType.HOLE).setRange(aRange);
-		}
-		else
-		{
-			assert aIndex >= 0 && aIndex < mHashTable.mPointersPerNode;
-
-			blockPointer = mHashTable.writeBlock(aNode, aRange);
-		}
-
-		blockPointer.marshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
-	}
-
-
-	private <T extends HashTableNode> T getNode(int aIndex)
-	{
-		BlockPointer blockPointer = getPointer(aIndex);
-
-		if (blockPointer == null)
-		{
-			return null;
-		}
-
-		switch (blockPointer.getBlockType())
-		{
-			case INDEX:
-				return (T)new HashTableInnerNode(mHashTable, this, blockPointer);
-			case LEAF:
-				return (T)new HashTableLeafNode(mHashTable, this, blockPointer);
-			case HOLE:
-				return (T)new HashTableLeafNode(mHashTable, this);
-			case FREE:
-			default:
-				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
-		}
-	}
-
-
 	@Override
 	public void scan(ScanResult aScanResult)
 	{
@@ -329,7 +251,7 @@ final class HashTableInnerNode implements HashTableNode
 
 		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{
-			HashTableNode node = getNode(i);
+			HashTableNode node = mChildNodes.getNode(i);
 
 			if (node != null)
 			{
@@ -361,7 +283,7 @@ final class HashTableInnerNode implements HashTableNode
 
 					while (next == null && index < mHashTable.mPointersPerNode)
 					{
-						next = getNode(index++);
+						next = mChildNodes.getNode(index++);
 					}
 				}
 
@@ -395,5 +317,29 @@ final class HashTableInnerNode implements HashTableNode
 		mBlockPointer = mHashTable.writeBlock(this, mHashTable.mPointersPerNode);
 
 		return mBlockPointer;
+	}
+
+
+	void setNode(int aIndex, HashTableNode aNode, int aRange)
+	{
+		mHashTable.writeBlock(aNode, aRange);
+		mChildNodes.set(aIndex, aNode, aRange);
+	}
+
+
+	@Override
+	public void removeAll()
+	{
+		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
+		{
+			HashTableNode node = mChildNodes.getNode(i);
+
+			if (node != null)
+			{
+				node.removeAll();
+			}
+		}
+
+		mHashTable.freeBlock(mBlockPointer);
 	}
 }

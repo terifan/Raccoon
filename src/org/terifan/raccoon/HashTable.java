@@ -156,7 +156,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 			Log.d("upgrade root from leaf to node");
 
-			mRootNode = ((HashTableLeafNode)mRootNode).growTree(0);
+			mRootNode = ((HashTableLeafNode)mRootNode).splitRootLeaf();
 		}
 
 		mRootNode.putValue(aEntry, oldEntry, hash, 0);
@@ -302,23 +302,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		int modCount = ++mModCount;
 		mChanged = true;
 
-		visit(node ->
-		{
-			mCost.mTreeTraversal++;
-
-			if (node instanceof HashTableLeafNode)
-			{
-				for (ArrayMapEntry entry : (HashTableLeafNode)node)
-				{
-					if ((entry.getFlags() & TableInstance.FLAG_BLOB) != 0)
-					{
-						Blob.deleteBlob(mBlockAccessor, entry.getValue());
-					}
-				}
-			}
-
-			freeBlock(node.getBlockPointer());
-		});
+		mRootNode.removeAll();
 
 		mRootNode = new HashTableLeafNode(this, null);
 		mRootNodeBlockPointer = null;

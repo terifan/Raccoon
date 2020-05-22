@@ -34,4 +34,7 @@ interface HashTableNode
 
 
 	String integrityCheck();
+
+
+	void removeAll();
 }
