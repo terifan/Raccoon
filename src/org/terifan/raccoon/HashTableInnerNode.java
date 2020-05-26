@@ -2,6 +2,7 @@ package org.terifan.raccoon;
 
 import java.util.Iterator;
 import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 
@@ -121,7 +122,7 @@ final class HashTableInnerNode implements HashTableNode
 
 
 	@Override
-	public boolean getValue(ArrayMapEntry aEntry, long aHash, int aLevel)
+	public boolean get(ArrayMapEntry aEntry, long aHash, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("getValue");
 
@@ -137,7 +138,7 @@ final class HashTableInnerNode implements HashTableNode
 			case INDEX:
 			case LEAF:
 				HashTableNode node = mChildNodes.getNode(index);
-				return node.getValue(aEntry, aHash, aLevel + 1);
+				return node.get(aEntry, aHash, aLevel + 1);
 			case HOLE:
 				return false;
 			case FREE:
@@ -148,7 +149,7 @@ final class HashTableInnerNode implements HashTableNode
 
 
 	@Override
-	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
+	public boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("putValue");
 
@@ -164,7 +165,7 @@ final class HashTableInnerNode implements HashTableNode
 		{
 			case INDEX:
 				HashTableInnerNode node = mChildNodes.getNode(index);
-				node.putValue(aEntry, oOldEntry, aHash, aLevel + 1);
+				node.put(aEntry, oOldEntry, aHash, aLevel + 1);
 				mChildNodes.markDirty(index, node, blockPointer.getRange());
 				break;
 			case LEAF:
@@ -187,7 +188,7 @@ final class HashTableInnerNode implements HashTableNode
 
 
 	@Override
-	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
+	public boolean remove(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("removeValue");
 
@@ -200,7 +201,7 @@ final class HashTableInnerNode implements HashTableNode
 		{
 			case INDEX:
 				HashTableInnerNode node = mChildNodes.getNode(index);
-				if (node.removeValue(aEntry, oOldEntry, aHash, aLevel + 1))
+				if (node.remove(aEntry, oOldEntry, aHash, aLevel + 1))
 				{
 					mChildNodes.markDirty(index, node, blockPointer.getRange());
 					return true;
@@ -208,7 +209,7 @@ final class HashTableInnerNode implements HashTableNode
 				return false;
 			case LEAF:
 				HashTableLeafNode leaf = mChildNodes.getNode(index);
-				boolean found = leaf.removeValue(aEntry, oOldEntry, aHash, aLevel);
+				boolean found = leaf.remove(aEntry, oOldEntry, aHash, aLevel);
 
 				if (found)
 				{
@@ -320,26 +321,36 @@ final class HashTableInnerNode implements HashTableNode
 	}
 
 
-	void setNode(int aIndex, HashTableNode aNode, int aRange)
-	{
-		mHashTable.writeBlock(aNode, aRange);
-		mChildNodes.set(aIndex, aNode, aRange);
-	}
-
-
 	@Override
-	public void removeAll()
+	public void clear()
 	{
+		Log.i("clear node %s", mBlockPointer);
+		Log.inc();
+
 		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{
 			HashTableNode node = mChildNodes.getNode(i);
 
 			if (node != null)
 			{
-				node.removeAll();
+				node.clear();
+
+				mChildNodes.freePointer(i);
 			}
 		}
 
-		mHashTable.freeBlock(mBlockPointer);
+		if (mBlockPointer != null)
+		{
+			mHashTable.freeBlock(mBlockPointer);
+		}
+
+		Log.dec();
+	}
+
+
+	void setNode(int aIndex, HashTableNode aNode, int aRange)
+	{
+		mHashTable.writeBlock(aNode, aRange);
+		mChildNodes.set(aIndex, aNode, aRange);
 	}
 }

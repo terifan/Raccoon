@@ -15,13 +15,19 @@ interface HashTableNode
 	BlockType getType();
 
 
-	boolean getValue(ArrayMapEntry aEntry, long aHash, int aLevel);
+	boolean get(ArrayMapEntry aEntry, long aHash, int aLevel);
 
 
-	boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel);
+	boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel);
 
 
-	boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel);
+	boolean remove(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel);
+
+
+	void clear();
+
+
+	BlockPointer flush();
 
 
 	void scan(ScanResult aScanResult);
@@ -30,11 +36,5 @@ interface HashTableNode
 	void visit(HashTableVisitor aVisitor);
 
 
-	BlockPointer flush();
-
-
 	String integrityCheck();
-
-
-	void removeAll();
 }

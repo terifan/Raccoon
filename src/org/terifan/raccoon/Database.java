@@ -1201,30 +1201,46 @@ public final class Database implements AutoCloseable
 
 	public ScanResult scan(ScanResult aScanResult)
 	{
-		if (aScanResult == null)
+		mReadLock.lock();
+
+		try
 		{
-			aScanResult = new ScanResult();
-		}
-
-		aScanResult.enterTable(mSystemTable);
-
-		mSystemTable.scan(aScanResult);
-
-		aScanResult.exitTable();
-
-		for (Table tableMetadata : getTables())
-		{
-			try (TableInstance table = openTable(tableMetadata, DatabaseOpenOption.OPEN))
+			if (aScanResult == null)
 			{
+				aScanResult = new ScanResult();
+			}
+
+			aScanResult.enterTable(mSystemTable);
+
+			mSystemTable.scan(aScanResult);
+
+			aScanResult.exitTable();
+
+			for (Table tableMetadata : getTables())
+			{
+				boolean wasOpen = mOpenTables.containsKey(tableMetadata);
+
+				TableInstance table = openTable(tableMetadata, DatabaseOpenOption.OPEN);
+
 				aScanResult.enterTable(table);
 
 				table.scan(aScanResult);
 
 				aScanResult.exitTable();
-			}
-		}
 
-		return aScanResult;
+				if (!wasOpen)
+				{
+					table.close();
+					mOpenTables.remove(tableMetadata);
+				}
+			}
+
+			return aScanResult;
+		}
+		finally
+		{
+			mReadLock.unlock();
+		}
 	}
 
 

@@ -117,7 +117,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	public boolean get(ArrayMapEntry aEntry)
 	{
-		return mRootNode.getValue(aEntry, computeHash(aEntry.getKey()), 0);
+		return mRootNode.get(aEntry, computeHash(aEntry.getKey()), 0);
 	}
 
 
@@ -146,7 +146,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		{
 			Log.d("put root value");
 
-			if (mRootNode.putValue(aEntry, oldEntry, hash, 0))
+			if (mRootNode.put(aEntry, oldEntry, hash, 0))
 			{
 				Log.dec();
 				assert mModCount == modCount : "concurrent modification";
@@ -159,7 +159,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			mRootNode = ((HashTableLeafNode)mRootNode).splitRootLeaf();
 		}
 
-		mRootNode.putValue(aEntry, oldEntry, hash, 0);
+		mRootNode.put(aEntry, oldEntry, hash, 0);
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
@@ -174,7 +174,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		boolean modified = mRootNode.removeValue(aEntry, oldEntry, computeHash(aEntry.getKey()), 0);
+		boolean modified = mRootNode.remove(aEntry, oldEntry, computeHash(aEntry.getKey()), 0);
 
 		mChanged |= modified;
 
@@ -298,11 +298,14 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		checkOpen();
 
 		Log.i("clear");
+		Log.inc();
 
 		int modCount = ++mModCount;
+
+		mRootNode.clear();
 		mChanged = true;
 
-		mRootNode.removeAll();
+		Log.dec();
 
 		mRootNode = new HashTableLeafNode(this, null);
 		mRootNodeBlockPointer = null;

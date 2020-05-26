@@ -6,12 +6,13 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 class NodeArray
 {
-	private int mSize;
-	private byte[] mBuffer;
-	private BlockPointer[] mPointers;
-//	private HashTableNode[] mNodes;
 	private final HashTable mHashTable;
 	private final HashTableInnerNode mNode;
+
+	private int mPointerCount;
+	private final byte[] mBuffer;
+//	private BlockPointer[] mPointers;
+//	private HashTableNode[] mNodes;
 
 
 	public NodeArray(HashTable aHashTable, HashTableInnerNode aNode, byte[] aBuffer)
@@ -19,8 +20,9 @@ class NodeArray
 		mHashTable = aHashTable;
 		mNode = aNode;
 		mBuffer = aBuffer;
-		mSize = mBuffer.length / BlockPointer.SIZE;
-		mPointers = new BlockPointer[mSize];
+
+		mPointerCount = mBuffer.length / BlockPointer.SIZE;
+//		mPointers = new BlockPointer[mSize];
 //		mNodes = new HashTableNode[mSize];
 	}
 
@@ -67,7 +69,7 @@ class NodeArray
 			return null;
 		}
 
-		assert aIndex >= 0 && aIndex < mSize;
+		assert aIndex >= 0 && aIndex < mPointerCount;
 
 		BlockPointer blockPointer = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
 
@@ -79,7 +81,7 @@ class NodeArray
 
 	public BlockPointer getPointer2(int aIndex)
 	{
-		assert aIndex >= 0 && aIndex < mSize;
+		assert aIndex >= 0 && aIndex < mPointerCount;
 
 		BlockPointer blockPointer = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
 
@@ -95,7 +97,7 @@ class NodeArray
 
 	public boolean isFree(int aIndex)
 	{
-		assert aIndex >= 0 && aIndex < mSize : "0 >= " + aIndex + " < " + mSize;
+		assert aIndex >= 0 && aIndex < mPointerCount : "0 >= " + aIndex + " < " + mPointerCount;
 
 		return BlockPointer.getBlockType(mBuffer, aIndex * BlockPointer.SIZE) == BlockType.FREE;
 	}
@@ -126,14 +128,15 @@ class NodeArray
 	}
 
 
-	void markDirty(int aIndex, HashTableNode aNode, int aRange)
+	public void markDirty(int aIndex, HashTableNode aNode, int aRange)
 	{
 		mHashTable.freeBlock(getPointer(aIndex));
+
 		writeBlock(aIndex, aNode, aRange);
 	}
 
 
-	void writeBlock(int aIndex, HashTableNode aNode, int aRange)
+	public void writeBlock(int aIndex, HashTableNode aNode, int aRange)
 	{
 		BlockPointer blockPointer;
 
@@ -149,5 +152,13 @@ class NodeArray
 		}
 
 		blockPointer.marshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
+	}
+
+
+	public void freePointer(int aIndex)
+	{
+		BlockPointer bp = new BlockPointer().setBlockType(BlockType.FREE);
+
+		bp.marshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
 	}
 }

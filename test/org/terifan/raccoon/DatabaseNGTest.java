@@ -23,6 +23,7 @@ import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.managed.UnsupportedVersionException;
+import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import resources.__TestUtils;
@@ -689,25 +690,31 @@ public class DatabaseNGTest
 
 		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
 		{
-			for (int i = 0; i < 10000; i++)
+			for (int i = 0; i < 100; i++)
 			{
 				database.save(new _Animal1K("dog_" + i));
 			}
 			database.commit();
 		}
 
+		device.dump();
+
 		try (Database database = new Database(device, DatabaseOpenOption.OPEN))
 		{
 			assertEquals(database.getBlockDevice().getFreeSpace(), 5);
 
-			for (int i = 0; i < 10000; i++)
+			for (int i = 0; i < 100; i++)
 			{
 				assertTrue(database.tryGet(new _Animal1K("dog_" + i)));
 			}
 
+			Log.setLevel(LogLevel.INFO);
+
 			database.clear(_Animal1K.class);
 
-			for (int i = 0; i < 10000; i++)
+			Log.setLevel(LogLevel.ERROR);
+
+			for (int i = 0; i < 100; i++)
 			{
 				assertFalse(database.tryGet(new _Animal1K("dog_" + i)));
 			}
@@ -717,7 +724,13 @@ public class DatabaseNGTest
 
 		try (Database database = new Database(device, DatabaseOpenOption.OPEN))
 		{
+			System.out.println(database.scan(new ScanResult()));
+
 			assertEquals(database.size(_Animal1K.class), 0);
+
+			System.out.println(database.getBlockDevice().getUsedSpace());
+			System.out.println(database.getBlockDevice().getFreeSpace());
+			System.out.println(database.getBlockDevice().getAllocatedSpace());
 
 			assertEquals(database.getBlockDevice().getUsedSpace(), 13);
 		}

@@ -56,7 +56,7 @@ class HashTableLeafNode implements HashTableNode
 
 
 	@Override
-	public boolean getValue(ArrayMapEntry aEntry, long aHash, int aLevel)
+	public boolean get(ArrayMapEntry aEntry, long aHash, int aLevel)
 	{
 		mHashTable.mCost.mValueGet++;
 		return mMap.get(aEntry);
@@ -64,14 +64,14 @@ class HashTableLeafNode implements HashTableNode
 
 
 	@Override
-	public boolean putValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
+	public boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
 		return mMap.put(aEntry, oOldEntry);
 	}
 
 
 	@Override
-	public boolean removeValue(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
+	public boolean remove(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
 		return mMap.remove(aEntry, oOldEntry);
 	}
@@ -219,13 +219,13 @@ class HashTableLeafNode implements HashTableNode
 		}
 		else if (splitLeaf(aIndex, aLevel, aParent))
 		{
-			aParent.putValue(aEntry, oOldEntry, aHash, aLevel); // recursive put
+			aParent.put(aEntry, oOldEntry, aHash, aLevel); // recursive put
 		}
 		else
 		{
 			HashTableInnerNode node = growTree(aLevel + 1);
 
-			node.putValue(aEntry, oOldEntry, aHash, aLevel + 1); // recursive put
+			node.put(aEntry, oOldEntry, aHash, aLevel + 1); // recursive put
 
 			aParent.setNode(aIndex, node, mBlockPointer.getRange());
 		}
@@ -298,8 +298,11 @@ class HashTableLeafNode implements HashTableNode
 
 
 	@Override
-	public void removeAll()
+	public void clear()
 	{
+		Log.i("clear leaf %s", mBlockPointer);
+		Log.inc();
+
 		for (ArrayMapEntry entry : mMap)
 		{
 			if ((entry.getFlags() & TableInstance.FLAG_BLOB) != 0)
@@ -308,7 +311,12 @@ class HashTableLeafNode implements HashTableNode
 			}
 		}
 
-		mHashTable.freeBlock(mBlockPointer);
+		if (mBlockPointer != null)
+		{
+			mHashTable.freeBlock(mBlockPointer);
+		}
+
+		Log.dec();
 	}
 
 

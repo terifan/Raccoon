@@ -21,7 +21,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public final class TableInstance<T> implements Closeable
+public final class TableInstance<T>
 {
 	public static final byte FLAG_NONE = 0;
 	public static final byte FLAG_BLOB = 1;
@@ -289,7 +289,6 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	@Override
 	public void close()
 	{
 		mHashTable.close();
