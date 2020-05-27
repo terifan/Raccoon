@@ -99,10 +99,8 @@ class HashTableLeafNode implements HashTableNode
 
 		divideEntries(aLevel, halfRange, lowLeaf, highLeaf);
 
-//		mParentNode.addNode(parent);
-
-		parent.addNode(0, lowLeaf, halfRange);
-		parent.addNode(halfRange, highLeaf, halfRange);
+		parent.setNode(0, lowLeaf, halfRange);
+		parent.setNode(halfRange, highLeaf, halfRange);
 
 		Log.dec();
 		Log.dec();
@@ -131,8 +129,8 @@ class HashTableLeafNode implements HashTableNode
 
 		divideEntries(0, halfRange, lowLeaf, highLeaf);
 
-		parent.addNode(0, lowLeaf, halfRange);
-		parent.addNode(halfRange, highLeaf, halfRange);
+		parent.setNode(0, lowLeaf, halfRange);
+		parent.setNode(halfRange, highLeaf, halfRange);
 
 		Log.dec();
 
