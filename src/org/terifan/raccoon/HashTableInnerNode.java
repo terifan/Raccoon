@@ -7,7 +7,7 @@ import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 
 
-final class HashTableInnerNode implements HashTableNode
+class HashTableInnerNode implements HashTableNode
 {
 	private HashTable mHashTable;
 	private BlockPointer mBlockPointer;
@@ -170,11 +170,11 @@ final class HashTableInnerNode implements HashTableNode
 				break;
 			case LEAF:
 				HashTableLeafNode leaf = mChildNodes.getNode(index);
-				leaf.putValueLeaf(this, index, aEntry, oOldEntry, aHash, aLevel);
+				leaf.putValueLeaf(index, aEntry, oOldEntry, aHash, aLevel);
 				break;
 			case HOLE:
 				HashTableLeafNode hole = mChildNodes.getNode(index);
-				hole.upgradeHole(this, index, aEntry, aLevel, blockPointer.getRange());
+				hole.upgradeHole(index, aEntry, aLevel, blockPointer.getRange());
 				break;
 			case FREE:
 			default:
@@ -310,10 +310,7 @@ final class HashTableInnerNode implements HashTableNode
 	@Override
 	public BlockPointer flush()
 	{
-		if (mBlockPointer != null)
-		{
-			mHashTable.freeBlock(mBlockPointer);
-		}
+		freeNode(this);
 
 		mBlockPointer = mHashTable.writeBlock(this, mHashTable.mPointersPerNode);
 
@@ -324,9 +321,6 @@ final class HashTableInnerNode implements HashTableNode
 	@Override
 	public void clear()
 	{
-		Log.i("clear node %s", mBlockPointer);
-		Log.inc();
-
 		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{
 			HashTableNode node = mChildNodes.getNode(i);
@@ -339,18 +333,23 @@ final class HashTableInnerNode implements HashTableNode
 			}
 		}
 
-		if (mBlockPointer != null)
-		{
-			mHashTable.freeBlock(mBlockPointer);
-		}
-
-		Log.dec();
+		freeNode(this);
 	}
 
 
 	void setNode(int aIndex, HashTableNode aNode, int aRange)
 	{
-		mHashTable.writeBlock(aNode, aRange);
 		mChildNodes.set(aIndex, aNode, aRange);
+	}
+
+
+	void freeNode(HashTableNode aNode)
+	{
+		BlockPointer bp = aNode.getBlockPointer();
+
+		if (bp != null && bp.getBlockType() != BlockType.HOLE && bp.getBlockType() != BlockType.FREE)
+		{
+			mHashTable.freeBlock(bp);
+		}
 	}
 }

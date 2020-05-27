@@ -161,4 +161,15 @@ class NodeArray
 
 		bp.marshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
 	}
+
+
+	void freeNode(HashTableNode aNode)
+	{
+		BlockPointer bp = aNode.getBlockPointer();
+
+		if (bp != null && bp.getBlockType() != BlockType.HOLE && bp.getBlockType() != BlockType.FREE)
+		{
+			mHashTable.freeBlock(bp);
+		}
+	}
 }

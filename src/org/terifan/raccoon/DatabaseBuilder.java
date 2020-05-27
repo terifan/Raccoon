@@ -24,7 +24,6 @@ public class DatabaseBuilder
 	private int mCompressionOfNodes;
 	private int mCompressionOfLeafs;
 	private int mCompressionOfBlobs;
-	private int mBlockReadCacheSize;
 	private int mIterationCount;
 	private boolean mReadOnly;
 	private char[] mPassword;
@@ -37,7 +36,6 @@ public class DatabaseBuilder
 
 		mPagesPerNode = TableParam.DEFAULT_PAGES_PER_NODE;
 		mPagesPerLeaf = TableParam.DEFAULT_PAGES_PER_LEAF;
-		mBlockReadCacheSize = TableParam.DEFAULT_READ_CACHE_SIZE;
 		mCompressionOfNodes = CompressionParam.NONE;
 		mCompressionOfLeafs = CompressionParam.NONE;
 		mCompressionOfBlobs = CompressionParam.NONE;
@@ -54,7 +52,7 @@ public class DatabaseBuilder
 		ArrayList<OpenParam> params = new ArrayList<>();
 
 		params.add(new CompressionParam(mCompressionOfNodes, mCompressionOfLeafs, mCompressionOfBlobs));
-		params.add(new TableParam(mPagesPerNode, mPagesPerLeaf, mBlockReadCacheSize));
+		params.add(new TableParam(mPagesPerNode, mPagesPerLeaf));
 
 		if (mPassword != null)
 		{
@@ -106,7 +104,7 @@ public class DatabaseBuilder
 	/**
 	 * Open an existing database.
 	 */
-	public Database open() 
+	public Database open()
 	{
 		return build(mReadOnly ? DatabaseOpenOption.READ_ONLY : DatabaseOpenOption.OPEN);
 	}
@@ -209,13 +207,6 @@ public class DatabaseBuilder
 	public DatabaseBuilder setCompressionOfBlobs(int aCompressionOfBlobs)
 	{
 		mCompressionOfBlobs = aCompressionOfBlobs;
-		return this;
-	}
-
-
-	public DatabaseBuilder setBlockReadCacheSize(int aBlockReadCacheSize)
-	{
-		mBlockReadCacheSize = aBlockReadCacheSize;
 		return this;
 	}
 

@@ -463,6 +463,6 @@ public final class TableInstance<T>
 
 	private synchronized BlockAccessor getBlockAccessor()
 	{
-		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter(), 0);
+		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter());
 	}
 }

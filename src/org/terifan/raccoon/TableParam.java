@@ -5,15 +5,13 @@ public final class TableParam implements OpenParam
 {
 	public final static int DEFAULT_PAGES_PER_NODE = 2;
 	public final static int DEFAULT_PAGES_PER_LEAF = 4;
-	public final static int DEFAULT_READ_CACHE_SIZE = 1024;
-	public final static TableParam DEFAULT = new TableParam(DEFAULT_PAGES_PER_NODE, DEFAULT_PAGES_PER_LEAF, DEFAULT_READ_CACHE_SIZE);
+	public final static TableParam DEFAULT = new TableParam(DEFAULT_PAGES_PER_NODE, DEFAULT_PAGES_PER_LEAF);
 
 	private int mPagesPerNode;
 	private int mPagesPerLeaf;
-	private int mBlockReadCacheSize;
 
 
-	public TableParam(int aPagesPerNode, int aPagesPerLeaf, int aBlockReadCacheSize)
+	public TableParam(int aPagesPerNode, int aPagesPerLeaf)
 	{
 		if ((aPagesPerNode & -aPagesPerNode) != aPagesPerNode)
 		{
@@ -26,7 +24,6 @@ public final class TableParam implements OpenParam
 
 		mPagesPerNode = aPagesPerNode;
 		mPagesPerLeaf = aPagesPerLeaf;
-		mBlockReadCacheSize = aBlockReadCacheSize;
 	}
 
 
@@ -42,15 +39,9 @@ public final class TableParam implements OpenParam
 	}
 
 
-	public int getBlockReadCacheSize()
-	{
-		return mBlockReadCacheSize;
-	}
-
-
 	@Override
 	public String toString()
 	{
-		return "TableParam{" + "mPagesPerNode=" + mPagesPerNode + ", mPagesPerLeaf=" + mPagesPerLeaf + ", mBlockReadCacheSize=" + mBlockReadCacheSize + '}';
+		return "TableParam{" + "mPagesPerNode=" + mPagesPerNode + ", mPagesPerLeaf=" + mPagesPerLeaf + '}';
 	}
 }

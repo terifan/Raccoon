@@ -88,10 +88,7 @@ class HashTableLeafNode implements HashTableNode
 		mHashTable.mCost.mTreeTraversal++;
 		mHashTable.mCost.mBlockSplit++;
 
-		if (mBlockPointer != null)
-		{
-			mHashTable.freeBlock(mBlockPointer);
-		}
+		mParentNode.freeNode(this);
 
 		int halfRange = mHashTable.mPointersPerNode / 2;
 
@@ -116,17 +113,14 @@ class HashTableLeafNode implements HashTableNode
 
 	HashTableInnerNode splitRootLeaf()
 	{
-		assert mHashTable.mPerformanceTool.tick("growTree");
+		assert mHashTable.mPerformanceTool.tick("splitRootLeaf");
 
 		Log.inc();
 
 		mHashTable.mCost.mTreeTraversal++;
 		mHashTable.mCost.mBlockSplit++;
 
-		if (mBlockPointer != null)
-		{
-			mHashTable.freeBlock(mBlockPointer);
-		}
+		mParentNode.freeNode(this);
 
 		int halfRange = mHashTable.mPointersPerNode / 2;
 
@@ -146,7 +140,7 @@ class HashTableLeafNode implements HashTableNode
 	}
 
 
-	boolean splitLeaf(int aIndex, int aLevel, HashTableInnerNode aParent)
+	boolean splitLeaf(int aIndex, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("splitLeaf");
 
@@ -164,16 +158,16 @@ class HashTableLeafNode implements HashTableNode
 		Log.d("split leaf");
 		Log.inc();
 
-		mHashTable.freeBlock(mBlockPointer);
+		mParentNode.freeNode(this);
 
-		HashTableLeafNode lowLeaf = new HashTableLeafNode(mHashTable, aParent);
-		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, aParent);
+		HashTableLeafNode lowLeaf = new HashTableLeafNode(mHashTable, mParentNode);
+		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, mParentNode);
 		int halfRange = mBlockPointer.getRange() / 2;
 
 		divideEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
 
-		aParent.setNode(aIndex, lowLeaf, halfRange);
-		aParent.setNode(aIndex + halfRange, highLeaf, halfRange);
+		mParentNode.setNode(aIndex, lowLeaf, halfRange);
+		mParentNode.setNode(aIndex + halfRange, highLeaf, halfRange);
 
 		Log.dec();
 		Log.dec();
@@ -200,7 +194,7 @@ class HashTableLeafNode implements HashTableNode
 	}
 
 
-	void putValueLeaf(HashTableInnerNode aParent, int aIndex, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
+	void putValueLeaf(int aIndex, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry, long aHash, int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("putValueLeaf");
 
@@ -208,18 +202,15 @@ class HashTableLeafNode implements HashTableNode
 
 		if (mMap.put(aEntry, oOldEntry))
 		{
-			if (mBlockPointer.getBlockType() != BlockType.HOLE)
-			{
-				mHashTable.freeBlock(mBlockPointer);
-			}
+			mParentNode.freeNode(this);
 
-			aParent.setNode(aIndex, this, mBlockPointer.getRange());
+			mParentNode.setNode(aIndex, this, mBlockPointer.getRange());
 
 			mHashTable.mCost.mValuePut++;
 		}
-		else if (splitLeaf(aIndex, aLevel, aParent))
+		else if (splitLeaf(aIndex, aLevel))
 		{
-			aParent.put(aEntry, oOldEntry, aHash, aLevel); // recursive put
+			mParentNode.put(aEntry, oOldEntry, aHash, aLevel); // recursive put
 		}
 		else
 		{
@@ -227,20 +218,20 @@ class HashTableLeafNode implements HashTableNode
 
 			node.put(aEntry, oOldEntry, aHash, aLevel + 1); // recursive put
 
-			aParent.setNode(aIndex, node, mBlockPointer.getRange());
+			mParentNode.setNode(aIndex, node, mBlockPointer.getRange());
 		}
 	}
 
 
-	void upgradeHole(HashTableInnerNode aParent, int aIndex, ArrayMapEntry aEntry, int aLevel, int aRange)
+	void upgradeHole(int aIndex, ArrayMapEntry aEntry, int aLevel, int aRange)
 	{
-		assert mHashTable.mPerformanceTool.tick("putValueLeaf");
+		assert mHashTable.mPerformanceTool.tick("upgradeHole");
 
 		mHashTable.mCost.mTreeTraversal++;
 
 		mMap.put(aEntry, null);
 
-		aParent.setNode(aIndex, this, aRange);
+		mParentNode.setNode(aIndex, this, aRange);
 
 		mHashTable.mCost.mValuePut++;
 	}
@@ -286,10 +277,7 @@ class HashTableLeafNode implements HashTableNode
 	@Override
 	public BlockPointer flush()
 	{
-		if (mBlockPointer != null)
-		{
-			mHashTable.freeBlock(mBlockPointer);
-		}
+		mParentNode.freeNode(this);
 
 		mBlockPointer = mHashTable.writeBlock(this, mHashTable.mPointersPerNode);
 
@@ -300,9 +288,6 @@ class HashTableLeafNode implements HashTableNode
 	@Override
 	public void clear()
 	{
-		Log.i("clear leaf %s", mBlockPointer);
-		Log.inc();
-
 		for (ArrayMapEntry entry : mMap)
 		{
 			if ((entry.getFlags() & TableInstance.FLAG_BLOB) != 0)
@@ -311,12 +296,7 @@ class HashTableLeafNode implements HashTableNode
 			}
 		}
 
-		if (mBlockPointer != null)
-		{
-			mHashTable.freeBlock(mBlockPointer);
-		}
-
-		Log.dec();
+		mParentNode.freeNode(this);
 	}
 
 

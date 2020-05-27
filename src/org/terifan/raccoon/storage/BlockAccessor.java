@@ -19,7 +19,7 @@ public class BlockAccessor implements IBlockAccessor
 	private CompressionParam mCompressionParam;
 
 
-	public BlockAccessor(IManagedBlockDevice aBlockDevice, CompressionParam aCompressionParam, int aCacheSize)
+	public BlockAccessor(IManagedBlockDevice aBlockDevice, CompressionParam aCompressionParam)
 	{
 		mBlockDevice = aBlockDevice;
 		mCompressionParam = aCompressionParam;

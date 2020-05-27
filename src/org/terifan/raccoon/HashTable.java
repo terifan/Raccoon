@@ -40,7 +40,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		mTransactionId = aTransactionId;
 		mCost = aCost;
 		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
-		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam, aTableParam.getBlockReadCacheSize());
+		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam);
 
 		boolean create = aTableHeader == null;
 
@@ -55,7 +55,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 			mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
 
-			mRootNode = new HashTableLeafNode(this, null);
+			mRootNode = new HashTableLeafNode(this, new FakeInnerNode());
 
 			mWasEmptyInstance = true;
 			mChanged = true;
@@ -69,11 +69,11 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 			if (mRootNodeBlockPointer.getBlockType() == BlockType.LEAF)
 			{
-				mRootNode = new HashTableLeafNode(this, null, mRootNodeBlockPointer);
+				mRootNode = new HashTableLeafNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
 			}
 			else
 			{
-				mRootNode = new HashTableInnerNode(this, null, mRootNodeBlockPointer);
+				mRootNode = new HashTableInnerNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
 			}
 		}
 
@@ -273,7 +273,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			Log.d("rollback empty");
 
 			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
-			mRootNode = new HashTableLeafNode(this, null);
+			mRootNode = new HashTableLeafNode(this, new FakeInnerNode());
 		}
 		else
 		{
@@ -281,7 +281,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 			if (mRootNodeBlockPointer.getBlockType() == BlockType.LEAF)
 			{
-				mRootNode = new HashTableLeafNode(this, null, mRootNodeBlockPointer);
+				mRootNode = new HashTableLeafNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
 			}
 			else
 			{
@@ -297,17 +297,12 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	{
 		checkOpen();
 
-		Log.i("clear");
-		Log.inc();
-
 		int modCount = ++mModCount;
 
 		mRootNode.clear();
 		mChanged = true;
 
-		Log.dec();
-
-		mRootNode = new HashTableLeafNode(this, null);
+		mRootNode = new HashTableLeafNode(this, new FakeInnerNode());
 		mRootNodeBlockPointer = null;
 
 		assert mModCount == modCount : "concurrent modification";
@@ -427,5 +422,91 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		mCost.mWriteBlockBytes += blockPointer.getAllocatedSize();
 
 		return blockPointer;
+	}
+
+
+	class FakeInnerNode extends HashTableInnerNode
+	{
+		public FakeInnerNode()
+		{
+			super(HashTable.this, null);
+		}
+
+
+		@Override
+		public BlockPointer getBlockPointer()
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public byte[] array()
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public BlockType getType()
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public boolean get(ArrayMapEntry aEntry, long aHash, int aLevel)
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> aoOldEntry, long aHash, int aLevel)
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public boolean remove(ArrayMapEntry aEntry, Result<ArrayMapEntry> aoOldEntry, long aHash, int aLevel)
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public void clear()
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public BlockPointer flush()
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public void scan(ScanResult aScanResult)
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public void visit(HashTableVisitor aVisitor)
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public String integrityCheck()
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
 	}
 }
