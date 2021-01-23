@@ -268,11 +268,11 @@ public final class Table<T>
 
 	public int size()
 	{
-		return getTableType().size();
+		return getTableInstance().size();
 	}
 
 
-	private TableInstance getTableType()
+	private TableInstance getTableInstance()
 	{
 		return mDatabase.openTable(this, DatabaseOpenOption.OPEN);
 	}
@@ -284,7 +284,7 @@ public final class Table<T>
 
 		try
 		{
-			for (Iterator<T> it = new EntityIterator(getTableType(), getTableType().getLeafIterator()); it.hasNext();)
+			for (Iterator<T> it = new EntityIterator(getTableInstance(), getTableInstance().getLeafIterator()); it.hasNext();)
 			{
 				aConsumer.accept(it.next());
 			}
@@ -308,7 +308,7 @@ public final class Table<T>
 
 		try
 		{
-			ResultSet resultSet = new ResultSet(getTableType(), getTableType().getLeafIterator());
+			ResultSet resultSet = new ResultSet(getTableInstance(), getTableInstance().getLeafIterator());
 
 			while (resultSet.next())
 			{
@@ -339,5 +339,18 @@ public final class Table<T>
 	synchronized boolean isReadLocked()
 	{
 		return mReadLocked > 0;
+	}
+
+
+	public ScanResult scan(ScanResult aScanResult)
+	{
+		if (aScanResult == null)
+		{
+			aScanResult = new ScanResult();
+		}
+
+		getTableInstance().scan(aScanResult);
+
+		return aScanResult;
 	}
 }

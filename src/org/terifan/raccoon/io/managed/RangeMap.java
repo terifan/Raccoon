@@ -202,7 +202,7 @@ class RangeMap implements Cloneable
 	}
 
 
-	public void marshal(ByteArrayBuffer aDataOutput) throws IOException
+	public void marshal(ByteArrayBuffer aDataOutput)
 	{
 		int prev = 0;
 
@@ -220,7 +220,7 @@ class RangeMap implements Cloneable
 	}
 
 
-	public void unmarshal(ByteArrayBuffer aDataInput) throws IOException
+	public void unmarshal(ByteArrayBuffer aDataInput)
 	{
 		int size = aDataInput.readVar32();
 

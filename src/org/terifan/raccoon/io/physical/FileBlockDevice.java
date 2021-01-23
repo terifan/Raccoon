@@ -5,8 +5,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.StandardOpenOption;
+import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.util.Log;
 
 
@@ -17,81 +19,116 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	protected int mBlockSize;
 
 
-	public FileBlockDevice(File aFile, boolean aReadOnly) throws IOException
+	public FileBlockDevice(File aFile, boolean aReadOnly)
 	{
 		this(aFile, 4096, aReadOnly);
 	}
 
 
-	public FileBlockDevice(File aFile, int aBlockSize, boolean aReadOnly) throws IOException
+	public FileBlockDevice(File aFile, int aBlockSize, boolean aReadOnly)
 	{
-		if (aReadOnly)
+		try
 		{
-			mFile = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ);
-		}
-		else
-		{
-			try
+			if (aReadOnly)
 			{
-				mFile = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+				mFile = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ);
 			}
-			catch (AccessDeniedException e)
+			else
 			{
-				throw new FileAlreadyOpenException("Failed to open file: " + aFile, e);
+				try
+				{
+					mFile = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+				}
+				catch (AccessDeniedException e)
+				{
+					throw new FileAlreadyOpenException("Failed to open file: " + aFile, e);
+				}
+
+				try
+				{
+					mFileLock = mFile.tryLock();
+				}
+				catch (IOException | OverlappingFileLockException e)
+				{
+					throw new FileAlreadyOpenException("Failed to lock file: " + aFile, e);
+				}
 			}
 
-			try
-			{
-				mFileLock = mFile.tryLock();
-			}
-			catch (Exception e)
-			{
-				throw new FileAlreadyOpenException("Failed to lock file: " + aFile, e);
-			}
+			mBlockSize = aBlockSize;
 		}
-
-		mBlockSize = aBlockSize;
+		catch (IOException e)
+		{
+			throw new DatabaseIOException(e);
+		}
 	}
 
 
-	public void readBlock(long aBlockIndex, ByteBuffer aBuffer, long[] aIV) throws IOException
+	public void readBlock(long aBlockIndex, ByteBuffer aBuffer, long[] aIV)
 	{
 		Log.d("read block %d +%d", aBlockIndex, (aBuffer.limit() - aBuffer.position()) / mBlockSize);
 
-		mFile.read(aBuffer, aBlockIndex * mBlockSize);
+		try
+		{
+			mFile.read(aBuffer, aBlockIndex * mBlockSize);
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseIOException(e);
+		}
 	}
 
 
-	public void writeBlock(long aBlockIndex, ByteBuffer aBuffer, long[] aIV) throws IOException
+	public void writeBlock(long aBlockIndex, ByteBuffer aBuffer, long[] aIV)
 	{
 		Log.d("write block %d +%d", aBlockIndex, (aBuffer.limit() - aBuffer.position()) / mBlockSize);
 
-		mFile.write(aBuffer, aBlockIndex * mBlockSize);
+		try
+		{
+			mFile.write(aBuffer, aBlockIndex * mBlockSize);
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseIOException(e);
+		}
 	}
 
 
 	@Override
-	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
+	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
 	{
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
-		ByteBuffer buf = ByteBuffer.wrap(aBuffer, aBufferOffset, aBufferLength);
-		mFile.read(buf, aBlockIndex * mBlockSize);
+		try
+		{
+			ByteBuffer buf = ByteBuffer.wrap(aBuffer, aBufferOffset, aBufferLength);
+			mFile.read(buf, aBlockIndex * mBlockSize);
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseIOException(e);
+		}
 	}
 
 
 	@Override
-	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
+	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
 	{
 		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
-		ByteBuffer buf = ByteBuffer.wrap(aBuffer, aBufferOffset, aBufferLength);
-		mFile.write(buf, aBlockIndex * mBlockSize);
+		try
+		{
+			ByteBuffer buf = ByteBuffer.wrap(aBuffer, aBufferOffset, aBufferLength);
+			mFile.write(buf, aBlockIndex * mBlockSize);
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseIOException(e);
+		}
 	}
 
 
 	@Override
-	public void close() throws IOException
+	public void close()
 	{
 		Log.d("close");
 
@@ -113,7 +150,14 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 			if (mFile != null)
 			{
-				mFile.close();
+				try
+				{
+					mFile.close();
+				}
+				catch (IOException e)
+				{
+					throw new DatabaseIOException(e);
+				}
 				mFile = null;
 			}
 		}
@@ -121,18 +165,32 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 
 	@Override
-	public long length() throws IOException
+	public long length()
 	{
-		return mFile.size() / mBlockSize;
+		try
+		{
+			return mFile.size() / mBlockSize;
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseIOException(e);
+		}
 	}
 
 
 	@Override
-	public void commit(boolean aMetadata) throws IOException
+	public void commit(boolean aMetadata)
 	{
 		Log.d("commit");
 
-		mFile.force(aMetadata);
+		try
+		{
+			mFile.force(aMetadata);
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseIOException(e);
+		}
 	}
 
 
@@ -144,8 +202,15 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 
 	@Override
-	public void setLength(long aNewLength) throws IOException
+	public void setLength(long aNewLength)
 	{
-		mFile.truncate(aNewLength * mBlockSize);
+		try
+		{
+			mFile.truncate(aNewLength * mBlockSize);
+		}
+		catch (IOException e)
+		{
+			throw new DatabaseIOException(e);
+		}
 	}
 }

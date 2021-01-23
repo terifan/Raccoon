@@ -20,7 +20,7 @@ public class Blob implements SeekableByteChannel
 {
 	private final static boolean LOG = false;
 
-	private final static int CHUNK_SIZE = 1024 * 1024;
+	private final static int MAX_BLOCK_SIZE = 1024 * 1024;
 	private final static int HEADER_SIZE = 8;
 	private final static int INDIRECT_POINTER_THRESHOLD = 4;
 
@@ -49,7 +49,7 @@ public class Blob implements SeekableByteChannel
 		mTransactionId = aTransactionId;
 		mHeader = aHeader;
 
-		mBuffer = new byte[CHUNK_SIZE];
+		mBuffer = new byte[MAX_BLOCK_SIZE];
 		mPendingBlockPointsers = new HashMap<>();
 		mEmptyBlocks = new HashSet<>();
 
@@ -98,13 +98,13 @@ public class Blob implements SeekableByteChannel
 
 		if (LOG) System.out.println("READ  " + mPosition + " +" + total);
 
-		int posInChunk = (int)(mPosition % CHUNK_SIZE);
+		int posInChunk = (int)(mPosition % MAX_BLOCK_SIZE);
 
 		for (int remaining = total; remaining > 0; )
 		{
 			sync(false);
 
-			int length = Math.min(remaining, CHUNK_SIZE - posInChunk);
+			int length = Math.min(remaining, MAX_BLOCK_SIZE - posInChunk);
 
 			if (LOG) System.out.println("\tAppend " + posInChunk + " +" + length);
 
@@ -131,13 +131,13 @@ public class Blob implements SeekableByteChannel
 
 		if (LOG) System.out.println("WRITE " + mPosition + " +" + total);
 
-		int posInChunk = (int)(mPosition % CHUNK_SIZE);
+		int posInChunk = (int)(mPosition % MAX_BLOCK_SIZE);
 
 		for (int remaining = total; remaining > 0;)
 		{
 			sync(false);
 
-			int length = Math.min(remaining, CHUNK_SIZE - posInChunk);
+			int length = Math.min(remaining, MAX_BLOCK_SIZE - posInChunk);
 
 			if (LOG) System.out.println("\tAppend " + posInChunk + " +" + length);
 
@@ -243,7 +243,7 @@ public class Blob implements SeekableByteChannel
 		Log.d("closing blob");
 		Log.inc();
 
-		int pointerCount = (int)((mTotalSize + CHUNK_SIZE - 1) / CHUNK_SIZE);
+		int pointerCount = (int)((mTotalSize + MAX_BLOCK_SIZE - 1) / MAX_BLOCK_SIZE);
 		ByteArrayBuffer buf = ByteArrayBuffer.alloc(HEADER_SIZE + BlockPointer.SIZE * pointerCount, true);
 		buf.limit(buf.capacity());
 
@@ -320,13 +320,13 @@ public class Blob implements SeekableByteChannel
 
 	private void sync(boolean aFinal) throws IOException
 	{
-		if (LOG) System.out.println("\tsync pos: " + mPosition + ", size: " + mTotalSize + ", final: " + aFinal + ", posChunk: " + (mPosition % CHUNK_SIZE) + ", indexChunk:" + mPosition / CHUNK_SIZE + ", mod: " + mChunkModified);
+		if (LOG) System.out.println("\tsync pos: " + mPosition + ", size: " + mTotalSize + ", final: " + aFinal + ", posChunk: " + (mPosition % MAX_BLOCK_SIZE) + ", indexChunk:" + mPosition / MAX_BLOCK_SIZE + ", mod: " + mChunkModified);
 
-		if ((mPosition % CHUNK_SIZE) == 0 || mPosition / CHUNK_SIZE != mChunkIndex || aFinal)
+		if ((mPosition % MAX_BLOCK_SIZE) == 0 || mPosition / MAX_BLOCK_SIZE != mChunkIndex || aFinal)
 		{
 			if (mChunkModified)
 			{
-				int len = (int)Math.min(CHUNK_SIZE, mTotalSize - CHUNK_SIZE * mChunkIndex);
+				int len = (int)Math.min(MAX_BLOCK_SIZE, mTotalSize - MAX_BLOCK_SIZE * mChunkIndex);
 
 				if (LOG) System.out.println("\tWriting chunk " + mChunkIndex + " " + len + " bytes");
 
@@ -352,7 +352,7 @@ public class Blob implements SeekableByteChannel
 			{
 				Arrays.fill(mBuffer, (byte)0);
 
-				mChunkIndex = (int)(mPosition / CHUNK_SIZE);
+				mChunkIndex = (int)(mPosition / MAX_BLOCK_SIZE);
 				mChunkModified = false;
 
 				mBlockPointer = mPendingBlockPointsers.get(mChunkIndex);
@@ -393,7 +393,7 @@ public class Blob implements SeekableByteChannel
 	}
 
 
-	static void deleteBlob(BlockAccessor aBlockAccessor, byte[] aHeader) throws IOException
+	static void deleteBlob(BlockAccessor aBlockAccessor, byte[] aHeader)
 	{
 		freeBlocks(aBlockAccessor, ByteArrayBuffer.wrap(aHeader).position(HEADER_SIZE));
 	}
@@ -606,5 +606,43 @@ public class Blob implements SeekableByteChannel
 	{
 		mCloseListener = aListener;
 		return this;
+	}
+
+
+	public void scan(ScanResult aScanResult)
+	{
+		int blockSize = mBlockAccessor.getBlockDevice().getBlockSize();
+
+		aScanResult.enterBlob();
+
+		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(mHeader);
+		aScanResult.blobs++;
+		aScanResult.blobLogicalSize += buffer.readInt64();
+
+		BlockPointer bp = new BlockPointer();
+		bp.unmarshal(buffer);
+
+		if (bp.getBlockType() == BlockType.BLOB_INDEX)
+		{
+			aScanResult.blobIndirect(bp);
+			aScanResult.blobIndirectBlocks++;
+
+			buffer = ByteArrayBuffer.wrap(mBlockAccessor.readBlock(bp)).limit(bp.getLogicalSize());
+		}
+
+		buffer.position(HEADER_SIZE);
+
+		while (buffer.remaining() > 0)
+		{
+			bp.unmarshal(buffer);
+
+			aScanResult.blobData(bp);
+
+			aScanResult.blobDataBlocks++;
+			aScanResult.blobAllocatedSize += bp.getAllocatedSize() * blockSize;
+			aScanResult.blobPhysicalSize += bp.getAllocatedSize() * blockSize;
+		}
+
+		aScanResult.exitBlob();
 	}
 }

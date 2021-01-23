@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
-import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -15,49 +14,49 @@ import org.terifan.security.messagedigest.MurmurHash3;
 
 final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 {
-	private final Cost mCost;
-	private final String mTableName;
-	private final TransactionGroup mTransactionId;
-	private BlockAccessor mBlockAccessor;
-	private BlockPointer mRootBlockPointer;
-	private HashTableLeaf mRootMap;
-	private HashTableNode mRootNode;
-	private int mNodeSize;
-	private int mLeafSize;
-	private int mPointersPerNode;
-	private int mHashSeed;
+	/*private*/ final Cost mCost;
+	/*private*/ final String mTableName;
+	final TransactionGroup mTransactionId;
+	/*private*/ BlockAccessor mBlockAccessor;
+	int mNodeSize;
+	int mLeafSize;
+	int mPointersPerNode;
+	private long mHashSeed;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mChanged;
 	private boolean mCommitChangesToBlockDevice;
-	private final PerformanceTool mPerformanceTool;
+	/*private*/ final PerformanceTool mPerformanceTool;
 	/*private*/ int mModCount;
+	private int mBitsPerNode;
+	private HashTableNode mRootNode;
+	private BlockPointer mRootNodeBlockPointer;
 
 
-	/**
-	 * Open an existing HashTable or create a new HashTable with default settings.
-	 */
-	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool) throws IOException
+	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool)
 	{
 		mPerformanceTool = aPerformanceTool;
 		mTableName = aTableName;
 		mTransactionId = aTransactionId;
 		mCost = aCost;
 		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
-		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam, aTableParam.getBlockReadCacheSize());
+		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam);
 
-		if (aTableHeader == null)
+		boolean create = aTableHeader == null;
+
+		if (create)
 		{
 			Log.i("create table %s", mTableName);
 			Log.inc();
 
 			mNodeSize = aTableParam.getPagesPerNode() * aBlockDevice.getBlockSize();
 			mLeafSize = aTableParam.getPagesPerLeaf() * aBlockDevice.getBlockSize();
-			mHashSeed = new SecureRandom().nextInt();
-
+			mHashSeed = new SecureRandom().nextLong();
 			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
-			mRootMap = new HashTableLeaf(mLeafSize);
-			mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode);
+			mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
+
+			mRootNode = new HashTableLeafNode(this, new FakeInnerNode());
+
 			mWasEmptyInstance = true;
 			mChanged = true;
 		}
@@ -68,9 +67,14 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 			unmarshalHeader(aTableHeader);
 
-			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
-
-			loadRoot();
+			if (mRootNodeBlockPointer.getBlockType() == BlockType.LEAF)
+			{
+				mRootNode = new HashTableLeafNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
+			}
+			else
+			{
+				mRootNode = new HashTableInnerNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
+			}
 		}
 
 		Log.dec();
@@ -80,8 +84,8 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	public byte[] marshalHeader()
 	{
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(BlockPointer.SIZE + 4 + 4 + 4 + 3);
-		mRootBlockPointer.marshal(buffer);
-		buffer.writeInt32(mHashSeed);
+		mRootNodeBlockPointer.marshal(buffer);
+		buffer.writeInt64(mHashSeed);
 		buffer.writeVar32(mNodeSize);
 		buffer.writeVar32(mLeafSize);
 		mBlockAccessor.getCompressionParam().marshal(buffer);
@@ -92,14 +96,17 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	private void unmarshalHeader(byte[] aTableHeader)
 	{
-		mRootBlockPointer = new BlockPointer();
-
 		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aTableHeader);
-		mRootBlockPointer.unmarshal(buffer);
 
-		mHashSeed = buffer.readInt32();
+		mRootNodeBlockPointer = new BlockPointer();
+		mRootNodeBlockPointer.unmarshal(buffer);
+
+		mHashSeed = buffer.readInt64();
 		mNodeSize = buffer.readVar32();
 		mLeafSize = buffer.readVar32();
+		mPointersPerNode = mNodeSize / BlockPointer.SIZE;
+
+		mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
 
 		CompressionParam compressionParam = new CompressionParam();
 		compressionParam.unmarshal(buffer);
@@ -108,35 +115,13 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	private void loadRoot()
-	{
-		Log.i("load root %s", mRootBlockPointer);
-
-		if (mRootBlockPointer.getBlockType() == BlockType.LEAF)
-		{
-			mRootMap = readLeaf(mRootBlockPointer);
-		}
-		else
-		{
-			mRootNode = readNode(mRootBlockPointer).setGCEnabled(false);
-		}
-	}
-
-
 	public boolean get(ArrayMapEntry aEntry)
 	{
-		checkOpen();
-
-		if (mRootMap != null)
-		{
-			return mRootMap.get(aEntry);
-		}
-
-		return getValue(aEntry.getKey(), 0, aEntry, mRootNode);
+		return mRootNode.get(aEntry, computeHash(aEntry.getKey()), 0);
 	}
 
 
-	public boolean put(ArrayMapEntry aEntry)
+	public ArrayMapEntry put(ArrayMapEntry aEntry)
 	{
 		checkOpen();
 
@@ -153,51 +138,47 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		mChanged = true;
 
-		if (mRootMap != null)
+		Result<ArrayMapEntry> oldEntry = new Result<>();
+
+		long hash = computeHash(aEntry.getKey());
+
+		if (mRootNode instanceof HashTableLeafNode)
 		{
 			Log.d("put root value");
 
-			if (!mRootMap.put(aEntry))
+			if (mRootNode.put(aEntry, oldEntry, hash, 0))
 			{
-				Log.d("upgrade root leaf to node");
+				Log.dec();
+				assert mModCount == modCount : "concurrent modification";
 
-				mRootNode = splitLeaf(mRootBlockPointer, mRootMap, 0).setGCEnabled(false);
-
-				mRootBlockPointer = writeBlock(mRootNode, mPointersPerNode);
-				mRootMap = null;
+				return oldEntry.get();
 			}
+
+			Log.d("upgrade root from leaf to node");
+
+			mRootNode = ((HashTableLeafNode)mRootNode).splitRootLeaf();
 		}
 
-		if (mRootMap == null)
-		{
-			putValue(aEntry, aEntry.getKey(), 0, mRootNode);
-		}
+		mRootNode.put(aEntry, oldEntry, hash, 0);
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
-		return aEntry.getValue() != null;
+		return oldEntry.get();
 	}
 
 
-	public boolean remove(ArrayMapEntry aEntry)
+	public ArrayMapEntry remove(ArrayMapEntry aEntry)
 	{
 		checkOpen();
 
-		boolean modified;
+		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		if (mRootMap != null)
-		{
-			modified = mRootMap.remove(aEntry);
-		}
-		else
-		{
-			modified = removeValue(aEntry.getKey(), 0, aEntry, mRootNode);
-		}
+		boolean modified = mRootNode.remove(aEntry, oldEntry, computeHash(aEntry.getKey()), 0);
 
 		mChanged |= modified;
 
-		return modified;
+		return oldEntry.get();
 	}
 
 
@@ -206,16 +187,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	{
 		checkOpen();
 
-		if (mRootNode != null)
-		{
-			return new HashTableNodeIterator(this, mRootBlockPointer);
-		}
-		if (!mRootMap.isEmpty())
-		{
-			return new HashTableNodeIterator(this, mRootMap);
-		}
-
-		return new ArrayList<ArrayMapEntry>().iterator();
+		return new HashTableNodeIterator(this, mRootNode);
 	}
 
 
@@ -240,7 +212,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	public boolean commit() throws IOException
+	public boolean commit()
 	{
 		assert mPerformanceTool.tick("commit");
 
@@ -254,16 +226,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				Log.i("commit hash table");
 				Log.inc();
 
-				freeBlock(mRootBlockPointer);
-
-				if (mRootMap != null)
-				{
-					mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode);
-				}
-				else
-				{
-					mRootBlockPointer = writeBlock(mRootNode, mPointersPerNode);
-				}
+				mRootNodeBlockPointer = mRootNode.flush();
 
 				if (mCommitChangesToBlockDevice)
 				{
@@ -272,7 +235,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 				mChanged = false;
 
-				Log.i("table commit finished; root block is %s", mRootBlockPointer);
+				Log.i("table commit finished; root block is %s", mRootNodeBlockPointer);
 
 				Log.dec();
 				assert mModCount == modCount : "concurrent modification";
@@ -294,7 +257,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	public void rollback() throws IOException
+	public void rollback()
 	{
 		checkOpen();
 
@@ -305,23 +268,28 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 			mBlockAccessor.getBlockDevice().rollback();
 		}
 
-		mRootNode = null;
-		mRootMap = null;
-		mChanged = false;
-
 		if (mWasEmptyInstance)
 		{
 			Log.d("rollback empty");
 
 			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
-			mRootMap = new HashTableLeaf(mLeafSize);
+			mRootNode = new HashTableLeafNode(this, new FakeInnerNode());
 		}
 		else
 		{
-			Log.d("rollback %s", mRootBlockPointer.getBlockType() == BlockType.LEAF ? "root map" : "root node");
+			Log.d("rollback %s", mRootNodeBlockPointer.getBlockType() == BlockType.LEAF ? "root map" : "root node");
 
-			loadRoot();
+			if (mRootNodeBlockPointer.getBlockType() == BlockType.LEAF)
+			{
+				mRootNode = new HashTableLeafNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
+			}
+			else
+			{
+				mRootNode = new HashTableInnerNode(this, null, mRootNodeBlockPointer);
+			}
 		}
+
+		mChanged = false;
 	}
 
 
@@ -329,34 +297,13 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	{
 		checkOpen();
 
-		Log.i("clear");
-
 		int modCount = ++mModCount;
+
+		mRootNode.clear();
 		mChanged = true;
 
-		if (mRootMap != null)
-		{
-			mRootMap.clear();
-		}
-		else
-		{
-			visit((aPointerIndex, aBlockPointer) ->
-			{
-				mCost.mTreeTraversal++;
-
-				if (aPointerIndex >= 0 && aBlockPointer != null && (aBlockPointer.getBlockType() == BlockType.INDEX || aBlockPointer.getBlockType() == BlockType.LEAF))
-				{
-					freeBlock(aBlockPointer);
-				}
-			});
-
-			mRootNode = null;
-			mRootMap = new HashTableLeaf(mLeafSize);
-		}
-
-		freeBlock(mRootBlockPointer);
-
-		mRootBlockPointer = writeBlock(mRootMap, mPointersPerNode);
+		mRootNode = new HashTableLeafNode(this, new FakeInnerNode());
+		mRootNodeBlockPointer = null;
 
 		assert mModCount == modCount : "concurrent modification";
 	}
@@ -371,7 +318,6 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		mClosed = true;
 
 		mBlockAccessor = null;
-		mRootMap = null;
 		mRootNode = null;
 	}
 
@@ -382,13 +328,14 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 		Result<Integer> result = new Result<>(0);
 
-		visit((aPointerIndex, aBlockPointer) ->
+		visit(node ->
 		{
 			mCost.mTreeTraversal++;
 
-			if (aBlockPointer != null && aBlockPointer.getBlockType() == BlockType.LEAF)
+			if (node instanceof HashTableLeafNode)
 			{
-				result.set(result.get() + readLeaf(aBlockPointer).size());
+				HashTableLeafNode leaf = (HashTableLeafNode)node;
+				result.set(result.get() + leaf.size());
 			}
 		});
 
@@ -396,347 +343,9 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
-	private boolean getValue(byte[] aKey, int aLevel, ArrayMapEntry aEntry, HashTableNode aNode)
-	{
-		assert mPerformanceTool.tick("getValue");
-
-		Log.i("get %s value", mTableName);
-
-		mCost.mTreeTraversal++;
-
-		BlockPointer blockPointer = aNode.getPointer(aNode.findPointer(computeIndex(aKey, aLevel)));
-
-		switch (blockPointer.getBlockType())
-		{
-			case INDEX:
-				return getValue(aKey, aLevel + 1, aEntry, readNode(blockPointer));
-			case LEAF:
-				mCost.mValueGet++;
-				HashTableLeaf leaf = readLeaf(blockPointer);
-				boolean result = leaf.get(aEntry);
-				leaf.gc();
-				return result;
-			case HOLE:
-				return false;
-			case FREE:
-			default:
-				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
-		}
-	}
-
-
-	private byte[] putValue(ArrayMapEntry aEntry, byte[] aKey, int aLevel, HashTableNode aNode)
-	{
-		assert mPerformanceTool.tick("putValue");
-
-		Log.d("put %s value", mTableName);
-		Log.inc();
-
-		mCost.mTreeTraversal++;
-
-		int index = aNode.findPointer(computeIndex(aKey, aLevel));
-		BlockPointer blockPointer = aNode.getPointer(index);
-		byte[] oldValue;
-
-		switch (blockPointer.getBlockType())
-		{
-			case INDEX:
-				HashTableNode node = readNode(blockPointer);
-				oldValue = putValue(aEntry, aKey, aLevel + 1, node);
-				freeBlock(blockPointer);
-				aNode.setPointer(index, writeBlock(node, blockPointer.getRange()));
-				node.gc();
-				break;
-			case LEAF:
-				oldValue = putValueLeaf(blockPointer, index, aEntry, aLevel, aNode, aKey);
-				break;
-			case HOLE:
-				oldValue = upgradeHoleToLeaf(aEntry, aNode, blockPointer, index);
-				break;
-			case FREE:
-			default:
-				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
-		}
-
-		Log.dec();
-
-		return oldValue;
-	}
-
-
-	private byte[] putValueLeaf(BlockPointer aBlockPointer, int aIndex, ArrayMapEntry aEntry, int aLevel, HashTableNode aNode, byte[] aKey)
-	{
-		assert mPerformanceTool.tick("putValueLeaf");
-
-		mCost.mTreeTraversal++;
-
-		HashTableLeaf map = readLeaf(aBlockPointer);
-
-		byte[] oldValue;
-
-		if (map.put(aEntry))
-		{
-			oldValue = aEntry.getValue();
-
-			freeBlock(aBlockPointer);
-
-			aNode.setPointer(aIndex, writeBlock(map, aBlockPointer.getRange()));
-
-			mCost.mValuePut++;
-		}
-		else if (splitLeaf(map, aBlockPointer, aIndex, aLevel, aNode))
-		{
-			oldValue = putValue(aEntry, aKey, aLevel, aNode); // recursive put
-		}
-		else
-		{
-			HashTableNode node = splitLeaf(aBlockPointer, map, aLevel + 1);
-
-			oldValue = putValue(aEntry, aKey, aLevel + 1, node); // recursive put
-
-			aNode.setPointer(aIndex, writeBlock(node, aBlockPointer.getRange()));
-
-			node.gc();
-		}
-
-		return oldValue;
-	}
-
-
-	private byte[] upgradeHoleToLeaf(ArrayMapEntry aEntry, HashTableNode aNode, BlockPointer aBlockPointer, int aIndex)
-	{
-		assert mPerformanceTool.tick("upgradeHoleToLeaf");
-
-		Log.d("upgrade hole to leaf");
-		Log.inc();
-
-		mCost.mTreeTraversal++;
-
-		HashTableLeaf node = new HashTableLeaf(mLeafSize);
-
-		if (!node.put(aEntry))
-		{
-			throw new DatabaseException("Failed to upgrade hole to leaf");
-		}
-
-		byte[] oldValue = aEntry.getValue();
-
-		BlockPointer blockPointer = writeBlock(node, aBlockPointer.getRange());
-		aNode.setPointer(aIndex, blockPointer);
-
-		node.gc();
-
-		Log.dec();
-
-		return oldValue;
-	}
-
-
-	private HashTableNode splitLeaf(BlockPointer aBlockPointer, HashTableLeaf aLeafNode, int aLevel)
-	{
-		assert mPerformanceTool.tick("splitLeaf");
-
-		Log.inc();
-		Log.d("split leaf");
-		Log.inc();
-
-		mCost.mTreeTraversal++;
-		mCost.mBlockSplit++;
-
-		freeBlock(aBlockPointer);
-
-		HashTableLeaf lowLeaf = new HashTableLeaf(mLeafSize);
-		HashTableLeaf highLeaf = new HashTableLeaf(mLeafSize);
-		int halfRange = mPointersPerNode / 2;
-
-		divideLeafEntries(aLeafNode, aLevel, halfRange, lowLeaf, highLeaf);
-
-		// create nodes pointing to leafs
-		BlockPointer lowIndex = writeIfNotEmpty(lowLeaf, halfRange);
-		BlockPointer highIndex = writeIfNotEmpty(highLeaf, halfRange);
-
-		HashTableNode node = new HashTableNode(new byte[mNodeSize]);
-		node.setPointer(0, lowIndex);
-		node.setPointer(halfRange, highIndex);
-
-		lowLeaf.gc();
-		highLeaf.gc();
-
-		Log.dec();
-		Log.dec();
-
-		return node;
-	}
-
-
-	private boolean splitLeaf(HashTableLeaf aMap, BlockPointer aBlockPointer, int aIndex, int aLevel, HashTableNode aNode)
-	{
-		assert mPerformanceTool.tick("splitLeaf");
-
-		if (aBlockPointer.getRange() == 1)
-		{
-			return false;
-		}
-
-		assert aBlockPointer.getRange() >= 2;
-
-		mCost.mTreeTraversal++;
-		mCost.mBlockSplit++;
-
-		Log.inc();
-		Log.d("split leaf");
-		Log.inc();
-
-		freeBlock(aBlockPointer);
-
-		HashTableLeaf lowLeaf = new HashTableLeaf(mLeafSize);
-		HashTableLeaf highLeaf = new HashTableLeaf(mLeafSize);
-		int halfRange = aBlockPointer.getRange() / 2;
-
-		divideLeafEntries(aMap, aLevel, aIndex + halfRange, lowLeaf, highLeaf);
-
-		// create nodes pointing to leafs
-		BlockPointer lowIndex = writeIfNotEmpty(lowLeaf, halfRange);
-		BlockPointer highIndex = writeIfNotEmpty(highLeaf, halfRange);
-
-		aNode.split(aIndex, lowIndex, highIndex);
-
-		lowLeaf.gc();
-		highLeaf.gc();
-
-		Log.dec();
-		Log.dec();
-
-		return true;
-	}
-
-
-	private void divideLeafEntries(HashTableLeaf aMap, int aLevel, int aHalfRange, HashTableLeaf aLowLeaf, HashTableLeaf aHighLeaf)
-	{
-		assert mPerformanceTool.tick("divideLeafEntries");
-
-		for (ArrayMapEntry entry : aMap)
-		{
-			if (computeIndex(entry.getKey(), aLevel) < aHalfRange)
-			{
-				aLowLeaf.put(entry);
-			}
-			else
-			{
-				aHighLeaf.put(entry);
-			}
-		}
-	}
-
-
-	private BlockPointer writeIfNotEmpty(HashTableLeaf aLeaf, int aRange)
-	{
-		if (aLeaf.isEmpty())
-		{
-			return new BlockPointer().setBlockType(BlockType.HOLE).setRange(aRange);
-		}
-
-		return writeBlock(aLeaf, aRange);
-	}
-
-
-	private boolean removeValue(byte[] aKey, int aLevel, ArrayMapEntry aEntry, HashTableNode aNode)
-	{
-		assert mPerformanceTool.tick("removeValue");
-
-		mCost.mTreeTraversal++;
-
-		int index = aNode.findPointer(computeIndex(aKey, aLevel));
-		BlockPointer blockPointer = aNode.getPointer(index);
-
-		switch (blockPointer.getBlockType())
-		{
-			case INDEX:
-			{
-				HashTableNode node = readNode(blockPointer);
-				if (removeValue(aKey, aLevel + 1, aEntry, node))
-				{
-					freeBlock(blockPointer);
-					BlockPointer newBlockPointer = writeBlock(node, blockPointer.getRange());
-					aNode.setPointer(index, newBlockPointer);
-					return true;
-				}
-				return false;
-			}
-			case LEAF:
-			{
-				HashTableLeaf node = readLeaf(blockPointer);
-				boolean found = node.remove(aEntry);
-
-				if (found)
-				{
-					mCost.mEntityRemove++;
-
-					freeBlock(blockPointer);
-					BlockPointer newBlockPointer = writeBlock(node, blockPointer.getRange());
-					aNode.setPointer(index, newBlockPointer);
-				}
-
-				node.gc();
-				return found;
-			}
-			case HOLE:
-				return false;
-			case FREE:
-			default:
-				throw new IllegalStateException("Block structure appears damaged, attempting to travese a free block");
-		}
-	}
-
-
-	HashTableLeaf readLeaf(BlockPointer aBlockPointer)
-	{
-		assert mPerformanceTool.tick("readLeaf");
-
-		assert aBlockPointer.getBlockType() == BlockType.LEAF;
-
-		if (aBlockPointer.getBlockIndex0() == mRootBlockPointer.getBlockIndex0() && mRootMap != null)
-		{
-			return mRootMap;
-		}
-
-		mCost.mReadBlockLeaf++;
-
-		return new HashTableLeaf(readBlock(aBlockPointer));
-	}
-
-
-	HashTableNode readNode(BlockPointer aBlockPointer)
-	{
-		assert mPerformanceTool.tick("readNode");
-
-		assert aBlockPointer.getBlockType() == BlockType.INDEX;
-
-		if (aBlockPointer.getBlockIndex0() == mRootBlockPointer.getBlockIndex0() && mRootNode != null)
-		{
-			return mRootNode;
-		}
-
-		mCost.mReadBlockNode++;
-
-		return new HashTableNode(readBlock(aBlockPointer));
-	}
-
-
-	private int computeIndex(byte[] aKey, int aLevel)
-	{
-		return MurmurHash3.hash32(aKey, mHashSeed ^ aLevel) & (mPointersPerNode - 1);
-	}
-
-
 	public String integrityCheck()
 	{
 		Log.i("integrity check");
-
-		if (mRootMap != null)
-		{
-			return mRootMap.integrityCheck();
-		}
 
 		return mRootNode.integrityCheck();
 	}
@@ -744,75 +353,17 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 
 	public int getEntryMaximumLength()
 	{
-		return mLeafSize - HashTableLeaf.OVERHEAD;
+		return mLeafSize - HashTableLeafNode.OVERHEAD;
 	}
 
 
-	private void visit(HashTableVisitor aVisitor)
+	void visit(HashTableVisitor aVisitor)
 	{
-		if (mRootNode != null)
-		{
-			visitNode(aVisitor, mRootBlockPointer);
-		}
-
-		aVisitor.visit(-1, mRootBlockPointer); // start visit at root level
+		mRootNode.visit(aVisitor);
 	}
 
 
-	private void visitNode(HashTableVisitor aVisitor, BlockPointer aBlockPointer)
-	{
-		HashTableNode node = readNode(aBlockPointer);
-
-		for (int i = 0; i < mPointersPerNode; i++)
-		{
-			BlockPointer next = node.getPointer(i);
-
-			if (next != null && next.getBlockType() == BlockType.INDEX)
-			{
-				visitNode(aVisitor, next);
-			}
-
-			aVisitor.visit(i, next);
-		}
-
-		node.gc();
-	}
-
-
-	private void freeBlock(BlockPointer aBlockPointer)
-	{
-		mCost.mFreeBlock++;
-		mCost.mFreeBlockBytes += aBlockPointer.getAllocatedSize();
-
-		mBlockAccessor.freeBlock(aBlockPointer);
-	}
-
-
-	private byte[] readBlock(BlockPointer aBlockPointer)
-	{
-		assert mPerformanceTool.tick("readBlock");
-
-		mCost.mReadBlock++;
-		mCost.mReadBlockBytes += aBlockPointer.getAllocatedSize();
-
-		return mBlockAccessor.readBlock(aBlockPointer);
-	}
-
-
-	private BlockPointer writeBlock(Node aNode, int aRange)
-	{
-		assert mPerformanceTool.tick("writeBlock");
-
-		BlockPointer blockPointer = mBlockAccessor.writeBlock(aNode.array(), 0, aNode.array().length, mTransactionId.get(), aNode.getType(), aRange);
-
-		mCost.mWriteBlock++;
-		mCost.mWriteBlockBytes += blockPointer.getAllocatedSize();
-
-		return blockPointer;
-	}
-
-
-	private void checkOpen() throws IllegalStateException
+	void checkOpen()
 	{
 		if (mClosed)
 		{
@@ -825,95 +376,137 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	{
 		aScanResult.tables++;
 
-		scan(aScanResult, mRootBlockPointer);
+		mRootNode.scan(aScanResult);
 	}
 
 
-	void scan(ScanResult aScanResult, BlockPointer aBlockPointer)
+	long computeHash(byte[] aKey)
 	{
-		assert mPerformanceTool.tick("scan");
+		return MurmurHash3.hash64(aKey, mHashSeed);
+	}
 
-		byte[] buffer = mBlockAccessor.readBlock(aBlockPointer);
 
-		switch (aBlockPointer.getBlockType())
+	int computeIndex(long aHash, int aLevel)
+	{
+		return (int)(Long.rotateRight(aHash, aLevel * mBitsPerNode) & (mPointersPerNode - 1));
+	}
+
+
+	void freeBlock(BlockPointer aBlockPointer)
+	{
+		mCost.mFreeBlock++;
+		mCost.mFreeBlockBytes += aBlockPointer.getAllocatedSize();
+
+		mBlockAccessor.freeBlock(aBlockPointer);
+	}
+
+
+	byte[] readBlock(BlockPointer aBlockPointer)
+	{
+		assert mPerformanceTool.tick("readBlock");
+
+		mCost.mReadBlock++;
+		mCost.mReadBlockBytes += aBlockPointer.getAllocatedSize();
+
+		return mBlockAccessor.readBlock(aBlockPointer);
+	}
+
+
+	BlockPointer writeBlock(HashTableNode aNode, int aRange)
+	{
+		assert mPerformanceTool.tick("writeBlock");
+
+		BlockPointer blockPointer = mBlockAccessor.writeBlock(aNode.array(), 0, aNode.array().length, mTransactionId.get(), aNode.getType(), aRange);
+
+		mCost.mWriteBlock++;
+		mCost.mWriteBlockBytes += blockPointer.getAllocatedSize();
+
+		return blockPointer;
+	}
+
+
+	class FakeInnerNode extends HashTableInnerNode
+	{
+		public FakeInnerNode()
 		{
-			case INDEX:
-				aScanResult.enterNode(aBlockPointer);
-				aScanResult.indexBlocks++;
+			super(HashTable.this, null);
+		}
 
-				HashTableNode indexNode = new HashTableNode(buffer);
 
-				for (int i = 0; i < indexNode.getPointerCount(); i++)
-				{
-					BlockPointer pointer = indexNode.getPointer(i);
+		@Override
+		public BlockPointer getBlockPointer()
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
 
-					if (pointer != null)
-					{
-						if (pointer.getBlockType() == BlockType.HOLE)
-						{
-							aScanResult.holes++;
-						}
-						else
-						{
-							scan(aScanResult, pointer);
-						}
-					}
-				}
-				aScanResult.exitNode();
-				break;
-			case LEAF:
-				HashTableLeaf leafNode = new HashTableLeaf(buffer);
 
-				aScanResult.enterLeaf(aBlockPointer, buffer);
+		@Override
+		public byte[] array()
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
 
-				aScanResult.records += leafNode.size();
 
-//				for (RecordEntry entry : leafNode)
-//				{
-//					aScanResult.entry();
-//
-//					if (entry.hasFlag(LeafEntry.FLAG_BLOB))
-//					{
-//						aScanResult.blobs++;
-//
-//						ByteArrayBuffer byteArrayBuffer = ByteArrayBuffer.wrap(entry.getValue());
-//						byteArrayBuffer.readInt8();
-//						long len = byteArrayBuffer.readVar64();
-//
-//						while (byteArrayBuffer.remaining() > 0)
-//						{
-//							scan(aScanResult, new BlockPointer().unmarshal(byteArrayBuffer));
-//						}
-//					}
-//					else
-//					{
-//						aScanResult.records++;
-//					}
-//				}
-				aScanResult.exitLeaf();
+		@Override
+		public BlockType getType()
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
 
-				break;
-			case BLOB_INDEX:
-				aScanResult.blobIndices++;
 
-				ByteArrayBuffer byteArrayBuffer = ByteArrayBuffer.wrap(buffer);
-				while (byteArrayBuffer.remaining() > 0)
-				{
-					aScanResult.enterBlob();
+		@Override
+		public boolean get(ArrayMapEntry aEntry, long aHash, int aLevel)
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
 
-					scan(aScanResult, new BlockPointer().unmarshal(byteArrayBuffer));
 
-					aScanResult.exitBlob();
-				}
-				break;
-			case BLOB_DATA:
-				aScanResult.blobData++;
+		@Override
+		public boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> aoOldEntry, long aHash, int aLevel)
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
 
-				aScanResult.blobData();
 
-				break;
-			default:
-				throw new IllegalStateException();
+		@Override
+		public boolean remove(ArrayMapEntry aEntry, Result<ArrayMapEntry> aoOldEntry, long aHash, int aLevel)
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public void clear()
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public BlockPointer flush()
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public void scan(ScanResult aScanResult)
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public void visit(HashTableVisitor aVisitor)
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+
+
+		@Override
+		public String integrityCheck()
+		{
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 		}
 	}
 }

@@ -13,13 +13,13 @@ import org.terifan.security.cryptography.ISAAC;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-public class BlockAccessor
+public class BlockAccessor implements IBlockAccessor
 {
 	private final IManagedBlockDevice mBlockDevice;
 	private CompressionParam mCompressionParam;
 
 
-	public BlockAccessor(IManagedBlockDevice aBlockDevice, CompressionParam aCompressionParam, int aCacheSize) throws IOException
+	public BlockAccessor(IManagedBlockDevice aBlockDevice, CompressionParam aCompressionParam)
 	{
 		mBlockDevice = aBlockDevice;
 		mCompressionParam = aCompressionParam;
@@ -44,6 +44,7 @@ public class BlockAccessor
 	}
 
 
+	@Override
 	public void freeBlock(BlockPointer aBlockPointer)
 	{
 		try
@@ -62,6 +63,7 @@ public class BlockAccessor
 	}
 
 
+	@Override
 	public byte[] readBlock(BlockPointer aBlockPointer)
 	{
 		try

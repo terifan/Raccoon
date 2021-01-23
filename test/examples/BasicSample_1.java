@@ -18,7 +18,7 @@ public class BasicSample_1
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, new TableParam(8,1,0), CompressionParam.BEST_SPEED))
+		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, new TableParam(8,1), CompressionParam.BEST_SPEED))
 		{
 			db.save(new MyEntity(1, "apple"));
 			for (int i = 0; i < 100000;i++)
@@ -30,14 +30,14 @@ public class BasicSample_1
 
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 		{
-			String scan = db.scan().sb.toString();
-
-			System.out.println(scan);
-
-			try (FileWriter fw = new FileWriter("d:\\test.html"))
-			{
-				fw.write(scan.toString());
-			}
+//			String scan = db.scan(null).sb.toString();
+//
+//			System.out.println(scan);
+//
+//			try (FileWriter fw = new FileWriter("d:\\test.html"))
+//			{
+//				fw.write(scan.toString());
+//			}
 
 			db.list(MyEntity.class).forEach(System.out::println);
 		}

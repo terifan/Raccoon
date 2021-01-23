@@ -5,11 +5,12 @@ import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import org.terifan.raccoon.util.Result;
 
 
 /**
- * This is a fixed size buffer for key/value storage suitable for persistence on external media. The LeafNode wraps an array and reads and
- * writes entries directly to the array maintaining all necessary structural information inside the array at all time.
+ * This is a fixed size buffer for key/value storage suitable for persistence on external media. An array is wrapped and read and
+ * written to directly maintaining all necessary structural information inside the array at all time.
  *
  * implementation notes: an empty map will always consist of only zero value bytes, the map does not record the capacity, this must be
  * provided when an instance is created
@@ -66,7 +67,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	{
 		if (aCapacity <= HEADER_SIZE || aCapacity > MAX_CAPACITY)
 		{
-			throw new IllegalArgumentException("Illegal bucket size.");
+			throw new IllegalArgumentException("Illegal bucket size: " + aCapacity);
 		}
 
 		mStartOffset = 0;
@@ -145,7 +146,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public boolean put(ArrayMapEntry aEntry)
+	public boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
 		byte[] key = aEntry.getKey();
 		byte[] value = aEntry.getValue();
@@ -171,8 +172,14 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 				int valueOffset = entryOffset + ENTRY_HEADER_SIZE + readKeyLength(index);
 				int offset = mStartOffset + valueOffset;
 
-				aEntry.setFlags(mBuffer[offset]);
-				aEntry.setValue(Arrays.copyOfRange(mBuffer, offset + 1, offset + oldValueLengthPlus1));
+				if (oExistingEntry != null)
+				{
+					ArrayMapEntry old = new ArrayMapEntry();
+					old.setKey(key);
+					old.setFlags(mBuffer[offset]);
+					old.setValue(Arrays.copyOfRange(mBuffer, offset + 1, offset + oldValueLengthPlus1));
+					oExistingEntry.set(old);
+				}
 
 				System.arraycopy(value, 0, mBuffer, offset + 1, value.length);
 				mBuffer[offset] = format;
@@ -187,7 +194,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 				return false;
 			}
 
-			remove(index, aEntry); // old entry value is loaded here
+			removeImpl(index, oExistingEntry);
 
 			assert indexOf(key) == (-index) - 1;
 		}
@@ -198,9 +205,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		else
 		{
 			index = (-index) - 1;
-
-			aEntry.setFlags((byte)0);
-			aEntry.setValue(null);
 		}
 
 		int modCount = ++mModCount;
@@ -280,7 +284,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public boolean remove(ArrayMapEntry aEntry)
+	public boolean remove(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry)
 	{
 		int index = indexOf(aEntry.getKey());
 
@@ -289,19 +293,24 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			return false;
 		}
 
-		remove(index, aEntry);
+		removeImpl(index, oOldEntry);
 
 		return true;
 	}
 
 
-	private void remove(int aIndex, ArrayMapEntry aEntry)
+	private void removeImpl(int aIndex, Result<ArrayMapEntry> oOldEntry)
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount : "index="+aIndex+", count="+mEntryCount;
 
 		int modCount = ++mModCount;
 
-		get(aIndex, aEntry);
+		if (oOldEntry != null)
+		{
+			ArrayMapEntry old = new ArrayMapEntry();
+			oOldEntry.set(old);
+			get(aIndex, old);
+		}
 
 		int offset = readEntryOffset(aIndex);
 		int length = readEntryLength(aIndex);
@@ -659,17 +668,17 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	public ArrayMapEntry removeFirst()
 	{
-		ArrayMapEntry entry = new ArrayMapEntry();
-		remove(0, entry);
-		return entry;
+		Result<ArrayMapEntry> entry = new Result<>();
+		removeImpl(0, entry);
+		return entry.get();
 	}
 
 
 	public ArrayMapEntry removeLast()
 	{
-		ArrayMapEntry entry = new ArrayMapEntry();
-		remove(mEntryCount - 1, entry);
-		return entry;
+		Result<ArrayMapEntry> entry = new Result<>();
+		removeImpl(mEntryCount - 1, entry);
+		return entry.get();
 	}
 
 
@@ -682,17 +691,5 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		System.arraycopy(mBuffer, mBuffer.length - s, buffer, aNewSize - s, s);
 
 		return new ArrayMap(buffer);
-	}
-
-
-	public void gc()
-	{
-		mBuffer = null;
-		mStartOffset = 0;
-		mCapacity = 0;
-		mPointerListOffset = 0;
-		mFreeSpaceOffset = 0;
-		mEntryCount = 0;
-		mModCount = 0;
 	}
 }

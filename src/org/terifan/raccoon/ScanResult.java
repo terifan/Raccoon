@@ -1,84 +1,165 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
-import org.terifan.raccoon.TableInstance;
 
 
 public class ScanResult
 {
-	public int tables;
-	public int records;
-	public int indexBlocks;
-	public int blobIndices;
-	public int blobData;
-	public int holes;
+	protected int tables;
+	protected int records;
+	protected int blobs;
+	protected int innerNodes;
+	protected int leafNodes;
+	protected int blobIndirectBlocks;
+	protected int blobDataBlocks;
+	protected long blobAllocatedSize;
+	protected long blobPhysicalSize;
+	protected long blobLogicalSize;
+	protected int holes;
 
-	public StringBuilder sb = new StringBuilder();
+	protected StringBuilder sb = new StringBuilder();
 
 
-	public void enterNode(BlockPointer aBlockPointer)
+	public ScanResult()
 	{
-		sb.append("<table border=1><tr><td>"+aBlockPointer+"</td></tr><tr><td style='padding-left:40px;'>");
 	}
 
 
-	public void exitNode()
+	public int getTables()
 	{
-		sb.append("</td></tr></table>");
+		return tables;
 	}
 
 
-	public void enterLeaf(BlockPointer aBlockPointer, byte[] aBuffer)
+	public int getRecords()
 	{
-		sb.append("<table border=1><tr><td>"+aBlockPointer+"</td><td>");
+		return records;
 	}
 
 
-	public void entry()
+	public int getBlobs()
 	{
-		sb.append("entry ");
+		return blobs;
 	}
 
 
-	public void exitLeaf()
+	public int getInnerNodes()
 	{
-		sb.append("</td></tr></table>");
+		return innerNodes;
 	}
 
 
-	public void enterBlob()
+	public int getLeafNodes()
 	{
-		sb.append("<table border=1><tr><td>blob</td></tr><tr><td>");
+		return leafNodes;
 	}
 
 
-	public void exitBlob()
+	public int getBlobIndirectBlocks()
 	{
-		sb.append("</td></tr></table>");
+		return blobIndirectBlocks;
 	}
 
 
-	public void blobData()
+	public int getBlobDataBlocks()
 	{
-		sb.append("blob ");
+		return blobDataBlocks;
 	}
 
 
-	public void enterTable(TableInstance aTable)
+	public long getBlobAllocatedSize()
 	{
-		sb.append("<table border=1><tr><td>"+aTable.toString()+"</td></tr><tr><td>");
+		return blobAllocatedSize;
 	}
 
 
-	public void exitTable()
+	public long getBlobPhysicalSize()
 	{
-		sb.append("</td></tr></table>");
+		return blobPhysicalSize;
+	}
+
+
+	public long getBlobLogicalSize()
+	{
+		return blobLogicalSize;
+	}
+
+
+	public int getHoles()
+	{
+		return holes;
+	}
+
+
+	protected void enterTable(TableInstance aTable)
+	{
+//		sb.append("<table border=1><tr><td>" + aTable.toString() + "</td></tr><tr><td>");
+	}
+
+
+	protected void exitTable()
+	{
+//		sb.append("</td></tr></table>");
+	}
+
+
+	protected void enterInnerNode(BlockPointer aBlockPointer)
+	{
+//		sb.append("<table border=1><tr><td>" + aBlockPointer + "</td></tr><tr><td style='padding-left:40px;'>");
+	}
+
+
+	protected void exitInnerNode()
+	{
+//		sb.append("</td></tr></table>");
+	}
+
+
+	protected void enterLeafNode(BlockPointer aBlockPointer, byte[] aBuffer)
+	{
+//		sb.append("<table border=1><tr><td>" + aBlockPointer + "</td><td>");
+	}
+
+
+	protected void exitLeafNode()
+	{
+//		sb.append("</td></tr></table>");
+	}
+
+
+	protected void enterBlob()
+	{
+//		sb.append("<table border=1><tr><td>" + aBlockPointer + "</td></tr><tr><td style='padding-left:40px;'>");
+	}
+
+
+	protected void exitBlob()
+	{
+//		sb.append("</td></tr></table>");
+	}
+
+
+	protected void record()
+	{
+//		sb.append("entry ");
+	}
+
+
+	protected void blobIndirect(BlockPointer aBlockPointer)
+	{
+//		sb.append("<table border=1><tr><td>" + aBlockPointer + "</td></tr><tr><td style='padding-left:40px;'>");
+	}
+
+
+	protected void blobData(BlockPointer aBlockPointer)
+	{
+//		sb.append("<table border=1><tr><td>" + aBlockPointer + "</td></tr><tr><td style='padding-left:40px;'>");
 	}
 
 
 	@Override
 	public String toString()
 	{
-		return "ScanResult{" + "tables=" + tables + ", records=" + records + ", indexBlocks=" + indexBlocks + ", blobIndices=" + blobIndices + ", blobData=" + blobData + ", holes=" + holes + ", sb=" + sb + '}';
+		return "{" + "\"tables\":" + tables + ", \"records\":" + records + ", \"blobs\":" + blobs + ", \"innerNodes\":" + innerNodes + ", \"leafNodes\":" + leafNodes + ", \"blobIndirectBlocks\":" + blobIndirectBlocks + ", \"blobDataBlocks\":" + blobDataBlocks + ", \"blobAllocatedSize\":" + blobAllocatedSize + ", \"blobPhysicalSize\":" + blobPhysicalSize + ", \"blobLogicalSize\":" + blobLogicalSize + ", \"holes\":" + holes + '}';
 	}
 }

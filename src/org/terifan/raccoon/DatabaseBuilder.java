@@ -24,7 +24,6 @@ public class DatabaseBuilder
 	private int mCompressionOfNodes;
 	private int mCompressionOfLeafs;
 	private int mCompressionOfBlobs;
-	private int mBlockReadCacheSize;
 	private int mIterationCount;
 	private boolean mReadOnly;
 	private char[] mPassword;
@@ -37,7 +36,6 @@ public class DatabaseBuilder
 
 		mPagesPerNode = TableParam.DEFAULT_PAGES_PER_NODE;
 		mPagesPerLeaf = TableParam.DEFAULT_PAGES_PER_LEAF;
-		mBlockReadCacheSize = TableParam.DEFAULT_READ_CACHE_SIZE;
 		mCompressionOfNodes = CompressionParam.NONE;
 		mCompressionOfLeafs = CompressionParam.NONE;
 		mCompressionOfBlobs = CompressionParam.NONE;
@@ -49,12 +47,12 @@ public class DatabaseBuilder
 	}
 
 
-	private Database build(DatabaseOpenOption aOpenOption) throws IOException
+	private Database build(DatabaseOpenOption aOpenOption)
 	{
 		ArrayList<OpenParam> params = new ArrayList<>();
 
 		params.add(new CompressionParam(mCompressionOfNodes, mCompressionOfLeafs, mCompressionOfBlobs));
-		params.add(new TableParam(mPagesPerNode, mPagesPerLeaf, mBlockReadCacheSize));
+		params.add(new TableParam(mPagesPerNode, mPagesPerLeaf));
 
 		if (mPassword != null)
 		{
@@ -88,7 +86,7 @@ public class DatabaseBuilder
 	/**
 	 * Create a new or open an existing database.
 	 */
-	public Database create() throws IOException
+	public Database create()
 	{
 		return build(DatabaseOpenOption.CREATE);
 	}
@@ -97,7 +95,7 @@ public class DatabaseBuilder
 	/**
 	 * Create a new empty database erasing any existing data.
 	 */
-	public Database reset() throws IOException
+	public Database reset()
 	{
 		return build(DatabaseOpenOption.CREATE_NEW);
 	}
@@ -106,7 +104,7 @@ public class DatabaseBuilder
 	/**
 	 * Open an existing database.
 	 */
-	public Database open() throws IOException
+	public Database open()
 	{
 		return build(mReadOnly ? DatabaseOpenOption.READ_ONLY : DatabaseOpenOption.OPEN);
 	}
@@ -209,13 +207,6 @@ public class DatabaseBuilder
 	public DatabaseBuilder setCompressionOfBlobs(int aCompressionOfBlobs)
 	{
 		mCompressionOfBlobs = aCompressionOfBlobs;
-		return this;
-	}
-
-
-	public DatabaseBuilder setBlockReadCacheSize(int aBlockReadCacheSize)
-	{
-		mBlockReadCacheSize = aBlockReadCacheSize;
 		return this;
 	}
 

@@ -1,7 +1,7 @@
 package org.terifan.raccoon.io.managed;
 
-import java.io.IOException;
 import org.terifan.raccoon.DatabaseException;
+import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.util.Log;
 
@@ -26,7 +26,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	 * a label describing contents of the block device. If a non-null value is provided then this value must match the value found inside
 	 * the block device opened or an exception is thrown.
 	 */
-	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice) throws IOException
+	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice)
 	{
 		this(aBlockDevice, new DeviceHeader(), new DeviceHeader());
 	}
@@ -39,7 +39,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	 * a label describing contents of the block device. If a non-null value is provided then this value must match the value found inside
 	 * the block device opened or an exception is thrown.
 	 */
-	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice, DeviceHeader aApplicationHeader, DeviceHeader aTenantHeader) throws IOException
+	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice, DeviceHeader aApplicationHeader, DeviceHeader aTenantHeader)
 	{
 		if (aBlockDevice.getBlockSize() < 512)
 		{
@@ -61,7 +61,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private void init() throws IOException
+	private void init()
 	{
 		if (mWasCreated)
 		{
@@ -74,7 +74,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private void createBlockDevice() throws IOException, IllegalStateException
+	private void createBlockDevice()
 	{
 		Log.i("create block device");
 		Log.inc();
@@ -98,7 +98,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private void loadBlockDevice() throws IOException
+	private void loadBlockDevice()
 	{
 		Log.i("load block device");
 		Log.inc();
@@ -180,14 +180,14 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public long length() throws IOException
+	public long length()
 	{
 		return mBlockDevice.length() - RESERVED_BLOCKS;
 	}
 
 
 	@Override
-	public void close() throws IOException
+	public void close()
 	{
 		if (mModified)
 		{
@@ -203,7 +203,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public void forceClose() throws IOException
+	public void forceClose()
 	{
 		mSpaceMap.clearUncommitted();
 
@@ -223,20 +223,20 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public long allocBlock(int aBlockCount) throws IOException
+	public long allocBlock(int aBlockCount)
 	{
 		long blockIndex = allocBlockInternal(aBlockCount) - RESERVED_BLOCKS;
 
 		if (blockIndex < 0)
 		{
-			throw new IOException("Illegal block index allocated.");
+			throw new DatabaseIOException("Illegal block index allocated.");
 		}
 
 		return blockIndex;
 	}
 
 
-	long allocBlockInternal(int aBlockCount) throws IOException
+	long allocBlockInternal(int aBlockCount)
 	{
 		mModified = true;
 
@@ -245,18 +245,18 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public void freeBlock(long aBlockIndex, int aBlockCount) throws IOException
+	public void freeBlock(long aBlockIndex, int aBlockCount)
 	{
 		if (aBlockIndex < 0)
 		{
-			throw new IOException("Illegal offset: " + aBlockIndex);
+			throw new DatabaseIOException("Illegal offset: " + aBlockIndex);
 		}
 
 		freeBlockInternal(RESERVED_BLOCKS + aBlockIndex, aBlockCount);
 	}
 
 
-	void freeBlockInternal(long aBlockIndex, int aBlockCount) throws IOException
+	void freeBlockInternal(long aBlockIndex, int aBlockCount)
 	{
 		Log.d("free block %d +%d", aBlockIndex, aBlockCount);
 
@@ -267,22 +267,22 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
+	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
 	{
 		if (aBlockIndex < 0)
 		{
-			throw new IOException("Illegal offset: " + aBlockIndex);
+			throw new DatabaseIOException("Illegal offset: " + aBlockIndex);
 		}
 		if ((aBufferLength % mBlockSize) != 0)
 		{
-			throw new IOException("Illegal buffer length: " + aBlockIndex);
+			throw new DatabaseIOException("Illegal buffer length: " + aBlockIndex);
 		}
 
 		writeBlockInternal(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
 	}
 
 
-	private void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
+	private void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
 	{
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;
@@ -301,22 +301,22 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
+	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
 	{
 		if (aBlockIndex < 0)
 		{
-			throw new IOException("Illegal offset: " + aBlockIndex);
+			throw new DatabaseIOException("Illegal offset: " + aBlockIndex);
 		}
 		if ((aBufferLength % mBlockSize) != 0)
 		{
-			throw new IOException("Illegal buffer length: " + aBlockIndex);
+			throw new DatabaseIOException("Illegal buffer length: " + aBlockIndex);
 		}
 
 		readBlockInternal(aBlockIndex + RESERVED_BLOCKS, aBuffer, aBufferOffset, aBufferLength, aIV);
 	}
 
 
-	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV) throws IOException
+	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
 	{
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;
@@ -333,7 +333,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public void commit(boolean aMetadata) throws IOException
+	public void commit(boolean aMetadata)
 	{
 		if (mModified)
 		{
@@ -363,14 +363,14 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public void commit() throws IOException
+	public void commit()
 	{
 		commit(false);
 	}
 
 
 	@Override
-	public void rollback() throws IOException
+	public void rollback()
 	{
 		if (mModified)
 		{
@@ -389,7 +389,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private void readSuperBlock() throws IOException
+	private void readSuperBlock()
 	{
 		Log.d("read super block");
 		Log.inc();
@@ -418,7 +418,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	private void writeSuperBlock() throws IOException
+	private void writeSuperBlock()
 	{
 		mSuperBlock.incrementTransactionId();
 
@@ -452,7 +452,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	/**
 	 * Return the maximum available space this block device can theoretically allocate. This value may be greater than what the underlying block device can support.
 	 */
-	public long getAvailableSpace() throws IOException
+	@Override
+	public long getMaximumSpace()
 	{
 		return mSpaceMap.getRangeMap().getFreeSpace();
 	}
@@ -461,16 +462,18 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	/**
 	 * Return the size of the underlying block device, ie. size of a file acting as a block storage.
 	 */
-	public long getAllocatedSpace() throws IOException
+	@Override
+	public long getAllocatedSpace()
 	{
 		return mBlockDevice.length();
 	}
 
 
 	/**
-	 * Return the free space within the allocated space.
+	 * Return the number of free blocks within the allocated space.
 	 */
-	public long getFreeSpace() throws IOException
+	@Override
+	public long getFreeSpace()
 	{
 		return mBlockDevice.length() - mSpaceMap.getRangeMap().getUsedSpace();
 	}
@@ -479,21 +482,22 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	/**
 	 * Return the number of blocks actually used.
 	 */
-	public long getUsedSpace() throws IOException
+	@Override
+	public long getUsedSpace()
 	{
 		return mSpaceMap.getRangeMap().getUsedSpace();
 	}
 
 
 	@Override
-	public void setLength(long aNewLength) throws IOException
+	public void setLength(long aNewLength)
 	{
 		mBlockDevice.setLength(aNewLength + RESERVED_BLOCKS);
 	}
 
 
 	@Override
-	public void clear() throws IOException
+	public void clear()
 	{
 		mBlockDevice.setLength(0);
 

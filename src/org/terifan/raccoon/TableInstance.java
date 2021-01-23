@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.DatabaseIOException;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -20,7 +21,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
-public final class TableInstance<T> implements Closeable
+public final class TableInstance<T>
 {
 	public static final byte FLAG_NONE = 0;
 	public static final byte FLAG_BLOB = 1;
@@ -34,23 +35,16 @@ public final class TableInstance<T> implements Closeable
 
 	TableInstance(Database aDatabase, Table aTable, byte[] aPointer)
 	{
-		try
-		{
-			mCost = new Cost();
-			mCommitLocks = new HashSet<>();
+		mCost = new Cost();
+		mCommitLocks = new HashSet<>();
 
-			mDatabase = aDatabase;
-			mTable = aTable;
+		mDatabase = aDatabase;
+		mTable = aTable;
 
-			CompressionParam compression = mDatabase.getCompressionParameter();
-			TableParam parameter = mDatabase.getTableParameter();
+		CompressionParam compression = mDatabase.getCompressionParameter();
+		TableParam parameter = mDatabase.getTableParameter();
 
-			mHashTable = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());
-		}
-		catch (IOException e)
-		{
-			throw new DatabaseIOException(e);
-		}
+		mHashTable = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());
 	}
 
 
@@ -131,9 +125,11 @@ public final class TableInstance<T> implements Closeable
 
 		ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
 
-		if (mHashTable.put(entry))
+		ArrayMapEntry oldEntry = mHashTable.put(entry);
+
+		if (oldEntry != null)
 		{
-			deleteIfBlob(entry);
+			deleteIfBlob(oldEntry);
 		}
 
 		Log.dec();
@@ -142,18 +138,11 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	private void deleteIfBlob(ArrayMapEntry aEntry) throws DatabaseException
+	private void deleteIfBlob(ArrayMapEntry aEntry)
 	{
 		if (aEntry.hasFlag(FLAG_BLOB))
 		{
-			try
-			{
-				Blob.deleteBlob(getBlockAccessor(), aEntry.getValue());
-			}
-			catch (IOException e)
-			{
-				throw new DatabaseException(e);
-			}
+			Blob.deleteBlob(getBlockAccessor(), aEntry.getValue());
 		}
 	}
 
@@ -200,42 +189,48 @@ public final class TableInstance<T> implements Closeable
 			Blob out = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), header, aOpenOption)
 			{
 				@Override
-				public void close() throws IOException
+				public void close()
 				{
 					try
 					{
-						if (isModified())
+						try
 						{
-							Log.d("write blob entry");
-
-							byte[] header = finish();
-
-							mDatabase.aquireWriteLock();
-							try
+							if (isModified())
 							{
-								ArrayMapEntry entry = new ArrayMapEntry(key, header, FLAG_BLOB);
-								mHashTable.put(entry);
-							}
-							catch (DatabaseException e)
-							{
-								mDatabase.forceClose(e);
-								throw e;
-							}
-							finally
-							{
-								mDatabase.releaseWriteLock();
+									Log.d("write blob entry");
 
+									byte[] header = finish();
+
+									mDatabase.aquireWriteLock();
+									try
+									{
+										ArrayMapEntry entry = new ArrayMapEntry(key, header, FLAG_BLOB);
+										mHashTable.put(entry);
+									}
+									catch (DatabaseException e)
+									{
+										mDatabase.forceClose(e);
+										throw e;
+									}
+									finally
+									{
+										mDatabase.releaseWriteLock();
+									}
 							}
+						}
+						finally
+						{
+							synchronized (TableInstance.this)
+							{
+								mCommitLocks.remove(lock);
+							}
+
+							super.close();
 						}
 					}
-					finally
+					catch (IOException e)
 					{
-						synchronized (TableInstance.this)
-						{
-							mCommitLocks.remove(lock);
-						}
-
-						super.close();
+						throw new DatabaseIOException(e);
 					}
 				}
 			};
@@ -260,9 +255,11 @@ public final class TableInstance<T> implements Closeable
 	{
 		ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
 
-		if (mHashTable.remove(entry))
+		ArrayMapEntry oldEntry = mHashTable.remove(entry);
+
+		if (oldEntry != null)
 		{
-			deleteIfBlob(entry);
+			deleteIfBlob(oldEntry);
 
 			return true;
 		}
@@ -292,7 +289,6 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	@Override
 	public void close()
 	{
 		mHashTable.close();
@@ -321,16 +317,9 @@ public final class TableInstance<T> implements Closeable
 			}
 		}
 
-		try
+		if (!mHashTable.commit())
 		{
-			if (!mHashTable.commit())
-			{
-				return false;
-			}
-		}
-		catch (IOException e)
-		{
-			throw new DatabaseIOException(e);
+			return false;
 		}
 
 		byte[] newPointer = mHashTable.marshalHeader();
@@ -346,7 +335,7 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	void rollback() throws IOException
+	void rollback()
 	{
 		mHashTable.rollback();
 	}
@@ -376,7 +365,7 @@ public final class TableInstance<T> implements Closeable
 
 	void unmarshalToObjectValues(ArrayMapEntry aBuffer, Object aOutput)
 	{
-		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aBuffer.getValue(), false);
+		ByteArrayBuffer buffer;
 
 		if (aBuffer.hasFlag(FLAG_BLOB))
 		{
@@ -384,13 +373,16 @@ public final class TableInstance<T> implements Closeable
 			{
 				byte[] buf = new byte[(int)blob.size()];
 				blob.read(ByteBuffer.wrap(buf));
-				buffer.write(buf);
-				buffer.position(0);
+				buffer = ByteArrayBuffer.wrap(buf);
 			}
 			catch (IOException e)
 			{
 				throw new DatabaseException(e);
 			}
+		}
+		else
+		{
+			buffer = ByteArrayBuffer.wrap(aBuffer.getValue(), false);
 		}
 
 		Marshaller marshaller = mTable.getMarshaller();
@@ -469,8 +461,8 @@ public final class TableInstance<T> implements Closeable
 	}
 
 
-	private synchronized BlockAccessor getBlockAccessor() throws IOException
+	private synchronized BlockAccessor getBlockAccessor()
 	{
-		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter(), 0);
+		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter());
 	}
 }

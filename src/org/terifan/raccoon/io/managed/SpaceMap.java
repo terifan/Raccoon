@@ -3,6 +3,7 @@ package org.terifan.raccoon.io.managed;
 import java.io.IOException;
 import java.util.HashSet;
 import org.terifan.raccoon.BlockType;
+import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -29,7 +30,7 @@ class SpaceMap
 	}
 
 
-	public SpaceMap(SuperBlock aSuperBlock, ManagedBlockDevice aBlockDevice, IPhysicalBlockDevice aBlockDeviceDirect) throws IOException
+	public SpaceMap(SuperBlock aSuperBlock, ManagedBlockDevice aBlockDevice, IPhysicalBlockDevice aBlockDeviceDirect)
 	{
 		mUncommittedAllocations = new HashSet<>();
 
@@ -83,11 +84,11 @@ class SpaceMap
 	}
 
 
-	public void assertUsed(long aBlockIndex, int aBlockCount) throws IOException
+	public void assertUsed(long aBlockIndex, int aBlockCount)
 	{
 		if (!mRangeMap.isFree((int)aBlockIndex, aBlockCount))
 		{
-			throw new IOException("Range not allocated: " + aBlockIndex + " +" + aBlockCount);
+			throw new DatabaseIOException("Range not allocated: " + aBlockIndex + " +" + aBlockCount);
 		}
 	}
 
@@ -104,7 +105,7 @@ class SpaceMap
 	}
 
 
-	public void write(BlockPointer aSpaceMapBlockPointer, ManagedBlockDevice aBlockDevice, IPhysicalBlockDevice aBlockDeviceDirect) throws IOException
+	public void write(BlockPointer aSpaceMapBlockPointer, ManagedBlockDevice aBlockDevice, IPhysicalBlockDevice aBlockDeviceDirect)
 	{
 		Log.d("write space map");
 		Log.inc();
@@ -139,7 +140,7 @@ class SpaceMap
 	}
 
 
-	private RangeMap read(SuperBlock aSuperBlock, ManagedBlockDevice aBlockDevice, IPhysicalBlockDevice aBlockDeviceDirect) throws IOException
+	private RangeMap read(SuperBlock aSuperBlock, ManagedBlockDevice aBlockDevice, IPhysicalBlockDevice aBlockDeviceDirect)
 	{
 		BlockPointer blockPointer = aSuperBlock.getSpaceMapPointer();
 
@@ -157,7 +158,7 @@ class SpaceMap
 		{
 			if (blockPointer.getBlockIndex0() < 0)
 			{
-				throw new IOException("Block at illegal offset: " + blockPointer.getBlockIndex0());
+				throw new DatabaseIOException("Block at illegal offset: " + blockPointer.getBlockIndex0());
 			}
 
 			int blockSize = aBlockDevice.getBlockSize();
@@ -170,7 +171,7 @@ class SpaceMap
 
 			if (!blockPointer.verifyChecksum(hash))
 			{
-				throw new IOException("Checksum error at block index ");
+				throw new DatabaseIOException("Checksum error at block index ");
 			}
 
 			buffer.limit(blockPointer.getLogicalSize());

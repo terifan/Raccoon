@@ -1,9 +1,14 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.io;
 
 
 public class DatabaseIOException extends RuntimeException
 {
 	private static final long serialVersionUID = 1L;
+
+
+	public DatabaseIOException()
+	{
+	}
 
 
 	public DatabaseIOException(String aMessage)

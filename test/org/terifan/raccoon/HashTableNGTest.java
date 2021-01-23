@@ -304,7 +304,7 @@ public class HashTableNGTest
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
 				ArrayMapEntry leafEntry = new ArrayMapEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), (byte)0);
-				assertTrue(hashTable.remove(leafEntry));
+				assertTrue(hashTable.remove(leafEntry) != null);
 				assertEquals(leafEntry.getValue(), entry.getValue().getBytes());
 			}
 			hashTable.commit();
