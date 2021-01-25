@@ -141,7 +141,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		int checksum = computeChecksum(salt, aPayload);
 
 		// update header
-		putInt(aPayload, 0, checksum);
+		putInt32(aPayload, 0, checksum);
 
 		// create user key
 		byte[] userKeyPool = aAccessCredentials.generateKeyPool(aAccessCredentials.getKeyGeneratorFunction(), salt, KEY_POOL_SIZE);
@@ -234,7 +234,7 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 					cipher.decrypt(aBlockIndex, payloadCopy, 0, PAYLOAD_SIZE, new long[2]);
 
 					// read header
-					int expectedChecksum = getInt(payloadCopy, 0);
+					int expectedChecksum = getInt32(payloadCopy, 0);
 
 					// verify checksum of boot block
 					if (expectedChecksum == computeChecksum(salt, payloadCopy))
@@ -313,8 +313,8 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	public void writeBlockWithIV(final long aBlockIndex, final byte[] aBuffer, final int aBufferOffset, final int aBufferLength)
 	{
 		// the buffer must end with 16 zero bytes reserved for the IV
-		assert getLong(aBuffer, aBuffer.length - 16) == 0;
-		assert getLong(aBuffer, aBuffer.length - 8) == 0;
+		assert getInt64(aBuffer, aBuffer.length - 16) == 0;
+		assert getInt64(aBuffer, aBuffer.length - 8) == 0;
 
 		if (aBlockIndex < 0)
 		{
@@ -332,8 +332,8 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			ISAAC.PRNG.nextLong()
 		};
 
-		putLong(workBuffer, workBuffer.length - 16, iv[0]);
-		putLong(workBuffer, workBuffer.length - 8, iv[1]);
+		putInt64(workBuffer, workBuffer.length - 16, iv[0]);
+		putInt64(workBuffer, workBuffer.length - 8, iv[1]);
 
 		mCipherImplementation.encrypt(RESERVED_BLOCKS + aBlockIndex, workBuffer, aBufferOffset, aBufferLength - 16, iv);
 
@@ -361,8 +361,8 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		long[] iv =
 		{
-			getLong(aBuffer, aBuffer.length - 16),
-			getLong(aBuffer, aBuffer.length - 8)
+			getInt64(aBuffer, aBuffer.length - 16),
+			getInt64(aBuffer, aBuffer.length - 8)
 		};
 
 		mCipherImplementation.decrypt(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength - 16, iv);
@@ -491,8 +491,8 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			{
 				if (i < mMasterIV.length)
 				{
-					mMasterIV[i][0] = getLong(aKeyPool, offset + 0);
-					mMasterIV[i][1] = getLong(aKeyPool, offset + 8);
+					mMasterIV[i][0] = getInt64(aKeyPool, offset + 0);
+					mMasterIV[i][1] = getInt64(aKeyPool, offset + 8);
 				}
 				offset += IV_SIZE;
 			}

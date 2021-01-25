@@ -7,9 +7,9 @@ import java.util.zip.Deflater;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
+import org.terifan.raccoon.io.secure.BlockKeyGenerator;
 import org.terifan.raccoon.util.ByteBlockOutputStream;
 import org.terifan.raccoon.util.Log;
-import org.terifan.security.cryptography.ISAAC;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
@@ -73,18 +73,18 @@ public class BlockAccessor implements IBlockAccessor
 
 // TODO: remove
 byte[] buffer;
-if (aBlockPointer.getAllocatedSize() == 0)
+if (aBlockPointer.getAllocatedBlocks() == 0)
 {
 	buffer = new byte[roundUp(aBlockPointer.getLogicalSize())];
 }
 else
 {
-	buffer = new byte[aBlockPointer.getAllocatedSize() * mBlockDevice.getBlockSize()];
+	buffer = new byte[aBlockPointer.getAllocatedBlocks() * mBlockDevice.getBlockSize()];
 }
 
-			mBlockDevice.readBlock(aBlockPointer.getBlockIndex0(), buffer, 0, buffer.length, aBlockPointer.getIV());
+			mBlockDevice.readBlock(aBlockPointer.getBlockIndex0(), buffer, 0, buffer.length, aBlockPointer.getBlockKey(new long[2]));
 
-			long[] hash = MurmurHash3.hash128(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getBlockIndex0());
+			long[] hash = MurmurHash3.hash256(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getTransactionId());
 
 			if (!aBlockPointer.verifyChecksum(hash))
 			{
@@ -120,7 +120,7 @@ else
 		try
 		{
 			ByteBlockOutputStream compressedBlock = null;
-			int compressor = mCompressionParam.getCompressorId(aType);
+			byte compressor = mCompressionParam.getCompressorId(aType);
 			boolean compressed = false;
 
 			if (compressor != CompressionParam.NONE)
@@ -143,25 +143,31 @@ else
 				compressor = CompressionParam.NONE;
 			}
 
-			int allocatedSize = aBuffer.length / mBlockDevice.getBlockSize();
-			long blockIndex = mBlockDevice.allocBlock(allocatedSize);
+			assert aBuffer.length % mBlockDevice.getBlockSize() == 0;
+
+			int allocatedBlocks = aBuffer.length / mBlockDevice.getBlockSize();
+
+			long blockIndex = mBlockDevice.allocBlock(allocatedBlocks);
+			long[] blockKey = BlockKeyGenerator.generate();
 
 			blockPointer = new BlockPointer();
 			blockPointer.setCompressionAlgorithm(compressor);
-			blockPointer.setBlockIndex(blockIndex);
-			blockPointer.setAllocatedSize(allocatedSize);
+			blockPointer.setAllocatedBlocks(allocatedBlocks);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
 			blockPointer.setTransactionId(aTransactionId);
 			blockPointer.setBlockType(aType);
-			blockPointer.setRange(aRange);
-			blockPointer.setChecksum(MurmurHash3.hash128(aBuffer, 0, physicalSize, blockIndex));
-			blockPointer.setIV(ISAAC.PRNG.nextLong(), ISAAC.PRNG.nextLong());
+			blockPointer.setUserData(aRange);
+			blockPointer.setEncryptionAlgorithm((byte)0); // not used
+			blockPointer.setChecksumAlgorithm((byte)0); // not used
+			blockPointer.setChecksum(MurmurHash3.hash256(aBuffer, 0, physicalSize, aTransactionId));
+			blockPointer.setBlockKey(blockKey);
+			blockPointer.setBlockIndex0(blockIndex);
 
 			Log.d("write block %s", blockPointer);
 			Log.inc();
 
-			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockPointer.getIV());
+			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockKey);
 
 			Log.dec();
 

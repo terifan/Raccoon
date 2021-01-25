@@ -155,7 +155,7 @@ class SuperBlock
 			aBlockDevice.readBlock(aBlockIndex, buffer.array(), 0, buffer.capacity(), new long[2]);
 		}
 
-		long[] hash = MurmurHash3.hash128(buffer.array(), CHECKSUM_SIZE, blockSize - CHECKSUM_SIZE - IV_SIZE, aBlockIndex);
+		long[] hash = MurmurHash3.hash256(buffer.array(), CHECKSUM_SIZE, blockSize - CHECKSUM_SIZE - IV_SIZE, aBlockIndex);
 
 		buffer.position(0);
 
@@ -194,7 +194,7 @@ class SuperBlock
 			ISAAC.PRNG.nextBytes(buffer.array(), buffer.position(), buffer.remaining() - IV_SIZE);
 		}
 
-		long[] hash = MurmurHash3.hash128(buffer.array(), CHECKSUM_SIZE, blockSize - CHECKSUM_SIZE - IV_SIZE, aBlockIndex);
+		long[] hash = MurmurHash3.hash256(buffer.array(), CHECKSUM_SIZE, blockSize - CHECKSUM_SIZE - IV_SIZE, aBlockIndex);
 
 		buffer.position(0);
 		buffer.writeInt64(hash[0]);

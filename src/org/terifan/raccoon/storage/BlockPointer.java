@@ -3,248 +3,268 @@ package org.terifan.raccoon.storage;
 import java.io.Serializable;
 import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.raccoon.util.ByteArrayUtil;
 
 
+/*
+ *   +------+------+------+------+------+------+------+------+
+ * 0 | type | chk  | enc  | comp |             |  alloc blk  |
+ *   +------+------+------+------+------+------+------+------+
+ * 1 |        logical size       |       physical size       |
+ *   +------+------+------+------+------+------+------+------+
+ * 2 |                      block index                      |
+ *   +------+------+------+------+------+------+------+------+
+ * 3 |                      block index                      |
+ *   +------+------+------+------+------+------+------+------+
+ * 4 |                      block index                      |
+ *   +------+------+------+------+------+------+------+------+
+ * 5 |                                                       |
+ *   +------+------+------+------+------+------+------+------+
+ * 6 |                                                       |
+ *   +------+------+------+------+------+------+------+------+
+ * 7 |                                                       |
+ *   +------+------+------+------+------+------+------+------+
+ * 8 |                       user data                       |
+ *   +------+------+------+------+------+------+------+------+
+ * 9 |                      transaction                      |
+ *   +------+------+------+------+------+------+------+------+
+ * A |                       block key                       |
+ *   +------+------+------+------+------+------+------+------+
+ * B |                       block key                       |
+ *   +------+------+------+------+------+------+------+------+
+ * C |                       checksum                        |
+ *   +------+------+------+------+------+------+------+------+
+ * D |                       checksum                        |
+ *   +------+------+------+------+------+------+------+------+
+ * E |                       checksum                        |
+ *   +------+------+------+------+------+------+------+------+
+ * F |                       checksum                        |
+ *   +------+------+------+------+------+------+------+------+
+ *
+ *   8 block type
+ *   8 checksum algorithm
+ *   8 encryption algorithm
+ *   8 compression algorithm
+ *  16 allocated blocks
+ *  32 logical size
+ *  32 physical size
+ *  64 block index
+ *  64 user data
+ *  64 transaction
+ * 128 block key (initialization vector)
+ * 256 checksum
+ */
 public class BlockPointer implements Serializable
 {
 	private final static long serialVersionUID = 1;
+	public final static int SIZE = 128;
 
-	public final static int SIZE = 64;
+	private final static int OFS_FLAG_TYPE = 0;
+	private final static int OFS_FLAG_CHECKSUM = 1;
+	private final static int OFS_FLAG_ENCRYPTION = 2;
+	private final static int OFS_FLAG_COMPRESSION = 3;
+	private final static int OFS_ALLOCATED_BLOCKS = 4;
+	private final static int OFS_LOGICAL_SIZE = 8;
+	private final static int OFS_PHYSICAL_SIZE = 12;
+	private final static int OFS_OFFSET1 = 32;
+	private final static int OFS_USER_DATA = 64;
+	private final static int OFS_TRANSACTION = 72;
+	private final static int OFS_BLOCK_KEY = 80;
+	private final static int OFS_CHECKSUM = 96;
 
-	private int mBlockType;
-	private int mChecksumAlgorithm;
-	private int mCompressionAlgorithm;
-	private int mRange;
-	private int mAllocatedSize;
-	private int mLogicalSize;
-	private int mPhysicalSize;
-	private long mBlockIndex0;
-	private long mBlockIndex1;
-	private long mBlockIndex2;
-	private long mTransactionId;
-	private long[] mChecksum;
-	private long[] mIV;
-
-	private transient Object mUserObject;
+	private byte[] mData;
 
 
 	public BlockPointer()
 	{
-		mIV = new long[2];
-		mChecksum = new long[2];
-	}
-
-
-	public int getChecksumAlgorithm()
-	{
-		return mChecksumAlgorithm;
-	}
-
-
-	public BlockPointer setChecksumAlgorithm(int aChecksumAlgorithm)
-	{
-		mChecksumAlgorithm = aChecksumAlgorithm;
-		return this;
-	}
-
-
-	public int getCompressionAlgorithm()
-	{
-		return mCompressionAlgorithm;
-	}
-
-
-	public BlockPointer setCompressionAlgorithm(int aCompressionAlgorithm)
-	{
-		mCompressionAlgorithm = aCompressionAlgorithm;
-		return this;
+		mData = new byte[SIZE];
 	}
 
 
 	public BlockType getBlockType()
 	{
-		return BlockType.values()[mBlockType];
+		return BlockType.values()[mData[OFS_FLAG_TYPE]];
 	}
 
 
 	public BlockPointer setBlockType(BlockType aBlockType)
 	{
-		mBlockType = aBlockType.ordinal();
+		mData[OFS_FLAG_TYPE] = (byte)aBlockType.ordinal();
 		return this;
 	}
 
 
-	public int getAllocatedSize()
+	public byte getChecksumAlgorithm()
 	{
-		return mAllocatedSize;
+		return mData[OFS_FLAG_CHECKSUM];
 	}
 
 
-	public BlockPointer setAllocatedSize(int aAllocSize)
+	public BlockPointer setChecksumAlgorithm(byte aChecksumAlgorithm)
 	{
-		mAllocatedSize = aAllocSize;
+		mData[OFS_FLAG_CHECKSUM] = aChecksumAlgorithm;
+		return this;
+	}
+
+
+	public byte getEncryptionAlgorithm()
+	{
+		return mData[OFS_FLAG_ENCRYPTION];
+	}
+
+
+	public BlockPointer setEncryptionAlgorithm(byte aEncryptionAlgorithm)
+	{
+		mData[OFS_FLAG_ENCRYPTION] = aEncryptionAlgorithm;
+		return this;
+	}
+
+
+	public byte getCompressionAlgorithm()
+	{
+		return mData[OFS_FLAG_COMPRESSION];
+	}
+
+
+	public BlockPointer setCompressionAlgorithm(byte aCompressionAlgorithm)
+	{
+		mData[OFS_FLAG_COMPRESSION] = aCompressionAlgorithm;
+		return this;
+	}
+
+
+	public int getAllocatedBlocks()
+	{
+		return ByteArrayUtil.getInt16(mData, OFS_ALLOCATED_BLOCKS);
+	}
+
+
+	public BlockPointer setAllocatedBlocks(int aAllocBlocks)
+	{
+		assert aAllocBlocks >= 0 && aAllocBlocks <= 65535;
+
+		ByteArrayUtil.putInt16(mData, OFS_ALLOCATED_BLOCKS, aAllocBlocks);
 		return this;
 	}
 
 
 	public int getLogicalSize()
 	{
-		return mLogicalSize;
+		return ByteArrayUtil.getInt32(mData, OFS_LOGICAL_SIZE);
 	}
 
 
 	public BlockPointer setLogicalSize(int aLogicalSize)
 	{
-		mLogicalSize = aLogicalSize;
-		return this;
-	}
-
-
-	public int getRange()
-	{
-		return mRange;
-	}
-
-
-	public BlockPointer setRange(int aRange)
-	{
-		mRange = aRange;
-		return this;
-	}
-
-
-	public long getBlockIndex0()
-	{
-		return mBlockIndex0;
-	}
-
-
-	public BlockPointer setBlockIndex(long aBlockIndex)
-	{
-		mBlockIndex0 = aBlockIndex;
+		ByteArrayUtil.putInt32(mData, OFS_LOGICAL_SIZE, aLogicalSize);
 		return this;
 	}
 
 
 	public int getPhysicalSize()
 	{
-		return mPhysicalSize;
+		return ByteArrayUtil.getInt32(mData, OFS_PHYSICAL_SIZE);
 	}
 
 
 	public BlockPointer setPhysicalSize(int aPhysicalSize)
 	{
-		mPhysicalSize = aPhysicalSize;
+		ByteArrayUtil.putInt32(mData, OFS_PHYSICAL_SIZE, aPhysicalSize);
 		return this;
 	}
 
 
-	public long[] getChecksum()
+	public long[] getBlockKey(long[] aBlockKey)
 	{
-		return mChecksum.clone();
+		assert aBlockKey.length == 2;
+
+		aBlockKey[0] = ByteArrayUtil.getInt64(mData, OFS_BLOCK_KEY + 0);
+		aBlockKey[1] = ByteArrayUtil.getInt64(mData, OFS_BLOCK_KEY + 8);
+		return aBlockKey;
 	}
 
 
-	public BlockPointer setChecksum(long[] aChecksum)
+	public BlockPointer setBlockKey(long[] aBlockKey)
 	{
-		mChecksum = aChecksum.clone();
+		assert aBlockKey.length == 2;
+
+		ByteArrayUtil.putInt64(mData, OFS_BLOCK_KEY + 0, aBlockKey[0]);
+		ByteArrayUtil.putInt64(mData, OFS_BLOCK_KEY + 8, aBlockKey[1]);
 		return this;
 	}
 
 
-	public long[] getIV()
+	public long getBlockIndex0()
 	{
-		return mIV.clone();
+		return ByteArrayUtil.getInt64(mData, OFS_OFFSET1);
 	}
 
 
-	public BlockPointer setIV(long aIV0, long aIV1)
+	public BlockPointer setBlockIndex0(long aBlockIndex)
 	{
-		mIV[0] = aIV0;
-		mIV[1] = aIV1;
-		return this;
-	}
-
-
-	public BlockPointer setIV(long[] aIV)
-	{
-		mIV = aIV;
+		ByteArrayUtil.putInt64(mData, OFS_OFFSET1, aBlockIndex);
 		return this;
 	}
 
 
 	public long getTransactionId()
 	{
-		return mTransactionId;
+		return ByteArrayUtil.getInt64(mData, OFS_TRANSACTION);
 	}
 
 
 	public BlockPointer setTransactionId(long aTransactionId)
 	{
-		mTransactionId = aTransactionId;
+		ByteArrayUtil.putInt64(mData, OFS_TRANSACTION, aTransactionId);
 		return this;
 	}
 
 
-	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer)
+	public long[] getChecksum(long[] aChecksum)
 	{
-		assert mBlockType >= 0 && mBlockType <= 0xff;
-		assert mCompressionAlgorithm >= 0 && mCompressionAlgorithm <= 0xff;
-		assert mChecksumAlgorithm >= 0 && mChecksumAlgorithm <= 0x0f;
-		assert mAllocatedSize >= 0 && mAllocatedSize <= 0xffff;
-		assert mPhysicalSize >= 0 && mPhysicalSize <= 0xffffff;
-		assert mLogicalSize >= 0 && mPhysicalSize <= 0xffffff;
-		assert mBlockIndex0 >= 0 && mBlockIndex0 <= 0xffffffffffL;
-		assert mBlockIndex1 >= 0 && mBlockIndex1 <= 0xffffffffffL;
-		assert mBlockIndex2 >= 0 && mBlockIndex2 <= 0xffffffffffL;
-		assert mTransactionId >= 0 && mTransactionId <= 0xffffffffffL;
-		assert mRange >= 0 && mRange <= 0xfff;
+		assert aChecksum.length == 4;
 
-		aBuffer.writeInt8(mBlockType);
-		aBuffer.writeInt8(mCompressionAlgorithm);
-		aBuffer.writeInt16((mChecksumAlgorithm << 12) + mRange);
-		aBuffer.writeInt16(mAllocatedSize);
-		aBuffer.writeInt24(mLogicalSize);
-		aBuffer.writeInt24(mPhysicalSize);
-		aBuffer.writeInt40(mBlockIndex0);
-		aBuffer.writeInt40(mBlockIndex1);
-		aBuffer.writeInt40(mBlockIndex2);
-		aBuffer.writeInt40(mTransactionId);
-		aBuffer.writeInt64(mIV[0]);
-		aBuffer.writeInt64(mIV[1]);
-		aBuffer.writeInt64(mChecksum[0]);
-		aBuffer.writeInt64(mChecksum[1]);
-
-		return aBuffer;
+		aChecksum[0] = ByteArrayUtil.getInt64(mData, OFS_CHECKSUM + 0);
+		aChecksum[1] = ByteArrayUtil.getInt64(mData, OFS_CHECKSUM + 8);
+		aChecksum[2] = ByteArrayUtil.getInt64(mData, OFS_CHECKSUM + 16);
+		aChecksum[3] = ByteArrayUtil.getInt64(mData, OFS_CHECKSUM + 24);
+		return aChecksum;
 	}
 
 
-	public BlockPointer unmarshal(ByteArrayBuffer aBuffer)
+	public BlockPointer setChecksum(long[] aChecksum)
 	{
-		mBlockType = aBuffer.readInt8();
-		mCompressionAlgorithm = aBuffer.readInt8();
-		int tmp = aBuffer.readInt16();
-		mChecksumAlgorithm = tmp >>> 12;
-		mRange = tmp & 0xfff;
-		mAllocatedSize = aBuffer.readInt16();
-		mLogicalSize = aBuffer.readInt24();
-		mPhysicalSize = aBuffer.readInt24();
-		mBlockIndex0 = aBuffer.readInt40();
-		mBlockIndex1 = aBuffer.readInt40();
-		mBlockIndex2 = aBuffer.readInt40();
-		mTransactionId = aBuffer.readInt40();
-		mIV[0] = aBuffer.readInt64();
-		mIV[1] = aBuffer.readInt64();
-		mChecksum[0] = aBuffer.readInt64();
-		mChecksum[1] = aBuffer.readInt64();
+		assert aChecksum.length == 4;
 
+		ByteArrayUtil.putInt64(mData, OFS_CHECKSUM + 0, aChecksum[0]);
+		ByteArrayUtil.putInt64(mData, OFS_CHECKSUM + 8, aChecksum[1]);
+		ByteArrayUtil.putInt64(mData, OFS_CHECKSUM + 16, aChecksum[2]);
+		ByteArrayUtil.putInt64(mData, OFS_CHECKSUM + 24, aChecksum[3]);
 		return this;
 	}
 
 
 	public boolean verifyChecksum(long[] aChecksum)
 	{
-		return aChecksum[0] == mChecksum[0] && aChecksum[1] == mChecksum[1];
+		assert aChecksum.length == 4;
+
+		return aChecksum[0] == ByteArrayUtil.getInt64(mData, OFS_CHECKSUM + 0)
+			&& aChecksum[1] == ByteArrayUtil.getInt64(mData, OFS_CHECKSUM + 8)
+			&& aChecksum[2] == ByteArrayUtil.getInt64(mData, OFS_CHECKSUM + 16)
+			&& aChecksum[3] == ByteArrayUtil.getInt64(mData, OFS_CHECKSUM + 24);
+	}
+
+
+	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer)
+	{
+		return aBuffer.write(mData);
+	}
+
+
+	public BlockPointer unmarshal(ByteArrayBuffer aBuffer)
+	{
+		aBuffer.read(mData);
+		return this;
 	}
 
 
@@ -260,14 +280,14 @@ public class BlockPointer implements Serializable
 	 */
 	public static BlockType getBlockType(byte[] aBuffer, int aOffset)
 	{
-		return BlockType.values()[0xFF & aBuffer[aOffset]];
+		return BlockType.values()[0xFF & aBuffer[aOffset + OFS_FLAG_TYPE]];
 	}
 
 
 	@Override
 	public int hashCode()
 	{
-		return (int)(mBlockIndex0 ^ (mBlockIndex0 >>> 32));
+		return Long.hashCode(getBlockIndex0());
 	}
 
 
@@ -276,27 +296,28 @@ public class BlockPointer implements Serializable
 	{
 		if (aBlockPointer instanceof BlockPointer)
 		{
-			return ((BlockPointer)aBlockPointer).getBlockIndex0() == mBlockIndex0;
+			return ((BlockPointer)aBlockPointer).getBlockIndex0() == getBlockIndex0();
 		}
 		return false;
 	}
 
 
-	public Object getUserObject()
+	public long getUserData()
 	{
-		return mUserObject;
+		return ByteArrayUtil.getInt64(mData, OFS_USER_DATA);
 	}
 
 
-	public void setUserObject(Object aUserObject)
+	public BlockPointer setUserData(long aUserData)
 	{
-		mUserObject = aUserObject;
+		ByteArrayUtil.putInt64(mData, OFS_USER_DATA, aUserData);
+		return this;
 	}
 
 
 	@Override
 	public String toString()
 	{
-		return "{type=" + getBlockType() + ", offset=" + mBlockIndex0 + ", alloc=" + mAllocatedSize + ", phys=" + mPhysicalSize + ", logic=" + mLogicalSize + ", range=" + mRange + ", tx=" + mTransactionId + ")";
+		return "{type=" + getBlockType() + ", offset=" + getBlockIndex0() + ", phys=" + getPhysicalSize() + ", logic=" + getLogicalSize() + ", tx=" + getTransactionId() + ")";
 	}
 }

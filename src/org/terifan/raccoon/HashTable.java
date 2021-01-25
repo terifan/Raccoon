@@ -395,7 +395,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	void freeBlock(BlockPointer aBlockPointer)
 	{
 		mCost.mFreeBlock++;
-		mCost.mFreeBlockBytes += aBlockPointer.getAllocatedSize();
+		mCost.mFreeBlockBytes += aBlockPointer.getAllocatedBlocks();
 
 		mBlockAccessor.freeBlock(aBlockPointer);
 	}
@@ -406,7 +406,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		assert mPerformanceTool.tick("readBlock");
 
 		mCost.mReadBlock++;
-		mCost.mReadBlockBytes += aBlockPointer.getAllocatedSize();
+		mCost.mReadBlockBytes += aBlockPointer.getAllocatedBlocks();
 
 		return mBlockAccessor.readBlock(aBlockPointer);
 	}
@@ -419,7 +419,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 		BlockPointer blockPointer = mBlockAccessor.writeBlock(aNode.array(), 0, aNode.array().length, mTransactionId.get(), aNode.getType(), aRange);
 
 		mCost.mWriteBlock++;
-		mCost.mWriteBlockBytes += blockPointer.getAllocatedSize();
+		mCost.mWriteBlockBytes += blockPointer.getAllocatedBlocks();
 
 		return blockPointer;
 	}

@@ -17,6 +17,8 @@ class NodeArray
 
 	public NodeArray(HashTable aHashTable, HashTableInnerNode aNode, byte[] aBuffer)
 	{
+		assert (aBuffer.length % BlockPointer.SIZE) == 0;
+
 		mHashTable = aHashTable;
 		mNode = aNode;
 		mBuffer = aBuffer;
@@ -73,7 +75,7 @@ class NodeArray
 
 		BlockPointer blockPointer = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
 
-		assert blockPointer.getRange() != 0;
+		assert blockPointer.getUserData() != 0;
 
 		return blockPointer;
 	}
@@ -111,11 +113,13 @@ class NodeArray
 
 	public void set(int aIndex, HashTableNode aNode, int aRange)
 	{
+		assert aIndex >= 0 && aIndex < mPointerCount : "0 <= " + aIndex + " < " + mPointerCount;
+
 		BlockPointer blockPointer;
 
 		if (aNode instanceof HashTableLeafNode && ((HashTableLeafNode)aNode).size() == 0)
 		{
-			blockPointer = new BlockPointer().setBlockType(BlockType.HOLE).setRange(aRange);
+			blockPointer = new BlockPointer().setBlockType(BlockType.HOLE).setUserData(aRange);
 		}
 		else
 		{
@@ -142,7 +146,7 @@ class NodeArray
 
 		if (aNode instanceof HashTableLeafNode && ((HashTableLeafNode)aNode).size() == 0)
 		{
-			blockPointer = new BlockPointer().setBlockType(BlockType.HOLE).setRange(aRange);
+			blockPointer = new BlockPointer().setBlockType(BlockType.HOLE).setUserData(aRange);
 		}
 		else
 		{

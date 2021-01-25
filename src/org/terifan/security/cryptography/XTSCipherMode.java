@@ -43,14 +43,14 @@ public final class XTSCipherMode extends CipherMode
 
 				int finalCarry = ((whiteningValue[8 + 7] & 0x80) != 0) ? 135 : 0;
 
-				putLongLE(whiteningValue, 8, getLongLE(whiteningValue, 8) << 1);
+				putInt64LE(whiteningValue, 8, getInt64LE(whiteningValue, 8) << 1);
 
 				if ((whiteningValue[7] & 0x80) != 0)
 				{
 					whiteningValue[8] |= 0x01;
 				}
 
-				putLongLE(whiteningValue, 0, getLongLE(whiteningValue, 0) << 1);
+				putInt64LE(whiteningValue, 0, getInt64LE(whiteningValue, 0) << 1);
 
 				whiteningValue[0] ^= finalCarry;
 			}
@@ -84,14 +84,14 @@ public final class XTSCipherMode extends CipherMode
 
 				int finalCarry = (whiteningValue[8 + 7] & 0x80) != 0 ? 135 : 0;
 
-				putLongLE(whiteningValue, 8, getLongLE(whiteningValue, 8) << 1);
+				putInt64LE(whiteningValue, 8, getInt64LE(whiteningValue, 8) << 1);
 
 				if ((whiteningValue[7] & 0x80) != 0)
 				{
 					whiteningValue[8] |= 0x01;
 				}
 
-				putLongLE(whiteningValue, 0, getLongLE(whiteningValue, 0) << 1);
+				putInt64LE(whiteningValue, 0, getInt64LE(whiteningValue, 0) << 1);
 
 				whiteningValue[0] ^= finalCarry;
 			}

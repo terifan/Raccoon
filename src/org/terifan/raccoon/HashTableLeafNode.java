@@ -142,12 +142,12 @@ class HashTableLeafNode implements HashTableNode
 	{
 		assert mHashTable.mPerformanceTool.tick("splitLeaf");
 
-		if (mBlockPointer.getRange() == 1)
+		if (mBlockPointer.getUserData() == 1)
 		{
 			return false;
 		}
 
-		assert mBlockPointer.getRange() >= 2;
+		assert mBlockPointer.getUserData() >= 2;
 
 		mHashTable.mCost.mTreeTraversal++;
 		mHashTable.mCost.mBlockSplit++;
@@ -160,7 +160,7 @@ class HashTableLeafNode implements HashTableNode
 
 		HashTableLeafNode lowLeaf = new HashTableLeafNode(mHashTable, mParentNode);
 		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, mParentNode);
-		int halfRange = mBlockPointer.getRange() / 2;
+		int halfRange = (int)mBlockPointer.getUserData() / 2;
 
 		divideEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
 
@@ -202,7 +202,7 @@ class HashTableLeafNode implements HashTableNode
 		{
 			mParentNode.freeNode(this);
 
-			mParentNode.setNode(aIndex, this, mBlockPointer.getRange());
+			mParentNode.setNode(aIndex, this, (int)mBlockPointer.getUserData());
 
 			mHashTable.mCost.mValuePut++;
 		}
@@ -216,7 +216,7 @@ class HashTableLeafNode implements HashTableNode
 
 			node.put(aEntry, oOldEntry, aHash, aLevel + 1); // recursive put
 
-			mParentNode.setNode(aIndex, node, mBlockPointer.getRange());
+			mParentNode.setNode(aIndex, node, (int)mBlockPointer.getUserData());
 		}
 	}
 

@@ -44,8 +44,8 @@ public abstract class CipherMode
 
 	protected static void prepareIV(long[] aMasterIV, long[] aBlockIV, long aDataUnitNo, byte[] aOutputIV, BlockCipher aTweakCipher)
 	{
-		putLongLE(aOutputIV, 0, aMasterIV[0] ^ aBlockIV[0]);
-		putLongLE(aOutputIV, 8, aMasterIV[1] ^ aBlockIV[1] ^ aDataUnitNo);
+		putInt64LE(aOutputIV, 0, aMasterIV[0] ^ aBlockIV[0]);
+		putInt64LE(aOutputIV, 8, aMasterIV[1] ^ aBlockIV[1] ^ aDataUnitNo);
 
 		aTweakCipher.engineEncryptBlock(aOutputIV, 0, aOutputIV, 0);
 	}

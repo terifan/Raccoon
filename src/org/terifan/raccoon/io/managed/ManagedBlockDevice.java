@@ -267,7 +267,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
+	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aBlockKey)
 	{
 		if (aBlockIndex < 0)
 		{
@@ -278,11 +278,11 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			throw new DatabaseIOException("Illegal buffer length: " + aBlockIndex);
 		}
 
-		writeBlockInternal(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
+		writeBlockInternal(RESERVED_BLOCKS + aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 	}
 
 
-	private void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
+	private void writeBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aBlockKey)
 	{
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;
@@ -294,14 +294,14 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 		Log.inc();
 
-		mBlockDevice.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
+		mBlockDevice.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 
 		Log.dec();
 	}
 
 
 	@Override
-	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
+	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aBlockKey)
 	{
 		if (aBlockIndex < 0)
 		{
@@ -312,11 +312,11 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			throw new DatabaseIOException("Illegal buffer length: " + aBlockIndex);
 		}
 
-		readBlockInternal(aBlockIndex + RESERVED_BLOCKS, aBuffer, aBufferOffset, aBufferLength, aIV);
+		readBlockInternal(aBlockIndex + RESERVED_BLOCKS, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 	}
 
 
-	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
+	private void readBlockInternal(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aBlockKey)
 	{
 		assert aBufferLength > 0;
 		assert (aBufferLength % mBlockSize) == 0;
@@ -326,7 +326,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 		Log.inc();
 
-		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aIV);
+		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 
 		Log.dec();
 	}

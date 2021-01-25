@@ -5,19 +5,19 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 public final class CompressionParam implements OpenParam
 {
-	public final static int NONE = 0;
-	public final static int ZLE = 1;
-	public final static int DEFLATE_FAST = 2;
-	public final static int DEFLATE_DEFAULT = 3;
-	public final static int DEFLATE_BEST = 4;
+	public final static byte NONE = 0;
+	public final static byte ZLE = 1;
+	public final static byte DEFLATE_FAST = 2;
+	public final static byte DEFLATE_DEFAULT = 3;
+	public final static byte DEFLATE_BEST = 4;
 
 	public final static CompressionParam BEST_SPEED = new CompressionParam(DEFLATE_FAST, ZLE, NONE);
 	public final static CompressionParam BEST_COMPRESSION = new CompressionParam(DEFLATE_DEFAULT, DEFLATE_DEFAULT, DEFLATE_BEST);
 	public final static CompressionParam NO_COMPRESSION = new CompressionParam(NONE, NONE, NONE);
 
-	private int mNode;
-	private int mLeaf;
-	private int mBlob;
+	private byte mNode;
+	private byte mLeaf;
+	private byte mBlob;
 
 
 	public CompressionParam()
@@ -26,7 +26,7 @@ public final class CompressionParam implements OpenParam
 	}
 
 
-	public CompressionParam(int aNode, int aLeaf, int aBlob)
+	public CompressionParam(byte aNode, byte aLeaf, byte aBlob)
 	{
 		mNode = aNode;
 		mLeaf = aLeaf;
@@ -34,19 +34,19 @@ public final class CompressionParam implements OpenParam
 	}
 
 
-	public int getLeaf()
+	public byte getLeaf()
 	{
 		return mLeaf;
 	}
 
 
-	public int getNode()
+	public byte getNode()
 	{
 		return mNode;
 	}
 
 
-	public int getBlob()
+	public byte getBlob()
 	{
 		return mBlob;
 	}
@@ -59,7 +59,7 @@ public final class CompressionParam implements OpenParam
 	}
 
 
-	public int getCompressorId(BlockType aType)
+	public byte getCompressorId(BlockType aType)
 	{
 		switch (aType)
 		{
@@ -78,16 +78,16 @@ public final class CompressionParam implements OpenParam
 
 	public void marshal(ByteArrayBuffer aBuffer)
 	{
-		aBuffer.writeVar32(mLeaf);
-		aBuffer.writeVar32(mNode);
-		aBuffer.writeVar32(mBlob);
+		aBuffer.writeInt8(mLeaf);
+		aBuffer.writeInt8(mNode);
+		aBuffer.writeInt8(mBlob);
 	}
 
 
 	public void unmarshal(ByteArrayBuffer aBuffer)
 	{
-		mLeaf = aBuffer.readVar32();
-		mNode = aBuffer.readVar32();
-		mBlob = aBuffer.readVar32();
+		mLeaf = (byte)aBuffer.readInt8();
+		mNode = (byte)aBuffer.readInt8();
+		mBlob = (byte)aBuffer.readInt8();
 	}
 }

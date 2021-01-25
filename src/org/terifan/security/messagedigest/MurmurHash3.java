@@ -225,21 +225,23 @@ public class MurmurHash3
 	}
 
 
+//	/**
+//	 * Compute the hash value of buffer provided.
+//	 *
+//	 * @param aData buffer to process
+//	 * @param aSeed seed value
+//	 * @return the provided output array
+//	 */
+//	public static long[] hash128(byte[] aData, long aSeed)
+//	{
+//		return hash128(aData, 0, aData.length, aSeed);
+//	}
+
+
 	/**
 	 * Compute the hash value of buffer provided.
 	 *
-	 * @param aData buffer to process
-	 * @param aSeed seed value
-	 * @return the provided output array
-	 */
-	public static long[] hash128(byte[] aData, long aSeed)
-	{
-		return hash128(aData, 0, aData.length, aSeed);
-	}
-
-
-	/**
-	 * Compute the hash value of buffer provided.
+	 * WARNING: this method return a 128 bit hash in a 256 bit array!!!
 	 *
 	 * @param aData buffer to process
 	 * @param aOffset offset in buffer
@@ -247,7 +249,7 @@ public class MurmurHash3
 	 * @param aSeed seed value
 	 * @return the provided output array
 	 */
-	public static long[] hash128(byte[] aData, int aOffset, int aLength, long aSeed)
+	public static long[] hash256(byte[] aData, int aOffset, int aLength, long aSeed)
 	{
 		int nblocks = aLength / 16;
 
@@ -343,7 +345,7 @@ public class MurmurHash3
 		h1 += h2;
 		h2 += h1;
 
-		long[] output = new long[2];
+		long[] output = new long[4];
 		output[0] = h1;
 		output[1] = h2;
 

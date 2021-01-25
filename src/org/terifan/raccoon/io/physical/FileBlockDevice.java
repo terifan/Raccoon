@@ -63,7 +63,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	}
 
 
-	public void readBlock(long aBlockIndex, ByteBuffer aBuffer, long[] aIV)
+	public void readBlock(long aBlockIndex, ByteBuffer aBuffer, long[] aBlockKey)
 	{
 		Log.d("read block %d +%d", aBlockIndex, (aBuffer.limit() - aBuffer.position()) / mBlockSize);
 
@@ -78,7 +78,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	}
 
 
-	public void writeBlock(long aBlockIndex, ByteBuffer aBuffer, long[] aIV)
+	public void writeBlock(long aBlockIndex, ByteBuffer aBuffer, long[] aBlockKey)
 	{
 		Log.d("write block %d +%d", aBlockIndex, (aBuffer.limit() - aBuffer.position()) / mBlockSize);
 
@@ -94,7 +94,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 
 	@Override
-	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
+	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aBlockKey)
 	{
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
@@ -111,7 +111,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 
 	@Override
-	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV)
+	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aBlockKey)
 	{
 		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 

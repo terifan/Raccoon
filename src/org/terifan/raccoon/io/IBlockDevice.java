@@ -14,10 +14,10 @@ public interface IBlockDevice extends AutoCloseable
 	 *   offset in the block array where block data is stored
 	 * @param aBufferLength
 	 *   length of buffer to write, must be dividable by block size
-	 * @param aIV
+	 * @param aBlockKey
 	 *   128 bit seed value that may be used by block device implementations performing cryptography
 	 */
-	void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV);
+	void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aBlockKey);
 
 
 	/**
@@ -34,7 +34,7 @@ public interface IBlockDevice extends AutoCloseable
 	 * @param aBlockKey
 	 *   128 bit seed value that may be used by block device implementations performing cryptography
 	 */
-	void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aIV);
+	void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aBlockKey);
 
 
 	/**

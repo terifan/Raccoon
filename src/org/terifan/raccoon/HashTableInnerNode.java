@@ -95,18 +95,18 @@ class HashTableInnerNode implements HashTableNode
 
 			if (rangeRemain > 0)
 			{
-				if (bp.getRange() != 0)
+				if (bp.getUserData() != 0)
 				{
 					return "Pointer inside range";
 				}
 			}
 			else
 			{
-				if (bp.getRange() == 0)
+				if (bp.getUserData() == 0)
 				{
 					return "Zero range";
 				}
-				rangeRemain = bp.getRange();
+				rangeRemain = (int)bp.getUserData();
 			}
 			rangeRemain--;
 		}
@@ -160,7 +160,7 @@ class HashTableInnerNode implements HashTableNode
 			case INDEX:
 				HashTableInnerNode node = mNodesArray.getNode(index);
 				node.put(aEntry, oOldEntry, aHash, aLevel + 1);
-				mNodesArray.markDirty(index, node, blockPointer.getRange());
+				mNodesArray.markDirty(index, node, (int)blockPointer.getUserData());
 				break;
 			case LEAF:
 				HashTableLeafNode leaf = mNodesArray.getNode(index);
@@ -168,7 +168,7 @@ class HashTableInnerNode implements HashTableNode
 				break;
 			case HOLE:
 				HashTableLeafNode hole = mNodesArray.getNode(index);
-				hole.upgradeHole(index, aEntry, aLevel, blockPointer.getRange());
+				hole.upgradeHole(index, aEntry, aLevel, (int)blockPointer.getUserData());
 				break;
 			case FREE:
 			default:
@@ -197,7 +197,7 @@ class HashTableInnerNode implements HashTableNode
 				HashTableInnerNode node = mNodesArray.getNode(index);
 				if (node.remove(aEntry, oOldEntry, aHash, aLevel + 1))
 				{
-					mNodesArray.markDirty(index, node, blockPointer.getRange());
+					mNodesArray.markDirty(index, node, (int)blockPointer.getUserData());
 					return true;
 				}
 				return false;
@@ -208,7 +208,7 @@ class HashTableInnerNode implements HashTableNode
 				if (found)
 				{
 					mHashTable.mCost.mEntityRemove++;
-					mNodesArray.markDirty(index, leaf, blockPointer.getRange());
+					mNodesArray.markDirty(index, leaf, (int)blockPointer.getUserData());
 				}
 
 				return found;

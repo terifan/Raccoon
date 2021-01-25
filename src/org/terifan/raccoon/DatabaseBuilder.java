@@ -21,9 +21,9 @@ public class DatabaseBuilder
 	private CipherModeFunction mCipherModeFunction;
 	private int mPagesPerNode;
 	private int mPagesPerLeaf;
-	private int mCompressionOfNodes;
-	private int mCompressionOfLeafs;
-	private int mCompressionOfBlobs;
+	private byte mCompressionOfNodes;
+	private byte mCompressionOfLeafs;
+	private byte mCompressionOfBlobs;
 	private int mIterationCount;
 	private boolean mReadOnly;
 	private char[] mPassword;
@@ -190,21 +190,21 @@ public class DatabaseBuilder
 	}
 
 
-	public DatabaseBuilder setCompressionOfNodes(int aCompressionOfNodes)
+	public DatabaseBuilder setCompressionOfNodes(byte aCompressionOfNodes)
 	{
 		mCompressionOfNodes = aCompressionOfNodes;
 		return this;
 	}
 
 
-	public DatabaseBuilder setCompressionOfLeafs(int aCompressionOfLeafs)
+	public DatabaseBuilder setCompressionOfLeafs(byte aCompressionOfLeafs)
 	{
 		mCompressionOfLeafs = aCompressionOfLeafs;
 		return this;
 	}
 
 
-	public DatabaseBuilder setCompressionOfBlobs(int aCompressionOfBlobs)
+	public DatabaseBuilder setCompressionOfBlobs(byte aCompressionOfBlobs)
 	{
 		mCompressionOfBlobs = aCompressionOfBlobs;
 		return this;

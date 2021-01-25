@@ -639,8 +639,8 @@ public class Blob implements SeekableByteChannel
 			aScanResult.blobData(bp);
 
 			aScanResult.blobDataBlocks++;
-			aScanResult.blobAllocatedSize += bp.getAllocatedSize() * blockSize;
-			aScanResult.blobPhysicalSize += bp.getAllocatedSize() * blockSize;
+			aScanResult.blobAllocatedSize += bp.getAllocatedBlocks() * blockSize;
+			aScanResult.blobPhysicalSize += bp.getAllocatedBlocks() * blockSize; // why not phys size???
 		}
 
 		aScanResult.exitBlob();
