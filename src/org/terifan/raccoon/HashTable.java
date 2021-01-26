@@ -68,7 +68,7 @@ final class HashTable implements AutoCloseable, ITableImplementation
 
 
 	@Override
-	public void open(byte[] aTableHeader, IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool)
+	public void open(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool, byte[] aTableHeader)
 	{
 		mTableName = aTableName;
 		mTransactionId = aTransactionId;
@@ -323,7 +323,7 @@ final class HashTable implements AutoCloseable, ITableImplementation
 
 
 	@Override
-	public void clear()
+	public void removeAll()
 	{
 		checkOpen();
 

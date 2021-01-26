@@ -260,7 +260,7 @@ public class HashTableNGTest
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
-			hashTable.clear();
+			hashTable.removeAll();
 			hashTable.commit(null);
 
 			assertEquals(hashTable.size(), 0);
@@ -356,7 +356,7 @@ public class HashTableNGTest
 		}
 		else
 		{
-			table.open(aRoot, new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", new Cost(), new PerformanceTool(null));
+			table.open(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", new Cost(), new PerformanceTool(null), aRoot);
 		}
 		return table;
 	}

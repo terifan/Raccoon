@@ -52,7 +52,7 @@ public final class TableInstance<T>
 		}
 		else
 		{
-			mHashTable.open(aTableHeader, mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());
+			mHashTable.open(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool(), aTableHeader);
 		}
 	}
 
@@ -294,7 +294,7 @@ public final class TableInstance<T>
 
 	public void clear()
 	{
-		mHashTable.clear();
+		mHashTable.removeAll();
 	}
 
 

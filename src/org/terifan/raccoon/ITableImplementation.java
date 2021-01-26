@@ -11,7 +11,7 @@ public interface ITableImplementation extends Iterable<ArrayMapEntry>
 	void create(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool);
 
 
-	void open(byte[] aTableHeader, IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool);
+	void open(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool, byte[] aTableHeader);
 
 
 	boolean get(ArrayMapEntry aEntry);
@@ -29,10 +29,16 @@ public interface ITableImplementation extends Iterable<ArrayMapEntry>
 	Iterator<ArrayMapEntry> iterator();
 
 
-	void clear();
+	void removeAll();
 
 
 	void close();
+
+
+	int size();
+
+
+	boolean isChanged();
 
 
 	/**
@@ -51,11 +57,5 @@ public interface ITableImplementation extends Iterable<ArrayMapEntry>
 	String integrityCheck();
 
 
-	boolean isChanged();
-
-
 	void scan(ScanResult aScanResult);
-
-
-	int size();
 }
