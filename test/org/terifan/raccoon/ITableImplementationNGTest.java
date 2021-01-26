@@ -3,6 +3,8 @@ package org.terifan.raccoon;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import static resources.__TestUtils.*;
@@ -12,10 +14,10 @@ import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
 
 
-public class HashTableNGTest
+public class ITableImplementationNGTest
 {
 	@Test(dataProvider = "itemSizes")
-	public void testSimpleCreateWriteOpenRead(int aSize) throws Exception
+	public void testSimpleCreateWriteOpenRead(Class<ITableImplementation> aTable, int aSize) throws Exception
 	{
 		HashMap<byte[],byte[]> map = new HashMap<>();
 
@@ -24,7 +26,7 @@ public class HashTableNGTest
 		byte[] root = null;
 		TransactionGroup tx = new TransactionGroup(0);
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (int i = 0; i < aSize; i++)
 			{
@@ -37,7 +39,7 @@ public class HashTableNGTest
 			root = hashTable.commit(null);
 		}
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (byte[] key : map.keySet())
 			{
@@ -48,7 +50,7 @@ public class HashTableNGTest
 
 
 	@Test(dataProvider="itemSizes")
-	public void testRollback(int aSize) throws Exception
+	public void testRollback(Class<ITableImplementation> aTable, int aSize) throws Exception
 	{
 		HashMap<String,String> map = new HashMap<>();
 		for (int i = 0; i < aSize; i++)
@@ -61,7 +63,7 @@ public class HashTableNGTest
 		byte[] root = null;
 		TransactionGroup tx = new TransactionGroup(0);
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -97,7 +99,7 @@ public class HashTableNGTest
 
 
 	@Test(dataProvider = "sizeSizes")
-	public void testSize(int aSize) throws Exception
+	public void testSize(Class<ITableImplementation> aTable, int aSize) throws Exception
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
@@ -113,7 +115,7 @@ public class HashTableNGTest
 		byte[] v2 = tb();
 		byte[] v3 = tb();
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			hashTable.put(new ArrayMapEntry(k0, v0, (byte)0));
 
@@ -126,7 +128,7 @@ public class HashTableNGTest
 			assertEquals(hashTable.size(), 2);
 		}
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			assertEquals(hashTable.size(), 2);
 
@@ -158,7 +160,7 @@ public class HashTableNGTest
 
 
 	@Test(dataProvider = "iteratorSizes")
-	public void testIterator(int aSize) throws Exception
+	public void testIterator(Class<ITableImplementation> aTable, int aSize) throws Exception
 	{
 		HashMap<String,String> map = new HashMap<>();
 
@@ -167,7 +169,7 @@ public class HashTableNGTest
 		byte[] root = null;
 		TransactionGroup tx = new TransactionGroup(0);
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (int i = 0; i < aSize; i++)
 			{
@@ -182,7 +184,7 @@ public class HashTableNGTest
 			root = hashTable.commit(null);
 		}
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (ArrayMapEntry entry : hashTable)
 			{
@@ -197,7 +199,7 @@ public class HashTableNGTest
 
 
 	@Test(dataProvider = "iteratorSizes")
-	public void testList(int aSize) throws Exception
+	public void testList(Class<ITableImplementation> aTable, int aSize) throws Exception
 	{
 		HashMap<String,String> map = new HashMap<>();
 		for (int i = 0; i < aSize; i++)
@@ -210,7 +212,7 @@ public class HashTableNGTest
 		byte[] root = null;
 		TransactionGroup tx = new TransactionGroup(0);
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -220,7 +222,7 @@ public class HashTableNGTest
 			root = hashTable.commit(null);
 		}
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (ArrayMapEntry entry : hashTable.list())
 			{
@@ -235,7 +237,7 @@ public class HashTableNGTest
 
 
 	@Test(dataProvider = "iteratorSizes")
-	public void testClear(int aSize) throws Exception
+	public void testClear(Class<ITableImplementation> aTable, int aSize) throws Exception
 	{
 		HashMap<String,String> map = new HashMap<>();
 		for (int i = 0; i < aSize; i++)
@@ -248,7 +250,7 @@ public class HashTableNGTest
 		byte[] root = null;
 		TransactionGroup tx = new TransactionGroup(0);
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -258,7 +260,7 @@ public class HashTableNGTest
 			root = hashTable.commit(null);
 		}
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			hashTable.removeAll();
 			hashTable.commit(null);
@@ -269,7 +271,7 @@ public class HashTableNGTest
 
 
 	@Test(dataProvider = "iteratorSizes")
-	public void testRemove(int aSize) throws Exception
+	public void testRemove(Class<ITableImplementation> aTable, int aSize) throws Exception
 	{
 		HashMap<String,String> map = new HashMap<>();
 		for (int i = 0; i < aSize; i++)
@@ -282,7 +284,7 @@ public class HashTableNGTest
 		byte[] root = null;
 		TransactionGroup tx = new TransactionGroup(0);
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -292,7 +294,7 @@ public class HashTableNGTest
 			root = hashTable.commit(null);
 		}
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -307,14 +309,14 @@ public class HashTableNGTest
 	}
 
 
-	@Test
-	public void testPut() throws Exception
+	@Test(dataProvider = "tableTypes")
+	public void testPut(Class<ITableImplementation> aTable) throws Exception
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 		TransactionGroup tx = new TransactionGroup(0);
 		byte[] root = null;
 
-		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
+		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			byte[] key = new byte[hashTable.getEntryMaximumLength() - 1];
 			byte[] value = {85};
@@ -329,40 +331,54 @@ public class HashTableNGTest
 	@DataProvider(name="iteratorSizes")
 	private Object[][] iteratorSizes()
 	{
-		return new Object[][]{{0},{10},{1000}};
+		return new Object[][]{{HashTreeTable.class,0},{HashTreeTable.class,10},{HashTreeTable.class,1000}};
 	}
 
 
 	@DataProvider(name="sizeSizes")
 	private Object[][] sizeSizes()
 	{
-		return new Object[][]{{0},{1000}};
+		return new Object[][]{{HashTreeTable.class,0},{HashTreeTable.class,1000}};
 	}
 
 
 	@DataProvider(name="itemSizes")
 	private Object[][] itemSizes()
 	{
-		return new Object[][]{{1},{10},{1000}};
+		return new Object[][]{{HashTreeTable.class,1},{HashTreeTable.class,10},{HashTreeTable.class,1000}};
 	}
 
 
-	private HashTable newHashTable(byte[] aRoot, TransactionGroup aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
+	@DataProvider(name="tableTypes")
+	private Object[][] tableTypes()
 	{
-		HashTable table = new HashTable();
-		if (aRoot == null)
-		{
-			table.create(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", new Cost(), new PerformanceTool(null));
-		}
-		else
-		{
-			table.open(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", new Cost(), new PerformanceTool(null), aRoot);
-		}
-		return table;
+		return new Object[][]{{HashTreeTable.class},{HashTreeTable.class},{HashTreeTable.class}};
 	}
 
 
-	private byte[] get(HashTable aHashTable, byte[] aKey)
+	private ITableImplementation newHashTable(Class<ITableImplementation> aImplementation, byte[] aRoot, TransactionGroup aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
+	{
+		try
+		{
+			ITableImplementation table = aImplementation.newInstance();
+			if (aRoot == null)
+			{
+				table.create(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", new Cost(), new PerformanceTool(null));
+			}
+			else
+			{
+				table.open(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", new Cost(), new PerformanceTool(null), aRoot);
+			}
+			return table;
+		}
+		catch (Exception e)
+		{
+			throw new IllegalStateException(e);
+		}
+	}
+
+
+	private byte[] get(ITableImplementation aHashTable, byte[] aKey)
 	{
 		ArrayMapEntry leafEntry = new ArrayMapEntry(aKey);
 		if (aHashTable.get(leafEntry))

@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 
 
-public interface ITableImplementation extends Iterable<ArrayMapEntry>
+public interface ITableImplementation extends Iterable<ArrayMapEntry>, AutoCloseable
 {
 	void create(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool);
 
@@ -32,6 +32,7 @@ public interface ITableImplementation extends Iterable<ArrayMapEntry>
 	void removeAll();
 
 
+	@Override
 	void close();
 
 
@@ -58,4 +59,7 @@ public interface ITableImplementation extends Iterable<ArrayMapEntry>
 
 
 	void scan(ScanResult aScanResult);
+
+
+	int getEntryMaximumLength();
 }

@@ -8,17 +8,17 @@ import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 
 
-class HashTableLeafNode implements HashTableNode
+class HashTreeTableLeafNode implements HashTreeTableNode
 {
 	final static int OVERHEAD = ArrayMap.OVERHEAD;
 
-	private HashTable mHashTable;
-	private HashTableInnerNode mParentNode;
+	private HashTreeTable mHashTable;
+	private HashTreeTableInnerNode mParentNode;
 	private BlockPointer mBlockPointer;
 	private ArrayMap mMap;
 
 
-	public HashTableLeafNode(HashTable aHashTable, HashTableInnerNode aParentNode)
+	public HashTreeTableLeafNode(HashTreeTable aHashTable, HashTreeTableInnerNode aParentNode)
 	{
 		mHashTable = aHashTable;
 		mParentNode = aParentNode;
@@ -26,7 +26,7 @@ class HashTableLeafNode implements HashTableNode
 	}
 
 
-	public HashTableLeafNode(HashTable aHashTable, HashTableInnerNode aParentNode, BlockPointer aBlockPointer)
+	public HashTreeTableLeafNode(HashTreeTable aHashTable, HashTreeTableInnerNode aParentNode, BlockPointer aBlockPointer)
 	{
 		assert aBlockPointer.getBlockType() == BlockType.LEAF;
 		assert aHashTable.mPerformanceTool.tick("readLeaf");
@@ -77,7 +77,7 @@ class HashTableLeafNode implements HashTableNode
 	}
 
 
-	HashTableInnerNode growTree(int aLevel)
+	HashTreeTableInnerNode growTree(int aLevel)
 	{
 		assert mHashTable.mPerformanceTool.tick("growTree");
 
@@ -92,10 +92,10 @@ class HashTableLeafNode implements HashTableNode
 
 		int halfRange = mHashTable.mPointersPerNode / 2;
 
-		HashTableInnerNode parent = new HashTableInnerNode(mHashTable, mParentNode);
+		HashTreeTableInnerNode parent = new HashTreeTableInnerNode(mHashTable, mParentNode);
 
-		HashTableLeafNode lowLeaf = new HashTableLeafNode(mHashTable, parent);
-		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, parent);
+		HashTreeTableLeafNode lowLeaf = new HashTreeTableLeafNode(mHashTable, parent);
+		HashTreeTableLeafNode highLeaf = new HashTreeTableLeafNode(mHashTable, parent);
 
 		divideEntries(aLevel, halfRange, lowLeaf, highLeaf);
 
@@ -109,7 +109,7 @@ class HashTableLeafNode implements HashTableNode
 	}
 
 
-	HashTableInnerNode splitRootLeaf()
+	HashTreeTableInnerNode splitRootLeaf()
 	{
 		assert mHashTable.mPerformanceTool.tick("splitRootLeaf");
 
@@ -122,10 +122,10 @@ class HashTableLeafNode implements HashTableNode
 
 		int halfRange = mHashTable.mPointersPerNode / 2;
 
-		HashTableInnerNode parent = new HashTableInnerNode(mHashTable, mParentNode);
+		HashTreeTableInnerNode parent = new HashTreeTableInnerNode(mHashTable, mParentNode);
 
-		HashTableLeafNode lowLeaf = new HashTableLeafNode(mHashTable, parent);
-		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, parent);
+		HashTreeTableLeafNode lowLeaf = new HashTreeTableLeafNode(mHashTable, parent);
+		HashTreeTableLeafNode highLeaf = new HashTreeTableLeafNode(mHashTable, parent);
 
 		divideEntries(0, halfRange, lowLeaf, highLeaf);
 
@@ -158,8 +158,8 @@ class HashTableLeafNode implements HashTableNode
 
 		mParentNode.freeNode(this);
 
-		HashTableLeafNode lowLeaf = new HashTableLeafNode(mHashTable, mParentNode);
-		HashTableLeafNode highLeaf = new HashTableLeafNode(mHashTable, mParentNode);
+		HashTreeTableLeafNode lowLeaf = new HashTreeTableLeafNode(mHashTable, mParentNode);
+		HashTreeTableLeafNode highLeaf = new HashTreeTableLeafNode(mHashTable, mParentNode);
 		int halfRange = (int)mBlockPointer.getUserData() / 2;
 
 		divideEntries(aLevel, aIndex + halfRange, lowLeaf, highLeaf);
@@ -174,7 +174,7 @@ class HashTableLeafNode implements HashTableNode
 	}
 
 
-	private void divideEntries(int aLevel, int aHalfRange, HashTableLeafNode aLowLeaf, HashTableLeafNode aHighLeaf)
+	private void divideEntries(int aLevel, int aHalfRange, HashTreeTableLeafNode aLowLeaf, HashTreeTableLeafNode aHighLeaf)
 	{
 		assert mHashTable.mPerformanceTool.tick("divideLeafEntries");
 
@@ -212,7 +212,7 @@ class HashTableLeafNode implements HashTableNode
 		}
 		else
 		{
-			HashTableInnerNode node = growTree(aLevel + 1);
+			HashTreeTableInnerNode node = growTree(aLevel + 1);
 
 			node.put(aEntry, oOldEntry, aHash, aLevel + 1); // recursive put
 
@@ -266,7 +266,7 @@ class HashTableLeafNode implements HashTableNode
 
 
 	@Override
-	public void visit(HashTableVisitor aVisitor)
+	public void visit(HashTreeTableVisitor aVisitor)
 	{
 		aVisitor.visit(this);
 	}

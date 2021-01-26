@@ -7,15 +7,15 @@ import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 
 
-class HashTableInnerNode implements HashTableNode
+class HashTreeTableInnerNode implements HashTreeTableNode
 {
-	private HashTable mHashTable;
+	private HashTreeTable mHashTable;
 	private BlockPointer mBlockPointer;
-	private HashTableInnerNode mParentNode;
+	private HashTreeTableInnerNode mParentNode;
 	private NodeArray mNodesArray;
 
 
-	public HashTableInnerNode(HashTable aHashTable, HashTableInnerNode aParent)
+	public HashTreeTableInnerNode(HashTreeTable aHashTable, HashTreeTableInnerNode aParent)
 	{
 		mHashTable = aHashTable;
 		mParentNode = aParent;
@@ -24,7 +24,7 @@ class HashTableInnerNode implements HashTableNode
 	}
 
 
-	public HashTableInnerNode(HashTable aHashTable, HashTableInnerNode aParentNode, BlockPointer aBlockPointer)
+	public HashTreeTableInnerNode(HashTreeTable aHashTable, HashTreeTableInnerNode aParentNode, BlockPointer aBlockPointer)
 	{
 		assert aHashTable.mPerformanceTool.tick("readNode");
 		assert aBlockPointer.getBlockType() == BlockType.INDEX;
@@ -131,7 +131,7 @@ class HashTableInnerNode implements HashTableNode
 		{
 			case INDEX:
 			case LEAF:
-				HashTableNode node = mNodesArray.getNode(index);
+				HashTreeTableNode node = mNodesArray.getNode(index);
 				return node.get(aEntry, aHash, aLevel + 1);
 			case HOLE:
 				return false;
@@ -158,16 +158,16 @@ class HashTableInnerNode implements HashTableNode
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				HashTableInnerNode node = mNodesArray.getNode(index);
+				HashTreeTableInnerNode node = mNodesArray.getNode(index);
 				node.put(aEntry, oOldEntry, aHash, aLevel + 1);
 				mNodesArray.markDirty(index, node, (int)blockPointer.getUserData());
 				break;
 			case LEAF:
-				HashTableLeafNode leaf = mNodesArray.getNode(index);
+				HashTreeTableLeafNode leaf = mNodesArray.getNode(index);
 				leaf.putValueLeaf(index, aEntry, oOldEntry, aHash, aLevel);
 				break;
 			case HOLE:
-				HashTableLeafNode hole = mNodesArray.getNode(index);
+				HashTreeTableLeafNode hole = mNodesArray.getNode(index);
 				hole.upgradeHole(index, aEntry, aLevel, (int)blockPointer.getUserData());
 				break;
 			case FREE:
@@ -194,7 +194,7 @@ class HashTableInnerNode implements HashTableNode
 		switch (blockPointer.getBlockType())
 		{
 			case INDEX:
-				HashTableInnerNode node = mNodesArray.getNode(index);
+				HashTreeTableInnerNode node = mNodesArray.getNode(index);
 				if (node.remove(aEntry, oOldEntry, aHash, aLevel + 1))
 				{
 					mNodesArray.markDirty(index, node, (int)blockPointer.getUserData());
@@ -202,7 +202,7 @@ class HashTableInnerNode implements HashTableNode
 				}
 				return false;
 			case LEAF:
-				HashTableLeafNode leaf = mNodesArray.getNode(index);
+				HashTreeTableLeafNode leaf = mNodesArray.getNode(index);
 				boolean found = leaf.remove(aEntry, oOldEntry, aHash, aLevel);
 
 				if (found)
@@ -222,11 +222,11 @@ class HashTableInnerNode implements HashTableNode
 
 
 	@Override
-	public void visit(HashTableVisitor aVisitor)
+	public void visit(HashTreeTableVisitor aVisitor)
 	{
 		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{
-			HashTableNode node = mNodesArray.getNode(i);
+			HashTreeTableNode node = mNodesArray.getNode(i);
 
 			if (node != null)
 			{
@@ -246,7 +246,7 @@ class HashTableInnerNode implements HashTableNode
 
 		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{
-			HashTableNode node = mNodesArray.getNode(i);
+			HashTreeTableNode node = mNodesArray.getNode(i);
 
 			if (node != null)
 			{
@@ -258,12 +258,12 @@ class HashTableInnerNode implements HashTableNode
 	}
 
 
-	public Iterator<HashTableNode> iterator()
+	public Iterator<HashTreeTableNode> iterator()
 	{
-		return new Iterator<HashTableNode>()
+		return new Iterator<HashTreeTableNode>()
 		{
 			int index;
-			HashTableNode next;
+			HashTreeTableNode next;
 
 
 			@Override
@@ -287,13 +287,13 @@ class HashTableInnerNode implements HashTableNode
 
 
 			@Override
-			public HashTableNode next()
+			public HashTreeTableNode next()
 			{
 				if (next == null)
 				{
 					throw new IllegalStateException();
 				}
-				HashTableNode tmp = next;
+				HashTreeTableNode tmp = next;
 				next = null;
 				return tmp;
 			}
@@ -317,7 +317,7 @@ class HashTableInnerNode implements HashTableNode
 	{
 		for (int i = 0; i < mHashTable.mPointersPerNode; i++)
 		{
-			HashTableNode node = mNodesArray.getNode(i);
+			HashTreeTableNode node = mNodesArray.getNode(i);
 
 			if (node != null)
 			{
@@ -331,13 +331,13 @@ class HashTableInnerNode implements HashTableNode
 	}
 
 
-	public void setNode(int aIndex, HashTableNode aNode, int aRange)
+	public void setNode(int aIndex, HashTreeTableNode aNode, int aRange)
 	{
 		mNodesArray.set(aIndex, aNode, aRange);
 	}
 
 
-	public void freeNode(HashTableNode aNode)
+	public void freeNode(HashTreeTableNode aNode)
 	{
 		BlockPointer bp = aNode.getBlockPointer();
 

@@ -4,7 +4,7 @@ import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Result;
 
 
-interface HashTableNode
+interface HashTreeTableNode
 {
 	BlockPointer getBlockPointer();
 
@@ -33,7 +33,7 @@ interface HashTableNode
 	void scan(ScanResult aScanResult);
 
 
-	void visit(HashTableVisitor aVisitor);
+	void visit(HashTreeTableVisitor aVisitor);
 
 
 	String integrityCheck();

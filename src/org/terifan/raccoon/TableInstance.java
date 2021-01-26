@@ -30,7 +30,7 @@ public final class TableInstance<T>
 	private final Database mDatabase;
 	private final Table mTable;
 	private final HashSet<CommitLock> mCommitLocks;
-	private final HashTable mHashTable;
+	private final HashTreeTable mHashTable;
 	private final Cost mCost;
 
 
@@ -45,7 +45,7 @@ public final class TableInstance<T>
 		CompressionParam compression = mDatabase.getCompressionParameter();
 		TableParam parameter = mDatabase.getTableParameter();
 
-		mHashTable = new HashTable();
+		mHashTable = new HashTreeTable();
 		if (aTableHeader == null)
 		{
 			mHashTable.create(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());

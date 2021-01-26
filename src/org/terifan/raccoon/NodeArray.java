@@ -6,8 +6,8 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 
 class NodeArray
 {
-	private final HashTable mHashTable;
-	private final HashTableInnerNode mNode;
+	private final HashTreeTable mHashTable;
+	private final HashTreeTableInnerNode mNode;
 
 	private int mPointerCount;
 	private final byte[] mBuffer;
@@ -15,7 +15,7 @@ class NodeArray
 //	private HashTableNode[] mNodes;
 
 
-	public NodeArray(HashTable aHashTable, HashTableInnerNode aNode, byte[] aBuffer)
+	public NodeArray(HashTreeTable aHashTable, HashTreeTableInnerNode aNode, byte[] aBuffer)
 	{
 		assert (aBuffer.length % BlockPointer.SIZE) == 0;
 
@@ -29,10 +29,10 @@ class NodeArray
 	}
 
 
-	public <T extends HashTableNode> T getNode(int aIndex)
+	public <T extends HashTreeTableNode> T getNode(int aIndex)
 	{
 //		HashTableNode node = mNodes[aIndex];
-		HashTableNode node = null;
+		HashTreeTableNode node = null;
 
 		if (node == null)
 		{
@@ -43,13 +43,13 @@ class NodeArray
 				switch (blockPointer.getBlockType())
 				{
 					case INDEX:
-						node = new HashTableInnerNode(mHashTable, mNode, blockPointer);
+						node = new HashTreeTableInnerNode(mHashTable, mNode, blockPointer);
 						break;
 					case LEAF:
-						node = new HashTableLeafNode(mHashTable, mNode, blockPointer);
+						node = new HashTreeTableLeafNode(mHashTable, mNode, blockPointer);
 						break;
 					case HOLE:
-						node = new HashTableLeafNode(mHashTable, mNode);
+						node = new HashTreeTableLeafNode(mHashTable, mNode);
 						break;
 					case FREE:
 					default:
@@ -111,13 +111,13 @@ class NodeArray
 	}
 
 
-	public void set(int aIndex, HashTableNode aNode, int aRange)
+	public void set(int aIndex, HashTreeTableNode aNode, int aRange)
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount : "0 <= " + aIndex + " < " + mPointerCount;
 
 		BlockPointer blockPointer;
 
-		if (aNode instanceof HashTableLeafNode && ((HashTableLeafNode)aNode).size() == 0)
+		if (aNode instanceof HashTreeTableLeafNode && ((HashTreeTableLeafNode)aNode).size() == 0)
 		{
 			blockPointer = new BlockPointer().setBlockType(BlockType.HOLE).setUserData(aRange);
 		}
@@ -132,7 +132,7 @@ class NodeArray
 	}
 
 
-	public void markDirty(int aIndex, HashTableNode aNode, int aRange)
+	public void markDirty(int aIndex, HashTreeTableNode aNode, int aRange)
 	{
 		mHashTable.freeBlock(getPointer(aIndex));
 
@@ -140,11 +140,11 @@ class NodeArray
 	}
 
 
-	public void writeBlock(int aIndex, HashTableNode aNode, int aRange)
+	public void writeBlock(int aIndex, HashTreeTableNode aNode, int aRange)
 	{
 		BlockPointer blockPointer;
 
-		if (aNode instanceof HashTableLeafNode && ((HashTableLeafNode)aNode).size() == 0)
+		if (aNode instanceof HashTreeTableLeafNode && ((HashTreeTableLeafNode)aNode).size() == 0)
 		{
 			blockPointer = new BlockPointer().setBlockType(BlockType.HOLE).setUserData(aRange);
 		}
@@ -167,7 +167,7 @@ class NodeArray
 	}
 
 
-	void freeNode(HashTableNode aNode)
+	void freeNode(HashTreeTableNode aNode)
 	{
 		BlockPointer bp = aNode.getBlockPointer();
 

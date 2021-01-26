@@ -5,29 +5,29 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 
 
-final class HashTableNodeIterator implements Iterator<ArrayMapEntry>
+final class HashTreeTableNodeIterator implements Iterator<ArrayMapEntry>
 {
 	private final long mModCount;
-	private ArrayDeque<Iterator<HashTableNode>> mQueue;
+	private ArrayDeque<Iterator<HashTreeTableNode>> mQueue;
 	private Iterator<ArrayMapEntry> mValueIt;
-	private Iterator<HashTableNode> mNodeIt;
+	private Iterator<HashTreeTableNode> mNodeIt;
 	private ArrayMapEntry mNextEntry;
-	private HashTable mHashTable;
+	private HashTreeTable mHashTable;
 
 
-	HashTableNodeIterator(HashTable aHashTable, HashTableNode aNode)
+	HashTreeTableNodeIterator(HashTreeTable aHashTable, HashTreeTableNode aNode)
 	{
 		mHashTable = aHashTable;
 		mModCount = mHashTable.mModCount;
 
-		if (aNode instanceof HashTableLeafNode)
+		if (aNode instanceof HashTreeTableLeafNode)
 		{
-			mValueIt = ((HashTableLeafNode)aNode).iterator();
+			mValueIt = ((HashTreeTableLeafNode)aNode).iterator();
 		}
 		else
 		{
 			mQueue = new ArrayDeque<>();
-			mNodeIt = ((HashTableInnerNode)aNode).iterator();
+			mNodeIt = ((HashTreeTableInnerNode)aNode).iterator();
 		}
 	}
 
@@ -61,16 +61,16 @@ final class HashTableNodeIterator implements Iterator<ArrayMapEntry>
 
 			if (mNodeIt.hasNext())
 			{
-				HashTableNode node = mNodeIt.next();
+				HashTreeTableNode node = mNodeIt.next();
 
-				if (node instanceof HashTableLeafNode)
+				if (node instanceof HashTreeTableLeafNode)
 				{
-					mValueIt = ((HashTableLeafNode)node).iterator();
+					mValueIt = ((HashTreeTableLeafNode)node).iterator();
 				}
-				else if (node instanceof HashTableInnerNode)
+				else if (node instanceof HashTreeTableInnerNode)
 				{
 					mQueue.addFirst(mNodeIt);
-					mNodeIt = ((HashTableInnerNode)node).iterator();
+					mNodeIt = ((HashTreeTableInnerNode)node).iterator();
 				}
 
 				return hasNext();

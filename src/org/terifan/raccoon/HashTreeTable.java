@@ -13,7 +13,7 @@ import org.terifan.raccoon.util.Result;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-final class HashTable implements AutoCloseable, ITableImplementation
+final class HashTreeTable implements AutoCloseable, ITableImplementation
 {
 	/*private*/ Cost mCost;
 	/*private*/ String mTableName;
@@ -30,11 +30,11 @@ final class HashTable implements AutoCloseable, ITableImplementation
 	/*private*/ PerformanceTool mPerformanceTool;
 	/*private*/ int mModCount;
 	private int mBitsPerNode;
-	private HashTableNode mRootNode;
+	private HashTreeTableNode mRootNode;
 	private BlockPointer mRootNodeBlockPointer;
 
 
-	public HashTable()
+	public HashTreeTable()
 	{
 	}
 
@@ -58,7 +58,7 @@ final class HashTable implements AutoCloseable, ITableImplementation
 		mPointersPerNode = mNodeSize / BlockPointer.SIZE;
 		mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
 
-		mRootNode = new HashTableLeafNode(this, new FakeInnerNode());
+		mRootNode = new HashTreeTableLeafNode(this, new FakeInnerNode());
 
 		mWasEmptyInstance = true;
 		mChanged = true;
@@ -84,11 +84,11 @@ final class HashTable implements AutoCloseable, ITableImplementation
 
 		if (mRootNodeBlockPointer.getBlockType() == BlockType.LEAF)
 		{
-			mRootNode = new HashTableLeafNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
+			mRootNode = new HashTreeTableLeafNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
 		}
 		else
 		{
-			mRootNode = new HashTableInnerNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
+			mRootNode = new HashTreeTableInnerNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
 		}
 
 		Log.dec();
@@ -158,7 +158,7 @@ final class HashTable implements AutoCloseable, ITableImplementation
 
 		long hash = computeHash(aEntry.getKey());
 
-		if (mRootNode instanceof HashTableLeafNode)
+		if (mRootNode instanceof HashTreeTableLeafNode)
 		{
 			Log.d("put root value");
 
@@ -172,7 +172,7 @@ final class HashTable implements AutoCloseable, ITableImplementation
 
 			Log.d("upgrade root from leaf to node");
 
-			mRootNode = ((HashTableLeafNode)mRootNode).splitRootLeaf();
+			mRootNode = ((HashTreeTableLeafNode)mRootNode).splitRootLeaf();
 		}
 
 		mRootNode.put(aEntry, oldEntry, hash, 0);
@@ -204,7 +204,7 @@ final class HashTable implements AutoCloseable, ITableImplementation
 	{
 		checkOpen();
 
-		return new HashTableNodeIterator(this, mRootNode);
+		return new HashTreeTableNodeIterator(this, mRootNode);
 	}
 
 
@@ -302,7 +302,7 @@ final class HashTable implements AutoCloseable, ITableImplementation
 			Log.d("rollback empty");
 
 			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
-			mRootNode = new HashTableLeafNode(this, new FakeInnerNode());
+			mRootNode = new HashTreeTableLeafNode(this, new FakeInnerNode());
 		}
 		else
 		{
@@ -310,11 +310,11 @@ final class HashTable implements AutoCloseable, ITableImplementation
 
 			if (mRootNodeBlockPointer.getBlockType() == BlockType.LEAF)
 			{
-				mRootNode = new HashTableLeafNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
+				mRootNode = new HashTreeTableLeafNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
 			}
 			else
 			{
-				mRootNode = new HashTableInnerNode(this, null, mRootNodeBlockPointer);
+				mRootNode = new HashTreeTableInnerNode(this, null, mRootNodeBlockPointer);
 			}
 		}
 
@@ -332,7 +332,7 @@ final class HashTable implements AutoCloseable, ITableImplementation
 		mRootNode.clear();
 		mChanged = true;
 
-		mRootNode = new HashTableLeafNode(this, new FakeInnerNode());
+		mRootNode = new HashTreeTableLeafNode(this, new FakeInnerNode());
 		mRootNodeBlockPointer = null;
 
 		assert mModCount == modCount : "concurrent modification";
@@ -363,9 +363,9 @@ final class HashTable implements AutoCloseable, ITableImplementation
 		{
 			mCost.mTreeTraversal++;
 
-			if (node instanceof HashTableLeafNode)
+			if (node instanceof HashTreeTableLeafNode)
 			{
-				HashTableLeafNode leaf = (HashTableLeafNode)node;
+				HashTreeTableLeafNode leaf = (HashTreeTableLeafNode)node;
 				result.set(result.get() + leaf.size());
 			}
 		});
@@ -383,13 +383,14 @@ final class HashTable implements AutoCloseable, ITableImplementation
 	}
 
 
+	@Override
 	public int getEntryMaximumLength()
 	{
-		return mLeafSize - HashTableLeafNode.OVERHEAD;
+		return mLeafSize - HashTreeTableLeafNode.OVERHEAD;
 	}
 
 
-	void visit(HashTableVisitor aVisitor)
+	void visit(HashTreeTableVisitor aVisitor)
 	{
 		mRootNode.visit(aVisitor);
 	}
@@ -445,7 +446,7 @@ final class HashTable implements AutoCloseable, ITableImplementation
 	}
 
 
-	BlockPointer writeBlock(HashTableNode aNode, int aRange)
+	BlockPointer writeBlock(HashTreeTableNode aNode, int aRange)
 	{
 		assert mPerformanceTool.tick("writeBlock");
 
@@ -458,11 +459,11 @@ final class HashTable implements AutoCloseable, ITableImplementation
 	}
 
 
-	class FakeInnerNode extends HashTableInnerNode
+	class FakeInnerNode extends HashTreeTableInnerNode
 	{
 		public FakeInnerNode()
 		{
-			super(HashTable.this, null);
+			super(HashTreeTable.this, null);
 		}
 
 
@@ -530,7 +531,7 @@ final class HashTable implements AutoCloseable, ITableImplementation
 
 
 		@Override
-		public void visit(HashTableVisitor aVisitor)
+		public void visit(HashTreeTableVisitor aVisitor)
 		{
 			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 		}
