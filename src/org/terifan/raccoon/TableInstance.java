@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -33,7 +34,7 @@ public final class TableInstance<T>
 	private final Cost mCost;
 
 
-	TableInstance(Database aDatabase, Table aTable, byte[] aPointer)
+	TableInstance(Database aDatabase, Table aTable, byte[] aTableHeader)
 	{
 		mCost = new Cost();
 		mCommitLocks = new HashSet<>();
@@ -44,7 +45,15 @@ public final class TableInstance<T>
 		CompressionParam compression = mDatabase.getCompressionParameter();
 		TableParam parameter = mDatabase.getTableParameter();
 
-		mHashTable = new HashTable(mDatabase.getBlockDevice(), aPointer, mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());
+		mHashTable = new HashTable();
+		if (aTableHeader == null)
+		{
+			mHashTable.create(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());
+		}
+		else
+		{
+			mHashTable.open(aTableHeader, mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());
+		}
 	}
 
 
@@ -317,12 +326,13 @@ public final class TableInstance<T>
 			}
 		}
 
-		if (!mHashTable.commit())
+		AtomicBoolean changed = new AtomicBoolean();
+		byte[] newPointer = mHashTable.commit(changed);
+
+		if (!changed.get())
 		{
 			return false;
 		}
-
-		byte[] newPointer = mHashTable.marshalHeader();
 
 		if (Arrays.equals(newPointer, mTable.getTableHeader()))
 		{

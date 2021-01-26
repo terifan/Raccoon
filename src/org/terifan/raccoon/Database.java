@@ -323,16 +323,16 @@ public final class Database implements AutoCloseable
 			throw new UnsupportedVersionException("Unsupported database version: " + applicationHeader);
 		}
 
-		byte[] applicationPointer = aBlockDevice.getApplicationPointer();
+		byte[] tableHeader = aBlockDevice.getApplicationPointer();
 
-		if (applicationPointer.length < BlockPointer.SIZE)
+		if (tableHeader.length < BlockPointer.SIZE)
 		{
-			throw new UnsupportedVersionException("The application pointer is too short: " + applicationPointer.length);
+			throw new UnsupportedVersionException("The application pointer is too short: " + tableHeader.length);
 		}
 
 		mBlockDevice = aBlockDevice;
 		mSystemTableMetadata = new Table(this, Table.class, null);
-		mSystemTable = new TableInstance(this, mSystemTableMetadata, applicationPointer);
+		mSystemTable = new TableInstance(this, mSystemTableMetadata, tableHeader);
 		mReadOnly = aReadOnly;
 
 		Log.dec();

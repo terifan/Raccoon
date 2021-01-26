@@ -4,6 +4,7 @@ import org.terifan.raccoon.storage.BlockPointer;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -12,11 +13,11 @@ import org.terifan.raccoon.util.Result;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
+final class HashTable implements AutoCloseable, ITableImplementation
 {
-	/*private*/ final Cost mCost;
-	/*private*/ final String mTableName;
-	final TransactionGroup mTransactionId;
+	/*private*/ Cost mCost;
+	/*private*/ String mTableName;
+	TransactionGroup mTransactionId;
 	/*private*/ BlockAccessor mBlockAccessor;
 	int mNodeSize;
 	int mLeafSize;
@@ -26,62 +27,75 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	private boolean mClosed;
 	private boolean mChanged;
 	private boolean mCommitChangesToBlockDevice;
-	/*private*/ final PerformanceTool mPerformanceTool;
+	/*private*/ PerformanceTool mPerformanceTool;
 	/*private*/ int mModCount;
 	private int mBitsPerNode;
 	private HashTableNode mRootNode;
 	private BlockPointer mRootNodeBlockPointer;
 
 
-	public HashTable(IManagedBlockDevice aBlockDevice, byte[] aTableHeader, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool)
+	public HashTable()
 	{
-		mPerformanceTool = aPerformanceTool;
+	}
+
+
+	@Override
+	public void create(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool)
+	{
 		mTableName = aTableName;
 		mTransactionId = aTransactionId;
-		mCost = aCost;
-		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
 		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam);
+		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
+		mCost = aCost;
+		mPerformanceTool = aPerformanceTool;
 
-		boolean create = aTableHeader == null;
+		Log.i("create table %s", mTableName);
+		Log.inc();
 
-		if (create)
+		mNodeSize = aTableParam.getPagesPerNode() * aBlockDevice.getBlockSize();
+		mLeafSize = aTableParam.getPagesPerLeaf() * aBlockDevice.getBlockSize();
+		mHashSeed = new SecureRandom().nextLong();
+		mPointersPerNode = mNodeSize / BlockPointer.SIZE;
+		mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
+
+		mRootNode = new HashTableLeafNode(this, new FakeInnerNode());
+
+		mWasEmptyInstance = true;
+		mChanged = true;
+
+		Log.dec();
+	}
+
+
+	@Override
+	public void open(byte[] aTableHeader, IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool)
+	{
+		mTableName = aTableName;
+		mTransactionId = aTransactionId;
+		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam);
+		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
+		mCost = aCost;
+		mPerformanceTool = aPerformanceTool;
+
+		Log.i("open table %s", mTableName);
+		Log.inc();
+
+		unmarshalHeader(aTableHeader);
+
+		if (mRootNodeBlockPointer.getBlockType() == BlockType.LEAF)
 		{
-			Log.i("create table %s", mTableName);
-			Log.inc();
-
-			mNodeSize = aTableParam.getPagesPerNode() * aBlockDevice.getBlockSize();
-			mLeafSize = aTableParam.getPagesPerLeaf() * aBlockDevice.getBlockSize();
-			mHashSeed = new SecureRandom().nextLong();
-			mPointersPerNode = mNodeSize / BlockPointer.SIZE;
-			mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
-
-			mRootNode = new HashTableLeafNode(this, new FakeInnerNode());
-
-			mWasEmptyInstance = true;
-			mChanged = true;
+			mRootNode = new HashTableLeafNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
 		}
 		else
 		{
-			Log.i("open table %s", mTableName);
-			Log.inc();
-
-			unmarshalHeader(aTableHeader);
-
-			if (mRootNodeBlockPointer.getBlockType() == BlockType.LEAF)
-			{
-				mRootNode = new HashTableLeafNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
-			}
-			else
-			{
-				mRootNode = new HashTableInnerNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
-			}
+			mRootNode = new HashTableInnerNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
 		}
 
 		Log.dec();
 	}
 
 
-	public byte[] marshalHeader()
+	private byte[] marshalHeader()
 	{
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(BlockPointer.SIZE + 4 + 4 + 4 + 3);
 		mRootNodeBlockPointer.marshal(buffer);
@@ -115,12 +129,14 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
+	@Override
 	public boolean get(ArrayMapEntry aEntry)
 	{
 		return mRootNode.get(aEntry, computeHash(aEntry.getKey()), 0);
 	}
 
 
+	@Override
 	public ArrayMapEntry put(ArrayMapEntry aEntry)
 	{
 		checkOpen();
@@ -168,6 +184,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
+	@Override
 	public ArrayMapEntry remove(ArrayMapEntry aEntry)
 	{
 		checkOpen();
@@ -191,6 +208,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
+	@Override
 	public ArrayList<ArrayMapEntry> list()
 	{
 		checkOpen();
@@ -206,13 +224,15 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
+	@Override
 	public boolean isChanged()
 	{
 		return mChanged;
 	}
 
 
-	public boolean commit()
+	@Override
+	public byte[] commit(AtomicBoolean oChanged)
 	{
 		assert mPerformanceTool.tick("commit");
 
@@ -240,7 +260,11 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				Log.dec();
 				assert mModCount == modCount : "concurrent modification";
 
-				return true;
+				if (oChanged != null)
+				{
+					oChanged.set(true);
+				}
+				return marshalHeader();
 			}
 
 			if (mWasEmptyInstance && mCommitChangesToBlockDevice)
@@ -248,7 +272,11 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 				mBlockAccessor.getBlockDevice().commit();
 			}
 
-			return false;
+			if (oChanged != null)
+			{
+				oChanged.set(false);
+			}
+			return marshalHeader();
 		}
 		finally
 		{
@@ -257,6 +285,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
+	@Override
 	public void rollback()
 	{
 		checkOpen();
@@ -293,6 +322,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
+	@Override
 	public void clear()
 	{
 		checkOpen();
@@ -322,6 +352,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
+	@Override
 	public int size()
 	{
 		checkOpen();
@@ -343,6 +374,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
+	@Override
 	public String integrityCheck()
 	{
 		Log.i("integrity check");
@@ -372,6 +404,7 @@ final class HashTable implements AutoCloseable, Iterable<ArrayMapEntry>
 	}
 
 
+	@Override
 	public void scan(ScanResult aScanResult)
 	{
 		aScanResult.tables++;

@@ -34,8 +34,7 @@ public class HashTableNGTest
 				map.put(key, value);
 			}
 
-			hashTable.commit();
-			root = hashTable.marshalHeader();
+			root = hashTable.commit(null);
 		}
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
@@ -68,7 +67,7 @@ public class HashTableNGTest
 			{
 				hashTable.put(new ArrayMapEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), (byte)0));
 			}
-			hashTable.commit();
+			hashTable.commit(null);
 
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -122,11 +121,9 @@ public class HashTableNGTest
 
 			hashTable.put(new ArrayMapEntry(k1, v1, (byte)0));
 
-			hashTable.commit();
+			root = hashTable.commit(null);
 
 			assertEquals(hashTable.size(), 2);
-
-			root = hashTable.marshalHeader();
 		}
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
@@ -137,7 +134,7 @@ public class HashTableNGTest
 
 			assertEquals(hashTable.size(), 3);
 
-			hashTable.commit();
+			hashTable.commit(null);
 
 			hashTable.put(new ArrayMapEntry(k1, v1, (byte)0)); // replace value
 
@@ -153,7 +150,7 @@ public class HashTableNGTest
 			{
 				hashTable.put(new ArrayMapEntry(tb(), tb(), (byte)0));
 			}
-			hashTable.commit();
+			hashTable.commit(null);
 
 			assertEquals(hashTable.size(), 3 + aSize);
 		}
@@ -182,8 +179,7 @@ public class HashTableNGTest
 				hashTable.put(new ArrayMapEntry(key.getBytes(), value.getBytes(), (byte)0));
 			}
 
-			hashTable.commit();
-			root = hashTable.marshalHeader();
+			root = hashTable.commit(null);
 		}
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
@@ -221,8 +217,7 @@ public class HashTableNGTest
 				hashTable.put(new ArrayMapEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), (byte)0));
 			}
 
-			hashTable.commit();
-			root = hashTable.marshalHeader();
+			root = hashTable.commit(null);
 		}
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
@@ -260,14 +255,13 @@ public class HashTableNGTest
 				hashTable.put(new ArrayMapEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), (byte)0));
 			}
 
-			hashTable.commit();
-			root = hashTable.marshalHeader();
+			root = hashTable.commit(null);
 		}
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
 		{
 			hashTable.clear();
-			hashTable.commit();
+			hashTable.commit(null);
 
 			assertEquals(hashTable.size(), 0);
 		}
@@ -295,8 +289,7 @@ public class HashTableNGTest
 				hashTable.put(new ArrayMapEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), (byte)0));
 			}
 
-			hashTable.commit();
-			root = hashTable.marshalHeader();
+			root = hashTable.commit(null);
 		}
 
 		try (HashTable hashTable = newHashTable(root, tx, blockDevice))
@@ -307,7 +300,7 @@ public class HashTableNGTest
 				assertTrue(hashTable.remove(leafEntry) != null);
 				assertEquals(leafEntry.getValue(), entry.getValue().getBytes());
 			}
-			hashTable.commit();
+			hashTable.commit(null);
 
 			assertEquals(hashTable.size(), 0);
 		}
@@ -356,7 +349,16 @@ public class HashTableNGTest
 
 	private HashTable newHashTable(byte[] aRoot, TransactionGroup aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
 	{
-		return new HashTable(new ManagedBlockDevice(aBlockDevice), aRoot, aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", new Cost(), new PerformanceTool(null));
+		HashTable table = new HashTable();
+		if (aRoot == null)
+		{
+			table.create(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", new Cost(), new PerformanceTool(null));
+		}
+		else
+		{
+			table.open(aRoot, new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", new Cost(), new PerformanceTool(null));
+		}
+		return table;
 	}
 
 
