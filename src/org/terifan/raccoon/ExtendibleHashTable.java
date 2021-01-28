@@ -3,8 +3,10 @@ package org.terifan.raccoon;
 import org.terifan.raccoon.storage.BlockPointer;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.terifan.raccoon.HashTreeTable.FakeInnerNode;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -29,9 +31,12 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	private boolean mCommitChangesToBlockDevice;
 	private int mModCount;
 
+	private HashMap<Integer, ArrayMapEntry> mNodes;
+
 
 	public ExtendibleHashTable()
 	{
+		mNodes = new HashMap<>();
 	}
 
 
@@ -49,7 +54,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		Log.inc();
 
 		mHashSeed = new SecureRandom().nextLong();
-		mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
 
 		mDirectory = new byte[mBlockAccessor.getBlockDevice().getBlockSize()];
 
@@ -74,15 +78,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		Log.inc();
 
 		unmarshalHeader(aTableHeader);
-
-		if (mRootNodeBlockPointer.getBlockType() == BlockType.LEAF)
-		{
-			mRootNode = new HashTreeTableLeafNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
-		}
-		else
-		{
-			mRootNode = new HashTreeTableInnerNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
-		}
 
 		Log.dec();
 	}
