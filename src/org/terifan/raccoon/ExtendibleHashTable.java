@@ -49,9 +49,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		Log.inc();
 
 		mHashSeed = new SecureRandom().nextLong();
-		mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
-
-		mDirectory = new byte[mBlockAccessor.getBlockDevice().getBlockSize()];
+		mDirectory = new byte[BlockPointer.SIZE];
 
 		mWasEmptyInstance = true;
 		mChanged = true;
@@ -75,15 +73,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		unmarshalHeader(aTableHeader);
 
-		if (mRootNodeBlockPointer.getBlockType() == BlockType.LEAF)
-		{
-			mRootNode = new HashTreeTableLeafNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
-		}
-		else
-		{
-			mRootNode = new HashTreeTableInnerNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
-		}
-
 		Log.dec();
 	}
 
@@ -93,8 +82,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(BlockPointer.SIZE + 4 + 4 + 4 + 3);
 		mRootNodeBlockPointer.marshal(buffer);
 		buffer.writeInt64(mHashSeed);
-		buffer.writeVar32(mNodeSize);
-		buffer.writeVar32(mLeafSize);
+		buffer.writeInt8(mNodeSize);
 		mBlockAccessor.getCompressionParam().marshal(buffer);
 
 		return buffer.trim().array();
@@ -111,9 +99,9 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		mHashSeed = buffer.readInt64();
 		mNodeSize = buffer.readVar32();
 		mLeafSize = buffer.readVar32();
-		mPointersPerNode = mNodeSize / BlockPointer.SIZE;
+		mPointersPerPage = mNodeSize / BlockPointer.SIZE;
 
-		mBitsPerNode = (int)(Math.log(mPointersPerNode) / Math.log(2));
+		mBitsPerNode = (int)(Math.log(mPointersPerPage) / Math.log(2));
 
 		CompressionParam compressionParam = new CompressionParam();
 		compressionParam.unmarshal(buffer);
@@ -295,20 +283,13 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			Log.d("rollback empty");
 
 			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
-			mRootNode = new HashTreeTableLeafNode(this, new FakeInnerNode());
+			mDirectory = new byte[BlockPointer.SIZE];
 		}
 		else
 		{
 			Log.d("rollback %s", mRootNodeBlockPointer.getBlockType() == BlockType.LEAF ? "root map" : "root node");
 
-			if (mRootNodeBlockPointer.getBlockType() == BlockType.LEAF)
-			{
-				mRootNode = new HashTreeTableLeafNode(this, new FakeInnerNode(), mRootNodeBlockPointer);
-			}
-			else
-			{
-				mRootNode = new HashTreeTableInnerNode(this, null, mRootNodeBlockPointer);
-			}
+			mDirectory = new byte[BlockPointer.SIZE];
 		}
 
 		mChanged = false;
@@ -415,7 +396,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 	int computeIndex(long aHash, int aLevel)
 	{
-		return (int)(Long.rotateRight(aHash, aLevel * mBitsPerNode) & (mPointersPerNode - 1));
+		return (int)(Long.rotateRight(aHash, aLevel * mBitsPerNode) & (mPointersPerPage - 1));
 	}
 
 

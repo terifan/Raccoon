@@ -12,7 +12,7 @@ class HashTreeTableInnerNode implements HashTreeTableNode
 	private HashTreeTable mHashTable;
 	private BlockPointer mBlockPointer;
 	private HashTreeTableInnerNode mParentNode;
-	private NodeArray mNodesArray;
+	private HashTreeTableNodeArray mNodesArray;
 
 
 	public HashTreeTableInnerNode(HashTreeTable aHashTable, HashTreeTableInnerNode aParent)
@@ -20,7 +20,7 @@ class HashTreeTableInnerNode implements HashTreeTableNode
 		mHashTable = aHashTable;
 		mParentNode = aParent;
 
-		mNodesArray = new NodeArray(mHashTable, this, new byte[mHashTable.mNodeSize]);
+		mNodesArray = new HashTreeTableNodeArray(mHashTable, this, new byte[mHashTable.mNodeSize]);
 	}
 
 
@@ -33,7 +33,7 @@ class HashTreeTableInnerNode implements HashTreeTableNode
 		mParentNode = aParentNode;
 		mBlockPointer = aBlockPointer;
 
-		mNodesArray = new NodeArray(mHashTable, this, mHashTable.readBlock(mBlockPointer));
+		mNodesArray = new HashTreeTableNodeArray(mHashTable, this, mHashTable.readBlock(mBlockPointer));
 
 		mHashTable.mCost.mReadBlockNode++;
 	}

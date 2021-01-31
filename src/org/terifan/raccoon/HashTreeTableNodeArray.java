@@ -4,7 +4,7 @@ import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-class NodeArray
+class HashTreeTableNodeArray
 {
 	private final HashTreeTable mHashTable;
 	private final HashTreeTableInnerNode mNode;
@@ -15,7 +15,7 @@ class NodeArray
 //	private HashTableNode[] mNodes;
 
 
-	public NodeArray(HashTreeTable aHashTable, HashTreeTableInnerNode aNode, byte[] aBuffer)
+	public HashTreeTableNodeArray(HashTreeTable aHashTable, HashTreeTableInnerNode aNode, byte[] aBuffer)
 	{
 		assert (aBuffer.length % BlockPointer.SIZE) == 0;
 
