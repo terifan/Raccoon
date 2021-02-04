@@ -101,7 +101,7 @@ class HashTreeTableNodeArray
 	{
 		assert aIndex >= 0 && aIndex < mPointerCount : "0 >= " + aIndex + " < " + mPointerCount;
 
-		return BlockPointer.getBlockType(mBuffer, aIndex * BlockPointer.SIZE) == BlockType.FREE;
+		return BlockPointer.readBlockType(mBuffer, aIndex * BlockPointer.SIZE) == BlockType.FREE;
 	}
 
 

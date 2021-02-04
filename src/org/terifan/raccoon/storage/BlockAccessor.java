@@ -113,7 +113,7 @@ else
 	}
 
 
-	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType, int aRange)
+	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType, long aUserData)
 	{
 		BlockPointer blockPointer = null;
 
@@ -157,7 +157,7 @@ else
 			blockPointer.setLogicalSize(aLength);
 			blockPointer.setTransactionId(aTransactionId);
 			blockPointer.setBlockType(aType);
-			blockPointer.setUserData(aRange);
+			blockPointer.setUserData(aUserData);
 			blockPointer.setEncryptionAlgorithm((byte)0); // not used
 			blockPointer.setChecksumAlgorithm((byte)0); // not used
 			blockPointer.setChecksum(MurmurHash3.hash256(aBuffer, 0, physicalSize, aTransactionId));

@@ -3,7 +3,7 @@ package org.terifan.raccoon;
 import org.terifan.raccoon.storage.BlockPointer;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.terifan.raccoon.HashTreeTable.FakeInnerNode;
@@ -13,6 +13,7 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 import org.terifan.security.messagedigest.MurmurHash3;
+import org.terifan.util.Debug;
 
 
 final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
@@ -31,12 +32,12 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	private boolean mCommitChangesToBlockDevice;
 	private int mModCount;
 
-	private HashMap<Integer, ArrayMapEntry> mNodes;
+	private LeafNode[] mNodes;
+	private int mPrefixLength;
 
 
 	public ExtendibleHashTable()
 	{
-		mNodes = new HashMap<>();
 	}
 
 
@@ -53,9 +54,22 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		Log.i("create table %s", mTableName);
 		Log.inc();
 
-		mHashSeed = new SecureRandom().nextLong();
-		mDirectory = new byte[BlockPointer.SIZE];
+		int blockSize = mBlockAccessor.getBlockDevice().getBlockSize();
+		int pointersPerPage = blockSize / BlockPointer.SIZE;
+		mPrefixLength = (int)Math.ceil(Math.log(pointersPerPage) / Math.log(2));
 
+		mHashSeed = new SecureRandom().nextLong();
+		mDirectory = new byte[blockSize];
+
+		LeafNode node = new LeafNode();
+		node.mMap = new ArrayMap(blockSize * 10);
+		node.mSize = mPrefixLength;
+		node.mDirty = true;
+
+		mNodes = new LeafNode[1 << mPrefixLength];
+		Arrays.fill(mNodes, node);
+
+		System.out.println(mPrefixLength);
 		mWasEmptyInstance = true;
 		mChanged = true;
 
@@ -70,13 +84,23 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		mTransactionId = aTransactionId;
 		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam);
 		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
-		mCost = aCost;
 		mPerformanceTool = aPerformanceTool;
+		mCost = aCost;
 
 		Log.i("open table %s", mTableName);
 		Log.inc();
 
 		unmarshalHeader(aTableHeader);
+
+		mDirectory = readBlock(mRootNodeBlockPointer);
+
+		int pointersPerPage = mDirectory.length / BlockPointer.SIZE;
+		mPrefixLength = (int)Math.ceil(Math.log(pointersPerPage) / Math.log(2));
+
+		mNodes = new LeafNode[1 << mPrefixLength];
+
+		System.out.println(mPrefixLength);
+		Debug.hexDump(mDirectory);
 
 		Log.dec();
 	}
@@ -84,10 +108,9 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 	private byte[] marshalHeader()
 	{
-		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(BlockPointer.SIZE + 4 + 4 + 4 + 3);
+		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(BlockPointer.SIZE + 8 + 3);
 		mRootNodeBlockPointer.marshal(buffer);
 		buffer.writeInt64(mHashSeed);
-		buffer.writeInt8(mNodeSize);
 		mBlockAccessor.getCompressionParam().marshal(buffer);
 
 		return buffer.trim().array();
@@ -102,11 +125,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		mRootNodeBlockPointer.unmarshal(buffer);
 
 		mHashSeed = buffer.readInt64();
-		mNodeSize = buffer.readVar32();
-		mLeafSize = buffer.readVar32();
-		mPointersPerPage = mNodeSize / BlockPointer.SIZE;
-
-		mBitsPerNode = (int)(Math.log(mPointersPerPage) / Math.log(2));
 
 		CompressionParam compressionParam = new CompressionParam();
 		compressionParam.unmarshal(buffer);
@@ -118,7 +136,11 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	@Override
 	public boolean get(ArrayMapEntry aEntry)
 	{
-		return mRootNode.get(aEntry, computeHash(aEntry.getKey()), 0);
+		checkOpen();
+
+		int index = computeIndex(computeHash(aEntry.getKey()));
+
+		return loadNode(index).mMap.get(aEntry);
 	}
 
 
@@ -142,46 +164,61 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		long hash = computeHash(aEntry.getKey());
+		int index = computeIndex(computeHash(aEntry.getKey()));
 
-		if (mRootNode instanceof HashTreeTableLeafNode)
-		{
-			Log.d("put root value");
+		LeafNode node = loadNode(index);
 
-			if (mRootNode.put(aEntry, oldEntry, hash, 0))
-			{
-				Log.dec();
-				assert mModCount == modCount : "concurrent modification";
+		node.mMap.put(aEntry, oldEntry);
+		node.mDirty = true;
 
-				return oldEntry.get();
-			}
-
-			Log.d("upgrade root from leaf to node");
-
-			mRootNode = ((HashTreeTableLeafNode)mRootNode).splitRootLeaf();
-		}
-
-		mRootNode.put(aEntry, oldEntry, hash, 0);
+		System.out.println(node.mMap);
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
 		return oldEntry.get();
+
+//		long hash = computeHash(aEntry.getKey());
+//
+//		if (mRootNode instanceof HashTreeTableLeafNode)
+//		{
+//			Log.d("put root value");
+//
+//			if (mRootNode.put(aEntry, oldEntry, hash, 0))
+//			{
+//				Log.dec();
+//				assert mModCount == modCount : "concurrent modification";
+//
+//				return oldEntry.get();
+//			}
+//
+//			Log.d("upgrade root from leaf to node");
+//
+//			mRootNode = ((HashTreeTableLeafNode)mRootNode).splitRootLeaf();
+//		}
+//
+//		mRootNode.put(aEntry, oldEntry, hash, 0);
+//
+//		Log.dec();
+//		assert mModCount == modCount : "concurrent modification";
+//
+//		return oldEntry.get();
 	}
 
 
 	@Override
 	public ArrayMapEntry remove(ArrayMapEntry aEntry)
 	{
-		checkOpen();
-
-		Result<ArrayMapEntry> oldEntry = new Result<>();
-
-		boolean modified = mRootNode.remove(aEntry, oldEntry, computeHash(aEntry.getKey()), 0);
-
-		mChanged |= modified;
-
-		return oldEntry.get();
+		return null;
+//		checkOpen();
+//
+//		Result<ArrayMapEntry> oldEntry = new Result<>();
+//
+//		boolean modified = mRootNode.remove(aEntry, oldEntry, computeHash(aEntry.getKey()), 0);
+//
+//		mChanged |= modified;
+//
+//		return oldEntry.get();
 	}
 
 
@@ -190,7 +227,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	{
 		checkOpen();
 
-		return new HashTreeTableNodeIterator(this, mRootNode);
+		return new ExtendibleHashTableMapIterator();
 	}
 
 
@@ -232,7 +269,14 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 				Log.i("commit hash table");
 				Log.inc();
 
-				mRootNodeBlockPointer = mRootNode.flush();
+				flush();
+
+				if (mRootNodeBlockPointer != null)
+				{
+					freeBlock(mRootNodeBlockPointer);
+				}
+
+				mRootNodeBlockPointer = writeBlock(mDirectory, BlockType.INDEX, 0L);
 
 				if (mCommitChangesToBlockDevice)
 				{
@@ -271,6 +315,26 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	}
 
 
+	private void flush()
+	{
+		for (int i = 0; i < mNodes.length; i++)
+		{
+			LeafNode node = mNodes[i];
+
+			if (node != null && node.mDirty)
+			{
+				if (node.mBlockPointer != null)
+				{
+					freeBlock(node.mBlockPointer);
+				}
+				node.mBlockPointer = writeBlock(node.mMap.array(), BlockType.LEAF, node.mSize);
+				node.mBlockPointer.marshal(ByteArrayBuffer.wrap(mDirectory).position(BlockPointer.SIZE * i));
+				node.mDirty = false;
+			}
+		}
+	}
+
+
 	@Override
 	public void rollback()
 	{
@@ -304,17 +368,17 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	@Override
 	public void removeAll()
 	{
-		checkOpen();
-
-		int modCount = ++mModCount;
-
-		mRootNode.clear();
-		mChanged = true;
-
-		mRootNode = new HashTreeTableLeafNode(this, new FakeInnerNode());
-		mRootNodeBlockPointer = null;
-
-		assert mModCount == modCount : "concurrent modification";
+//		checkOpen();
+//
+//		int modCount = ++mModCount;
+//
+//		mRootNode.clear();
+//		mChanged = true;
+//
+//		mRootNode = new HashTreeTableLeafNode(this, new FakeInnerNode());
+//		mRootNodeBlockPointer = null;
+//
+//		assert mModCount == modCount : "concurrent modification";
 	}
 
 
@@ -327,7 +391,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		mClosed = true;
 
 		mBlockAccessor = null;
-		mRootNode = null;
+		mDirectory = null;
+		mNodes = null;
 	}
 
 
@@ -356,22 +421,24 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	@Override
 	public String integrityCheck()
 	{
-		Log.i("integrity check");
-
-		return mRootNode.integrityCheck();
+		return null;
+//		Log.i("integrity check");
+//
+//		return mRootNode.integrityCheck();
 	}
 
 
 	@Override
 	public int getEntryMaximumLength()
 	{
-		return mLeafSize - HashTreeTableLeafNode.OVERHEAD;
+		return 1024;
+//		return mLeafSize - HashTreeTableLeafNode.OVERHEAD;
 	}
 
 
 	void visit(HashTreeTableVisitor aVisitor)
 	{
-		mRootNode.visit(aVisitor);
+//		mRootNode.visit(aVisitor);
 	}
 
 
@@ -399,41 +466,240 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	}
 
 
-	int computeIndex(long aHash, int aLevel)
+	int computeIndex(long aHash)
 	{
-		return (int)(Long.rotateRight(aHash, aLevel * mBitsPerNode) & (mPointersPerPage - 1));
+		return (int)(0x7fffffff & (aHash >>> (64 - mPrefixLength)));
 	}
 
 
-//	void freeBlock(BlockPointer aBlockPointer)
-//	{
-//		mCost.mFreeBlock++;
-//		mCost.mFreeBlockBytes += aBlockPointer.getAllocatedBlocks();
-//
-//		mBlockAccessor.freeBlock(aBlockPointer);
-//	}
-//
-//
-//	byte[] readBlock(BlockPointer aBlockPointer)
-//	{
-//		assert mPerformanceTool.tick("readBlock");
-//
-//		mCost.mReadBlock++;
-//		mCost.mReadBlockBytes += aBlockPointer.getAllocatedBlocks();
-//
-//		return mBlockAccessor.readBlock(aBlockPointer);
-//	}
-//
-//
-//	BlockPointer writeBlock(HashTreeTableNode aNode, int aRange)
-//	{
-//		assert mPerformanceTool.tick("writeBlock");
-//
-//		BlockPointer blockPointer = mBlockAccessor.writeBlock(aNode.array(), 0, aNode.array().length, mTransactionId.get(), aNode.getType(), aRange);
-//
-//		mCost.mWriteBlock++;
-//		mCost.mWriteBlockBytes += blockPointer.getAllocatedBlocks();
-//
-//		return blockPointer;
-//	}
+	/*
+	 *                 split           split + split   grow + split
+	 *
+	 * 000 +----- 8    000 +----- 4    000 +----- 1    0000 +----- 2
+	 * 001 |           001 |           001 +----- 1    0001 |
+	 * 010 |           010 |           010 +----- 2    0010 +----- 1
+	 * 011 |           011 |           011 |           0011 +----- 1
+	 * 100 |           100 +----- 4    100 +----- 4    0100 +----- 4
+	 * 101 |           101 |           101 |           0101 |
+	 * 110 |           110 |           110 |           0110 |
+	 * 111 |           111 |           111 |           0111 |
+	 * 	           	           	           	           1000 +----- 8
+	 * 	           	           	           	           1001 |
+	 * 	           	           	           	           1010 |
+	 * 	           	           	           	           1011 |
+	 * 	           	           	           	           1100 |
+	 * 	           	           	           	           1101 |
+	 * 	           	           	           	           1110 |
+	 * 	           	           	           	           1111 |
+	 */
+	private void growDirectory()
+	{
+		LeafNode[] newNodes = new LeafNode[2 * mNodes.length];
+
+		for (int dst = 0, src = 0; dst < newNodes.length; )
+		{
+			newNodes[dst++] = mNodes[src++];
+		}
+		for (int i = 0; i < newNodes.length; )
+		{
+			newNodes[i].mSize *= 2;
+			i += newNodes[i].mSize;
+		}
+
+		byte[] newDirectory = new byte[2 * mDirectory.length];
+
+		for (int src = 0, dst = 0; dst < newDirectory.length; src += BlockPointer.SIZE, dst += BlockPointer.SIZE * 2)
+		{
+			System.arraycopy(mDirectory, src, newDirectory, dst, BlockPointer.SIZE);
+		}
+
+		mDirectory = newDirectory;
+		mNodes = newNodes;
+	}
+
+
+	private void split(LeafNode aNode)
+	{
+		LeafNode lowNode = new LeafNode();
+		lowNode.mDirty = true;
+		lowNode.mSize = aNode.mSize - 1;
+		lowNode.mMap = new ArrayMap(aNode.mMap.getCapacity());
+
+		LeafNode highNode = new LeafNode();
+		highNode.mDirty = true;
+		highNode.mSize = aNode.mSize - 1;
+		highNode.mMap = new ArrayMap(aNode.mMap.getCapacity());
+
+		for (ArrayMapEntry entry : aNode.mMap)
+		{
+			if ((computeIndex(computeHash(entry.getKey())) & 1) == 0)
+			{
+				lowNode.mMap.put(entry, null);
+			}
+			else
+			{
+				highNode.mMap.put(entry, null);
+			}
+		}
+	}
+
+
+	private LeafNode loadNode(int aIndex)
+	{
+		LeafNode node = mNodes[aIndex];
+
+		if (node == null)
+		{
+			BlockPointer bp = new BlockPointer();
+			int offset = 0;
+			int size = 0;
+			for (int i = 0; offset < mDirectory.length;)
+			{
+				size = 1 << (int)BlockPointer.readUserData(mDirectory, offset);
+				if (aIndex >= i && aIndex < aIndex + size)
+				{
+					bp.unmarshal(ByteArrayBuffer.wrap(mDirectory).position(offset));
+					break;
+				}
+				i += size;
+				offset += BlockPointer.SIZE * size;
+			}
+			node = new LeafNode();
+			node.mBlockPointer = bp;
+			node.mMap = new ArrayMap(readBlock(bp));
+			node.mSize = size;
+			Arrays.fill(mNodes, offset, offset + size, node);
+		}
+
+		return node;
+	}
+
+
+	private class LeafNode
+	{
+		BlockPointer mBlockPointer;
+		ArrayMap mMap;
+		int mSize;
+		boolean mDirty;
+	}
+
+
+	void freeBlock(BlockPointer aBlockPointer)
+	{
+		mCost.mFreeBlock++;
+		mCost.mFreeBlockBytes += aBlockPointer.getAllocatedBlocks();
+
+		mBlockAccessor.freeBlock(aBlockPointer);
+	}
+
+
+	byte[] readBlock(BlockPointer aBlockPointer)
+	{
+		assert mPerformanceTool.tick("readBlock");
+
+		mCost.mReadBlock++;
+		mCost.mReadBlockBytes += aBlockPointer.getAllocatedBlocks();
+
+		return mBlockAccessor.readBlock(aBlockPointer);
+	}
+
+
+	BlockPointer writeBlock(byte[] aContent, BlockType aBlockType, long aUserData)
+	{
+		assert mPerformanceTool.tick("writeBlock");
+
+		BlockPointer blockPointer = mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionId.get(), aBlockType, aUserData);
+
+		mCost.mWriteBlock++;
+		mCost.mWriteBlockBytes += blockPointer.getAllocatedBlocks();
+
+		return blockPointer;
+	}
+
+
+	private class ExtendibleHashTableMapIterator implements Iterator<ArrayMapEntry>
+	{
+		private ExtendibleHashTableIterator mIterator;
+		private Iterator<ArrayMapEntry> mIt;
+
+
+		public ExtendibleHashTableMapIterator()
+		{
+			mIterator = new ExtendibleHashTableIterator();
+		}
+
+
+		@Override
+		public boolean hasNext()
+		{
+			if (mIt == null)
+			{
+				if (!mIterator.hasNext())
+				{
+					return false;
+				}
+
+				mIt = mIterator.next().mMap.iterator();
+			}
+
+			if (!mIt.hasNext())
+			{
+				mIt = null;
+				return hasNext();
+			}
+
+			return true;
+		}
+
+
+		@Override
+		public ArrayMapEntry next()
+		{
+			return mIt.next();
+		}
+	}
+
+
+	private class ExtendibleHashTableIterator implements Iterator<LeafNode>
+	{
+		private int mIndex;
+		private int mOffset;
+		private LeafNode mNode;
+
+
+		@Override
+		public boolean hasNext()
+		{
+			if (mNode == null)
+			{
+				if (mOffset == mDirectory.length)
+				{
+					return false;
+				}
+
+				int size = 1 << (int)BlockPointer.readUserData(mDirectory, mOffset);
+
+				BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mDirectory).position(mOffset));
+
+				mIndex += size;
+				mOffset += BlockPointer.SIZE * size;
+
+				mNode = new LeafNode();
+				mNode.mBlockPointer = bp;
+				mNode.mMap = new ArrayMap(readBlock(bp));
+				mNode.mSize = size;
+			}
+
+			return true;
+		}
+
+
+		@Override
+		public LeafNode next()
+		{
+			LeafNode n = mNode;
+			mNode = null;
+			return n;
+		}
+	}
 }

@@ -8,19 +8,19 @@ import org.terifan.raccoon.util.ByteArrayUtil;
 
 /*
  *   +------+------+------+------+------+------+------+------+
- * 0 | type | chk  | enc  | comp |             |  alloc blk  |
+ * 0 | type | chk  | enc  | comp |      allocated blocks     |
  *   +------+------+------+------+------+------+------+------+
  * 1 |        logical size       |       physical size       |
  *   +------+------+------+------+------+------+------+------+
  * 2 |                      block index                      |
  *   +------+------+------+------+------+------+------+------+
- * 3 |                      block index                      |
+ * 3 |                                                       |
  *   +------+------+------+------+------+------+------+------+
  * 4 |                      block index                      |
  *   +------+------+------+------+------+------+------+------+
  * 5 |                                                       |
  *   +------+------+------+------+------+------+------+------+
- * 6 |                                                       |
+ * 6 |                      block index                      |
  *   +------+------+------+------+------+------+------+------+
  * 7 |                                                       |
  *   +------+------+------+------+------+------+------+------+
@@ -45,10 +45,10 @@ import org.terifan.raccoon.util.ByteArrayUtil;
  *   8 checksum algorithm
  *   8 encryption algorithm
  *   8 compression algorithm
- *  16 allocated blocks
+ *  32 allocated blocks
  *  32 logical size
  *  32 physical size
- *  64 block index
+ * 128 block address
  *  64 user data
  *  64 transaction
  * 128 block key (initialization vector)
@@ -94,6 +94,22 @@ public class BlockPointer implements Serializable
 	}
 
 
+	/**
+	 * Return the 'type' field from a BlockPointer stored in the buffer provided.
+	 *
+	 * @param aBuffer
+	 *   a buffer containing a BlockPointer
+	 * @param aBlockPointerOffset
+	 *   start offset of the BlockPointer in the buffer
+	 * @return
+	 *   the 'type' field
+	 */
+	public static BlockType readBlockType(byte[] aBuffer, int aBlockPointerOffset)
+	{
+		return BlockType.values()[0xFF & aBuffer[aBlockPointerOffset + OFS_FLAG_TYPE]];
+	}
+
+
 	public byte getChecksumAlgorithm()
 	{
 		return mData[OFS_FLAG_CHECKSUM];
@@ -135,15 +151,13 @@ public class BlockPointer implements Serializable
 
 	public int getAllocatedBlocks()
 	{
-		return ByteArrayUtil.getInt16(mData, OFS_ALLOCATED_BLOCKS);
+		return ByteArrayUtil.getInt32(mData, OFS_ALLOCATED_BLOCKS);
 	}
 
 
 	public BlockPointer setAllocatedBlocks(int aAllocBlocks)
 	{
-		assert aAllocBlocks >= 0 && aAllocBlocks <= 65535;
-
-		ByteArrayUtil.putInt16(mData, OFS_ALLOCATED_BLOCKS, aAllocBlocks);
+		ByteArrayUtil.putInt32(mData, OFS_ALLOCATED_BLOCKS, aAllocBlocks);
 		return this;
 	}
 
@@ -268,22 +282,6 @@ public class BlockPointer implements Serializable
 	}
 
 
-	/**
-	 * Return the 'type' field from a BlockPointer stored in the buffer provided.
-	 *
-	 * @param aBuffer
-	 *   a buffer containing a BlockPointer
-	 * @param aOffset
-	 *   start offset of the BlockPointer in the buffer
-	 * @return
-	 *   the 'type' field
-	 */
-	public static BlockType getBlockType(byte[] aBuffer, int aOffset)
-	{
-		return BlockType.values()[0xFF & aBuffer[aOffset + OFS_FLAG_TYPE]];
-	}
-
-
 	@Override
 	public int hashCode()
 	{
@@ -312,6 +310,12 @@ public class BlockPointer implements Serializable
 	{
 		ByteArrayUtil.putInt64(mData, OFS_USER_DATA, aUserData);
 		return this;
+	}
+
+
+	public static long readUserData(byte[] aBuffer, int aBlockPointerOffset)
+	{
+		return ByteArrayUtil.getInt64(aBuffer, aBlockPointerOffset + OFS_USER_DATA);
 	}
 
 

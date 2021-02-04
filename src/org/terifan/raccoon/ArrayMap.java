@@ -25,7 +25,7 @@ import org.terifan.raccoon.util.Result;
  *   2 bytes - key length
  *   2 bytes - value length
  *   n bytes - key
- *   1 byte - flags
+ *   1 byte  - flags
  *   n bytes - value
  * [free space]
  *   n bytes - zeros
@@ -58,7 +58,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 
 	/**
-	 * Create a new LeafNode with specified capacity.
+	 * Create a new ArrayMap with specified capacity.
 	 *
 	 * @param aCapacity the capacity (length) of the buffer. Maximum 65536 bytes.
 	 * @return the buffer
@@ -79,7 +79,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 
 	/**
-	 * Create a new LeafNode wrapping the provided array.
+	 * Create a new ArrayMap wrapping the provided array.
 	 *
 	 * @param aBuffer the byte array to wrap
 	 * @return the buffer
@@ -91,7 +91,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 
 	/**
-	 * Create a new LeafNode wrapping the provided array reading the actual map at the specified offset.
+	 * Create a new ArrayMap wrapping the provided array reading the actual map at the specified offset.
 	 *
 	 * @param aBuffer the byte array to wrap
 	 * @param aOffset an offset to the the actual map in the byte array.
@@ -125,6 +125,12 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		}
 
 		assert integrityCheck() == null : integrityCheck();
+	}
+
+
+	public int getCapacity()
+	{
+		return mCapacity;
 	}
 
 
