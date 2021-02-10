@@ -171,7 +171,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		{
 			int oldValueLengthPlus1 = readValueLength(index);
 
-			// fast put
+			// replace with same length
 			if (oldValueLengthPlus1 == newValueLengthPlus1)
 			{
 				int entryOffset = readEntryOffset(index);

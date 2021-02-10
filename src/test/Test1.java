@@ -16,22 +16,31 @@ public class Test1
 	{
 		try
 		{
-			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION, new TableParam(1, 1), null))
+			long t = System.currentTimeMillis();
+//			for (int test = 0; test < 10; test++)
 			{
-				for (int i = 0; i < 10; i++)
+				MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
+
+				try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION, new TableParam(1, 1), null))
 				{
-					db.save(new MyEntity(i, -i, "01234567890123456789"));
+					for (int i = 0; i < 1000000; i++)
+					{
+						db.save(new MyEntity(i, -i, "01234567890123456789"));
+					}
+
+					db.commit();
 				}
 
-				db.commit();
+				System.out.println(blockDevice.length()*blockDevice.getBlockSize()/1024.0/1024);
+
+//				try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+//				{
+//					if(db.list(MyEntity.class).size()!=2000)throw new IllegalStateException();
+//					db.list(MyEntity.class).forEach(System.out::println);
+//				}
 			}
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
-			{
-				db.list(MyEntity.class).forEach(System.out::println);
-			}
+			System.out.println(System.currentTimeMillis()-t);
 		}
 		catch (Throwable e)
 		{

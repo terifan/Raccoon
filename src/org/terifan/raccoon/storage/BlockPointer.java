@@ -8,21 +8,21 @@ import org.terifan.raccoon.util.ByteArrayUtil;
 
 /*
  *   +------+------+------+------+------+------+------+------+
- * 0 | type | chk  | enc  | comp |      allocated blocks     |
+ * 0 | type | chk  | enc  | comp |      allocated blocks     | 1 user data
  *   +------+------+------+------+------+------+------+------+
  * 1 |        logical size       |       physical size       |
  *   +------+------+------+------+------+------+------+------+
  * 2 |                      block index                      |
  *   +------+------+------+------+------+------+------+------+
- * 3 |                                                       |
+ * 3 |                                                       | birth transaction
  *   +------+------+------+------+------+------+------+------+
  * 4 |                      block index                      |
  *   +------+------+------+------+------+------+------+------+
- * 5 |                                                       |
+ * 5 |                                                       | write time
  *   +------+------+------+------+------+------+------+------+
  * 6 |                      block index                      |
  *   +------+------+------+------+------+------+------+------+
- * 7 |                                                       |
+ * 7 |                                                       | birth time
  *   +------+------+------+------+------+------+------+------+
  * 8 |                       user data                       |
  *   +------+------+------+------+------+------+------+------+
@@ -316,6 +316,12 @@ public class BlockPointer implements Serializable
 	public static long readUserData(byte[] aBuffer, int aBlockPointerOffset)
 	{
 		return ByteArrayUtil.getInt64(aBuffer, aBlockPointerOffset + OFS_USER_DATA);
+	}
+
+
+	public static void writeUserData(byte[] aBuffer, int aBlockPointerOffset, long aValue)
+	{
+		ByteArrayUtil.putInt64(aBuffer, aBlockPointerOffset + OFS_USER_DATA, aValue);
 	}
 
 

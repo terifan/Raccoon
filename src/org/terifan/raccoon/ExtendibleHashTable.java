@@ -6,14 +6,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.terifan.raccoon.HashTreeTable.FakeInnerNode;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.raccoon.util.ByteArrayUtil;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 import org.terifan.security.messagedigest.MurmurHash3;
-import org.terifan.util.Debug;
 
 
 final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
@@ -35,6 +34,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	private LeafNode[] mNodes;
 	private int mPrefixLength;
 
+	private int mLeafSize = 64*1024;
+
 
 	public ExtendibleHashTable()
 	{
@@ -54,22 +55,25 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		Log.i("create table %s", mTableName);
 		Log.inc();
 
-		int blockSize = mBlockAccessor.getBlockDevice().getBlockSize();
-		int pointersPerPage = blockSize / BlockPointer.SIZE;
-		mPrefixLength = (int)Math.ceil(Math.log(pointersPerPage) / Math.log(2));
-
 		mHashSeed = new SecureRandom().nextLong();
-		mDirectory = new byte[blockSize];
+
+		mDirectory = new byte[mBlockAccessor.getBlockDevice().getBlockSize()];
+		mPrefixLength = (int)Math.ceil(Math.log(mDirectory.length / BlockPointer.SIZE) / Math.log(2));
+		mNodes = new LeafNode[1 << mPrefixLength];
 
 		LeafNode node = new LeafNode();
-		node.mMap = new ArrayMap(blockSize * 10);
-		node.mSize = mPrefixLength;
+		node.mMap = new ArrayMap(mLeafSize);
+		node.mRange = mPrefixLength;
 		node.mDirty = true;
 
-		mNodes = new LeafNode[1 << mPrefixLength];
 		Arrays.fill(mNodes, node);
 
-		System.out.println(mPrefixLength);
+		// fake blockpointer required for growing directory
+		new BlockPointer()
+			.setBlockType(BlockType.FREE)
+			.setUserData(mPrefixLength)
+			.marshal(ByteArrayBuffer.wrap(mDirectory));
+
 		mWasEmptyInstance = true;
 		mChanged = true;
 
@@ -93,14 +97,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		unmarshalHeader(aTableHeader);
 
 		mDirectory = readBlock(mRootNodeBlockPointer);
-
-		int pointersPerPage = mDirectory.length / BlockPointer.SIZE;
-		mPrefixLength = (int)Math.ceil(Math.log(pointersPerPage) / Math.log(2));
-
+		mPrefixLength = (int)Math.ceil(Math.log(mDirectory.length / BlockPointer.SIZE) / Math.log(2));
 		mNodes = new LeafNode[1 << mPrefixLength];
-
-		System.out.println(mPrefixLength);
-		Debug.hexDump(mDirectory);
 
 		Log.dec();
 	}
@@ -138,7 +136,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	{
 		checkOpen();
 
-		int index = computeIndex(computeHash(aEntry.getKey()));
+		long hash = computeHash(aEntry.getKey());
+		int index = computeIndex(hash);
 
 		return loadNode(index).mMap.get(aEntry);
 	}
@@ -164,45 +163,27 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		int index = computeIndex(computeHash(aEntry.getKey()));
+		long hash = computeHash(aEntry.getKey());
+		int index = computeIndex(hash);
 
 		LeafNode node = loadNode(index);
 
-		node.mMap.put(aEntry, oldEntry);
-		node.mDirty = true;
+		while (!node.mMap.put(aEntry, oldEntry))
+		{
+			if (node.mRange == 0)
+			{
+				growDirectory();
+				index <<= 1;
+			}
+			node = splitNode(index, node);
+		}
 
-		System.out.println(node.mMap);
+		node.mDirty = true;
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
 		return oldEntry.get();
-
-//		long hash = computeHash(aEntry.getKey());
-//
-//		if (mRootNode instanceof HashTreeTableLeafNode)
-//		{
-//			Log.d("put root value");
-//
-//			if (mRootNode.put(aEntry, oldEntry, hash, 0))
-//			{
-//				Log.dec();
-//				assert mModCount == modCount : "concurrent modification";
-//
-//				return oldEntry.get();
-//			}
-//
-//			Log.d("upgrade root from leaf to node");
-//
-//			mRootNode = ((HashTreeTableLeafNode)mRootNode).splitRootLeaf();
-//		}
-//
-//		mRootNode.put(aEntry, oldEntry, hash, 0);
-//
-//		Log.dec();
-//		assert mModCount == modCount : "concurrent modification";
-//
-//		return oldEntry.get();
 	}
 
 
@@ -271,10 +252,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 				flush();
 
-				if (mRootNodeBlockPointer != null)
-				{
-					freeBlock(mRootNodeBlockPointer);
-				}
+				freeBlock(mRootNodeBlockPointer);
 
 				mRootNodeBlockPointer = writeBlock(mDirectory, BlockType.INDEX, 0L);
 
@@ -317,6 +295,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 	private void flush()
 	{
+		ByteArrayBuffer buf = ByteArrayBuffer.wrap(mDirectory);
+
 		for (int i = 0; i < mNodes.length; i++)
 		{
 			LeafNode node = mNodes[i];
@@ -327,8 +307,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 				{
 					freeBlock(node.mBlockPointer);
 				}
-				node.mBlockPointer = writeBlock(node.mMap.array(), BlockType.LEAF, node.mSize);
-				node.mBlockPointer.marshal(ByteArrayBuffer.wrap(mDirectory).position(BlockPointer.SIZE * i));
+				node.mBlockPointer = writeBlock(node.mMap.array(), BlockType.LEAF, node.mRange);
+				node.mBlockPointer.marshal(buf.position(BlockPointer.SIZE * i));
 				node.mDirty = false;
 			}
 		}
@@ -353,6 +333,12 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
 			mDirectory = new byte[BlockPointer.SIZE];
+
+			// fake blockpointer required for growing directory
+			new BlockPointer()
+				.setBlockType(BlockType.FREE)
+				.setUserData(mPrefixLength)
+				.marshal(ByteArrayBuffer.wrap(mDirectory));
 		}
 		else
 		{
@@ -431,8 +417,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	@Override
 	public int getEntryMaximumLength()
 	{
-		return 1024;
-//		return mLeafSize - HashTreeTableLeafNode.OVERHEAD;
+		return mLeafSize / 2;
 	}
 
 
@@ -473,66 +458,94 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 
 	/*
-	 *                 split           split + split   grow + split
-	 *
-	 * 000 +----- 8    000 +----- 4    000 +----- 1    0000 +----- 2
-	 * 001 |           001 |           001 +----- 1    0001 |
-	 * 010 |           010 |           010 +----- 2    0010 +----- 1
-	 * 011 |           011 |           011 |           0011 +----- 1
-	 * 100 |           100 +----- 4    100 +----- 4    0100 +----- 4
-	 * 101 |           101 |           101 |           0101 |
-	 * 110 |           110 |           110 |           0110 |
-	 * 111 |           111 |           111 |           0111 |
-	 * 	           	           	           	           1000 +----- 8
-	 * 	           	           	           	           1001 |
-	 * 	           	           	           	           1010 |
-	 * 	           	           	           	           1011 |
-	 * 	           	           	           	           1100 |
-	 * 	           	           	           	           1101 |
-	 * 	           	           	           	           1110 |
-	 * 	           	           	           	           1111 |
+	 * 000 +----- 1    0000 +----- 2
+	 * 001 +----- 1    0001 |
+	 * 010 +----- 2    0010 +----- 2
+	 * 011 |           0011 |
+	 * 100 +----- 4    0100 +----- 4
+	 * 101 |           0101 |
+	 * 110 |           0110 |
+	 * 111 |           0111 |
+	 *     	           1000 +----- 8
+	 *     	           1001 |
+	 *     	           1010 |
+	 *                 1011 |
+	 *     	           1100 |
+	 *     	           1101 |
+	 *     	           1110 |
+	 *     	           1111 |
 	 */
 	private void growDirectory()
 	{
 		LeafNode[] newNodes = new LeafNode[2 * mNodes.length];
-
-		for (int dst = 0, src = 0; dst < newNodes.length; )
-		{
-			newNodes[dst++] = mNodes[src++];
-		}
-		for (int i = 0; i < newNodes.length; )
-		{
-			newNodes[i].mSize *= 2;
-			i += newNodes[i].mSize;
-		}
-
 		byte[] newDirectory = new byte[2 * mDirectory.length];
 
-		for (int src = 0, dst = 0; dst < newDirectory.length; src += BlockPointer.SIZE, dst += BlockPointer.SIZE * 2)
+		for (int src = 0, dst = 0; src < mNodes.length; src++, dst+=2)
 		{
-			System.arraycopy(mDirectory, src, newDirectory, dst, BlockPointer.SIZE);
+			newNodes[dst + 0] = mNodes[src];
+			newNodes[dst + 1] = mNodes[src];
+			System.arraycopy(mDirectory, src * BlockPointer.SIZE, newDirectory, dst * BlockPointer.SIZE, BlockPointer.SIZE);
+		}
+
+		for (int i = 0; i < newNodes.length; )
+		{
+			if (newNodes[i] != null)
+			{
+				i += 1 << ++newNodes[i].mRange;
+			}
+		}
+
+		for (int i = 0; i < newNodes.length; )
+		{
+			int range = (int)BlockPointer.readUserData(newDirectory, i * BlockPointer.SIZE);
+			range++;
+			BlockPointer.writeUserData(newDirectory, i * BlockPointer.SIZE, range);
+
+			i += 1 << range;
 		}
 
 		mDirectory = newDirectory;
 		mNodes = newNodes;
+		mPrefixLength++;
 	}
 
 
-	private void split(LeafNode aNode)
+	/*
+	 * 000 +----- 4 [a,b,c,d]   000 +----- 2 [a,b]
+	 * 001 |                    001 |
+	 * 010 |                    010 +----- 2 [c,d]
+	 * 011 |                    011 |
+	 * 100 +----- 4 [e,f,g,h]   100 +----- 4 [e,f,g,h]
+	 * 101 |                    101 |
+	 * 110 |                    110 |
+	 * 111 |                    111 |
+	 */
+	private LeafNode splitNode(int aIndex, LeafNode aNode)
 	{
+		int start = aIndex;
+		while (start > 0 && mNodes[start - 1] == mNodes[aIndex])
+		{
+			start--;
+		}
+
+		int newRange = aNode.mRange - 1;
+
 		LeafNode lowNode = new LeafNode();
 		lowNode.mDirty = true;
-		lowNode.mSize = aNode.mSize - 1;
-		lowNode.mMap = new ArrayMap(aNode.mMap.getCapacity());
+		lowNode.mRange = newRange;
+		lowNode.mMap = new ArrayMap(mLeafSize);
 
 		LeafNode highNode = new LeafNode();
 		highNode.mDirty = true;
-		highNode.mSize = aNode.mSize - 1;
-		highNode.mMap = new ArrayMap(aNode.mMap.getCapacity());
+		highNode.mRange = newRange;
+		highNode.mMap = new ArrayMap(mLeafSize);
+
+		int partition = 1 << newRange;
+		int mid = start + partition;
 
 		for (ArrayMapEntry entry : aNode.mMap)
 		{
-			if ((computeIndex(computeHash(entry.getKey())) & 1) == 0)
+			if (computeIndex(computeHash(entry.getKey())) < mid)
 			{
 				lowNode.mMap.put(entry, null);
 			}
@@ -541,6 +554,44 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 				highNode.mMap.put(entry, null);
 			}
 		}
+
+		freeBlock(aNode.mBlockPointer);
+
+		Arrays.fill(mNodes, start, mid, lowNode);
+		Arrays.fill(mNodes, mid, mid + partition, highNode);
+
+		return aIndex < mid ? lowNode : highNode;
+	}
+
+
+	private void dump()
+	{
+//		System.out.println(mTableName);
+//		for (int i = 0; i < mNodes.length; i++)
+//		{
+//			System.out.println("----" + (mNodes==null?"":mNodes[i]));
+//		}
+
+//		for (int i = 0; i < mNodes.length;)
+//		{
+//			if (mNodes[i] != null)
+//			{
+//				int range = mNodes[i].mRange;
+//
+//				LeafNode n = mNodes[i];
+//				for (int j = 1 << range; --j >= 0; i++)
+//				{
+//					if (mNodes[i] != n)
+//					{
+//						throw new IllegalStateException();
+//					}
+//				}
+//			}
+//			else
+//			{
+//				i++;
+//			}
+//		}
 	}
 
 
@@ -567,7 +618,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			node = new LeafNode();
 			node.mBlockPointer = bp;
 			node.mMap = new ArrayMap(readBlock(bp));
-			node.mSize = size;
+			node.mRange = size;
 			Arrays.fill(mNodes, offset, offset + size, node);
 		}
 
@@ -575,21 +626,15 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	}
 
 
-	private class LeafNode
-	{
-		BlockPointer mBlockPointer;
-		ArrayMap mMap;
-		int mSize;
-		boolean mDirty;
-	}
-
-
 	void freeBlock(BlockPointer aBlockPointer)
 	{
-		mCost.mFreeBlock++;
-		mCost.mFreeBlockBytes += aBlockPointer.getAllocatedBlocks();
+		if (aBlockPointer != null)
+		{
+			mCost.mFreeBlock++;
+			mCost.mFreeBlockBytes += aBlockPointer.getAllocatedBlocks();
 
-		mBlockAccessor.freeBlock(aBlockPointer);
+			mBlockAccessor.freeBlock(aBlockPointer);
+		}
 	}
 
 
@@ -677,17 +722,17 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 					return false;
 				}
 
-				int size = 1 << (int)BlockPointer.readUserData(mDirectory, mOffset);
+				int range = (int)BlockPointer.readUserData(mDirectory, mOffset);
 
 				BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mDirectory).position(mOffset));
 
-				mIndex += size;
-				mOffset += BlockPointer.SIZE * size;
+				mIndex += (1 << range);
+				mOffset += (1 << range) * BlockPointer.SIZE;
 
 				mNode = new LeafNode();
 				mNode.mBlockPointer = bp;
 				mNode.mMap = new ArrayMap(readBlock(bp));
-				mNode.mSize = size;
+				mNode.mRange = range;
 			}
 
 			return true;
@@ -700,6 +745,22 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			LeafNode n = mNode;
 			mNode = null;
 			return n;
+		}
+	}
+
+
+	private class LeafNode
+	{
+		BlockPointer mBlockPointer;
+		ArrayMap mMap;
+		int mRange;
+		boolean mDirty;
+
+
+		@Override
+		public String toString()
+		{
+			return String.format("%08x", hashCode()) + " " + mRange;
 		}
 	}
 }
