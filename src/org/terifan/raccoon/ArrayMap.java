@@ -9,6 +9,11 @@ import org.terifan.raccoon.util.Result;
 
 
 /**
+ * TODO:
+ *  free space offset 4 bytes
+ *  offset entries 4 bytes
+ *  remove flags byte
+ *
  * This is a fixed size buffer for key/value storage suitable for persistence on external media. An array is wrapped and read and
  * written to directly maintaining all necessary structural information inside the array at all time.
  *

@@ -136,8 +136,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	{
 		checkOpen();
 
-		long hash = computeHash(aEntry.getKey());
-		int index = computeIndex(hash);
+		int index = computeIndex(computeHash(aEntry.getKey()));
 
 		return loadNode(index).mMap.get(aEntry);
 	}
@@ -163,8 +162,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		long hash = computeHash(aEntry.getKey());
-		int index = computeIndex(hash);
+		int index = computeIndex(computeHash(aEntry.getKey()));
 
 		LeafNode node = loadNode(index);
 
@@ -190,16 +188,29 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	@Override
 	public ArrayMapEntry remove(ArrayMapEntry aEntry)
 	{
-		return null;
-//		checkOpen();
-//
-//		Result<ArrayMapEntry> oldEntry = new Result<>();
-//
-//		boolean modified = mRootNode.remove(aEntry, oldEntry, computeHash(aEntry.getKey()), 0);
-//
-//		mChanged |= modified;
-//
-//		return oldEntry.get();
+		checkOpen();
+
+		assert mPerformanceTool.tick("remove");
+
+		int modCount = ++mModCount;
+		Log.i("put");
+		Log.inc();
+
+		Result<ArrayMapEntry> oldEntry = new Result<>();
+
+		int index = computeIndex(computeHash(aEntry.getKey()));
+
+		LeafNode node = loadNode(index);
+
+		boolean modified = node.mMap.remove(aEntry, oldEntry);
+
+		mChanged |= modified;
+		node.mDirty = modified;
+
+		Log.dec();
+		assert mModCount == modCount : "concurrent modification";
+
+		return oldEntry.get();
 	}
 
 
@@ -303,10 +314,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 			if (node != null && node.mDirty)
 			{
-				if (node.mBlockPointer != null)
-				{
-					freeBlock(node.mBlockPointer);
-				}
+				freeBlock(node.mBlockPointer);
 				node.mBlockPointer = writeBlock(node.mMap.array(), BlockType.LEAF, node.mRange);
 				node.mBlockPointer.marshal(buf.position(BlockPointer.SIZE * i));
 				node.mDirty = false;
@@ -407,27 +415,47 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	@Override
 	public String integrityCheck()
 	{
-		return null;
 //		Log.i("integrity check");
 //
-//		return mRootNode.integrityCheck();
+//		for (int i = 0; i < mNodes.length;)
+//		{
+//			if (mNodes[i] != null)
+//			{
+//				int range = mNodes[i].mRange;
+//
+//				LeafNode n = mNodes[i];
+//				for (int j = 1 << range; --j >= 0; i++)
+//				{
+//					if (mNodes[i] != n)
+//					{
+//						throw new IllegalStateException();
+//					}
+//				}
+//			}
+//			else
+//			{
+//				i++;
+//			}
+//		}
+
+		return null;
 	}
 
 
 	@Override
 	public int getEntryMaximumLength()
 	{
-		return mLeafSize / 2;
+		return Math.min(65536, mLeafSize); // ?
 	}
 
 
-	void visit(HashTreeTableVisitor aVisitor)
+	private void visit(HashTreeTableVisitor aVisitor)
 	{
 //		mRootNode.visit(aVisitor);
 	}
 
 
-	void checkOpen()
+	private void checkOpen()
 	{
 		if (mClosed)
 		{
@@ -445,13 +473,13 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	}
 
 
-	long computeHash(byte[] aKey)
+	private long computeHash(byte[] aKey)
 	{
 		return MurmurHash3.hash64(aKey, mHashSeed);
 	}
 
 
-	int computeIndex(long aHash)
+	private int computeIndex(long aHash)
 	{
 		return (int)(0x7fffffff & (aHash >>> (64 - mPrefixLength)));
 	}
@@ -489,10 +517,17 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		for (int i = 0; i < newNodes.length; )
 		{
+			long range;
 			if (newNodes[i] != null)
 			{
-				i += 1 << ++newNodes[i].mRange;
+				range = ++newNodes[i].mRange;
 			}
+			else
+			{
+				range = 0;
+			}
+
+			i += 1 << range;
 		}
 
 		for (int i = 0; i < newNodes.length; )
@@ -528,7 +563,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			start--;
 		}
 
-		int newRange = aNode.mRange - 1;
+		long newRange = aNode.mRange - 1;
 
 		LeafNode lowNode = new LeafNode();
 		lowNode.mDirty = true;
@@ -564,65 +599,54 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	}
 
 
-	private void dump()
-	{
-//		System.out.println(mTableName);
-//		for (int i = 0; i < mNodes.length; i++)
-//		{
-//			System.out.println("----" + (mNodes==null?"":mNodes[i]));
-//		}
-
-//		for (int i = 0; i < mNodes.length;)
-//		{
-//			if (mNodes[i] != null)
-//			{
-//				int range = mNodes[i].mRange;
-//
-//				LeafNode n = mNodes[i];
-//				for (int j = 1 << range; --j >= 0; i++)
-//				{
-//					if (mNodes[i] != n)
-//					{
-//						throw new IllegalStateException();
-//					}
-//				}
-//			}
-//			else
-//			{
-//				i++;
-//			}
-//		}
-	}
-
-
 	private LeafNode loadNode(int aIndex)
 	{
 		LeafNode node = mNodes[aIndex];
 
-		if (node == null)
+		if (node != null)
 		{
-			BlockPointer bp = new BlockPointer();
-			int offset = 0;
-			int size = 0;
-			for (int i = 0; offset < mDirectory.length;)
-			{
-				size = 1 << (int)BlockPointer.readUserData(mDirectory, offset);
-				if (aIndex >= i && aIndex < aIndex + size)
-				{
-					bp.unmarshal(ByteArrayBuffer.wrap(mDirectory).position(offset));
-					break;
-				}
-				i += size;
-				offset += BlockPointer.SIZE * size;
-			}
-			node = new LeafNode();
-			node.mBlockPointer = bp;
-			node.mMap = new ArrayMap(readBlock(bp));
-			node.mRange = size;
-			Arrays.fill(mNodes, offset, offset + size, node);
+			return node;
 		}
 
-		return node;
+		int range = 0;
+
+		for (int index = 0; index < mNodes.length;)
+		{
+			if (mNodes[index] != null)
+			{
+				range = 1 << mNodes[index].mRange;
+
+				if (aIndex >= index && aIndex < index + range)
+				{
+					return mNodes[index];
+				}
+			}
+			else
+			{
+				int offset = index * BlockPointer.SIZE;
+
+				long rangeBits = BlockPointer.readUserData(mDirectory, offset);
+				range = 1 << rangeBits;
+
+				if (aIndex >= index && aIndex < index + range)
+				{
+					BlockPointer bp = new BlockPointer();
+					bp.unmarshal(ByteArrayBuffer.wrap(mDirectory).position(offset));
+
+					node = new LeafNode();
+					node.mBlockPointer = bp;
+					node.mMap = new ArrayMap(readBlock(bp));
+					node.mRange = rangeBits;
+
+					Arrays.fill(mNodes, index, index + range, node);
+					return node;
+				}
+			}
+
+			index += range;
+		}
+
+		throw new IllegalStateException();
 	}
 
 
@@ -708,7 +732,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	private class ExtendibleHashTableIterator implements Iterator<LeafNode>
 	{
 		private int mIndex;
-		private int mOffset;
 		private LeafNode mNode;
 
 
@@ -717,22 +740,14 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		{
 			if (mNode == null)
 			{
-				if (mOffset == mDirectory.length)
+				if (mIndex == mNodes.length)
 				{
 					return false;
 				}
 
-				int range = (int)BlockPointer.readUserData(mDirectory, mOffset);
+				mNode = loadNode(mIndex);
 
-				BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(mDirectory).position(mOffset));
-
-				mIndex += (1 << range);
-				mOffset += (1 << range) * BlockPointer.SIZE;
-
-				mNode = new LeafNode();
-				mNode.mBlockPointer = bp;
-				mNode.mMap = new ArrayMap(readBlock(bp));
-				mNode.mRange = range;
+				mIndex += 1 << mNode.mRange;
 			}
 
 			return true;
@@ -742,9 +757,9 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		@Override
 		public LeafNode next()
 		{
-			LeafNode n = mNode;
+			LeafNode tmp = mNode;
 			mNode = null;
-			return n;
+			return tmp;
 		}
 	}
 
@@ -753,7 +768,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	{
 		BlockPointer mBlockPointer;
 		ArrayMap mMap;
-		int mRange;
+		long mRange;
 		boolean mDirty;
 
 

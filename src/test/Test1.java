@@ -1,7 +1,6 @@
 package test;
 
 import java.awt.Dimension;
-import java.nio.file.OpenOption;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.Key;
@@ -19,13 +18,13 @@ public class Test1
 			long t = System.currentTimeMillis();
 //			for (int test = 0; test < 10; test++)
 			{
-				MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
+				MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 				try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION, new TableParam(1, 1), null))
 				{
 					for (int i = 0; i < 1000000; i++)
 					{
-						db.save(new MyEntity(i, -i, "01234567890123456789"));
+						db.save(new MyEntity(i, Integer.toString(-i), "01234567890123456789"));
 					}
 
 					db.commit();
@@ -33,11 +32,15 @@ public class Test1
 
 				System.out.println(blockDevice.length()*blockDevice.getBlockSize()/1024.0/1024);
 
-//				try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
-//				{
-//					if(db.list(MyEntity.class).size()!=2000)throw new IllegalStateException();
+				try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+				{
+					System.out.println(db.remove(new MyEntity(4, "-4")));
+
 //					db.list(MyEntity.class).forEach(System.out::println);
-//				}
+
+					System.out.println("--------");
+					System.out.println(db.get(new MyEntity(4, "-4")));
+				}
 			}
 
 			System.out.println(System.currentTimeMillis()-t);
@@ -52,7 +55,7 @@ public class Test1
 	static class MyEntity
 	{
 		@Key Integer id1;
-		@Key Integer id2;
+		@Key String id2;
 		String name;
 		Dimension dim;
 
@@ -60,12 +63,18 @@ public class Test1
 		{
 		}
 
-		public MyEntity(Integer aId1, Integer aId2, String aName)
+		public MyEntity(Integer aId1, String aId2)
+		{
+			this.id1 = aId1;
+			this.id2 = aId2;
+		}
+
+		public MyEntity(Integer aId1, String aId2, String aName)
 		{
 			this.id1 = aId1;
 			this.id2 = aId2;
 			this.name = aName;
-			dim = new Dimension(aId1,aId2);
+			dim = new Dimension(aId1,aId1);
 		}
 
 
