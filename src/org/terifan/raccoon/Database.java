@@ -642,7 +642,7 @@ public final class Database implements AutoCloseable
 	 * Saves an entity.
 	 *
 	 * @return
-	 * true if the entity didn't previously existed.
+	 * true if this table did not already contain the specified entity
 	 */
 	public boolean save(Object aEntity)
 	{

@@ -55,27 +55,9 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		Log.i("create table %s", mTableName);
 		Log.inc();
 
-		mHashSeed = new SecureRandom().nextLong();
-
-		mDirectory = new byte[mBlockAccessor.getBlockDevice().getBlockSize()];
-		mPrefixLength = (int)Math.ceil(Math.log(mDirectory.length / BlockPointer.SIZE) / Math.log(2));
-		mNodes = new LeafNode[1 << mPrefixLength];
-
-		LeafNode node = new LeafNode();
-		node.mMap = new ArrayMap(mLeafSize);
-		node.mRange = mPrefixLength;
-		node.mDirty = true;
-
-		Arrays.fill(mNodes, node);
-
-		// fake blockpointer required for growing directory
-		new BlockPointer()
-			.setBlockType(BlockType.FREE)
-			.setUserData(mPrefixLength)
-			.marshal(ByteArrayBuffer.wrap(mDirectory));
+		setupEmptyTable();
 
 		mWasEmptyInstance = true;
-		mChanged = true;
 
 		Log.dec();
 	}
@@ -315,6 +297,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			if (node != null && node.mDirty)
 			{
 				freeBlock(node.mBlockPointer);
+
 				node.mBlockPointer = writeBlock(node.mMap.array(), BlockType.LEAF, node.mRange);
 				node.mBlockPointer.marshal(buf.position(BlockPointer.SIZE * i));
 				node.mDirty = false;
@@ -362,17 +345,31 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	@Override
 	public void removeAll()
 	{
-//		checkOpen();
-//
-//		int modCount = ++mModCount;
-//
-//		mRootNode.clear();
-//		mChanged = true;
-//
-//		mRootNode = new HashTreeTableLeafNode(this, new FakeInnerNode());
-//		mRootNodeBlockPointer = null;
-//
-//		assert mModCount == modCount : "concurrent modification";
+		checkOpen();
+
+		int modCount = ++mModCount;
+
+		BlockPointer bp = new BlockPointer();
+		ByteArrayBuffer buf = ByteArrayBuffer.wrap(mDirectory);
+
+		for (int i = 0; i < mNodes.length; i++)
+		{
+			if (mNodes[i] != null)
+			{
+				freeBlock(mNodes[i].mBlockPointer);
+			}
+
+			if (BlockPointer.readBlockType(mDirectory, i * BlockPointer.SIZE) != BlockType.FREE)
+			{
+				freeBlock(bp.unmarshal(buf.position(i * BlockPointer.SIZE)));
+			}
+		}
+
+		setupEmptyTable();
+
+		mRootNodeBlockPointer = null;
+
+		assert mModCount == modCount : "concurrent modification";
 	}
 
 
@@ -409,6 +406,31 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		});
 
 		return result.get();
+	}
+
+
+	private void setupEmptyTable()
+	{
+		mHashSeed = new SecureRandom().nextLong();
+
+		mDirectory = new byte[mBlockAccessor.getBlockDevice().getBlockSize()];
+		mPrefixLength = (int)Math.ceil(Math.log(mDirectory.length / BlockPointer.SIZE) / Math.log(2));
+		mNodes = new LeafNode[1 << mPrefixLength];
+
+		LeafNode node = new LeafNode();
+		node.mMap = new ArrayMap(mLeafSize);
+		node.mRange = mPrefixLength;
+		node.mDirty = true;
+
+		Arrays.fill(mNodes, node);
+
+		// fake blockpointer required for growing directory
+		new BlockPointer()
+			.setBlockType(BlockType.FREE)
+			.setUserData(mPrefixLength)
+			.marshal(ByteArrayBuffer.wrap(mDirectory));
+
+		mChanged = true;
 	}
 
 
@@ -591,6 +613,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		}
 
 		freeBlock(aNode.mBlockPointer);
+		Arrays.fill(mDirectory, start * BlockPointer.SIZE, (start + 1) * BlockPointer.SIZE, (byte)0);
 
 		Arrays.fill(mNodes, start, mid, lowNode);
 		Arrays.fill(mNodes, mid, mid + partition, highNode);
@@ -650,7 +673,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	}
 
 
-	void freeBlock(BlockPointer aBlockPointer)
+	private void freeBlock(BlockPointer aBlockPointer)
 	{
 		if (aBlockPointer != null)
 		{
@@ -662,7 +685,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	}
 
 
-	byte[] readBlock(BlockPointer aBlockPointer)
+	private byte[] readBlock(BlockPointer aBlockPointer)
 	{
 		assert mPerformanceTool.tick("readBlock");
 
@@ -673,7 +696,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	}
 
 
-	BlockPointer writeBlock(byte[] aContent, BlockType aBlockType, long aUserData)
+	private BlockPointer writeBlock(byte[] aContent, BlockType aBlockType, long aUserData)
 	{
 		assert mPerformanceTool.tick("writeBlock");
 
