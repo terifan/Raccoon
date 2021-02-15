@@ -147,6 +147,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		int index = computeIndex(computeHash(aEntry.getKey()));
 
 		LeafNode node = loadNode(index);
+		node.mDirty = true;
 
 		while (!node.mMap.put(aEntry, oldEntry))
 		{
@@ -157,8 +158,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			}
 			node = splitNode(index, node);
 		}
-
-		node.mDirty = true;
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
@@ -187,7 +186,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		boolean modified = node.mMap.remove(aEntry, oldEntry);
 
 		mChanged |= modified;
-		node.mDirty = modified;
+		node.mDirty |= modified;
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
@@ -245,6 +244,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 				flush();
 
+				assert integrityCheck() == null : integrityCheck();
+
 				freeBlock(mRootNodeBlockPointer);
 
 				mRootNodeBlockPointer = writeBlock(mDirectory, BlockType.INDEX, 0L);
@@ -265,6 +266,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 				{
 					oChanged.set(true);
 				}
+
 				return marshalHeader();
 			}
 
@@ -277,6 +279,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			{
 				oChanged.set(false);
 			}
+
 			return marshalHeader();
 		}
 		finally
@@ -299,7 +302,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 				freeBlock(node.mBlockPointer);
 
 				node.mBlockPointer = writeBlock(node.mMap.array(), BlockType.LEAF, node.mRange);
-				node.mBlockPointer.marshal(buf.position(BlockPointer.SIZE * i));
+				node.mBlockPointer.marshal(buf.position(i * BlockPointer.SIZE));
 				node.mDirty = false;
 			}
 		}
@@ -424,9 +427,9 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		Arrays.fill(mNodes, node);
 
-		// fake blockpointer required for growing directory
+		// fake blockpointer required when growing directory first time
 		new BlockPointer()
-			.setBlockType(BlockType.FREE)
+			.setBlockType(BlockType.LEAF)
 			.setUserData(mPrefixLength)
 			.marshal(ByteArrayBuffer.wrap(mDirectory));
 
@@ -437,28 +440,61 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	@Override
 	public String integrityCheck()
 	{
-//		Log.i("integrity check");
-//
-//		for (int i = 0; i < mNodes.length;)
-//		{
-//			if (mNodes[i] != null)
-//			{
-//				int range = mNodes[i].mRange;
-//
-//				LeafNode n = mNodes[i];
-//				for (int j = 1 << range; --j >= 0; i++)
-//				{
-//					if (mNodes[i] != n)
-//					{
-//						throw new IllegalStateException();
-//					}
-//				}
-//			}
-//			else
-//			{
-//				i++;
-//			}
-//		}
+		Log.i("integrity check");
+
+		for (int index = 0; index < mNodes.length;)
+		{
+			if (mNodes[index] != null)
+			{
+				LeafNode expected = mNodes[index];
+
+				long range = 1 << expected.mRange;
+
+				if (range <= 0 || index + range > mNodes.length)
+				{
+					return "ExtendibleHashTable node has bad range";
+				}
+
+				for (long j = range; --j >= 0; index++)
+				{
+					if (mNodes[index] != expected)
+					{
+						return "ExtendibleHashTable node error at " + index;
+					}
+				}
+			}
+			else
+			{
+				index++;
+			}
+		}
+
+		for (int offset = 0; offset < mDirectory.length; )
+		{
+			if (BlockPointer.readBlockType(mDirectory, offset) != BlockType.LEAF)
+			{
+				Log.hexDump(mDirectory);
+				return "ExtendibleHashTable directory has bad block type";
+			}
+
+			long range = BlockPointer.SIZE * (1 << BlockPointer.readUserData(mDirectory, offset));
+
+			if (range <= 0 || offset + range > mDirectory.length)
+			{
+				return "ExtendibleHashTable directory has bad range";
+			}
+
+			offset += BlockPointer.SIZE;
+			range -= BlockPointer.SIZE;
+
+			for (long j = range; --j >= 0; offset++)
+			{
+				if (mDirectory[offset] != 0)
+				{
+					return "ExtendibleHashTable directory error at " + offset;
+				}
+			}
+		}
 
 		return null;
 	}
@@ -467,7 +503,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	@Override
 	public int getEntryMaximumLength()
 	{
-		return Math.min(65536, mLeafSize); // ?
+		return 1024;
 	}
 
 
@@ -564,6 +600,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		mDirectory = newDirectory;
 		mNodes = newNodes;
 		mPrefixLength++;
+
+		assert integrityCheck() == null : integrityCheck();
 	}
 
 
@@ -579,6 +617,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	 */
 	private LeafNode splitNode(int aIndex, LeafNode aNode)
 	{
+		assert integrityCheck() == null : integrityCheck();
+
 		int start = aIndex;
 		while (start > 0 && mNodes[start - 1] == mNodes[aIndex])
 		{
@@ -600,6 +640,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		int partition = 1 << newRange;
 		int mid = start + partition;
 
+		assert aIndex >= start && aIndex < mid + partition;
+
 		for (ArrayMapEntry entry : aNode.mMap)
 		{
 			if (computeIndex(computeHash(entry.getKey())) < mid)
@@ -613,10 +655,11 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		}
 
 		freeBlock(aNode.mBlockPointer);
-		Arrays.fill(mDirectory, start * BlockPointer.SIZE, (start + 1) * BlockPointer.SIZE, (byte)0);
 
 		Arrays.fill(mNodes, start, mid, lowNode);
 		Arrays.fill(mNodes, mid, mid + partition, highNode);
+
+		assert integrityCheck() == null : integrityCheck();
 
 		return aIndex < mid ? lowNode : highNode;
 	}
@@ -789,6 +832,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 	private class LeafNode
 	{
+		long id = System.nanoTime();
+
 		BlockPointer mBlockPointer;
 		ArrayMap mMap;
 		long mRange;
@@ -798,7 +843,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		@Override
 		public String toString()
 		{
-			return String.format("%08x", hashCode()) + " " + mRange;
+			return "[" + id + " "+ String.format("%08x", hashCode()) + ", range=" + mRange + ", dirty=" + mDirty + "]";
 		}
 	}
 }

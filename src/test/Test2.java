@@ -6,8 +6,10 @@ import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.Key;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.LogLevel;
 import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.util.Log;
 
 
 public class Test2
@@ -18,23 +20,28 @@ public class Test2
 		{
 			long t = System.currentTimeMillis();
 
-			Random rnd = new Random();
-
 			HashSet<Integer> existing = new HashSet<>();
+
+//			Log.setLevel(LogLevel.INFO);
 
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 			for (int test = 0; test < 10; test++)
 			{
+				long seed = Math.abs(new Random().nextLong());
+				Random rnd = new Random(seed);
+
+				System.out.println("test " + test + ", seed " + seed);
+
 				try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE, CompressionParam.NO_COMPRESSION, new TableParam(1, 1), null))
 				{
 					int insert = 0;
 					int update = 0;
 					int expectedInsert = 0;
 					int expectedUpdate = 0;
-					for (int i = 0; i < 100000; i++)
+					for (int i = 0; i < 10000; i++)
 					{
-						int k = rnd.nextInt(1000);
+						int k = rnd.nextInt(100000);
 						if (existing.add(k)) expectedInsert++; else expectedUpdate++;
 						if (db.save(new MyEntity(k, "01234567890123456789"))) insert++; else update++;
 					}
@@ -43,12 +50,15 @@ public class Test2
 					int expectedDelete = 0;
 					for (int i = 0; i < 10000; i++)
 					{
-						int k = rnd.nextInt(10000);
+						int k = rnd.nextInt(100000);
 						if (existing.remove(k)) expectedDelete++;
 						if (db.remove(new MyEntity(k))) delete++;
 					}
 
-					System.out.println(insert + " " + update + " " + delete + " --- " + expectedInsert + " "  + expectedUpdate + " " + expectedDelete);
+					if (insert != expectedInsert || update != expectedUpdate || delete != expectedDelete)
+					{
+						System.out.println(insert+" != "+expectedInsert+" || "+update+" != "+expectedUpdate+" || "+delete+" != "+expectedDelete);
+					}
 
 					db.commit();
 				}

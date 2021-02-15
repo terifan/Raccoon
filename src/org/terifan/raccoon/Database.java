@@ -601,7 +601,10 @@ public final class Database implements AutoCloseable
 					table.rollback();
 				}
 
-				mSystemTable.rollback();
+				if (mSystemTable != null)
+				{
+					mSystemTable.rollback();
+				}
 
 				mBlockDevice.rollback();
 

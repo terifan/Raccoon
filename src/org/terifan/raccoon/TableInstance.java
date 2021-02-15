@@ -109,6 +109,12 @@ public final class TableInstance<T>
 	}
 
 
+	/**
+	 * Saves an entity.
+	 *
+	 * @return
+	 * true if this table did not already contain the specified entity
+	 */
 	public boolean save(T aEntity)
 	{
 		Log.i("save %s", aEntity.getClass());
@@ -144,7 +150,7 @@ public final class TableInstance<T>
 
 		Log.dec();
 
-		return entry.getValue() != null;
+		return oldEntry == null;
 	}
 
 
