@@ -30,7 +30,7 @@ public final class TableInstance<T>
 	private final Database mDatabase;
 	private final Table mTable;
 	private final HashSet<CommitLock> mCommitLocks;
-	private final ITableImplementation mHashTable;
+	private final ITableImplementation mTableImplementation;
 	private final Cost mCost;
 
 
@@ -46,14 +46,14 @@ public final class TableInstance<T>
 		TableParam parameter = mDatabase.getTableParameter();
 
 //		mHashTable = new HashTreeTable();
-		mHashTable = new ExtendibleHashTable();
+		mTableImplementation = new ExtendibleHashTable();
 		if (aTableHeader == null)
 		{
-			mHashTable.create(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());
+			mTableImplementation.create(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());
 		}
 		else
 		{
-			mHashTable.open(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool(), aTableHeader);
+			mTableImplementation.open(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool(), aTableHeader);
 		}
 	}
 
@@ -79,7 +79,7 @@ public final class TableInstance<T>
 		{
 			ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
 
-			if (mHashTable.get(entry))
+			if (mTableImplementation.get(entry))
 			{
 				unmarshalToObjectValues(entry, aEntity);
 
@@ -124,7 +124,7 @@ public final class TableInstance<T>
 		byte[] value = getNonKeys(aEntity);
 		byte type = FLAG_NONE;
 
-		if (key.length + value.length + 1 > mHashTable.getEntryMaximumLength() / 4)
+		if (key.length + value.length + 1 > mTableImplementation.getEntryMaximumLength() / 4)
 		{
 			type = FLAG_BLOB;
 
@@ -141,7 +141,7 @@ public final class TableInstance<T>
 
 		ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
 
-		ArrayMapEntry oldEntry = mHashTable.put(entry);
+		ArrayMapEntry oldEntry = mTableImplementation.put(entry);
 
 		if (oldEntry != null)
 		{
@@ -174,7 +174,7 @@ public final class TableInstance<T>
 
 			byte[] header;
 
-			if (mHashTable.get(entry))
+			if (mTableImplementation.get(entry))
 			{
 				if (!entry.hasFlag(FLAG_BLOB))
 				{
@@ -221,7 +221,7 @@ public final class TableInstance<T>
 									try
 									{
 										ArrayMapEntry entry = new ArrayMapEntry(key, header, FLAG_BLOB);
-										mHashTable.put(entry);
+										mTableImplementation.put(entry);
 									}
 									catch (DatabaseException e)
 									{
@@ -271,7 +271,7 @@ public final class TableInstance<T>
 	{
 		ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
 
-		ArrayMapEntry oldEntry = mHashTable.remove(entry);
+		ArrayMapEntry oldEntry = mTableImplementation.remove(entry);
 
 		if (oldEntry != null)
 		{
@@ -289,31 +289,31 @@ public final class TableInstance<T>
 	 */
 	public Iterator<T> iterator()
 	{
-		return new EntityIterator(this, getLeafIterator());
+		return new EntityIterator(this, getEntryIterator());
 	}
 
 
-	Iterator<ArrayMapEntry> getLeafIterator()
+	Iterator<ArrayMapEntry> getEntryIterator()
 	{
-		return mHashTable.iterator();
+		return mTableImplementation.iterator();
 	}
 
 
 	public void clear()
 	{
-		mHashTable.removeAll();
+		mTableImplementation.removeAll(this::deleteIfBlob);
 	}
 
 
 	public void close()
 	{
-		mHashTable.close();
+		mTableImplementation.close();
 	}
 
 
 	boolean isModified()
 	{
-		return mHashTable.isChanged();
+		return mTableImplementation.isChanged();
 	}
 
 
@@ -334,7 +334,7 @@ public final class TableInstance<T>
 		}
 
 		AtomicBoolean changed = new AtomicBoolean();
-		byte[] newPointer = mHashTable.commit(changed);
+		byte[] newPointer = mTableImplementation.commit(changed);
 
 		if (!changed.get())
 		{
@@ -354,19 +354,19 @@ public final class TableInstance<T>
 
 	void rollback()
 	{
-		mHashTable.rollback();
+		mTableImplementation.rollback();
 	}
 
 
 	int size()
 	{
-		return mHashTable.size();
+		return mTableImplementation.size();
 	}
 
 
 	String integrityCheck()
 	{
-		return mHashTable.integrityCheck();
+		return mTableImplementation.integrityCheck();
 	}
 
 
@@ -441,7 +441,7 @@ public final class TableInstance<T>
 
 	void scan(ScanResult aScanResult)
 	{
-		mHashTable.scan(aScanResult);
+		mTableImplementation.scan(aScanResult);
 	}
 
 
@@ -451,7 +451,7 @@ public final class TableInstance<T>
 		{
 			Stream<T> tmp = StreamSupport.stream(new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
 			{
-				EntityIterator entityIterator = new EntityIterator(TableInstance.this, mHashTable.iterator());
+				EntityIterator entityIterator = new EntityIterator(TableInstance.this, mTableImplementation.iterator());
 
 				@Override
 				public boolean tryAdvance(Consumer<? super T> aConsumer)

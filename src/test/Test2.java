@@ -26,7 +26,7 @@ public class Test2
 
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-			for (int test = 0; test < 10; test++)
+			for (int test = 0; test < 100000; test++)
 			{
 				long seed = Math.abs(new Random().nextLong());
 				Random rnd = new Random(seed);
