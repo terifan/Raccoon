@@ -359,19 +359,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			node.mBlockPointer = null;
 		});
 
-//		BlockPointer bp = new BlockPointer();
-//		ByteArrayBuffer buf = ByteArrayBuffer.wrap(mDirectory);
-//
-//		for (int i = 0; i < mNodes.length; i++)
-//		{
-//			if (mNodes[i] != null && mNodes[i].mBlockPointer != null)
-//			{
-//				freeBlock(mNodes[i].mBlockPointer);
-//				mNodes[i].mBlockPointer = null;
-//				mNodes[i] = null;
-//			}
-//		}
-
 		setupEmptyTable();
 
 		assert mModCount == modCount : "concurrent modification";
