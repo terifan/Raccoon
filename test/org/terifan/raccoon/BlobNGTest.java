@@ -152,9 +152,9 @@ public class BlobNGTest
 		}
 
 		byte[] buffer = new byte[512];
-		device.readBlock(200, buffer, 0, buffer.length, new long[2]);
+		device.readBlock(300, buffer, 0, buffer.length, new long[2]);
 		buffer[0] ^= 1;
-		device.writeBlock(200, buffer, 0, buffer.length, new long[2]);
+		device.writeBlock(300, buffer, 0, buffer.length, new long[2]);
 
 		try (Database database = new Database(device, DatabaseOpenOption.OPEN))
 		{
