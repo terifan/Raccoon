@@ -1,4 +1,4 @@
-package org.terifan.raccoon.core;
+package org.terifan.raccoon;
 
 import org.terifan.raccoon.ArrayMapEntry;
 import org.terifan.raccoon.ArrayMap;
