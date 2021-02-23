@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 public final class ArrayMapEntry2
 {
+	private byte mFlags;
 	private byte[] mKey;
 	private byte[] mValue;
 
@@ -20,10 +21,11 @@ public final class ArrayMapEntry2
 	}
 
 
-	public ArrayMapEntry2(byte[] aKey, byte[] aValue)
+	public ArrayMapEntry2(byte[] aKey, byte[] aValue, byte aFlags)
 	{
 		mKey = aKey;
 		mValue = aValue;
+		mFlags = aFlags;
 	}
 
 
@@ -39,21 +41,52 @@ public final class ArrayMapEntry2
 	}
 
 
-	public byte[] getValue(byte[] aBuffer, int aOffset)
+	public byte[] getValue()
 	{
-		System.arraycopy(mValue, 0, aBuffer, aOffset, mValue.length);
-		return aBuffer;
+		return mValue;
 	}
 
 
-	public void setValue(byte[] aBuffer, int aOffset, int aLength)
+	public void setValue(byte[] aValue)
 	{
-		mValue = Arrays.copyOfRange(aBuffer, aOffset, aOffset + aLength);
+		mValue = aValue;
 	}
 
 
-	public int getValueLength()
+	public byte getFlags()
 	{
-		return mValue.length;
+		return mFlags;
+	}
+
+
+	public void setFlags(byte aFlags)
+	{
+		mFlags = aFlags;
+	}
+
+
+	public boolean hasFlag(byte aFlag)
+	{
+		return (mFlags & aFlag) == aFlag;
+	}
+
+
+	public void marshall(byte[] aBuffer, int aOffset)
+	{
+		aBuffer[aOffset] = mFlags;
+		System.arraycopy(mValue, 0, aBuffer, aOffset + 1, mValue.length);
+	}
+
+
+	public void unmarshall(byte[] aBuffer, int aOffset, int aLength)
+	{
+		mFlags = aBuffer[aOffset];
+		mValue = Arrays.copyOfRange(aBuffer, aOffset + 1, aOffset + aLength);
+	}
+
+
+	public int getMarshalledLength()
+	{
+		return 1 + mValue.length;
 	}
 }
