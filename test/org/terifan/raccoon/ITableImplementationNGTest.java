@@ -331,28 +331,28 @@ public class ITableImplementationNGTest
 	@DataProvider(name="iteratorSizes")
 	private Object[][] iteratorSizes()
 	{
-		return new Object[][]{{HashTreeTable.class,0},{HashTreeTable.class,10},{HashTreeTable.class,1000}};
+		return new Object[][]{{ExtendibleHashTable.class,0},{ExtendibleHashTable.class,10},{ExtendibleHashTable.class,1000}};
 	}
 
 
 	@DataProvider(name="sizeSizes")
 	private Object[][] sizeSizes()
 	{
-		return new Object[][]{{HashTreeTable.class,0},{HashTreeTable.class,1000}};
+		return new Object[][]{{ExtendibleHashTable.class,0},{ExtendibleHashTable.class,1000}};
 	}
 
 
 	@DataProvider(name="itemSizes")
 	private Object[][] itemSizes()
 	{
-		return new Object[][]{{HashTreeTable.class,1},{HashTreeTable.class,10},{HashTreeTable.class,1000}};
+		return new Object[][]{{ExtendibleHashTable.class,1},{ExtendibleHashTable.class,10},{ExtendibleHashTable.class,1000}};
 	}
 
 
 	@DataProvider(name="tableTypes")
 	private Object[][] tableTypes()
 	{
-		return new Object[][]{{HashTreeTable.class},{HashTreeTable.class},{HashTreeTable.class}};
+		return new Object[][]{{ExtendibleHashTable.class}};
 	}
 
 

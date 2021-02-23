@@ -23,8 +23,9 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	private TransactionGroup mTransactionId;
 	private BlockAccessor mBlockAccessor;
 	private PerformanceTool mPerformanceTool;
-	private BlockPointer mRootNodeBlockPointer;
-	private byte[] mDirectory;
+	private BlockPointer mRootBlockPointer;
+	private Directory mDirectory;
+	private LeafNode[] mNodes;
 	private long mHashSeed;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
@@ -32,10 +33,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	private boolean mCommitChangesToBlockDevice;
 	private int mModCount;
 
-	private LeafNode[] mNodes;
-	private int mPrefixLength;
-
-	private int mLeafSize = 64*1024;
+	private int mLeafSize = 128 * 1024;
 
 
 	public ExtendibleHashTable()
@@ -79,9 +77,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		unmarshalHeader(aTableHeader);
 
-		mDirectory = readBlock(mRootNodeBlockPointer);
-		mPrefixLength = (int)Math.ceil(Math.log(mDirectory.length / BlockPointer.SIZE) / Math.log(2));
-		mNodes = new LeafNode[1 << mPrefixLength];
+		mDirectory = new Directory(mRootBlockPointer);
+		mNodes = new LeafNode[1 << mDirectory.getPrefixLength()];
 
 		Log.dec();
 	}
@@ -90,8 +87,11 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	private byte[] marshalHeader()
 	{
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(BlockPointer.SIZE + 8 + 3);
-		mRootNodeBlockPointer.marshal(buffer);
+
+		mRootBlockPointer.marshal(buffer);
+
 		buffer.writeInt64(mHashSeed);
+
 		mBlockAccessor.getCompressionParam().marshal(buffer);
 
 		return buffer.trim().array();
@@ -102,8 +102,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	{
 		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aTableHeader);
 
-		mRootNodeBlockPointer = new BlockPointer();
-		mRootNodeBlockPointer.unmarshal(buffer);
+		mRootBlockPointer = new BlockPointer();
+		mRootBlockPointer.unmarshal(buffer);
 
 		mHashSeed = buffer.readInt64();
 
@@ -119,7 +119,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	{
 		checkOpen();
 
-		int index = computeIndex(computeHash(aEntry.getKey()));
+		int index = computeIndex(aEntry.getKey());
 
 		return loadNode(index).mMap.get(aEntry);
 	}
@@ -145,26 +145,25 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		int index = computeIndex(computeHash(aEntry.getKey()));
+		int index = computeIndex(aEntry.getKey());
 
 		LeafNode node = loadNode(index);
-		node.mDirty = true;
+		node.mChanged = true;
 
 		while (!node.mMap.put(aEntry, oldEntry))
 		{
-			if (node.mRange == 0)
+			if (node.mRangeBits == 0)
 			{
 				growDirectory();
 
-				index = computeIndex(computeHash(aEntry.getKey()));
+				index = computeIndex(aEntry.getKey());
 			}
+
 			node = splitNode(index, node);
 		}
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
-
-		assert get(aEntry) : "#########";
 
 		return oldEntry.get();
 	}
@@ -183,14 +182,14 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		int index = computeIndex(computeHash(aEntry.getKey()));
+		int index = computeIndex(aEntry.getKey());
 
 		LeafNode node = loadNode(index);
 
-		boolean modified = node.mMap.remove(aEntry, oldEntry);
+		boolean changed = node.mMap.remove(aEntry, oldEntry);
 
-		mChanged |= modified;
-		node.mDirty |= modified;
+		mChanged |= changed;
+		node.mChanged |= changed;
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
@@ -214,11 +213,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		checkOpen();
 
 		ArrayList<ArrayMapEntry> list = new ArrayList<>();
-
-		for (Iterator<ArrayMapEntry> it = iterator(); it.hasNext();)
-		{
-			list.add(it.next());
-		}
+		iterator().forEachRemaining(list::add);
 
 		return list;
 	}
@@ -250,9 +245,9 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 				assert integrityCheck() == null : integrityCheck();
 
-				freeBlock(mRootNodeBlockPointer);
+				freeBlock(mRootBlockPointer);
 
-				mRootNodeBlockPointer = writeBlock(mDirectory, BlockType.INDEX, 0L);
+				mRootBlockPointer = mDirectory.writeBuffer();
 
 				if (mCommitChangesToBlockDevice)
 				{
@@ -261,7 +256,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 				mChanged = false;
 
-				Log.i("table commit finished; root block is %s", mRootNodeBlockPointer);
+				Log.i("table commit finished; root block is %s", mRootBlockPointer);
 
 				Log.dec();
 				assert mModCount == modCount : "concurrent modification";
@@ -295,19 +290,18 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 	private void flush()
 	{
-		ByteArrayBuffer buf = ByteArrayBuffer.wrap(mDirectory);
-
 		for (int i = 0; i < mNodes.length; i++)
 		{
 			LeafNode node = mNodes[i];
 
-			if (node != null && node.mDirty)
+			if (node != null && node.mChanged)
 			{
 				freeBlock(node.mBlockPointer);
 
-				node.mBlockPointer = writeBlock(node.mMap.array(), BlockType.LEAF, node.mRange);
-				node.mBlockPointer.marshal(buf.position(i * BlockPointer.SIZE));
-				node.mDirty = false;
+				node.mBlockPointer = writeBlock(node.mMap.array(), BlockType.LEAF, node.mRangeBits);
+				node.mChanged = false;
+
+				mDirectory.setBlockPointer(i, node.mBlockPointer);
 			}
 		}
 	}
@@ -335,9 +329,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		{
 			Log.d("rollback");
 
-			mDirectory = readBlock(mRootNodeBlockPointer);
-			mPrefixLength = (int)Math.ceil(Math.log(mDirectory.length / BlockPointer.SIZE) / Math.log(2));
-			mNodes = new LeafNode[1 << mPrefixLength];
+			mDirectory = new Directory(mRootBlockPointer);
+			mNodes = new LeafNode[1 << mDirectory.getPrefixLength()];
 		}
 
 		mChanged = false;
@@ -398,22 +391,21 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 	private void setupEmptyTable()
 	{
-		mDirectory = new byte[mBlockAccessor.getBlockDevice().getBlockSize()];
-		mPrefixLength = (int)Math.ceil(Math.log(mDirectory.length / BlockPointer.SIZE) / Math.log(2));
-		mNodes = new LeafNode[1 << mPrefixLength];
+		mDirectory = new Directory(mBlockAccessor.getBlockDevice().getBlockSize());
+		mNodes = new LeafNode[1 << mDirectory.getPrefixLength()];
 
 		LeafNode node = new LeafNode();
 		node.mMap = new ArrayMap(mLeafSize);
-		node.mRange = mPrefixLength;
-		node.mDirty = true;
+		node.mRangeBits = mDirectory.getPrefixLength();
+		node.mChanged = true;
 
 		Arrays.fill(mNodes, node);
 
 		// fake blockpointer required when growing directory first time
 		new BlockPointer()
 			.setBlockType(BlockType.SPECIAL)
-			.setUserData(mPrefixLength)
-			.marshal(ByteArrayBuffer.wrap(mDirectory));
+			.setUserData(node.mRangeBits)
+			.marshal(ByteArrayBuffer.wrap(mDirectory.mBuffer));
 
 		mChanged = true;
 	}
@@ -430,7 +422,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			{
 				LeafNode expected = mNodes[index];
 
-				long range = 1 << expected.mRange;
+				long range = 1 << expected.mRangeBits;
 
 				if (range <= 0 || index + range > mNodes.length)
 				{
@@ -451,33 +443,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			}
 		}
 
-		for (int offset = 0; offset < mDirectory.length; )
-		{
-			if (BlockPointer.readBlockType(mDirectory, offset) != BlockType.LEAF && BlockPointer.readBlockType(mDirectory, offset) != BlockType.SPECIAL)
-			{
-				return "ExtendibleHashTable directory has bad block type";
-			}
-
-			long range = BlockPointer.SIZE * (1 << BlockPointer.readUserData(mDirectory, offset));
-
-			if (range <= 0 || offset + range > mDirectory.length)
-			{
-				return "ExtendibleHashTable directory has bad range";
-			}
-
-			offset += BlockPointer.SIZE;
-			range -= BlockPointer.SIZE;
-
-			for (long j = range; --j >= 0; offset++)
-			{
-				if (mDirectory[offset] != 0)
-				{
-					return "ExtendibleHashTable directory error at " + offset;
-				}
-			}
-		}
-
-		return null;
+		return mDirectory.integrityCheck();
 	}
 
 
@@ -485,12 +451,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	public int getEntryMaximumLength()
 	{
 		return 1024;
-	}
-
-
-	private void visit(HashTreeTableVisitor aVisitor)
-	{
-//		mRootNode.visit(aVisitor);
 	}
 
 
@@ -541,15 +501,9 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	}
 
 
-	private long computeHash(byte[] aKey)
+	private int computeIndex(byte[] aKey)
 	{
-		return MurmurHash3.hash64(aKey, mHashSeed);
-	}
-
-
-	private int computeIndex(long aHash)
-	{
-		return (int)(0x7fffffff & (aHash >>> (64 - mPrefixLength)));
+		return (int)(0x7fffffff & (MurmurHash3.hash64(aKey, mHashSeed) >>> (64 - mDirectory.getPrefixLength())));
 	}
 
 
@@ -574,13 +528,13 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	private void growDirectory()
 	{
 		LeafNode[] newNodes = new LeafNode[2 * mNodes.length];
-		byte[] newDirectory = new byte[2 * mDirectory.length];
+		byte[] newBuffer = new byte[2 * mDirectory.mBuffer.length];
 
 		for (int src = 0, dst = 0; src < mNodes.length; src++, dst+=2)
 		{
 			newNodes[dst + 0] = mNodes[src];
 			newNodes[dst + 1] = mNodes[src];
-			System.arraycopy(mDirectory, src * BlockPointer.SIZE, newDirectory, dst * BlockPointer.SIZE, BlockPointer.SIZE);
+			System.arraycopy(mDirectory.mBuffer, src * BlockPointer.SIZE, newBuffer, dst * BlockPointer.SIZE, BlockPointer.SIZE);
 		}
 
 		for (int i = 0; i < newNodes.length; )
@@ -588,7 +542,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			long range;
 			if (newNodes[i] != null)
 			{
-				range = ++newNodes[i].mRange;
+				range = ++newNodes[i].mRangeBits;
 			}
 			else
 			{
@@ -600,16 +554,16 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		for (int i = 0; i < newNodes.length; )
 		{
-			int range = (int)BlockPointer.readUserData(newDirectory, i * BlockPointer.SIZE);
+			int range = (int)BlockPointer.readUserData(newBuffer, i * BlockPointer.SIZE);
 			range++;
-			BlockPointer.writeUserData(newDirectory, i * BlockPointer.SIZE, range);
+			BlockPointer.writeUserData(newBuffer, i * BlockPointer.SIZE, range);
 
 			i += 1 << range;
 		}
 
-		mDirectory = newDirectory;
+		mDirectory.mBuffer = newBuffer;
+		mDirectory.mPrefixLength++;
 		mNodes = newNodes;
-		mPrefixLength++;
 
 		assert integrityCheck() == null : integrityCheck();
 	}
@@ -635,16 +589,16 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			start--;
 		}
 
-		long newRange = aNode.mRange - 1;
+		long newRange = aNode.mRangeBits - 1;
 
 		LeafNode lowNode = new LeafNode();
-		lowNode.mDirty = true;
-		lowNode.mRange = newRange;
+		lowNode.mChanged = true;
+		lowNode.mRangeBits = newRange;
 		lowNode.mMap = new ArrayMap(mLeafSize);
 
 		LeafNode highNode = new LeafNode();
-		highNode.mDirty = true;
-		highNode.mRange = newRange;
+		highNode.mChanged = true;
+		highNode.mRangeBits = newRange;
 		highNode.mMap = new ArrayMap(mLeafSize);
 
 		int partition = 1 << newRange;
@@ -654,7 +608,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		for (ArrayMapEntry entry : aNode.mMap)
 		{
-			if (computeIndex(computeHash(entry.getKey())) < mid)
+			if (computeIndex(entry.getKey()) < mid)
 			{
 				lowNode.mMap.put(entry, null);
 			}
@@ -690,7 +644,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		{
 			if (mNodes[index] != null)
 			{
-				range = 1 << mNodes[index].mRange;
+				range = 1 << mNodes[index].mRangeBits;
 
 				if (aIndex >= index && aIndex < index + range)
 				{
@@ -699,20 +653,17 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			}
 			else
 			{
-				int offset = index * BlockPointer.SIZE;
-
-				long rangeBits = BlockPointer.readUserData(mDirectory, offset);
+				long rangeBits = mDirectory.getRangeBits(index);
 				range = 1 << rangeBits;
 
 				if (aIndex >= index && aIndex < index + range)
 				{
-					BlockPointer bp = new BlockPointer();
-					bp.unmarshal(ByteArrayBuffer.wrap(mDirectory).position(offset));
+					BlockPointer bp = mDirectory.readBlockPointer(index);
 
 					node = new LeafNode();
 					node.mBlockPointer = bp;
 					node.mMap = new ArrayMap(readBlock(bp));
-					node.mRange = rangeBits;
+					node.mRangeBits = rangeBits;
 
 					Arrays.fill(mNodes, index, index + range, node);
 					return node;
@@ -823,7 +774,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 				mNode = loadNode(mIndex);
 
-				mIndex += 1 << mNode.mRange;
+				mIndex += 1 << mNode.mRangeBits;
 			}
 
 			return true;
@@ -842,18 +793,97 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 	private class LeafNode
 	{
-		long id = System.nanoTime();
-
 		BlockPointer mBlockPointer;
 		ArrayMap mMap;
-		long mRange;
-		boolean mDirty;
+		long mRangeBits;
+		boolean mChanged;
+	}
 
 
-		@Override
-		public String toString()
+	private class Directory
+	{
+		private byte[] mBuffer;
+		private int mPrefixLength;
+
+
+		private Directory(int aCapacity)
 		{
-			return "[" + id + " "+ String.format("%08x", hashCode()) + ", range=" + mRange + ", dirty=" + mDirty + "]";
+			mBuffer = new byte[aCapacity];
+			mPrefixLength = (int)Math.ceil(Math.log(mBuffer.length / BlockPointer.SIZE) / Math.log(2));
+		}
+
+
+		private Directory(BlockPointer aRootNodeBlockPointer)
+		{
+			mBuffer = readBlock(aRootNodeBlockPointer);
+			mPrefixLength = (int)Math.ceil(Math.log(mBuffer.length / BlockPointer.SIZE) / Math.log(2));
+		}
+
+
+		private int getPrefixLength()
+		{
+			return mPrefixLength;
+		}
+
+
+		private BlockPointer writeBuffer()
+		{
+			return writeBlock(mBuffer, BlockType.INDEX, 0L);
+		}
+
+
+		private void setBlockPointer(int aIndex, BlockPointer aBlockPointer)
+		{
+			aBlockPointer.marshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
+		}
+
+
+		private long getRangeBits(int aIndex)
+		{
+			return BlockPointer.readUserData(mBuffer, aIndex * BlockPointer.SIZE);
+		}
+
+
+		private BlockPointer readBlockPointer(int aIndex)
+		{
+			BlockPointer bp = new BlockPointer();
+			bp.unmarshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
+			return bp;
+		}
+
+
+		private String integrityCheck()
+		{
+			for (int offset = 0; offset < mBuffer.length; )
+			{
+				BlockType blockType = BlockPointer.readBlockType(mBuffer, offset);
+
+				if (blockType != BlockType.LEAF && blockType != BlockType.SPECIAL)
+				{
+					return "ExtendibleHashTable directory has bad block type";
+				}
+
+				long rangeBits = BlockPointer.readUserData(mBuffer, offset);
+				long range = BlockPointer.SIZE * (1 << rangeBits);
+
+				if (range <= 0 || offset + range > mBuffer.length)
+				{
+					return "ExtendibleHashTable directory has bad range";
+				}
+
+				offset += BlockPointer.SIZE;
+				range -= BlockPointer.SIZE;
+
+				for (long j = range; --j >= 0; offset++)
+				{
+					if (mBuffer[offset] != 0)
+					{
+						return "ExtendibleHashTable directory error at " + offset;
+					}
+				}
+			}
+
+			return null;
 		}
 	}
 }
