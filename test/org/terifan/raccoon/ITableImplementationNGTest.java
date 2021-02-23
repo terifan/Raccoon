@@ -262,7 +262,7 @@ public class ITableImplementationNGTest
 
 		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
-			hashTable.removeAll();
+			hashTable.removeAll(c->{});
 			hashTable.commit(null);
 
 			assertEquals(hashTable.size(), 0);

@@ -1,15 +1,16 @@
 package org.terifan.raccoon;
 
+import java.io.IOException;
 import org.terifan.raccoon.storage.BlockPointer;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.util.ByteArrayUtil;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 import org.terifan.security.messagedigest.MurmurHash3;
@@ -154,13 +155,16 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			if (node.mRange == 0)
 			{
 				growDirectory();
-				index <<= 1;
+
+				index = computeIndex(computeHash(aEntry.getKey()));
 			}
 			node = splitNode(index, node);
 		}
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
+
+		assert get(aEntry) : "#########";
 
 		return oldEntry.get();
 	}
@@ -325,20 +329,15 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		{
 			Log.d("rollback empty");
 
-			// occurs when the hashtable is created and never been commited thus rollback is to an empty hashtable
-			mDirectory = new byte[BlockPointer.SIZE];
-
-			// fake blockpointer required for growing directory
-			new BlockPointer()
-				.setBlockType(BlockType.FREE)
-				.setUserData(mPrefixLength)
-				.marshal(ByteArrayBuffer.wrap(mDirectory));
+			setupEmptyTable();
 		}
 		else
 		{
-			Log.d("rollback %s", mRootNodeBlockPointer.getBlockType() == BlockType.LEAF ? "root map" : "root node");
+			Log.d("rollback");
 
-			mDirectory = new byte[BlockPointer.SIZE];
+			mDirectory = readBlock(mRootNodeBlockPointer);
+			mPrefixLength = (int)Math.ceil(Math.log(mDirectory.length / BlockPointer.SIZE) / Math.log(2));
+			mNodes = new LeafNode[1 << mPrefixLength];
 		}
 
 		mChanged = false;
@@ -346,31 +345,21 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 
 	@Override
-	public void removeAll()
+	public void removeAll(Consumer<ArrayMapEntry> aConsumer)
 	{
 		checkOpen();
 
 		int modCount = ++mModCount;
 
-		BlockPointer bp = new BlockPointer();
-		ByteArrayBuffer buf = ByteArrayBuffer.wrap(mDirectory);
-
-		for (int i = 0; i < mNodes.length; i++)
+		new ExtendibleHashTableNodeIterator().forEachRemaining(node->
 		{
-			if (mNodes[i] != null)
-			{
-				freeBlock(mNodes[i].mBlockPointer);
-			}
+			new ArrayMap(node.mMap.array()).forEach(aConsumer);
 
-			if (BlockPointer.readBlockType(mDirectory, i * BlockPointer.SIZE) != BlockType.FREE)
-			{
-				freeBlock(bp.unmarshal(buf.position(i * BlockPointer.SIZE)));
-			}
-		}
+			freeBlock(node.mBlockPointer);
+			node.mBlockPointer = null;
+		});
 
 		setupEmptyTable();
-
-		mRootNodeBlockPointer = null;
 
 		assert mModCount == modCount : "concurrent modification";
 	}
@@ -397,15 +386,10 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		Result<Integer> result = new Result<>(0);
 
-		visit(node ->
-		{
+		new ExtendibleHashTableNodeIterator().forEachRemaining(node->{
 			mCost.mTreeTraversal++;
 
-			if (node instanceof HashTreeTableLeafNode)
-			{
-				HashTreeTableLeafNode leaf = (HashTreeTableLeafNode)node;
-				result.set(result.get() + leaf.size());
-			}
+			result.set(result.get() + node.mMap.size());
 		});
 
 		return result.get();
@@ -414,8 +398,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 	private void setupEmptyTable()
 	{
-		mHashSeed = new SecureRandom().nextLong();
-
 		mDirectory = new byte[mBlockAccessor.getBlockDevice().getBlockSize()];
 		mPrefixLength = (int)Math.ceil(Math.log(mDirectory.length / BlockPointer.SIZE) / Math.log(2));
 		mNodes = new LeafNode[1 << mPrefixLength];
@@ -429,7 +411,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		// fake blockpointer required when growing directory first time
 		new BlockPointer()
-			.setBlockType(BlockType.LEAF)
+			.setBlockType(BlockType.SPECIAL)
 			.setUserData(mPrefixLength)
 			.marshal(ByteArrayBuffer.wrap(mDirectory));
 
@@ -471,9 +453,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		for (int offset = 0; offset < mDirectory.length; )
 		{
-			if (BlockPointer.readBlockType(mDirectory, offset) != BlockType.LEAF)
+			if (BlockPointer.readBlockType(mDirectory, offset) != BlockType.LEAF && BlockPointer.readBlockType(mDirectory, offset) != BlockType.SPECIAL)
 			{
-				Log.hexDump(mDirectory);
 				return "ExtendibleHashTable directory has bad block type";
 			}
 
@@ -525,9 +506,38 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	@Override
 	public void scan(ScanResult aScanResult)
 	{
-//		aScanResult.tables++;
-//
-//		mRootNode.scan(aScanResult);
+		assert mPerformanceTool.tick("scan");
+
+		aScanResult.tables++;
+
+		new ExtendibleHashTableNodeIterator().forEachRemaining(node->scanLeaf(aScanResult, node));
+	}
+
+
+	private void scanLeaf(ScanResult aScanResult, LeafNode aNode)
+	{
+		aScanResult.enterLeafNode(aNode.mBlockPointer, aNode.mMap.array());
+		aScanResult.leafNodes++;
+
+		for (ArrayMapEntry entry : aNode.mMap)
+		{
+			aScanResult.records++;
+			aScanResult.record();
+
+			if (entry.hasFlag(TableInstance.FLAG_BLOB))
+			{
+				try
+				{
+					new Blob(mBlockAccessor, null, entry.getValue(), BlobOpenOption.READ).scan(aScanResult);
+				}
+				catch (IOException e)
+				{
+					throw new DatabaseIOException(e);
+				}
+			}
+		}
+
+		aScanResult.exitLeafNode();
 	}
 
 
@@ -754,13 +764,13 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 	private class ExtendibleHashTableMapIterator implements Iterator<ArrayMapEntry>
 	{
-		private ExtendibleHashTableIterator mIterator;
+		private ExtendibleHashTableNodeIterator mIterator;
 		private Iterator<ArrayMapEntry> mIt;
 
 
 		public ExtendibleHashTableMapIterator()
 		{
-			mIterator = new ExtendibleHashTableIterator();
+			mIterator = new ExtendibleHashTableNodeIterator();
 		}
 
 
@@ -795,7 +805,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	}
 
 
-	private class ExtendibleHashTableIterator implements Iterator<LeafNode>
+	private class ExtendibleHashTableNodeIterator implements Iterator<LeafNode>
 	{
 		private int mIndex;
 		private LeafNode mNode;

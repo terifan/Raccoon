@@ -9,5 +9,6 @@ public enum BlockType
 	INDEX,
 	BLOB_DATA,
 	BLOB_INDEX,
-	SPACEMAP
+	SPACEMAP,
+	SPECIAL
 }

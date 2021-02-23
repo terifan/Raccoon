@@ -9,6 +9,7 @@ import static java.lang.System.in;
 import java.util.Random;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.util.Log;
 import static org.testng.Assert.*;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -59,20 +60,20 @@ public class BlobNGTest
 
 		try (Database db = new Database(managedBlockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.BEST_COMPRESSION))
 		{
-			db.save(in);
-			db.commit();
+			assertTrue(db.save(in));
+			assertTrue(db.commit());
 		}
 
 		try (Database db = new Database(managedBlockDevice, DatabaseOpenOption.OPEN))
 		{
-			db.tryGet(out);
+			assertTrue(db.tryGet(out));
 
-			db.remove(out);
-			db.commit();
+			assertTrue(db.remove(out));
+			assertTrue(db.commit());
 		}
 
 		assertEquals(out.content, in.content);
-		assertEquals(managedBlockDevice.getUsedSpace(), 5);
+		assertEquals(managedBlockDevice.getUsedSpace(), 8);
 		assertTrue(managedBlockDevice.getFreeSpace() > 1000_000 / 512);
 	}
 
@@ -99,7 +100,7 @@ public class BlobNGTest
 			db.commit();
 		}
 
-		assertEquals(managedBlockDevice.getUsedSpace(), 5);
+		assertEquals(managedBlockDevice.getUsedSpace(), 8);
 		assertTrue(managedBlockDevice.getFreeSpace() > 1000_000 / 512);
 	}
 
@@ -151,9 +152,9 @@ public class BlobNGTest
 		}
 
 		byte[] buffer = new byte[512];
-		device.readBlock(100, buffer, 0, buffer.length, new long[2]);
+		device.readBlock(200, buffer, 0, buffer.length, new long[2]);
 		buffer[0] ^= 1;
-		device.writeBlock(100, buffer, 0, buffer.length, new long[2]);
+		device.writeBlock(200, buffer, 0, buffer.length, new long[2]);
 
 		try (Database database = new Database(device, DatabaseOpenOption.OPEN))
 		{

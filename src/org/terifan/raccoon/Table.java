@@ -284,7 +284,7 @@ public final class Table<T>
 
 		try
 		{
-			for (Iterator<T> it = new EntityIterator(getTableInstance(), getTableInstance().getLeafIterator()); it.hasNext();)
+			for (Iterator<T> it = new EntityIterator(getTableInstance(), getTableInstance().getEntryIterator()); it.hasNext();)
 			{
 				aConsumer.accept(it.next());
 			}
@@ -308,7 +308,7 @@ public final class Table<T>
 
 		try
 		{
-			ResultSet resultSet = new ResultSet(getTableInstance(), getTableInstance().getLeafIterator());
+			ResultSet resultSet = new ResultSet(getTableInstance(), getTableInstance().getEntryIterator());
 
 			while (resultSet.next())
 			{
