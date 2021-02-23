@@ -119,9 +119,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	{
 		checkOpen();
 
-		int index = computeIndex(aEntry.getKey());
-
-		return loadNode(index).mMap.get(aEntry);
+		return loadNode(computeIndex(aEntry)).mMap.get(aEntry);
 	}
 
 
@@ -145,7 +143,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		int index = computeIndex(aEntry.getKey());
+		int index = computeIndex(aEntry);
 
 		LeafNode node = loadNode(index);
 		node.mChanged = true;
@@ -156,7 +154,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			{
 				growDirectory();
 
-				index = computeIndex(aEntry.getKey());
+				index = computeIndex(aEntry);
 			}
 
 			node = splitNode(index, node);
@@ -182,9 +180,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		int index = computeIndex(aEntry.getKey());
-
-		LeafNode node = loadNode(index);
+		LeafNode node = loadNode(computeIndex(aEntry));
 
 		boolean changed = node.mMap.remove(aEntry, oldEntry);
 
@@ -349,6 +345,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			new ArrayMap(node.mMap.array()).forEach(aConsumer);
 
 			freeBlock(node.mBlockPointer);
+
 			node.mBlockPointer = null;
 		});
 
@@ -501,9 +498,9 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	}
 
 
-	private int computeIndex(byte[] aKey)
+	private int computeIndex(ArrayMapEntry aEntry)
 	{
-		return (int)(0x7fffffff & (MurmurHash3.hash64(aKey, mHashSeed) >>> (64 - mDirectory.getPrefixLength())));
+		return (int)(0x7fffffff & (MurmurHash3.hash64(aEntry.getKey(), mHashSeed) >>> (64 - mDirectory.getPrefixLength())));
 	}
 
 
@@ -608,7 +605,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		for (ArrayMapEntry entry : aNode.mMap)
 		{
-			if (computeIndex(entry.getKey()) < mid)
+			if (computeIndex(entry) < mid)
 			{
 				lowNode.mMap.put(entry, null);
 			}
@@ -653,8 +650,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			}
 			else
 			{
-				long rangeBits = mDirectory.getRangeBits(index);
-				range = 1 << rangeBits;
+				range = 1 << mDirectory.getRangeBits(index);
 
 				if (aIndex >= index && aIndex < index + range)
 				{
@@ -663,7 +659,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 					node = new LeafNode();
 					node.mBlockPointer = bp;
 					node.mMap = new ArrayMap(readBlock(bp));
-					node.mRangeBits = rangeBits;
+					node.mRangeBits = mDirectory.getRangeBits(index);
 
 					Arrays.fill(mNodes, index, index + range, node);
 					return node;
