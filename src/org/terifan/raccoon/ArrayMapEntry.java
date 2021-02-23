@@ -1,5 +1,7 @@
 package org.terifan.raccoon;
 
+import java.util.Arrays;
+
 
 public final class ArrayMapEntry
 {
@@ -27,6 +29,36 @@ public final class ArrayMapEntry
 	}
 
 
+	public byte[] getKey()
+	{
+		return mKey;
+	}
+
+
+	public void setKey(byte[] aKey)
+	{
+		mKey = aKey;
+	}
+
+
+	public void unmarshallKey(byte[] aBuffer, int aOffset, int aLength)
+	{
+		setKey(Arrays.copyOfRange(aBuffer, aOffset, aOffset + aLength));
+	}
+
+
+	public byte[] getValue()
+	{
+		return mValue;
+	}
+
+
+	public void setValue(byte[] aValue)
+	{
+		mValue = aValue;
+	}
+
+
 	public byte getFlags()
 	{
 		return mFlags;
@@ -45,32 +77,22 @@ public final class ArrayMapEntry
 	}
 
 
-	public byte[] getKey()
+	public void marshallValue(byte[] aBuffer, int aOffset)
 	{
-		return mKey;
+		aBuffer[aOffset] = mFlags;
+		System.arraycopy(mValue, 0, aBuffer, aOffset + 1, mValue.length);
 	}
 
 
-	public void setKey(byte[] aKey)
+	public void unmarshallValue(byte[] aBuffer, int aOffset, int aLength)
 	{
-		mKey = aKey;
+		mFlags = aBuffer[aOffset];
+		mValue = Arrays.copyOfRange(aBuffer, aOffset + 1, aOffset + aLength);
 	}
 
 
-	public byte[] getValue()
+	public int getMarshalledValueLength()
 	{
-		return mValue;
-	}
-
-
-	public void setValue(byte[] aValue)
-	{
-		mValue = aValue;
-	}
-
-
-	public int size()
-	{
-		return mKey.length + mValue.length + 1;
+		return 1 + mValue.length;
 	}
 }
