@@ -23,8 +23,8 @@ import org.terifan.raccoon.util.Log;
 
 public final class TableInstance<T>
 {
-	public static final byte FLAG_NONE = 0;
-	public static final byte FLAG_BLOB = 1;
+	public final static byte TYPE_DEFAULT = 0;
+	public final static byte TYPE_BLOB = 1;
 
 	private final Database mDatabase;
 	private final Table mTable;
@@ -44,7 +44,6 @@ public final class TableInstance<T>
 		CompressionParam compression = mDatabase.getCompressionParameter();
 		TableParam parameter = mDatabase.getTableParameter();
 
-//		mHashTable = new HashTreeTable();
 		mTableImplementation = new ExtendibleHashTable();
 		if (aTableHeader == null)
 		{
@@ -121,11 +120,11 @@ public final class TableInstance<T>
 
 		byte[] key = getKeys(aEntity);
 		byte[] value = getNonKeys(aEntity);
-		byte type = FLAG_NONE;
+		byte type = TYPE_DEFAULT;
 
 		if (key.length + value.length + 1 > mTableImplementation.getEntryMaximumLength() / 4)
 		{
-			type = FLAG_BLOB;
+			type = TYPE_BLOB;
 
 			try (Blob blob = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), null, BlobOpenOption.WRITE))
 			{
@@ -155,7 +154,7 @@ public final class TableInstance<T>
 
 	private void deleteIfBlob(ArrayMapEntry aEntry)
 	{
-		if (aEntry.hasFlag(FLAG_BLOB))
+		if (aEntry.getType() == TYPE_BLOB)
 		{
 			Blob.deleteBlob(getBlockAccessor(), aEntry.getValue());
 		}
@@ -175,7 +174,7 @@ public final class TableInstance<T>
 
 			if (mTableImplementation.get(entry))
 			{
-				if (!entry.hasFlag(FLAG_BLOB))
+				if (entry.getType() != TYPE_BLOB)
 				{
 					throw new IllegalArgumentException("Not a blob");
 				}
@@ -219,7 +218,7 @@ public final class TableInstance<T>
 									mDatabase.aquireWriteLock();
 									try
 									{
-										ArrayMapEntry entry = new ArrayMapEntry(key, header, FLAG_BLOB);
+										ArrayMapEntry entry = new ArrayMapEntry(key, header, TYPE_BLOB);
 										mTableImplementation.put(entry);
 									}
 									catch (DatabaseException e)
@@ -383,7 +382,7 @@ public final class TableInstance<T>
 	{
 		ByteArrayBuffer buffer;
 
-		if (aBuffer.hasFlag(FLAG_BLOB))
+		if (aBuffer.getType() == TYPE_BLOB)
 		{
 			try (Blob blob = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), aBuffer.getValue(), BlobOpenOption.READ))
 			{

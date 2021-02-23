@@ -524,7 +524,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			aScanResult.records++;
 			aScanResult.record();
 
-			if (entry.hasFlag(TableInstance.FLAG_BLOB))
+			if (entry.getType() == TableInstance.TYPE_BLOB)
 			{
 				try
 				{

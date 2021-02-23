@@ -248,7 +248,7 @@ class HashTreeTableLeafNode implements HashTreeTableNode
 			aScanResult.records++;
 			aScanResult.record();
 
-			if (entry.hasFlag(TableInstance.FLAG_BLOB))
+			if (entry.getType() == TableInstance.TYPE_BLOB)
 			{
 				try
 				{
@@ -288,7 +288,7 @@ class HashTreeTableLeafNode implements HashTreeTableNode
 	{
 		for (ArrayMapEntry entry : mMap)
 		{
-			if (entry.hasFlag(TableInstance.FLAG_BLOB))
+			if (entry.getType() == TableInstance.TYPE_BLOB)
 			{
 				Blob.deleteBlob(mHashTable.mBlockAccessor, entry.getValue());
 			}

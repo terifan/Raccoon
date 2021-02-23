@@ -20,7 +20,7 @@ public class ArrayMapEntryNGTest
 
 		entry2.unmarshallValue(buf, 10, buf.length - 10 - 10);
 
-		assertEquals(entry1.getFlags(), entry2.getFlags());
+		assertEquals(entry1.getType(), entry2.getType());
 		assertEquals(entry1.getValue(), entry2.getValue());
 	}
 }

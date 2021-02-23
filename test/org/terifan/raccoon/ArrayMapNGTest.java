@@ -33,7 +33,7 @@ public class ArrayMapNGTest
 
 		assertTrue(map.get(entry));
 		assertEquals(entry.getValue(), value);
-		assertEquals(entry.getFlags(), flags);
+		assertEquals(entry.getType(), flags);
 	}
 
 
@@ -190,7 +190,7 @@ public class ArrayMapNGTest
 			ArrayMapEntry entry1 = new ArrayMapEntry(entry.getKey().getBytes());
 			assertTrue(map.get(entry1));
 			assertEquals(entry1.getValue(), entry.getValue());
-			assertEquals(entry1.getFlags(), flags);
+			assertEquals(entry1.getType(), flags);
 		}
 	}
 

@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 public final class ArrayMapEntry
 {
-	private byte mFlags;
+	private byte mType;
 	private byte[] mKey;
 	private byte[] mValue;
 
@@ -21,11 +21,11 @@ public final class ArrayMapEntry
 	}
 
 
-	public ArrayMapEntry(byte[] aKey, byte[] aValue, byte aFlags)
+	public ArrayMapEntry(byte[] aKey, byte[] aValue, byte aType)
 	{
 		mKey = aKey;
 		mValue = aValue;
-		mFlags = aFlags;
+		mType = aType;
 	}
 
 
@@ -59,34 +59,28 @@ public final class ArrayMapEntry
 	}
 
 
-	public byte getFlags()
+	public byte getType()
 	{
-		return mFlags;
+		return mType;
 	}
 
 
-	public void setFlags(byte aFlags)
+	public void setType(byte aType)
 	{
-		mFlags = aFlags;
-	}
-
-
-	public boolean hasFlag(byte aFlag)
-	{
-		return (mFlags & aFlag) == aFlag;
+		mType = aType;
 	}
 
 
 	public void marshallValue(byte[] aBuffer, int aOffset)
 	{
-		aBuffer[aOffset] = mFlags;
+		aBuffer[aOffset] = mType;
 		System.arraycopy(mValue, 0, aBuffer, aOffset + 1, mValue.length);
 	}
 
 
 	public void unmarshallValue(byte[] aBuffer, int aOffset, int aLength)
 	{
-		mFlags = aBuffer[aOffset];
+		mType = aBuffer[aOffset];
 		mValue = Arrays.copyOfRange(aBuffer, aOffset + 1, aOffset + aLength);
 	}
 
