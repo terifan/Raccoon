@@ -1,9 +1,13 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.annotations.Discriminator;
+import org.terifan.raccoon.annotations.Id;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.function.Consumer;
+import org.terifan.raccoon.annotations.Column;
+import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.EntityDescriptor;
@@ -12,16 +16,17 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
+@Entity
 public final class Table<T>
 {
 	public final static int FIELD_CATEGORY_KEY = 1;
 	public final static int FIELD_CATEGORY_DISCRIMINATOR = 2;
 	public final static int FIELD_CATEGORY_VALUE = 4;
 
-	@Key private String mTypeName;
-	@Key private byte[] mDiscriminatorKey;
-	private EntityDescriptor mEntityDescriptor;
-	private byte[] mTableHeader;
+	@Id private String mTypeName;
+	@Id private byte[] mDiscriminatorKey;
+	@Column private EntityDescriptor mEntityDescriptor;
+	@Column private byte[] mTableHeader;
 
 	private transient Class mType;
 	private transient Marshaller mMarshaller;
@@ -234,7 +239,7 @@ public final class Table<T>
 
 	private transient FieldTypeCategorizer mCategorizer = aField ->
 	{
-		if (aField.getAnnotation(Key.class) != null)
+		if (aField.getAnnotation(Id.class) != null)
 		{
 			return FIELD_CATEGORY_KEY;
 		}

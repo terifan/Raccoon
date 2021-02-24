@@ -1,12 +1,12 @@
 package resources.entities;
 
-import org.terifan.raccoon.Discriminator;
-import org.terifan.raccoon.Key;
+import org.terifan.raccoon.annotations.Discriminator;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class _Fruit1K1D
 {
-	@Key public String _name;
+	@Id public String _name;
 	@Discriminator public String _color;
 	public double calories;
 

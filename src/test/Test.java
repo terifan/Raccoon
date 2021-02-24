@@ -5,11 +5,15 @@ import org.terifan.ganttchart.GanttChart;
 import org.terifan.ganttchart.SimpleGanttWindow;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
-import org.terifan.raccoon.Key;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.annotations.Discriminator;
 import org.terifan.raccoon.PerformanceTool;
 import org.terifan.raccoon.TableParam;
+import org.terifan.raccoon.annotations.Blob;
+import org.terifan.raccoon.annotations.Column;
+import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class Test
@@ -50,22 +54,27 @@ public class Test
 	}
 
 
+	@Entity(name = "entities")
 	static class MyEntity
 	{
-		@Key Integer id1;
-		@Key Integer id2;
-		String name;
-		Dimension dim;
+		@Discriminator String category;
+		@Id Integer id1;
+		@Id Integer id2;
+		@Column(name = "name") String name;
+		@Column(name = "size") Dimension dim;
+		@Blob(name = "data") byte[] data;
+
 
 		public MyEntity()
 		{
 		}
 
+
 		public MyEntity(Integer aId1, Integer aId2, String aName)
 		{
-			this.id1 = aId1;
-			this.id2 = aId2;
-			this.name = aName;
+			id1 = aId1;
+			id2 = aId2;
+			name = aName;
 			dim = new Dimension(aId1,aId2);
 		}
 

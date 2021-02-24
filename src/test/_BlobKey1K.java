@@ -1,11 +1,11 @@
 package test;
 
-import org.terifan.raccoon.Key;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class _BlobKey1K
 {
-	@Key public String _name;
+	@Id public String _name;
 
 
 	public _BlobKey1K()

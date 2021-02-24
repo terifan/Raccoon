@@ -3,15 +3,17 @@ package test;
 import java.awt.Dimension;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
-import org.terifan.raccoon.Key;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.TableParam;
+import org.terifan.raccoon.annotations.Column;
+import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class Test1
 {
-	public static void main(String ... args)
+	public static void main(String... args)
 	{
 		try
 		{
@@ -30,20 +32,19 @@ public class Test1
 					db.commit();
 				}
 
-				System.out.println(blockDevice.length()*blockDevice.getBlockSize()/1024.0/1024);
+				System.out.println(blockDevice.length() * blockDevice.getBlockSize() / 1024.0 / 1024);
 
 				try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 				{
 					System.out.println(db.remove(new MyEntity(4, "-4")));
 
 //					db.list(MyEntity.class).forEach(System.out::println);
-
 					System.out.println("--------");
 					System.out.println(db.get(new MyEntity(4, "-4")));
 				}
 			}
 
-			System.out.println(System.currentTimeMillis()-t);
+			System.out.println(System.currentTimeMillis() - t);
 		}
 		catch (Throwable e)
 		{
@@ -52,16 +53,19 @@ public class Test1
 	}
 
 
+	@Entity
 	static class MyEntity
 	{
-		@Key Integer id1;
-		@Key String id2;
-		String name;
-		Dimension dim;
+		@Id Integer id1;
+		@Id String id2;
+		@Column String name;
+		@Column Dimension dim;
+
 
 		public MyEntity()
 		{
 		}
+
 
 		public MyEntity(Integer aId1, String aId2)
 		{
@@ -69,12 +73,13 @@ public class Test1
 			this.id2 = aId2;
 		}
 
+
 		public MyEntity(Integer aId1, String aId2, String aName)
 		{
 			this.id1 = aId1;
 			this.id2 = aId2;
 			this.name = aName;
-			dim = new Dimension(aId1,aId1);
+			dim = new Dimension(aId1, aId1);
 		}
 
 

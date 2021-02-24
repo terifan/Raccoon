@@ -4,11 +4,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
-import org.terifan.raccoon.Key;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.testng.annotations.Test;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class BasicSample_1
@@ -45,7 +45,7 @@ public class BasicSample_1
 
 	static class MyEntity
 	{
-		@Key int id;
+		@Id int id;
 		String name;
 
 		public MyEntity()

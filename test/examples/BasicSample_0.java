@@ -2,11 +2,11 @@ package examples;
 
 import java.io.IOException;
 import org.terifan.raccoon.Database;
-import org.terifan.raccoon.Key;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.testng.annotations.Test;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class BasicSample_0
@@ -30,7 +30,7 @@ public class BasicSample_0
 
 	static class MyEntity
 	{
-		@Key int id;
+		@Id int id;
 		String name;
 
 		public MyEntity()

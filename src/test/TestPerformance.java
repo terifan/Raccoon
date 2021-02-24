@@ -4,8 +4,8 @@ import java.io.File;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseBuilder;
-import org.terifan.raccoon.Key;
 import org.terifan.raccoon.io.physical.FileBlockDevice;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class TestPerformance
@@ -52,7 +52,7 @@ public class TestPerformance
 
 	static class MyEntity
 	{
-		@Key int intkey1;
+		@Id int intkey1;
 		long long1;
 		double double1;
 		String string1;

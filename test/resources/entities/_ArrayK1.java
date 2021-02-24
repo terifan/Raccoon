@@ -1,12 +1,12 @@
 package resources.entities;
 
 import java.io.Serializable;
-import org.terifan.raccoon.Key;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class _ArrayK1 implements Serializable
 {
-	@Key public byte[] _id;
+	@Id public byte[] _id;
 	public byte[] value1;
 	public byte[][] value2;
 	public byte[][][] value3;

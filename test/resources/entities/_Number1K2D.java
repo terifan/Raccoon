@@ -1,15 +1,15 @@
 package resources.entities;
 
 import java.io.Serializable;
-import org.terifan.raccoon.Discriminator;
-import org.terifan.raccoon.Key;
+import org.terifan.raccoon.annotations.Discriminator;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class _Number1K2D implements Serializable
 {
 	@Discriminator public int _disc1;
 	@Discriminator public int _disc2;
-	@Key public int _id;
+	@Id public int _id;
 	public String name;
 
 

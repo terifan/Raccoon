@@ -5,17 +5,17 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import org.terifan.raccoon.Discriminator;
-import org.terifan.raccoon.Key;
+import org.terifan.raccoon.annotations.Discriminator;
 import static resources.__TestUtils.*;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class _BigObject2K1D implements Serializable
 {
 	private transient static final long serialVersionUID = 1L;
 
-	@Key public Long _key1;
-	@Key public Long _key2;
+	@Id public Long _key1;
+	@Id public Long _key2;
 
 	@Discriminator public Long _discriminator;
 

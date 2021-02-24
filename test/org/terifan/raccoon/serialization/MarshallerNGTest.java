@@ -1,7 +1,6 @@
 package org.terifan.raccoon.serialization;
 
-import org.terifan.raccoon.Discriminator;
-import org.terifan.raccoon.Key;
+import org.terifan.raccoon.annotations.Discriminator;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.ResultSet;
@@ -9,6 +8,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import resources.entities._BigObject2K1D;
 import resources.entities._Fruit1K1D;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class MarshallerNGTest
@@ -87,7 +87,7 @@ public class MarshallerNGTest
 		{
 			return 2;
 		}
-		else if (aField.getAnnotation(Key.class) != null)
+		else if (aField.getAnnotation(Id.class) != null)
 		{
 			return 1;
 		}

@@ -1,12 +1,12 @@
 package resources.entities;
 
 import java.util.Calendar;
-import org.terifan.raccoon.Key;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class _Object1K
 {
-	@Key public String _name;
+	@Id public String _name;
 	public Calendar calendar;
 
 
