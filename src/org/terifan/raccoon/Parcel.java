@@ -7,9 +7,9 @@ import java.nio.Buffer;
 import java.nio.channels.SeekableByteChannel;
 
 
-public class Blob
+public class Parcel
 {
-	public SeekableByteChannel openLob(LobOpenOption aOption) throws IOException
+	public SeekableByteChannel openChannel(LobOpenOption aOption) throws IOException
 	{
 		throw new UnsupportedOperationException();
 	}

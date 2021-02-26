@@ -112,7 +112,7 @@ public class BlobNGTest
 
 		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
 		{
-			try (Blob blob = database.openBlob(new _BlobKey1K("test"), BlobOpenOption.READ))
+			try (LobByteChannel blob = database.openLob(new _BlobKey1K("test"), LobOpenOption.READ))
 			{
 				assertEquals(blob, null);
 			}
@@ -129,7 +129,7 @@ public class BlobNGTest
 		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
 		{
 			assertEquals(database.size(new DiscriminatorType(new _BlobKey1K("apple"))), 0);
-			assertEquals(database.openBlob(new _BlobKey1K("bad"), BlobOpenOption.READ), null);
+			assertEquals(database.openLob(new _BlobKey1K("bad"), LobOpenOption.READ), null);
 			database.commit();
 		}
 	}
@@ -144,7 +144,7 @@ public class BlobNGTest
 
 		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION))
 		{
-			try (Blob blob = database.openBlob(new _BlobKey1K("good"), BlobOpenOption.CREATE))
+			try (LobByteChannel blob = database.openLob(new _BlobKey1K("good"), LobOpenOption.CREATE))
 			{
 				blob.writeAllBytes(out);
 			}
@@ -158,7 +158,7 @@ public class BlobNGTest
 
 		try (Database database = new Database(device, DatabaseOpenOption.OPEN))
 		{
-			try (Blob blob = database.openBlob(new _BlobKey1K("good"), BlobOpenOption.READ))
+			try (LobByteChannel blob = database.openLob(new _BlobKey1K("good"), LobOpenOption.READ))
 			{
 				byte[] in = blob.readAllBytes();
 
@@ -177,12 +177,12 @@ public class BlobNGTest
 		{
 			byte[] out = __TestUtils.createRandomBuffer(0, 10_000_000);
 
-			try (Blob blob = database.openBlob(new _BlobKey1K("good"), BlobOpenOption.CREATE))
+			try (LobByteChannel blob = database.openLob(new _BlobKey1K("good"), LobOpenOption.CREATE))
 			{
 				blob.writeAllBytes(out);
 			}
 
-			try (InputStream blob = database.openBlob(new _BlobKey1K("good"), BlobOpenOption.READ).newInputStream())
+			try (InputStream blob = database.openLob(new _BlobKey1K("good"), LobOpenOption.READ).newInputStream())
 			{
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				Random rnd = new Random(1);
@@ -219,7 +219,7 @@ public class BlobNGTest
 		{
 			byte[] out = __TestUtils.createRandomBuffer(0, 10_000_000);
 
-			try (OutputStream blob = database.openBlob(new _BlobKey1K("good"), BlobOpenOption.CREATE).newOutputStream())
+			try (OutputStream blob = database.openLob(new _BlobKey1K("good"), LobOpenOption.CREATE).newOutputStream())
 			{
 				ByteArrayInputStream bais = new ByteArrayInputStream(out);
 				Random rnd = new Random(1);
@@ -240,7 +240,7 @@ public class BlobNGTest
 				}
 			}
 
-			try (Blob blob = database.openBlob(new _BlobKey1K("good"), BlobOpenOption.READ))
+			try (LobByteChannel blob = database.openLob(new _BlobKey1K("good"), LobOpenOption.READ))
 			{
 				byte[] in = blob.readAllBytes();
 

@@ -5,6 +5,7 @@ import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.io.managed.DeviceHeader;
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -834,13 +835,13 @@ public final class Database implements AutoCloseable
 	/**
 	 * The contents of the stream is associated with the key found in the entity provided. The stream will persist the entity when it's closed.
 	 */
-	public Blob openBlob(Object aEntity, BlobOpenOption aOpenOption)
+	public LobByteChannel openLob(Object aEntity, LobOpenOption aOpenOption)
 	{
-		TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), aOpenOption == BlobOpenOption.READ ? DatabaseOpenOption.OPEN : DatabaseOpenOption.CREATE);
+		TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), aOpenOption == LobOpenOption.READ ? DatabaseOpenOption.OPEN : DatabaseOpenOption.CREATE);
 
 		if (table == null)
 		{
-			if (aOpenOption == BlobOpenOption.READ)
+			if (aOpenOption == LobOpenOption.READ)
 			{
 				return null;
 			}

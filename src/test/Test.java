@@ -9,7 +9,6 @@ import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.annotations.Discriminator;
 import org.terifan.raccoon.PerformanceTool;
 import org.terifan.raccoon.TableParam;
-import org.terifan.raccoon.annotations.Blob;
 import org.terifan.raccoon.annotations.Column;
 import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
@@ -18,7 +17,7 @@ import org.terifan.raccoon.annotations.Id;
 
 public class Test
 {
-	public static void main(String ... args)
+	public static void main(String... args)
 	{
 		try
 		{
@@ -32,15 +31,20 @@ public class Test
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION, new TableParam(1, 1), new PerformanceTool(chart)))
 			{
-				for (int i = 0; i < 1000; i++)
+				for (int i = 1; i < 1000; i++)
 				{
 					db.save(new MyEntity(i, -i, "01234567890123456789"));
+				}
+
+				for (int i = 1; i < 100; i++)
+				{
+					db.remove(new MyEntity(i, -i, "01234567890123456789"));
 				}
 
 				db.commit();
 			}
 
-			System.out.println((System.nanoTime() - t)/1000000.0);
+			System.out.println((System.nanoTime() - t) / 1000000.0);
 
 //			try (Database db = new Database(blockDevice, OpenOption.OPEN))
 //			{
@@ -62,7 +66,6 @@ public class Test
 		@Id Integer id2;
 		@Column(name = "name") String name;
 		@Column(name = "size") Dimension dim;
-		@Blob(name = "data") byte[] data;
 
 
 		public MyEntity()
@@ -75,7 +78,7 @@ public class Test
 			id1 = aId1;
 			id2 = aId2;
 			name = aName;
-			dim = new Dimension(aId1,aId2);
+			dim = new Dimension(aId1, aId2);
 		}
 
 

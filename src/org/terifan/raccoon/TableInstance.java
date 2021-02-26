@@ -126,7 +126,7 @@ public final class TableInstance<T>
 		{
 			type = TYPE_BLOB;
 
-			try (Blob blob = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), null, BlobOpenOption.WRITE))
+			try (ParcelChannelImpl blob = new ParcelChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), null, LobOpenOption.WRITE))
 			{
 				blob.write(ByteBuffer.wrap(value));
 				value = blob.finish();
@@ -156,12 +156,12 @@ public final class TableInstance<T>
 	{
 		if (aEntry.getType() == TYPE_BLOB)
 		{
-			Blob.deleteBlob(getBlockAccessor(), aEntry.getValue());
+			ParcelChannelImpl.deleteBlob(getBlockAccessor(), aEntry.getValue());
 		}
 	}
 
 
-	public Blob openBlob(T aEntityKey, BlobOpenOption aOpenOption)
+	public ParcelChannelImpl openBlob(T aEntityKey, LobOpenOption aOpenOption)
 	{
 		try
 		{
@@ -179,12 +179,12 @@ public final class TableInstance<T>
 					throw new IllegalArgumentException("Not a blob");
 				}
 
-				if (aOpenOption == BlobOpenOption.CREATE)
+				if (aOpenOption == LobOpenOption.CREATE)
 				{
 					throw new IllegalArgumentException("A blob already exists with this key.");
 				}
 
-				if (aOpenOption == BlobOpenOption.REPLACE)
+				if (aOpenOption == LobOpenOption.REPLACE)
 				{
 					deleteIfBlob(entry);
 
@@ -200,7 +200,7 @@ public final class TableInstance<T>
 				header = null;
 			}
 
-			Blob out = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), header, aOpenOption)
+			ParcelChannelImpl out = new ParcelChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), header, aOpenOption)
 			{
 				@Override
 				public void close()
@@ -211,25 +211,25 @@ public final class TableInstance<T>
 						{
 							if (isModified())
 							{
-									Log.d("write blob entry");
+								Log.d("write blob entry");
 
-									byte[] header = finish();
+								byte[] header = finish();
 
-									mDatabase.aquireWriteLock();
-									try
-									{
-										ArrayMapEntry entry = new ArrayMapEntry(key, header, TYPE_BLOB);
-										mTableImplementation.put(entry);
-									}
-									catch (DatabaseException e)
-									{
-										mDatabase.forceClose(e);
-										throw e;
-									}
-									finally
-									{
-										mDatabase.releaseWriteLock();
-									}
+								mDatabase.aquireWriteLock();
+								try
+								{
+									ArrayMapEntry entry = new ArrayMapEntry(key, header, TYPE_BLOB);
+									mTableImplementation.put(entry);
+								}
+								catch (DatabaseException e)
+								{
+									mDatabase.forceClose(e);
+									throw e;
+								}
+								finally
+								{
+									mDatabase.releaseWriteLock();
+								}
 							}
 						}
 						finally
@@ -384,7 +384,7 @@ public final class TableInstance<T>
 
 		if (aBuffer.getType() == TYPE_BLOB)
 		{
-			try (Blob blob = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), aBuffer.getValue(), BlobOpenOption.READ))
+			try (ParcelChannelImpl blob = new ParcelChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), aBuffer.getValue(), LobOpenOption.READ))
 			{
 				byte[] buf = new byte[(int)blob.size()];
 				blob.read(ByteBuffer.wrap(buf));

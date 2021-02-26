@@ -743,7 +743,7 @@ public class DatabaseNGTest
 		{
 			for (int i = 0; i < 10; i++)
 			{
-				try (Blob blob = database.openBlob(new _BlobKey1K("dog_" + i), BlobOpenOption.CREATE))
+				try (LobByteChannel blob = database.openLob(new _BlobKey1K("dog_" + i), LobOpenOption.CREATE))
 				{
 					blob.writeAllBytes(buf[i]);
 				}
@@ -758,7 +758,7 @@ public class DatabaseNGTest
 
 			for (int i = 0; i < 10; i++)
 			{
-				try (Blob blob = database.openBlob(new _BlobKey1K("dog_" + i), BlobOpenOption.READ))
+				try (LobByteChannel blob = database.openLob(new _BlobKey1K("dog_" + i), LobOpenOption.READ))
 				{
 					assertEquals(blob.readAllBytes(), buf[i]);
 				}

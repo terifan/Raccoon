@@ -1,11 +1,9 @@
 package examples;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
-import org.terifan.raccoon.Blob;
-import org.terifan.raccoon.BlobOpenOption;
+import org.terifan.raccoon.LobOpenOption;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.LogLevel;
@@ -14,8 +12,8 @@ import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
-import resources.__TestUtils;
 import resources.entities._BlobKey1K;
+import org.terifan.raccoon.LobByteChannel;
 
 
 public class Test1
@@ -34,7 +32,7 @@ public class Test1
 		{
 			_BlobKey1K key = new _BlobKey1K("test");
 
-			try (Blob blob = db.openBlob(key, BlobOpenOption.CREATE))
+			try (LobByteChannel blob = db.openLob(key, LobOpenOption.CREATE))
 			{
 				blob.write(ByteBuffer.wrap(writeAll));
 			}
@@ -48,7 +46,7 @@ public class Test1
 
 			byte[] readAll;
 
-			try (Blob blob = db.openBlob(key, BlobOpenOption.READ))
+			try (LobByteChannel blob = db.openLob(key, LobOpenOption.READ))
 			{
 				readAll = new byte[(int)blob.size()];
 				blob.read(ByteBuffer.wrap(readAll));

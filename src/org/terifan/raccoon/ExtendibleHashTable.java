@@ -119,6 +119,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	{
 		checkOpen();
 
+		mPerformanceTool.tick("get");
+
 		return loadNode(computeIndex(aEntry)).mMap.get(aEntry);
 	}
 
@@ -127,6 +129,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	public ArrayMapEntry put(ArrayMapEntry aEntry)
 	{
 		checkOpen();
+
+		mPerformanceTool.tick("put");
 
 		if (aEntry.getKey().length + aEntry.getValue().length > getEntryMaximumLength())
 		{
@@ -172,6 +176,9 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	{
 		checkOpen();
 
+		mPerformanceTool.enter(this, "remove", "");
+		mPerformanceTool.tick("remove");
+
 		assert mPerformanceTool.tick("remove");
 
 		int modCount = ++mModCount;
@@ -189,6 +196,8 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
+
+		mPerformanceTool.exit(this, "remove");
 
 		return oldEntry.get();
 	}
@@ -485,7 +494,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			{
 				try
 				{
-					new Blob(mBlockAccessor, null, entry.getValue(), BlobOpenOption.READ).scan(aScanResult);
+					new ParcelChannelImpl(mBlockAccessor, null, entry.getValue(), LobOpenOption.READ).scan(aScanResult);
 				}
 				catch (IOException e)
 				{
