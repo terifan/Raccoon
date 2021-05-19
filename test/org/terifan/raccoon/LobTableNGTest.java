@@ -62,6 +62,9 @@ public class LobTableNGTest
 			assertTrue(db.commit());
 		}
 
+		System.out.println(managedBlockDevice.getUsedSpace());
+		System.out.println(managedBlockDevice.getFreeSpace());
+
 		try (Database db = new Database(managedBlockDevice, DatabaseOpenOption.OPEN))
 		{
 			assertTrue(db.tryGet(out));
@@ -69,6 +72,9 @@ public class LobTableNGTest
 			assertTrue(db.remove(out));
 			assertTrue(db.commit());
 		}
+
+		System.out.println(managedBlockDevice.getUsedSpace());
+		System.out.println(managedBlockDevice.getFreeSpace());
 
 		assertEquals(out.content, in.content);
 		assertEquals(managedBlockDevice.getUsedSpace(), 8);

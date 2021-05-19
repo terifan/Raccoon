@@ -27,7 +27,7 @@ public class TestBlobs2
 			{
 				try (LobByteChannel channel = db.openLob(new PictureEntity("x", 1, "the name"), LobOpenOption.WRITE))
 				{
-					channel.writeAllBytes(new FileInputStream("d:\\juncker1.jpg"));
+					channel.writeAllBytes(new FileInputStream("d:\\desktop\\_sent_juncker.jpg"));
 				}
 
 //				PictureEntity entity = new PictureEntity("cat", 0);
