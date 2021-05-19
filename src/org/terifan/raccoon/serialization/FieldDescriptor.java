@@ -20,6 +20,8 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	private boolean mNullable;
 	private boolean mArray;
 	private boolean mPrimitive;
+	private boolean mLob;
+	private boolean mLazy;
 	private String mName;
 	private String mTypeName;
 
@@ -28,21 +30,6 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 
 	public FieldDescriptor()
 	{
-	}
-
-
-	public FieldDescriptor(int aIndex, int aCategory, int aDepth, ValueType aValueType, boolean aNullable, boolean aArray, boolean aPrimitive, String aName, String aTypeName, Field aField)
-	{
-		this.mIndex = aIndex;
-		this.mCategory = aCategory;
-		this.mDepth = aDepth;
-		this.mValueType = aValueType;
-		this.mNullable = aNullable;
-		this.mArray = aArray;
-		this.mPrimitive = aPrimitive;
-		this.mName = aName;
-		this.mTypeName = aTypeName;
-		this.mField = aField;
 	}
 
 
@@ -142,6 +129,30 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	}
 
 
+	public boolean isLob()
+	{
+		return mLob;
+	}
+
+
+	void setLob(boolean aLob)
+	{
+		mLob = aLob;
+	}
+
+
+	public boolean isLazy()
+	{
+		return mLazy;
+	}
+
+
+	void setLazy(boolean aLazy)
+	{
+		mLazy = aLazy;
+	}
+
+
 	public String getTypeName()
 	{
 		return mTypeName;
@@ -172,9 +183,11 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 		int flags
 			= (mNullable ? 1 : 0)
 			+ (mArray ? 2 : 0)
-			+ (mPrimitive ? 4 : 0);
-		aOutput.write(flags);
+			+ (mPrimitive ? 4 : 0)
+			+ (mLob ? 8 : 0)
+			+ (mLazy ? 16 : 0);
 
+		aOutput.write(flags);
 		aOutput.writeUTF(mName);
 		aOutput.writeShort(mIndex);
 		aOutput.write(mValueType.ordinal());
@@ -191,6 +204,8 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 		mNullable = (flags & 1) != 0;
 		mArray = (flags & 2) != 0;
 		mPrimitive = (flags & 4) != 0;
+		mLob = (flags & 8) != 0;
+		mLazy = (flags & 16) != 0;
 
 		mName = aInput.readUTF();
 		mIndex = aInput.readShort();
@@ -204,7 +219,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	@Override
 	public int hashCode()
 	{
-		return mName.hashCode() ^ mIndex ^ mValueType.ordinal() ^ mTypeName.hashCode() ^ mCategory ^ mDepth ^ (mArray ? 1 : 0) ^ (mNullable ? 2 : 0);
+		return mName.hashCode() ^ mIndex ^ mValueType.ordinal() ^ mTypeName.hashCode() ^ mCategory ^ mDepth ^ (mArray ? 1 : 0) ^ (mNullable ? 2 : 0) ^ (mPrimitive ? 4 : 0) ^ (mLob ? 8 : 0) ^ (mLazy ? 16 : 0);
 	}
 
 
@@ -223,6 +238,8 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 				&& (mField == null && other.mField == null || mField != null && mField.equals(other.mField))
 				&& mNullable == other.mNullable
 				&& mPrimitive == other.mPrimitive
+				&& mLob == other.mLob
+				&& mLazy == other.mLazy
 				&& mValueType == other.mValueType
 				&& mCategory == other.mCategory;
 		}

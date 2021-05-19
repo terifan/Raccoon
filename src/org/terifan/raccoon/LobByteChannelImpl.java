@@ -13,10 +13,9 @@ import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
-import org.terifan.raccoon.util.Listener;
 
 
-class ParcelChannelImpl implements LobByteChannel
+class LobByteChannelImpl implements LobByteChannel
 {
 	private final static boolean LOG = false;
 
@@ -43,7 +42,7 @@ class ParcelChannelImpl implements LobByteChannel
 	private byte[] mHeader;
 
 
-	ParcelChannelImpl(BlockAccessor aBlockAccessor, TransactionGroup aTransactionId, byte[] aHeader, LobOpenOption aOpenOption) throws IOException
+	LobByteChannelImpl(BlockAccessor aBlockAccessor, TransactionGroup aTransactionId, byte[] aHeader, LobOpenOption aOpenOption) throws IOException
 	{
 		mBlockAccessor = aBlockAccessor;
 		mTransactionId = aTransactionId;
@@ -425,7 +424,7 @@ class ParcelChannelImpl implements LobByteChannel
 
 
 	@Override
-	public ParcelChannelImpl readAllBytes(OutputStream aDst) throws IOException
+	public LobByteChannelImpl readAllBytes(OutputStream aDst) throws IOException
 	{
 		ByteBuffer buf = ByteBuffer.allocate(1024);
 
@@ -444,7 +443,7 @@ class ParcelChannelImpl implements LobByteChannel
 
 
 	@Override
-	public ParcelChannelImpl writeAllBytes(byte[] aSrc) throws IOException
+	public LobByteChannelImpl writeAllBytes(byte[] aSrc) throws IOException
 	{
 		write(ByteBuffer.wrap(aSrc));
 		return this;
@@ -452,7 +451,7 @@ class ParcelChannelImpl implements LobByteChannel
 
 
 	@Override
-	public ParcelChannelImpl writeAllBytes(InputStream aSrc) throws IOException
+	public LobByteChannelImpl writeAllBytes(InputStream aSrc) throws IOException
 	{
 		ByteBuffer buf = ByteBuffer.allocate(1024);
 
@@ -487,7 +486,7 @@ class ParcelChannelImpl implements LobByteChannel
 
 					position(streamPosition);
 					buffer.position(0);
-					ParcelChannelImpl.this.read(buffer);
+					LobByteChannelImpl.this.read(buffer);
 					buffer.flip();
 					streamPosition = position();
 				}
@@ -512,7 +511,7 @@ class ParcelChannelImpl implements LobByteChannel
 
 						position(streamPosition);
 						buffer.position(0);
-						ParcelChannelImpl.this.read(buffer);
+						LobByteChannelImpl.this.read(buffer);
 						buffer.flip();
 						streamPosition = position();
 					}
@@ -531,7 +530,7 @@ class ParcelChannelImpl implements LobByteChannel
 			@Override
 			public void close() throws IOException
 			{
-				ParcelChannelImpl.this.close();
+				LobByteChannelImpl.this.close();
 			}
 		};
 	}
@@ -553,7 +552,7 @@ class ParcelChannelImpl implements LobByteChannel
 				if (buffer.position() == buffer.capacity())
 				{
 					buffer.flip();
-					ParcelChannelImpl.this.write(buffer);
+					LobByteChannelImpl.this.write(buffer);
 					buffer.clear();
 				}
 			}
@@ -574,7 +573,7 @@ class ParcelChannelImpl implements LobByteChannel
 					if (buffer.position() == buffer.capacity())
 					{
 						buffer.flip();
-						ParcelChannelImpl.this.write(buffer);
+						LobByteChannelImpl.this.write(buffer);
 						buffer.clear();
 					}
 				}
@@ -587,10 +586,10 @@ class ParcelChannelImpl implements LobByteChannel
 				if (buffer.position() > 0)
 				{
 					buffer.flip();
-					ParcelChannelImpl.this.write(buffer);
+					LobByteChannelImpl.this.write(buffer);
 				}
 
-				ParcelChannelImpl.this.close();
+				LobByteChannelImpl.this.close();
 			}
 		};
 	}

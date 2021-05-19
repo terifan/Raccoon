@@ -132,9 +132,9 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		mPerformanceTool.tick("put");
 
-		if (aEntry.getKey().length + aEntry.getValue().length > getEntryMaximumLength())
+		if (aEntry.getKey().length + aEntry.getValue().length > getEntrySizeLimit())
 		{
-			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().length + ", value: " + aEntry.getValue().length + ", maximum: " + getEntryMaximumLength());
+			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().length + ", value: " + aEntry.getValue().length + ", maximum: " + getEntrySizeLimit());
 		}
 
 		assert mPerformanceTool.tick("put");
@@ -454,7 +454,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 
 	@Override
-	public int getEntryMaximumLength()
+	public int getEntrySizeLimit()
 	{
 		return 1024;
 	}
@@ -494,7 +494,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 			{
 				try
 				{
-					new ParcelChannelImpl(mBlockAccessor, null, entry.getValue(), LobOpenOption.READ).scan(aScanResult);
+					new LobByteChannelImpl(mBlockAccessor, null, entry.getValue(), LobOpenOption.READ).scan(aScanResult);
 				}
 				catch (IOException e)
 				{

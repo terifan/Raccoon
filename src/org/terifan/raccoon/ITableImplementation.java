@@ -62,5 +62,5 @@ public interface ITableImplementation extends Iterable<ArrayMapEntry>, AutoClose
 	void scan(ScanResult aScanResult);
 
 
-	int getEntryMaximumLength();
+	int getEntrySizeLimit();
 }

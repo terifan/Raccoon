@@ -318,7 +318,7 @@ public class ITableImplementationNGTest
 
 		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
-			byte[] key = new byte[hashTable.getEntryMaximumLength() - 1];
+			byte[] key = new byte[hashTable.getEntrySizeLimit() - 1];
 			byte[] value = {85};
 
 			hashTable.put(new ArrayMapEntry(key, value, (byte)0));

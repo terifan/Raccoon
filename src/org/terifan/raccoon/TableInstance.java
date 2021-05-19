@@ -68,7 +68,7 @@ public final class TableInstance<T>
 	}
 
 
-	public boolean get(T aEntity)
+	public boolean get(T aEntity, boolean aFetchLazy)
 	{
 		Log.i("get entity %s", aEntity);
 		Log.inc();
@@ -122,11 +122,11 @@ public final class TableInstance<T>
 		byte[] value = getNonKeys(aEntity);
 		byte type = TYPE_DEFAULT;
 
-		if (key.length + value.length + 1 > mTableImplementation.getEntryMaximumLength() / 4)
+		if (key.length + value.length + 1 > mTableImplementation.getEntrySizeLimit())
 		{
 			type = TYPE_BLOB;
 
-			try (ParcelChannelImpl blob = new ParcelChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), null, LobOpenOption.WRITE))
+			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), null, LobOpenOption.WRITE))
 			{
 				blob.write(ByteBuffer.wrap(value));
 				value = blob.finish();
@@ -156,12 +156,12 @@ public final class TableInstance<T>
 	{
 		if (aEntry.getType() == TYPE_BLOB)
 		{
-			ParcelChannelImpl.deleteBlob(getBlockAccessor(), aEntry.getValue());
+			LobByteChannelImpl.deleteBlob(getBlockAccessor(), aEntry.getValue());
 		}
 	}
 
 
-	public ParcelChannelImpl openBlob(T aEntityKey, LobOpenOption aOpenOption)
+	public LobByteChannelImpl openBlob(T aEntityKey, LobOpenOption aOpenOption)
 	{
 		try
 		{
@@ -200,7 +200,7 @@ public final class TableInstance<T>
 				header = null;
 			}
 
-			ParcelChannelImpl out = new ParcelChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), header, aOpenOption)
+			LobByteChannelImpl out = new LobByteChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), header, aOpenOption)
 			{
 				@Override
 				public void close()
@@ -384,7 +384,7 @@ public final class TableInstance<T>
 
 		if (aBuffer.getType() == TYPE_BLOB)
 		{
-			try (ParcelChannelImpl blob = new ParcelChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), aBuffer.getValue(), LobOpenOption.READ))
+			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), aBuffer.getValue(), LobOpenOption.READ))
 			{
 				byte[] buf = new byte[(int)blob.size()];
 				blob.read(ByteBuffer.wrap(buf));

@@ -379,7 +379,7 @@ public final class Database implements AutoCloseable
 
 			try
 			{
-				boolean tableExists = mSystemTable.get(aTableMetadata);
+				boolean tableExists = mSystemTable.get(aTableMetadata, true);
 
 				if (!tableExists && (aOptions == DatabaseOpenOption.OPEN || aOptions == DatabaseOpenOption.READ_ONLY))
 				{
@@ -710,7 +710,7 @@ public final class Database implements AutoCloseable
 			{
 				return false;
 			}
-			return table.get(aEntity);
+			return table.get(aEntity, false);
 		}
 		catch (DatabaseException e)
 		{
@@ -731,18 +731,35 @@ public final class Database implements AutoCloseable
 	 */
 	public <T> T get(T aEntity) throws DatabaseException
 	{
+		return getImpl(aEntity, false);
+	}
+
+
+	/**
+	 *
+	 * @throws NoSuchEntityException
+	 * if the entity cannot be found
+	 */
+	public <T> T fetch(T aEntity) throws DatabaseException
+	{
+		return getImpl(aEntity, true);
+	}
+
+
+	private <T> T getImpl(T aEntity, boolean aFetchLazy) throws DatabaseException
+	{
 		Assert.notNull(aEntity, "Argument is null");
 
 		mReadLock.lock();
 		try
 		{
-			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
+			TableInstance tableInstance = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
 
-			if (table == null)
+			if (tableInstance == null)
 			{
 				throw new NoSuchEntityException("No table exists matching type " + aEntity.getClass());
 			}
-			if (!table.get(aEntity))
+			if (!tableInstance.get(aEntity, aFetchLazy))
 			{
 				throw new NoSuchEntityException("No entity exists matching key");
 			}
