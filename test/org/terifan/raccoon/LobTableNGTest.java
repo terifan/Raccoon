@@ -77,7 +77,7 @@ public class LobTableNGTest
 		System.out.println(managedBlockDevice.getFreeSpace());
 
 		assertEquals(out.content, in.content);
-		assertEquals(managedBlockDevice.getUsedSpace(), 8);
+		assertEquals(managedBlockDevice.getUsedSpace(), 7);
 		assertTrue(managedBlockDevice.getFreeSpace() > 1000_000 / 512);
 	}
 
@@ -104,7 +104,7 @@ public class LobTableNGTest
 			db.commit();
 		}
 
-		assertEquals(managedBlockDevice.getUsedSpace(), 8);
+		assertEquals(managedBlockDevice.getUsedSpace(), 7);
 		assertTrue(managedBlockDevice.getFreeSpace() > 1000_000 / 512);
 	}
 
