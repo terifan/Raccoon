@@ -55,68 +55,71 @@ public class TableNGTest
 
 		String str = metadata.getJavaDeclaration().replace("\r\n","\n").replace("\n\n","\n");
 
-		assertEquals(str, "package resources.entities;\n" +
+		String expected = "package resources.entities;\n" +
+			"@Entity\n" +
 			"class _BigObject2K1D\n" +
 			"{\n" +
-			"	@Key Long _key1;\n" +
-			"	@Key Long _key2;\n" +
+			"	@Id Long _key1;\n" +
+			"	@Id Long _key2;\n" +
 			"	@Discriminator Long _discriminator;\n" +
-			"	boolean mBoolean;\n" +
-			"	byte mByte;\n" +
-			"	short mShort;\n" +
-			"	char mChar;\n" +
-			"	int mInt;\n" +
-			"	long mLong;\n" +
-			"	float mFloat;\n" +
-			"	double mDouble;\n" +
-			"	String mString;\n" +
-			"	Date mDate;\n" +
-			"	boolean[] mBooleans;\n" +
-			"	byte[] mBytes;\n" +
-			"	short[] mShorts;\n" +
-			"	char[] mChars;\n" +
-			"	int[] mInts;\n" +
-			"	long[] mLongs;\n" +
-			"	float[] mFloats;\n" +
-			"	double[] mDoubles;\n" +
-			"	String[] mStrings;\n" +
-			"	Date[] mDates;\n" +
-			"	boolean[][] mBooleans2;\n" +
-			"	byte[][] mBytes2;\n" +
-			"	short[][] mShorts2;\n" +
-			"	char[][] mChars2;\n" +
-			"	int[][] mInts2;\n" +
-			"	long[][] mLongs2;\n" +
-			"	float[][] mFloats2;\n" +
-			"	double[][] mDoubles2;\n" +
-			"	String[][] mStrings2;\n" +
-			"	Date[][] mDates2;\n" +
-			"	Boolean mBooleanB;\n" +
-			"	Byte mByteB;\n" +
-			"	Short mShortB;\n" +
-			"	Character mCharB;\n" +
-			"	Integer mIntB;\n" +
-			"	Long mLongB;\n" +
-			"	Float mFloatB;\n" +
-			"	Double mDoubleB;\n" +
-			"	Boolean[] mBooleansB;\n" +
-			"	Byte[] mBytesB;\n" +
-			"	Short[] mShortsB;\n" +
-			"	Character[] mCharsB;\n" +
-			"	Integer[] mIntsB;\n" +
-			"	Long[] mLongsB;\n" +
-			"	Float[] mFloatsB;\n" +
-			"	Double[] mDoublesB;\n" +
-			"	Boolean[][] mBooleans2B;\n" +
-			"	Byte[][] mBytes2B;\n" +
-			"	Short[][] mShorts2B;\n" +
-			"	Character[][] mChars2B;\n" +
-			"	Integer[][] mInts2B;\n" +
-			"	Long[][] mLongs2B;\n" +
-			"	Float[][] mFloats2B;\n" +
-			"	Double[][] mDoubles2B;\n" +
-			"	Object mArrayList;\n" +
-			"}");
+			"	@Column boolean mBoolean;\n" +
+			"	@Column byte mByte;\n" +
+			"	@Column short mShort;\n" +
+			"	@Column char mChar;\n" +
+			"	@Column int mInt;\n" +
+			"	@Column long mLong;\n" +
+			"	@Column float mFloat;\n" +
+			"	@Column double mDouble;\n" +
+			"	@Column String mString;\n" +
+			"	@Column java.util.Date mDate;\n" +
+			"	@Column boolean[] mBooleans;\n" +
+			"	@Column byte[] mBytes;\n" +
+			"	@Column short[] mShorts;\n" +
+			"	@Column char[] mChars;\n" +
+			"	@Column int[] mInts;\n" +
+			"	@Column long[] mLongs;\n" +
+			"	@Column float[] mFloats;\n" +
+			"	@Column double[] mDoubles;\n" +
+			"	@Column String[] mStrings;\n" +
+			"	@Column java.util.Date[] mDates;\n" +
+			"	@Column boolean[][] mBooleans2;\n" +
+			"	@Column byte[][] mBytes2;\n" +
+			"	@Column short[][] mShorts2;\n" +
+			"	@Column char[][] mChars2;\n" +
+			"	@Column int[][] mInts2;\n" +
+			"	@Column long[][] mLongs2;\n" +
+			"	@Column float[][] mFloats2;\n" +
+			"	@Column double[][] mDoubles2;\n" +
+			"	@Column String[][] mStrings2;\n" +
+			"	@Column java.util.Date[][] mDates2;\n" +
+			"	@Column Boolean mBooleanB;\n" +
+			"	@Column Byte mByteB;\n" +
+			"	@Column Short mShortB;\n" +
+			"	@Column Character mCharB;\n" +
+			"	@Column Integer mIntB;\n" +
+			"	@Column Long mLongB;\n" +
+			"	@Column Float mFloatB;\n" +
+			"	@Column Double mDoubleB;\n" +
+			"	@Column Boolean[] mBooleansB;\n" +
+			"	@Column Byte[] mBytesB;\n" +
+			"	@Column Short[] mShortsB;\n" +
+			"	@Column Character[] mCharsB;\n" +
+			"	@Column Integer[] mIntsB;\n" +
+			"	@Column Long[] mLongsB;\n" +
+			"	@Column Float[] mFloatsB;\n" +
+			"	@Column Double[] mDoublesB;\n" +
+			"	@Column Boolean[][] mBooleans2B;\n" +
+			"	@Column Byte[][] mBytes2B;\n" +
+			"	@Column Short[][] mShorts2B;\n" +
+			"	@Column Character[][] mChars2B;\n" +
+			"	@Column Integer[][] mInts2B;\n" +
+			"	@Column Long[][] mLongs2B;\n" +
+			"	@Column Float[][] mFloats2B;\n" +
+			"	@Column Double[][] mDoubles2B;\n" +
+			"	@Column java.util.List mArrayList;\n" +
+			"}";
+
+		assertEquals(str, expected);
 	}
 
 

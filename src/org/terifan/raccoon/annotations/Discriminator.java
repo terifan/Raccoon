@@ -9,4 +9,5 @@ import java.lang.annotation.Target;
 @Target(value = {ElementType.METHOD, ElementType.FIELD}) @Retention(value = RetentionPolicy.RUNTIME)
 public @interface Discriminator
 {
+	String name() default "";
 }

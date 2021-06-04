@@ -2,12 +2,9 @@ package org.terifan.raccoon.serialization;
 
 import org.terifan.raccoon.annotations.Discriminator;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.util.Log;
-import org.terifan.raccoon.ResultSet;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import resources.entities._BigObject2K1D;
-import resources.entities._Fruit1K1D;
 import org.terifan.raccoon.annotations.Id;
 
 
@@ -18,7 +15,7 @@ public class MarshallerNGTest
 	{
 		_BigObject2K1D in = new _BigObject2K1D().random();
 
-		EntityDescriptor entityDescriptor = new EntityDescriptor(_BigObject2K1D.class, mCategorizer);
+		EntityDescriptor entityDescriptor = new EntityDescriptor("obj", _BigObject2K1D.class, mCategorizer);
 
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(16);
 
@@ -42,7 +39,7 @@ public class MarshallerNGTest
 	{
 		_BigObject2K1D in = new _BigObject2K1D().random();
 
-		EntityDescriptor entityDescriptor = new EntityDescriptor(_BigObject2K1D.class, mCategorizer);
+		EntityDescriptor entityDescriptor = new EntityDescriptor("obj", _BigObject2K1D.class, mCategorizer);
 
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(16);
 

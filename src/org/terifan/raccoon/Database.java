@@ -17,6 +17,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
@@ -374,7 +375,7 @@ public final class Database implements AutoCloseable
 
 			aTableMetadata.initialize(this);
 
-			Log.i("open table '%s' with option %s", aTableMetadata.getTypeName(), aOptions);
+			Log.i("open table '%s' with option %s", aTableMetadata.getEntityName(), aOptions);
 			Log.inc();
 
 			try
@@ -1124,7 +1125,7 @@ public final class Database implements AutoCloseable
 		{
 			return (Table)mSystemTable.list(Table.class, Integer.MAX_VALUE).stream().filter(e ->
 			{
-				String tm = ((Table)e).getTypeName();
+				String tm = ((Table)e).getEntityName();
 				return tm.equals(aTypeName) || tm.endsWith("." + aTypeName);
 			}).findFirst().orElse(null);
 		}
@@ -1145,7 +1146,7 @@ public final class Database implements AutoCloseable
 		{
 			return (List<Table>)mSystemTable.list(Table.class, Integer.MAX_VALUE).stream().filter(e ->
 			{
-				String tm = ((Table)e).getTypeName();
+				String tm = ((Table)e).getEntityName();
 				return tm.equals(aTypeName) || tm.endsWith("." + aTypeName);
 			}).collect(Collectors.toList());
 		}
@@ -1190,11 +1191,20 @@ public final class Database implements AutoCloseable
 
 			ArrayList<DiscriminatorType<T>> result = new ArrayList<>();
 
-			String name = aType.getName();
+			String name;
+			Entity entity = (Entity)aType.getAnnotation(Entity.class);
+			if (entity != null)
+			{
+				name = entity.name();
+			}
+			else
+			{
+				name = aType.getName();
+			}
 
 			for (Table tableMetadata : (List<Table>)mSystemTable.list(Table.class, Integer.MAX_VALUE))
 			{
-				if (name.equals(tableMetadata.getTypeName()))
+				if (name.equals(tableMetadata.getEntityName()))
 				{
 					try
 					{

@@ -592,9 +592,9 @@ public class DatabaseNGTest
 			assertEquals(tableMetadatas.size(), 3);
 
 			HashSet<String> set = new HashSet<>(Arrays.asList(_Fruit1K.class.getName(), _Fruit2K.class.getName(), _Animal1K.class.getName()));
-			assertTrue(set.contains(tableMetadatas.get(0).getTypeName()));
-			assertTrue(set.contains(tableMetadatas.get(1).getTypeName()));
-			assertTrue(set.contains(tableMetadatas.get(2).getTypeName()));
+			assertTrue(set.contains(tableMetadatas.get(0).getEntityName()));
+			assertTrue(set.contains(tableMetadatas.get(1).getEntityName()));
+			assertTrue(set.contains(tableMetadatas.get(2).getEntityName()));
 		}
 	}
 

@@ -47,11 +47,11 @@ public final class TableInstance<T>
 		mTableImplementation = new ExtendibleHashTable();
 		if (aTableHeader == null)
 		{
-			mTableImplementation.create(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());
+			mTableImplementation.create(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getEntityName(), mCost, aDatabase.getPerformanceTool());
 		}
 		else
 		{
-			mTableImplementation.open(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool(), aTableHeader);
+			mTableImplementation.open(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getEntityName(), mCost, aDatabase.getPerformanceTool(), aTableHeader);
 		}
 	}
 

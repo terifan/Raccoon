@@ -9,6 +9,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Objects;
+import org.terifan.raccoon.annotations.Column;
+import org.terifan.raccoon.annotations.Discriminator;
+import org.terifan.raccoon.annotations.Id;
 import static org.terifan.raccoon.serialization.TypeMappings.VALUE_TYPES;
 import static org.terifan.raccoon.serialization.TypeMappings.CLASS_TYPES;
 import org.terifan.raccoon.util.Log;
@@ -18,7 +21,9 @@ public class EntityDescriptor implements Externalizable
 {
 	private static final long serialVersionUID = 1L;
 
-	private String mName;
+	private String mEntityName;
+	private String mTypeName;
+	private String mPackageName;
 	private FieldDescriptor[] mFields;
 
 
@@ -30,12 +35,14 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	public EntityDescriptor(Class aType, FieldTypeCategorizer aCategorizer)
+	public EntityDescriptor(String aEntityName, Class aType, FieldTypeCategorizer aCategorizer)
 	{
 		Log.d("create type declarations for %s", aType);
 		Log.inc();
 
-		mName = aType.getName();
+		mEntityName = aEntityName;
+		mTypeName = aType.getName();
+		mPackageName = aType.getPackage().getName();
 		mFields = extractFields(aType, aCategorizer);
 
 		Log.dec();
@@ -48,7 +55,7 @@ public class EntityDescriptor implements Externalizable
 		{
 			for (FieldDescriptor fieldDescriptor : mFields)
 			{
-				if (fieldDescriptor.getName().equals(field.getName()) && fieldDescriptor.getTypeName().equals(field.getType().getName()))
+				if (fieldDescriptor.getFieldName().equals(field.getName()) && fieldDescriptor.getTypeName().equals(field.getType().getName()))
 				{
 					fieldDescriptor.setField(field);
 				}
@@ -57,9 +64,21 @@ public class EntityDescriptor implements Externalizable
 	}
 
 
-	public String getName()
+	public String getEntityName()
 	{
-		return mName;
+		return mEntityName;
+	}
+
+
+	public String getTypeName()
+	{
+		return mTypeName;
+	}
+
+
+	public String getPackageName()
+	{
+		return mPackageName;
 	}
 
 
@@ -92,7 +111,9 @@ public class EntityDescriptor implements Externalizable
 	@Override
 	public void readExternal(ObjectInput aIn) throws IOException, ClassNotFoundException
 	{
-		mName = aIn.readUTF();
+		mEntityName = aIn.readUTF();
+		mTypeName = aIn.readUTF();
+		mPackageName = aIn.readUTF();
 		mFields = (FieldDescriptor[])aIn.readObject();
 	}
 
@@ -100,7 +121,9 @@ public class EntityDescriptor implements Externalizable
 	@Override
 	public void writeExternal(ObjectOutput aOut) throws IOException
 	{
-		aOut.writeUTF(mName);
+		aOut.writeUTF(mEntityName);
+		aOut.writeUTF(mTypeName);
+		aOut.writeUTF(mPackageName);
 		aOut.writeObject(mFields);
 	}
 
@@ -112,7 +135,7 @@ public class EntityDescriptor implements Externalizable
 		{
 			EntityDescriptor other = (EntityDescriptor)aObj;
 
-			return mName.equals(other.mName) && Arrays.equals(mFields, other.mFields);
+			return mEntityName.equals(other.mEntityName) && Arrays.equals(mFields, other.mFields);
 		}
 
 		return false;
@@ -122,14 +145,14 @@ public class EntityDescriptor implements Externalizable
 	@Override
 	public int hashCode()
 	{
-		return Objects.hashCode(mName) ^ Arrays.deepHashCode(mFields);
+		return Objects.hashCode(mEntityName) ^ Arrays.deepHashCode(mFields);
 	}
 
 
 	@Override
 	public String toString()
 	{
-		return "EntityDescriptor{" + "mName=" + mName + ", mFields=" + Arrays.toString(mFields) + '}';
+		return "EntityDescriptor{" + "mEntityName=" + mEntityName + ", mPackageName=" + mPackageName + ", mTypeName=" + mTypeName + ", mFields=" + Arrays.toString(mFields) + '}';
 	}
 
 
@@ -146,10 +169,38 @@ public class EntityDescriptor implements Externalizable
 
 		for (Field field : fields)
 		{
+			String columnName = "";
+
+			Column column = (Column)field.getAnnotation(Column.class);
+			if (column != null && column.name().length() > 0)
+			{
+				columnName = column.name();
+			}
+
+			Id id = (Id)field.getAnnotation(Id.class);
+			if (id != null && id.name().length() > 0)
+			{
+				columnName = id.name();
+			}
+
+			Discriminator disc = (Discriminator)field.getAnnotation(Discriminator.class);
+			if (disc != null && disc.name().length() > 0)
+			{
+				columnName = disc.name();
+			}
+
+			Class<?> tmp = field.getType();
+			while (tmp.isArray())
+			{
+				tmp = tmp.getComponentType();
+			}
+			String typeName = tmp.getName();
+
 			FieldDescriptor fieldDescriptor = new FieldDescriptor();
 			fieldDescriptor.setField(field);
-			fieldDescriptor.setName(field.getName());
-			fieldDescriptor.setTypeName(field.getType().getName());
+			fieldDescriptor.setFieldName(field.getName());
+			fieldDescriptor.setColumnName(columnName);
+			fieldDescriptor.setTypeName(typeName);
 			fieldDescriptor.setIndex(index++);
 			fieldDescriptor.setCategory(aCategorizer.categorize(field));
 

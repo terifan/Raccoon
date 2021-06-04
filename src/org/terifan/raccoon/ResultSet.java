@@ -34,7 +34,7 @@ public class ResultSet
 		mMarshaller = new Marshaller(aEntityDescriptor);
 		mValues = new Object[mTypes.length];
 		mTypeNameLookup = new HashMap<>();
-		Arrays.stream(mTypes).forEach(e->mTypeNameLookup.put(e.getName(), e));
+		Arrays.stream(mTypes).forEach(e->mTypeNameLookup.put(e.getFieldName(), e));
 	}
 
 
@@ -47,7 +47,7 @@ public class ResultSet
 		mMarshaller = new Marshaller(mEntityDescriptor);
 		mValues = new Object[mTypes.length];
 		mTypeNameLookup = new HashMap<>();
-		Arrays.stream(mTypes).forEach(e->mTypeNameLookup.put(e.getName(), e));
+		Arrays.stream(mTypes).forEach(e->mTypeNameLookup.put(e.getFieldName(), e));
 	}
 
 
@@ -114,6 +114,6 @@ public class ResultSet
 	@Override
 	public String toString()
 	{
-		return "ResultSet{" + "mEntityDescriptor=" + mEntityDescriptor.getName() + "mTypes=" + Arrays.toString(mTypes) + '}';
+		return "ResultSet{" + "mEntityDescriptor=" + mEntityDescriptor.getEntityName() + "mTypes=" + Arrays.toString(mTypes) + '}';
 	}
 }
