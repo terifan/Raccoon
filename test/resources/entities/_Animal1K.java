@@ -1,11 +1,11 @@
 package resources.entities;
 
-import org.terifan.raccoon.Key;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class _Animal1K
 {
-	@Key public String _name;
+	@Id public String _name;
 	public int number;
 	public double weight;
 	public String color;

@@ -1,12 +1,12 @@
 package resources.entities;
 
-import org.terifan.raccoon.Key;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class _Fruit2K
 {
-	@Key public String _color;
-	@Key public String _name;
+	@Id public String _color;
+	@Id public String _name;
 	public String shape;
 	public String taste;
 	public int value;

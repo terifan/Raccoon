@@ -1,13 +1,13 @@
 package resources.entities;
 
-import org.terifan.raccoon.Discriminator;
-import org.terifan.raccoon.Key;
+import org.terifan.raccoon.annotations.Discriminator;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class _Number1K1D
 {
 	@Discriminator public boolean _odd;
-	@Key public int _number;
+	@Id public int _number;
 	public String name;
 
 

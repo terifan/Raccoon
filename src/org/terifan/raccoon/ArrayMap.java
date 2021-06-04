@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import org.terifan.raccoon.util.ByteArrayUtil;
 import org.terifan.raccoon.util.Result;
 
 
@@ -12,34 +13,34 @@ import org.terifan.raccoon.util.Result;
  * This is a fixed size buffer for key/value storage suitable for persistence on external media. An array is wrapped and read and
  * written to directly maintaining all necessary structural information inside the array at all time.
  *
- * implementation notes: an empty map will always consist of only zero value bytes, the map does not record the capacity, this must be
+ * implementation note: an empty map will always consist of only zero value bytes, the map does not record the capacity, this must be
  * provided when an instance is created
  *
  * Data layout:
  *
  * [header]
  *   2 bytes - entry count
- *   2 bytes - free space offset (minus HEADER_SIZE)
+ *   4 bytes - free space offset (minus HEADER_SIZE)
  * [list of entries]
  *   (entry 1..n)
  *   2 bytes - key length
  *   2 bytes - value length
  *   n bytes - key
- *   1 byte - flags
  *   n bytes - value
  * [free space]
  *   n bytes - zeros
  * [list of pointers]
  *   (pointer 1..n)
- *   2 bytes - offset
+ *   4 bytes - offset
  */
 public class ArrayMap implements Iterable<ArrayMapEntry>
 {
-	private final static int MAX_CAPACITY = 1 << 16;
-	private final static int HEADER_SIZE = 2 + 2;
-	private final static int ENTRY_POINTER_SIZE = 2;
+	private final static int HEADER_SIZE = 2 + 4;
+	private final static int ENTRY_POINTER_SIZE = 4;
 	private final static int ENTRY_HEADER_SIZE = 2 + 2;
-	private final static int MAX_VALUE_SIZE = (1 << 16) - 1;
+
+	public final static int MAX_VALUE_SIZE = (1 << 16) - 1;
+	public final static int MAX_ENTRY_COUNT = (1 << 16) - 1;
 
 	public final static int EXACT = 0;
 	public final static int NEAR = 1;
@@ -48,24 +49,24 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	private final static int ENTRY_OVERHEAD = ENTRY_POINTER_SIZE + ENTRY_HEADER_SIZE;
 	public final static int OVERHEAD = HEADER_SIZE + ENTRY_OVERHEAD + ENTRY_POINTER_SIZE;
 
-	protected byte[] mBuffer;
-	protected int mStartOffset;
-	protected int mCapacity;
-	protected int mPointerListOffset;
-	protected int mFreeSpaceOffset;
-	protected int mEntryCount;
+	private byte[] mBuffer;
+	private int mStartOffset;
+	private int mCapacity;
+	private int mPointerListOffset;
+	private int mFreeSpaceOffset;
+	private int mEntryCount;
 	private int mModCount;
 
 
 	/**
-	 * Create a new LeafNode with specified capacity.
+	 * Create a new ArrayMap with specified capacity.
 	 *
 	 * @param aCapacity the capacity (length) of the buffer. Maximum 65536 bytes.
 	 * @return the buffer
 	 */
 	public ArrayMap(int aCapacity)
 	{
-		if (aCapacity <= HEADER_SIZE || aCapacity > MAX_CAPACITY)
+		if (aCapacity <= HEADER_SIZE)
 		{
 			throw new IllegalArgumentException("Illegal bucket size: " + aCapacity);
 		}
@@ -79,7 +80,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 
 	/**
-	 * Create a new LeafNode wrapping the provided array.
+	 * Create a new ArrayMap wrapping the provided array.
 	 *
 	 * @param aBuffer the byte array to wrap
 	 * @return the buffer
@@ -91,7 +92,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 
 	/**
-	 * Create a new LeafNode wrapping the provided array reading the actual map at the specified offset.
+	 * Create a new ArrayMap wrapping the provided array reading the actual map at the specified offset.
 	 *
 	 * @param aBuffer the byte array to wrap
 	 * @param aOffset an offset to the the actual map in the byte array.
@@ -100,10 +101,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	 */
 	public ArrayMap(byte[] aBuffer, int aOffset, int aCapacity)
 	{
-		if (aCapacity > MAX_CAPACITY)
-		{
-			throw new IllegalArgumentException("Bucket exceeds maximum size.");
-		}
 		if (aOffset < 0 || aOffset + aCapacity > aBuffer.length)
 		{
 			throw new IllegalArgumentException("Illegal bucket offset.");
@@ -114,10 +111,10 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		mCapacity = aCapacity;
 
 		mEntryCount = readInt16(0);
-		mFreeSpaceOffset = readInt16(2) + HEADER_SIZE;
+		mFreeSpaceOffset = readInt32(2) + HEADER_SIZE;
 		mPointerListOffset = mCapacity - ENTRY_POINTER_SIZE * mEntryCount;
 
-		int limit = (mCapacity - HEADER_SIZE) / (ENTRY_HEADER_SIZE + ENTRY_POINTER_SIZE + 1);
+		int limit = (mCapacity - HEADER_SIZE) / (ENTRY_HEADER_SIZE + ENTRY_POINTER_SIZE);
 
 		if (mEntryCount > limit)
 		{
@@ -125,6 +122,12 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		}
 
 		assert integrityCheck() == null : integrityCheck();
+	}
+
+
+	public int getCapacity()
+	{
+		return mCapacity;
 	}
 
 
@@ -149,13 +152,12 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	public boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
 		byte[] key = aEntry.getKey();
-		byte[] value = aEntry.getValue();
-		byte format = aEntry.getFlags();
-		int newValueLengthPlus1 = 1 + value.length;
+		int valueLength = aEntry.getMarshalledValueLength();
+		int keyLength = key.length;
 
-		if (key.length > MAX_VALUE_SIZE || newValueLengthPlus1 > MAX_VALUE_SIZE || key.length + newValueLengthPlus1 > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
+		if (keyLength > MAX_VALUE_SIZE || valueLength > MAX_VALUE_SIZE || keyLength + valueLength > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
 		{
-			throw new IllegalArgumentException("Entry length exceeds capacity of this map: " + (key.length + newValueLengthPlus1) + " > " + (mCapacity - ENTRY_HEADER_SIZE - HEADER_SIZE - ENTRY_POINTER_SIZE));
+			throw new IllegalArgumentException("Entry length exceeds capacity of this map: " + (keyLength + valueLength) + " > " + (mCapacity - ENTRY_HEADER_SIZE - HEADER_SIZE - ENTRY_POINTER_SIZE));
 		}
 
 		int index = indexOf(key);
@@ -163,33 +165,30 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		// if key already exists
 		if (index >= 0)
 		{
-			int oldValueLengthPlus1 = readValueLength(index);
+			int entryOffset = readEntryOffset(index);
+			int oldValueLength = readValueLength(entryOffset);
 
-			// fast put
-			if (oldValueLengthPlus1 == newValueLengthPlus1)
+			// replace with same length
+			if (oldValueLength == valueLength)
 			{
-				int entryOffset = readEntryOffset(index);
-				int valueOffset = entryOffset + ENTRY_HEADER_SIZE + readKeyLength(index);
-				int offset = mStartOffset + valueOffset;
+				int valueOffset = readValueOffset(entryOffset);
 
 				if (oExistingEntry != null)
 				{
 					ArrayMapEntry old = new ArrayMapEntry();
 					old.setKey(key);
-					old.setFlags(mBuffer[offset]);
-					old.setValue(Arrays.copyOfRange(mBuffer, offset + 1, offset + oldValueLengthPlus1));
+					old.unmarshallValue(mBuffer, mStartOffset + valueOffset, oldValueLength);
 					oExistingEntry.set(old);
 				}
 
-				System.arraycopy(value, 0, mBuffer, offset + 1, value.length);
-				mBuffer[offset] = format;
+				aEntry.marshallValue(mBuffer, mStartOffset + valueOffset);
 
 				assert integrityCheck() == null : integrityCheck();
 
 				return true;
 			}
 
-			if (newValueLengthPlus1 - oldValueLengthPlus1 > getFreeSpace())
+			if (valueLength - oldValueLength > getFreeSpace())
 			{
 				return false;
 			}
@@ -198,7 +197,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 			assert indexOf(key) == (-index) - 1;
 		}
-		else if (getFreeSpace() < ENTRY_HEADER_SIZE + key.length + newValueLengthPlus1 + ENTRY_POINTER_SIZE)
+		else if (getFreeSpace() < ENTRY_HEADER_SIZE + keyLength + valueLength + ENTRY_POINTER_SIZE)
 		{
 			return false;
 		}
@@ -207,22 +206,26 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			index = (-index) - 1;
 		}
 
+		if (++mEntryCount > MAX_ENTRY_COUNT)
+		{
+			return false;
+		}
+
 		int modCount = ++mModCount;
 
 		// make room for pointer
 		System.arraycopy(mBuffer, mStartOffset + mPointerListOffset, mBuffer, mStartOffset + mPointerListOffset - ENTRY_POINTER_SIZE, ENTRY_POINTER_SIZE * index);
 		mPointerListOffset -= ENTRY_POINTER_SIZE;
-		mEntryCount++;
 
 		// write entry
-		writeEntryOffset(index, mFreeSpaceOffset);
-		writeEntryHeader(index, key.length, newValueLengthPlus1);
-		int valueOffset = mStartOffset + readValueOffset(index);
-		System.arraycopy(key, 0, mBuffer, mStartOffset + readKeyOffset(index), key.length);
-		System.arraycopy(value, 0, mBuffer, valueOffset + 1, value.length);
-		mBuffer[valueOffset] = format;
+		int entryOffset = mFreeSpaceOffset;
+		writeEntryOffset(index, entryOffset);
+		writeKeyLength(entryOffset, keyLength);
+		writeValueLength(entryOffset, valueLength);
+		System.arraycopy(key, 0, mBuffer, mStartOffset + readKeyOffset(entryOffset), keyLength);
+		aEntry.marshallValue(mBuffer, mStartOffset + readValueOffset(entryOffset));
 
-		mFreeSpaceOffset += ENTRY_HEADER_SIZE + key.length + newValueLengthPlus1;
+		mFreeSpaceOffset += ENTRY_HEADER_SIZE + keyLength + valueLength;
 
 		writeBufferHeader();
 
@@ -277,10 +280,11 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	private void loadValue(int aIndex, ArrayMapEntry aEntry)
 	{
-		int valueOffset = mStartOffset + readValueOffset(aIndex);
+		int entryOffset = readEntryOffset(aIndex);
+		int valueOffset = readValueOffset(entryOffset);
+		int valueLength = readValueLength(entryOffset);
 
-		aEntry.setFlags(mBuffer[valueOffset]);
-		aEntry.setValue(Arrays.copyOfRange(mBuffer, valueOffset + 1, valueOffset + readValueLength(aIndex)));
+		aEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
 	}
 
 
@@ -308,12 +312,12 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		if (oOldEntry != null)
 		{
 			ArrayMapEntry old = new ArrayMapEntry();
-			oOldEntry.set(old);
 			get(aIndex, old);
+			oOldEntry.set(old);
 		}
 
 		int offset = readEntryOffset(aIndex);
-		int length = readEntryLength(aIndex);
+		int length = readEntryLength(offset);
 
 		assert mStartOffset + offset + length <= mStartOffset + mFreeSpaceOffset;
 
@@ -352,12 +356,14 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	public ArrayMapEntry get(int aIndex, ArrayMapEntry aEntry)
 	{
-		int keyOffset = mStartOffset + readKeyOffset(aIndex);
-		int valueOffset = mStartOffset + readValueOffset(aIndex);
+		int entryOffset = readEntryOffset(aIndex);
+		int keyOffset = readKeyOffset(entryOffset);
+		int keyLength = readKeyLength(entryOffset);
+		int valueOffset = readValueOffset(entryOffset);
+		int valueLength = readValueLength(entryOffset);
 
-		aEntry.setKey(Arrays.copyOfRange(mBuffer, keyOffset, keyOffset + readKeyLength(aIndex)));
-		aEntry.setFlags(mBuffer[valueOffset]);
-		aEntry.setValue(Arrays.copyOfRange(mBuffer, valueOffset + 1, valueOffset + readValueLength(aIndex)));
+		aEntry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
+		aEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
 
 		return aEntry;
 	}
@@ -392,7 +398,11 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		{
 			int mid = (low + high) >>> 1;
 
-			int cmp = compare(aKey, 0, aKey.length, mBuffer, mStartOffset + readKeyOffset(mid), readKeyLength(mid));
+			int entryOffset = readEntryOffset(mid);
+			int keyOffset = readKeyOffset(entryOffset);
+			int keyLength = readKeyLength(entryOffset);
+
+			int cmp = compare(aKey, 0, aKey.length, mBuffer, mStartOffset + keyOffset, keyLength);
 
 			if (cmp > 0)
 			{
@@ -440,31 +450,13 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	private void writeBufferHeader()
 	{
 		writeInt16(0, mEntryCount);
-		writeInt16(2, mFreeSpaceOffset - HEADER_SIZE);
+		writeInt32(2, mFreeSpaceOffset - HEADER_SIZE);
 	}
 
 
-	private void writeEntryHeader(int aIndex, int aKeyLength, int aValueLength)
+	private int readEntryLength(int aEntryOffset)
 	{
-		int i = readEntryOffset(aIndex);
-
-		writeInt16(i + 0, aKeyLength);
-		writeInt16(i + 2, aValueLength);
-	}
-
-
-	private int readEntryLength(int aIndex)
-	{
-		return ENTRY_HEADER_SIZE + readKeyLength(aIndex) + readValueLength(aIndex);
-	}
-
-
-	private void writeEntryOffset(int aIndex, int aOffset)
-	{
-		assert aIndex >= 0 && aIndex < mEntryCount;
-		assert aOffset > 0 && aOffset < mCapacity;
-
-		writeInt16(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE, aOffset);
+		return ENTRY_HEADER_SIZE + readKeyLength(aEntryOffset) + readValueLength(aEntryOffset);
 	}
 
 
@@ -472,44 +464,76 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount;
 
-		return readInt16(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE);
+		return readInt32(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE);
 	}
 
 
-	protected int readKeyOffset(int aIndex)
+	private void writeEntryOffset(int aIndex, int aEntryOffset)
 	{
-		return readEntryOffset(aIndex) + ENTRY_HEADER_SIZE;
+		assert aIndex >= 0 && aIndex < mEntryCount;
+		assert aEntryOffset > 0 && aEntryOffset < mCapacity;
+
+		writeInt32(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE, aEntryOffset);
 	}
 
 
-	protected int readKeyLength(int aIndex)
+	private int readKeyOffset(int aEntryOffset)
 	{
-		return readInt16(readEntryOffset(aIndex));
+		return aEntryOffset + ENTRY_HEADER_SIZE;
 	}
 
 
-	protected int readValueOffset(int aIndex)
+	private int readKeyLength(int aEntryOffset)
 	{
-		return readKeyOffset(aIndex) + readKeyLength(aIndex);
+		return readInt16(aEntryOffset);
 	}
 
 
-	protected int readValueLength(int aIndex)
+	private void writeKeyLength(int aEntryOffset, int aKeyLength)
 	{
-		return readInt16(readEntryOffset(aIndex) + 2);
+		writeInt16(aEntryOffset, aKeyLength);
+	}
+
+
+	private int readValueOffset(int aEntryOffset)
+	{
+		return aEntryOffset + ENTRY_HEADER_SIZE + readKeyLength(aEntryOffset);
+	}
+
+
+	private int readValueLength(int aEntryOffset)
+	{
+		return readInt16(aEntryOffset + 2);
+	}
+
+
+	private void writeValueLength(int aEntryOffset, int aValueLength)
+	{
+		writeInt16(aEntryOffset + 2, aValueLength);
 	}
 
 
 	private int readInt16(int aOffset)
 	{
-		return ((0xff & mBuffer[mStartOffset + aOffset]) << 8) + (0xff & mBuffer[mStartOffset + aOffset + 1]);
+		return ByteArrayUtil.getInt16(mBuffer, mStartOffset + aOffset);
 	}
 
 
 	private void writeInt16(int aOffset, int aValue)
 	{
-		mBuffer[mStartOffset + aOffset + 0] = (byte)(aValue >> 8);
-		mBuffer[mStartOffset + aOffset + 1] = (byte)aValue;
+		ByteArrayUtil.putInt16(mBuffer, mStartOffset + aOffset, aValue);
+	}
+
+
+	private int readInt32(int aOffset)
+	{
+		return ByteArrayUtil.getInt32(mBuffer, mStartOffset + aOffset);
+	}
+
+
+	private void writeInt32(int aOffset, int aValue)
+	{
+		ByteArrayUtil.putInt32(mBuffer, mStartOffset + aOffset, aValue);
 	}
 
 
@@ -539,23 +563,23 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 		for (int i = 0, prevKeyOffset = -1, prevKeyLength = -1; i < mEntryCount; i++)
 		{
-			int offset = mStartOffset + readEntryOffset(i);
-			int keyOffset = mStartOffset + readKeyOffset(i);
-			int keyLength = readKeyLength(i);
-			int length = readEntryLength(i);
+			int entryOffset = readEntryOffset(i);
+			int bufferOffset = entryOffset;
+			int keyOffset = readKeyOffset(entryOffset);
+			int keyLength = readKeyLength(entryOffset);
+			int length = readEntryLength(entryOffset);
 
 			dataLength += length;
 
-			if (offset < mStartOffset + HEADER_SIZE)
+			if (bufferOffset < HEADER_SIZE)
 			{
 				return "Entry offset before header";
 			}
-			if (offset + length > mStartOffset + mFreeSpaceOffset)
+			if (bufferOffset + length > mFreeSpaceOffset)
 			{
-				return "Entry offset after free space (" + (offset + " + " + length) + ">" + (mStartOffset + mFreeSpaceOffset) + ")";
+				return "Entry offset after free space (" + ((mStartOffset + bufferOffset) + " + " + length) + ">" + (mStartOffset + mFreeSpaceOffset) + ")";
 			}
-
-			if (i > 0 && compare(mBuffer, prevKeyOffset, prevKeyLength, mBuffer, keyOffset, keyLength) >= 0)
+			if (i > 0 && compare(mBuffer, mStartOffset + prevKeyOffset, prevKeyLength, mBuffer, mStartOffset + keyOffset, keyLength) >= 0)
 			{
 				return "Keys are out of order";
 			}
@@ -629,11 +653,11 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			}
 
 			int entryOffset = readEntryOffset(mIndex);
-			int keyLength = readInt16(entryOffset);
-			int offset = mStartOffset + entryOffset + ENTRY_HEADER_SIZE;
+			int keyLength = readKeyLength(entryOffset);
+			int keyOffset = readKeyOffset(entryOffset);
 
 			ArrayMapEntry entry = new ArrayMapEntry();
-			entry.setKey(Arrays.copyOfRange(mBuffer, offset, offset + keyLength));
+			entry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
 			loadValue(mIndex, entry);
 
 			mIndex++;

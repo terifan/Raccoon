@@ -1,9 +1,13 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.annotations.Discriminator;
+import org.terifan.raccoon.annotations.Id;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.function.Consumer;
+import org.terifan.raccoon.annotations.Column;
+import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.serialization.EntityDescriptor;
@@ -12,16 +16,17 @@ import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
+@Entity
 public final class Table<T>
 {
 	public final static int FIELD_CATEGORY_KEY = 1;
 	public final static int FIELD_CATEGORY_DISCRIMINATOR = 2;
 	public final static int FIELD_CATEGORY_VALUE = 4;
 
-	@Key private String mTypeName;
-	@Key private byte[] mDiscriminatorKey;
-	private EntityDescriptor mEntityDescriptor;
-	private byte[] mTableHeader;
+	@Id private String mEntityName;
+	@Id private byte[] mDiscriminatorKey;
+	@Column private EntityDescriptor mEntityDescriptor;
+	@Column private byte[] mTableHeader;
 
 	private transient Class mType;
 	private transient Marshaller mMarshaller;
@@ -37,8 +42,18 @@ public final class Table<T>
 	Table(Database aDatabase, Class aClass, DiscriminatorType aDiscriminator)
 	{
 		mType = aClass;
-		mTypeName = mType.getName();
-		mEntityDescriptor = new EntityDescriptor(mType, mCategorizer);
+
+		Entity entity = (Entity)mType.getAnnotation(Entity.class);
+		if (entity != null)
+		{
+			mEntityName = entity.name();
+		}
+		else
+		{
+			mEntityName = mType.getName();
+		}
+
+		mEntityDescriptor = new EntityDescriptor(mEntityName, mType, mCategorizer);
 		mMarshaller = new Marshaller(mEntityDescriptor);
 
 		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);
@@ -57,7 +72,7 @@ public final class Table<T>
 
 		try
 		{
-			mType = Class.forName(mTypeName);
+			mType = Class.forName(mEntityName);
 		}
 		catch (Exception | Error e)
 		{
@@ -116,13 +131,30 @@ public final class Table<T>
 
 	public Class getType()
 	{
+		if (mType == null)
+		{
+			try
+			{
+				mType = Class.forName(getTypeName());
+			}
+			catch (Exception e)
+			{
+				// ignore
+			}
+		}
 		return mType;
+	}
+
+
+	public String getEntityName()
+	{
+		return mEntityName;
 	}
 
 
 	public String getTypeName()
 	{
-		return mTypeName;
+		return mEntityDescriptor.getTypeName();
 	}
 
 
@@ -151,7 +183,7 @@ public final class Table<T>
 		{
 			Table other = (Table)aOther;
 
-			return mTypeName.equals(other.mTypeName) && Arrays.equals(mDiscriminatorKey, other.mDiscriminatorKey);
+			return mEntityName.equals(other.mEntityName) && Arrays.equals(mDiscriminatorKey, other.mDiscriminatorKey);
 		}
 
 		return false;
@@ -161,7 +193,7 @@ public final class Table<T>
 	@Override
 	public int hashCode()
 	{
-		return mTypeName.hashCode() ^ Arrays.hashCode(mDiscriminatorKey);
+		return mEntityName.hashCode() ^ Arrays.hashCode(mDiscriminatorKey);
 	}
 
 
@@ -172,10 +204,10 @@ public final class Table<T>
 
 		if (s == null)
 		{
-			return mTypeName;
+			return mEntityName;
 		}
 
-		return mTypeName + "[" + s + "]";
+		return mEntityName + "[" + s + "]";
 	}
 
 
@@ -197,7 +229,7 @@ public final class Table<T>
 				result.append(", ");
 			}
 
-			result.append(fieldType.getName()).append("=").append(resultSet.get(fieldType));
+			result.append(fieldType.getFieldName()).append("=").append(resultSet.get(fieldType));
 		}
 
 		return result.toString();
@@ -210,20 +242,39 @@ public final class Table<T>
 	public String getJavaDeclaration()
 	{
 		StringBuilder sb = new StringBuilder();
-		sb.append("package " + mEntityDescriptor.getName().substring(0, mEntityDescriptor.getName().lastIndexOf('.')) + ";\n\n");
-		sb.append("class " + mEntityDescriptor.getName().substring(mEntityDescriptor.getName().lastIndexOf('.') + 1) + "\n{\n");
+		sb.append("package " + mEntityDescriptor.getPackageName() + ";\n\n");
+
+		String className = mEntityDescriptor.getTypeName().substring(mEntityDescriptor.getTypeName().lastIndexOf('.') + 1);
+		if (className.contains("$"))
+		{
+			className = className.substring(className.lastIndexOf("$") + 1);
+		}
+
+		if (mEntityDescriptor.getEntityName().length() > 0 && !mEntityDescriptor.getEntityName().equals(mEntityDescriptor.getTypeName()))
+		{
+			sb.append("@Entity(name = \"" + mEntityDescriptor.getEntityName() + "\")\n");
+		}
+		else
+		{
+			sb.append("@Entity\n");
+		}
+
+		sb.append("class " + className + "\n{\n");
 
 		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_KEY))
 		{
-			sb.append("\t" + "@Key " + fieldType + ";\n");
+			String tmp = fieldType.getColumnName().isEmpty() ? "" : "(name = \"" + fieldType.getColumnName() + "\")";
+			sb.append("\t" + "@" + Id.class.getSimpleName() + tmp + " " + fieldType.toTypeNameString() + ";\n");
 		}
 		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_DISCRIMINATOR))
 		{
-			sb.append("\t" + "@Discriminator " + fieldType + ";\n");
+			String tmp = fieldType.getColumnName().isEmpty() ? "" : "(name = \"" + fieldType.getColumnName() + "\")";
+			sb.append("\t" + "@" + Discriminator.class.getSimpleName() + tmp + " " + fieldType.toTypeNameString() + ";\n");
 		}
 		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_VALUE))
 		{
-			sb.append("\t" + "" + fieldType + ";\n");
+			String tmp = fieldType.getColumnName().isEmpty() ? "" : "(name = \"" + fieldType.getColumnName() + "\")";
+			sb.append("\t" + "@" + Column.class.getSimpleName() + tmp + " " + fieldType.toTypeNameString() + ";\n");
 		}
 
 		sb.append("}");
@@ -234,7 +285,7 @@ public final class Table<T>
 
 	private transient FieldTypeCategorizer mCategorizer = aField ->
 	{
-		if (aField.getAnnotation(Key.class) != null)
+		if (aField.getAnnotation(Id.class) != null)
 		{
 			return FIELD_CATEGORY_KEY;
 		}
@@ -284,7 +335,7 @@ public final class Table<T>
 
 		try
 		{
-			for (Iterator<T> it = new EntityIterator(getTableInstance(), getTableInstance().getLeafIterator()); it.hasNext();)
+			for (Iterator<T> it = new EntityIterator(getTableInstance(), getTableInstance().getEntryIterator()); it.hasNext();)
 			{
 				aConsumer.accept(it.next());
 			}
@@ -308,7 +359,7 @@ public final class Table<T>
 
 		try
 		{
-			ResultSet resultSet = new ResultSet(getTableInstance(), getTableInstance().getLeafIterator());
+			ResultSet resultSet = new ResultSet(getTableInstance(), getTableInstance().getEntryIterator());
 
 			while (resultSet.next())
 			{

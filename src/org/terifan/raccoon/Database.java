@@ -5,6 +5,7 @@ import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.io.managed.DeviceHeader;
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +17,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
@@ -373,12 +375,12 @@ public final class Database implements AutoCloseable
 
 			aTableMetadata.initialize(this);
 
-			Log.i("open table '%s' with option %s", aTableMetadata.getTypeName(), aOptions);
+			Log.i("open table '%s' with option %s", aTableMetadata.getEntityName(), aOptions);
 			Log.inc();
 
 			try
 			{
-				boolean tableExists = mSystemTable.get(aTableMetadata);
+				boolean tableExists = mSystemTable.get(aTableMetadata, true);
 
 				if (!tableExists && (aOptions == DatabaseOpenOption.OPEN || aOptions == DatabaseOpenOption.READ_ONLY))
 				{
@@ -601,7 +603,10 @@ public final class Database implements AutoCloseable
 					table.rollback();
 				}
 
-				mSystemTable.rollback();
+				if (mSystemTable != null)
+				{
+					mSystemTable.rollback();
+				}
 
 				mBlockDevice.rollback();
 
@@ -642,7 +647,7 @@ public final class Database implements AutoCloseable
 	 * Saves an entity.
 	 *
 	 * @return
-	 * true if the entity didn't previously existed.
+	 * true if this table did not already contain the specified entity
 	 */
 	public boolean save(Object aEntity)
 	{
@@ -706,7 +711,7 @@ public final class Database implements AutoCloseable
 			{
 				return false;
 			}
-			return table.get(aEntity);
+			return table.get(aEntity, false);
 		}
 		catch (DatabaseException e)
 		{
@@ -727,18 +732,35 @@ public final class Database implements AutoCloseable
 	 */
 	public <T> T get(T aEntity) throws DatabaseException
 	{
+		return getImpl(aEntity, false);
+	}
+
+
+	/**
+	 *
+	 * @throws NoSuchEntityException
+	 * if the entity cannot be found
+	 */
+	public <T> T fetch(T aEntity) throws DatabaseException
+	{
+		return getImpl(aEntity, true);
+	}
+
+
+	private <T> T getImpl(T aEntity, boolean aFetchLazy) throws DatabaseException
+	{
 		Assert.notNull(aEntity, "Argument is null");
 
 		mReadLock.lock();
 		try
 		{
-			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
+			TableInstance tableInstance = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
 
-			if (table == null)
+			if (tableInstance == null)
 			{
 				throw new NoSuchEntityException("No table exists matching type " + aEntity.getClass());
 			}
-			if (!table.get(aEntity))
+			if (!tableInstance.get(aEntity, aFetchLazy))
 			{
 				throw new NoSuchEntityException("No entity exists matching key");
 			}
@@ -831,13 +853,13 @@ public final class Database implements AutoCloseable
 	/**
 	 * The contents of the stream is associated with the key found in the entity provided. The stream will persist the entity when it's closed.
 	 */
-	public Blob openBlob(Object aEntity, BlobOpenOption aOpenOption)
+	public LobByteChannel openLob(Object aEntity, LobOpenOption aOpenOption)
 	{
-		TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), aOpenOption == BlobOpenOption.READ ? DatabaseOpenOption.OPEN : DatabaseOpenOption.CREATE);
+		TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), aOpenOption == LobOpenOption.READ ? DatabaseOpenOption.OPEN : DatabaseOpenOption.CREATE);
 
 		if (table == null)
 		{
-			if (aOpenOption == BlobOpenOption.READ)
+			if (aOpenOption == LobOpenOption.READ)
 			{
 				return null;
 			}
@@ -1103,7 +1125,7 @@ public final class Database implements AutoCloseable
 		{
 			return (Table)mSystemTable.list(Table.class, Integer.MAX_VALUE).stream().filter(e ->
 			{
-				String tm = ((Table)e).getTypeName();
+				String tm = ((Table)e).getEntityName();
 				return tm.equals(aTypeName) || tm.endsWith("." + aTypeName);
 			}).findFirst().orElse(null);
 		}
@@ -1124,7 +1146,7 @@ public final class Database implements AutoCloseable
 		{
 			return (List<Table>)mSystemTable.list(Table.class, Integer.MAX_VALUE).stream().filter(e ->
 			{
-				String tm = ((Table)e).getTypeName();
+				String tm = ((Table)e).getEntityName();
 				return tm.equals(aTypeName) || tm.endsWith("." + aTypeName);
 			}).collect(Collectors.toList());
 		}
@@ -1169,11 +1191,20 @@ public final class Database implements AutoCloseable
 
 			ArrayList<DiscriminatorType<T>> result = new ArrayList<>();
 
-			String name = aType.getName();
+			String name;
+			Entity entity = (Entity)aType.getAnnotation(Entity.class);
+			if (entity != null)
+			{
+				name = entity.name();
+			}
+			else
+			{
+				name = aType.getName();
+			}
 
 			for (Table tableMetadata : (List<Table>)mSystemTable.list(Table.class, Integer.MAX_VALUE))
 			{
-				if (name.equals(tableMetadata.getTypeName()))
+				if (name.equals(tableMetadata.getEntityName()))
 				{
 					try
 					{

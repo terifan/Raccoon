@@ -132,7 +132,6 @@ class SpaceMap
 		aSpaceMapBlockPointer.setBlockIndex0(blockIndex);
 		aSpaceMapBlockPointer.setLogicalSize(buffer.position());
 		aSpaceMapBlockPointer.setPhysicalSize(blockSize * allocBlocks);
-		aSpaceMapBlockPointer.setEncryptionAlgorithm((byte)0); // not used
 		aSpaceMapBlockPointer.setChecksumAlgorithm((byte)0); // not used
 		aSpaceMapBlockPointer.setChecksum(MurmurHash3.hash256(buffer.array(), 0, buffer.position(), aSpaceMapBlockPointer.getTransactionId()));
 		aSpaceMapBlockPointer.setBlockKey(blockKey);

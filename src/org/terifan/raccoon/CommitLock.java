@@ -6,7 +6,7 @@ import java.util.Objects;
 class CommitLock
 {
 	private Exception mOwner;
-	private Blob mBlob;
+	private LobByteChannelImpl mBlob;
 
 
 	public CommitLock()
@@ -15,7 +15,7 @@ class CommitLock
 	}
 
 
-	public void setBlob(Blob aBlob)
+	public void setBlob(LobByteChannelImpl aBlob)
 	{
 		mBlob = aBlob;
 	}

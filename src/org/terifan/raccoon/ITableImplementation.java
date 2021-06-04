@@ -3,6 +3,7 @@ package org.terifan.raccoon;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 
 
@@ -29,7 +30,7 @@ public interface ITableImplementation extends Iterable<ArrayMapEntry>, AutoClose
 	Iterator<ArrayMapEntry> iterator();
 
 
-	void removeAll();
+	void removeAll(Consumer<ArrayMapEntry> aConsumer);
 
 
 	@Override
@@ -61,5 +62,5 @@ public interface ITableImplementation extends Iterable<ArrayMapEntry>, AutoClose
 	void scan(ScanResult aScanResult);
 
 
-	int getEntryMaximumLength();
+	int getEntrySizeLimit();
 }

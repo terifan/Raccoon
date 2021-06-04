@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.io.DatabaseIOException;
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -24,13 +23,13 @@ import org.terifan.raccoon.util.Log;
 
 public final class TableInstance<T>
 {
-	public static final byte FLAG_NONE = 0;
-	public static final byte FLAG_BLOB = 1;
+	public final static byte TYPE_DEFAULT = 0;
+	public final static byte TYPE_BLOB = 1;
 
 	private final Database mDatabase;
 	private final Table mTable;
 	private final HashSet<CommitLock> mCommitLocks;
-	private final HashTreeTable mHashTable;
+	private final ITableImplementation mTableImplementation;
 	private final Cost mCost;
 
 
@@ -45,14 +44,14 @@ public final class TableInstance<T>
 		CompressionParam compression = mDatabase.getCompressionParameter();
 		TableParam parameter = mDatabase.getTableParameter();
 
-		mHashTable = new HashTreeTable();
+		mTableImplementation = new ExtendibleHashTable();
 		if (aTableHeader == null)
 		{
-			mHashTable.create(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool());
+			mTableImplementation.create(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getEntityName(), mCost, aDatabase.getPerformanceTool());
 		}
 		else
 		{
-			mHashTable.open(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getTypeName(), mCost, aDatabase.getPerformanceTool(), aTableHeader);
+			mTableImplementation.open(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getEntityName(), mCost, aDatabase.getPerformanceTool(), aTableHeader);
 		}
 	}
 
@@ -69,7 +68,7 @@ public final class TableInstance<T>
 	}
 
 
-	public boolean get(T aEntity)
+	public boolean get(T aEntity, boolean aFetchLazy)
 	{
 		Log.i("get entity %s", aEntity);
 		Log.inc();
@@ -78,7 +77,7 @@ public final class TableInstance<T>
 		{
 			ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
 
-			if (mHashTable.get(entry))
+			if (mTableImplementation.get(entry))
 			{
 				unmarshalToObjectValues(entry, aEntity);
 
@@ -108,6 +107,12 @@ public final class TableInstance<T>
 	}
 
 
+	/**
+	 * Saves an entity.
+	 *
+	 * @return
+	 * true if this table did not already contain the specified entity
+	 */
 	public boolean save(T aEntity)
 	{
 		Log.i("save %s", aEntity.getClass());
@@ -115,13 +120,13 @@ public final class TableInstance<T>
 
 		byte[] key = getKeys(aEntity);
 		byte[] value = getNonKeys(aEntity);
-		byte type = FLAG_NONE;
+		byte type = TYPE_DEFAULT;
 
-		if (key.length + value.length + 1 > mHashTable.getEntryMaximumLength() / 4)
+		if (key.length + value.length + 1 > mTableImplementation.getEntrySizeLimit())
 		{
-			type = FLAG_BLOB;
+			type = TYPE_BLOB;
 
-			try (Blob blob = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), null, BlobOpenOption.WRITE))
+			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), null, LobOpenOption.WRITE))
 			{
 				blob.write(ByteBuffer.wrap(value));
 				value = blob.finish();
@@ -134,7 +139,7 @@ public final class TableInstance<T>
 
 		ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
 
-		ArrayMapEntry oldEntry = mHashTable.put(entry);
+		ArrayMapEntry oldEntry = mTableImplementation.put(entry);
 
 		if (oldEntry != null)
 		{
@@ -143,20 +148,20 @@ public final class TableInstance<T>
 
 		Log.dec();
 
-		return entry.getValue() != null;
+		return oldEntry == null;
 	}
 
 
 	private void deleteIfBlob(ArrayMapEntry aEntry)
 	{
-		if (aEntry.hasFlag(FLAG_BLOB))
+		if (aEntry.getType() == TYPE_BLOB)
 		{
-			Blob.deleteBlob(getBlockAccessor(), aEntry.getValue());
+			LobByteChannelImpl.deleteBlob(getBlockAccessor(), aEntry.getValue());
 		}
 	}
 
 
-	public Blob openBlob(T aEntityKey, BlobOpenOption aOpenOption)
+	public LobByteChannelImpl openBlob(T aEntityKey, LobOpenOption aOpenOption)
 	{
 		try
 		{
@@ -167,19 +172,19 @@ public final class TableInstance<T>
 
 			byte[] header;
 
-			if (mHashTable.get(entry))
+			if (mTableImplementation.get(entry))
 			{
-				if (!entry.hasFlag(FLAG_BLOB))
+				if (entry.getType() != TYPE_BLOB)
 				{
 					throw new IllegalArgumentException("Not a blob");
 				}
 
-				if (aOpenOption == BlobOpenOption.CREATE)
+				if (aOpenOption == LobOpenOption.CREATE)
 				{
 					throw new IllegalArgumentException("A blob already exists with this key.");
 				}
 
-				if (aOpenOption == BlobOpenOption.REPLACE)
+				if (aOpenOption == LobOpenOption.REPLACE)
 				{
 					deleteIfBlob(entry);
 
@@ -195,7 +200,7 @@ public final class TableInstance<T>
 				header = null;
 			}
 
-			Blob out = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), header, aOpenOption)
+			LobByteChannelImpl out = new LobByteChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), header, aOpenOption)
 			{
 				@Override
 				public void close()
@@ -206,25 +211,25 @@ public final class TableInstance<T>
 						{
 							if (isModified())
 							{
-									Log.d("write blob entry");
+								Log.d("write blob entry");
 
-									byte[] header = finish();
+								byte[] header = finish();
 
-									mDatabase.aquireWriteLock();
-									try
-									{
-										ArrayMapEntry entry = new ArrayMapEntry(key, header, FLAG_BLOB);
-										mHashTable.put(entry);
-									}
-									catch (DatabaseException e)
-									{
-										mDatabase.forceClose(e);
-										throw e;
-									}
-									finally
-									{
-										mDatabase.releaseWriteLock();
-									}
+								mDatabase.aquireWriteLock();
+								try
+								{
+									ArrayMapEntry entry = new ArrayMapEntry(key, header, TYPE_BLOB);
+									mTableImplementation.put(entry);
+								}
+								catch (DatabaseException e)
+								{
+									mDatabase.forceClose(e);
+									throw e;
+								}
+								finally
+								{
+									mDatabase.releaseWriteLock();
+								}
 							}
 						}
 						finally
@@ -264,7 +269,7 @@ public final class TableInstance<T>
 	{
 		ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
 
-		ArrayMapEntry oldEntry = mHashTable.remove(entry);
+		ArrayMapEntry oldEntry = mTableImplementation.remove(entry);
 
 		if (oldEntry != null)
 		{
@@ -282,31 +287,31 @@ public final class TableInstance<T>
 	 */
 	public Iterator<T> iterator()
 	{
-		return new EntityIterator(this, getLeafIterator());
+		return new EntityIterator(this, getEntryIterator());
 	}
 
 
-	Iterator<ArrayMapEntry> getLeafIterator()
+	Iterator<ArrayMapEntry> getEntryIterator()
 	{
-		return mHashTable.iterator();
+		return mTableImplementation.iterator();
 	}
 
 
 	public void clear()
 	{
-		mHashTable.removeAll();
+		mTableImplementation.removeAll(this::deleteIfBlob);
 	}
 
 
 	public void close()
 	{
-		mHashTable.close();
+		mTableImplementation.close();
 	}
 
 
 	boolean isModified()
 	{
-		return mHashTable.isChanged();
+		return mTableImplementation.isChanged();
 	}
 
 
@@ -327,7 +332,7 @@ public final class TableInstance<T>
 		}
 
 		AtomicBoolean changed = new AtomicBoolean();
-		byte[] newPointer = mHashTable.commit(changed);
+		byte[] newPointer = mTableImplementation.commit(changed);
 
 		if (!changed.get())
 		{
@@ -347,19 +352,19 @@ public final class TableInstance<T>
 
 	void rollback()
 	{
-		mHashTable.rollback();
+		mTableImplementation.rollback();
 	}
 
 
 	int size()
 	{
-		return mHashTable.size();
+		return mTableImplementation.size();
 	}
 
 
 	String integrityCheck()
 	{
-		return mHashTable.integrityCheck();
+		return mTableImplementation.integrityCheck();
 	}
 
 
@@ -377,9 +382,9 @@ public final class TableInstance<T>
 	{
 		ByteArrayBuffer buffer;
 
-		if (aBuffer.hasFlag(FLAG_BLOB))
+		if (aBuffer.getType() == TYPE_BLOB)
 		{
-			try (Blob blob = new Blob(getBlockAccessor(), mDatabase.getTransactionId(), aBuffer.getValue(), BlobOpenOption.READ))
+			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), aBuffer.getValue(), LobOpenOption.READ))
 			{
 				byte[] buf = new byte[(int)blob.size()];
 				blob.read(ByteBuffer.wrap(buf));
@@ -434,7 +439,7 @@ public final class TableInstance<T>
 
 	void scan(ScanResult aScanResult)
 	{
-		mHashTable.scan(aScanResult);
+		mTableImplementation.scan(aScanResult);
 	}
 
 
@@ -444,7 +449,7 @@ public final class TableInstance<T>
 		{
 			Stream<T> tmp = StreamSupport.stream(new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
 			{
-				EntityIterator entityIterator = new EntityIterator(TableInstance.this, mHashTable.iterator());
+				EntityIterator entityIterator = new EntityIterator(TableInstance.this, mTableImplementation.iterator());
 
 				@Override
 				public boolean tryAdvance(Consumer<? super T> aConsumer)

@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
 
-public enum BlobOpenOption
+public enum LobOpenOption
 {
 	/**
 	 * Open for read-only access.

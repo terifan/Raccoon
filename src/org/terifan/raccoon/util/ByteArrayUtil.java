@@ -47,6 +47,22 @@ public final class ByteArrayUtil
 	}
 
 
+	public static int getInt24(byte[] aBuffer, int aPosition)
+	{
+		return ((aBuffer[aPosition + 0] & 255) << 16)
+			+ ((aBuffer[aPosition + 1] & 255) << 8)
+			+ ((aBuffer[aPosition + 2] & 255));
+	}
+
+
+	public static void putInt24(byte[] aBuffer, int aPosition, int aValue)
+	{
+		aBuffer[aPosition++] = (byte)(aValue >> 16);
+		aBuffer[aPosition++] = (byte)(aValue >> 8);
+		aBuffer[aPosition] = (byte)(aValue);
+	}
+
+
 	public static int getInt32(byte[] aBuffer, int aPosition)
 	{
 		return ((aBuffer[aPosition] & 255) << 24)

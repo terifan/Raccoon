@@ -10,9 +10,9 @@ import org.terifan.raccoon.util.Log;
 /**
  * This is a fast and simple algorithm to eliminate runs of zeroes.
  */
-class ZeroCompressor implements Compressor
+class ZLE implements Compressor
 {
-	public ZeroCompressor(int aPageSize)
+	public ZLE(int aPageSize)
 	{
 	}
 

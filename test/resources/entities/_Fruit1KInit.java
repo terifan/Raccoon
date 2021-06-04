@@ -1,12 +1,12 @@
 package resources.entities;
 
 import org.terifan.raccoon.Initializable;
-import org.terifan.raccoon.Key;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class _Fruit1KInit implements Initializable
 {
-	@Key public String _name;
+	@Id public String _name;
 	public double calories;
 	public boolean initialized;
 

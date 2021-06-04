@@ -13,5 +13,6 @@ public enum ValueType
 	DOUBLE,
 	STRING,
 	DATE,
+	BLOB,
 	OBJECT
 }

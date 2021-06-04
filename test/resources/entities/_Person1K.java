@@ -1,11 +1,11 @@
 package resources.entities;
 
-import org.terifan.raccoon.Key;
+import org.terifan.raccoon.annotations.Id;
 
 
 public class _Person1K
 {
-	@Key public String _firstName;
+	@Id public String _firstName;
 	public String lastName;
 	public String address;
 	public String postCode;

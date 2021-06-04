@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Field;
-import java.util.Locale;
 import static org.terifan.raccoon.serialization.TypeMappings.*;
 
 
@@ -20,7 +19,10 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	private boolean mNullable;
 	private boolean mArray;
 	private boolean mPrimitive;
-	private String mName;
+	private boolean mLob;
+	private boolean mLazy;
+	private String mFieldName;
+	private String mColumnName;
 	private String mTypeName;
 
 	private transient Field mField;
@@ -28,21 +30,6 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 
 	public FieldDescriptor()
 	{
-	}
-
-
-	public FieldDescriptor(int aIndex, int aCategory, int aDepth, ValueType aValueType, boolean aNullable, boolean aArray, boolean aPrimitive, String aName, String aTypeName, Field aField)
-	{
-		this.mIndex = aIndex;
-		this.mCategory = aCategory;
-		this.mDepth = aDepth;
-		this.mValueType = aValueType;
-		this.mNullable = aNullable;
-		this.mArray = aArray;
-		this.mPrimitive = aPrimitive;
-		this.mName = aName;
-		this.mTypeName = aTypeName;
-		this.mField = aField;
 	}
 
 
@@ -82,15 +69,27 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	}
 
 
-	public String getName()
+	public String getFieldName()
 	{
-		return mName;
+		return mFieldName;
 	}
 
 
-	void setName(String aName)
+	void setFieldName(String aFieldName)
 	{
-		mName = aName;
+		mFieldName = aFieldName;
+	}
+
+
+	public String getColumnName()
+	{
+		return mColumnName;
+	}
+
+
+	void setColumnName(String aColumnName)
+	{
+		mColumnName = aColumnName;
 	}
 
 
@@ -142,6 +141,30 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	}
 
 
+	public boolean isLob()
+	{
+		return mLob;
+	}
+
+
+	void setLob(boolean aLob)
+	{
+		mLob = aLob;
+	}
+
+
+	public boolean isLazy()
+	{
+		return mLazy;
+	}
+
+
+	void setLazy(boolean aLazy)
+	{
+		mLazy = aLazy;
+	}
+
+
 	public String getTypeName()
 	{
 		return mTypeName;
@@ -172,13 +195,16 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 		int flags
 			= (mNullable ? 1 : 0)
 			+ (mArray ? 2 : 0)
-			+ (mPrimitive ? 4 : 0);
-		aOutput.write(flags);
+			+ (mPrimitive ? 4 : 0)
+			+ (mLob ? 8 : 0)
+			+ (mLazy ? 16 : 0);
 
-		aOutput.writeUTF(mName);
+		aOutput.write(flags);
+		aOutput.writeUTF(mFieldName);
 		aOutput.writeShort(mIndex);
 		aOutput.write(mValueType.ordinal());
 		aOutput.writeUTF(mTypeName);
+		aOutput.writeUTF(mColumnName);
 		aOutput.writeShort(mCategory);
 		aOutput.write(mDepth);
 	}
@@ -191,11 +217,14 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 		mNullable = (flags & 1) != 0;
 		mArray = (flags & 2) != 0;
 		mPrimitive = (flags & 4) != 0;
+		mLob = (flags & 8) != 0;
+		mLazy = (flags & 16) != 0;
 
-		mName = aInput.readUTF();
+		mFieldName = aInput.readUTF();
 		mIndex = aInput.readShort();
 		mValueType = ValueType.values()[aInput.read()];
 		mTypeName = aInput.readUTF();
+		mColumnName = aInput.readUTF();
 		mCategory = aInput.readShort();
 		mDepth = aInput.read();
 	}
@@ -204,7 +233,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	@Override
 	public int hashCode()
 	{
-		return mName.hashCode() ^ mIndex ^ mValueType.ordinal() ^ mTypeName.hashCode() ^ mCategory ^ mDepth ^ (mArray ? 1 : 0) ^ (mNullable ? 2 : 0);
+		return mColumnName.hashCode() ^ mIndex ^ mValueType.ordinal() ^ mTypeName.hashCode() ^ mCategory ^ mDepth ^ (mArray ? 1 : 0) ^ (mNullable ? 2 : 0) ^ (mPrimitive ? 4 : 0) ^ (mLob ? 8 : 0) ^ (mLazy ? 16 : 0);
 	}
 
 
@@ -215,7 +244,7 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 		{
 			FieldDescriptor other = (FieldDescriptor)aOther;
 
-			return mName.equals(other.mName)
+			return mColumnName.equals(other.mColumnName)
 				&& mTypeName.equals(other.mTypeName)
 				&& mArray == other.mArray
 				&& mDepth == other.mDepth
@@ -223,6 +252,8 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 				&& (mField == null && other.mField == null || mField != null && mField.equals(other.mField))
 				&& mNullable == other.mNullable
 				&& mPrimitive == other.mPrimitive
+				&& mLob == other.mLob
+				&& mLazy == other.mLazy
 				&& mValueType == other.mValueType
 				&& mCategory == other.mCategory;
 		}
@@ -234,26 +265,39 @@ public class FieldDescriptor implements Comparable<FieldDescriptor>, Externaliza
 	@Override
 	public int compareTo(FieldDescriptor aOther)
 	{
-		return mName.compareTo(aOther.mName);
+		return mFieldName.compareTo(aOther.mFieldName);
 	}
 
 
 	@Override
 	public String toString()
 	{
-		String s = mValueType.toString().toLowerCase(Locale.getDefault());
-		if (!mPrimitive)
-		{
-			s = s.substring(0, 1).toUpperCase(Locale.getDefault()) + s.substring(1);
-		}
-		s = s.replace("Int", "Integer");
-		s = s.replace("Char", "Character");
-		StringBuilder t = new StringBuilder();
+		return toTypeNameString();
+	}
+
+
+	public String toTypeNameString()
+	{
+		String s = mTypeName;
+
+		s = s.replace("java.lang.Boolean", "Boolean");
+		s = s.replace("java.lang.Byte", "Byte");
+		s = s.replace("java.lang.Short", "Short");
+		s = s.replace("java.lang.Character", "Character");
+		s = s.replace("java.lang.Integer", "Integer");
+		s = s.replace("java.lang.Long", "Long");
+		s = s.replace("java.lang.Float", "Float");
+		s = s.replace("java.lang.Double", "Double");
+		s = s.replace("java.lang.String", "String");
+
+		StringBuilder buffer = new StringBuilder();
+
 		for (int i = 0; i < mDepth; i++)
 		{
-			t.append("[]");
+			buffer.append("[]");
 		}
-		s += t + " " + mName;
+
+		s += buffer + " " + mFieldName;
 
 		return s;
 	}

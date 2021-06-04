@@ -5,8 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import org.terifan.raccoon.Table;
-import org.terifan.raccoon.util.Log;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import resources.entities._BigObject2K1D;
@@ -18,7 +16,7 @@ public class EntityDescriptorNGTest
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException
 	{
-		EntityDescriptor out = new EntityDescriptor(_BigObject2K1D.class, mCategorizer);
+		EntityDescriptor out = new EntityDescriptor("obj", _BigObject2K1D.class, mCategorizer);
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try (ObjectOutputStream oos = new ObjectOutputStream(baos))
@@ -36,7 +34,7 @@ public class EntityDescriptorNGTest
 	@Test
 	public void testToString() throws IOException, ClassNotFoundException
 	{
-		EntityDescriptor out = new EntityDescriptor(_BigObject2K1D.class, mCategorizer);
+		EntityDescriptor out = new EntityDescriptor("obj", _BigObject2K1D.class, mCategorizer);
 
 		assertTrue(out.toString().length() > 0);
 	}
@@ -45,8 +43,8 @@ public class EntityDescriptorNGTest
 	@Test
 	public void testEquals() throws IOException, ClassNotFoundException
 	{
-		EntityDescriptor a = new EntityDescriptor(_BigObject2K1D.class, mCategorizer);
-		EntityDescriptor b = new EntityDescriptor(_BigObject2K1D.class, mCategorizer);
+		EntityDescriptor a = new EntityDescriptor("obj", _BigObject2K1D.class, mCategorizer);
+		EntityDescriptor b = new EntityDescriptor("obj", _BigObject2K1D.class, mCategorizer);
 		boolean eq = a.equals(b);
 
 		assertTrue(eq);
@@ -57,7 +55,7 @@ public class EntityDescriptorNGTest
 	@Test
 	public void testEquals2() throws IOException, ClassNotFoundException
 	{
-		EntityDescriptor a = new EntityDescriptor(_BigObject2K1D.class, mCategorizer);
+		EntityDescriptor a = new EntityDescriptor("obj", _BigObject2K1D.class, mCategorizer);
 		EntityDescriptor b = null;
 		boolean eq = a.equals(b);
 
@@ -68,17 +66,17 @@ public class EntityDescriptorNGTest
 	@Test
 	public void testGetName() throws IOException, ClassNotFoundException
 	{
-		EntityDescriptor a = new EntityDescriptor(_BigObject2K1D.class, mCategorizer);
+		EntityDescriptor a = new EntityDescriptor("obj", _BigObject2K1D.class, mCategorizer);
 
-		assertEquals(a.getName(), _BigObject2K1D.class.getName());
+		assertEquals(a.getTypeName(), _BigObject2K1D.class.getName());
 	}
 
 
 	@Test
 	public void testHashCode() throws IOException, ClassNotFoundException
 	{
-		EntityDescriptor a = new EntityDescriptor(_BigObject2K1D.class, mCategorizer);
-		EntityDescriptor b = new EntityDescriptor(_BigObject2K1D.class, mCategorizer);
+		EntityDescriptor a = new EntityDescriptor("obj", _BigObject2K1D.class, mCategorizer);
+		EntityDescriptor b = new EntityDescriptor("obj", _BigObject2K1D.class, mCategorizer);
 
 		assertEquals(a.hashCode(), b.hashCode());
 		assertEquals(a.getFields()[0].hashCode(), b.getFields()[0].hashCode());

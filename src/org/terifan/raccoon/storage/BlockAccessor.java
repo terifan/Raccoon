@@ -113,7 +113,7 @@ else
 	}
 
 
-	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType, int aRange)
+	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType, long aUserData)
 	{
 		BlockPointer blockPointer = null;
 
@@ -157,8 +157,7 @@ else
 			blockPointer.setLogicalSize(aLength);
 			blockPointer.setTransactionId(aTransactionId);
 			blockPointer.setBlockType(aType);
-			blockPointer.setUserData(aRange);
-			blockPointer.setEncryptionAlgorithm((byte)0); // not used
+			blockPointer.setUserData(aUserData);
 			blockPointer.setChecksumAlgorithm((byte)0); // not used
 			blockPointer.setChecksum(MurmurHash3.hash256(aBuffer, 0, physicalSize, aTransactionId));
 			blockPointer.setBlockKey(blockKey);
@@ -185,7 +184,7 @@ else
 		switch (aCompressorId)
 		{
 			case CompressionParam.ZLE:
-				return new ZeroCompressor(mBlockDevice.getBlockSize());
+				return new ZLE(mBlockDevice.getBlockSize());
 			case CompressionParam.DEFLATE_FAST:
 				return new DeflateCompressor(Deflater.BEST_SPEED);
 			case CompressionParam.DEFLATE_DEFAULT:

@@ -8,10 +8,10 @@ public class DiscriminatorType<T>
 
 	public DiscriminatorType(T aInstance)
 	{
-		this.instance = aInstance;
+		instance = aInstance;
 	}
-	
-	
+
+
 	Class getType()
 	{
 		return instance.getClass();

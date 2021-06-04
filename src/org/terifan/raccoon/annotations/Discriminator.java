@@ -1,4 +1,4 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 
 @Target(value = {ElementType.METHOD, ElementType.FIELD}) @Retention(value = RetentionPolicy.RUNTIME)
-public @interface Key
+public @interface Discriminator
 {
-	public boolean generated() default false;
+	String name() default "";
 }
