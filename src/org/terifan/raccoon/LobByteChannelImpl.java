@@ -12,6 +12,7 @@ import java.util.HashSet;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.raccoon.util.Listener;
 import org.terifan.raccoon.util.Log;
 
 
@@ -30,7 +31,7 @@ class LobByteChannelImpl implements LobByteChannel
 	private HashMap<Integer,BlockPointer> mPendingBlockPointsers;
 	private HashSet<Integer> mEmptyBlocks;
 	private boolean mClosed;
-//	private Listener<Blob> mCloseListener;
+	private Listener<LobByteChannel> mCloseListener;
 
 	private long mTotalSize;
 	private long mPosition;
@@ -310,10 +311,10 @@ class LobByteChannelImpl implements LobByteChannel
 	@Override
 	public void close() throws IOException
 	{
-//		if (mCloseListener != null)
-//		{
-//			mCloseListener.call(this);
-//		}
+		if (mCloseListener != null)
+		{
+			mCloseListener.call(this);
+		}
 	}
 
 
@@ -595,23 +596,25 @@ class LobByteChannelImpl implements LobByteChannel
 	}
 
 
-	boolean isModified()
+	@Override
+	public boolean isModified()
 	{
 		return mModified;
 	}
 
 
-//	public Listener<Blob> getCloseListener()
-//	{
-//		return mCloseListener;
-//	}
-//
-//
-//	public Blob setCloseListener(Listener<Blob> aListener)
-//	{
-//		mCloseListener = aListener;
-//		return this;
-//	}
+	public Listener<LobByteChannel> getCloseListener()
+	{
+		return mCloseListener;
+	}
+
+
+	@Override
+	public LobByteChannel setCloseListener(Listener<LobByteChannel> aListener)
+	{
+		mCloseListener = aListener;
+		return this;
+	}
 
 
 	public void scan(ScanResult aScanResult)

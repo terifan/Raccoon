@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.SeekableByteChannel;
+import org.terifan.raccoon.util.Listener;
 
 
 public interface LobByteChannel extends SeekableByteChannel
@@ -24,4 +25,10 @@ public interface LobByteChannel extends SeekableByteChannel
 
 
 	OutputStream newOutputStream();
+
+
+	LobByteChannel setCloseListener(Listener<LobByteChannel> aListener);
+
+
+	boolean isModified();
 }
