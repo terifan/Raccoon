@@ -13,6 +13,7 @@ import org.terifan.raccoon.annotations.Column;
 import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.annotations.Id;
+import org.terifan.raccoon.io.secure.AccessCredentials;
 
 
 public class Test
