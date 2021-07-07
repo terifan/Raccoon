@@ -19,7 +19,7 @@ import org.terifan.raccoon.util.Log;
 @Entity
 public final class Table<T>
 {
-	public final static int FIELD_CATEGORY_KEY = 1;
+	public final static int FIELD_CATEGORY_ID = 1;
 	public final static int FIELD_CATEGORY_DISCRIMINATOR = 2;
 	public final static int FIELD_CATEGORY_VALUE = 4;
 
@@ -58,7 +58,7 @@ public final class Table<T>
 
 		mDiscriminatorKey = createDiscriminatorKey(aDiscriminator);
 
-		if (mEntityDescriptor.getFields(FIELD_CATEGORY_KEY).isEmpty())
+		if (mEntityDescriptor.getFields(FIELD_CATEGORY_ID).isEmpty())
 		{
 			throw new IllegalArgumentException("Entity has no keys: " + aClass);
 		}
@@ -96,7 +96,7 @@ public final class Table<T>
 
 	public ArrayList<FieldDescriptor> getKeyFields()
 	{
-		return mEntityDescriptor.getFields(FIELD_CATEGORY_KEY);
+		return mEntityDescriptor.getFields(FIELD_CATEGORY_ID);
 	}
 
 
@@ -261,7 +261,7 @@ public final class Table<T>
 
 		sb.append("class " + className + "\n{\n");
 
-		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_KEY))
+		for (FieldDescriptor fieldType : mEntityDescriptor.getFields(FIELD_CATEGORY_ID))
 		{
 			String tmp = fieldType.getColumnName().isEmpty() ? "" : "(name = \"" + fieldType.getColumnName() + "\")";
 			sb.append("\t" + "@" + Id.class.getSimpleName() + tmp + " " + fieldType.toTypeNameString() + ";\n");
@@ -287,7 +287,7 @@ public final class Table<T>
 	{
 		if (aField.getAnnotation(Id.class) != null)
 		{
-			return FIELD_CATEGORY_KEY;
+			return FIELD_CATEGORY_ID;
 		}
 		if (aField.getAnnotation(Discriminator.class) != null)
 		{
@@ -305,7 +305,7 @@ public final class Table<T>
 
 	public static String getCategoryName(int aCategory)
 	{
-		if ((aCategory & FIELD_CATEGORY_KEY) != 0)
+		if ((aCategory & FIELD_CATEGORY_ID) != 0)
 		{
 			return "Key";
 		}

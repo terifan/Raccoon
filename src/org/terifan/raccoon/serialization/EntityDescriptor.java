@@ -171,20 +171,20 @@ public class EntityDescriptor implements Externalizable
 		{
 			String columnName = "";
 
-			Column column = (Column)field.getAnnotation(Column.class);
-			if (column != null && column.name().length() > 0)
+			Column column = field.getAnnotation(Column.class);
+			if (column != null && !column.name().isEmpty())
 			{
 				columnName = column.name();
 			}
 
-			Id id = (Id)field.getAnnotation(Id.class);
-			if (id != null && id.name().length() > 0)
+			Id id = field.getAnnotation(Id.class);
+			if (id != null && !id.name().isEmpty())
 			{
 				columnName = id.name();
 			}
 
-			Discriminator disc = (Discriminator)field.getAnnotation(Discriminator.class);
-			if (disc != null && disc.name().length() > 0)
+			Discriminator disc = field.getAnnotation(Discriminator.class);
+			if (disc != null && !disc.name().isEmpty())
 			{
 				columnName = disc.name();
 			}

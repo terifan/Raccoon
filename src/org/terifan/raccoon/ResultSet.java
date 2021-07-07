@@ -104,7 +104,7 @@ public class ResultSet
 
 		ArrayMapEntry entry = mIterator.next();
 
-		mMarshaller.unmarshal(ByteArrayBuffer.wrap(entry.getKey()), this, Table.FIELD_CATEGORY_KEY);
+		mMarshaller.unmarshal(ByteArrayBuffer.wrap(entry.getKey()), this, Table.FIELD_CATEGORY_ID);
 		mMarshaller.unmarshal(ByteArrayBuffer.wrap(entry.getValue()), this, Table.FIELD_CATEGORY_DISCRIMINATOR + Table.FIELD_CATEGORY_VALUE);
 
 		return true;

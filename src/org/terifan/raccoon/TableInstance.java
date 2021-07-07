@@ -372,7 +372,7 @@ public final class TableInstance<T>
 	{
 		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aBuffer.getKey());
 
-		mTable.getMarshaller().unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_KEY);
+		mTable.getMarshaller().unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_ID);
 
 		mCost.mUnmarshalKeys++;
 	}
@@ -409,7 +409,7 @@ public final class TableInstance<T>
 
 	private byte[] getKeys(Object aInput)
 	{
-		return mTable.getMarshaller().marshal(ByteArrayBuffer.alloc(16), aInput, Table.FIELD_CATEGORY_KEY).trim().array();
+		return mTable.getMarshaller().marshal(ByteArrayBuffer.alloc(16), aInput, Table.FIELD_CATEGORY_ID).trim().array();
 	}
 
 
