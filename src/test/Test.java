@@ -1,19 +1,15 @@
 package test;
 
 import java.awt.Dimension;
-import org.terifan.ganttchart.GanttChart;
-import org.terifan.ganttchart.SimpleGanttWindow;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.annotations.Discriminator;
-import org.terifan.raccoon.PerformanceTool;
 import org.terifan.raccoon.TableParam;
 import org.terifan.raccoon.annotations.Column;
 import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.annotations.Id;
-import org.terifan.raccoon.io.secure.AccessCredentials;
 
 
 public class Test
@@ -22,15 +18,11 @@ public class Test
 	{
 		try
 		{
-			GanttChart chart = new GanttChart();
-
-			new SimpleGanttWindow(chart).show();
-
-			long t = System.nanoTime();
+			long t = System.currentTimeMillis();
 
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION, new TableParam(1, 1), new PerformanceTool(chart)))
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION, new TableParam(1, 1)))
 			{
 				for (int i = 1; i < 1000; i++)
 				{
@@ -45,7 +37,7 @@ public class Test
 				db.commit();
 			}
 
-			System.out.println((System.nanoTime() - t) / 1000000.0);
+			System.out.println(System.currentTimeMillis() - t);
 
 //			try (Database db = new Database(blockDevice, OpenOption.OPEN))
 //			{

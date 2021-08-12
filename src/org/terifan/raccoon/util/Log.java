@@ -136,6 +136,17 @@ public class Log
 	}
 
 
+	public static String toHex(byte[] aValue)
+	{
+		StringBuilder sb = new StringBuilder();
+		for (byte b : aValue)
+		{
+			sb.append(String.format("%02X", b));
+		}
+		return sb.toString();
+	}
+
+
 	public static String toString(byte[] aValue)
 	{
 		return aValue == null ? null : new String(aValue, Charset.defaultCharset());

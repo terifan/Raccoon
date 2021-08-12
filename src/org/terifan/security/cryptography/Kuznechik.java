@@ -574,4 +574,11 @@ public final class Kuznechik implements BlockCipher
 
 		return kuz;
 	}
+
+
+	@Override
+	public String toString()
+	{
+		return "Kuznechik";
+	}
 }

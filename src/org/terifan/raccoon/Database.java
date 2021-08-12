@@ -50,7 +50,6 @@ public final class Database implements AutoCloseable
 	private boolean mReadOnly;
 	private CompressionParam mCompressionParam;
 	private TableParam mTableParam;
-	private PerformanceTool mPerformanceTool;
 
 
 	private Database()
@@ -60,7 +59,6 @@ public final class Database implements AutoCloseable
 		mFactories = new HashMap<>();
 		mInitializers = new HashMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
-		mPerformanceTool = new PerformanceTool(null);
 	}
 
 
@@ -188,100 +186,89 @@ public final class Database implements AutoCloseable
 
 	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption, OpenParam[] aOpenParams)
 	{
-		mPerformanceTool = getParameter(PerformanceTool.class, aOpenParams, mPerformanceTool);
+		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aOpenParams, null);
+		DeviceHeader tenantHeader = getParameter(DeviceHeader.class, aOpenParams, null);
 
-		assert mPerformanceTool.enter(this, "init", "init database");
+		mCompressionParam = getParameter(CompressionParam.class, aOpenParams, CompressionParam.NO_COMPRESSION);
+		mTableParam = getParameter(TableParam.class, aOpenParams, TableParam.DEFAULT);
 
-		try
+		IManagedBlockDevice device;
+
+		if (aBlockDevice instanceof IManagedBlockDevice)
 		{
-			AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aOpenParams, null);
-			DeviceHeader tenantHeader = getParameter(DeviceHeader.class, aOpenParams, null);
-
-			mCompressionParam = getParameter(CompressionParam.class, aOpenParams, CompressionParam.NO_COMPRESSION);
-			mTableParam = getParameter(TableParam.class, aOpenParams, TableParam.DEFAULT);
-
-			IManagedBlockDevice device;
-
-			if (aBlockDevice instanceof IManagedBlockDevice)
+			if (accessCredentials != null)
 			{
-				if (accessCredentials != null)
-				{
-					throw new IllegalArgumentException("The BlockDevice provided cannot be secured, ensure that the BlockDevice it writes to is a secure BlockDevice.");
-				}
-
-				device = (IManagedBlockDevice)aBlockDevice;
+				throw new IllegalArgumentException("The BlockDevice provided cannot be secured, ensure that the BlockDevice it writes to is a secure BlockDevice.");
 			}
-			else if (accessCredentials == null)
-			{
-				Log.d("creating a managed block device");
 
-				device = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice);
-			}
-			else
-			{
-				Log.d("creating a secure block device");
+			device = (IManagedBlockDevice)aBlockDevice;
+		}
+		else if (accessCredentials == null)
+		{
+			Log.d("creating a managed block device");
 
-				IPhysicalBlockDevice physicalDevice = (IPhysicalBlockDevice)aBlockDevice;
-				SecureBlockDevice secureDevice;
+			device = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice);
+		}
+		else
+		{
+			Log.d("creating a secure block device");
 
-				if (aCreate)
-				{
-					secureDevice = SecureBlockDevice.create(accessCredentials, physicalDevice);
-				}
-				else
-				{
-					secureDevice = SecureBlockDevice.open(accessCredentials, physicalDevice);
-				}
-
-				if (secureDevice == null)
-				{
-					throw new InvalidPasswordException("Incorrect password or not a secure BlockDevice");
-				}
-
-				device = new ManagedBlockDevice(secureDevice);
-			}
+			IPhysicalBlockDevice physicalDevice = (IPhysicalBlockDevice)aBlockDevice;
+			SecureBlockDevice secureDevice;
 
 			if (aCreate)
 			{
-				if (tenantHeader != null)
-				{
-					device.setTenantHeader(tenantHeader);
-				}
-
-				create(device, aOpenParams);
+				secureDevice = SecureBlockDevice.create(accessCredentials, physicalDevice);
 			}
 			else
 			{
-				open(device, aOpenOption == DatabaseOpenOption.READ_ONLY, aOpenParams);
-
-				if (tenantHeader != null && !tenantHeader.getLabel().equals(device.getTenantHeader().getLabel()))
-				{
-					throw new UnsupportedVersionException("Device tenant header labels don't match: expected: " + tenantHeader + ", actual:" + device.getTenantHeader());
-				}
+				secureDevice = SecureBlockDevice.open(accessCredentials, physicalDevice);
 			}
 
-			mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
-
-			mShutdownHook = new Thread()
+			if (secureDevice == null)
 			{
-				@Override
-				public void run()
-				{
-					Log.i("shutdown hook executing");
-					Log.inc();
+				throw new InvalidPasswordException("Incorrect password or not a secure BlockDevice");
+			}
 
-					close();
-
-					Log.dec();
-				}
-			};
-
-			Runtime.getRuntime().addShutdownHook(mShutdownHook);
+			device = new ManagedBlockDevice(secureDevice);
 		}
-		finally
+
+		if (aCreate)
 		{
-			assert mPerformanceTool.exit(this, "init");
+			if (tenantHeader != null)
+			{
+				device.setTenantHeader(tenantHeader);
+			}
+
+			create(device, aOpenParams);
 		}
+		else
+		{
+			open(device, aOpenOption == DatabaseOpenOption.READ_ONLY, aOpenParams);
+
+			if (tenantHeader != null && !tenantHeader.getLabel().equals(device.getTenantHeader().getLabel()))
+			{
+				throw new UnsupportedVersionException("Device tenant header labels don't match: expected: " + tenantHeader + ", actual:" + device.getTenantHeader());
+			}
+		}
+
+		mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
+
+		mShutdownHook = new Thread()
+		{
+			@Override
+			public void run()
+			{
+				Log.i("shutdown hook executing");
+				Log.inc();
+
+				close();
+
+				Log.dec();
+			}
+		};
+
+		Runtime.getRuntime().addShutdownHook(mShutdownHook);
 	}
 
 
@@ -456,58 +443,49 @@ public final class Database implements AutoCloseable
 	 */
 	public boolean commit()
 	{
-		assert mPerformanceTool.enter(this, "commit", "commit changes");
+		checkOpen();
+
+		aquireWriteLock();
 
 		try
 		{
-			checkOpen();
+			Log.i("commit database");
+			Log.inc();
 
-			aquireWriteLock();
-
-			try
+			for (java.util.Map.Entry<Table, TableInstance> entry : mOpenTables.entrySet())
 			{
-				Log.i("commit database");
-				Log.inc();
-
-				for (java.util.Map.Entry<Table, TableInstance> entry : mOpenTables.entrySet())
+				if (entry.getValue().commit())
 				{
-					if (entry.getValue().commit())
-					{
-						Log.i("table updated '%s'", entry.getKey());
+					Log.i("table updated '%s'", entry.getKey());
 
-						mSystemTable.save(entry.getKey());
+					mSystemTable.save(entry.getKey());
 
-						mModified = true;
-					}
+					mModified = true;
 				}
-
-				boolean returnModified = mModified;
-
-				if (mModified)
-				{
-					mSystemTable.commit();
-
-					updateSuperBlock();
-
-					mBlockDevice.commit();
-
-					mModified = false;
-
-					assert integrityCheck() == null : integrityCheck();
-				}
-
-				Log.dec();
-
-				return returnModified;
 			}
-			finally
+
+			boolean returnModified = mModified;
+
+			if (mModified)
 			{
-				mWriteLock.unlock();
+				mSystemTable.commit();
+
+				updateSuperBlock();
+
+				mBlockDevice.commit();
+
+				mModified = false;
+
+				assert integrityCheck() == null : integrityCheck();
 			}
+
+			Log.dec();
+
+			return returnModified;
 		}
 		finally
 		{
-			assert mPerformanceTool.exit(this, "commit");
+			mWriteLock.unlock();
 		}
 	}
 
@@ -651,29 +629,20 @@ public final class Database implements AutoCloseable
 	 */
 	public boolean save(Object aEntity)
 	{
-		assert mPerformanceTool.enter(this, "save", "save");
-
+		aquireWriteLock();
 		try
 		{
-			aquireWriteLock();
-			try
-			{
-				TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.CREATE);
-				return table.save(aEntity);
-			}
-			catch (DatabaseException e)
-			{
-				forceClose(e);
-				throw e;
-			}
-			finally
-			{
-				mWriteLock.unlock();
-			}
+			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.CREATE);
+			return table.save(aEntity);
+		}
+		catch (DatabaseException e)
+		{
+			forceClose(e);
+			throw e;
 		}
 		finally
 		{
-			assert mPerformanceTool.exit(this, "save");
+			mWriteLock.unlock();
 		}
 	}
 
@@ -919,7 +888,7 @@ public final class Database implements AutoCloseable
 			{
 				list = tableInstance.list(aType, aLimit <= 0 ? Integer.MAX_VALUE : aLimit);
 
-				Log.i("list %s %s", aType.getSimpleName(), tableInstance.getCost().toString());
+				Log.i("list %s", aType.getSimpleName());
 			}
 		}
 		catch (DatabaseException e)
@@ -1359,11 +1328,5 @@ public final class Database implements AutoCloseable
 		{
 			mWriteLock.unlock();
 		}
-	}
-
-
-	public PerformanceTool getPerformanceTool()
-	{
-		return mPerformanceTool;
 	}
 }

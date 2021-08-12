@@ -30,12 +30,10 @@ public final class TableInstance<T>
 	private final Table mTable;
 	private final HashSet<CommitLock> mCommitLocks;
 	private final ITableImplementation mTableImplementation;
-	private final Cost mCost;
 
 
 	TableInstance(Database aDatabase, Table aTable, byte[] aTableHeader)
 	{
-		mCost = new Cost();
 		mCommitLocks = new HashSet<>();
 
 		mDatabase = aDatabase;
@@ -47,11 +45,11 @@ public final class TableInstance<T>
 		mTableImplementation = new ExtendibleHashTable();
 		if (aTableHeader == null)
 		{
-			mTableImplementation.create(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getEntityName(), mCost, aDatabase.getPerformanceTool());
+			mTableImplementation.create(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getEntityName());
 		}
 		else
 		{
-			mTableImplementation.open(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getEntityName(), mCost, aDatabase.getPerformanceTool(), aTableHeader);
+			mTableImplementation.open(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getEntityName(), aTableHeader);
 		}
 	}
 
@@ -59,12 +57,6 @@ public final class TableInstance<T>
 	public Database getDatabase()
 	{
 		return mDatabase;
-	}
-
-
-	public Cost getCost()
-	{
-		return mCost;
 	}
 
 
@@ -101,7 +93,6 @@ public final class TableInstance<T>
 		for (Iterator<T> it = (Iterator<T>)iterator(); list.size() < aLimit && it.hasNext();)
 		{
 			list.add(it.next());
-			mCost.mEntityReturn++;
 		}
 		return list;
 	}
@@ -373,8 +364,6 @@ public final class TableInstance<T>
 		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aBuffer.getKey());
 
 		mTable.getMarshaller().unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_ID);
-
-		mCost.mUnmarshalKeys++;
 	}
 
 
@@ -402,8 +391,6 @@ public final class TableInstance<T>
 
 		Marshaller marshaller = mTable.getMarshaller();
 		marshaller.unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_DISCRIMINATOR | Table.FIELD_CATEGORY_VALUE);
-
-		mCost.mUnmarshalValues++;
 	}
 
 

@@ -42,8 +42,9 @@ public final class AccessCredentials implements OpenParam
 
 		for (int i = 0, j = 0; i < aPassword.length; i++)
 		{
-			mPassword[j++] = (byte)(aPassword[i] >>> 8);
-			mPassword[j++] = (byte)(aPassword[i]);
+			char c = aPassword[i];
+			mPassword[j++] = (byte)(c >>> 8);
+			mPassword[j++] = (byte)(c);
 		}
 	}
 

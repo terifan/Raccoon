@@ -3,8 +3,6 @@ package org.terifan.raccoon;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import static resources.__TestUtils.*;
@@ -363,11 +361,11 @@ public class ITableImplementationNGTest
 			ITableImplementation table = aImplementation.newInstance();
 			if (aRoot == null)
 			{
-				table.create(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", new Cost(), new PerformanceTool(null));
+				table.create(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname");
 			}
 			else
 			{
-				table.open(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", new Cost(), new PerformanceTool(null), aRoot);
+				table.open(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", aRoot);
 			}
 			return table;
 		}

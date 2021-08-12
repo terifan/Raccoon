@@ -1,6 +1,5 @@
 package org.terifan.raccoon;
 
-import org.terifan.util.Debug;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 

@@ -18,11 +18,9 @@ import org.terifan.security.messagedigest.MurmurHash3;
 
 final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 {
-	private Cost mCost;
 	private String mTableName;
 	private TransactionGroup mTransactionId;
 	private BlockAccessor mBlockAccessor;
-	private PerformanceTool mPerformanceTool;
 	private BlockPointer mRootBlockPointer;
 	private Directory mDirectory;
 	private LeafNode[] mNodes;
@@ -42,14 +40,12 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 
 	@Override
-	public void create(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool)
+	public void create(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName)
 	{
 		mTableName = aTableName;
 		mTransactionId = aTransactionId;
 		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam);
 		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
-		mPerformanceTool = aPerformanceTool;
-		mCost = aCost;
 
 		Log.i("create table %s", mTableName);
 		Log.inc();
@@ -63,14 +59,12 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 
 	@Override
-	public void open(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, Cost aCost, PerformanceTool aPerformanceTool, byte[] aTableHeader)
+	public void open(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, byte[] aTableHeader)
 	{
 		mTableName = aTableName;
 		mTransactionId = aTransactionId;
 		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam);
 		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
-		mPerformanceTool = aPerformanceTool;
-		mCost = aCost;
 
 		Log.i("open table %s", mTableName);
 		Log.inc();
@@ -119,8 +113,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	{
 		checkOpen();
 
-		mPerformanceTool.tick("get");
-
 		return loadNode(computeIndex(aEntry)).mMap.get(aEntry);
 	}
 
@@ -130,14 +122,10 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	{
 		checkOpen();
 
-		mPerformanceTool.tick("put");
-
 		if (aEntry.getKey().length + aEntry.getValue().length > getEntrySizeLimit())
 		{
 			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().length + ", value: " + aEntry.getValue().length + ", maximum: " + getEntrySizeLimit());
 		}
-
-		assert mPerformanceTool.tick("put");
 
 		int modCount = ++mModCount;
 		Log.i("put");
@@ -176,11 +164,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	{
 		checkOpen();
 
-		mPerformanceTool.enter(this, "remove", "");
-		mPerformanceTool.tick("remove");
-
-		assert mPerformanceTool.tick("remove");
-
 		int modCount = ++mModCount;
 		Log.i("put");
 		Log.inc();
@@ -196,8 +179,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
-
-		mPerformanceTool.exit(this, "remove");
 
 		return oldEntry.get();
 	}
@@ -234,8 +215,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	@Override
 	public byte[] commit(AtomicBoolean oChanged)
 	{
-		assert mPerformanceTool.tick("commit");
-
 		checkOpen();
 
 		try
@@ -385,11 +364,7 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 		Result<Integer> result = new Result<>(0);
 
-		new ExtendibleHashTableNodeIterator().forEachRemaining(node->{
-			mCost.mTreeTraversal++;
-
-			result.set(result.get() + node.mMap.size());
-		});
+		new ExtendibleHashTableNodeIterator().forEachRemaining(node -> result.set(result.get() + node.mMap.size()));
 
 		return result.get();
 	}
@@ -472,8 +447,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	@Override
 	public void scan(ScanResult aScanResult)
 	{
-		assert mPerformanceTool.tick("scan");
-
 		aScanResult.tables++;
 
 		new ExtendibleHashTableNodeIterator().forEachRemaining(node->scanLeaf(aScanResult, node));
@@ -686,9 +659,6 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 	{
 		if (aBlockPointer != null)
 		{
-			mCost.mFreeBlock++;
-			mCost.mFreeBlockBytes += aBlockPointer.getAllocatedBlocks();
-
 			mBlockAccessor.freeBlock(aBlockPointer);
 		}
 	}
@@ -696,25 +666,13 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 
 	private byte[] readBlock(BlockPointer aBlockPointer)
 	{
-		assert mPerformanceTool.tick("readBlock");
-
-		mCost.mReadBlock++;
-		mCost.mReadBlockBytes += aBlockPointer.getAllocatedBlocks();
-
 		return mBlockAccessor.readBlock(aBlockPointer);
 	}
 
 
 	private BlockPointer writeBlock(byte[] aContent, BlockType aBlockType, long aUserData)
 	{
-		assert mPerformanceTool.tick("writeBlock");
-
-		BlockPointer blockPointer = mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionId.get(), aBlockType, aUserData);
-
-		mCost.mWriteBlock++;
-		mCost.mWriteBlockBytes += blockPointer.getAllocatedBlocks();
-
-		return blockPointer;
+		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionId.get(), aBlockType, aUserData);
 	}
 
 

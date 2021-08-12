@@ -2,8 +2,12 @@ package org.terifan.security.cryptography;
 
 import org.terifan.security.messagedigest.HMAC;
 
-
-// https://github.com/wg/scrypt/tree/master/src/main/java/com/lambdaworks/crypto
+/**
+ * STRONGER KEY DERIVATION VIA SEQUENTIAL MEMORY-HARD FUNCTIONS
+ * An implementation of the <a href="http://www.tarsnap.com/scrypt/scrypt.pdf"/>scrypt</a> key derivation function.
+ *
+ * https://github.com/wg/scrypt/tree/master/src/main/java/com/lambdaworks/crypto
+ */
 public class SCrypt
 {
 	public static byte[] generate(HMAC aHmac, byte[] aSalt, int aCost, int aRounds, int aParallelization, int aIterationCount, int aOutputLength)

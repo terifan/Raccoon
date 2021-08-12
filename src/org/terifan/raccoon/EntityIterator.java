@@ -42,8 +42,6 @@ final class EntityIterator<T> implements Iterator<T>
 
 		initializeNewEntity(outputEntity);
 
-		mTableInstance.getCost().mUnmarshalEntity++;
-
 		Log.dec();
 
 		return outputEntity;
