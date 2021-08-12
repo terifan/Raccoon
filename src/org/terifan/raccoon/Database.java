@@ -696,10 +696,12 @@ public final class Database implements AutoCloseable
 
 
 	/**
-	 * Retrieves an entity.
+	 * Attempts to retrieves an entity returning true if entity found and updating the provided instance.
 	 *
+	 * @param aEntity
+	 *   an entity with discriminator/key fields set
 	 * @return
-	 * true if the entity was found.
+	 *   true if the entity was found.
 	 */
 	public boolean tryGet(Object aEntity)
 	{
@@ -726,9 +728,12 @@ public final class Database implements AutoCloseable
 
 
 	/**
+	 * Retrieves an entity throwing and exception if the entity wasn't found.
 	 *
+	 * @param aEntity
+	 *   an entity with discriminator/key fields set
 	 * @throws NoSuchEntityException
-	 * if the entity cannot be found
+	 *   if the entity cannot be found
 	 */
 	public <T> T get(T aEntity) throws DatabaseException
 	{
@@ -741,10 +746,10 @@ public final class Database implements AutoCloseable
 	 * @throws NoSuchEntityException
 	 * if the entity cannot be found
 	 */
-	public <T> T fetch(T aEntity) throws DatabaseException
-	{
-		return getImpl(aEntity, true);
-	}
+//	public <T> T fetch(T aEntity) throws DatabaseException
+//	{
+//		return getImpl(aEntity, true);
+//	}
 
 
 	private <T> T getImpl(T aEntity, boolean aFetchLazy) throws DatabaseException
@@ -783,7 +788,7 @@ public final class Database implements AutoCloseable
 	 * Removes the entity.
 	 *
 	 * @return
-	 * true if the entity was removed.
+	 *   true if the entity was removed.
 	 */
 	public boolean remove(Object aEntity)
 	{

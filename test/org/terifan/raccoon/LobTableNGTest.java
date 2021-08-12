@@ -6,13 +6,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Random;
+import java.util.stream.Stream;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import resources.__TestUtils;
 import static resources.__TestUtils.createRandomBuffer;
-import resources.entities._BlobEntity;
 import resources.entities._BlobKey1K;
 import resources.entities._KeyValue1K;
 
@@ -20,8 +20,45 @@ import resources.entities._KeyValue1K;
 public class LobTableNGTest
 {
 	@Test
-	public void testSomeMethod()
+	public void testConcurrentReadWriteLob() throws Exception
 	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+		byte[][] content = new byte[1000][];
+		for (int i = 0; i < content.length; i++)
+		{
+			content[i] = createRandomBuffer(i, 1024);
+		}
+
+		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
+		{
+			Stream.of(content).parallel().forEach(b ->
+			{
+				try (LobByteChannel channel = database.openLob(new _BlobKey1K(b.toString()), LobOpenOption.REPLACE))
+				{
+					channel.writeAllBytes(b);
+				}
+				catch (Exception e)
+				{
+					throw new RuntimeException(e);
+				}
+			});
+			database.commit();
+		}
+
+		try (Database database = new Database(device, DatabaseOpenOption.OPEN))
+		{
+			Stream.of(content).parallel().forEach(b ->
+			{
+				try (LobByteChannel channel = database.openLob(new _BlobKey1K(b.toString()), LobOpenOption.READ))
+				{
+					assertEquals(channel.readAllBytes(), b);
+				}
+				catch (Exception e)
+				{
+					throw new RuntimeException(e);
+				}
+			});
+		}
 	}
 
 
@@ -29,7 +66,7 @@ public class LobTableNGTest
 	public void testExternalizedEntrySave() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
-		byte[] content = createRandomBuffer(0, 10*1024*1024);
+		byte[] content = createRandomBuffer(0, 10 * 1024 * 1024);
 
 		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
 		{
@@ -62,9 +99,8 @@ public class LobTableNGTest
 			assertTrue(db.commit());
 		}
 
-		System.out.println(managedBlockDevice.getUsedSpace());
-		System.out.println(managedBlockDevice.getFreeSpace());
-
+//		System.out.println(managedBlockDevice.getUsedSpace());
+//		System.out.println(managedBlockDevice.getFreeSpace());
 		try (Database db = new Database(managedBlockDevice, DatabaseOpenOption.OPEN))
 		{
 			assertTrue(db.tryGet(out));
@@ -73,9 +109,8 @@ public class LobTableNGTest
 			assertTrue(db.commit());
 		}
 
-		System.out.println(managedBlockDevice.getUsedSpace());
-		System.out.println(managedBlockDevice.getFreeSpace());
-
+//		System.out.println(managedBlockDevice.getUsedSpace());
+//		System.out.println(managedBlockDevice.getFreeSpace());
 		assertEquals(out.content, in.content);
 		assertEquals(managedBlockDevice.getUsedSpace(), 7);
 		assertTrue(managedBlockDevice.getFreeSpace() > 1000_000 / 512);
@@ -196,12 +231,18 @@ public class LobTableNGTest
 					if (rnd.nextBoolean())
 					{
 						int c = blob.read();
-						if (c != -1) baos.write(c);
+						if (c != -1)
+						{
+							baos.write(c);
+						}
 					}
 					else
 					{
 						int len = blob.read(buf, 0, rnd.nextInt(buf.length));
-						if (len <= 0) break;
+						if (len <= 0)
+						{
+							break;
+						}
 						baos.write(buf, 0, len);
 					}
 				}
@@ -233,12 +274,18 @@ public class LobTableNGTest
 					if (rnd.nextBoolean())
 					{
 						int c = bais.read();
-						if (c != -1) blob.write(c);
+						if (c != -1)
+						{
+							blob.write(c);
+						}
 					}
 					else
 					{
 						int len = bais.read(buf, 0, rnd.nextInt(buf.length));
-						if (len <= 0) break;
+						if (len <= 0)
+						{
+							break;
+						}
 						blob.write(buf, 0, len);
 					}
 				}
