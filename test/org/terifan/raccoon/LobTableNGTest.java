@@ -9,6 +9,7 @@ import java.util.Random;
 import java.util.stream.Stream;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.util.FixedThreadExecutor;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import resources.__TestUtils;
@@ -23,7 +24,7 @@ public class LobTableNGTest
 	public void testConcurrentReadWriteLob() throws Exception
 	{
 		MemoryBlockDevice device = new MemoryBlockDevice(512);
-		byte[][] content = new byte[1000][];
+		byte[][] content = new byte[10000][];
 		for (int i = 0; i < content.length; i++)
 		{
 			content[i] = createRandomBuffer(i, 1024);
@@ -59,6 +60,53 @@ public class LobTableNGTest
 				}
 			});
 		}
+
+//		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
+//		{
+//			try (FixedThreadExecutor ex = new FixedThreadExecutor(8))
+//			{
+//				for (int i = 0; i < content.length; i++)
+//				{
+//					int _i = i;
+//					ex.submit(()->
+//					{
+//						try (LobByteChannel channel = database.openLob(new _BlobKey1K(content[_i].toString()), LobOpenOption.REPLACE))
+//						{
+//							channel.writeAllBytes(content[_i]);
+//						}
+//						catch (Exception e)
+//						{
+//							throw new RuntimeException(e);
+//						}
+//					}
+//					);
+//				}
+//			}
+//			database.commit();
+//		}
+//
+//		try (Database database = new Database(device, DatabaseOpenOption.OPEN))
+//		{
+//			try (FixedThreadExecutor ex = new FixedThreadExecutor(8))
+//			{
+//				for (int i = 0; i < content.length; i++)
+//				{
+//					int _i = i;
+//					ex.submit(()->
+//					{
+//						try (LobByteChannel channel = database.openLob(new _BlobKey1K(content[_i].toString()), LobOpenOption.READ))
+//						{
+//							assertEquals(channel.readAllBytes(), content[_i]);
+//						}
+//						catch (Exception e)
+//						{
+//							throw new RuntimeException(e);
+//						}
+//					}
+//					);
+//				}
+//			}
+//		}
 	}
 
 

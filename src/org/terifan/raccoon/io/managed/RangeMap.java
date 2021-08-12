@@ -1,6 +1,5 @@
 package org.terifan.raccoon.io.managed;
 
-import java.io.IOException;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -19,7 +18,7 @@ class RangeMap implements Cloneable
 	}
 
 
-	public void add(int aOffset, int aSize)
+	public synchronized void add(int aOffset, int aSize)
 	{
 		if (aOffset < 0 || aSize <= 0)
 		{
@@ -70,7 +69,7 @@ class RangeMap implements Cloneable
 	}
 
 
-	public void remove(int aOffset, int aSize)
+	public synchronized void remove(int aOffset, int aSize)
 	{
 		if (aSize <= 0)
 		{
@@ -124,7 +123,7 @@ class RangeMap implements Cloneable
 	}
 
 
-	public int next(int aSize)
+	public synchronized int next(int aSize)
 	{
 		Entry<Integer, Integer> entry = mMap.firstEntry();
 
@@ -149,19 +148,19 @@ class RangeMap implements Cloneable
 	}
 
 
-	public int getFreeSpace()
+	public synchronized int getFreeSpace()
 	{
 		return mSpace;
 	}
 
 
-	public int getUsedSpace()
+	public synchronized int getUsedSpace()
 	{
 		return mMap.lastEntry().getValue() - mSpace;
 	}
 
 
-	public boolean isFree(int aOffset, int aSize)
+	public synchronized boolean isFree(int aOffset, int aSize)
 	{
 		Integer blockStart = mMap.floorKey(aOffset);
 
@@ -179,7 +178,7 @@ class RangeMap implements Cloneable
 	}
 
 
-	public void clear()
+	public synchronized void clear()
 	{
 		mMap.clear();
 		mSpace = 0;
