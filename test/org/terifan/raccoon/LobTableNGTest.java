@@ -9,7 +9,6 @@ import java.util.Random;
 import java.util.stream.Stream;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
-import org.terifan.raccoon.util.FixedThreadExecutor;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import resources.__TestUtils;
