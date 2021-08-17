@@ -9,6 +9,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import resources.entities._Animal1K;
 import resources.entities._BigObject2K1D;
+import resources.entities._ClassNoKeys;
 import resources.entities._Fruit1K1D;
 
 
@@ -126,7 +127,7 @@ public class TableNGTest
 	@Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Entity has no keys.*")
 	public void testNoKeys() throws IOException, ClassNotFoundException
 	{
-		new Table(null, String.class, null);
+		new Table(null, _ClassNoKeys.class, null);
 	}
 
 
