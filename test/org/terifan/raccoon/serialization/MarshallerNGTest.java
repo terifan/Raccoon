@@ -56,9 +56,12 @@ public class MarshallerNGTest
 		assertEquals(out.mDate, in.mDate);
 		assertEquals(out.mChars, in.mChars);
 		assertEquals(out.mDouble, in.mDouble);
-		assertEquals(out.mDoubles2B, in.mDoubles2B);
-		assertEquals(out.mFloats2, in.mFloats2);
-		assertEquals(out.mBooleans2, in.mBooleans2);
+		assertEquals(out.mDoubles2B.length, in.mDoubles2B.length);
+		assertEquals(out.mFloats2.length, in.mFloats2.length);
+		assertEquals(out.mBooleans2.length, in.mBooleans2.length);
+		for (int i = 0; i < out.mDoubles2B.length; i++) assertEquals(out.mDoubles2B[i], in.mDoubles2B[i]);
+		for (int i = 0; i < out.mFloats2.length; i++) assertEquals(out.mFloats2[i], in.mFloats2[i]);
+		for (int i = 0; i < out.mBooleans2.length; i++) assertEquals(out.mBooleans2[i], in.mBooleans2[i]);
 	}
 
 
