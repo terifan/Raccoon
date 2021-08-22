@@ -35,9 +35,9 @@ import org.terifan.raccoon.util.Result;
  */
 public class ArrayMap implements Iterable<ArrayMapEntry>
 {
-	private final static int HEADER_SIZE = 2 + 4;
-	private final static int ENTRY_POINTER_SIZE = 4;
-	private final static int ENTRY_HEADER_SIZE = 2 + 2;
+	final static int HEADER_SIZE = 2 + 4;
+	final static int ENTRY_POINTER_SIZE = 4;
+	final static int ENTRY_HEADER_SIZE = 2 + 2;
 
 	public final static int MAX_VALUE_SIZE = (1 << 16) - 1;
 	public final static int MAX_ENTRY_COUNT = (1 << 16) - 1;

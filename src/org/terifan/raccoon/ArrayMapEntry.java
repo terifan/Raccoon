@@ -87,7 +87,7 @@ public final class ArrayMapEntry
 
 	public int getMarshalledLength()
 	{
-		return 1 + mKey.length + mValue.length;
+		return 1 + mValue.length + mKey.length;
 	}
 
 

@@ -1,9 +1,12 @@
 package org.terifan.raccoon;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
@@ -76,7 +79,7 @@ public class ArrayMapNGTest
 
 
 	@Test
-	public void testFillBuffer()
+	public void testFillBuffer() throws UnsupportedEncodingException
 	{
 		ArrayMap map = new ArrayMap(1000_000);
 
@@ -86,7 +89,8 @@ public class ArrayMapNGTest
 
 		for (Map.Entry<String, byte[]> expectedEntry : expected.entrySet())
 		{
-			ArrayMapEntry entry = new ArrayMapEntry(expectedEntry.getKey().getBytes());
+			ArrayMapEntry entry = new ArrayMapEntry(expectedEntry.getKey().getBytes("utf-8"));
+
 			assertTrue(map.get(entry));
 			assertEquals(entry.getValue(), expectedEntry.getValue());
 		}
@@ -157,29 +161,30 @@ public class ArrayMapNGTest
 
 
 	@Test
-	public void testReplaceEntry()
+	public void testReplaceEntry() throws UnsupportedEncodingException
 	{
-		byte[][] keys = new byte[1000][];
-		for (int i = 0; i < 1000; i++)
+		String[] keys = new String[1000];
+		for (int i = 0; i < keys.length; i++)
 		{
-			keys[i] = tb();
+			keys[i] = new String(tb());
 		}
 
 		ArrayMap map = new ArrayMap(1000_000);
 
 		HashMap<String, byte[]> values = new HashMap<>();
 
-		byte flags = (byte)77;
+		byte type = (byte)77;
 
-		for (int i = 0; i < 100000; i++)
+		for (int i = 0; i < 100_000; i++)
 		{
 			int j = c() % keys.length;
 			byte[] value = tb();
-			byte[] key = keys[j];
+			String keyString = keys[j];
+			byte[] key = keyString.getBytes("utf-8");
 
-			if (map.put(new ArrayMapEntry(key, value, flags), null))
+			if (map.put(new ArrayMapEntry(key, value, type), null))
 			{
-				values.put(new String(key), value);
+				values.put(keyString, value);
 			}
 		}
 
@@ -187,10 +192,10 @@ public class ArrayMapNGTest
 
 		for (Map.Entry<String, byte[]> entry : values.entrySet())
 		{
-			ArrayMapEntry entry1 = new ArrayMapEntry(entry.getKey().getBytes());
+			ArrayMapEntry entry1 = new ArrayMapEntry(entry.getKey().getBytes("utf-8"));
 			assertTrue(map.get(entry1));
 			assertEquals(entry1.getValue(), entry.getValue());
-			assertEquals(entry1.getType(), flags);
+			assertEquals(entry1.getType(), type);
 		}
 	}
 
@@ -227,20 +232,35 @@ public class ArrayMapNGTest
 	}
 
 
-	private void fillArrayMap(ArrayMap aMap, HashMap<String, byte[]> aValues)
+	public static void fillArrayMap(ArrayMap aMap, HashMap<String, byte[]> aValues)
 	{
-		for (;;)
+		try
 		{
-			byte[] key = tb();
-			byte[] value = tb();
-			byte flags = (byte)77;
-
-			if (!aMap.put(new ArrayMapEntry(key, value, flags), null))
+			for (;;)
 			{
-				break;
-			}
+				String keyString = new String(tb());
+				byte[] key = keyString.getBytes("utf-8");
+				byte[] value = tb();
+				byte type = b();
 
-			aValues.put(new String(key), value);
+				ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
+
+				if (entry.getMarshalledLength() > aMap.getCapacity() - ArrayMap.HEADER_SIZE - ArrayMap.ENTRY_HEADER_SIZE - ArrayMap.ENTRY_POINTER_SIZE)
+				{
+					continue;
+				}
+
+				if (!aMap.put(entry, null))
+				{
+					break;
+				}
+
+				aValues.put(keyString, value);
+			}
+		}
+		catch (UnsupportedEncodingException e)
+		{
+			throw new IllegalStateException(e);
 		}
 	}
 }
