@@ -166,7 +166,7 @@ public class ArrayMapNGTest
 		String[] keys = new String[1000];
 		for (int i = 0; i < keys.length; i++)
 		{
-			keys[i] = new String(tb());
+			keys[i] = new String(tb(), "utf-8");
 		}
 
 		ArrayMap map = new ArrayMap(1000_000);
@@ -238,7 +238,7 @@ public class ArrayMapNGTest
 		{
 			for (;;)
 			{
-				String keyString = new String(tb());
+				String keyString = new String(tb(), "utf-8");
 				byte[] key = keyString.getBytes("utf-8");
 				byte[] value = tb();
 				byte type = b();
