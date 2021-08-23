@@ -111,7 +111,7 @@ public class ArrayMapNGTest
 			assertTrue(map.put(new ArrayMapEntry(key, value, (byte)77), null));
 		}
 
-		byte[] key = ("" + (ArrayMap.MAX_ENTRY_COUNT + 1)).getBytes();
+		byte[] key = ("" + ArrayMap.MAX_ENTRY_COUNT).getBytes();
 
 		assertFalse(map.put(new ArrayMapEntry(key, value, (byte)77), null));
 	}
