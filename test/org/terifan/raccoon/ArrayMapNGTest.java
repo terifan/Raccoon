@@ -118,7 +118,7 @@ public class ArrayMapNGTest
 
 
 	@Test
-	public void testIterator()
+	public void testIterator() throws UnsupportedEncodingException
 	{
 		ArrayMap map = new ArrayMap(1000_000);
 
@@ -130,7 +130,7 @@ public class ArrayMapNGTest
 
 		for (ArrayMapEntry entry : map)
 		{
-			String k = new String(entry.getKey());
+			String k = new String(entry.getKey(), "utf-8");
 			assertEquals(entry.getValue(), expected.get(k));
 			found.add(k);
 		}
