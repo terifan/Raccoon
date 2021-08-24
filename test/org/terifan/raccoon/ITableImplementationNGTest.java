@@ -15,7 +15,7 @@ import org.testng.annotations.DataProvider;
 public class ITableImplementationNGTest
 {
 	@Test(dataProvider = "itemSizes")
-	public void testSimpleCreateWriteOpenRead(Class<ITableImplementation> aTable, int aSize) throws Exception
+	public void testSimpleCreateWriteOpenRead(Class<TableImplementation> aTable, int aSize) throws Exception
 	{
 		HashMap<byte[],byte[]> map = new HashMap<>();
 
@@ -24,7 +24,7 @@ public class ITableImplementationNGTest
 		byte[] root = null;
 		TransactionGroup tx = new TransactionGroup(0);
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (int i = 0; i < aSize; i++)
 			{
@@ -37,7 +37,7 @@ public class ITableImplementationNGTest
 			root = hashTable.commit(null);
 		}
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (byte[] key : map.keySet())
 			{
@@ -48,7 +48,7 @@ public class ITableImplementationNGTest
 
 
 	@Test(dataProvider="itemSizes")
-	public void testRollback(Class<ITableImplementation> aTable, int aSize) throws Exception
+	public void testRollback(Class<TableImplementation> aTable, int aSize) throws Exception
 	{
 		HashMap<String,String> map = new HashMap<>();
 		for (int i = 0; i < aSize; i++)
@@ -61,7 +61,7 @@ public class ITableImplementationNGTest
 		byte[] root = null;
 		TransactionGroup tx = new TransactionGroup(0);
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -97,7 +97,7 @@ public class ITableImplementationNGTest
 
 
 	@Test(dataProvider = "sizeSizes")
-	public void testSize(Class<ITableImplementation> aTable, int aSize) throws Exception
+	public void testSize(Class<TableImplementation> aTable, int aSize) throws Exception
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
@@ -113,7 +113,7 @@ public class ITableImplementationNGTest
 		byte[] v2 = tb();
 		byte[] v3 = tb();
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			hashTable.put(new ArrayMapEntry(k0, v0, (byte)0));
 
@@ -126,7 +126,7 @@ public class ITableImplementationNGTest
 			assertEquals(hashTable.size(), 2);
 		}
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			assertEquals(hashTable.size(), 2);
 
@@ -158,7 +158,7 @@ public class ITableImplementationNGTest
 
 
 	@Test(dataProvider = "iteratorSizes")
-	public void testIterator(Class<ITableImplementation> aTable, int aSize) throws Exception
+	public void testIterator(Class<TableImplementation> aTable, int aSize) throws Exception
 	{
 		HashMap<String,String> map = new HashMap<>();
 
@@ -167,7 +167,7 @@ public class ITableImplementationNGTest
 		byte[] root = null;
 		TransactionGroup tx = new TransactionGroup(0);
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (int i = 0; i < aSize; i++)
 			{
@@ -182,7 +182,7 @@ public class ITableImplementationNGTest
 			root = hashTable.commit(null);
 		}
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (ArrayMapEntry entry : hashTable)
 			{
@@ -197,7 +197,7 @@ public class ITableImplementationNGTest
 
 
 	@Test(dataProvider = "iteratorSizes")
-	public void testList(Class<ITableImplementation> aTable, int aSize) throws Exception
+	public void testList(Class<TableImplementation> aTable, int aSize) throws Exception
 	{
 		HashMap<String,String> map = new HashMap<>();
 		for (int i = 0; i < aSize; i++)
@@ -210,7 +210,7 @@ public class ITableImplementationNGTest
 		byte[] root = null;
 		TransactionGroup tx = new TransactionGroup(0);
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -220,7 +220,7 @@ public class ITableImplementationNGTest
 			root = hashTable.commit(null);
 		}
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (ArrayMapEntry entry : hashTable.list())
 			{
@@ -235,7 +235,7 @@ public class ITableImplementationNGTest
 
 
 	@Test(dataProvider = "iteratorSizes")
-	public void testClear(Class<ITableImplementation> aTable, int aSize) throws Exception
+	public void testClear(Class<TableImplementation> aTable, int aSize) throws Exception
 	{
 		HashMap<String,String> map = new HashMap<>();
 		for (int i = 0; i < aSize; i++)
@@ -248,7 +248,7 @@ public class ITableImplementationNGTest
 		byte[] root = null;
 		TransactionGroup tx = new TransactionGroup(0);
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -258,7 +258,7 @@ public class ITableImplementationNGTest
 			root = hashTable.commit(null);
 		}
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			hashTable.removeAll(c->{});
 			hashTable.commit(null);
@@ -269,7 +269,7 @@ public class ITableImplementationNGTest
 
 
 	@Test(dataProvider = "iteratorSizes")
-	public void testRemove(Class<ITableImplementation> aTable, int aSize) throws Exception
+	public void testRemove(Class<TableImplementation> aTable, int aSize) throws Exception
 	{
 		HashMap<String,String> map = new HashMap<>();
 		for (int i = 0; i < aSize; i++)
@@ -282,7 +282,7 @@ public class ITableImplementationNGTest
 		byte[] root = null;
 		TransactionGroup tx = new TransactionGroup(0);
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -292,7 +292,7 @@ public class ITableImplementationNGTest
 			root = hashTable.commit(null);
 		}
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -308,13 +308,13 @@ public class ITableImplementationNGTest
 
 
 	@Test(dataProvider = "tableTypes")
-	public void testPut(Class<ITableImplementation> aTable) throws Exception
+	public void testPut(Class<TableImplementation> aTable) throws Exception
 	{
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 		TransactionGroup tx = new TransactionGroup(0);
 		byte[] root = null;
 
-		try (ITableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
+		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			byte[] key = new byte[hashTable.getEntrySizeLimit() - 1];
 			byte[] value = {85};
@@ -329,37 +329,37 @@ public class ITableImplementationNGTest
 	@DataProvider(name="iteratorSizes")
 	private Object[][] iteratorSizes()
 	{
-		return new Object[][]{{ExtendibleHashTable.class,0},{ExtendibleHashTable.class,10},{ExtendibleHashTable.class,1000}};
+		return new Object[][]{{ExtendibleHashTableImplementation.class,0},{ExtendibleHashTableImplementation.class,10},{ExtendibleHashTableImplementation.class,1000}};
 	}
 
 
 	@DataProvider(name="sizeSizes")
 	private Object[][] sizeSizes()
 	{
-		return new Object[][]{{ExtendibleHashTable.class,0},{ExtendibleHashTable.class,1000}};
+		return new Object[][]{{ExtendibleHashTableImplementation.class,0},{ExtendibleHashTableImplementation.class,1000}};
 	}
 
 
 	@DataProvider(name="itemSizes")
 	private Object[][] itemSizes()
 	{
-		return new Object[][]{{ExtendibleHashTable.class,1},{ExtendibleHashTable.class,10},{ExtendibleHashTable.class,1000}};
+		return new Object[][]{{ExtendibleHashTableImplementation.class,1},{ExtendibleHashTableImplementation.class,10},{ExtendibleHashTableImplementation.class,1000}};
 	}
 
 
 	@DataProvider(name="tableTypes")
 	private Object[][] tableTypes()
 	{
-		return new Object[][]{{ExtendibleHashTable.class}};
+		return new Object[][]{{ExtendibleHashTableImplementation.class}};
 	}
 
 
-	private ITableImplementation newHashTable(Class<ITableImplementation> aImplementation, byte[] aRoot, TransactionGroup aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
+	private TableImplementation newHashTable(Class<TableImplementation> aImplementation, byte[] aRoot, TransactionGroup aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
 	{
 		try
 		{
-			ITableImplementation table = aImplementation.getDeclaredConstructor().newInstance();
-			table.open(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", aRoot);
+			TableImplementation table = (TableImplementation)aImplementation.getDeclaredConstructors()[0].newInstance(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname");
+			table.openOrCreateTable(aRoot);
 			return table;
 		}
 		catch (Exception e)
@@ -369,7 +369,7 @@ public class ITableImplementationNGTest
 	}
 
 
-	private byte[] get(ITableImplementation aHashTable, byte[] aKey)
+	private byte[] get(TableImplementation aHashTable, byte[] aKey)
 	{
 		ArrayMapEntry leafEntry = new ArrayMapEntry(aKey);
 		if (aHashTable.get(leafEntry))

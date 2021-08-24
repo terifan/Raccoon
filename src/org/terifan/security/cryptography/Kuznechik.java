@@ -134,8 +134,8 @@ public final class Kuznechik implements BlockCipher
 	private static final int[] gf256res = new int[16 * 256 * 4];
 	private static final int[] gf256resInv = new int[16 * 256 * 4];
 
-	private static final Object _ignoreMeJvmDoesntRunInitializersSometimes = init();
-	private static String init()
+	private static final Object _ignoreMeJvmDoesntRunInitializersSometimes = initializeStatics();
+	private static Object initializeStatics()
 	{
 		byte[] tmp = new byte[16];
 		for (int index = 0; index < 16; index++)

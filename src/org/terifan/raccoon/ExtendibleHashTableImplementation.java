@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.terifan.raccoon.io.DatabaseIOException;
-import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -16,37 +15,29 @@ import org.terifan.raccoon.util.Result;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-final class ExtendibleHashTable implements ITableImplementation
+final class ExtendibleHashTableImplementation extends TableImplementation
 {
-	private String mTableName;
-	private TransactionGroup mTransactionGroup;
-	private BlockAccessor mBlockAccessor;
 	private BlockPointer mRootBlockPointer;
 	private Directory mDirectory;
 	private LeafNode[] mNodes;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mChanged;
-	private boolean mCommitChangesToBlockDevice;
 	private long mHashSeed;
 	private int mModCount;
 
 	private int mLeafSize = 128 * 1024;
 
 
-	public ExtendibleHashTable()
+	public ExtendibleHashTableImplementation(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionGroup, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName)
 	{
+		super(aBlockDevice, aTransactionGroup, aCommitChangesToBlockDevice, aCompressionParam, aTableParam, aTableName);
 	}
 
 
 	@Override
-	public void open(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionGroup, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, byte[] aTableHeader)
+	public void openOrCreateTable(byte[] aTableHeader)
 	{
-		mTableName = aTableName;
-		mTransactionGroup = aTransactionGroup;
-		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam);
-		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
-
 		if (aTableHeader == null)
 		{
 			Log.i("create table %s", mTableName);
@@ -344,16 +335,18 @@ final class ExtendibleHashTable implements ITableImplementation
 
 
 	/**
-	 * Clean-up resources only
+	 * Clean-up resources
 	 */
 	@Override
 	public void close()
 	{
-		mClosed = true;
-
-		mBlockAccessor = null;
-		mDirectory = null;
-		mNodes = null;
+		if (!mClosed)
+		{
+			mClosed = true;
+			mDirectory = null;
+			mNodes = null;
+			mBlockAccessor = null;
+		}
 	}
 
 
@@ -431,7 +424,7 @@ final class ExtendibleHashTable implements ITableImplementation
 	@Override
 	public int getEntrySizeLimit()
 	{
-		return 1024;
+		return mLeafSize / 8;
 	}
 
 

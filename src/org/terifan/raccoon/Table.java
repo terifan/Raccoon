@@ -27,6 +27,7 @@ public final class Table<T>
 	@Id private byte[] mDiscriminatorKey;
 	@Column private EntityDescriptor mEntityDescriptor;
 	@Column private byte[] mTableHeader;
+	@Column private String mImplementation;
 
 	private transient Class mType;
 	private transient Marshaller mMarshaller;
@@ -47,10 +48,12 @@ public final class Table<T>
 		if (entity != null)
 		{
 			mEntityName = entity.name();
+			mImplementation = entity.implementation();
 		}
 		else
 		{
 			mEntityName = mType.getName();
+			mImplementation = Constants.DEFAULT_TABLE_IMPLEMENTATION;
 		}
 
 		mEntityDescriptor = new EntityDescriptor(mEntityName, mType, mCategorizer);
@@ -344,6 +347,12 @@ public final class Table<T>
 		{
 			releaseReadLock();
 		}
+	}
+
+
+	public String getImplementation()
+	{
+		return mImplementation;
 	}
 
 

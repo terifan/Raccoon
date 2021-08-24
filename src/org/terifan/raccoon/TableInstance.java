@@ -2,6 +2,7 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.io.DatabaseIOException;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +30,7 @@ public final class TableInstance<T>
 	private final Database mDatabase;
 	private final Table mTable;
 	private final HashSet<CommitLock> mCommitLocks;
-	private final ITableImplementation mTableImplementation;
+	private final TableImplementation mTableImplementation;
 
 
 	TableInstance(Database aDatabase, Table aTable, byte[] aTableHeader)
@@ -39,11 +40,31 @@ public final class TableInstance<T>
 		mDatabase = aDatabase;
 		mTable = aTable;
 
-		CompressionParam compression = mDatabase.getCompressionParameter();
-		TableParam parameter = mDatabase.getTableParameter();
+		try
+		{
+			Class<? extends TableImplementation> type;
 
-		mTableImplementation = new ExtendibleHashTable();
-		mTableImplementation.open(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getEntityName(), aTableHeader);
+			if ("btree".equals(aTable.getImplementation()))
+			{
+				type = ExtendibleHashTableImplementation.class;
+			}
+			else if ("hashtable".equals(aTable.getImplementation()))
+			{
+				type = ExtendibleHashTableImplementation.class;
+			}
+			else
+			{
+				throw new IllegalArgumentException("No supported table implementation: " + aTable.getImplementation());
+			}
+
+			mTableImplementation = (TableImplementation)type.getDeclaredConstructors()[0].newInstance(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, mDatabase.getCompressionParameter(), mDatabase.getTableParameter(), aTable.getEntityName());
+		}
+		catch (IllegalAccessException | InstantiationException | SecurityException | InvocationTargetException e)
+		{
+			throw new IllegalArgumentException(e);
+		}
+
+		mTableImplementation.openOrCreateTable(aTableHeader);
 	}
 
 

@@ -57,8 +57,8 @@ public final class Twofish implements BlockCipher
 	private final static int[][] MDS = new int[4][256];
 
 
-	private static final Object _ignoreMeJvmDoesntRunInitializersSometimes = init();
-	private static String init()
+	private static final Object _ignoreMeJvmDoesntRunInitializersSometimes = initializeStatics();
+	private static Object initializeStatics()
 	{
 		// precompute the MDS matrix
 		int[] m1 = new int[2];

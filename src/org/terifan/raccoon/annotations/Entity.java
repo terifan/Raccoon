@@ -10,4 +10,7 @@ import java.lang.annotation.Target;
 public @interface Entity
 {
 	String name() default "";
+
+
+	String implementation() default "hashtable";
 }

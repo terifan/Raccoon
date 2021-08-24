@@ -71,7 +71,7 @@ public class TestTiny
 	}
 
 
-	@Entity(name = "fruits")
+	@Entity(name = "fruits", implementation = "btree")
 	public static class Fruit
 	{
 		@Id Integer mId;

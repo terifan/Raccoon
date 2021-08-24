@@ -33,6 +33,8 @@ public class FieldReader
 
 	private static Object readArray(ByteArrayBuffer aInput, FieldDescriptor aFieldDescriptor, int aLevel, Class<?> aComponentType, boolean aIgnoreMissingClasses) throws IOException, ClassNotFoundException
 	{
+		assert aComponentType != null;
+
 		int len = aInput.readVar32();
 
 		int[] dims = new int[aFieldDescriptor.getDepth() - aLevel + 1];
