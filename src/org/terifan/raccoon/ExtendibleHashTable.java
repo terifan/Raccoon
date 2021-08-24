@@ -16,7 +16,7 @@ import org.terifan.raccoon.util.Result;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
+final class ExtendibleHashTable implements ITableImplementation
 {
 	private String mTableName;
 	private TransactionGroup mTransactionId;
@@ -138,10 +138,15 @@ final class ExtendibleHashTable implements AutoCloseable, ITableImplementation
 		int index = computeIndex(aEntry);
 
 		LeafNode node = loadNode(index);
-		node.mChanged = true;
 
-		while (!node.mMap.put(aEntry, oldEntry))
+		for (;;)
 		{
+			if (node.mMap.put(aEntry, oldEntry))
+			{
+				node.mChanged = true;
+				break;
+			}
+
 			if (node.mRangeBits == 0)
 			{
 				growDirectory();
