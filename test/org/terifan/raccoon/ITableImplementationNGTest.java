@@ -358,15 +358,8 @@ public class ITableImplementationNGTest
 	{
 		try
 		{
-			ITableImplementation table = aImplementation.newInstance();
-			if (aRoot == null)
-			{
-				table.create(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname");
-			}
-			else
-			{
-				table.open(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", aRoot);
-			}
+			ITableImplementation table = aImplementation.getDeclaredConstructor().newInstance();
+			table.open(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname", aRoot);
 			return table;
 		}
 		catch (Exception e)

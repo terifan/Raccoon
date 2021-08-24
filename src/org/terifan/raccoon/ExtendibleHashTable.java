@@ -19,7 +19,7 @@ import org.terifan.security.messagedigest.MurmurHash3;
 final class ExtendibleHashTable implements ITableImplementation
 {
 	private String mTableName;
-	private TransactionGroup mTransactionId;
+	private TransactionGroup mTransactionGroup;
 	private BlockAccessor mBlockAccessor;
 	private BlockPointer mRootBlockPointer;
 	private Directory mDirectory;
@@ -40,41 +40,36 @@ final class ExtendibleHashTable implements ITableImplementation
 
 
 	@Override
-	public void create(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName)
+	public void open(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionGroup, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, byte[] aTableHeader)
 	{
 		mTableName = aTableName;
-		mTransactionId = aTransactionId;
+		mTransactionGroup = aTransactionGroup;
 		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam);
 		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
 
-		Log.i("create table %s", mTableName);
-		Log.inc();
+		if (aTableHeader == null)
+		{
+			Log.i("create table %s", mTableName);
+			Log.inc();
 
-		setupEmptyTable();
+			setupEmptyTable();
 
-		mWasEmptyInstance = true;
+			mWasEmptyInstance = true;
 
-		Log.dec();
-	}
+			Log.dec();
+		}
+		else
+		{
+			Log.i("open table %s", mTableName);
+			Log.inc();
 
+			unmarshalHeader(aTableHeader);
 
-	@Override
-	public void open(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, byte[] aTableHeader)
-	{
-		mTableName = aTableName;
-		mTransactionId = aTransactionId;
-		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam);
-		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
+			mDirectory = new Directory(mRootBlockPointer);
+			mNodes = new LeafNode[1 << mDirectory.getPrefixLength()];
 
-		Log.i("open table %s", mTableName);
-		Log.inc();
-
-		unmarshalHeader(aTableHeader);
-
-		mDirectory = new Directory(mRootBlockPointer);
-		mNodes = new LeafNode[1 << mDirectory.getPrefixLength()];
-
-		Log.dec();
+			Log.dec();
+		}
 	}
 
 
@@ -677,7 +672,7 @@ final class ExtendibleHashTable implements ITableImplementation
 
 	private BlockPointer writeBlock(byte[] aContent, BlockType aBlockType, long aUserData)
 	{
-		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionId.get(), aBlockType, aUserData);
+		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionGroup.get(), aBlockType, aUserData);
 	}
 
 

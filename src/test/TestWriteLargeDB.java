@@ -1,10 +1,10 @@
 package test;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import test.TestTiny.Fruit;
+
 
 /*
 09:41:13    1000000       6943       5870       8778
@@ -17,7 +17,6 @@ import test.TestTiny.Fruit;
 09:46:27    8000000       3956       5859      69317
 09:48:28    9000000       1286       9622     110950
 09:50:43   10000000       3789       6120     128491
-(total time: 9 minutes 41 seconds)
 */
 public class TestWriteLargeDB
 {
@@ -26,20 +25,26 @@ public class TestWriteLargeDB
 		try
 		{
 			Runtime r = Runtime.getRuntime();
+			long startTime = System.currentTimeMillis();
 
-			try (Database db = new Database(new File("d:\\test.rdb"), DatabaseOpenOption.CREATE_NEW))
+			try ( Database db = new Database(new File("d:\\test.rdb"), DatabaseOpenOption.CREATE_NEW))
 			{
 				for (int j = 0, index = 0; j < 10; j++)
 				{
 					long t0 = System.currentTimeMillis();
+
 					for (int i = 0; i < 1000_000; i++)
 					{
 						db.save(new Fruit(++index, "apple " + index, 1.4));
 					}
+
 					long t1 = System.currentTimeMillis();
+
 					db.commit();
+
 					long t2 = System.currentTimeMillis();
-					System.out.printf("%s %10d %10d %10d %10d%n", new SimpleDateFormat("HH:mm:ss").format(System.currentTimeMillis()), index, (r.maxMemory()-r.totalMemory()+r.freeMemory())/1024/1024, t1-t0, t2-t1);
+
+					System.out.printf("%s %10d %10d %10d %10d%n", System.currentTimeMillis() - startTime, index, (r.maxMemory() - r.totalMemory() + r.freeMemory()) / 1024 / 1024, t1 - t0, t2 - t1);
 				}
 			}
 		}

@@ -43,14 +43,7 @@ public final class TableInstance<T>
 		TableParam parameter = mDatabase.getTableParameter();
 
 		mTableImplementation = new ExtendibleHashTable();
-		if (aTableHeader == null)
-		{
-			mTableImplementation.create(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getEntityName());
-		}
-		else
-		{
-			mTableImplementation.open(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getEntityName(), aTableHeader);
-		}
+		mTableImplementation.open(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, compression, parameter, aTable.getEntityName(), aTableHeader);
 	}
 
 

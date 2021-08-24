@@ -9,9 +9,6 @@ import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 
 public interface ITableImplementation extends Iterable<ArrayMapEntry>, AutoCloseable
 {
-	void create(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName);
-
-
 	void open(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionId, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName, byte[] aTableHeader);
 
 
