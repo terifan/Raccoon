@@ -17,7 +17,7 @@ import test.TestTiny.Fruit;
 09:46:27    8000000       3956       5859      69317
 09:48:28    9000000       1286       9622     110950
 09:50:43   10000000       3789       6120     128491
-(total time: 9 minutes 30 seconds)
+(total time: 9 minutes 41 seconds)
 */
 public class TestWriteLargeDB
 {

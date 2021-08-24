@@ -24,11 +24,11 @@ final class ExtendibleHashTable implements ITableImplementation
 	private BlockPointer mRootBlockPointer;
 	private Directory mDirectory;
 	private LeafNode[] mNodes;
-	private long mHashSeed;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mChanged;
 	private boolean mCommitChangesToBlockDevice;
+	private long mHashSeed;
 	private int mModCount;
 
 	private int mLeafSize = 128 * 1024;
