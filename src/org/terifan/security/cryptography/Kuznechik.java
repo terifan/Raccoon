@@ -131,15 +131,12 @@ public final class Kuznechik implements BlockCipher
 		(byte)0x37, (byte)0xc4, (byte)0xaf, (byte)0x24, (byte)0x2e, (byte)0x6f, (byte)0x8a, (byte)0xa8, (byte)0xf7, (byte)0x60, (byte)0x49, (byte)0xe3, (byte)0x80, (byte)0x86, (byte)0x59, (byte)0x07,
 	};
 
-	private static final int[] gf256res;
-	private static final int[] gf256resInv;
+	private static final int[] gf256res = new int[16 * 256 * 4];
+	private static final int[] gf256resInv = new int[16 * 256 * 4];
 
-
-	static
+	private static final Object _ignoreMeJvmDoesntRunInitializersSometimes = init();
+	private static String init()
 	{
-		gf256res = new int[16 * 256 * 4];
-		gf256resInv = new int[16 * 256 * 4];
-
 		byte[] tmp = new byte[16];
 		for (int index = 0; index < 16; index++)
 		{
@@ -162,6 +159,8 @@ public final class Kuznechik implements BlockCipher
 				ByteArrayBuffer.readInt32(tmp, 0, gf256resInv, (index + (16 * i)) * 4, 4);
 			}
 		}
+
+		return null;
 	}
 
 

@@ -22,7 +22,7 @@ public class KuznechikNGTest
 		cipher.engineEncryptBlock(plainTex, 0, encrypted, 0);
 
 		cipher.engineDecryptBlock(encrypted, 0, decrypted, 0);
-			
+
 		assertEquals(encrypted, cipherText);
 		assertEquals(decrypted, plainTex);
 	}

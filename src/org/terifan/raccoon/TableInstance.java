@@ -60,7 +60,7 @@ public final class TableInstance<T>
 	}
 
 
-	public boolean get(T aEntity, boolean aFetchLazy)
+	public boolean get(T aEntity)
 	{
 		Log.i("get entity %s", aEntity);
 		Log.inc();

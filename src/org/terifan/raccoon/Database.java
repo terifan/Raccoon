@@ -4,13 +4,11 @@ import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.io.managed.DeviceHeader;
 import java.io.File;
-import java.io.IOException;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -42,14 +40,14 @@ public final class Database implements AutoCloseable
 	private final ConcurrentHashMap<Table, TableInstance> mOpenTables;
 	private final TableMetadataProvider mTableMetadatas;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
-	private TableInstance mSystemTable;
 	private boolean mModified;
-	private Table mSystemTableMetadata;
 	private boolean mCloseDeviceOnCloseDatabase;
-	private Thread mShutdownHook;
 	private boolean mReadOnly;
-	private CompressionParam mCompressionParam;
+	private Table mSystemTableMetadata;
+	private Thread mShutdownHook;
 	private TableParam mTableParam;
+	private TableInstance mSystemTable;
+	private CompressionParam mCompressionParam;
 
 
 	private Database()
@@ -367,7 +365,7 @@ public final class Database implements AutoCloseable
 
 			try
 			{
-				boolean tableExists = mSystemTable.get(aTableMetadata, true);
+				boolean tableExists = mSystemTable.get(aTableMetadata);
 
 				if (!tableExists && (aOptions == DatabaseOpenOption.OPEN || aOptions == DatabaseOpenOption.READ_ONLY))
 				{
@@ -452,7 +450,7 @@ public final class Database implements AutoCloseable
 			Log.i("commit database");
 			Log.inc();
 
-			for (java.util.Map.Entry<Table, TableInstance> entry : mOpenTables.entrySet())
+			for (Entry<Table, TableInstance> entry : mOpenTables.entrySet())
 			{
 				if (entry.getValue().commit())
 				{
@@ -565,7 +563,7 @@ public final class Database implements AutoCloseable
 
 			if (!mModified)
 			{
-				for (java.util.Map.Entry<Table, TableInstance> entry : mOpenTables.entrySet())
+				for (Entry<Table, TableInstance> entry : mOpenTables.entrySet())
 				{
 					mModified |= entry.getValue().isModified();
 				}
@@ -682,7 +680,7 @@ public final class Database implements AutoCloseable
 			{
 				return false;
 			}
-			return table.get(aEntity, false);
+			return table.get(aEntity);
 		}
 		catch (DatabaseException e)
 		{
@@ -706,22 +704,11 @@ public final class Database implements AutoCloseable
 	 */
 	public <T> T get(T aEntity) throws DatabaseException
 	{
-		return getImpl(aEntity, false);
+		return getImpl(aEntity);
 	}
 
 
-	/**
-	 *
-	 * @throws NoSuchEntityException
-	 * if the entity cannot be found
-	 */
-//	public <T> T fetch(T aEntity) throws DatabaseException
-//	{
-//		return getImpl(aEntity, true);
-//	}
-
-
-	private <T> T getImpl(T aEntity, boolean aFetchLazy) throws DatabaseException
+	private <T> T getImpl(T aEntity) throws DatabaseException
 	{
 		Assert.notNull(aEntity, "Argument is null");
 
@@ -734,7 +721,7 @@ public final class Database implements AutoCloseable
 			{
 				throw new NoSuchEntityException("No table exists matching type " + aEntity.getClass());
 			}
-			if (!tableInstance.get(aEntity, aFetchLazy))
+			if (!tableInstance.get(aEntity))
 			{
 				throw new NoSuchEntityException("No entity exists matching key");
 			}

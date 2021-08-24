@@ -27,6 +27,7 @@ public interface ITableImplementation extends Iterable<ArrayMapEntry>, AutoClose
 	ArrayList<ArrayMapEntry> list();
 
 
+	@Override
 	Iterator<ArrayMapEntry> iterator();
 
 

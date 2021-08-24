@@ -1,12 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.serialization.EntityDescriptor;
-import org.terifan.raccoon.serialization.FieldTypeCategorizer;
-import org.terifan.raccoon.serialization.Marshaller;
-import org.terifan.raccoon.util.ByteArrayBuffer;
-import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import resources.entities._BigObject2K1D;
 
 
 public class ResultSetNGTest

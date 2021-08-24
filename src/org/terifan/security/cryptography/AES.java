@@ -51,7 +51,8 @@ public final class AES implements BlockCipher
 	private final static byte[] rcon = new byte[30];
 
 
-	static
+	private static final Object _ignoreMeJvmDoesntRunInitializersSometimes = init();
+	private static String init()
 	{
 		int root = 0x11B;
 		int i = 0;
@@ -115,7 +116,10 @@ public final class AES implements BlockCipher
 			}
 			rcon[i] = (byte)r;
 		}
+
+		return null;
 	}
+
 	private transient int[][] ke;
 	private transient int[][] kd;
 
