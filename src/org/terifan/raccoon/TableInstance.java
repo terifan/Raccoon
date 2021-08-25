@@ -46,7 +46,7 @@ public final class TableInstance<T>
 
 			if ("btree".equals(aTable.getImplementation()))
 			{
-				type = ExtendibleHashTableImplementation.class;
+				type = BTreeTableImplementation.class;
 			}
 			else if ("hashtable".equals(aTable.getImplementation()))
 			{

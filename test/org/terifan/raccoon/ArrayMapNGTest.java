@@ -203,12 +203,12 @@ public class ArrayMapNGTest
 	@Test
 	public void testNearest() throws IOException
 	{
-		byte[] b = "123".getBytes();
-		byte[] d = "456".getBytes();
+		byte[] value1 = "123".getBytes();
+		byte[] value2 = "456".getBytes();
 
 		ArrayMap map = new ArrayMap(new byte[512]);
-		map.put(new ArrayMapEntry("b".getBytes(), b, (byte)77), null);
-		map.put(new ArrayMapEntry("d".getBytes(), d, (byte)77), null);
+		map.put(new ArrayMapEntry("b".getBytes(), value1, (byte)77), null);
+		map.put(new ArrayMapEntry("d".getBytes(), value2, (byte)77), null);
 
 		ArrayMapEntry A = new ArrayMapEntry("a".getBytes());
 		ArrayMapEntry B = new ArrayMapEntry("b".getBytes());
@@ -216,19 +216,19 @@ public class ArrayMapNGTest
 		ArrayMapEntry D = new ArrayMapEntry("d".getBytes());
 		ArrayMapEntry E = new ArrayMapEntry("e".getBytes());
 
-		assertEquals(map.nearest(A), ArrayMap.NEAR);
-		assertEquals(A.getValue(), b);
+		assertEquals(map.nearest(A), ArrayMap.LOWER); // a is lower than b
+		assertEquals(A.getValue(), value1);
 
-		assertEquals(map.nearest(B), ArrayMap.EXACT);
-		assertEquals(B.getValue(), b);
+		assertEquals(map.nearest(B), ArrayMap.EXACT); // b matches
+		assertEquals(B.getValue(), value1);
 
-		assertEquals(map.nearest(C), ArrayMap.NEAR);
-		assertEquals(C.getValue(), d);
+		assertEquals(map.nearest(C), ArrayMap.LOWER); // c is lower than d
+		assertEquals(C.getValue(), value2);
 
-		assertEquals(map.nearest(D), ArrayMap.EXACT);
-		assertEquals(D.getValue(), d);
+		assertEquals(map.nearest(D), ArrayMap.EXACT); // d matches
+		assertEquals(D.getValue(), value2);
 
-		assertEquals(map.nearest(E), ArrayMap.LAST);
+		assertEquals(map.nearest(E), ArrayMap.FINAL); // e is last
 	}
 
 

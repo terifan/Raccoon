@@ -180,7 +180,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 	{
 		checkOpen();
 
-		return new ExtendibleHashTableMapIterator();
+		return new ArrayMapIterator();
 	}
 
 
@@ -319,7 +319,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 		int modCount = ++mModCount;
 
-		new ExtendibleHashTableNodeIterator().forEachRemaining(node->
+		new NodeIterator().forEachRemaining(node->
 		{
 			new ArrayMap(node.mMap.array()).forEach(aConsumer);
 
@@ -357,7 +357,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 		Result<Integer> result = new Result<>(0);
 
-		new ExtendibleHashTableNodeIterator().forEachRemaining(node -> result.set(result.get() + node.mMap.size()));
+		new NodeIterator().forEachRemaining(node -> result.set(result.get() + node.mMap.size()));
 
 		return result.get();
 	}
@@ -442,7 +442,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 	{
 		aScanResult.tables++;
 
-		new ExtendibleHashTableNodeIterator().forEachRemaining(node->scanLeaf(aScanResult, node));
+		new NodeIterator().forEachRemaining(node->scanLeaf(aScanResult, node));
 	}
 
 
@@ -669,15 +669,15 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 	}
 
 
-	private class ExtendibleHashTableMapIterator implements Iterator<ArrayMapEntry>
+	private class ArrayMapIterator implements Iterator<ArrayMapEntry>
 	{
-		private ExtendibleHashTableNodeIterator mIterator;
+		private NodeIterator mIterator;
 		private Iterator<ArrayMapEntry> mIt;
 
 
-		public ExtendibleHashTableMapIterator()
+		public ArrayMapIterator()
 		{
-			mIterator = new ExtendibleHashTableNodeIterator();
+			mIterator = new NodeIterator();
 		}
 
 
@@ -712,7 +712,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 	}
 
 
-	private class ExtendibleHashTableNodeIterator implements Iterator<LeafNode>
+	private class NodeIterator implements Iterator<LeafNode>
 	{
 		private int mIndex;
 		private LeafNode mNode;

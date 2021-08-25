@@ -43,8 +43,8 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	public final static int MAX_ENTRY_COUNT = (1 << 16) - 1;
 
 	public final static int EXACT = 0;
-	public final static int NEAR = 1;
-	public final static int LAST = 2;
+	public final static int LOWER = 1;
+	public final static int FINAL = 2;
 
 	private final static int ENTRY_OVERHEAD = ENTRY_POINTER_SIZE + ENTRY_HEADER_SIZE;
 	public final static int OVERHEAD = HEADER_SIZE + ENTRY_OVERHEAD + ENTRY_POINTER_SIZE;
@@ -263,13 +263,13 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 		if (index == -mEntryCount - 1)
 		{
-			return LAST;
+			return FINAL;
 		}
 		if (index < 0)
 		{
 			loadValue(-index - 1, aEntry);
 
-			return NEAR;
+			return LOWER;
 		}
 
 		loadValue(index, aEntry);

@@ -26,43 +26,45 @@ public class TestTiny
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 			{
 				db.save(new Fruit(1, "apple", 1.4));
-				db.save(new Fruit(2, "banana", 2.1));
-				db.save(new Fruit(3, "lemon", 3.2));
+//				db.save(new Fruit(2, "banana", 2.1));
+//				db.save(new Fruit(3, "lemon", 3.2));
 				db.commit();
 			}
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
-			{
-				db.list(Fruit.class).forEach(System.out::println);
-			}
+//			blockDevice.dump();
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE))
-			{
-				Fruit apple = new Fruit(1);
-				db.get(apple);
-				apple.mWeight = 1.1;
-				db.save(apple);
-
-				db.commit();
-			}
-
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
-			{
-				System.out.println("-------- -------- -------- -------- -------- -------- -------- -------- -------- --------");
-
-				for (Table table : db.getTables())
-				{
-					System.out.println(table.getEntityName());
-					for (FieldDescriptor f : table.getFields())
-					{
-						System.out.println("\t" + f);
-					}
-				}
-
-				System.out.println("-------- -------- -------- -------- -------- -------- -------- -------- -------- --------");
-
-				db.list(Fruit.class).forEach(System.out::println);
-			}
+//			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
+//			{
+//				db.list(Fruit.class).forEach(System.out::println);
+//			}
+//
+//			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE))
+//			{
+//				Fruit apple = new Fruit(1);
+//				db.get(apple);
+//				apple.mWeight = 1.1;
+//				db.save(apple);
+//
+//				db.commit();
+//			}
+//
+//			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
+//			{
+//				System.out.println("-------- -------- -------- -------- -------- -------- -------- -------- -------- --------");
+//
+//				for (Table table : db.getTables())
+//				{
+//					System.out.println(table.getEntityName());
+//					for (FieldDescriptor f : table.getFields())
+//					{
+//						System.out.println("\t" + f);
+//					}
+//				}
+//
+//				System.out.println("-------- -------- -------- -------- -------- -------- -------- -------- -------- --------");
+//
+//				db.list(Fruit.class).forEach(System.out::println);
+//			}
 		}
 		catch (Throwable e)
 		{
