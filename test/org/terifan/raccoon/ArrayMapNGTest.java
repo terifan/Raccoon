@@ -2,7 +2,6 @@ package org.terifan.raccoon;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -22,21 +21,57 @@ public class ArrayMapNGTest
 
 
 	@Test
-	public void testPutGet()
+	public void testPutGetReplaceRemove()
 	{
-		ArrayMap map = new ArrayMap(1000_000);
+		ArrayMap map = new ArrayMap(100);
 
-		byte[] key = tb();
-		byte[] value = tb();
-		byte flags = (byte)77;
+		byte[] original = "green".getBytes();
+		ArrayMapEntry out = new ArrayMapEntry("apple".getBytes(), original, (byte)'-');
 
-		assertTrue(map.put(new ArrayMapEntry(key, value, flags), null));
+		Result<ArrayMapEntry> existing = new Result<>();
 
-		ArrayMapEntry entry = new ArrayMapEntry(key);
+		boolean wasAdd = map.put(out, existing);
 
-		assertTrue(map.get(entry));
-		assertEquals(entry.getValue(), value);
-		assertEquals(entry.getType(), flags);
+		assertTrue(wasAdd);
+		assertNull(existing.get());
+
+		ArrayMapEntry in = new ArrayMapEntry(out.getKey());
+
+		boolean wasFound = map.get(in);
+
+		assertTrue(wasFound);
+		assertEquals(in.getValue(), out.getValue());
+		assertEquals(in.getType(), out.getType());
+		assertEquals(map.getFreeSpace(), 75);
+
+		out.setValue("red".getBytes());
+
+		wasAdd = map.put(out, existing);
+
+		assertTrue(wasAdd);
+		assertNotNull(existing.get());
+		assertEquals(existing.get().getValue(), original);
+
+		in = new ArrayMapEntry(out.getKey());
+
+		wasFound = map.get(in);
+
+		assertTrue(wasFound);
+		assertEquals(in.getValue(), out.getValue());
+		assertEquals(in.getType(), out.getType());
+		assertEquals(map.getFreeSpace(), 77);
+
+		wasFound = map.remove(in, existing);
+
+		assertTrue(wasFound);
+		assertEquals(existing.get().getValue(), out.getValue());
+		assertEquals(existing.get().getType(), out.getType());
+		assertEquals(map.getFreeSpace(), 94);
+
+		wasFound = map.remove(in, existing);
+
+		assertFalse(wasFound);
+		assertNull(existing.get());
 	}
 
 

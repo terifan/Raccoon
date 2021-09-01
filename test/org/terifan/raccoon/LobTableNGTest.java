@@ -22,42 +22,52 @@ public class LobTableNGTest
 	@Test
 	public void testConcurrentReadWriteLob() throws Exception
 	{
-		MemoryBlockDevice device = new MemoryBlockDevice(512);
-		byte[][] content = new byte[10000][];
-		for (int i = 0; i < content.length; i++)
+		for (int test = 0; test < 1000; test++)
 		{
-			content[i] = createRandomBuffer(i, 1024);
-		}
+			System.out.println(test);
 
-		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
-		{
-			Stream.of(content).parallel().forEach(b ->
-			{
-				try (LobByteChannel channel = database.openLob(new _BlobKey1K(b.toString()), LobOpenOption.REPLACE))
-				{
-					channel.writeAllBytes(b);
-				}
-				catch (Exception e)
-				{
-					throw new RuntimeException(e);
-				}
-			});
-			database.commit();
-		}
+			MemoryBlockDevice device = new MemoryBlockDevice(512);
 
-		try (Database database = new Database(device, DatabaseOpenOption.OPEN))
-		{
-			Stream.of(content).parallel().forEach(b ->
+			Object[][] content = new Object[10000][];
+			for (int i = 0; i < content.length; i++)
 			{
-				try (LobByteChannel channel = database.openLob(new _BlobKey1K(b.toString()), LobOpenOption.READ))
+				content[i] = new Object[]{Integer.toString(i), createRandomBuffer(i, 1024)};
+			}
+
+			try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))
+			{
+				Stream.of(content).parallel().forEach(b ->
 				{
-					assertEquals(channel.readAllBytes(), b);
-				}
-				catch (Exception e)
+					String key = (String)b[0];
+					byte[] buf = (byte[])b[1];
+					try (LobByteChannel channel = database.openLob(new _BlobKey1K(key), LobOpenOption.REPLACE))
+					{
+						channel.writeAllBytes(buf);
+					}
+					catch (Exception e)
+					{
+						throw new RuntimeException(e);
+					}
+				});
+				database.commit();
+			}
+
+			try (Database database = new Database(device, DatabaseOpenOption.OPEN))
+			{
+				Stream.of(content).parallel().forEach(b ->
 				{
-					throw new RuntimeException(e);
-				}
-			});
+					String key = (String)b[0];
+					byte[] buf = (byte[])b[1];
+					try (LobByteChannel channel = database.openLob(new _BlobKey1K(key), LobOpenOption.READ))
+					{
+						assertEquals(channel.readAllBytes(), buf);
+					}
+					catch (Exception e)
+					{
+						throw new RuntimeException(e);
+					}
+				});
+			}
 		}
 
 //		try (Database database = new Database(device, DatabaseOpenOption.CREATE_NEW))

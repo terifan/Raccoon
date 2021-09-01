@@ -149,6 +149,16 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
+	/**
+	 * Add the entry to the map
+	 *
+	 * @param aEntry
+	 *   entry to add
+	 * @param oExistingEntry
+	 *   optional; output for an existing entry with the entry key
+	 * @return
+	 *   true if the operation was successful and entry inserted into the map
+	 */
 	public boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
 		byte[] key = aEntry.getKey();
@@ -294,6 +304,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 		if (index < 0)
 		{
+			oOldEntry.set(null);
 			return false;
 		}
 
