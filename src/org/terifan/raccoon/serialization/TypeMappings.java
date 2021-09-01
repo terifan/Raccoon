@@ -12,8 +12,7 @@ class TypeMappings
 	protected final static HashMap<Class, ValueType> CLASS_TYPES = new HashMap<>();
 
 
-	private static final Object _ignoreMeJvmDoesntRunInitializersSometimes = initializeStatics();
-	private static Object initializeStatics()
+	static
 	{
 		TYPE_VALUES.put(ValueType.BOOLEAN, Boolean.TYPE);
 		TYPE_VALUES.put(ValueType.BYTE, Byte.TYPE);
@@ -54,7 +53,5 @@ class TypeMappings
 		CLASS_TYPES.put(Long.class, ValueType.LONG);
 		CLASS_TYPES.put(Float.class, ValueType.FLOAT);
 		CLASS_TYPES.put(Double.class, ValueType.DOUBLE);
-
-		return null;
 	}
 }

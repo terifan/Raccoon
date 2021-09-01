@@ -134,8 +134,7 @@ public final class Kuznechik implements BlockCipher
 	private static final int[] gf256res = new int[16 * 256 * 4];
 	private static final int[] gf256resInv = new int[16 * 256 * 4];
 
-	private static final Object _ignoreMeJvmDoesntRunInitializersSometimes = initializeStatics();
-	private static Object initializeStatics()
+	static
 	{
 		byte[] tmp = new byte[16];
 		for (int index = 0; index < 16; index++)
@@ -159,8 +158,6 @@ public final class Kuznechik implements BlockCipher
 				ByteArrayBuffer.readInt32(tmp, 0, gf256resInv, (index + (16 * i)) * 4, 4);
 			}
 		}
-
-		return null;
 	}
 
 

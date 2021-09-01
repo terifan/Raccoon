@@ -44,16 +44,13 @@ public final class Skein512 extends MessageDigest implements Cloneable
     private final static int[] MOD3 = new int[ROUNDS];
     private final static int[] MOD9 = new int[ROUNDS];
 
-	private static final Object _ignoreMeJvmDoesntRunInitializersSometimes = initializeStatics();
-	private static Object initializeStatics()
+	static
 	{
 		for (int i = 0; i < MOD3.length; i++)
 		{
 			MOD3[i] = i % 3;
 			MOD9[i] = i % 9;
 		}
-
-		return null;
 	}
 
 	// current byte count in the buffer
