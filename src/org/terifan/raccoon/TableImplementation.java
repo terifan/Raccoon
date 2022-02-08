@@ -52,6 +52,9 @@ public abstract class TableImplementation implements Iterable<ArrayMapEntry>, Au
 	public abstract void close();
 
 
+	public abstract long flush();
+
+
 	/**
 	 *
 	 * @param oChanged

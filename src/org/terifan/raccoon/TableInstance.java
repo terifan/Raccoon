@@ -320,6 +320,12 @@ public final class TableInstance<T>
 	}
 
 
+	long flush()
+	{
+		return mTableImplementation.flush();
+	}
+
+
 	boolean commit()
 	{
 		synchronized (this)

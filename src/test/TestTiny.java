@@ -25,9 +25,9 @@ public class TestTiny
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 			{
-				db.save(new Fruit(1, "apple", 1.4));
-				db.save(new Fruit(2, "banana", 2.1));
-				db.save(new Fruit(3, "lemon", 3.2));
+				db.save(new Fruit("apple", 1.4));
+				db.save(new Fruit("lemon", 2.1));
+				db.save(new Fruit("plum", 3.2));
 				db.commit();
 			}
 
@@ -38,33 +38,33 @@ public class TestTiny
 				db.list(Fruit.class).forEach(System.out::println);
 			}
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE))
-			{
-				Fruit apple = new Fruit(1);
-				db.get(apple);
-				apple.mWeight = 1.1;
-				db.save(apple);
-
-				db.commit();
-			}
-
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
-			{
-				System.out.println("-------- -------- -------- -------- -------- -------- -------- -------- -------- --------");
-
-				for (Table table : db.getTables())
-				{
-					System.out.println(table.getEntityName());
-					for (FieldDescriptor f : table.getFields())
-					{
-						System.out.println("\t" + f);
-					}
-				}
-
-				System.out.println("-------- -------- -------- -------- -------- -------- -------- -------- -------- --------");
-
-				db.list(Fruit.class).forEach(System.out::println);
-			}
+//			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE))
+//			{
+//				Fruit apple = new Fruit(1L);
+//				db.get(apple);
+//				apple.mWeight = 1.1;
+//				db.save(apple);
+//
+//				db.commit();
+//			}
+//
+//			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
+//			{
+//				System.out.println("-------- -------- -------- -------- -------- -------- -------- -------- -------- --------");
+//
+//				for (Table table : db.getTables())
+//				{
+//					System.out.println(table.getEntityName());
+//					for (FieldDescriptor f : table.getFields())
+//					{
+//						System.out.println("\t" + f);
+//					}
+//				}
+//
+//				System.out.println("-------- -------- -------- -------- -------- -------- -------- -------- -------- --------");
+//
+//				db.list(Fruit.class).forEach(System.out::println);
+//			}
 		}
 		catch (Throwable e)
 		{
@@ -73,14 +73,14 @@ public class TestTiny
 	}
 
 
-	@Entity(name = "fruits")
+	@Entity(name = "fruits", implementation = "btree")
 	public static class Fruit
 	{
-		@Id Integer mId;
-		@Column(name = "name") String mName;
+		@Column(name = "id") Long mId;
+		@Id String mName;
 		@Column(name = "weight") double mWeight;
 		@Column(name = "cost") Double mCost;
-		@Column(name = "size") Dimension mDimension;
+//		@Column(name = "size") Dimension mDimension;
 		@Column(name = "x") int[][] x;
 
 
@@ -89,25 +89,26 @@ public class TestTiny
 		}
 
 
-		public Fruit(Integer aId)
+		public Fruit(Long aId)
 		{
 			mId = aId;
 		}
 
 
-		public Fruit(Integer aId, String aName, double aWeight)
+		public Fruit(String aName, double aWeight)
 		{
-			mId = aId;
+			mId = System.nanoTime();
 			mName = aName;
 			mWeight = aWeight;
-			mDimension = new Dimension(new Random().nextInt(100), new Random().nextInt(100));
+//			mDimension = new Dimension(new Random().nextInt(100), new Random().nextInt(100));
 		}
 
 
 		@Override
 		public String toString()
 		{
-			return "MyEntity{" + "id=" + mId + ", name=" + mName + ", weight=" + mWeight + ", dim=" + mDimension + '}';
+//			return "MyEntity{" + "id=" + mId + ", name=" + mName + ", weight=" + mWeight + ", dim=" + mDimension + '}';
+			return "MyEntity{" + "id=" + mId + ", name=" + mName + ", weight=" + mWeight + '}';
 		}
 	}
 }

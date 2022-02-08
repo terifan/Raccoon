@@ -204,6 +204,29 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 
 	@Override
+	public long flush()
+	{
+		checkOpen();
+
+		long blocksWritten = 0;
+
+		if (mChanged)
+		{
+			int modCount = mModCount; // no increment
+			Log.i("commit hash table");
+			Log.inc();
+
+			blocksWritten = flushImpl();
+
+			Log.dec();
+			assert mModCount == modCount : "concurrent modification";
+		}
+
+		return blocksWritten;
+	}
+
+
+	@Override
 	public byte[] commit(AtomicBoolean oChanged)
 	{
 		checkOpen();
@@ -216,7 +239,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 				Log.i("commit hash table");
 				Log.inc();
 
-				flush();
+				flushImpl();
 
 				assert integrityCheck() == null : integrityCheck();
 
@@ -263,8 +286,10 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 	}
 
 
-	private void flush()
+	private long flushImpl()
 	{
+		long nodesWritten = 0;
+
 		for (int i = 0; i < mNodes.length; i++)
 		{
 			LeafNode node = mNodes[i];
@@ -277,8 +302,14 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 				node.mChanged = false;
 
 				mDirectory.setBlockPointer(i, node.mBlockPointer);
+
+				node.mBlockPointer.getAllocatedBlocks();
+
+				nodesWritten++;
 			}
 		}
+
+		return nodesWritten;
 	}
 
 

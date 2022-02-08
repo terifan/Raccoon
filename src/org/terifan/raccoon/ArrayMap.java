@@ -10,28 +10,16 @@ import org.terifan.raccoon.util.Result;
 
 
 /**
- * This is a fixed size buffer for key/value storage suitable for persistence on external media. An array is wrapped and read and
- * written to directly maintaining all necessary structural information inside the array at all time.
+ * This is a fixed size buffer for key/value storage suitable for persistence on external media. An array is wrapped and read and written to
+ * directly maintaining all necessary structural information inside the array at all time.
  *
  * implementation note: an empty map will always consist of only zero value bytes, the map does not record the capacity, this must be
  * provided when an instance is created
  *
  * Data layout:
  *
- * [header]
- *   2 bytes - entry count
- *   4 bytes - free space offset (minus HEADER_SIZE)
- * [list of entries]
- *   (entry 1..n)
- *   2 bytes - key length
- *   2 bytes - value length
- *   n bytes - key
- *   n bytes - value
- * [free space]
- *   n bytes - zeros
- * [list of pointers]
- *   (pointer 1..n)
- *   4 bytes - offset
+ * [header] 2 bytes - entry count 4 bytes - free space offset (minus HEADER_SIZE) [list of entries] (entry 1..n) 2 bytes - key length 2
+ * bytes - value length n bytes - key n bytes - value [free space] n bytes - zeros [list of pointers] (pointer 1..n) 4 bytes - offset
  */
 public class ArrayMap implements Iterable<ArrayMapEntry>
 {
@@ -41,10 +29,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	public final static int MAX_VALUE_SIZE = (1 << 16) - 1;
 	public final static int MAX_ENTRY_COUNT = (1 << 16) - 1;
-
-	public final static int EXACT = 0;
-	public final static int LOWER = 1;
-	public final static int FINAL = 2;
 
 	private final static int ENTRY_OVERHEAD = ENTRY_POINTER_SIZE + ENTRY_HEADER_SIZE;
 	public final static int OVERHEAD = HEADER_SIZE + ENTRY_OVERHEAD + ENTRY_POINTER_SIZE;
@@ -56,6 +40,14 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	private int mFreeSpaceOffset;
 	private int mEntryCount;
 	private int mModCount;
+
+
+	public enum NearestState
+	{
+		MATCH,
+		NEAR,
+		FINAL
+	}
 
 
 	/**
@@ -152,12 +144,9 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	/**
 	 * Add the entry to the map
 	 *
-	 * @param aEntry
-	 *   entry to add
-	 * @param oExistingEntry
-	 *   optional; output for an existing entry with the entry key
-	 * @return
-	 *   true if the operation was successful and entry inserted into the map
+	 * @param aEntry entry to add
+	 * @param oExistingEntry optional; output for an existing entry with the entry key
+	 * @return true if the operation was successful and entry inserted into the map
 	 */
 	public boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
@@ -264,27 +253,25 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	/**
 	 * Find an entry equal or before the sought key
 	 *
-	 * @return
-	 *   one of NEAR, EXACT or LAST depending on what entry was found. LAST indicated no identical or smaller key was found.
+	 * @return one of NEAR, EXACT or LAST depending on what entry was found. LAST indicated no identical or smaller key was found.
 	 */
-	public int nearest(ArrayMapEntry aEntry)
+	public NearestState nearest(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());
 
-		if (index == -mEntryCount - 1)
+		if (mEntryCount == -index - 1)
 		{
-			return FINAL;
+			return NearestState.FINAL;
 		}
 		if (index < 0)
 		{
 			loadValue(-index - 1, aEntry);
-
-			return LOWER;
+			return NearestState.NEAR;
 		}
 
 		loadValue(index, aEntry);
 
-		return EXACT;
+		return NearestState.MATCH;
 	}
 
 
@@ -316,7 +303,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	private void removeImpl(int aIndex, Result<ArrayMapEntry> oOldEntry)
 	{
-		assert aIndex >= 0 && aIndex < mEntryCount : "index="+aIndex+", count="+mEntryCount;
+		assert aIndex >= 0 && aIndex < mEntryCount : "index=" + aIndex + ", count=" + mEntryCount;
 
 		int modCount = ++mModCount;
 

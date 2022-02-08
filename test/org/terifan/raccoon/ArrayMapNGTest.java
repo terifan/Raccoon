@@ -5,7 +5,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.ArrayMap.NearestState;
 import org.terifan.raccoon.util.Result;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
@@ -251,19 +251,19 @@ public class ArrayMapNGTest
 		ArrayMapEntry D = new ArrayMapEntry("d".getBytes());
 		ArrayMapEntry E = new ArrayMapEntry("e".getBytes());
 
-		assertEquals(map.nearest(A), ArrayMap.LOWER); // a is lower than b
+		assertEquals(map.nearest(A), NearestState.NEAR); // a is lower than b
 		assertEquals(A.getValue(), value1);
 
-		assertEquals(map.nearest(B), ArrayMap.EXACT); // b matches
+		assertEquals(map.nearest(B), NearestState.MATCH); // b matches
 		assertEquals(B.getValue(), value1);
 
-		assertEquals(map.nearest(C), ArrayMap.LOWER); // c is lower than d
+		assertEquals(map.nearest(C), NearestState.NEAR); // c is lower than d
 		assertEquals(C.getValue(), value2);
 
-		assertEquals(map.nearest(D), ArrayMap.EXACT); // d matches
+		assertEquals(map.nearest(D), NearestState.MATCH); // d matches
 		assertEquals(D.getValue(), value2);
 
-		assertEquals(map.nearest(E), ArrayMap.FINAL); // e is last
+		assertEquals(map.nearest(E), NearestState.FINAL); // e is last
 	}
 
 

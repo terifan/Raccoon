@@ -17,16 +17,20 @@ import org.terifan.security.messagedigest.MurmurHash3;
 
 final class BTreeTableImplementation extends TableImplementation
 {
+	private final static int PAGE_HEADER_SIZE = 1;
+
 	private BlockPointer mRootBlockPointer;
-//	private Directory mDirectory;
-//	private LeafNode[] mNodes;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mChanged;
 	private int mModCount;
 
-	private int mIndexSize = 8 * 1024;
-	private int mLeafSize = 8 * 1024;
+	private ArrayMap mRootNode;
+
+	private int mIndexSize = 512;
+	private int mLeafSize = 512;
+//	private int mIndexSize = 8 * 1024;
+//	private int mLeafSize = 8 * 1024;
 
 
 	public BTreeTableImplementation(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionGroup, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName)
@@ -43,7 +47,7 @@ final class BTreeTableImplementation extends TableImplementation
 			Log.i("create table %s", mTableName);
 			Log.inc();
 
-//			setupEmptyTable();
+			setupEmptyTable();
 
 			mWasEmptyInstance = true;
 
@@ -116,15 +120,16 @@ final class BTreeTableImplementation extends TableImplementation
 
 		mChanged = true;
 
-		ArrayMap node = new ArrayMap(mIndexSize);
-
 		ArrayMapEntry entry = new ArrayMapEntry(aEntry.getKey());
 
-		int pos = node.nearest(entry);
+		ArrayMap.NearestState state = mRootNode.nearest(entry);
 
-		
+		System.out.println(state+" '"+new String(entry.getKey()).trim()+"'");
 
+		Result<ArrayMapEntry> r = new Result<>();
+		mRootNode.put(aEntry, r);
 
+		System.out.println(new String(mRootNode.array()));
 
 
 //		0:
@@ -135,31 +140,6 @@ final class BTreeTableImplementation extends TableImplementation
 //
 //		2:
 //		Data[.....]
-
-
-		System.out.println("#");
-
-//		int index = computeIndex(aEntry);
-//
-//		LeafNode node = loadNode(index);
-//
-//		for (;;)
-//		{
-//			if (node.mMap.put(aEntry, oldEntry))
-//			{
-//				node.mChanged = true;
-//				break;
-//			}
-//
-//			if (node.mRangeBits == 0)
-//			{
-//				growDirectory();
-//
-//				index = computeIndex(aEntry);
-//			}
-//
-//			node = splitNode(index, node);
-//		}
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
@@ -235,7 +215,7 @@ final class BTreeTableImplementation extends TableImplementation
 				Log.i("commit hash table");
 				Log.inc();
 
-				flush();
+				flushImpl();
 
 				assert integrityCheck() == null : integrityCheck();
 
@@ -282,7 +262,7 @@ final class BTreeTableImplementation extends TableImplementation
 	}
 
 
-	private void flush()
+	private void flushImpl()
 	{
 //		for (int i = 0; i < mNodes.length; i++)
 //		{
@@ -298,6 +278,13 @@ final class BTreeTableImplementation extends TableImplementation
 //				mDirectory.setBlockPointer(i, node.mBlockPointer);
 //			}
 //		}
+	}
+
+
+	@Override
+	public long flush()
+	{
+		return 0l;
 	}
 
 
@@ -423,7 +410,7 @@ final class BTreeTableImplementation extends TableImplementation
 	@Override
 	public int getEntrySizeLimit()
 	{
-		return mLeafSize / 8;
+		return mLeafSize / 2;
 	}
 
 
@@ -463,6 +450,12 @@ final class BTreeTableImplementation extends TableImplementation
 	private BlockPointer writeBlock(byte[] aContent, BlockType aBlockType, long aUserData)
 	{
 		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionGroup.get(), aBlockType, aUserData);
+	}
+
+
+	private void setupEmptyTable()
+	{
+		mRootNode = new ArrayMap(new byte[mLeafSize], PAGE_HEADER_SIZE, mLeafSize - PAGE_HEADER_SIZE);
 	}
 
 

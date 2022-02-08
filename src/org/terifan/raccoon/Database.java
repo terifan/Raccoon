@@ -436,6 +436,35 @@ public final class Database implements AutoCloseable
 	}
 
 
+	public long flush()
+	{
+		checkOpen();
+
+		aquireWriteLock();
+
+		long nodesWritten = 0;
+
+		try
+		{
+			Log.i("commit database");
+			Log.inc();
+
+			for (Entry<Table, TableInstance> entry : mOpenTables.entrySet())
+			{
+				nodesWritten = entry.getValue().flush();
+			}
+
+			Log.dec();
+		}
+		finally
+		{
+			mWriteLock.unlock();
+		}
+
+		return nodesWritten;
+	}
+
+
 	/**
 	 * Persists all pending changes. It's necessary to commit changes on a regular basis to avoid data loss.
 	 */

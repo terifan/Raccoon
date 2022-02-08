@@ -1,9 +1,13 @@
 package test;
 
+import java.awt.Dimension;
 import java.io.File;
+import java.util.Random;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
-import test.TestTiny.Fruit;
+import org.terifan.raccoon.annotations.Column;
+import org.terifan.raccoon.annotations.Entity;
+import org.terifan.raccoon.annotations.Id;
 
 
 /*
@@ -51,6 +55,46 @@ public class TestWriteLargeDB
 		catch (Throwable e)
 		{
 			e.printStackTrace(System.out);
+		}
+	}
+
+
+	@Entity(name = "fruits")
+	public static class Fruit
+	{
+		@Id(name = "id") Integer mId;
+		@Column(name = "name") String mName;
+		@Column(name = "weight") double mWeight;
+		@Column(name = "cost") Double mCost;
+		@Column(name = "size") Dimension mDimension;
+		@Column(name = "x") int[][] x;
+
+
+		public Fruit()
+		{
+		}
+
+
+		public Fruit(int aId)
+		{
+			mId = aId;
+		}
+
+
+		public Fruit(int aId, String aName, double aWeight)
+		{
+			mId = aId;
+			mName = aName;
+			mWeight = aWeight;
+			mDimension = new Dimension(new Random().nextInt(100), new Random().nextInt(100));
+		}
+
+
+		@Override
+		public String toString()
+		{
+//			return "MyEntity{" + "id=" + mId + ", name=" + mName + ", weight=" + mWeight + ", dim=" + mDimension + '}';
+			return "MyEntity{" + "id=" + mId + ", name=" + mName + ", weight=" + mWeight + '}';
 		}
 	}
 }
