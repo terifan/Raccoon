@@ -60,9 +60,6 @@ final class BTreeTableImplementation extends TableImplementation
 
 			unmarshalHeader(aTableHeader);
 
-//			mDirectory = new Directory(mRootBlockPointer);
-//			mNodes = new LeafNode[1 << mDirectory.getPrefixLength()];
-
 			Log.dec();
 		}
 	}
@@ -91,6 +88,8 @@ final class BTreeTableImplementation extends TableImplementation
 		compressionParam.unmarshal(buffer);
 
 		mBlockAccessor.setCompressionParam(compressionParam);
+
+		mRootNode = new ArrayMap(readBlock(mRootBlockPointer));
 	}
 
 
@@ -99,8 +98,7 @@ final class BTreeTableImplementation extends TableImplementation
 	{
 		checkOpen();
 
-//		return loadNode(computeIndex(aEntry)).mMap.get(aEntry);
-		return false;
+		return mRootNode.get(aEntry);
 	}
 
 
@@ -122,16 +120,17 @@ final class BTreeTableImplementation extends TableImplementation
 
 		ArrayMapEntry entry = new ArrayMapEntry(aEntry.getKey());
 
-		ArrayMap.SearchResult state = mRootNode.nearest(entry);
+		ArrayMap.NearResult state = mRootNode.nearest(entry);
 
 		System.out.println(state + " '" + new String(entry.getKey()).trim() + "'");
 
-		Result<ArrayMapEntry> r = new Result<>();
+		Result<ArrayMapEntry> prev = new Result<>();
 
-		mRootNode.put(aEntry, r);
+		boolean success = mRootNode.put(aEntry, prev);
+
+		System.out.println(success);
 
 		mRootNode.forEach(e->System.out.println("**" + new String(e.getKey()).replaceAll("[^\\w]*", "")));
-
 
 //		0:
 //		Index[cafe=1, filip=2, steve=3, *=4]
@@ -145,8 +144,7 @@ final class BTreeTableImplementation extends TableImplementation
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
-//		return entry.get();
-		return null;
+		return prev.get();
 	}
 
 
@@ -216,13 +214,11 @@ final class BTreeTableImplementation extends TableImplementation
 				Log.i("commit hash table");
 				Log.inc();
 
-				flushImpl();
-
 				assert integrityCheck() == null : integrityCheck();
 
 				freeBlock(mRootBlockPointer);
 
-//				mRootBlockPointer = mDirectory.writeBuffer();
+				mRootBlockPointer = writeBlock(mRootNode.array(), BlockType.LEAF);
 
 				if (mCommitChangesToBlockDevice)
 				{
@@ -263,25 +259,6 @@ final class BTreeTableImplementation extends TableImplementation
 	}
 
 
-	private void flushImpl()
-	{
-//		for (int i = 0; i < mNodes.length; i++)
-//		{
-//			LeafNode node = mNodes[i];
-//
-//			if (node != null && node.mChanged)
-//			{
-//				freeBlock(node.mBlockPointer);
-//
-//				node.mBlockPointer = writeBlock(node.mMap.array(), BlockType.LEAF, node.mRangeBits);
-//				node.mChanged = false;
-//
-//				mDirectory.setBlockPointer(i, node.mBlockPointer);
-//			}
-//		}
-	}
-
-
 	@Override
 	public long flush()
 	{
@@ -305,7 +282,7 @@ final class BTreeTableImplementation extends TableImplementation
 		{
 			Log.d("rollback empty");
 
-//			setupEmptyTable();
+			setupEmptyTable();
 		}
 		else
 		{
@@ -334,8 +311,8 @@ final class BTreeTableImplementation extends TableImplementation
 //
 //			node.mBlockPointer = null;
 //		});
-//
-//		setupEmptyTable();
+
+		setupEmptyTable();
 
 		assert mModCount == modCount : "concurrent modification";
 	}
@@ -350,8 +327,7 @@ final class BTreeTableImplementation extends TableImplementation
 		if (!mClosed)
 		{
 			mClosed = true;
-//			mDirectory = null;
-//			mNodes = null;
+			mRootNode = null;
 			mBlockAccessor = null;
 		}
 	}
@@ -448,22 +424,22 @@ final class BTreeTableImplementation extends TableImplementation
 	}
 
 
-	private BlockPointer writeBlock(byte[] aContent, BlockType aBlockType, long aUserData)
+	private BlockPointer writeBlock(byte[] aContent, BlockType aBlockType)
 	{
-		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionGroup.get(), aBlockType, aUserData);
+		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionGroup.get(), aBlockType, 0);
 	}
 
 
 	private void setupEmptyTable()
 	{
-		mRootNode = new ArrayMap(new byte[mLeafSize], PAGE_HEADER_SIZE, mLeafSize - PAGE_HEADER_SIZE);
+		mRootNode = new ArrayMap(mLeafSize);
 	}
 
 
 	private class TableIterator implements Iterator<ArrayMapEntry>
 	{
 		private NodeIterator mIterator;
-		private Iterator<ArrayMapEntry> mIt;
+		private Iterator<ArrayMapEntry> mElements;
 
 
 		public TableIterator()
@@ -475,19 +451,19 @@ final class BTreeTableImplementation extends TableImplementation
 		@Override
 		public boolean hasNext()
 		{
-			if (mIt == null)
+			if (mElements == null)
 			{
 				if (!mIterator.hasNext())
 				{
 					return false;
 				}
 
-				mIt = mIterator.next().mMap.iterator();
+				mElements = mIterator.next().mMap.iterator();
 			}
 
-			if (!mIt.hasNext())
+			if (!mElements.hasNext())
 			{
-				mIt = null;
+				mElements = null;
 				return hasNext();
 			}
 
@@ -498,31 +474,53 @@ final class BTreeTableImplementation extends TableImplementation
 		@Override
 		public ArrayMapEntry next()
 		{
-			return mIt.next();
+			return mElements.next();
 		}
 	}
 
 
+	// root
+	//  +-----index
+	//  |      +-----leaf
+	//  |      +-----leaf
+	//  |      +-----leaf
+	//  +-----leaf
+	//  +-----index
+	//  |      +-----leaf
+	//  |      +-----index
+	//  |             +-----leaf
+	//  |             +-----leaf
+	//  |      +-----leaf
+	//  +-----index
+	//  |      +-----leaf
+	//  |      +-----leaf
+	//  |      +-----leaf
+	//  +-----leaf
 	private class NodeIterator implements Iterator<LeafNode>
 	{
 		private int mIndex;
 		private LeafNode mNode;
 
 
+		public NodeIterator()
+		{
+			mNode = new LeafNode(mRootNode);
+		}
+
+
 		@Override
 		public boolean hasNext()
 		{
-//			if (mNode == null)
-//			{
-//				if (mIndex == mNodes.length)
-//				{
-//					return false;
-//				}
-//
-//				mNode = loadNode(mIndex);
-//
-//				mIndex += 1 << mNode.mRangeBits;
-//			}
+			if (mNode == null)
+			{
+//				if (mIndex == 0)
+				{
+					return false;
+				}
+
+//				mNode = null;
+//				mIndex++;
+			}
 
 			return true;
 		}
@@ -542,7 +540,12 @@ final class BTreeTableImplementation extends TableImplementation
 	{
 		BlockPointer mBlockPointer;
 		ArrayMap mMap;
-		long mRangeBits;
 		boolean mChanged;
+
+
+		private LeafNode(ArrayMap aMap)
+		{
+			mMap = aMap;
+		}
 	}
 }

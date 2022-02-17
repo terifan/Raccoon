@@ -187,7 +187,7 @@ public final class Database implements AutoCloseable
 		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aOpenParams, null);
 		DeviceHeader tenantHeader = getParameter(DeviceHeader.class, aOpenParams, null);
 
-		mCompressionParam = getParameter(CompressionParam.class, aOpenParams, CompressionParam.NO_COMPRESSION);
+		mCompressionParam = getParameter(CompressionParam.class, aOpenParams, CompressionParam.BEST_SPEED);
 		mTableParam = getParameter(TableParam.class, aOpenParams, TableParam.DEFAULT);
 
 		IManagedBlockDevice device;
@@ -446,7 +446,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			Log.i("commit database");
+			Log.i("flush changes");
 			Log.inc();
 
 			for (Entry<Table, TableInstance> entry : mOpenTables.entrySet())

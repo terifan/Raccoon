@@ -42,11 +42,14 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	private int mModCount;
 
 
-	public enum SearchResult
+	public enum NearResult
 	{
+		/** the ArrayMap contain an entry with the key provided */
 		MATCH,
-		NEAR,
-		FINAL
+		/** the ArrayMap contain an entry with a larger key */
+		LOWER,
+		/** the ArrayMap don't contain any entry with a larger key */
+		LAST
 	}
 
 
@@ -251,27 +254,25 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 
 	/**
-	 * Find an entry equal or before the sought key
-	 *
-	 * @return one of NEAR, EXACT or LAST depending on what entry was found. LAST indicated no identical or smaller key was found.
+	 * Find an entry equal or before the sought key. The provided entry is updated if the result is LOWER or MATCH.
 	 */
-	public SearchResult nearest(ArrayMapEntry aEntry)
+	public NearResult nearest(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());
 
 		if (mEntryCount == -index - 1)
 		{
-			return SearchResult.FINAL;
+			return NearResult.LAST;
 		}
 		if (index < 0)
 		{
 			loadValue(-index - 1, aEntry);
-			return SearchResult.NEAR;
+			return NearResult.LOWER;
 		}
 
 		loadValue(index, aEntry);
 
-		return SearchResult.MATCH;
+		return NearResult.MATCH;
 	}
 
 

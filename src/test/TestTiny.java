@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Random;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.LogLevel;
 import org.terifan.raccoon.Table;
 import org.terifan.raccoon.annotations.Discriminator;
 import org.terifan.raccoon.annotations.Column;
@@ -13,6 +14,7 @@ import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.annotations.Id;
 import org.terifan.raccoon.serialization.FieldDescriptor;
+import org.terifan.raccoon.util.Log;
 
 
 public class TestTiny
@@ -23,19 +25,28 @@ public class TestTiny
 		{
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
+//			Log.setLevel(LogLevel.INFO);
+
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 			{
-				db.save(new Fruit("banan", 3.2));
-				db.save(new Fruit("lemon", 2.1));
-				db.save(new Fruit("apple", 1.4));
+//				db.save(new Document().put("id",123).put("name","olle"));
+
+				db.save(new KeyValue("papaya", Helper.createString(new Random(1), 80)));
+				db.save(new KeyValue("olives", Helper.createString(new Random(1), 80)));
+				db.save(new KeyValue("orange", Helper.createString(new Random(1), 80)));
+				db.save(new KeyValue("banana", Helper.createString(new Random(1), 80)));
+				db.save(new KeyValue("cherry", Helper.createString(new Random(1), 80)));
+				db.list(KeyValue.class).forEach(System.out::println);
 				db.commit();
 			}
 
 //			blockDevice.dump();
 
+			System.out.println("-----------");
+
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
 			{
-				db.list(Fruit.class).forEach(System.out::println);
+				db.list(KeyValue.class).forEach(System.out::println);
 			}
 
 //			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE))
@@ -69,6 +80,24 @@ public class TestTiny
 		catch (Throwable e)
 		{
 			e.printStackTrace(System.out);
+		}
+	}
+
+
+	@Entity(name = "keyvalue", implementation = "btree")
+	public static class KeyValue
+	{
+		@Id(name="id") String mKey;
+		@Column(name="value") String mValue;
+
+		public KeyValue()
+		{
+		}
+
+		public KeyValue(String aKey, String aValue)
+		{
+			this.mKey = aKey;
+			this.mValue = aValue;
 		}
 	}
 
