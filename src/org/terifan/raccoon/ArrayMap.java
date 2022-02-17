@@ -42,7 +42,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	private int mModCount;
 
 
-	public enum NearestState
+	public enum SearchResult
 	{
 		MATCH,
 		NEAR,
@@ -255,23 +255,23 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	 *
 	 * @return one of NEAR, EXACT or LAST depending on what entry was found. LAST indicated no identical or smaller key was found.
 	 */
-	public NearestState nearest(ArrayMapEntry aEntry)
+	public SearchResult nearest(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());
 
 		if (mEntryCount == -index - 1)
 		{
-			return NearestState.FINAL;
+			return SearchResult.FINAL;
 		}
 		if (index < 0)
 		{
 			loadValue(-index - 1, aEntry);
-			return NearestState.NEAR;
+			return SearchResult.NEAR;
 		}
 
 		loadValue(index, aEntry);
 
-		return NearestState.MATCH;
+		return SearchResult.MATCH;
 	}
 
 

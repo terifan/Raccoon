@@ -25,9 +25,9 @@ public class TestTiny
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 			{
-				db.save(new Fruit("apple", 1.4));
+				db.save(new Fruit("banan", 3.2));
 				db.save(new Fruit("lemon", 2.1));
-				db.save(new Fruit("plum", 3.2));
+				db.save(new Fruit("apple", 1.4));
 				db.commit();
 			}
 
