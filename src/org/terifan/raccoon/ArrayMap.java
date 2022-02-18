@@ -765,7 +765,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		ArrayMap high = new ArrayMap(mCapacity);
 		ArrayMapEntry tmp = new ArrayMapEntry();
 
-		for (int i = 0, j = 0; i + j < mEntryCount; )
+		for (int i = 0, j = mEntryCount; i < j; )
 		{
 			if (low.getFreeSpace() > high.getFreeSpace())
 			{
@@ -773,7 +773,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			}
 			else
 			{
-				high.put(get(mEntryCount - ++j, tmp), null);
+				high.put(get(--j, tmp), null);
 			}
 		}
 
