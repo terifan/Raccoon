@@ -736,24 +736,22 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public ArrayMap resize(int aNewSize)
+	public ArrayMap resize(int aNewCapacity)
 	{
+		if (aNewCapacity < mCapacity && mCapacity - aNewCapacity > getFreeSpace())
+		{
+			throw new IllegalArgumentException();
+		}
+
 		int s = ENTRY_POINTER_SIZE * mEntryCount;
-		byte[] buffer = new byte[aNewSize];
+		byte[] buffer = new byte[aNewCapacity];
 
 		System.arraycopy(mBuffer, 0, buffer, 0, mFreeSpaceOffset);
-		System.arraycopy(mBuffer, mBuffer.length - s, buffer, aNewSize - s, s);
+		System.arraycopy(mBuffer, mBuffer.length - s, buffer, aNewCapacity - s, s);
 
 		mBuffer = buffer;
 		mCapacity = buffer.length;
 		mPointerListOffset = mCapacity - ENTRY_POINTER_SIZE * mEntryCount;
-
-		int limit = (mCapacity - HEADER_SIZE) / (ENTRY_HEADER_SIZE + ENTRY_POINTER_SIZE);
-
-		if (mEntryCount > limit)
-		{
-			throw new IllegalArgumentException("Entry count exceeds maximum possible entries: " + mEntryCount + ", allowed: " + limit);
-		}
 
 		return this;
 	}
