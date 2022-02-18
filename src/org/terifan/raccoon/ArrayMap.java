@@ -761,27 +761,22 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	public ArrayMap[] split()
 	{
-		ArrayMap[] maps = new ArrayMap[]
-		{
-			new ArrayMap(mCapacity),
-			new ArrayMap(mCapacity)
-		};
+		ArrayMap low = new ArrayMap(mCapacity);
+		ArrayMap high = new ArrayMap(mCapacity);
+		ArrayMapEntry tmp = new ArrayMapEntry();
 
 		for (int i = 0, j = 0; i + j < mEntryCount; )
 		{
-			if (maps[0].getFreeSpace() > maps[1].getFreeSpace())
+			if (low.getFreeSpace() > high.getFreeSpace())
 			{
-				maps[0].put(get(i++, new ArrayMapEntry()), null);
+				low.put(get(i++, tmp), null);
 			}
 			else
 			{
-				maps[1].put(get(mEntryCount - ++j, new ArrayMapEntry()), null);
+				high.put(get(mEntryCount - ++j, tmp), null);
 			}
 		}
 
-		System.out.println(maps[0].getFreeSpace());
-		System.out.println(maps[1].getFreeSpace());
-
-		return maps;
+		return new ArrayMap[]{low, high};
 	}
 }
