@@ -23,6 +23,7 @@ public class TestTiny
 	{
 		try
 		{
+			Random rnd = new Random();
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 //			Log.setLevel(LogLevel.INFO);
@@ -31,12 +32,28 @@ public class TestTiny
 			{
 //				db.save(new Document().put("id",123).put("name","olle"));
 
-				db.save(new KeyValue("papaya", Helper.createString(new Random(1), 80)));
-				db.save(new KeyValue("olives", Helper.createString(new Random(1), 80)));
-				db.save(new KeyValue("orange", Helper.createString(new Random(1), 80)));
-				db.save(new KeyValue("banana", Helper.createString(new Random(1), 80)));
-				db.save(new KeyValue("cherry", Helper.createString(new Random(1), 80)));
-				db.list(KeyValue.class).forEach(System.out::println);
+				db.save(new KeyValue("a", Helper.createString(rnd)));
+				db.save(new KeyValue("b", Helper.createString(rnd)));
+				db.save(new KeyValue("c", Helper.createString(rnd)));
+				db.save(new KeyValue("d", Helper.createString(rnd)));
+				db.save(new KeyValue("e", Helper.createString(rnd)));
+				db.save(new KeyValue("f", Helper.createString(rnd)));
+				db.save(new KeyValue("g", Helper.createString(rnd)));
+				db.save(new KeyValue("h", Helper.createString(rnd)));
+				db.save(new KeyValue("i", Helper.createString(rnd)));
+				db.save(new KeyValue("j", Helper.createString(rnd)));
+				db.save(new KeyValue("k", Helper.createString(rnd)));
+				db.save(new KeyValue("l", Helper.createString(rnd)));
+				db.save(new KeyValue("m", Helper.createString(rnd)));
+				db.save(new KeyValue("n", Helper.createString(rnd)));
+				db.save(new KeyValue("o", Helper.createString(rnd)));
+				db.save(new KeyValue("p", Helper.createString(rnd)));
+				db.save(new KeyValue("q", Helper.createString(rnd)));
+				db.save(new KeyValue("r", Helper.createString(rnd)));
+				db.save(new KeyValue("s", Helper.createString(rnd)));
+				db.save(new KeyValue("t", Helper.createString(rnd)));
+				db.save(new KeyValue("u", Helper.createString(rnd)));
+//				db.list(KeyValue.class).forEach(System.out::println);
 				db.commit();
 			}
 

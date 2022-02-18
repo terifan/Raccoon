@@ -122,15 +122,22 @@ final class BTreeTableImplementation extends TableImplementation
 
 		ArrayMap.NearResult state = mRootNode.nearest(entry);
 
-		System.out.println(state + " '" + new String(entry.getKey()).trim() + "'");
+//		System.out.println(state + " '" + new String(entry.getKey()).trim() + "'");
 
 		Result<ArrayMapEntry> prev = new Result<>();
 
-		boolean success = mRootNode.put(aEntry, prev);
+		if (!mRootNode.insert(aEntry, prev))
+		{
+			ArrayMap[] maps = mRootNode.split();
 
-		System.out.println(success);
+			System.out.println(maps[0]);
+			System.out.println(maps[1]);
 
-		mRootNode.forEach(e->System.out.println("**" + new String(e.getKey()).replaceAll("[^\\w]*", "")));
+//		mRootNode.forEach(e->System.out.println("**" + new String(e.getKey()).replaceAll("[^\\w]*", "")));
+
+		}
+
+//		mRootNode.forEach(e->System.out.println("**" + new String(e.getKey()).replaceAll("[^\\w]*", "")));
 
 //		0:
 //		Index[cafe=1, filip=2, steve=3, *=4]

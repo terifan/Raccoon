@@ -44,11 +44,17 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	public enum NearResult
 	{
-		/** the ArrayMap contain an entry with the key provided */
+		/**
+		 * the ArrayMap contain an entry with the key provided
+		 */
 		MATCH,
-		/** the ArrayMap contain an entry with a larger key */
+		/**
+		 * the ArrayMap contain an entry with a larger key
+		 */
 		LOWER,
-		/** the ArrayMap don't contain any entry with a larger key */
+		/**
+		 * the ArrayMap don't contain any entry with a larger key
+		 */
 		LAST
 	}
 
@@ -141,6 +147,31 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		mPointerListOffset = mCapacity;
 
 		return this;
+	}
+
+
+	/**
+	 * Add the entry to the map resizing the internal buffer if necessary.
+	 *
+	 * @param aEntry entry to add
+	 * @param oExistingEntry optional; output for an existing entry with the entry key
+	 * @return true if the entry was inserted without resizing the buffer and false if the buffer was resized
+	 */
+	public boolean insert(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
+	{
+		if (put(aEntry, oExistingEntry))
+		{
+			return true;
+		}
+
+		resize(mCapacity + ENTRY_OVERHEAD + aEntry.getMarshalledLength());
+
+		if (!put(aEntry, oExistingEntry))
+		{
+			throw new IllegalStateException("failed to put entity");
+		}
+
+		return false;
 	}
 
 
@@ -713,6 +744,44 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		System.arraycopy(mBuffer, 0, buffer, 0, mFreeSpaceOffset);
 		System.arraycopy(mBuffer, mBuffer.length - s, buffer, aNewSize - s, s);
 
-		return new ArrayMap(buffer);
+		mBuffer = buffer;
+		mCapacity = buffer.length;
+		mPointerListOffset = mCapacity - ENTRY_POINTER_SIZE * mEntryCount;
+
+		int limit = (mCapacity - HEADER_SIZE) / (ENTRY_HEADER_SIZE + ENTRY_POINTER_SIZE);
+
+		if (mEntryCount > limit)
+		{
+			throw new IllegalArgumentException("Entry count exceeds maximum possible entries: " + mEntryCount + ", allowed: " + limit);
+		}
+
+		return this;
+	}
+
+
+	public ArrayMap[] split()
+	{
+		ArrayMap[] maps = new ArrayMap[]
+		{
+			new ArrayMap(mCapacity),
+			new ArrayMap(mCapacity)
+		};
+
+		for (int i = 0, j = 0; i + j < mEntryCount; )
+		{
+			if (maps[0].getFreeSpace() > maps[1].getFreeSpace())
+			{
+				maps[0].put(get(i++, new ArrayMapEntry()), null);
+			}
+			else
+			{
+				maps[1].put(get(mEntryCount - ++j, new ArrayMapEntry()), null);
+			}
+		}
+
+		System.out.println(maps[0].getFreeSpace());
+		System.out.println(maps[1].getFreeSpace());
+
+		return maps;
 	}
 }
