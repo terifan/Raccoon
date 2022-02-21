@@ -1,36 +1,32 @@
 package org.terifan.raccoon;
 
-import java.io.IOException;
 import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import org.terifan.raccoon.io.DatabaseIOException;
+import org.terifan.raccoon.ArrayMap.NearResult;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
-import org.terifan.security.messagedigest.MurmurHash3;
 
 
 final class BTreeTableImplementation extends TableImplementation
 {
 	private final static int PAGE_HEADER_SIZE = 1;
 
-	private BlockPointer mRootBlockPointer;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mChanged;
 	private int mModCount;
 
-	private ArrayMap mRootNode;
+	private Node mRoot;
+//		BlockPointer mRootBlockPointer;
+//	private ArrayMap mRootNode;
 
 	private int mIndexSize = 512;
 	private int mLeafSize = 512;
-//	private int mIndexSize = 8 * 1024;
-//	private int mLeafSize = 8 * 1024;
 
 
 	public BTreeTableImplementation(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionGroup, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName)
@@ -69,7 +65,7 @@ final class BTreeTableImplementation extends TableImplementation
 	{
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(BlockPointer.SIZE + 3);
 
-		mRootBlockPointer.marshal(buffer);
+		mRoot.mBlockPointer.marshal(buffer);
 
 		mBlockAccessor.getCompressionParam().marshal(buffer);
 
@@ -81,15 +77,16 @@ final class BTreeTableImplementation extends TableImplementation
 	{
 		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aTableHeader);
 
-		mRootBlockPointer = new BlockPointer();
-		mRootBlockPointer.unmarshal(buffer);
+		mRoot = new Node();
+		mRoot.mBlockPointer = new BlockPointer();
+		mRoot.mBlockPointer.unmarshal(buffer);
 
 		CompressionParam compressionParam = new CompressionParam();
 		compressionParam.unmarshal(buffer);
 
 		mBlockAccessor.setCompressionParam(compressionParam);
 
-		mRootNode = new ArrayMap(readBlock(mRootBlockPointer));
+		mRoot.mMap = new ArrayMap(readBlock(mRoot.mBlockPointer));
 	}
 
 
@@ -98,7 +95,7 @@ final class BTreeTableImplementation extends TableImplementation
 	{
 		checkOpen();
 
-		return mRootNode.get(aEntry);
+		return mRoot.mMap.get(aEntry);
 	}
 
 
@@ -116,42 +113,38 @@ final class BTreeTableImplementation extends TableImplementation
 		Log.i("put");
 		Log.inc();
 
+		Result<ArrayMapEntry> prev = putImpl(new Node(mRoot.mMap), aEntry, new ArrayMapEntry(aEntry.getKey()));
+
 		mChanged = true;
-
-		ArrayMapEntry entry = new ArrayMapEntry(aEntry.getKey());
-
-		ArrayMap.NearResult state = mRootNode.nearest(entry);
-
-//		System.out.println(state + " '" + new String(entry.getKey()).trim() + "'");
-
-		Result<ArrayMapEntry> prev = new Result<>();
-
-		if (!mRootNode.insert(aEntry, prev))
-		{
-			ArrayMap[] maps = mRootNode.split();
-
-			System.out.println(maps[0]);
-			System.out.println(maps[1]);
-
-//		mRootNode.forEach(e->System.out.println("**" + new String(e.getKey()).replaceAll("[^\\w]*", "")));
-
-		}
-
-//		mRootNode.forEach(e->System.out.println("**" + new String(e.getKey()).replaceAll("[^\\w]*", "")));
-
-//		0:
-//		Index[cafe=1, filip=2, steve=3, *=4]
-//
-//		1:
-//		Index[babe=5, *=6]
-//
-//		2:
-//		Data[.....]
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
 		return prev.get();
+	}
+
+
+	private Result<ArrayMapEntry> putImpl(Node aNode, ArrayMapEntry aEntry, ArrayMapEntry aKey)
+	{
+		if (aNode.mBlockPointer != null && aNode.mBlockPointer.getBlockType() == BlockType.INDEX)
+		{
+			NearResult state = aNode.mMap.nearest(aKey);
+
+			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(aKey.getValue()));
+
+			Node node = new Node(new ArrayMap(readBlock(bp)));
+
+			return putImpl(node, aEntry, aKey);
+		}
+
+		Result<ArrayMapEntry> prev = new Result<>();
+
+		if (!mRoot.mMap.insert(aEntry, prev))
+		{
+			ArrayMap[] maps = mRoot.mMap.split();
+		}
+
+		return prev;
 	}
 
 
@@ -223,9 +216,9 @@ final class BTreeTableImplementation extends TableImplementation
 
 				assert integrityCheck() == null : integrityCheck();
 
-				freeBlock(mRootBlockPointer);
+				freeBlock(mRoot.mBlockPointer);
 
-				mRootBlockPointer = writeBlock(mRootNode.array(), BlockType.LEAF);
+				mRoot.mBlockPointer = writeBlock(mRoot.mMap.array(), BlockType.LEAF);
 
 				if (mCommitChangesToBlockDevice)
 				{
@@ -234,7 +227,7 @@ final class BTreeTableImplementation extends TableImplementation
 
 				mChanged = false;
 
-				Log.i("table commit finished; root block is %s", mRootBlockPointer);
+				Log.i("table commit finished; root block is %s", mRoot.mBlockPointer);
 
 				Log.dec();
 				assert mModCount == modCount : "concurrent modification";
@@ -334,7 +327,7 @@ final class BTreeTableImplementation extends TableImplementation
 		if (!mClosed)
 		{
 			mClosed = true;
-			mRootNode = null;
+			mRoot = null;
 			mBlockAccessor = null;
 		}
 	}
@@ -439,7 +432,8 @@ final class BTreeTableImplementation extends TableImplementation
 
 	private void setupEmptyTable()
 	{
-		mRootNode = new ArrayMap(mLeafSize);
+		mRoot = new Node();
+		mRoot.mMap = new ArrayMap(mLeafSize);
 	}
 
 
@@ -486,47 +480,30 @@ final class BTreeTableImplementation extends TableImplementation
 	}
 
 
-	// root
-	//  +-----index
-	//  |      +-----leaf
-	//  |      +-----leaf
-	//  |      +-----leaf
-	//  +-----leaf
-	//  +-----index
-	//  |      +-----leaf
-	//  |      +-----index
-	//  |             +-----leaf
-	//  |             +-----leaf
-	//  |      +-----leaf
-	//  +-----index
-	//  |      +-----leaf
-	//  |      +-----leaf
-	//  |      +-----leaf
-	//  +-----leaf
-	private class NodeIterator implements Iterator<LeafNode>
+	private class NodeIterator implements Iterator<Node>
 	{
-		private int mIndex;
-		private LeafNode mNode;
+		private int mPosition;
+		private Node mCurrent;
 
 
 		public NodeIterator()
 		{
-			mNode = new LeafNode(mRootNode);
+			mCurrent = mRoot;
 		}
 
 
 		@Override
 		public boolean hasNext()
 		{
-			if (mNode == null)
+			if (mCurrent == null)
 			{
-//				if (mIndex == 0)
+//				if (mPosition == 0)
 				{
 					return false;
 				}
 
 //				mNode = null;
-//				mIndex++;
+//				mPosition++;
 			}
 
 			return true;
@@ -534,23 +511,28 @@ final class BTreeTableImplementation extends TableImplementation
 
 
 		@Override
-		public LeafNode next()
+		public Node next()
 		{
-			LeafNode tmp = mNode;
-			mNode = null;
+			Node tmp = mCurrent;
+			mCurrent = null;
 			return tmp;
 		}
 	}
 
 
-	private class LeafNode
+	private class Node
 	{
 		BlockPointer mBlockPointer;
 		ArrayMap mMap;
 		boolean mChanged;
 
 
-		private LeafNode(ArrayMap aMap)
+		public Node()
+		{
+		}
+
+
+		private Node(ArrayMap aMap)
 		{
 			mMap = aMap;
 		}
