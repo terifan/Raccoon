@@ -113,18 +113,25 @@ final class BTreeTableImplementation extends TableImplementation
 		Log.i("put");
 		Log.inc();
 
-		Result<ArrayMapEntry> prev = putImpl(new Node(mRoot.mMap), aEntry, new ArrayMapEntry(aEntry.getKey()));
+		Result<ArrayMapEntry> result = new Result<>();
+
+		Node node = new Node(mRoot.mMap);
+
+		if (putImpl(node, aEntry, new ArrayMapEntry(aEntry.getKey()), result))
+		{
+			// grow
+		}
 
 		mChanged = true;
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
-		return prev.get();
+		return result.get();
 	}
 
 
-	private Result<ArrayMapEntry> putImpl(Node aNode, ArrayMapEntry aEntry, ArrayMapEntry aKey)
+	private boolean putImpl(Node aNode, ArrayMapEntry aEntry, ArrayMapEntry aKey, Result<ArrayMapEntry> aResult)
 	{
 		if (aNode.mBlockPointer != null && aNode.mBlockPointer.getBlockType() == BlockType.INDEX)
 		{
@@ -134,17 +141,15 @@ final class BTreeTableImplementation extends TableImplementation
 
 			Node node = new Node(new ArrayMap(readBlock(bp)));
 
-			return putImpl(node, aEntry, aKey);
+			if (putImpl(node, aEntry, aKey, aResult))
+			{
+				ArrayMap[] maps = node.mMap.split();
+			}
+
+			return false;
 		}
 
-		Result<ArrayMapEntry> prev = new Result<>();
-
-		if (!mRoot.mMap.insert(aEntry, prev))
-		{
-			ArrayMap[] maps = mRoot.mMap.split();
-		}
-
-		return prev;
+		return !aNode.mMap.insert(aEntry, aResult);
 	}
 
 

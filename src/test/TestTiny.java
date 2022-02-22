@@ -63,8 +63,10 @@ public class TestTiny
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
 			{
-				db.list(KeyValue.class).forEach(System.out::println);
+				db.list(KeyValue.class).forEach(System.out::print);
 			}
+
+			System.out.println();
 
 //			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE))
 //			{
@@ -115,6 +117,12 @@ public class TestTiny
 		{
 			this.mKey = aKey;
 			this.mValue = aValue;
+		}
+
+		@Override
+		public String toString()
+		{
+			return "[" + mKey + "]";
 		}
 	}
 
