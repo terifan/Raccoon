@@ -95,4 +95,11 @@ public final class ArrayMapEntry
 	{
 		return 1 + mValue.length;
 	}
+
+
+	@Override
+	public String toString()
+	{
+		return "ArrayMapEntry{" + "mType=" + mType + ", mKey=\"" + new String(mKey).replaceAll("[^\\w]*", "") + "\", mValue=\"" + new String(mValue).replaceAll("[^\\w]*", "") + "\"}";
+	}
 }

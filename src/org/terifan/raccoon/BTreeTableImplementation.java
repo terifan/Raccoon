@@ -2,6 +2,8 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -12,18 +14,16 @@ import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 
 
-final class BTreeTableImplementation extends TableImplementation
+class BTreeTableImplementation extends TableImplementation
 {
-	private final static int PAGE_HEADER_SIZE = 1;
+	private final static byte[] POINTER_PLACEHOLDER = new byte[BlockPointer.SIZE];
 
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mChanged;
 	private int mModCount;
 
-	private Node mRoot;
-//		BlockPointer mRootBlockPointer;
-//	private ArrayMap mRootNode;
+	private BTreeNode mRoot;
 
 	private int mIndexSize = 512;
 	private int mLeafSize = 512;
@@ -65,6 +65,7 @@ final class BTreeTableImplementation extends TableImplementation
 	{
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(BlockPointer.SIZE + 3);
 
+		mRoot.mBlockPointer.setBlockType(mRoot.mIndexNode ? BlockType.INDEX : BlockType.LEAF);
 		mRoot.mBlockPointer.marshal(buffer);
 
 		mBlockAccessor.getCompressionParam().marshal(buffer);
@@ -77,7 +78,7 @@ final class BTreeTableImplementation extends TableImplementation
 	{
 		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aTableHeader);
 
-		mRoot = new Node();
+		mRoot = new BTreeNode(null, false);
 		mRoot.mBlockPointer = new BlockPointer();
 		mRoot.mBlockPointer.unmarshal(buffer);
 
@@ -87,6 +88,12 @@ final class BTreeTableImplementation extends TableImplementation
 		mBlockAccessor.setCompressionParam(compressionParam);
 
 		mRoot.mMap = new ArrayMap(readBlock(mRoot.mBlockPointer));
+		mRoot.mIndexNode = mRoot.mBlockPointer.getBlockType() == BlockType.INDEX;
+
+		if (mRoot.mIndexNode)
+		{
+			mRoot.mChildren = new HashMap<>();
+		}
 	}
 
 
@@ -115,11 +122,29 @@ final class BTreeTableImplementation extends TableImplementation
 
 		Result<ArrayMapEntry> result = new Result<>();
 
-		Node node = new Node(mRoot.mMap);
-
-		if (putImpl(node, aEntry, new ArrayMapEntry(aEntry.getKey()), result))
+		if (putImpl(mRoot, aEntry, new ArrayMapEntry(aEntry.getKey()), result))
 		{
-			// grow
+			ArrayMap[] maps = mRoot.mMap.split();
+
+			if (mRoot.mIndexNode)
+			{
+			}
+			else
+			{
+				ArrayMapEntry a = maps[1].get(0, new ArrayMapEntry());
+				ArrayMapEntry b = new ArrayMapEntry("".getBytes(), POINTER_PLACEHOLDER, (byte)0);
+
+				BTreeNode na = new BTreeNode(maps[0], false);
+				BTreeNode nb = new BTreeNode(maps[1], false);
+
+				mRoot = new BTreeNode(new ArrayMap(mIndexSize), true);
+
+				mRoot.mMap.put(new ArrayMapEntry(a.getKey(), POINTER_PLACEHOLDER, (byte)0), null);
+				mRoot.mMap.put(new ArrayMapEntry(b.getKey(), POINTER_PLACEHOLDER, (byte)0), null);
+
+				mRoot.mChildren.put(new MarshalledKey(a.getKey()), na);
+				mRoot.mChildren.put(new MarshalledKey(b.getKey()), nb);
+			}
 		}
 
 		mChanged = true;
@@ -131,7 +156,7 @@ final class BTreeTableImplementation extends TableImplementation
 	}
 
 
-	private boolean putImpl(Node aNode, ArrayMapEntry aEntry, ArrayMapEntry aKey, Result<ArrayMapEntry> aResult)
+	private boolean putImpl(BTreeNode aNode, ArrayMapEntry aEntry, ArrayMapEntry aKey, Result<ArrayMapEntry> aResult)
 	{
 		if (aNode.mBlockPointer != null && aNode.mBlockPointer.getBlockType() == BlockType.INDEX)
 		{
@@ -139,11 +164,13 @@ final class BTreeTableImplementation extends TableImplementation
 
 			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(aKey.getValue()));
 
-			Node node = new Node(new ArrayMap(readBlock(bp)));
+			BTreeNode node = new BTreeNode(new ArrayMap(readBlock(bp)), bp.getBlockType() == BlockType.INDEX);
+			node.mIndexNode = bp.getBlockType() == BlockType.INDEX;
 
 			if (putImpl(node, aEntry, aKey, aResult))
 			{
 				ArrayMap[] maps = node.mMap.split();
+				System.out.println("#");
 			}
 
 			return false;
@@ -183,7 +210,7 @@ final class BTreeTableImplementation extends TableImplementation
 	{
 		checkOpen();
 
-		return new TableIterator();
+		return new BTreeEntryIterator(mRoot);
 	}
 
 
@@ -345,7 +372,7 @@ final class BTreeTableImplementation extends TableImplementation
 
 		Result<Integer> result = new Result<>(0);
 
-		new NodeIterator().forEachRemaining(node -> result.set(result.get() + node.mMap.size()));
+		new BTreeNodeIterator(mRoot).forEachRemaining(node -> result.set(result.get() + node.mMap.size()));
 
 		return result.get();
 	}
@@ -410,7 +437,47 @@ final class BTreeTableImplementation extends TableImplementation
 	{
 		aScanResult.tables++;
 
-//		new TableIterator().forEachRemaining(node->scanLeaf(aScanResult, node));
+		scan(mRoot, aScanResult);
+	}
+
+
+	private void scan(BTreeNode aNode, ScanResult aScanResult)
+	{
+		if (aNode.mIndexNode)
+		{
+			aScanResult.log.append("index[");
+
+			boolean first = true;
+			for (ArrayMapEntry entry : aNode.mMap)
+			{
+				if (!first)
+				{
+					aScanResult.log.append(",");
+				}
+				first = false;
+
+				System.out.println("*"+new String(entry.getKey()).replaceAll("[^\\w]*", ""));
+
+				BTreeNode node = aNode.mChildren.get(new MarshalledKey(entry.getKey()));
+
+				aScanResult.log.append(new String(entry.getKey()).replaceAll("[^\\w]*", "") + "=");
+
+				if (node == null)
+				{
+					BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
+
+					node = new BTreeNode(new ArrayMap(readBlock(bp)), bp.getBlockType() == BlockType.INDEX);
+				}
+
+				scan(node, aScanResult);
+			}
+
+			aScanResult.log.append("]");
+		}
+		else
+		{
+			aScanResult.log.append("leaf"+aNode.mMap);
+		}
 	}
 
 
@@ -437,109 +504,6 @@ final class BTreeTableImplementation extends TableImplementation
 
 	private void setupEmptyTable()
 	{
-		mRoot = new Node();
-		mRoot.mMap = new ArrayMap(mLeafSize);
-	}
-
-
-	private class TableIterator implements Iterator<ArrayMapEntry>
-	{
-		private NodeIterator mIterator;
-		private Iterator<ArrayMapEntry> mElements;
-
-
-		public TableIterator()
-		{
-			mIterator = new NodeIterator();
-		}
-
-
-		@Override
-		public boolean hasNext()
-		{
-			if (mElements == null)
-			{
-				if (!mIterator.hasNext())
-				{
-					return false;
-				}
-
-				mElements = mIterator.next().mMap.iterator();
-			}
-
-			if (!mElements.hasNext())
-			{
-				mElements = null;
-				return hasNext();
-			}
-
-			return true;
-		}
-
-
-		@Override
-		public ArrayMapEntry next()
-		{
-			return mElements.next();
-		}
-	}
-
-
-	private class NodeIterator implements Iterator<Node>
-	{
-		private int mPosition;
-		private Node mCurrent;
-
-
-		public NodeIterator()
-		{
-			mCurrent = mRoot;
-		}
-
-
-		@Override
-		public boolean hasNext()
-		{
-			if (mCurrent == null)
-			{
-//				if (mPosition == 0)
-				{
-					return false;
-				}
-
-//				mNode = null;
-//				mPosition++;
-			}
-
-			return true;
-		}
-
-
-		@Override
-		public Node next()
-		{
-			Node tmp = mCurrent;
-			mCurrent = null;
-			return tmp;
-		}
-	}
-
-
-	private class Node
-	{
-		BlockPointer mBlockPointer;
-		ArrayMap mMap;
-		boolean mChanged;
-
-
-		public Node()
-		{
-		}
-
-
-		private Node(ArrayMap aMap)
-		{
-			mMap = aMap;
-		}
+		mRoot = new BTreeNode(new ArrayMap(mLeafSize), false);
 	}
 }

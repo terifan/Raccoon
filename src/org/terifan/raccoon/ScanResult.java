@@ -17,7 +17,7 @@ public class ScanResult
 	protected long blobLogicalSize;
 	protected int holes;
 
-	protected StringBuilder sb = new StringBuilder();
+	protected StringBuilder log = new StringBuilder();
 
 
 	public ScanResult()
@@ -154,6 +154,12 @@ public class ScanResult
 	protected void blobData(BlockPointer aBlockPointer)
 	{
 //		sb.append("<table border=1><tr><td>" + aBlockPointer + "</td></tr><tr><td style='padding-left:40px;'>");
+	}
+
+
+	public String getDescription()
+	{
+		return log.toString();
 	}
 
 

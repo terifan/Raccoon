@@ -11,5 +11,7 @@ public @interface Id
 {
 	String name() default "";
 
+	int index() default 0;
+
 	boolean generated() default false;
 }

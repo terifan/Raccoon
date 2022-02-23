@@ -384,7 +384,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public ArrayMapEntry get(int aIndex, ArrayMapEntry aEntry)
+	public ArrayMapEntry get(int aIndex, ArrayMapEntry aOutputEntry)
 	{
 		int entryOffset = readEntryOffset(aIndex);
 		int keyOffset = readKeyOffset(entryOffset);
@@ -392,10 +392,10 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		int valueOffset = readValueOffset(entryOffset);
 		int valueLength = readValueLength(entryOffset);
 
-		aEntry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
-		aEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
+		aOutputEntry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
+		aOutputEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
 
-		return aEntry;
+		return aOutputEntry;
 	}
 
 
@@ -637,11 +637,11 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			{
 				if (sb.length() > 0)
 				{
-					sb.append(", ");
+					sb.append(",");
 				}
-				sb.append(new String(entry.getKey(), "utf-8"));
+				sb.append(new String(entry.getKey(), "utf-8").replaceAll("[^\\w]*", ""));
 			}
-			return "[" + sb.toString() + "]";
+			return "{" + sb.toString() + "}";
 		}
 		catch (UnsupportedEncodingException e)
 		{
