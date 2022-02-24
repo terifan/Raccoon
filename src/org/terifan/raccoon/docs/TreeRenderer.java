@@ -12,6 +12,9 @@ import java.awt.font.FontRenderContext;
 import java.awt.font.LineMetrics;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.PushbackReader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -19,13 +22,18 @@ import javax.swing.JPanel;
 
 public class TreeRenderer
 {
-	private final static BasicStroke LINE_STROKE = new BasicStroke(2.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1f, new float[]{2f}, 0);
+	private final static BasicStroke LINE_STROKE = new BasicStroke(2.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1f, new float[]
+	{
+		2f
+	}, 0);
 	private final static Font FONT = new Font("arial", Font.PLAIN, 14);
-	private final static LineMetrics LM = FONT.getLineMetrics("Adgjy", new FontRenderContext(null, true, false));
+	private static final FontRenderContext FRC = new FontRenderContext(null, true, false);
+	private final static LineMetrics LM = FONT.getLineMetrics("Adgjy", FRC);
 	private final static int HOR_SPACING = 20;
 	private final static int VER_SPACING = 50;
-	private final static int IPADDING_X = 40;
+	private final static int IPADDING_X = 0;
 	private final static int IPADDING_Y = 15;
+	private final static int ELEMENT_SPACING = 11;
 	private final static int FRAME_PADDING = 20;
 
 
@@ -35,37 +43,24 @@ public class TreeRenderer
 		{
 			ArrayList<BufferedImage> images = new ArrayList<>();
 
-//			images.add(render(parse(new StringReader("'J Q >'['D >'['A B C','D E F'],'J >'['G H I','J K L'],'Q >'['M N O','Q R']]"))));
-			images.add(render(
-				new Node("J Q >")
-					.add(new Node("D >")
-						.add(new Node("A B C"))
-						.add(new Node("D E F"))
-					)
-					.add(new Node("J >")
-						.add(new Node("G H I"))
-						.add(new Node("J K L"))
-					)
-					.add(new Node("Q >")
-						.add(new Node("M N O"))
-						.add(new Node("Q R"))
-					)
-			));
+			images.add(render(parse("'Japanese:Quality:>'['Dove:>'['Apple:Banana:Circus','Dove:Ear:Female'],'Japanese:>'['Gloves:Head:Internal','Japanese:Knife:Leap'],'Quality:>'['Mango:Nose:Open','Quality:Rupee']]")));
+
+			//images.add(render(parse("'J:Q:>'['D:>'['A:B:C','D:E:F'],'J:>'['G:H:I','J:K:L'],'Q:>'['M:N:O','Q:R']]")));
 
 			images.add(render(
-				new Node("J O >")
-					.add(new Node("D >")
-						.add(new Node("A B C"))
-						.add(new Node("D E F"))
+				new Node("J", "O", ">")
+					.add(new Node("D", ">")
+						.add(new Node("A", "B", "C"))
+						.add(new Node("D", "E", "F"))
 					)
-					.add(new Node("J >")
-						.add(new Node("G H I"))
-						.add(new Node("J K L"))
+					.add(new Node("J", ">")
+						.add(new Node("G", "H", "I"))
+						.add(new Node("J", "K", "L"))
 					)
-					.add(new Node("O Q >")
-						.add(new Node("M N"))
-						.add(new Node("O P"))
-						.add(new Node("Q R"))
+					.add(new Node("O", "Q", ">")
+						.add(new Node("M", "N"))
+						.add(new Node("O", "P"))
+						.add(new Node("Q", "R"))
 					)
 			));
 
@@ -109,24 +104,46 @@ public class TreeRenderer
 	}
 
 
-//	private static Node parse(Reader aCode) throws IOException
-//	{
-//		int c = aCode.read();
-//		if (c != '\'')
-//		{
-//			throw new IllegalStateException();
-//		}
-//
-//		String s = aCode.substring(1, aCode.indexOf("'", 1));
-//		aCode = aCode.substring(s.length() + 2);
-//		Node n = new Node(s);
-//		if (aCode.startsWith("["))
-//		{
-//			aCode = aCode.substring(1);
-//			n.add(parse(aCode));
-//		}
-//		return n;
-//	}
+	private static Node parse(String aInput) throws IOException
+	{
+		return parse(new PushbackReader(new StringReader(aInput)));
+	}
+
+
+	private static Node parse(PushbackReader aInput) throws IOException
+	{
+		int c = aInput.read();
+		if (c != '\'')
+		{
+			throw new IllegalStateException();
+		}
+
+		String s = "";
+		for (; (c = aInput.read()) != '\'';)
+		{
+			s += (char)c;
+		}
+
+		Node node = new Node(s.split(":"));
+
+		c = aInput.read();
+
+		if (c == '[')
+		{
+			do
+			{
+				node.add(parse(aInput));
+				c = aInput.read();
+			}
+			while (c == ',');
+		}
+		else
+		{
+			aInput.unread(c);
+		}
+
+		return node;
+	}
 
 
 	private static BufferedImage render(Node aNode)
@@ -155,14 +172,14 @@ public class TreeRenderer
 	{
 		private Dimension mLayout;
 		private ArrayList<Node> mChildren;
+		private String[] mText;
 		private int mWidth;
 		private int mHeight;
-		private String mText;
 		private int mTextWidth;
 		private int mTextHeight;
 
 
-		public Node(String aText)
+		public Node(String... aText)
 		{
 			mText = aText;
 		}
@@ -181,10 +198,15 @@ public class TreeRenderer
 
 		public Dimension layout()
 		{
-			Rectangle2D b = FONT.getStringBounds(mText, new FontRenderContext(null, true, false));
-			mTextWidth = (int)b.getWidth();
-			mTextHeight = (int)b.getHeight();
-			mWidth = IPADDING_X + mTextWidth;
+			mTextWidth = -ELEMENT_SPACING;
+			mTextHeight = 0;
+			for (String s : mText)
+			{
+				Rectangle2D b = FONT.getStringBounds(s, FRC);
+				mTextWidth += b.getWidth() + ELEMENT_SPACING;
+				mTextHeight = Math.max((int)b.getHeight(), mTextHeight);
+			}
+			mWidth = IPADDING_X + mTextWidth + ELEMENT_SPACING + 2;
 			mHeight = IPADDING_Y + mTextHeight;
 
 			if (mChildren == null)
@@ -215,7 +237,20 @@ public class TreeRenderer
 
 			aGraphics.setColor(Color.BLACK);
 			aGraphics.drawRect(x, aY, mWidth - 1, mHeight - 1);
-			aGraphics.drawString(mText, x + (mWidth - mTextWidth) / 2, aY + (mHeight + LM.getHeight()) / 2 - aGraphics.getFontMetrics().getDescent());
+
+			int tx = x + (mWidth - mTextWidth) / 2;
+			for (int i = 0; i < mText.length; i++)
+			{
+				int w = (int)FONT.getStringBounds(mText[i], FRC).getWidth();
+				aGraphics.setColor(Color.BLACK);
+				aGraphics.drawString(mText[i], tx, aY + (mHeight + LM.getHeight()) / 2 - aGraphics.getFontMetrics().getDescent());
+				if (i > 0)
+				{
+					aGraphics.setColor(Color.LIGHT_GRAY);
+					aGraphics.drawLine(tx-ELEMENT_SPACING/2, aY+1, tx-ELEMENT_SPACING/2, aY+mHeight-2);
+				}
+				tx += w + ELEMENT_SPACING;
+			}
 
 			if (mChildren != null)
 			{
