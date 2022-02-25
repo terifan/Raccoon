@@ -1,4 +1,4 @@
-package org.terifan.raccoon.docs;
+package org.terifan.treegraph;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -22,15 +22,19 @@ import javax.swing.JPanel;
 
 public class TreeRenderer
 {
-	private final static BasicStroke LINE_STROKE = new BasicStroke(2.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1f, new float[]{2f}, 0);
+	private final static BasicStroke LINE_STROKE = new BasicStroke(2.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1f, new float[]
+	{
+		2f
+	}, 0);
 	private final static Font FONT = new Font("arial", Font.PLAIN, 14);
 	private final static FontRenderContext FRC = new FontRenderContext(null, true, false);
 	private final static LineMetrics LM = FONT.getLineMetrics("Adgjy", FRC);
-	private final static int HOR_SPACING = 20;
-	private final static int VER_SPACING = 50;
-	private final static int IPADDING_X = 11;
-	private final static int IPADDING_Y = 15;
+	private final static int SIBLING_SPACING = 50;
+	private final static int CHILD_SPACING = 20;
+	private final static int TEXT_PADDING_X = 15;
+	private final static int TEXT_PADDING_Y = 11;
 	private final static int FRAME_PADDING = 20;
+	private final static boolean COMPACT_LEAFS = true;
 
 
 	public static void main(String... args)
@@ -38,9 +42,8 @@ public class TreeRenderer
 		try
 		{
 			ArrayList<BufferedImage> images = new ArrayList<>();
-
-			images.add(render(parse("'Jalapeno:Quality:>'['Dove:>'['Apple:Banana:Circus','Dove:Ear:Female'],'Japanese:>'['Gloves:Head:Internal','Japanese:Knife:Leap'],'Quality:>'['Mango:Nose:Open','Quality:Rupee']]")));
-			images.add(render(parse("'Jalapeno:Quality:>'['Dove:>'['Apple:Banana:Circus','Dove:Ear:Female'],'Japanese:>'['Gloves:Head:Internal','Japanese:Knife:Leap'],'Open:Quality:>'['Mango:Nose','Open:Pen','Quality:Rupee']]")));
+			images.add(render(new HorizontalLayout(), parse("'Jalapeno:Quality:>'['Dove:>'['Apple:Banana:Circus','Dove:Ear:Female'],'Japanese:>'['Gloves:Head:Internal','Japanese:Knife:Leap'],'Quality:>'['Mango:Nose:Open','Quality:Rupee']]")));
+			images.add(render(new VerticalLayout(), parse("'Jalapeno:Quality:>'['Dove:>'['Apple:Banana:Circus','Dove:Ear:Female'],'Japanese:>'['Gloves:Head:Internal','Japanese:Knife:Leap'],'Open:Quality:>'['Mango:Nose','Open:Pen','Quality:Rupee']]")));
 
 			JFrame frame = new JFrame();
 			frame.add(new JPanel()
@@ -96,7 +99,7 @@ public class TreeRenderer
 		}
 
 		StringBuilder s = new StringBuilder();
-		for (int c; (c = aInput.read()) != '\''; )
+		for (int c; (c = aInput.read()) != '\'';)
 		{
 			s.append((char)c);
 		}
@@ -120,9 +123,16 @@ public class TreeRenderer
 	}
 
 
-	private static BufferedImage render(Node aNode)
+	private static BufferedImage render(NodeLayout aLayout, Node aNode)
 	{
-		Dimension d = aNode.layout();
+		if (aNode.mLayout != aLayout)
+		{
+			aNode.mLayout = aLayout;
+			aLayout.layout(aNode);
+		}
+
+		Dimension d = aNode.mLayout.mBounds;
+
 		BufferedImage image = new BufferedImage(d.width + 2 * FRAME_PADDING, d.height + 2 * FRAME_PADDING, BufferedImage.TYPE_INT_RGB);
 
 		Graphics2D g = image.createGraphics();
@@ -132,7 +142,7 @@ public class TreeRenderer
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, image.getWidth(), image.getHeight());
 
-		aNode.render(g, FRAME_PADDING, FRAME_PADDING);
+		aLayout.render(aNode, g, FRAME_PADDING, FRAME_PADDING);
 
 		g.dispose();
 
@@ -142,13 +152,9 @@ public class TreeRenderer
 
 	private static class Node
 	{
-		private Dimension mLayout;
 		private ArrayList<Node> mChildren;
 		private String[] mText;
-		private int mWidth;
-		private int mHeight;
-		private int mTextWidth;
-		private int mTextHeight;
+		private NodeLayout mLayout;
 
 
 		public Node(String... aText)
@@ -166,88 +172,254 @@ public class TreeRenderer
 			mChildren.add(aNode);
 			return this;
 		}
+	}
 
 
-		public Dimension layout()
+	private abstract class NodeLayout
+	{
+		Dimension mBounds;
+		int mWidth;
+		int mHeight;
+		int mTextWidth;
+		int mTextHeight;
+
+
+		abstract void layout(Node aNode);
+
+
+		abstract void render(Node aNode, Graphics2D aGraphics, int aX, int aY);
+	}
+
+
+	private static void renderHorizontalBox(Graphics2D aGraphics, int aX, int aY, Node aNode)
+	{
+		aGraphics.setColor(Color.BLACK);
+		aGraphics.drawRect(aX, aY, aNode.mLayout.mWidth - 1, aNode.mLayout.mHeight - 1);
+		for (int i = 0, tx = aX + (aNode.mLayout.mWidth - aNode.mLayout.mTextWidth) / 2; i < aNode.mText.length; i++)
 		{
-			mTextWidth = -IPADDING_X;
-			mTextHeight = 0;
-			for (String s : mText)
+			aGraphics.setColor(Color.BLACK);
+			aGraphics.drawString(aNode.mText[i], tx, aY + (aNode.mLayout.mHeight + LM.getHeight()) / 2 - aGraphics.getFontMetrics().getDescent());
+			if (i > 0)
 			{
-				Rectangle2D b = FONT.getStringBounds(s, FRC);
-				mTextWidth += b.getWidth() + IPADDING_X;
-				mTextHeight = Math.max((int)b.getHeight(), mTextHeight);
+				aGraphics.setColor(Color.LIGHT_GRAY);
+				aGraphics.drawLine(tx - TEXT_PADDING_X / 2, aY + 1, tx - TEXT_PADDING_X / 2, aY + aNode.mLayout.mHeight - 2);
 			}
-			mWidth = IPADDING_X + mTextWidth + 2;
-			mHeight = IPADDING_Y + mTextHeight;
+			tx += FONT.getStringBounds(aNode.mText[i], FRC).getWidth() + TEXT_PADDING_X;
+		}
+	}
 
-			if (mChildren == null)
+
+	private static void renderVerticalBox(Graphics2D aGraphics, int aX, int aY, Node aNode)
+	{
+		aGraphics.setColor(Color.BLACK);
+		aGraphics.drawRect(aX, aY, aNode.mLayout.mWidth - 1, aNode.mLayout.mHeight - 1);
+		for (int i = 0, ty = aY + (aNode.mLayout.mHeight - aNode.mLayout.mTextHeight) / 2; i < aNode.mText.length; i++)
+		{
+			aGraphics.setColor(Color.BLACK);
+			aGraphics.drawString(aNode.mText[i], aX + (aNode.mLayout.mWidth - aGraphics.getFontMetrics().stringWidth(aNode.mText[i])) / 2, ty + LM.getHeight() - aGraphics.getFontMetrics().getDescent());
+			if (i > 0)
 			{
-				mLayout = new Dimension(mWidth, mHeight);
+				aGraphics.setColor(Color.LIGHT_GRAY);
+				aGraphics.drawLine(aX + 1, ty - TEXT_PADDING_Y / 2, aX + aNode.mLayout.mWidth - 2, ty - TEXT_PADDING_Y / 2);
+			}
+			ty += LM.getHeight() + TEXT_PADDING_Y;
+		}
+	}
+
+
+	private static void layoutHorizontalBox(Node aNode)
+	{
+		aNode.mLayout.mTextWidth = -TEXT_PADDING_X;
+		aNode.mLayout.mTextHeight = 0;
+		for (String s : aNode.mText)
+		{
+			Rectangle2D b = FONT.getStringBounds(s, FRC);
+			aNode.mLayout.mTextWidth += b.getWidth() + TEXT_PADDING_X;
+			aNode.mLayout.mTextHeight = Math.max((int)b.getHeight(), aNode.mLayout.mTextHeight);
+		}
+		aNode.mLayout.mWidth = TEXT_PADDING_X + aNode.mLayout.mTextWidth + 2;
+		aNode.mLayout.mHeight = TEXT_PADDING_Y + aNode.mLayout.mTextHeight;
+	}
+
+
+	private static void layoutVerticalBox(Node aNode)
+	{
+		aNode.mLayout.mTextWidth = 0;
+		aNode.mLayout.mTextHeight = -TEXT_PADDING_Y;
+		for (String s : aNode.mText)
+		{
+			Rectangle2D b = FONT.getStringBounds(s, FRC);
+			aNode.mLayout.mTextWidth = Math.max((int)b.getWidth(), aNode.mLayout.mTextWidth);
+			aNode.mLayout.mTextHeight += b.getHeight() + TEXT_PADDING_Y;
+		}
+		aNode.mLayout.mWidth = TEXT_PADDING_X + aNode.mLayout.mTextWidth;
+		aNode.mLayout.mHeight = TEXT_PADDING_Y + aNode.mLayout.mTextHeight + 2;
+	}
+
+
+	private static class HorizontalLayout extends NodeLayout
+	{
+		@Override
+		public void layout(Node aNode)
+		{
+			if (aNode.mChildren == null)
+			{
+				if (COMPACT_LEAFS)
+				{
+					layoutVerticalBox(aNode);
+				}
+				else
+				{
+					layoutHorizontalBox(aNode);
+				}
+
+				mBounds = new Dimension(mWidth, mHeight);
 			}
 			else
 			{
-				int w = -HOR_SPACING;
+				layoutHorizontalBox(aNode);
+
+				int w = -CHILD_SPACING;
 				int h = 0;
-				for (Node n : mChildren)
+				for (Node n : aNode.mChildren)
 				{
-					Dimension d = n.layout();
-					w += d.width + HOR_SPACING;
-					h = Math.max(d.height, h);
+					n.mLayout = new HorizontalLayout();
+					n.mLayout.layout(n);
+					w += n.mLayout.mBounds.width + CHILD_SPACING;
+					h = Math.max(n.mLayout.mBounds.height, h);
 				}
 
-				mLayout = new Dimension(Math.max(w, mWidth), h + VER_SPACING + mHeight);
+				mBounds = new Dimension(Math.max(w, mWidth), h + SIBLING_SPACING + mHeight);
 			}
-
-			return mLayout;
 		}
 
 
-		private void render(Graphics2D aGraphics, int aX, int aY)
+		@Override
+		public void render(Node aNode, Graphics2D aGraphics, int aX, int aY)
 		{
-			int x = aX + (mLayout.width - mWidth) / 2;
+			int x = aX + (mBounds.width - mWidth) / 2;
 
-			Stroke oldStroke = aGraphics.getStroke();
-			aGraphics.setColor(Color.BLACK);
-			aGraphics.drawRect(x, aY, mWidth - 1, mHeight - 1);
-
-			for (int i = 0, tx = x + (mWidth - mTextWidth) / 2; i < mText.length; i++)
+			if (aNode.mChildren != null)
 			{
-				aGraphics.setColor(Color.BLACK);
-				aGraphics.drawString(mText[i], tx, aY + (mHeight + LM.getHeight()) / 2 - aGraphics.getFontMetrics().getDescent());
-				if (i > 0)
-				{
-					aGraphics.setColor(Color.LIGHT_GRAY);
-					aGraphics.drawLine(tx - IPADDING_X / 2, aY + 1, tx - IPADDING_X / 2, aY + mHeight - 2);
-				}
-				tx += FONT.getStringBounds(mText[i], FRC).getWidth() + IPADDING_X;
-			}
+				renderHorizontalBox(aGraphics, x, aY, aNode);
 
-			if (mChildren != null)
-			{
-				boolean b = mText.length == mChildren.size();
+				Stroke oldStroke = aGraphics.getStroke();
+
+				boolean b = aNode.mText.length == aNode.mChildren.size();
 				int t = b ? x + (mWidth - mTextWidth) / 2 : x;
-				int s = mWidth / mChildren.size();
+				int s = mWidth / aNode.mChildren.size();
 				int w = s;
-				for (int i = 0; i < mChildren.size(); i++)
+				for (int i = 0; i < aNode.mChildren.size(); i++)
 				{
 					if (b)
 					{
-						w = (int)FONT.getStringBounds(mText[i], FRC).getWidth();
-						s = w + IPADDING_X;
+						w = (int)FONT.getStringBounds(aNode.mText[i], FRC).getWidth();
+						s = w + TEXT_PADDING_X;
 					}
 
-					Node n = mChildren.get(i);
-					n.render(aGraphics, aX, aY + mHeight + VER_SPACING);
+					Node n = aNode.mChildren.get(i);
+					n.mLayout.render(n, aGraphics, aX, aY + mHeight + SIBLING_SPACING);
 
 					aGraphics.setColor(Color.LIGHT_GRAY);
 					aGraphics.setStroke(LINE_STROKE);
-					aGraphics.drawLine(t + w / 2, aY + mHeight + 5, aX + n.mLayout.width / 2, aY + mHeight + VER_SPACING - 5);
+					aGraphics.drawLine(t + w / 2, aY + mHeight + 5, aX + n.mLayout.mBounds.width / 2, aY + mHeight + SIBLING_SPACING - 5);
 					aGraphics.setStroke(oldStroke);
 
-					aX += n.mLayout.width + HOR_SPACING;
+					aX += n.mLayout.mBounds.width + CHILD_SPACING;
 					t += s;
 				}
+			}
+			else if (COMPACT_LEAFS)
+			{
+				renderVerticalBox(aGraphics, aX, aY, aNode);
+			}
+			else
+			{
+				renderHorizontalBox(aGraphics, aX, aY, aNode);
+			}
+		}
+	}
+
+
+	private static class VerticalLayout extends NodeLayout
+	{
+		@Override
+		public void layout(Node aNode)
+		{
+			if (aNode.mChildren == null)
+			{
+				if (COMPACT_LEAFS)
+				{
+					layoutHorizontalBox(aNode);
+				}
+				else
+				{
+					layoutVerticalBox(aNode);
+				}
+
+				mBounds = new Dimension(mWidth, mHeight);
+			}
+			else
+			{
+				layoutVerticalBox(aNode);
+
+				int w = 0;
+				int h = -CHILD_SPACING;
+				for (Node n : aNode.mChildren)
+				{
+					n.mLayout = new VerticalLayout();
+					n.mLayout.layout(n);
+					w = Math.max(n.mLayout.mBounds.width, w);
+					h += n.mLayout.mBounds.height + CHILD_SPACING;
+				}
+
+				mBounds = new Dimension(w + SIBLING_SPACING + mWidth, Math.max(h, mHeight));
+			}
+		}
+
+
+		@Override
+		public void render(Node aNode, Graphics2D aGraphics, int aX, int aY)
+		{
+			int y = aY + (mBounds.height - mHeight) / 2;
+
+			if (aNode.mChildren != null)
+			{
+				renderVerticalBox(aGraphics, aX, y, aNode);
+
+				Stroke oldStroke = aGraphics.getStroke();
+
+				boolean b = aNode.mText.length == aNode.mChildren.size();
+				int t = b ? y + (mHeight - mTextHeight) / 2 : y;
+				int s = mHeight / aNode.mChildren.size();
+				int h = s;
+				for (int i = 0; i < aNode.mChildren.size(); i++)
+				{
+					if (b)
+					{
+						h = (int)FONT.getStringBounds(aNode.mText[i], FRC).getHeight();
+						s = h + TEXT_PADDING_Y;
+					}
+
+					Node n = aNode.mChildren.get(i);
+					n.mLayout.render(n, aGraphics, aX + mWidth + SIBLING_SPACING, aY);
+
+					aGraphics.setColor(Color.LIGHT_GRAY);
+					aGraphics.setStroke(LINE_STROKE);
+					aGraphics.drawLine(aX + mWidth + 5, t + h / 2, aX + mWidth + SIBLING_SPACING - 5, aY + n.mLayout.mBounds.height / 2);
+					aGraphics.setStroke(oldStroke);
+
+					aY += n.mLayout.mBounds.height + CHILD_SPACING;
+					t += s;
+				}
+			}
+			else if (COMPACT_LEAFS)
+			{
+				renderHorizontalBox(aGraphics, aX, aY, aNode);
+			}
+			else
+			{
+				renderVerticalBox(aGraphics, aX, aY, aNode);
 			}
 		}
 	}
