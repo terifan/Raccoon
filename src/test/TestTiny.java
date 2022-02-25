@@ -29,52 +29,55 @@ public class TestTiny
 
 //			Log.setLevel(LogLevel.INFO);
 
+//
+
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 			{
 //				db.save(new Document().put("id",123).put("name","olle"));
 
+				db.save(new KeyValue("Apple", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("a", Helper.createString(rnd)));
+				db.save(new KeyValue("Banana", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("b", Helper.createString(rnd)));
+				db.save(new KeyValue("Circus", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("c", Helper.createString(rnd)));
+				db.save(new KeyValue("Dove", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("d", Helper.createString(rnd)));
+				db.save(new KeyValue("Dove", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("e", Helper.createString(rnd)));
+				db.save(new KeyValue("Ear", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("f", Helper.createString(rnd)));
+				db.save(new KeyValue("Female", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("g", Helper.createString(rnd)));
+				db.save(new KeyValue("Gloves", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("h", Helper.createString(rnd)));
+				db.save(new KeyValue("Head", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("i", Helper.createString(rnd)));
+				db.save(new KeyValue("Internal", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("j", Helper.createString(rnd)));
+				db.save(new KeyValue("Jalapeno", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("k", Helper.createString(rnd)));
+				db.save(new KeyValue("Japanese", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("l", Helper.createString(rnd)));
+				db.save(new KeyValue("Japanese", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("m", Helper.createString(rnd)));
+				db.save(new KeyValue("Knife", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("n", Helper.createString(rnd)));
+				db.save(new KeyValue("Leap", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("o", Helper.createString(rnd)));
+				db.save(new KeyValue("Mango", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("p", Helper.createString(rnd)));
+				db.save(new KeyValue("Nose", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("q", Helper.createString(rnd)));
+				db.save(new KeyValue("Open", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("r", Helper.createString(rnd)));
+				db.save(new KeyValue("Quality", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("s", Helper.createString(rnd)));
+				db.save(new KeyValue("Quality", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("t", Helper.createString(rnd)));
+				db.save(new KeyValue("Quality", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
-				db.save(new KeyValue("u", Helper.createString(rnd)));
+				db.save(new KeyValue("Rupee", Helper.createString(rnd)));
 				System.out.println(db.scan(new ScanResult()).getDescription());
 
 //				db.list(KeyValue.class).forEach(System.out::println);
