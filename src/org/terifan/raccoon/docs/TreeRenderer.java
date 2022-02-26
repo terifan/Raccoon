@@ -1,4 +1,4 @@
-package org.terifan.treegraph;
+package org.terifan.raccoon.docs;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -175,7 +175,7 @@ public class TreeRenderer
 	}
 
 
-	private abstract class NodeLayout
+	private static abstract class NodeLayout
 	{
 		Dimension mBounds;
 		int mWidth;
