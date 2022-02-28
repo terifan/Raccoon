@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GridLayout;
 import java.awt.RenderingHints;
 import java.awt.Stroke;
 import java.awt.font.FontRenderContext;
@@ -46,33 +47,29 @@ public class TreeRenderer
 			images.add(render(new VerticalLayout(), parse("'Jalapeno:Quality:>'['Dove:>'['Apple:Banana:Circus','Dove:Ear:Female'],'Japanese:>'['Gloves:Head:Internal','Japanese:Knife:Leap'],'Open:Quality:>'['Mango:Nose','Open:Pen','Quality:Rupee']]")));
 
 			JFrame frame = new JFrame();
-			frame.add(new JPanel()
+			frame.setLayout(new GridLayout(1, 1));
+			for (BufferedImage image : images)
 			{
-				@Override
-				protected void paintComponent(Graphics aGraphics)
+				frame.add(new JPanel()
 				{
-					int y = 10;
-					for (BufferedImage image : images)
+					@Override
+					protected void paintComponent(Graphics aGraphics)
 					{
+						int y = 10;
 						aGraphics.drawImage(image, (getWidth() - image.getWidth()) / 2, y, null);
 						y += image.getHeight() + 20;
 					}
-				}
-
-
-				@Override
-				public Dimension getPreferredSize()
-				{
-					int w = 0;
-					int h = -20;
-					for (BufferedImage image : images)
+					@Override
+					public Dimension getPreferredSize()
 					{
+						int w = 0;
+						int h = -20;
 						w = Math.max(image.getWidth(), w);
 						h += image.getHeight() + 20;
+						return new Dimension(20 + w, 20 + h);
 					}
-					return new Dimension(20 + w, 20 + h);
-				}
-			});
+				});
+			}
 			frame.pack();
 			frame.setLocationRelativeTo(null);
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -175,7 +172,7 @@ public class TreeRenderer
 	}
 
 
-	private static abstract class NodeLayout
+	private abstract class NodeLayout
 	{
 		Dimension mBounds;
 		int mWidth;
@@ -309,6 +306,15 @@ public class TreeRenderer
 				int t = b ? x + (mWidth - mTextWidth) / 2 : x;
 				int s = mWidth / aNode.mChildren.size();
 				int w = s;
+				int ch = -CHILD_SPACING;
+				for (int i = 0; i < aNode.mChildren.size(); i++)
+				{
+					ch += aNode.mChildren.get(i).mLayout.mBounds.width + CHILD_SPACING;
+				}
+				if (ch < mWidth)
+				{
+					aX += (mWidth - ch) / 2;
+				}
 				for (int i = 0; i < aNode.mChildren.size(); i++)
 				{
 					if (b)
@@ -393,6 +399,15 @@ public class TreeRenderer
 				int t = b ? y + (mHeight - mTextHeight) / 2 : y;
 				int s = mHeight / aNode.mChildren.size();
 				int h = s;
+				int ch = -CHILD_SPACING;
+				for (int i = 0; i < aNode.mChildren.size(); i++)
+				{
+					ch += aNode.mChildren.get(i).mLayout.mBounds.height + CHILD_SPACING;
+				}
+				if (ch < mHeight)
+				{
+					aY += (mHeight - ch) / 2;
+				}
 				for (int i = 0; i < aNode.mChildren.size(); i++)
 				{
 					if (b)
