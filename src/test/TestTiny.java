@@ -1,6 +1,7 @@
 package test;
 
 import java.awt.Dimension;
+import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.List;
 import java.util.Random;
@@ -14,12 +15,16 @@ import org.terifan.raccoon.annotations.Column;
 import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.annotations.Id;
+import org.terifan.raccoon.docs.TreeRenderer;
 import org.terifan.raccoon.serialization.FieldDescriptor;
 import org.terifan.raccoon.util.Log;
 
 
 public class TestTiny
 {
+	private static TreeRenderer mFrame = new TreeRenderer();
+
+
 	public static void main(String... args)
 	{
 		try
@@ -36,49 +41,49 @@ public class TestTiny
 //				db.save(new Document().put("id",123).put("name","olle"));
 
 				db.save(new KeyValue("Apple", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Banana", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Circus", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Dove", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Dove", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Ear", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Female", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Gloves", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Head", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Internal", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Jalapeno", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Japanese", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Japanese", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Knife", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Leap", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Mango", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Nose", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Open", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Quality", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Quality", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Quality", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 				db.save(new KeyValue("Rupee", Helper.createString(rnd)));
-				System.out.println(db.scan(new ScanResult()).getDescription());
+				dump(db);
 
 //				db.list(KeyValue.class).forEach(System.out::println);
 
@@ -128,6 +133,14 @@ public class TestTiny
 		{
 			e.printStackTrace(System.out);
 		}
+	}
+
+
+	private static void dump(Database aDatabase) throws IOException
+	{
+		String description = aDatabase.scan(new ScanResult()).getDescription();
+
+		mFrame.add(mFrame.render(new TreeRenderer.VerticalLayout(), mFrame.parse(description)));
 	}
 
 

@@ -2,11 +2,14 @@ package org.terifan.raccoon.docs;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.LayoutManager;
 import java.awt.RenderingHints;
 import java.awt.Stroke;
 import java.awt.font.FontRenderContext;
@@ -17,8 +20,10 @@ import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.StringReader;
 import java.util.ArrayList;
+import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
 
 public class TreeRenderer
@@ -37,90 +42,113 @@ public class TreeRenderer
 	private final static int FRAME_PADDING = 20;
 	private final static boolean COMPACT_LEAFS = true;
 
+	private JFrame mFrame;
+	private JPanel mContainer;
 
-	public static void main(String... args)
+
+	public TreeRenderer()
 	{
-		try
-		{
-			ArrayList<BufferedImage> images = new ArrayList<>();
-			images.add(render(new HorizontalLayout(), parse("'Jalapeno:Quality:>'['Dove:>'['Apple:Banana:Circus','Dove:Ear:Female'],'Japanese:>'['Gloves:Head:Internal','Japanese:Knife:Leap'],'Quality:>'['Mango:Nose:Open','Quality:Rupee']]")));
-			images.add(render(new VerticalLayout(), parse("'Jalapeno:Quality:>'['Dove:>'['Apple:Banana:Circus','Dove:Ear:Female'],'Japanese:>'['Gloves:Head:Internal','Japanese:Knife:Leap'],'Open:Quality:>'['Mango:Nose','Open:Pen','Quality:Rupee']]")));
-
-			JFrame frame = new JFrame();
-			frame.setLayout(new GridLayout(1, 1));
-			for (BufferedImage image : images)
-			{
-				frame.add(new JPanel()
-				{
-					@Override
-					protected void paintComponent(Graphics aGraphics)
-					{
-						int y = 10;
-						aGraphics.drawImage(image, (getWidth() - image.getWidth()) / 2, y, null);
-						y += image.getHeight() + 20;
-					}
-					@Override
-					public Dimension getPreferredSize()
-					{
-						int w = 0;
-						int h = -20;
-						w = Math.max(image.getWidth(), w);
-						h += image.getHeight() + 20;
-						return new Dimension(20 + w, 20 + h);
-					}
-				});
-			}
-			frame.pack();
-			frame.setLocationRelativeTo(null);
-			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			frame.setVisible(true);
-		}
-		catch (Throwable e)
-		{
-			e.printStackTrace(System.out);
-		}
+		mContainer = new JPanel(new VerticalFlowLayout());
+		JScrollPane scrollPane = new JScrollPane(mContainer);
+		scrollPane.getVerticalScrollBar().setUnitIncrement(100);
+		scrollPane.getHorizontalScrollBar().setUnitIncrement(100);
+		mFrame = new JFrame();
+		mFrame.add(scrollPane);
+		mFrame.setSize(1600, 1200);
+		mFrame.setLocationRelativeTo(null);
+		mFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		mFrame.setVisible(true);
 	}
 
 
-	private static Node parse(String aInput) throws IOException
+	public void add(BufferedImage aImage)
+	{
+		mContainer.add(new JPanel()
+		{
+			{
+				setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+			}
+			@Override
+			protected void paintComponent(Graphics aGraphics)
+			{
+				aGraphics.setColor(Color.WHITE);
+				aGraphics.fillRect(0, 0, getWidth(), getHeight());
+				aGraphics.drawImage(aImage, (getWidth() - aImage.getWidth()) / 2, (getHeight() - aImage.getHeight()) / 2, null);
+			}
+
+			@Override
+			public Dimension getPreferredSize()
+			{
+				return new Dimension(aImage.getWidth(), aImage.getHeight() + 10);
+			}
+		});
+
+		mContainer.revalidate();
+		mContainer.invalidate();
+		mContainer.validate();
+	}
+
+
+	public Node parse(String aInput) throws IOException
 	{
 		return parse(new PushbackReader(new StringReader(aInput)));
 	}
 
 
-	private static Node parse(PushbackReader aInput) throws IOException
+	private Node parse(PushbackReader aInput) throws IOException
 	{
-		if (aInput.read() != '\'')
+		Node node;
+		if (aInput.read() == '\'')
 		{
-			throw new IllegalArgumentException();
-		}
+			node = new Node(readWord(aInput).split(":"));
 
-		StringBuilder s = new StringBuilder();
-		for (int c; (c = aInput.read()) != '\'';)
-		{
-			s.append((char)c);
-		}
-
-		Node node = new Node(s.toString().split(":"));
-		int c = aInput.read();
-		if (c == '[')
-		{
-			do
+			int c = aInput.read();
+			if (c == '[')
 			{
-				node.add(parse(aInput));
+				do
+				{
+					node.add(parse(aInput));
+				}
+				while (aInput.read() == ',');
 			}
-			while (aInput.read() == ',');
+			else
+			{
+				aInput.unread(c);
+			}
 		}
 		else
 		{
-			aInput.unread(c);
+			node = new Node();
+			ArrayList<String> keys = new ArrayList<>();
+			do
+			{
+				if (aInput.read() != '\'')
+				{
+					break;
+				}
+				keys.add(readWord(aInput));
+			}
+			while (aInput.read() == ',');
+			System.out.println(keys);
+			node.mText = keys.toArray(new String[0]);
 		}
 
 		return node;
 	}
 
 
-	private static BufferedImage render(NodeLayout aLayout, Node aNode)
+	private static String readWord(PushbackReader aInput) throws IOException
+	{
+		StringBuilder s = new StringBuilder();
+		for (int c; (c = aInput.read()) != '\'';)
+		{
+			s.append((char)c);
+		}
+		return s.toString();
+	}
+
+
+	public static BufferedImage render(NodeLayout aLayout, Node aNode)
 	{
 		if (aNode.mLayout != aLayout)
 		{
@@ -130,7 +158,7 @@ public class TreeRenderer
 
 		Dimension d = aNode.mLayout.mBounds;
 
-		BufferedImage image = new BufferedImage(d.width + 2 * FRAME_PADDING, d.height + 2 * FRAME_PADDING, BufferedImage.TYPE_INT_RGB);
+		BufferedImage image = new BufferedImage(d.width, d.height, BufferedImage.TYPE_INT_RGB);
 
 		Graphics2D g = image.createGraphics();
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -139,7 +167,7 @@ public class TreeRenderer
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, image.getWidth(), image.getHeight());
 
-		aLayout.render(aNode, g, FRAME_PADDING, FRAME_PADDING);
+		aLayout.render(aNode, g, 0, 0);
 
 		g.dispose();
 
@@ -147,7 +175,7 @@ public class TreeRenderer
 	}
 
 
-	private static class Node
+	public static class Node
 	{
 		private ArrayList<Node> mChildren;
 		private String[] mText;
@@ -172,7 +200,7 @@ public class TreeRenderer
 	}
 
 
-	private abstract class NodeLayout
+	public abstract class NodeLayout
 	{
 		Dimension mBounds;
 		int mWidth;
@@ -254,7 +282,7 @@ public class TreeRenderer
 	}
 
 
-	private static class HorizontalLayout extends NodeLayout
+	public static class HorizontalLayout extends NodeLayout
 	{
 		@Override
 		public void layout(Node aNode)
@@ -347,7 +375,7 @@ public class TreeRenderer
 	}
 
 
-	private static class VerticalLayout extends NodeLayout
+	public static class VerticalLayout extends NodeLayout
 	{
 		@Override
 		public void layout(Node aNode)
@@ -436,6 +464,136 @@ public class TreeRenderer
 			{
 				renderVerticalBox(aGraphics, aX, aY, aNode);
 			}
+		}
+	}
+
+
+	static class VerticalFlowLayout implements LayoutManager
+	{
+		public final static int CENTER = 0;
+		public final static int RIGHT = 1;
+		public final static int LEFT = 2;
+		public final static int BOTH = 3;
+		public final static int TOP = 1;
+		public final static int BOTTOM = 2;
+		private int vgap;
+		private int alignment;
+		private int anchor;
+		public VerticalFlowLayout()
+		{
+			this.vgap = 5;
+			this.alignment = BOTH;
+			this.anchor = TOP;
+		}
+		private Dimension layoutSize(Container parent, boolean minimum)
+		{
+			Dimension dim = new Dimension(0, 0);
+			synchronized (parent.getTreeLock())
+			{
+				int n = parent.getComponentCount();
+				for (int i = 0; i < n; i++)
+				{
+					Component c = parent.getComponent(i);
+					if (c.isVisible())
+					{
+						Dimension d = minimum ? c.getMinimumSize() : c.getPreferredSize();
+						dim.width = Math.max(dim.width, d.width);
+						dim.height += d.height;
+						if (i > 0)
+						{
+							dim.height += vgap;
+						}
+					}
+				}
+			}
+			Insets insets = parent.getInsets();
+			dim.width += insets.left + insets.right;
+			dim.height += insets.top + insets.bottom;
+			return dim;
+		}
+		public void layoutContainer(Container parent)
+		{
+			Insets insets = parent.getInsets();
+			synchronized (parent.getTreeLock())
+			{
+				int n = parent.getComponentCount();
+				Dimension pd = parent.getSize();
+				int y = 0;
+				for (int i = 0; i < n; i++)
+				{
+					Dimension d = parent.getComponent(i).getPreferredSize();
+					y += d.height + vgap;
+				}
+				y -= vgap;
+				if (anchor == TOP)
+				{
+					y = insets.top;
+				}
+				else
+				{
+					if (anchor == CENTER)
+					{
+						y = (pd.height - y) / 2;
+					}
+					else
+					{
+						y = pd.height - y - insets.bottom;
+					}
+				}
+				for (int i = 0; i < n; i++)
+				{
+					Component c = parent.getComponent(i);
+					Dimension d = c.getPreferredSize();
+					int x = insets.left;
+					int wid = d.width;
+					if (alignment == CENTER)
+					{
+						x = (pd.width - d.width) / 2;
+					}
+					else if (alignment == RIGHT)
+					{
+						x = pd.width - d.width - insets.right;
+					}
+					else if (alignment == BOTH)
+					{
+						wid = pd.width - insets.left - insets.right;
+					}
+					c.setBounds(x, y, wid, d.height);
+					y += d.height + vgap;
+				}
+			}
+		}
+		public Dimension minimumLayoutSize(Container parent)
+		{
+			return layoutSize(parent, false);
+		}
+		public Dimension preferredLayoutSize(Container parent)
+		{
+			return layoutSize(parent, false);
+		}
+		public void addLayoutComponent(String name, Component comp)
+		{
+		}
+		public void removeLayoutComponent(Component comp)
+		{
+		}
+	}
+
+
+	public static void main(String... args)
+	{
+		try
+		{
+			TreeRenderer instance = new TreeRenderer();
+//			instance.add(instance.render(new HorizontalLayout(), instance.parse("'Jalapeno:Quality:>'['Dove:>'['Apple:Banana:Circus','Dove:Ear:Female'],'Japanese:>'['Gloves:Head:Internal','Japanese:Knife:Leap'],'Quality:>'['Mango:Nose:Open','Quality:Rupee']]")));
+//			instance.add(instance.render(new VerticalLayout(), instance.parse("'Jalapeno:Quality:>'['Dove:>'['Apple:Banana:Circus','Dove:Ear:Female'],'Japanese:>'['Gloves:Head:Internal','Japanese:Knife:Leap'],'Open:Quality:>'['Mango:Nose','Open:Pen','Quality:Rupee']]")));
+//			instance.add(instance.render(new HorizontalLayout(), instance.parse("['a','b','c','d']")));
+//			instance.add(instance.render(new HorizontalLayout(), instance.parse("'x'['a','b','c','d']")));
+			instance.add(instance.render(new HorizontalLayout(), instance.parse("'x:y'[['a','b','c','d'],['a','b','c','d']]")));
+		}
+		catch (Throwable e)
+		{
+			e.printStackTrace(System.out);
 		}
 	}
 }

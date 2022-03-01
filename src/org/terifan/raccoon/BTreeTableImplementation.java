@@ -2,7 +2,6 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -445,9 +444,20 @@ class BTreeTableImplementation extends TableImplementation
 	{
 		if (aNode.mIndexNode)
 		{
-			aScanResult.log.append("index[");
-
 			boolean first = true;
+			aScanResult.log.append("'");
+			for (ArrayMapEntry entry : aNode.mMap)
+			{
+				if (!first)
+				{
+					aScanResult.log.append(":");
+				}
+				first = false;
+				aScanResult.log.append(new String(entry.getKey()).replaceAll("[^\\w]*", "").replace("'", ""));
+			}
+			aScanResult.log.append("'[");
+
+			first = true;
 			for (ArrayMapEntry entry : aNode.mMap)
 			{
 				if (!first)
@@ -456,11 +466,7 @@ class BTreeTableImplementation extends TableImplementation
 				}
 				first = false;
 
-				System.out.println("*"+new String(entry.getKey()).replaceAll("[^\\w]*", ""));
-
 				BTreeNode node = aNode.mChildren.get(new MarshalledKey(entry.getKey()));
-
-				aScanResult.log.append(new String(entry.getKey()).replaceAll("[^\\w]*", "") + "=");
 
 				if (node == null)
 				{
@@ -471,12 +477,22 @@ class BTreeTableImplementation extends TableImplementation
 
 				scan(node, aScanResult);
 			}
-
 			aScanResult.log.append("]");
 		}
 		else
 		{
-			aScanResult.log.append("leaf"+aNode.mMap);
+			aScanResult.log.append("[");
+			boolean first = true;
+			for (ArrayMapEntry entry : aNode.mMap)
+			{
+				if (!first)
+				{
+					aScanResult.log.append(",");
+				}
+				first = false;
+				aScanResult.log.append("'" + new String(entry.getKey()).replaceAll("[^\\w]*", "") + "'");
+			}
+			aScanResult.log.append("]");
 		}
 	}
 
