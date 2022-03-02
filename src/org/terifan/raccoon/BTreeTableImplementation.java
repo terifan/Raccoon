@@ -4,6 +4,7 @@ import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.terifan.raccoon.ArrayMap.NearResult;
@@ -15,7 +16,9 @@ import org.terifan.raccoon.util.Result;
 
 class BTreeTableImplementation extends TableImplementation
 {
-	private final static byte[] POINTER_PLACEHOLDER = new byte[BlockPointer.SIZE];
+	static byte[] POINTER_PLACEHOLDER = new byte[BlockPointer.SIZE];
+	static int mIndexSize = 512;
+	static int mLeafSize = 512;
 
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
@@ -23,9 +26,6 @@ class BTreeTableImplementation extends TableImplementation
 	private int mModCount;
 
 	private BTreeNode mRoot;
-
-	private int mIndexSize = 512;
-	private int mLeafSize = 512;
 
 
 	public BTreeTableImplementation(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionGroup, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName)
@@ -116,31 +116,20 @@ class BTreeTableImplementation extends TableImplementation
 
 		Result<ArrayMapEntry> result = new Result<>();
 
-		if (putImpl(mRoot, aEntry, new ArrayMapEntry(aEntry.getKey()), result))
-		{
-			ArrayMap[] maps = mRoot.mMap.split();
+		MarshalledKey key = new MarshalledKey(aEntry.getKey());
 
-			if (mRoot instanceof BTreeIndex)
+		if (mRoot.put(null, aEntry, key, result))
+		{
+			if (mRoot instanceof BTreeLeaf)
 			{
+				System.out.println("!");
+				mRoot = ((BTreeLeaf)mRoot).upgrade();
 			}
 			else
 			{
-				ArrayMapEntry a = maps[1].get(0, new ArrayMapEntry());
-				ArrayMapEntry b = new ArrayMapEntry("".getBytes(), POINTER_PLACEHOLDER, (byte)0);
-
-				BTreeLeaf na = new BTreeLeaf();
-				BTreeLeaf nb = new BTreeLeaf();
-				na.mMap = maps[0];
-				nb.mMap = maps[1];
-
-				BTreeIndex newRoot = new BTreeIndex();
-				newRoot.mMap = new ArrayMap(mIndexSize);
-				newRoot.mMap.put(new ArrayMapEntry(a.getKey(), POINTER_PLACEHOLDER, (byte)0), null);
-				newRoot.mMap.put(new ArrayMapEntry(b.getKey(), POINTER_PLACEHOLDER, (byte)0), null);
-				newRoot.mChildren.put(new MarshalledKey(a.getKey()), na);
-				newRoot.mChildren.put(new MarshalledKey(b.getKey()), nb);
-
-				mRoot = newRoot;
+				System.out.println("*");
+				BTreeNode[] newRoot = mRoot.split();
+				mRoot = newRoot[0];
 			}
 		}
 
@@ -150,30 +139,6 @@ class BTreeTableImplementation extends TableImplementation
 		assert mModCount == modCount : "concurrent modification";
 
 		return result.get();
-	}
-
-
-	private boolean putImpl(BTreeNode aNode, ArrayMapEntry aEntry, ArrayMapEntry aKey, Result<ArrayMapEntry> aResult)
-	{
-		if (aNode.mBlockPointer != null && aNode.mBlockPointer.getBlockType() == BlockType.INDEX)
-		{
-			NearResult state = aNode.mMap.nearest(aKey);
-
-			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(aKey.getValue()));
-
-			BTreeNode node = BTreeNode.newNode(bp);
-			node.mMap = new ArrayMap(readBlock(bp));
-
-			if (putImpl(node, aEntry, aKey, aResult))
-			{
-				ArrayMap[] maps = node.mMap.split();
-				System.out.println("#");
-			}
-
-			return false;
-		}
-
-		return !aNode.mMap.insert(aEntry, aResult);
 	}
 
 

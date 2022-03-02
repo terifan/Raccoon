@@ -68,6 +68,8 @@ public class TreeRenderer
 			{
 				setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 			}
+
+
 			@Override
 			protected void paintComponent(Graphics aGraphics)
 			{
@@ -75,6 +77,7 @@ public class TreeRenderer
 				aGraphics.fillRect(0, 0, getWidth(), getHeight());
 				aGraphics.drawImage(aImage, (getWidth() - aImage.getWidth()) / 2, (getHeight() - aImage.getHeight()) / 2, null);
 			}
+
 
 			@Override
 			public Dimension getPreferredSize()
@@ -223,7 +226,14 @@ public class TreeRenderer
 		for (int i = 0, tx = aX + (aNode.mLayout.mWidth - aNode.mLayout.mTextWidth) / 2; i < aNode.mText.length; i++)
 		{
 			aGraphics.setColor(Color.BLACK);
-			aGraphics.drawString(aNode.mText[i], tx, aY + (aNode.mLayout.mHeight + LM.getHeight()) / 2 - aGraphics.getFontMetrics().getDescent());
+			if (aNode.mText[i].length() > 0)
+			{
+				aGraphics.drawString(aNode.mText[i], tx, aY + (aNode.mLayout.mHeight + LM.getHeight()) / 2 - aGraphics.getFontMetrics().getDescent());
+			}
+			else
+			{
+				aGraphics.fillOval(tx, aY + (int)(aNode.mLayout.mHeight + LM.getHeight()) / 2, 5, 5);
+			}
 			if (i > 0)
 			{
 				aGraphics.setColor(Color.LIGHT_GRAY);
@@ -241,7 +251,14 @@ public class TreeRenderer
 		for (int i = 0, ty = aY + (aNode.mLayout.mHeight - aNode.mLayout.mTextHeight) / 2; i < aNode.mText.length; i++)
 		{
 			aGraphics.setColor(Color.BLACK);
-			aGraphics.drawString(aNode.mText[i], aX + (aNode.mLayout.mWidth - aGraphics.getFontMetrics().stringWidth(aNode.mText[i])) / 2, ty + LM.getHeight() - aGraphics.getFontMetrics().getDescent());
+			if (aNode.mText[i].length() > 0)
+			{
+				aGraphics.drawString(aNode.mText[i], aX + (aNode.mLayout.mWidth - aGraphics.getFontMetrics().stringWidth(aNode.mText[i])) / 2, ty + LM.getHeight() - aGraphics.getFontMetrics().getDescent());
+			}
+			else
+			{
+				aGraphics.fillOval(aX + aNode.mLayout.mWidth / 2 - 2, aY + aNode.mLayout.mHeight / 4 - 2, 5, 5);
+			}
 			if (i > 0)
 			{
 				aGraphics.setColor(Color.LIGHT_GRAY);
@@ -479,12 +496,16 @@ public class TreeRenderer
 		private int vgap;
 		private int alignment;
 		private int anchor;
+
+
 		public VerticalFlowLayout()
 		{
 			this.vgap = 5;
 			this.alignment = BOTH;
 			this.anchor = TOP;
 		}
+
+
 		private Dimension layoutSize(Container parent, boolean minimum)
 		{
 			Dimension dim = new Dimension(0, 0);
@@ -511,6 +532,8 @@ public class TreeRenderer
 			dim.height += insets.top + insets.bottom;
 			return dim;
 		}
+
+
 		public void layoutContainer(Container parent)
 		{
 			Insets insets = parent.getInsets();
@@ -563,17 +586,25 @@ public class TreeRenderer
 				}
 			}
 		}
+
+
 		public Dimension minimumLayoutSize(Container parent)
 		{
 			return layoutSize(parent, false);
 		}
+
+
 		public Dimension preferredLayoutSize(Container parent)
 		{
 			return layoutSize(parent, false);
 		}
+
+
 		public void addLayoutComponent(String name, Component comp)
 		{
 		}
+
+
 		public void removeLayoutComponent(Component comp)
 		{
 		}

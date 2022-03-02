@@ -28,6 +28,9 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 	@Override
 	public int compareTo(MarshalledKey aOther)
 	{
+		if (aOther.key.length < key.length) return -1;
+		if (aOther.key.length > key.length) return 1;
+
 		for (int i = 0; i < key.length; i++)
 		{
 //			int c = Integer.compareUnsigned(aOther.key[i], key[i]);
