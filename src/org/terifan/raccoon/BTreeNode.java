@@ -1,26 +1,17 @@
 package org.terifan.raccoon;
 
-import java.util.HashMap;
 import org.terifan.raccoon.storage.BlockPointer;
 
 
-public class BTreeNode
+abstract class BTreeNode
 {
 	BlockPointer mBlockPointer;
-	ArrayMap mMap;
-	HashMap<MarshalledKey, BTreeNode> mChildren;
-	boolean mIndexNode;
 	boolean mChanged;
+	ArrayMap mMap;
 
 
-	BTreeNode(ArrayMap aMap, boolean aIndexNode)
+	static BTreeNode newNode(BlockPointer aBlockPointer)
 	{
-		mMap = aMap;
-		mIndexNode = aIndexNode;
-
-		if (mIndexNode)
-		{
-			mChildren = new HashMap<>();
-		}
+		return aBlockPointer.getBlockType() == BlockType.INDEX ? new BTreeIndex() : new BTreeLeaf();
 	}
 }

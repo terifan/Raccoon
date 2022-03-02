@@ -64,7 +64,7 @@ class BTreeTableImplementation extends TableImplementation
 	{
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(BlockPointer.SIZE + 3);
 
-		mRoot.mBlockPointer.setBlockType(mRoot.mIndexNode ? BlockType.INDEX : BlockType.LEAF);
+		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeIndex ? BlockType.INDEX : BlockType.LEAF);
 		mRoot.mBlockPointer.marshal(buffer);
 
 		mBlockAccessor.getCompressionParam().marshal(buffer);
@@ -77,22 +77,17 @@ class BTreeTableImplementation extends TableImplementation
 	{
 		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aTableHeader);
 
-		mRoot = new BTreeNode(null, false);
-		mRoot.mBlockPointer = new BlockPointer();
-		mRoot.mBlockPointer.unmarshal(buffer);
-
 		CompressionParam compressionParam = new CompressionParam();
 		compressionParam.unmarshal(buffer);
 
 		mBlockAccessor.setCompressionParam(compressionParam);
 
-		mRoot.mMap = new ArrayMap(readBlock(mRoot.mBlockPointer));
-		mRoot.mIndexNode = mRoot.mBlockPointer.getBlockType() == BlockType.INDEX;
+		BlockPointer bp = new BlockPointer();
+		bp.unmarshal(buffer);
 
-		if (mRoot.mIndexNode)
-		{
-			mRoot.mChildren = new HashMap<>();
-		}
+		mRoot = BTreeNode.newNode(bp);
+		mRoot.mBlockPointer = bp;
+		mRoot.mMap = new ArrayMap(readBlock(bp));
 	}
 
 
@@ -125,7 +120,7 @@ class BTreeTableImplementation extends TableImplementation
 		{
 			ArrayMap[] maps = mRoot.mMap.split();
 
-			if (mRoot.mIndexNode)
+			if (mRoot instanceof BTreeIndex)
 			{
 			}
 			else
@@ -133,16 +128,19 @@ class BTreeTableImplementation extends TableImplementation
 				ArrayMapEntry a = maps[1].get(0, new ArrayMapEntry());
 				ArrayMapEntry b = new ArrayMapEntry("".getBytes(), POINTER_PLACEHOLDER, (byte)0);
 
-				BTreeNode na = new BTreeNode(maps[0], false);
-				BTreeNode nb = new BTreeNode(maps[1], false);
+				BTreeLeaf na = new BTreeLeaf();
+				BTreeLeaf nb = new BTreeLeaf();
+				na.mMap = maps[0];
+				nb.mMap = maps[1];
 
-				mRoot = new BTreeNode(new ArrayMap(mIndexSize), true);
+				BTreeIndex newRoot = new BTreeIndex();
+				newRoot.mMap = new ArrayMap(mIndexSize);
+				newRoot.mMap.put(new ArrayMapEntry(a.getKey(), POINTER_PLACEHOLDER, (byte)0), null);
+				newRoot.mMap.put(new ArrayMapEntry(b.getKey(), POINTER_PLACEHOLDER, (byte)0), null);
+				newRoot.mChildren.put(new MarshalledKey(a.getKey()), na);
+				newRoot.mChildren.put(new MarshalledKey(b.getKey()), nb);
 
-				mRoot.mMap.put(new ArrayMapEntry(a.getKey(), POINTER_PLACEHOLDER, (byte)0), null);
-				mRoot.mMap.put(new ArrayMapEntry(b.getKey(), POINTER_PLACEHOLDER, (byte)0), null);
-
-				mRoot.mChildren.put(new MarshalledKey(a.getKey()), na);
-				mRoot.mChildren.put(new MarshalledKey(b.getKey()), nb);
+				mRoot = newRoot;
 			}
 		}
 
@@ -163,8 +161,8 @@ class BTreeTableImplementation extends TableImplementation
 
 			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(aKey.getValue()));
 
-			BTreeNode node = new BTreeNode(new ArrayMap(readBlock(bp)), bp.getBlockType() == BlockType.INDEX);
-			node.mIndexNode = bp.getBlockType() == BlockType.INDEX;
+			BTreeNode node = BTreeNode.newNode(bp);
+			node.mMap = new ArrayMap(readBlock(bp));
 
 			if (putImpl(node, aEntry, aKey, aResult))
 			{
@@ -442,7 +440,7 @@ class BTreeTableImplementation extends TableImplementation
 
 	private void scan(BTreeNode aNode, ScanResult aScanResult)
 	{
-		if (aNode.mIndexNode)
+		if (aNode instanceof BTreeIndex)
 		{
 			boolean first = true;
 			aScanResult.log.append("'");
@@ -466,13 +464,14 @@ class BTreeTableImplementation extends TableImplementation
 				}
 				first = false;
 
-				BTreeNode node = aNode.mChildren.get(new MarshalledKey(entry.getKey()));
+				BTreeNode node = ((BTreeIndex)aNode).mChildren.get(new MarshalledKey(entry.getKey()));
 
 				if (node == null)
 				{
 					BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
 
-					node = new BTreeNode(new ArrayMap(readBlock(bp)), bp.getBlockType() == BlockType.INDEX);
+					node = BTreeNode.newNode(bp);
+					node.mMap = new ArrayMap(readBlock(bp));
 				}
 
 				scan(node, aScanResult);
@@ -520,6 +519,7 @@ class BTreeTableImplementation extends TableImplementation
 
 	private void setupEmptyTable()
 	{
-		mRoot = new BTreeNode(new ArrayMap(mLeafSize), false);
+		mRoot = new BTreeLeaf();
+		mRoot.mMap = new ArrayMap(mLeafSize);
 	}
 }

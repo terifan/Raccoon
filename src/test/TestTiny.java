@@ -1,89 +1,61 @@
 package test;
 
-import java.awt.Dimension;
 import java.io.IOException;
-import java.nio.file.OpenOption;
-import java.util.List;
 import java.util.Random;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
-import org.terifan.raccoon.LogLevel;
 import org.terifan.raccoon.ScanResult;
-import org.terifan.raccoon.Table;
-import org.terifan.raccoon.annotations.Discriminator;
 import org.terifan.raccoon.annotations.Column;
 import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.annotations.Id;
 import org.terifan.raccoon.docs.TreeRenderer;
-import org.terifan.raccoon.serialization.FieldDescriptor;
-import org.terifan.raccoon.util.Log;
 
 
 public class TestTiny
 {
 	private static TreeRenderer mFrame = new TreeRenderer();
+	private static Random rnd = new Random(1);
 
 
 	public static void main(String... args)
 	{
 		try
 		{
-			Random rnd = new Random();
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 //			Log.setLevel(LogLevel.INFO);
-
-//
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 			{
 //				db.save(new Document().put("id",123).put("name","olle"));
 
-				db.save(new KeyValue("Apple", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Banana", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Circus", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Dove", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Dove", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Ear", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Female", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Gloves", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Head", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Internal", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Jalapeno", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Japanese", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Japanese", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Knife", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Leap", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Mango", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Nose", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Open", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Quality", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Quality", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Quality", Helper.createString(rnd)));
-				dump(db);
-				db.save(new KeyValue("Rupee", Helper.createString(rnd)));
-				dump(db);
+				insert(db, "Apple");
+				insert(db, "Banana");
+				insert(db, "Circus");
+				insert(db, "Dove");
+				insert(db, "Ear");
+				insert(db, "Female");
+				insert(db, "Gloves");
+				insert(db, "Head");
+				insert(db, "Internal");
+				insert(db, "Jalapeno");
+				insert(db, "Japanese");
+				insert(db, "Knife");
+				insert(db, "Leap");
+				insert(db, "Mango");
+				insert(db, "Nose");
+				insert(db, "Open");
+				insert(db, "Quality");
+				insert(db, "Rupee");
+				insert(db, "Silver");
+				insert(db, "Turquoise");
+				insert(db, "Urban");
+				insert(db, "Vapor");
+				insert(db, "Whale");
+				insert(db, "Xenon");
+				insert(db, "Yellow");
+				insert(db, "Zebra");
 
 //				db.list(KeyValue.class).forEach(System.out::println);
 
@@ -141,6 +113,13 @@ public class TestTiny
 		String description = aDatabase.scan(new ScanResult()).getDescription();
 
 		mFrame.add(mFrame.render(new TreeRenderer.VerticalLayout(), mFrame.parse(description)));
+	}
+
+
+	private static void insert(Database aDatabase, String aKey) throws IOException
+	{
+		aDatabase.save(new KeyValue(aKey, Helper.createString(rnd)));
+		dump(aDatabase);
 	}
 
 
