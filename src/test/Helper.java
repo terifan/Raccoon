@@ -7,7 +7,8 @@ public class Helper
 {
 	static String createString(Random rnd)
 	{
-		return createString(rnd, 5 + rnd.nextInt(80));
+//		return createString(rnd, 50 + rnd.nextInt(80));
+		return createString(rnd, 100);
 	}
 
 

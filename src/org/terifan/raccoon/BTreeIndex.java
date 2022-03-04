@@ -3,6 +3,8 @@ package org.terifan.raccoon;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import static org.terifan.raccoon.BTreeTableImplementation.POINTER_PLACEHOLDER;
+import static org.terifan.raccoon.BTreeTableImplementation.mIndexSize;
 import org.terifan.raccoon.util.Result;
 
 
@@ -36,7 +38,15 @@ public class BTreeIndex extends BTreeNode
 
 		if (child.getValue().put(this, aEntry, aKey, aResult))
 		{
-			child.getValue().split();
+			System.out.println("+");
+
+			BTreeNode[] split = child.getValue().split();
+
+			mChildren.put(new MarshalledKey(split[0].mMap.getFirst().getKey()), split[0]);
+			mChildren.put(new MarshalledKey(split[1].mMap.getFirst().getKey()), split[1]);
+
+			mMap.insert(new ArrayMapEntry(split[0].mMap.getFirst().getKey(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0), null);
+			return mMap.insert(new ArrayMapEntry(split[1].mMap.getFirst().getKey(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0), null);
 		}
 
 		return false;
@@ -73,24 +83,44 @@ public class BTreeIndex extends BTreeNode
 		{
 			a, b
 		};
+	}
 
-//		ArrayMap[] maps = mMap.split();
-//
-//		ArrayMapEntry a = maps[1].get(0, new ArrayMapEntry());
-//		ArrayMapEntry b = new ArrayMapEntry("".getBytes(), POINTER_PLACEHOLDER, (byte)0);
-//
-//		BTreeLeaf na = new BTreeLeaf();
-//		BTreeLeaf nb = new BTreeLeaf();
-//		na.mMap = maps[0];
-//		nb.mMap = maps[1];
-//
-//		BTreeIndex newRoot = new BTreeIndex();
-//		newRoot.mMap = new ArrayMap(mIndexSize);
-//		newRoot.mMap.put(new ArrayMapEntry(a.getKey(), POINTER_PLACEHOLDER, (byte)0), null);
-//		newRoot.mMap.put(new ArrayMapEntry(b.getKey(), POINTER_PLACEHOLDER, (byte)0), null);
-//		newRoot.mChildren.put(new MarshalledKey(a.getKey()), na);
-//		newRoot.mChildren.put(new MarshalledKey(b.getKey()), nb);
-//
-//		return newRoot;
+
+	BTreeNode grow()
+	{
+		ArrayMap[] maps = mMap.split();
+
+		BTreeIndex a = new BTreeIndex();
+		BTreeIndex b = new BTreeIndex();
+		a.mMap = maps[0];
+		b.mMap = maps[1];
+
+		ArrayMapEntry midKeyBytes = new ArrayMapEntry();
+		b.mMap.get(0, midKeyBytes);
+		MarshalledKey midKey = new MarshalledKey(midKeyBytes.getKey());
+
+		for (Entry<MarshalledKey, BTreeNode> entry : mChildren.entrySet())
+		{
+			if (entry.getKey().compareTo(midKey) < 0)
+			{
+				a.mChildren.put(entry.getKey(), entry.getValue());
+			}
+			else
+			{
+				b.mChildren.put(entry.getKey(), entry.getValue());
+			}
+		}
+
+		MarshalledKey keyB = new MarshalledKey(new byte[0]);
+		MarshalledKey keyA = new MarshalledKey(midKeyBytes.getKey());
+
+		BTreeIndex newIndex = new BTreeIndex();
+		newIndex.mMap = new ArrayMap(mIndexSize);
+		newIndex.mMap.put(new ArrayMapEntry(keyA.key, POINTER_PLACEHOLDER, (byte)0), null);
+		newIndex.mMap.put(new ArrayMapEntry(keyB.key, POINTER_PLACEHOLDER, (byte)0), null);
+		newIndex.mChildren.put(keyA, a);
+		newIndex.mChildren.put(keyB, b);
+
+		return newIndex;
 	}
 }

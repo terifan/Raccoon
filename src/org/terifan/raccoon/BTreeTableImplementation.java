@@ -17,7 +17,7 @@ import org.terifan.raccoon.util.Result;
 class BTreeTableImplementation extends TableImplementation
 {
 	static byte[] POINTER_PLACEHOLDER = new byte[BlockPointer.SIZE];
-	static int mIndexSize = 512;
+	static int mIndexSize = 800;
 	static int mLeafSize = 512;
 
 	private boolean mWasEmptyInstance;
@@ -128,8 +128,7 @@ class BTreeTableImplementation extends TableImplementation
 			else
 			{
 				System.out.println("*");
-				BTreeNode[] newRoot = mRoot.split();
-				mRoot = newRoot[0];
+				mRoot = ((BTreeIndex)mRoot).grow();
 			}
 		}
 
@@ -433,14 +432,16 @@ class BTreeTableImplementation extends TableImplementation
 
 				if (node == null)
 				{
-					BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
-
-					node = BTreeNode.newNode(bp);
-					node.mMap = new ArrayMap(readBlock(bp));
+					throw new IllegalStateException();
+//					BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
+//
+//					node = BTreeNode.newNode(bp);
+//					node.mMap = new ArrayMap(readBlock(bp));
 				}
 
 				scan(node, aScanResult);
 			}
+
 			aScanResult.log.append("]");
 		}
 		else

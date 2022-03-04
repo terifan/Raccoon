@@ -36,7 +36,7 @@ public class TreeRenderer
 	private final static FontRenderContext FRC = new FontRenderContext(null, true, false);
 	private final static LineMetrics LM = FONT.getLineMetrics("Adgjy", FRC);
 	private final static int SIBLING_SPACING = 50;
-	private final static int CHILD_SPACING = 20;
+	private final static int CHILD_SPACING = 10;
 	private final static int TEXT_PADDING_X = 15;
 	private final static int TEXT_PADDING_Y = 11;
 	private final static int FRAME_PADDING = 20;
@@ -257,7 +257,7 @@ public class TreeRenderer
 			}
 			else
 			{
-				aGraphics.fillOval(aX + aNode.mLayout.mWidth / 2 - 2, aY + aNode.mLayout.mHeight / 4 - 2, 5, 5);
+				aGraphics.fillOval(aX + aNode.mLayout.mWidth / 2 - 2, ty + (int)LM.getHeight() / 2 - 2, 5, 5);
 			}
 			if (i > 0)
 			{

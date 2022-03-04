@@ -49,16 +49,16 @@ public class BTreeLeaf extends BTreeNode
 		ArrayMapEntry midKeyBytes = new ArrayMapEntry();
 		b.mMap.get(0, midKeyBytes);
 
-		MarshalledKey keyA = new MarshalledKey(new byte[0]);
-		MarshalledKey keyB = new MarshalledKey(midKeyBytes.getKey());
+		MarshalledKey keyB = new MarshalledKey(new byte[0]);
+		MarshalledKey keyA = new MarshalledKey(midKeyBytes.getKey());
 
-		BTreeIndex newRoot = new BTreeIndex();
-		newRoot.mMap = new ArrayMap(mIndexSize);
-		newRoot.mMap.put(new ArrayMapEntry(keyA.key, POINTER_PLACEHOLDER, (byte)0), null);
-		newRoot.mMap.put(new ArrayMapEntry(keyB.key, POINTER_PLACEHOLDER, (byte)0), null);
-		newRoot.mChildren.put(keyA, a);
-		newRoot.mChildren.put(keyB, b);
+		BTreeIndex newIndex = new BTreeIndex();
+		newIndex.mMap = new ArrayMap(mIndexSize);
+		newIndex.mMap.put(new ArrayMapEntry(keyA.key, POINTER_PLACEHOLDER, (byte)0), null);
+		newIndex.mMap.put(new ArrayMapEntry(keyB.key, POINTER_PLACEHOLDER, (byte)0), null);
+		newIndex.mChildren.put(keyA, a);
+		newIndex.mChildren.put(keyB, b);
 
-		return newRoot;
+		return newIndex;
 	}
 }
