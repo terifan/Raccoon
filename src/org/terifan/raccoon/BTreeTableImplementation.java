@@ -105,6 +105,8 @@ class BTreeTableImplementation extends TableImplementation
 	{
 		checkOpen();
 
+		aEntry = new ArrayMapEntry(new MarshalledKey(aEntry.getKey()).marshall(), aEntry.getValue(), aEntry.getType());
+
 		if (aEntry.getKey().length + aEntry.getValue().length > getEntrySizeLimit())
 		{
 			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().length + ", value: " + aEntry.getValue().length + ", maximum: " + getEntrySizeLimit());
@@ -415,7 +417,8 @@ class BTreeTableImplementation extends TableImplementation
 					aScanResult.log.append(":");
 				}
 				first = false;
-				aScanResult.log.append(new String(entry.getKey()).replaceAll("[^\\w]*", "").replace("'", ""));
+				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
+				aScanResult.log.append(key.isFinalKey()?"*":new String(key.getContent()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", ""));
 			}
 			aScanResult.log.append("'[");
 
@@ -427,8 +430,8 @@ class BTreeTableImplementation extends TableImplementation
 					aScanResult.log.append(",");
 				}
 				first = false;
-
-				BTreeNode node = ((BTreeIndex)aNode).mChildren.get(new MarshalledKey(entry.getKey()));
+				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
+				BTreeNode node = ((BTreeIndex)aNode).mChildren.get(key);
 
 				if (node == null)
 				{
@@ -455,7 +458,7 @@ class BTreeTableImplementation extends TableImplementation
 					aScanResult.log.append(",");
 				}
 				first = false;
-				aScanResult.log.append("'" + new String(entry.getKey()).replaceAll("[^\\w]*", "") + "'");
+				aScanResult.log.append("'" + new String(entry.getKey()).replaceAll("[^\\w]*", "").replace("_", "") + "'");
 			}
 			aScanResult.log.append("]");
 		}

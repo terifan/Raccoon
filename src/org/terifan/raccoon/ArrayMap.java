@@ -767,11 +767,11 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		{
 			if (low.getFreeSpace() > high.getFreeSpace())
 			{
-				low.put(get(i++, tmp), null);
+				low.insert(get(i++, tmp), null);
 			}
 			else
 			{
-				high.put(get(--j, tmp), null);
+				high.insert(get(--j, tmp), null);
 			}
 		}
 

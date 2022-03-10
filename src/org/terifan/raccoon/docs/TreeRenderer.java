@@ -226,13 +226,13 @@ public class TreeRenderer
 		for (int i = 0, tx = aX + (aNode.mLayout.mWidth - aNode.mLayout.mTextWidth) / 2; i < aNode.mText.length; i++)
 		{
 			aGraphics.setColor(Color.BLACK);
-			if (aNode.mText[i].length() > 0)
+			if (aNode.mText[i].equals("*"))
 			{
-				aGraphics.drawString(aNode.mText[i], tx, aY + (aNode.mLayout.mHeight + LM.getHeight()) / 2 - aGraphics.getFontMetrics().getDescent());
+				aGraphics.fillOval(tx, aY + (int)(aNode.mLayout.mHeight + LM.getHeight()) / 2, 5, 5);
 			}
 			else
 			{
-				aGraphics.fillOval(tx, aY + (int)(aNode.mLayout.mHeight + LM.getHeight()) / 2, 5, 5);
+				aGraphics.drawString(aNode.mText[i], tx, aY + (aNode.mLayout.mHeight + LM.getHeight()) / 2 - aGraphics.getFontMetrics().getDescent());
 			}
 			if (i > 0)
 			{
@@ -251,13 +251,13 @@ public class TreeRenderer
 		for (int i = 0, ty = aY + (aNode.mLayout.mHeight - aNode.mLayout.mTextHeight) / 2; i < aNode.mText.length; i++)
 		{
 			aGraphics.setColor(Color.BLACK);
-			if (aNode.mText[i].length() > 0)
+			if (aNode.mText[i].equals("*"))
 			{
-				aGraphics.drawString(aNode.mText[i], aX + (aNode.mLayout.mWidth - aGraphics.getFontMetrics().stringWidth(aNode.mText[i])) / 2, ty + LM.getHeight() - aGraphics.getFontMetrics().getDescent());
+				aGraphics.fillOval(aX + aNode.mLayout.mWidth / 2 - 2, ty + (int)LM.getHeight() / 2 - 2, 5, 5);
 			}
 			else
 			{
-				aGraphics.fillOval(aX + aNode.mLayout.mWidth / 2 - 2, ty + (int)LM.getHeight() / 2 - 2, 5, 5);
+				aGraphics.drawString(aNode.mText[i], aX + (aNode.mLayout.mWidth - aGraphics.getFontMetrics().stringWidth(aNode.mText[i])) / 2, ty + LM.getHeight() - aGraphics.getFontMetrics().getDescent());
 			}
 			if (i > 0)
 			{

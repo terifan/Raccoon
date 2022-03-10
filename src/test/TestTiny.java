@@ -1,6 +1,7 @@
 package test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Random;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
@@ -30,32 +31,59 @@ public class TestTiny
 			{
 //				db.save(new Document().put("id",123).put("name","olle"));
 
-				insert(db, "Apple");
-				insert(db, "Banana");
-				insert(db, "Circus");
-				insert(db, "Dove");
-				insert(db, "Ear");
-				insert(db, "Female");
-				insert(db, "Gloves");
-				insert(db, "Head");
-				insert(db, "Internal");
-				insert(db, "Jalapeno");
-				insert(db, "Japanese");
-				insert(db, "Knife");
-				insert(db, "Leap");
-				insert(db, "Mango");
-				insert(db, "Nose");
-				insert(db, "Open");
-				insert(db, "Quality");
-				insert(db, "Rupee");
-				insert(db, "Silver");
-				insert(db, "Turquoise");
-				insert(db, "Urban");
-				insert(db, "Vapor");
-				insert(db, "Whale");
-				insert(db, "Xenon");
-				insert(db, "Yellow");
-				insert(db, "Zebra");
+				insert(db, "a");
+				insert(db, "q");
+				insert(db, "l");
+				insert(db, "n");
+				insert(db, "x");
+				insert(db, "i");
+				insert(db, "j");
+				insert(db, "kkk");
+				insert(db, "m");
+				insert(db, "b");
+				insert(db, "ddd");
+				insert(db, "e");
+				insert(db, "f");
+				insert(db, "g");
+				insert(db, "r");
+				insert(db, "z");
+				insert(db, "y");
+				insert(db, "h");
+				insert(db, "w");
+				insert(db, "s");
+				insert(db, "t");
+				insert(db, "u");
+				insert(db, "v");
+				insert(db, "c");
+				insert(db, "p");
+				insert(db, "o");
+
+//				insert(db, "Apple");
+//				insert(db, "Banana");
+//				insert(db, "Circus");
+//				insert(db, "Dove");
+//				insert(db, "Ear");
+//				insert(db, "Female");
+//				insert(db, "Gloves");
+//				insert(db, "Head");
+//				insert(db, "Internal");
+//				insert(db, "Jalapeno");
+//				insert(db, "Japanese");
+//				insert(db, "Knife");
+//				insert(db, "Leap");
+//				insert(db, "Mango");
+//				insert(db, "Nose");
+//				insert(db, "Open");
+//				insert(db, "Quality");
+//				insert(db, "Rupee");
+//				insert(db, "Silver");
+//				insert(db, "Turquoise");
+//				insert(db, "Urban");
+//				insert(db, "Vapor");
+//				insert(db, "Whale");
+//				insert(db, "Xenon");
+//				insert(db, "Yellow");
+//				insert(db, "Zebra");
 
 //				db.list(KeyValue.class).forEach(System.out::println);
 
@@ -118,6 +146,7 @@ public class TestTiny
 
 	private static void insert(Database aDatabase, String aKey) throws IOException
 	{
+//		aDatabase.save(new KeyValue("__________".substring(aKey.length()) + aKey, Helper.createString(rnd)));
 		aDatabase.save(new KeyValue(aKey, Helper.createString(rnd)));
 		dump(aDatabase);
 	}
