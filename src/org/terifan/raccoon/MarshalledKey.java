@@ -87,14 +87,12 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 			int c = self[i] - other[i];
 			if (c != 0)
 			{
-		System.out.println("!");
 				return c;
 			}
 		}
-		System.out.println("? " + other.length+" < "+self.length);
 
-//		if (self.length > other.length) return 1;
-//		if (self.length < other.length) return -1;
+		if (self.length > other.length) return 1;
+		if (self.length < other.length) return -1;
 
 		return 0;
 	}
@@ -144,88 +142,67 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 	{
 		try
 		{
+			ArrayMap arrayMap = new ArrayMap(1000);
 			TreeSet<MarshalledKey> db = new TreeSet<>();
 
-			insert(db, "a");
-			insert(db, "q");
-			insert(db, "l");
-			insert(db, "n");
-			insert(db, "x");
-			insert(db, "i");
-			insert(db, "j");
-			insert(db, "kkk");
-			insert(db, "m");
-			insert(db, "b");
-			insert(db, "ddd");
-			insert(db, "e");
-			insert(db, "f");
-			insert(db, "g");
-			insert(db, "r");
-			insert(db, "z");
-			insert(db, "y");
-			insert(db, "h");
-			insert(db, "w");
-			insert(db, "s");
-			insert(db, "t");
-			insert(db, "u");
-			insert(db, "v");
-			insert(db, "c");
-			insert(db, "p");
-			insert(db, "o");
+//			insert(arrayMap, db, "n");
+//			insert(arrayMap, db);
 
-//			insert(db, "a");
-//			insert(db, "q");
-//			insert(db, "l");
-//			insert(db, "n");
-//			insert(db, "x");
-//			insert(db, "i");
-//			insert(db, "j");
-//			insert(db, "kkk");
-//			insert(db, "m");
-//			insert(db, "b");
-//			insert(db, "ddd");
-//			insert(db, "e");
-//			insert(db, "f");
-//			insert(db, "g");
-//			insert(db, "r");
-//			insert(db, "z");
-//			insert(db, "y");
-//			insert(db, "h");
-//			insert(db, "w");
-//			insert(db, "s");
-//			insert(db, "t");
-//			insert(db, "u");
-//			insert(db, "v");
-//			insert(db, "c");
-//			insert(db, "p");
-//			insert(db, "o");
+//			insert(arrayMap, db, "a");
+//			insert(arrayMap, db, "q");
+//			insert(arrayMap, db, "l");
+//			insert(arrayMap, db, "n");
+//			insert(arrayMap, db, "x");
+//			insert(arrayMap, db, "i");
+//			insert(arrayMap, db, "j");
+//			insert(arrayMap, db, "kkk");
+//			insert(arrayMap, db, "m");
+//			insert(arrayMap, db, "b");
+//			insert(arrayMap, db, "ddd");
+//			insert(arrayMap, db, "e");
+//			insert(arrayMap, db, "f");
+//			insert(arrayMap, db, "g");
+//			insert(arrayMap, db, "r");
+//			insert(arrayMap, db, "z");
+//			insert(arrayMap, db, "y");
+//			insert(arrayMap, db, "h");
+//			insert(arrayMap, db, "w");
+//			insert(arrayMap, db, "s");
+//			insert(arrayMap, db, "t");
+//			insert(arrayMap, db, "u");
+//			insert(arrayMap, db, "v");
+//			insert(arrayMap, db, "c");
+//			insert(arrayMap, db, "p");
+//			insert(arrayMap, db, "o");
 
-//			insert(db, "Apple");
-//			insert(db, "Banana");
-//			insert(db, "Circus");
-//			insert(db, "Dove");
-//			insert(db, "Ear");
-//			insert(db, "Female");
-//			insert(db, "Gloves");
-//			insert(db, "Head");
-//			insert(db, "Internal");
-//			insert(db, "Jalapeno");
-//			insert(db, "Japanese");
-//			insert(db, "Knife");
-//			insert(db, "Leap");
-//			insert(db, "Mango");
-//			insert(db, "Nose");
-//			insert(db, "Open");
-//			insert(db, "Quality");
-//			insert(db, "Rupee");
-//			insert(db, "Silver");
-//			insert(db, "Turquoise");
-//			insert(db, "Urban");
-//			insert(db, "Vapor");
-//			insert(db, "Whale");
-//			insert(db, "Xenon");
-//			insert(db, "Yellow");
-//			insert(db, "Zebra");
+//
+
+			insert(arrayMap, db, "Banana");
+			insert(arrayMap, db, "Nose");
+			insert(arrayMap, db, "Urban");
+			insert(arrayMap, db, "Vapor");
+			insert(arrayMap, db, "Gloves");
+			insert(arrayMap, db, "Female");
+			insert(arrayMap, db, "Mango");
+			insert(arrayMap, db, "Xenon");
+			insert(arrayMap, db, "Yellow");
+			insert(arrayMap, db, "Open");
+			insert(arrayMap, db, "Japanese");
+			insert(arrayMap, db, "Knife");
+			insert(arrayMap, db, "Apple");
+			insert(arrayMap, db, "Dove");
+			insert(arrayMap, db, "Ear");
+			insert(arrayMap, db, "Leap");
+			insert(arrayMap, db, "Quality");
+			insert(arrayMap, db, "Head");
+			insert(arrayMap, db, "Rupee");
+			insert(arrayMap, db, "Whale");
+			insert(arrayMap, db, "Turquoise");
+			insert(arrayMap, db, "Circus");
+			insert(arrayMap, db, "Internal");
+			insert(arrayMap, db, "Jalapeno");
+			insert(arrayMap, db, "Silver");
+			insert(arrayMap, db, "Zebra");
 		}
 		catch (Throwable e)
 		{
@@ -234,9 +211,20 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 	}
 
 
-	private static void insert(TreeSet<MarshalledKey> aMap, String aKey)
+	private static void insert(ArrayMap aArrayMap, TreeSet<MarshalledKey> aMap, String aKey)
 	{
+		aArrayMap.put(new ArrayMapEntry(new MarshalledKey(aKey.getBytes()).marshall(), new byte[0], (byte)0), null);
 		aMap.add(new MarshalledKey(aKey.getBytes()));
+		System.out.println(aArrayMap);
+		System.out.println(aMap);
+	}
+
+
+	private static void insert(ArrayMap aArrayMap, TreeSet<MarshalledKey> aMap)
+	{
+		aArrayMap.put(new ArrayMapEntry(new MarshalledKey(true).marshall(), new byte[0], (byte)0), null);
+		aMap.add(new MarshalledKey(true));
+		System.out.println(aArrayMap);
 		System.out.println(aMap);
 	}
 }

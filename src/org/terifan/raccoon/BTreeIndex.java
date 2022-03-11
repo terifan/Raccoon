@@ -20,14 +20,14 @@ public class BTreeIndex extends BTreeNode
 	}
 
 
-	boolean put(BTreeIndex aParent, ArrayMapEntry aEntry, MarshalledKey aKey, Result<ArrayMapEntry> aResult)
+	boolean put(BTreeIndex aParent, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
-		Entry<MarshalledKey, BTreeNode> child = mChildren.ceilingEntry(aKey);
+		Entry<MarshalledKey, BTreeNode> child = mChildren.higherEntry(MarshalledKey.unmarshall(aEntry.getKey()));
 
 		System.out.println(mChildren.size());
 		System.out.println(mChildren.firstKey());
 		System.out.println(mChildren.lastKey());
-		System.out.println(aKey);
+		System.out.println(MarshalledKey.unmarshall(aEntry.getKey()));
 		System.out.println(child);
 
 //		if (child == null)
@@ -43,7 +43,7 @@ public class BTreeIndex extends BTreeNode
 //			child.mMap = new ArrayMap(readBlock(bp));
 //		}
 
-		if (child.getValue().put(this, aEntry, aKey, aResult))
+		if (child.getValue().put(this, aEntry, aResult))
 		{
 			System.out.println("+");
 

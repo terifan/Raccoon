@@ -118,9 +118,7 @@ class BTreeTableImplementation extends TableImplementation
 
 		Result<ArrayMapEntry> result = new Result<>();
 
-		MarshalledKey key = new MarshalledKey(aEntry.getKey());
-
-		if (mRoot.put(null, aEntry, key, result))
+		if (mRoot.put(null, aEntry, result))
 		{
 			if (mRoot instanceof BTreeLeaf)
 			{

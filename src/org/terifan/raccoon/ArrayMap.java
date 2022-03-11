@@ -454,17 +454,33 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	private int compare(byte[] aBufferA, int aOffsetA, int aLengthA, byte[] aBufferB, int aOffsetB, int aLengthB)
 	{
-		for (int end = aOffsetA + Math.min(aLengthA, aLengthB); aOffsetA < end; aOffsetA++, aOffsetB++)
+		byte[] bufferA = aBufferA;
+		byte[] bufferB = aBufferB;
+
+		for (int i = 0, len = Math.min(aLengthA, aLengthB); i < len; i++)
 		{
-			byte a = aBufferA[aOffsetA];
-			byte b = aBufferB[aOffsetB];
-			if (a != b)
-			{
-				return (255 & a) - (255 & b);
-			}
+			byte a = bufferA[aOffsetA + i];
+			byte b = bufferB[aOffsetB + i];
+			if (a < b) return -1;
+			if (a > b) return 1;
 		}
 
-		return aLengthA - aLengthB;
+		if (aLengthA < aLengthB) return -1;
+		if (aLengthA > aLengthB) return 1;
+
+		return 0;
+
+//		for (int end = aOffsetA + Math.min(aLengthA, aLengthB); aOffsetA < end; aOffsetA++, aOffsetB++)
+//		{
+//			byte a = aBufferA[aOffsetA];
+//			byte b = aBufferB[aOffsetB];
+//			if (a != b)
+//			{
+//				return (255 & a) - (255 & b);
+//			}
+//		}
+//
+//		return aLengthA - aLengthB;
 	}
 
 
@@ -689,6 +705,8 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			ArrayMapEntry entry = new ArrayMapEntry();
 			entry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
 			loadValue(mIndex, entry);
+
+			System.out.println(mIndex+" "+entry);
 
 			mIndex++;
 

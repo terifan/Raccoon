@@ -3,6 +3,8 @@ package test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
+import org.terifan.raccoon.ArrayMap;
+import org.terifan.raccoon.ArrayMapEntry;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.ScanResult;
@@ -18,6 +20,7 @@ public class TestTiny
 	private static TreeRenderer mFrame = new TreeRenderer();
 	private static Random rnd = new Random(1);
 
+	private static ArrayMap arrayMap = new ArrayMap(1000);
 
 	public static void main(String... args)
 	{
@@ -34,29 +37,29 @@ public class TestTiny
 				insert(db, "a");
 				insert(db, "q");
 				insert(db, "l");
-				insert(db, "n");
-				insert(db, "x");
-				insert(db, "i");
-				insert(db, "j");
-				insert(db, "kkk");
-				insert(db, "m");
-				insert(db, "b");
-				insert(db, "ddd");
-				insert(db, "e");
-				insert(db, "f");
-				insert(db, "g");
-				insert(db, "r");
-				insert(db, "z");
-				insert(db, "y");
-				insert(db, "h");
-				insert(db, "w");
-				insert(db, "s");
-				insert(db, "t");
-				insert(db, "u");
-				insert(db, "v");
-				insert(db, "c");
-				insert(db, "p");
-				insert(db, "o");
+				insert(db, "nnn");
+//				insert(db, "x");
+//				insert(db, "i");
+//				insert(db, "j");
+//				insert(db, "kkk");
+//				insert(db, "m");
+//				insert(db, "b");
+//				insert(db, "ddd");
+//				insert(db, "e");
+//				insert(db, "f");
+//				insert(db, "g");
+//				insert(db, "r");
+//				insert(db, "z");
+//				insert(db, "y");
+//				insert(db, "h");
+//				insert(db, "w");
+//				insert(db, "s");
+//				insert(db, "t");
+//				insert(db, "u");
+//				insert(db, "v");
+//				insert(db, "c");
+//				insert(db, "p");
+//				insert(db, "o");
 
 //				insert(db, "Apple");
 //				insert(db, "Banana");
@@ -146,8 +149,12 @@ public class TestTiny
 
 	private static void insert(Database aDatabase, String aKey) throws IOException
 	{
-//		aDatabase.save(new KeyValue("__________".substring(aKey.length()) + aKey, Helper.createString(rnd)));
-		aDatabase.save(new KeyValue(aKey, Helper.createString(rnd)));
+		String value = Helper.createString(rnd);
+
+		arrayMap.put(new ArrayMapEntry(aKey.getBytes(), value.getBytes(), (byte)0), null);
+		System.out.println("arrayMap=" + arrayMap);
+
+		aDatabase.save(new KeyValue(aKey, value));
 		dump(aDatabase);
 	}
 

@@ -13,7 +13,7 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	boolean put(BTreeIndex aParent, ArrayMapEntry aEntry, MarshalledKey aKey, Result<ArrayMapEntry> aResult)
+	boolean put(BTreeIndex aParent, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
 		return !mMap.insert(aEntry, aResult);
 	}

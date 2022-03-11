@@ -11,7 +11,7 @@ abstract class BTreeNode
 	ArrayMap mMap;
 
 
-	abstract boolean put(BTreeIndex aParent, ArrayMapEntry aEntry, MarshalledKey aKey, Result<ArrayMapEntry> aResult);
+	abstract boolean put(BTreeIndex aParent, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult);
 
 
 	abstract BTreeNode[] split();
