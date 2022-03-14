@@ -1,7 +1,6 @@
 package test;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Random;
 import org.terifan.raccoon.ArrayMap;
 import org.terifan.raccoon.ArrayMapEntry;
@@ -12,12 +11,14 @@ import org.terifan.raccoon.annotations.Column;
 import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.annotations.Id;
-import org.terifan.raccoon.docs.TreeRenderer;
+import org.terifan.treegraph.TreeFrame;
+import org.terifan.treegraph.TreeRenderer;
+import org.terifan.treegraph.VerticalLayout;
 
 
 public class TestTiny
 {
-	private static TreeRenderer mFrame = new TreeRenderer();
+	private static TreeFrame mTreeFrame = new TreeFrame();
 	private static Random rnd = new Random(1);
 
 	private static ArrayMap arrayMap = new ArrayMap(1000);
@@ -143,7 +144,7 @@ public class TestTiny
 	{
 		String description = aDatabase.scan(new ScanResult()).getDescription();
 
-		mFrame.add(mFrame.render(new TreeRenderer.VerticalLayout(), mFrame.parse(description)));
+		mTreeFrame.add(new TreeRenderer(description).render(new VerticalLayout()));
 	}
 
 
