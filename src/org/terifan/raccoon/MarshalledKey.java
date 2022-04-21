@@ -1,14 +1,13 @@
 package org.terifan.raccoon;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.TreeSet;
 
 
 public class MarshalledKey implements Comparable<MarshalledKey>
 {
-	private static final byte PREV = (byte)0xfe;
-	private static final byte LAST = (byte)0xff;
+	private static final byte REAL = (byte)0xfe;
+	private static final byte FIRST = (byte)0xff;
 
 	private byte[] mBuffer;
 
@@ -25,25 +24,25 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 			throw new IllegalArgumentException();
 		}
 		mBuffer = Arrays.copyOfRange(aKey, 0, aKey.length + 1);
-		mBuffer[mBuffer.length - 1] = PREV;
+		mBuffer[mBuffer.length - 1] = REAL;
 	}
 
 
-	public MarshalledKey(boolean aFinalKey)
+	public MarshalledKey(boolean aFirstKey)
 	{
-		mBuffer = new byte[]{(byte)(aFinalKey ? LAST : PREV)};
+		mBuffer = new byte[]{(byte)(aFirstKey ? FIRST : REAL)};
 	}
 
 
-	public boolean isFinalKey()
+	public boolean isFirst()
 	{
-		return mBuffer[mBuffer.length - 1] == LAST;
+		return mBuffer[mBuffer.length - 1] == FIRST;
 	}
 
 
 	public byte[] getContent()
 	{
-		if (mBuffer[mBuffer.length - 1] != PREV && mBuffer[mBuffer.length - 1] != LAST)
+		if (mBuffer[mBuffer.length - 1] != REAL && mBuffer[mBuffer.length - 1] != FIRST)
 		{
 			throw new IllegalArgumentException();
 		}
@@ -53,7 +52,7 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 
 	public byte[] marshall()
 	{
-		if (mBuffer[mBuffer.length - 1] != PREV && mBuffer[mBuffer.length - 1] != LAST)
+		if (mBuffer[mBuffer.length - 1] != REAL && mBuffer[mBuffer.length - 1] != FIRST)
 		{
 			throw new IllegalArgumentException();
 		}
@@ -63,7 +62,7 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 
 	public static MarshalledKey unmarshall(byte[] aBuffer)
 	{
-		if (aBuffer[aBuffer.length - 1] != PREV && aBuffer[aBuffer.length - 1] != LAST)
+		if (aBuffer[aBuffer.length - 1] != REAL && aBuffer[aBuffer.length - 1] != FIRST)
 		{
 			throw new IllegalArgumentException();
 		}
@@ -79,8 +78,8 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 		byte[] other = aOther.mBuffer;
 		byte[] self = mBuffer;
 
-		if (self[self.length - 1] == LAST) {System.out.println("#");return other[other.length - 1] == LAST ? 0 : 1;}
-		if (other[other.length - 1] == LAST) {System.out.println("*");return -1;}
+		if (self[self.length - 1] == FIRST) {System.out.println("#");return other[other.length - 1] == FIRST ? 0 : 1;}
+		if (other[other.length - 1] == FIRST) {System.out.println("*");return -1;}
 
 		for (int i = 0, len = Math.min(self.length, other.length); i < len; i++)
 		{

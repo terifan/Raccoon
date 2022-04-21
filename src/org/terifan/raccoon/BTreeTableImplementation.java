@@ -158,7 +158,6 @@ class BTreeTableImplementation extends TableImplementation
 //
 //		mChanged |= changed;
 //		node.mChanged |= changed;
-
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
@@ -304,7 +303,6 @@ class BTreeTableImplementation extends TableImplementation
 //
 //			node.mBlockPointer = null;
 //		});
-
 		setupEmptyTable();
 
 		assert mModCount == modCount : "concurrent modification";
@@ -372,7 +370,6 @@ class BTreeTableImplementation extends TableImplementation
 //		}
 //
 //		return mDirectory.integrityCheck();
-
 		return null;
 	}
 
@@ -416,19 +413,20 @@ class BTreeTableImplementation extends TableImplementation
 				}
 				first = false;
 				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
-				aScanResult.log.append(key.isFinalKey()?"*":new String(key.getContent()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", ""));
+				aScanResult.log.append(key.isFirst() ? "*" : new String(key.getContent()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", ""));
 			}
-			aScanResult.log.append("'[");
+			aScanResult.log.append("'");
 
 			first = true;
+			aScanResult.log.append("[");
 			for (ArrayMapEntry entry : aNode.mMap)
 			{
+				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
 				if (!first)
 				{
 					aScanResult.log.append(",");
 				}
 				first = false;
-				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
 				BTreeNode node = ((BTreeIndex)aNode).mChildren.get(key);
 
 				if (node == null)
@@ -442,7 +440,6 @@ class BTreeTableImplementation extends TableImplementation
 
 				scan(node, aScanResult);
 			}
-
 			aScanResult.log.append("]");
 		}
 		else

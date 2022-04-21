@@ -459,8 +459,8 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 		for (int i = 0, len = Math.min(aLengthA, aLengthB); i < len; i++)
 		{
-			byte a = bufferA[aOffsetA + i];
-			byte b = bufferB[aOffsetB + i];
+			int a = 0xff & bufferA[aOffsetA + i];
+			int b = 0xff & bufferB[aOffsetB + i];
 			if (a < b) return -1;
 			if (a > b) return 1;
 		}

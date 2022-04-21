@@ -119,8 +119,8 @@ public class BTreeIndex extends BTreeNode
 			}
 		}
 
-		MarshalledKey keyA = MarshalledKey.unmarshall(midKeyBytes.getKey());
-		MarshalledKey keyB = new MarshalledKey(true);
+		MarshalledKey keyA = new MarshalledKey(true);
+		MarshalledKey keyB = MarshalledKey.unmarshall(midKeyBytes.getKey());
 
 		BTreeIndex newIndex = new BTreeIndex();
 		newIndex.mMap = new ArrayMap(mIndexSize);

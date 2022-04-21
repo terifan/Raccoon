@@ -39,10 +39,10 @@ public class TestTiny
 				insert(db, "q");
 				insert(db, "l");
 				insert(db, "nnn");
-//				insert(db, "x");
-//				insert(db, "i");
-//				insert(db, "j");
-//				insert(db, "kkk");
+				insert(db, "x");
+				insert(db, "i");
+				insert(db, "j");
+				insert(db, "kkk");
 //				insert(db, "m");
 //				insert(db, "b");
 //				insert(db, "ddd");
