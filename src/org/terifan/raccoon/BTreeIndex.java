@@ -16,19 +16,40 @@ public class BTreeIndex extends BTreeNode
 
 	BTreeIndex()
 	{
-		mChildren = new TreeMap<>();
+		mChildren = new TreeMap<>((o1, o2) -> o1.compareTo(o2));
 	}
 
 
 	boolean put(BTreeIndex aParent, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
-		Entry<MarshalledKey, BTreeNode> child = mChildren.higherEntry(MarshalledKey.unmarshall(aEntry.getKey()));
+//		Entry<MarshalledKey, BTreeNode> child = mChildren.higherEntry(MarshalledKey.unmarshall(aEntry.getKey()));
 
-		System.out.println(mChildren.size());
-		System.out.println(mChildren.firstKey());
-		System.out.println(mChildren.lastKey());
-		System.out.println(MarshalledKey.unmarshall(aEntry.getKey()));
-		System.out.println(child);
+		MarshalledKey putKey = MarshalledKey.unmarshall(aEntry.getKey());
+		MarshalledKey childKey = null;
+		MarshalledKey lastKey = null;
+
+		for (MarshalledKey compKey : mChildren.keySet())
+		{
+			lastKey = compKey;
+			System.out.println("---" + putKey + " " + compKey + " " + putKey.compareTo(compKey));
+			if (putKey.compareTo(compKey) <= 0)
+			{
+				break;
+			}
+			childKey = compKey;
+		}
+		if (childKey == null)
+		{
+			childKey = lastKey;
+		}
+
+		Log.hexDump(childKey.marshall());
+
+//		System.out.println(mChildren.size());
+//		System.out.println(mChildren.firstKey());
+//		System.out.println(mChildren.lastKey());
+//		System.out.println(MarshalledKey.unmarshall(aEntry.getKey()));
+		System.out.println(childKey);
 
 //		if (child == null)
 //		{
@@ -42,18 +63,29 @@ public class BTreeIndex extends BTreeNode
 //			child = BTreeNode.newNode(bp);
 //			child.mMap = new ArrayMap(readBlock(bp));
 //		}
+		BTreeNode childNode = mChildren.get(childKey);
 
-		if (child.getValue().put(this, aEntry, aResult))
+		if (childNode.put(this, aEntry, aResult))
 		{
-			System.out.println("+");
+			System.out.println("++++++++" + mMap);
+			System.out.println("++++++++" + childNode.mMap);
 
-			BTreeNode[] split = child.getValue().split();
+			BTreeNode[] split = childNode.split();
 
-			mChildren.put(MarshalledKey.unmarshall(split[1].mMap.getFirst().getKey()), split[0]);
-			mChildren.put(child.getKey(), split[1]);
+			System.out.println("--------" + split[0].mMap);
+			System.out.println("--------" + split[1].mMap);
 
-			mMap.insert(new ArrayMapEntry(split[1].mMap.getFirst().getKey(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x88), null);
-			mMap.insert(new ArrayMapEntry(child.getKey().marshall(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+			mChildren.remove(childKey);
+			mMap.remove(new ArrayMapEntry(childKey.marshall(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+
+			mChildren.put(MarshalledKey.unmarshall(split[0].mMap.getFirst().getKey()), split[0]);
+			mChildren.put(MarshalledKey.unmarshall(split[1].mMap.getFirst().getKey()), split[1]);
+
+			mMap.insert(new ArrayMapEntry(split[0].mMap.getFirst().getKey(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+			mMap.insert(new ArrayMapEntry(split[1].mMap.getFirst().getKey(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+
+			System.out.println("********" + mMap);
+			System.out.println("********" + mChildren.keySet());
 		}
 
 		return false;
@@ -119,7 +151,7 @@ public class BTreeIndex extends BTreeNode
 			}
 		}
 
-		MarshalledKey keyA = new MarshalledKey(true);
+		MarshalledKey keyA = MarshalledKey.unmarshall(a.mMap.getFirst().getKey());
 		MarshalledKey keyB = MarshalledKey.unmarshall(midKeyBytes.getKey());
 
 		BTreeIndex newIndex = new BTreeIndex();

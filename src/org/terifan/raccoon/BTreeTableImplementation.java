@@ -413,7 +413,8 @@ class BTreeTableImplementation extends TableImplementation
 				}
 				first = false;
 				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
-				aScanResult.log.append(key.isFirst() ? "*" : new String(key.getContent()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", ""));
+//				aScanResult.log.append(key.isFirst() ? "*" : new String(key.getContent()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", ""));
+				aScanResult.log.append(new String(key.marshall()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", ""));
 			}
 			aScanResult.log.append("'");
 
@@ -431,7 +432,7 @@ class BTreeTableImplementation extends TableImplementation
 
 				if (node == null)
 				{
-					throw new IllegalStateException();
+					throw new IllegalStateException("" + key + " " + aScanResult.log);
 //					BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
 //
 //					node = BTreeNode.newNode(bp);

@@ -6,8 +6,8 @@ import java.util.TreeSet;
 
 public class MarshalledKey implements Comparable<MarshalledKey>
 {
-	private static final byte REAL = (byte)0xfe;
-	private static final byte FIRST = (byte)0xff;
+//	private static final byte REAL = (byte)0xfe;
+//	private static final byte FIRST = (byte)0xff;
 
 	private byte[] mBuffer;
 
@@ -19,53 +19,54 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 
 	public MarshalledKey(byte[] aKey)
 	{
-		if (aKey[aKey.length - 1] == 0 || aKey[aKey.length - 1] == 1)
-		{
-			throw new IllegalArgumentException();
-		}
-		mBuffer = Arrays.copyOfRange(aKey, 0, aKey.length + 1);
-		mBuffer[mBuffer.length - 1] = REAL;
+//		if (aKey[aKey.length - 1] == 0 || aKey[aKey.length - 1] == 1)
+//		{
+//			throw new IllegalArgumentException();
+//		}
+//		mBuffer = Arrays.copyOfRange(aKey, 0, aKey.length + 1);
+//		mBuffer[mBuffer.length - 1] = REAL;
+		mBuffer = aKey.clone();
 	}
 
 
-	public MarshalledKey(boolean aFirstKey)
-	{
-		mBuffer = new byte[]{(byte)(aFirstKey ? FIRST : REAL)};
-	}
+//	public MarshalledKey(boolean aFirstKey)
+//	{
+//		mBuffer = new byte[]{(byte)(aFirstKey ? FIRST : REAL)};
+//	}
 
 
-	public boolean isFirst()
-	{
-		return mBuffer[mBuffer.length - 1] == FIRST;
-	}
+//	public boolean isFirst()
+//	{
+//		return mBuffer[mBuffer.length - 1] == FIRST;
+//	}
 
 
-	public byte[] getContent()
-	{
-		if (mBuffer[mBuffer.length - 1] != REAL && mBuffer[mBuffer.length - 1] != FIRST)
-		{
-			throw new IllegalArgumentException();
-		}
-		return Arrays.copyOfRange(mBuffer, 0, mBuffer.length - 1);
-	}
+//	public byte[] getContent()
+//	{
+//		if (mBuffer[mBuffer.length - 1] != REAL && mBuffer[mBuffer.length - 1] != FIRST)
+//		{
+//			throw new IllegalArgumentException();
+//		}
+//		return Arrays.copyOfRange(mBuffer, 0, mBuffer.length - 1);
+//	}
 
 
 	public byte[] marshall()
 	{
-		if (mBuffer[mBuffer.length - 1] != REAL && mBuffer[mBuffer.length - 1] != FIRST)
-		{
-			throw new IllegalArgumentException();
-		}
+//		if (mBuffer[mBuffer.length - 1] != REAL && mBuffer[mBuffer.length - 1] != FIRST)
+//		{
+//			throw new IllegalArgumentException();
+//		}
 		return mBuffer.clone();
 	}
 
 
 	public static MarshalledKey unmarshall(byte[] aBuffer)
 	{
-		if (aBuffer[aBuffer.length - 1] != REAL && aBuffer[aBuffer.length - 1] != FIRST)
-		{
-			throw new IllegalArgumentException();
-		}
+//		if (aBuffer[aBuffer.length - 1] != REAL && aBuffer[aBuffer.length - 1] != FIRST)
+//		{
+//			throw new IllegalArgumentException();
+//		}
 		MarshalledKey k = new MarshalledKey();
 		k.mBuffer = aBuffer;
 		return k;
@@ -78,16 +79,12 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 		byte[] other = aOther.mBuffer;
 		byte[] self = mBuffer;
 
-		if (self[self.length - 1] == FIRST) {System.out.println("#");return other[other.length - 1] == FIRST ? 0 : 1;}
-		if (other[other.length - 1] == FIRST) {System.out.println("*");return -1;}
-
 		for (int i = 0, len = Math.min(self.length, other.length); i < len; i++)
 		{
-			int c = self[i] - other[i];
-			if (c != 0)
-			{
-				return c;
-			}
+			int a = 0xff & self[i];
+			int b = 0xff & other[i];
+			if (a < b) return -1;
+			if (a > b) return 1;
 		}
 
 		if (self.length > other.length) return 1;
@@ -141,11 +138,18 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 	{
 		try
 		{
+			MarshalledKey a = new MarshalledKey("Apple".getBytes());
+			MarshalledKey b = new MarshalledKey("Banana".getBytes());
+			System.out.println(a.compareTo(b));
+			System.out.println(b.compareTo(a));
+
+			MarshalledKey c = new MarshalledKey("send".getBytes());
+			MarshalledKey d = new MarshalledKey("sender".getBytes());
+			System.out.println(c.compareTo(d));
+			System.out.println(d.compareTo(c));
+
 			ArrayMap arrayMap = new ArrayMap(1000);
 			TreeSet<MarshalledKey> db = new TreeSet<>();
-
-//			insert(arrayMap, db, "n");
-//			insert(arrayMap, db);
 
 //			insert(arrayMap, db, "a");
 //			insert(arrayMap, db, "q");
@@ -174,34 +178,32 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 //			insert(arrayMap, db, "p");
 //			insert(arrayMap, db, "o");
 
-//
-
-			insert(arrayMap, db, "Banana");
-			insert(arrayMap, db, "Nose");
-			insert(arrayMap, db, "Urban");
-			insert(arrayMap, db, "Vapor");
-			insert(arrayMap, db, "Gloves");
-			insert(arrayMap, db, "Female");
-			insert(arrayMap, db, "Mango");
-			insert(arrayMap, db, "Xenon");
-			insert(arrayMap, db, "Yellow");
-			insert(arrayMap, db, "Open");
-			insert(arrayMap, db, "Japanese");
-			insert(arrayMap, db, "Knife");
-			insert(arrayMap, db, "Apple");
-			insert(arrayMap, db, "Dove");
-			insert(arrayMap, db, "Ear");
-			insert(arrayMap, db, "Leap");
-			insert(arrayMap, db, "Quality");
-			insert(arrayMap, db, "Head");
-			insert(arrayMap, db, "Rupee");
-			insert(arrayMap, db, "Whale");
-			insert(arrayMap, db, "Turquoise");
-			insert(arrayMap, db, "Circus");
-			insert(arrayMap, db, "Internal");
-			insert(arrayMap, db, "Jalapeno");
-			insert(arrayMap, db, "Silver");
-			insert(arrayMap, db, "Zebra");
+//			insert(arrayMap, db, "Banana");
+//			insert(arrayMap, db, "Nose");
+//			insert(arrayMap, db, "Urban");
+//			insert(arrayMap, db, "Vapor");
+//			insert(arrayMap, db, "Gloves");
+//			insert(arrayMap, db, "Female");
+//			insert(arrayMap, db, "Mango");
+//			insert(arrayMap, db, "Xenon");
+//			insert(arrayMap, db, "Yellow");
+//			insert(arrayMap, db, "Open");
+//			insert(arrayMap, db, "Japanese");
+//			insert(arrayMap, db, "Knife");
+//			insert(arrayMap, db, "Apple");
+//			insert(arrayMap, db, "Dove");
+//			insert(arrayMap, db, "Ear");
+//			insert(arrayMap, db, "Leap");
+//			insert(arrayMap, db, "Quality");
+//			insert(arrayMap, db, "Head");
+//			insert(arrayMap, db, "Rupee");
+//			insert(arrayMap, db, "Whale");
+//			insert(arrayMap, db, "Turquoise");
+//			insert(arrayMap, db, "Circus");
+//			insert(arrayMap, db, "Internal");
+//			insert(arrayMap, db, "Jalapeno");
+//			insert(arrayMap, db, "Silver");
+//			insert(arrayMap, db, "Zebra");
 		}
 		catch (Throwable e)
 		{
@@ -219,11 +221,11 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 	}
 
 
-	private static void insert(ArrayMap aArrayMap, TreeSet<MarshalledKey> aMap)
-	{
-		aArrayMap.put(new ArrayMapEntry(new MarshalledKey(true).marshall(), new byte[0], (byte)0), null);
-		aMap.add(new MarshalledKey(true));
-		System.out.println(aArrayMap);
-		System.out.println(aMap);
-	}
+//	private static void insert(ArrayMap aArrayMap, TreeSet<MarshalledKey> aMap)
+//	{
+//		aArrayMap.put(new ArrayMapEntry(new MarshalledKey(true).marshall(), new byte[0], (byte)0), null);
+//		aMap.add(new MarshalledKey(true));
+//		System.out.println(aArrayMap);
+//		System.out.println(aMap);
+//	}
 }

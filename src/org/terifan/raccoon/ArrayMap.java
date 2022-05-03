@@ -184,6 +184,8 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	 */
 	public boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
+//		System.out.println("#######################"+this);
+
 		byte[] key = aEntry.getKey();
 		int valueLength = aEntry.getMarshalledValueLength();
 		int keyLength = key.length;
@@ -264,6 +266,8 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 		assert integrityCheck() == null : integrityCheck();
 		assert mModCount == modCount : mModCount + " == " + modCount;
+
+//		System.out.println("***********************"+this);
 
 		return true;
 	}
@@ -432,7 +436,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			int keyOffset = readKeyOffset(entryOffset);
 			int keyLength = readKeyLength(entryOffset);
 
-			int cmp = compare(aKey, 0, aKey.length, mBuffer, mStartOffset + keyOffset, keyLength);
+			int cmp = compare(aKey, 2, aKey.length-2, mBuffer, mStartOffset + keyOffset+2, keyLength-2);
 
 			if (cmp > 0)
 			{
@@ -461,8 +465,14 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		{
 			int a = 0xff & bufferA[aOffsetA + i];
 			int b = 0xff & bufferB[aOffsetB + i];
+//			System.out.println(">>>>>"+a+" "+b);
 			if (a < b) return -1;
 			if (a > b) return 1;
+//			int c = (0xff & bufferA[aOffsetA + i]) - (0xff & bufferB[aOffsetB + i]);
+//			if (c != 0)
+//			{
+//				return c;
+//			}
 		}
 
 		if (aLengthA < aLengthB) return -1;
@@ -706,7 +716,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			entry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
 			loadValue(mIndex, entry);
 
-			System.out.println(mIndex+" "+entry);
+//			System.out.println(mIndex+" "+entry);
 
 			mIndex++;
 

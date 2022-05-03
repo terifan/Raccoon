@@ -21,7 +21,7 @@ public class TestTiny
 	private static TreeFrame mTreeFrame = new TreeFrame();
 	private static Random rnd = new Random(1);
 
-	private static ArrayMap arrayMap = new ArrayMap(1000);
+//	private static ArrayMap arrayMap = new ArrayMap(1000);
 
 	public static void main(String... args)
 	{
@@ -35,14 +35,14 @@ public class TestTiny
 			{
 //				db.save(new Document().put("id",123).put("name","olle"));
 
-				insert(db, "a");
-				insert(db, "q");
-				insert(db, "l");
-				insert(db, "nnn");
-				insert(db, "x");
-				insert(db, "i");
-				insert(db, "j");
-				insert(db, "kkk");
+//				insert(db, "a");
+//				insert(db, "q");
+//				insert(db, "l");
+//				insert(db, "nnn");
+//				insert(db, "x");
+//				insert(db, "i");
+//				insert(db, "j");
+//				insert(db, "kkk");
 //				insert(db, "m");
 //				insert(db, "b");
 //				insert(db, "ddd");
@@ -62,32 +62,32 @@ public class TestTiny
 //				insert(db, "p");
 //				insert(db, "o");
 
-//				insert(db, "Apple");
-//				insert(db, "Banana");
-//				insert(db, "Circus");
-//				insert(db, "Dove");
+				insert(db, "Circus");
+				insert(db, "Banana");
+				insert(db, "Whale");
+				insert(db, "Xenon");
+				insert(db, "Open");
+				insert(db, "Rupee");
+				insert(db, "Silver");
+//				insert(db, "Leap");
 //				insert(db, "Ear");
-//				insert(db, "Female");
+//				insert(db, "Apple");
+//				insert(db, "Yellow");
+//				insert(db, "Turquoise");
+//				insert(db, "Japanese");
+//				insert(db, "Quality");
+//				insert(db, "Nose");
 //				insert(db, "Gloves");
 //				insert(db, "Head");
+//				insert(db, "Zebra");
+//				insert(db, "Female");
 //				insert(db, "Internal");
 //				insert(db, "Jalapeno");
-//				insert(db, "Japanese");
-//				insert(db, "Knife");
-//				insert(db, "Leap");
-//				insert(db, "Mango");
-//				insert(db, "Nose");
-//				insert(db, "Open");
-//				insert(db, "Quality");
-//				insert(db, "Rupee");
-//				insert(db, "Silver");
-//				insert(db, "Turquoise");
 //				insert(db, "Urban");
 //				insert(db, "Vapor");
-//				insert(db, "Whale");
-//				insert(db, "Xenon");
-//				insert(db, "Yellow");
-//				insert(db, "Zebra");
+//				insert(db, "Dove");
+//				insert(db, "Mango");
+//				insert(db, "Knife");
 
 //				db.list(KeyValue.class).forEach(System.out::println);
 
@@ -152,8 +152,8 @@ public class TestTiny
 	{
 		String value = Helper.createString(rnd);
 
-		arrayMap.put(new ArrayMapEntry(aKey.getBytes(), value.getBytes(), (byte)0), null);
-		System.out.println("arrayMap=" + arrayMap);
+//		arrayMap.put(new ArrayMapEntry(aKey.getBytes(), value.getBytes(), (byte)0), null);
+//		System.out.println("arrayMap=" + arrayMap);
 
 		aDatabase.save(new KeyValue(aKey, value));
 		dump(aDatabase);
