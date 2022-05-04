@@ -73,8 +73,8 @@ public class BTreeIndex extends BTreeNode
 
 			BTreeNode[] split = childNode.split();
 
-//			System.out.println("--------" + split[0].mMap);
-//			System.out.println("--------" + split[1].mMap);
+			System.out.println("--------" + split[0].mMap);
+			System.out.println("--------" + split[1].mMap);
 
 			mChildren.remove(childKey);
 			mMap.remove(new ArrayMapEntry(childKey.marshall(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
@@ -110,7 +110,7 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	BTreeNode[] split()
 	{
-		ArrayMap[] maps = mMap.split();
+		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mIndexSize);
 
 		BTreeIndex a = new BTreeIndex();
 		BTreeIndex b = new BTreeIndex();
@@ -142,7 +142,7 @@ public class BTreeIndex extends BTreeNode
 
 	BTreeNode grow()
 	{
-		ArrayMap[] maps = mMap.split();
+		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mIndexSize);
 
 		BTreeIndex a = new BTreeIndex();
 		BTreeIndex b = new BTreeIndex();

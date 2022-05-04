@@ -780,10 +780,10 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public ArrayMap[] split()
+	public ArrayMap[] split(int aCapacity)
 	{
-		ArrayMap low = new ArrayMap(mCapacity);
-		ArrayMap high = new ArrayMap(mCapacity);
+		ArrayMap low = new ArrayMap(aCapacity);
+		ArrayMap high = new ArrayMap(aCapacity);
 		ArrayMapEntry tmp = new ArrayMapEntry();
 
 		for (int i = 0, j = mEntryCount; i < j; )

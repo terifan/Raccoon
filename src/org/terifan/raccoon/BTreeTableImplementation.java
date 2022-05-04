@@ -15,8 +15,8 @@ import org.terifan.raccoon.util.Result;
 class BTreeTableImplementation extends TableImplementation
 {
 	static byte[] POINTER_PLACEHOLDER = new byte[BlockPointer.SIZE];
-	static int mIndexSize = 450;
-	static int mLeafSize = 250;
+	static int mIndexSize = 512;
+	static int mLeafSize = 1024;
 
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
