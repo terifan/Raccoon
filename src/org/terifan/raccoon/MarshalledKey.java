@@ -216,8 +216,8 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 	{
 		aArrayMap.put(new ArrayMapEntry(new MarshalledKey(aKey.getBytes()).marshall(), new byte[0], (byte)0), null);
 		aMap.add(new MarshalledKey(aKey.getBytes()));
-		System.out.println(aArrayMap);
-		System.out.println(aMap);
+//		System.out.println(aArrayMap);
+//		System.out.println(aMap);
 	}
 
 

@@ -184,8 +184,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	 */
 	public boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
-//		System.out.println("#######################"+this);
-
 		byte[] key = aEntry.getKey();
 		int valueLength = aEntry.getMarshalledValueLength();
 		int keyLength = key.length;
@@ -266,8 +264,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 		assert integrityCheck() == null : integrityCheck();
 		assert mModCount == modCount : mModCount + " == " + modCount;
-
-//		System.out.println("***********************"+this);
 
 		return true;
 	}
@@ -436,7 +432,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			int keyOffset = readKeyOffset(entryOffset);
 			int keyLength = readKeyLength(entryOffset);
 
-			int cmp = compare(aKey, 2, aKey.length-2, mBuffer, mStartOffset + keyOffset+2, keyLength-2);
+			int cmp = compare(aKey, 0, aKey.length, mBuffer, mStartOffset + keyOffset, keyLength);
 
 			if (cmp > 0)
 			{
@@ -458,39 +454,38 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	private int compare(byte[] aBufferA, int aOffsetA, int aLengthA, byte[] aBufferB, int aOffsetB, int aLengthB)
 	{
-		byte[] bufferA = aBufferA;
-		byte[] bufferB = aBufferB;
-
-		for (int i = 0, len = Math.min(aLengthA, aLengthB); i < len; i++)
-		{
-			int a = 0xff & bufferA[aOffsetA + i];
-			int b = 0xff & bufferB[aOffsetB + i];
-//			System.out.println(">>>>>"+a+" "+b);
-			if (a < b) return -1;
-			if (a > b) return 1;
-//			int c = (0xff & bufferA[aOffsetA + i]) - (0xff & bufferB[aOffsetB + i]);
-//			if (c != 0)
-//			{
-//				return c;
-//			}
-		}
-
-		if (aLengthA < aLengthB) return -1;
-		if (aLengthA > aLengthB) return 1;
-
-		return 0;
-
-//		for (int end = aOffsetA + Math.min(aLengthA, aLengthB); aOffsetA < end; aOffsetA++, aOffsetB++)
+//		byte[] bufferA = aBufferA;
+//		byte[] bufferB = aBufferB;
+//
+//		for (int i = 0, len = Math.min(aLengthA, aLengthB); i < len; i++)
 //		{
-//			byte a = aBufferA[aOffsetA];
-//			byte b = aBufferB[aOffsetB];
-//			if (a != b)
-//			{
-//				return (255 & a) - (255 & b);
-//			}
+//			int a = 0xff & bufferA[aOffsetA + i];
+//			int b = 0xff & bufferB[aOffsetB + i];
+//			if (a < b) return -1;
+//			if (a > b) return 1;
+////			int c = (0xff & bufferA[aOffsetA + i]) - (0xff & bufferB[aOffsetB + i]);
+////			if (c != 0)
+////			{
+////				return c;
+////			}
 //		}
 //
-//		return aLengthA - aLengthB;
+//		if (aLengthA < aLengthB) return -1;
+//		if (aLengthA > aLengthB) return 1;
+//
+//		return 0;
+
+		for (int end = aOffsetA + Math.min(aLengthA, aLengthB); aOffsetA < end; aOffsetA++, aOffsetB++)
+		{
+			byte a = aBufferA[aOffsetA];
+			byte b = aBufferB[aOffsetB];
+			if (a != b)
+			{
+				return (255 & a) - (255 & b);
+			}
+		}
+
+		return aLengthA - aLengthB;
 	}
 
 

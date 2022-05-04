@@ -2,12 +2,10 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import org.terifan.raccoon.ArrayMap.NearResult;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -17,8 +15,8 @@ import org.terifan.raccoon.util.Result;
 class BTreeTableImplementation extends TableImplementation
 {
 	static byte[] POINTER_PLACEHOLDER = new byte[BlockPointer.SIZE];
-	static int mIndexSize = 800;
-	static int mLeafSize = 512;
+	static int mIndexSize = 450;
+	static int mLeafSize = 250;
 
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
@@ -105,6 +103,8 @@ class BTreeTableImplementation extends TableImplementation
 	{
 		checkOpen();
 
+aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
+
 		aEntry = new ArrayMapEntry(new MarshalledKey(aEntry.getKey()).marshall(), aEntry.getValue(), aEntry.getType());
 
 		if (aEntry.getKey().length + aEntry.getValue().length > getEntrySizeLimit())
@@ -122,12 +122,12 @@ class BTreeTableImplementation extends TableImplementation
 		{
 			if (mRoot instanceof BTreeLeaf)
 			{
-				System.out.println("!");
+//				System.out.println("!");
 				mRoot = ((BTreeLeaf)mRoot).upgrade();
 			}
 			else
 			{
-				System.out.println("*");
+//				System.out.println("*");
 				mRoot = ((BTreeIndex)mRoot).grow();
 			}
 		}
@@ -145,6 +145,8 @@ class BTreeTableImplementation extends TableImplementation
 	public ArrayMapEntry remove(ArrayMapEntry aEntry)
 	{
 		checkOpen();
+
+aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		int modCount = ++mModCount;
 		Log.i("put");

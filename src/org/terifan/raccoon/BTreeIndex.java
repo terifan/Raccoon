@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import static org.terifan.raccoon.BTreeTableImplementation.POINTER_PLACEHOLDER;
@@ -31,7 +31,7 @@ public class BTreeIndex extends BTreeNode
 		for (MarshalledKey compKey : mChildren.keySet())
 		{
 			lastKey = compKey;
-			System.out.println("---" + putKey + " " + compKey + " " + putKey.compareTo(compKey));
+//			System.out.println("---" + putKey + " " + compKey + " " + putKey.compareTo(compKey));
 			if (putKey.compareTo(compKey) <= 0)
 			{
 				break;
@@ -43,13 +43,13 @@ public class BTreeIndex extends BTreeNode
 			childKey = lastKey;
 		}
 
-		Log.hexDump(childKey.marshall());
+//		System.out.println(mMap+" "+mMap.getFreeSpace());
 
 //		System.out.println(mChildren.size());
 //		System.out.println(mChildren.firstKey());
 //		System.out.println(mChildren.lastKey());
 //		System.out.println(MarshalledKey.unmarshall(aEntry.getKey()));
-		System.out.println(childKey);
+//		System.out.println(childKey);
 
 //		if (child == null)
 //		{
@@ -63,17 +63,18 @@ public class BTreeIndex extends BTreeNode
 //			child = BTreeNode.newNode(bp);
 //			child.mMap = new ArrayMap(readBlock(bp));
 //		}
+
 		BTreeNode childNode = mChildren.get(childKey);
 
 		if (childNode.put(this, aEntry, aResult))
 		{
-			System.out.println("++++++++" + mMap);
-			System.out.println("++++++++" + childNode.mMap);
+//			System.out.println("++++++++" + mMap);
+//			System.out.println("++++++++" + childNode.mMap);
 
 			BTreeNode[] split = childNode.split();
 
-			System.out.println("--------" + split[0].mMap);
-			System.out.println("--------" + split[1].mMap);
+//			System.out.println("--------" + split[0].mMap);
+//			System.out.println("--------" + split[1].mMap);
 
 			mChildren.remove(childKey);
 			mMap.remove(new ArrayMapEntry(childKey.marshall(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
@@ -81,11 +82,25 @@ public class BTreeIndex extends BTreeNode
 			mChildren.put(MarshalledKey.unmarshall(split[0].mMap.getFirst().getKey()), split[0]);
 			mChildren.put(MarshalledKey.unmarshall(split[1].mMap.getFirst().getKey()), split[1]);
 
-			mMap.insert(new ArrayMapEntry(split[0].mMap.getFirst().getKey(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
-			mMap.insert(new ArrayMapEntry(split[1].mMap.getFirst().getKey(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+			boolean overflow = !mMap.insert(new ArrayMapEntry(split[0].mMap.getFirst().getKey(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+			overflow |= !mMap.insert(new ArrayMapEntry(split[1].mMap.getFirst().getKey(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
 
-			System.out.println("********" + mMap);
-			System.out.println("********" + mChildren.keySet());
+			return overflow;
+
+//			System.out.println("********" + mMap);
+//			System.out.println("********" + mChildren.keySet());
+		}
+		else
+		{
+			if (Arrays.compare(aEntry.getKey(), mMap.getFirst().getKey()) < 0)
+			{
+				mChildren.remove(childKey);
+				mMap.remove(new ArrayMapEntry(childKey.marshall(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+
+				mChildren.put(MarshalledKey.unmarshall(childNode.mMap.getFirst().getKey()), childNode);
+
+				mMap.insert(new ArrayMapEntry(childNode.mMap.getFirst().getKey(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+			}
 		}
 
 		return false;
