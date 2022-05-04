@@ -11,14 +11,14 @@ import org.terifan.raccoon.annotations.Column;
 import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.annotations.Id;
-import org.terifan.treegraph.TreeFrame;
 import org.terifan.treegraph.TreeRenderer;
 import org.terifan.treegraph.VerticalLayout;
+import org.terifan.treegraph.util.VerticalImageFrame;
 
 
 public class TestTiny
 {
-	private static TreeFrame mTreeFrame = new TreeFrame();
+	private static VerticalImageFrame mTreeFrame = new VerticalImageFrame();
 	private static Random rnd = new Random(1);
 
 //	private static ArrayMap arrayMap = new ArrayMap(1000);
