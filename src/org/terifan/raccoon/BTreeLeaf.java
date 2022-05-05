@@ -13,6 +13,13 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
+	boolean get(ArrayMapEntry aEntry)
+	{
+		return !mMap.get(aEntry);
+	}
+
+
+	@Override
 	boolean put(BTreeIndex aParent, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
 		return !mMap.insert(aEntry, aResult);
@@ -50,12 +57,6 @@ public class BTreeLeaf extends BTreeNode
 
 		ArrayMapEntry bk = new ArrayMapEntry();
 		b.mMap.get(0, bk);
-
-//		ArrayMapEntry midKeyBytes = new ArrayMapEntry();
-//		b.mMap.get(0, midKeyBytes);
-//
-//		MarshalledKey keyA = new MarshalledKey(true);
-//		MarshalledKey keyB = MarshalledKey.unmarshall(midKeyBytes.getKey());
 
 		MarshalledKey keyA = MarshalledKey.unmarshall(ak.getKey());
 		MarshalledKey keyB = MarshalledKey.unmarshall(bk.getKey());

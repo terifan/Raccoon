@@ -350,7 +350,7 @@ public class ITableImplementationNGTest
 	@DataProvider(name="tableTypes")
 	private Object[][] tableTypes()
 	{
-		return new Object[][]{{ExtendibleHashTableImplementation.class}};
+		return new Object[][]{{ExtendibleHashTableImplementation.class}, {BTreeTableImplementation.class}};
 	}
 
 

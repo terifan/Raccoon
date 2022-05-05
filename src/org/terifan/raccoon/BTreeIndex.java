@@ -20,7 +20,8 @@ public class BTreeIndex extends BTreeNode
 	}
 
 
-	boolean put(BTreeIndex aParent, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	@Override
+	boolean get(ArrayMapEntry aEntry)
 	{
 //		Entry<MarshalledKey, BTreeNode> child = mChildren.higherEntry(MarshalledKey.unmarshall(aEntry.getKey()));
 
@@ -31,7 +32,6 @@ public class BTreeIndex extends BTreeNode
 		for (MarshalledKey compKey : mChildren.keySet())
 		{
 			lastKey = compKey;
-//			System.out.println("---" + putKey + " " + compKey + " " + putKey.compareTo(compKey));
 			if (putKey.compareTo(compKey) <= 0)
 			{
 				break;
@@ -43,34 +43,39 @@ public class BTreeIndex extends BTreeNode
 			childKey = lastKey;
 		}
 
-//		System.out.println(mMap+" "+mMap.getFreeSpace());
+		BTreeNode childNode = mChildren.get(childKey);
 
-//		System.out.println(mChildren.size());
-//		System.out.println(mChildren.firstKey());
-//		System.out.println(mChildren.lastKey());
-//		System.out.println(MarshalledKey.unmarshall(aEntry.getKey()));
-//		System.out.println(childKey);
+		return childNode.get(aEntry);
+	}
 
-//		if (child == null)
-//		{
-//			int index = aParent.mMap.indexOf(aEntry.getKey());
-//
-//			ArrayMapEntry entry = new ArrayMapEntry();
-//			((BTreeIndex)aParent).mMap.get(index, entry);
-//
-//			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(aKey.key));
-//
-//			child = BTreeNode.newNode(bp);
-//			child.mMap = new ArrayMap(readBlock(bp));
-//		}
+
+	@Override
+	boolean put(BTreeIndex aParent, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	{
+//		Entry<MarshalledKey, BTreeNode> child = mChildren.higherEntry(MarshalledKey.unmarshall(aEntry.getKey()));
+
+		MarshalledKey putKey = MarshalledKey.unmarshall(aEntry.getKey());
+		MarshalledKey childKey = null;
+		MarshalledKey lastKey = null;
+
+		for (MarshalledKey compKey : mChildren.keySet())
+		{
+			lastKey = compKey;
+			if (putKey.compareTo(compKey) <= 0)
+			{
+				break;
+			}
+			childKey = compKey;
+		}
+		if (childKey == null)
+		{
+			childKey = lastKey;
+		}
 
 		BTreeNode childNode = mChildren.get(childKey);
 
 		if (childNode.put(this, aEntry, aResult))
 		{
-//			System.out.println("++++++++" + mMap);
-//			System.out.println("++++++++" + childNode.mMap);
-
 			BTreeNode[] split = childNode.split();
 
 			System.out.println("--------" + split[0].mMap);
@@ -86,9 +91,6 @@ public class BTreeIndex extends BTreeNode
 			overflow |= !mMap.insert(new ArrayMapEntry(split[1].mMap.getFirst().getKey(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
 
 			return overflow;
-
-//			System.out.println("********" + mMap);
-//			System.out.println("********" + mChildren.keySet());
 		}
 		else
 		{

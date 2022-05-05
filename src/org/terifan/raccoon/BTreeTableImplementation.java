@@ -94,7 +94,11 @@ class BTreeTableImplementation extends TableImplementation
 	{
 		checkOpen();
 
-		return mRoot.mMap.get(aEntry);
+aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
+
+		aEntry = new ArrayMapEntry(new MarshalledKey(aEntry.getKey()).marshall(), aEntry.getValue(), aEntry.getType());
+
+		return mRoot.get(aEntry);
 	}
 
 
@@ -122,12 +126,10 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 		{
 			if (mRoot instanceof BTreeLeaf)
 			{
-//				System.out.println("!");
 				mRoot = ((BTreeLeaf)mRoot).upgrade();
 			}
 			else
 			{
-//				System.out.println("*");
 				mRoot = ((BTreeIndex)mRoot).grow();
 			}
 		}
@@ -379,7 +381,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	@Override
 	public int getEntrySizeLimit()
 	{
-		return mLeafSize / 2;
+		return mLeafSize / 3;
 	}
 
 

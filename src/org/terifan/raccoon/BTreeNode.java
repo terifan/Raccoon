@@ -11,6 +11,9 @@ abstract class BTreeNode
 	ArrayMap mMap;
 
 
+	abstract boolean get(ArrayMapEntry aEntry);
+
+
 	abstract boolean put(BTreeIndex aParent, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult);
 
 
