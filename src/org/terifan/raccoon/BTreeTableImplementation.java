@@ -96,8 +96,6 @@ class BTreeTableImplementation extends TableImplementation
 
 aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
-		aEntry = new ArrayMapEntry(new MarshalledKey(aEntry.getKey()).marshall(), aEntry.getValue(), aEntry.getType());
-
 		return mRoot.get(aEntry);
 	}
 

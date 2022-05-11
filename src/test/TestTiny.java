@@ -23,33 +23,33 @@ public class TestTiny
 
 //	private static ArrayMap arrayMap = new ArrayMap(1000);
 
-	public static void main(String ... args)
-	{
-		try
-		{
-			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+//	public static void main(String ... args)
+//	{
+//		try
+//		{
+//			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+//
+//			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
+//			{
+//				String key = "alpha";
+//				String value = Helper.createString(rnd);
+//
+//				db.save(new KeyValue(key, value));
+//
+//				KeyValue out = db.get(new KeyValue(key));
+//
+//				System.out.println(out);
+//
+//				dump(db);
+//			}
+//		}
+//		catch (Throwable e)
+//		{
+//			e.printStackTrace(System.out);
+//		}
+//	}
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
-			{
-				String key = "alpha";
-				String value = Helper.createString(rnd);
-
-				db.save(new KeyValue(key, value));
-
-				KeyValue out = db.get(new KeyValue(key));
-
-				System.out.println(out);
-
-				dump(db);
-			}
-		}
-		catch (Throwable e)
-		{
-			e.printStackTrace(System.out);
-		}
-	}
-
-	public static void xmain(String... args)
+	public static void main(String... args)
 	{
 		try
 		{
@@ -235,6 +235,9 @@ public class TestTiny
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
 			{
 //				db.list(KeyValue.class).forEach(System.out::print);
+
+				KeyValue value = db.get(new KeyValue("Goofer"));
+				System.out.println(value);
 			}
 
 //			System.out.println();

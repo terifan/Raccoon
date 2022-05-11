@@ -100,6 +100,6 @@ public final class ArrayMapEntry
 	@Override
 	public String toString()
 	{
-		return "ArrayMapEntry{" + "mType=" + mType + ", mKey=\"" + new String(mKey).replaceAll("[^\\w]*", "") + "\", mValue=\"" + new String(mValue).replaceAll("[^\\w]*", "") + "\"}";
+		return "ArrayMapEntry{" + "mType=" + mType + ", mKey=" + (mKey == null ? "null" : "\"" + new String(mKey).replaceAll("[^\\w]*", "") + "\"") + ", mValue=" + (mValue == null ? "null" : "\"" + new String(mValue).replaceAll("[^\\w]*", "") + "\"") + "}";
 	}
 }

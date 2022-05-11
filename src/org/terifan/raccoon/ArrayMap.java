@@ -6,6 +6,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.terifan.raccoon.util.ByteArrayUtil;
+import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 
 

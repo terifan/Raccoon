@@ -2,6 +2,7 @@ package org.terifan.raccoon;
 
 import static org.terifan.raccoon.BTreeTableImplementation.POINTER_PLACEHOLDER;
 import static org.terifan.raccoon.BTreeTableImplementation.mIndexSize;
+import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 
 
@@ -15,7 +16,7 @@ public class BTreeLeaf extends BTreeNode
 	@Override
 	boolean get(ArrayMapEntry aEntry)
 	{
-		return !mMap.get(aEntry);
+		return mMap.get(aEntry);
 	}
 
 
