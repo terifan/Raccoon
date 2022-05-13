@@ -25,6 +25,8 @@ public class BTreeIndex extends BTreeNode
 	{
 //		Entry<MarshalledKey, BTreeNode> child = mChildren.higherEntry(MarshalledKey.unmarshall(aEntry.getKey()));
 
+//		System.out.println("index " + aEntry + " " + mChildren.keySet());
+
 		MarshalledKey putKey = MarshalledKey.unmarshall(aEntry.getKey());
 		MarshalledKey childKey = null;
 		MarshalledKey lastKey = null;
@@ -32,7 +34,7 @@ public class BTreeIndex extends BTreeNode
 		for (MarshalledKey compKey : mChildren.keySet())
 		{
 			lastKey = compKey;
-			if (putKey.compareTo(compKey) <= 0)
+			if (putKey.compareTo(compKey) < 0)
 			{
 				break;
 			}
@@ -61,7 +63,7 @@ public class BTreeIndex extends BTreeNode
 		for (MarshalledKey compKey : mChildren.keySet())
 		{
 			lastKey = compKey;
-			if (putKey.compareTo(compKey) <= 0)
+			if (putKey.compareTo(compKey) < 0)
 			{
 				break;
 			}
@@ -78,8 +80,8 @@ public class BTreeIndex extends BTreeNode
 		{
 			BTreeNode[] split = childNode.split();
 
-			System.out.println("--------" + split[0].mMap);
-			System.out.println("--------" + split[1].mMap);
+//			System.out.println("--------" + split[0].mMap);
+//			System.out.println("--------" + split[1].mMap);
 
 			mChildren.remove(childKey);
 			mMap.remove(new ArrayMapEntry(childKey.marshall(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);

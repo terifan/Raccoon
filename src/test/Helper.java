@@ -14,7 +14,7 @@ public class Helper
 
 	static String createString(Random rnd, int aLength)
 	{
-		String s = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ";
+		String s = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 		StringBuilder sb = new StringBuilder();
 		for (int i = aLength; --i >= 0;)
 		{

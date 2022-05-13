@@ -398,7 +398,6 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 		aScanResult.tables++;
 
 		scan(mRoot, aScanResult);
-		System.out.println(aScanResult.log);
 	}
 
 

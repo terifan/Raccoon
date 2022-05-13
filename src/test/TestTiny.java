@@ -1,9 +1,8 @@
 package test;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Random;
-import org.terifan.raccoon.ArrayMap;
-import org.terifan.raccoon.ArrayMapEntry;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.ScanResult;
@@ -20,6 +19,7 @@ public class TestTiny
 {
 	private static VerticalImageFrame mTreeFrame = new VerticalImageFrame();
 	private static Random rnd = new Random(1);
+	private static HashSet<String> mKeys = new HashSet<>();
 
 //	private static ArrayMap arrayMap = new ArrayMap(1000);
 
@@ -224,6 +224,20 @@ public class TestTiny
 				insertQ(db, "Karate");
 				dump(db);
 
+				for (String key : mKeys)
+				{
+					try
+					{
+						System.out.println(db.get(new KeyValue(key)));
+					}
+					catch (Exception e)
+					{
+						System.out.println(key);
+						e.printStackTrace(System.out);
+						break;
+					}
+				}
+
 //				db.list(KeyValue.class).forEach(System.out::println);
 
 				db.commit();
@@ -233,13 +247,13 @@ public class TestTiny
 
 //			System.out.println("-----------");
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
-			{
+//			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
+//			{
 //				db.list(KeyValue.class).forEach(System.out::print);
-
-				KeyValue value = db.get(new KeyValue("Goofer"));
-				System.out.println(value);
-			}
+//
+//				KeyValue value = db.get(new KeyValue("Goofer"));
+//				System.out.println(value);
+//			}
 
 //			System.out.println();
 
@@ -288,6 +302,8 @@ public class TestTiny
 
 	private static void insert(Database aDatabase, String aKey) throws IOException
 	{
+		mKeys.add(aKey);
+
 		String value = Helper.createString(rnd);
 
 //		arrayMap.put(new ArrayMapEntry(aKey.getBytes(), value.getBytes(), (byte)0), null);
@@ -300,6 +316,8 @@ public class TestTiny
 
 	private static void insertQ(Database aDatabase, String aKey) throws IOException
 	{
+		mKeys.add(aKey);
+
 		String value = Helper.createString(rnd);
 
 		aDatabase.save(new KeyValue(aKey, value));
@@ -330,7 +348,7 @@ public class TestTiny
 		@Override
 		public String toString()
 		{
-			return "[" + mKey + "]";
+			return "[" + mKey + "=" + mValue + "]";
 		}
 	}
 

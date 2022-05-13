@@ -16,6 +16,8 @@ public class BTreeLeaf extends BTreeNode
 	@Override
 	boolean get(ArrayMapEntry aEntry)
 	{
+//		System.out.println("leaf " + aEntry + " " + mMap);
+
 		return mMap.get(aEntry);
 	}
 
