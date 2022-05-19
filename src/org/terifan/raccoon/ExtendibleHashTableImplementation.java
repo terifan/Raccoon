@@ -408,7 +408,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 		// fake blockpointer required when growing directory first time
 		new BlockPointer()
-			.setBlockType(BlockType.SPECIAL)
+			.setBlockType(BlockType.ILLEGAL)
 			.setUserData(node.mRangeBits)
 			.marshal(ByteArrayBuffer.wrap(mDirectory.mBuffer));
 
@@ -845,7 +845,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 			{
 				BlockType blockType = BlockPointer.readBlockType(mBuffer, offset);
 
-				if (blockType != BlockType.LEAF && blockType != BlockType.SPECIAL)
+				if (blockType != BlockType.LEAF && blockType != BlockType.ILLEGAL)
 				{
 					return "ExtendibleHashTable directory has bad block type";
 				}

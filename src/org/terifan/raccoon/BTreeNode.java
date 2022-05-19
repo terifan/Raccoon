@@ -6,22 +6,26 @@ import org.terifan.raccoon.util.Result;
 
 abstract class BTreeNode
 {
+	final BTreeTableImplementation mImplementation;
 	BlockPointer mBlockPointer;
-	boolean mChanged;
 	ArrayMap mMap;
+	boolean mModified;
 
 
-	abstract boolean get(ArrayMapEntry aEntry);
+	public BTreeNode(BTreeTableImplementation aImplementation)
+	{
+		mImplementation = aImplementation;
+	}
 
 
-	abstract boolean put(BTreeIndex aParent, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult);
+	abstract boolean get(MarshalledKey aKey, ArrayMapEntry aEntry);
+
+
+	abstract boolean put(BTreeIndex aParent, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult);
 
 
 	abstract BTreeNode[] split();
 
 
-	static BTreeNode newNode(BlockPointer aBlockPointer)
-	{
-		return aBlockPointer.getBlockType() == BlockType.INDEX ? new BTreeIndex() : new BTreeLeaf();
-	}
+	abstract boolean commit();
 }

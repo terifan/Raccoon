@@ -5,13 +5,16 @@ import java.util.HashSet;
 import java.util.Random;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.LogLevel;
 import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.annotations.Column;
 import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.annotations.Id;
+import org.terifan.raccoon.util.Log;
 import org.terifan.treegraph.TreeRenderer;
 import org.terifan.treegraph.VerticalLayout;
+import org.terifan.treegraph.util.TextSlice;
 import org.terifan.treegraph.util.VerticalImageFrame;
 
 
@@ -55,7 +58,7 @@ public class TestTiny
 		{
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-//			Log.setLevel(LogLevel.INFO);
+//			Log.setLevel(LogLevel.DEBUG);
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 			{
@@ -88,140 +91,140 @@ public class TestTiny
 //				insert(db, "p");
 //				insert(db, "o");
 
-				insertQ(db, "Circus");
-				insertQ(db, "Banana");
-				insertQ(db, "Whale");
-				insertQ(db, "Xenon");
-				insertQ(db, "Open");
-				insertQ(db, "Rupee");
-				insertQ(db, "Silver");
-				insertQ(db, "Leap");
-				insertQ(db, "Ear");
-				insertQ(db, "Apple");
-				insertQ(db, "Yellow");
-				insertQ(db, "Turquoise");
-				insertQ(db, "Japanese");
-				insertQ(db, "Quality");
-				insertQ(db, "Nose");
-				insertQ(db, "Gloves");
-				insertQ(db, "Head");
-				insertQ(db, "Zebra");
-				insertQ(db, "Female");
-				insertQ(db, "Internal");
-				insertQ(db, "Jalapeno");
-				insertQ(db, "Urban");
-				insertQ(db, "Vapor");
-				insertQ(db, "Dove");
-				insertQ(db, "Mango");
-				insertQ(db, "Knife");
+				insert(db, "Circus");
+				insert(db, "Banana");
+				insert(db, "Whale");
+				insert(db, "Xenon");
+				insert(db, "Open");
+				insert(db, "Rupee");
+				insert(db, "Silver");
+				insert(db, "Leap");
+				insert(db, "Ear");
+				insert(db, "Apple");
+				insert(db, "Yellow");
+				insert(db, "Turquoise");
+				insert(db, "Japanese");
+				insert(db, "Quality");
+				insert(db, "Nose");
+				insert(db, "Gloves");
+				insert(db, "Head");
+				insert(db, "Zebra");
+				insert(db, "Female");
+				insert(db, "Internal");
+				insert(db, "Jalapeno");
+				insert(db, "Urban");
+				insert(db, "Vapor");
+				insert(db, "Dove");
+				insert(db, "Mango");
+				insert(db, "Knife");
 
-				insertQ(db, "Clemens");
-				insertQ(db, "Bobby");
-				insertQ(db, "Wort");
-				insertQ(db, "Xor");
-				insertQ(db, "Order");
-				insertQ(db, "Ranger");
-				insertQ(db, "Surfing");
-				insertQ(db, "Love");
-				insertQ(db, "Eliot");
-				insertQ(db, "Asian");
-				insertQ(db, "Year");
-				insertQ(db, "Tank");
-				insertQ(db, "Jeans");
-				insertQ(db, "Queer");
-				insertQ(db, "Nickle");
-				insertQ(db, "Goat");
-				insertQ(db, "Happy");
-				insertQ(db, "Zink");
-				insertQ(db, "Furniture");
-				insertQ(db, "Immense");
-				insertQ(db, "Jehova");
-				insertQ(db, "Under");
-				insertQ(db, "Vital");
-				insertQ(db, "Dragon");
-				insertQ(db, "Many");
-				insertQ(db, "King");
+				insert(db, "Clemens");
+				insert(db, "Bobby");
+				insert(db, "Wort");
+				insert(db, "Xor");
+				insert(db, "Order");
+				insert(db, "Ranger");
+				insert(db, "Surfing");
+				insert(db, "Love");
+				insert(db, "Eliot");
+				insert(db, "Asian");
+				insert(db, "Year");
+				insert(db, "Tank");
+				insert(db, "Jeans");
+				insert(db, "Queer");
+				insert(db, "Nickle");
+				insert(db, "Goat");
+				insert(db, "Happy");
+				insert(db, "Zink");
+				insert(db, "Furniture");
+				insert(db, "Immense");
+				insert(db, "Jehova");
+				insert(db, "Under");
+				insert(db, "Vital");
+				insert(db, "Dragon");
+				insert(db, "Many");
+				insert(db, "King");
 
-				insertQ(db, "Clemens");
-				insertQ(db, "Bread");
-				insertQ(db, "Wild");
-				insertQ(db, "Xanthe");
-				insertQ(db, "Opera");
-				insertQ(db, "River");
-				insertQ(db, "Sand");
-				insertQ(db, "Leach");
-				insertQ(db, "Electron");
-				insertQ(db, "Accuracy");
-				insertQ(db, "Yearning");
-				insertQ(db, "Tangent");
-				insertQ(db, "Jelly");
-				insertQ(db, "Queen");
-				insertQ(db, "Number");
-				insertQ(db, "Guts");
-				insertQ(db, "Harbor");
-				insertQ(db, "Zulu");
-				insertQ(db, "Fulfill");
-				insertQ(db, "Import");
-				insertQ(db, "Jupiter");
-				insertQ(db, "Ultra");
-				insertQ(db, "Voice");
-				insertQ(db, "Down");
-				insertQ(db, "Metal");
-				insertQ(db, "Knight");
+				insert(db, "Clemens");
+				insert(db, "Bread");
+				insert(db, "Wild");
+				insert(db, "Xanthe");
+				insert(db, "Opera");
+				insert(db, "River");
+				insert(db, "Sand");
+				insert(db, "Leach");
+				insert(db, "Electron");
+				insert(db, "Accuracy");
+				insert(db, "Yearning");
+				insert(db, "Tangent");
+				insert(db, "Jelly");
+				insert(db, "Queen");
+				insert(db, "Number");
+				insert(db, "Guts");
+				insert(db, "Harbor");
+				insert(db, "Zulu");
+				insert(db, "Fulfill");
+				insert(db, "Import");
+				insert(db, "Jupiter");
+				insert(db, "Ultra");
+				insert(db, "Voice");
+				insert(db, "Down");
+				insert(db, "Metal");
+				insert(db, "Knight");
 
-				insertQ(db, "Clear");
-				insertQ(db, "Breach");
-				insertQ(db, "Wilshire");
-				insertQ(db, "Xanthopsia");
-				insertQ(db, "Operation");
-				insertQ(db, "Robot");
-				insertQ(db, "Sugar");
-				insertQ(db, "Leather");
-				insertQ(db, "Ellipse");
-				insertQ(db, "Agree");
-				insertQ(db, "Yeisk");
-				insertQ(db, "Tartar");
-				insertQ(db, "Jigger");
-				insertQ(db, "Quelt");
-				insertQ(db, "Nutrition");
-				insertQ(db, "Gustus");
-				insertQ(db, "Hardner");
-				insertQ(db, "Zurvan");
-				insertQ(db, "Flead");
-				insertQ(db, "Instant");
-				insertQ(db, "Justis");
-				insertQ(db, "Umbrella");
-				insertQ(db, "Voltage");
-				insertQ(db, "Dwarf");
-				insertQ(db, "Misty");
-				insertQ(db, "Kart");
+				insert(db, "Clear");
+				insert(db, "Breach");
+				insert(db, "Wilshire");
+				insert(db, "Xanthopsia");
+				insert(db, "Operation");
+				insert(db, "Robot");
+				insert(db, "Sugar");
+				insert(db, "Leather");
+				insert(db, "Ellipse");
+				insert(db, "Agree");
+				insert(db, "Yeisk");
+				insert(db, "Tartar");
+				insert(db, "Jigger");
+				insert(db, "Quelt");
+				insert(db, "Nutrition");
+				insert(db, "Gustus");
+				insert(db, "Hardner");
+				insert(db, "Zurvan");
+				insert(db, "Flead");
+				insert(db, "Instant");
+				insert(db, "Justis");
+				insert(db, "Umbrella");
+				insert(db, "Voltage");
+				insert(db, "Dwarf");
+				insert(db, "Misty");
+				insert(db, "Kart");
 
-				insertQ(db, "Christian");
-				insertQ(db, "Break");
-				insertQ(db, "Wilson");
-				insertQ(db, "Xanthoma");
-				insertQ(db, "Oven");
-				insertQ(db, "Rock");
-				insertQ(db, "Sudder");
-				insertQ(db, "Leap");
-				insertQ(db, "Eighty");
-				insertQ(db, "Alphabet");
-				insertQ(db, "Yekaterinburg");
-				insertQ(db, "Tassie");
-				insertQ(db, "Jewels");
-				insertQ(db, "Quernstone");
-				insertQ(db, "Nurses");
-				insertQ(db, "Goofer");
-				insertQ(db, "Hareem");
-				insertQ(db, "Zurek");
-				insertQ(db, "Flipper");
-				insertQ(db, "Intellectual");
-				insertQ(db, "Jitney");
-				insertQ(db, "Umbelled");
-				insertQ(db, "Vinyl");
-				insertQ(db, "Dwell");
-				insertQ(db, "Mold");
-				insertQ(db, "Karate");
+				insert(db, "Christian");
+				insert(db, "Break");
+				insert(db, "Wilson");
+				insert(db, "Xanthoma");
+				insert(db, "Oven");
+				insert(db, "Rock");
+				insert(db, "Sudder");
+				insert(db, "Leap");
+				insert(db, "Eighty");
+				insert(db, "Alphabet");
+				insert(db, "Yekaterinburg");
+				insert(db, "Tassie");
+				insert(db, "Jewels");
+				insert(db, "Quernstone");
+				insert(db, "Nurses");
+				insert(db, "Goofer");
+				insert(db, "Hareem");
+				insert(db, "Zurek");
+				insert(db, "Flipper");
+				insert(db, "Intellectual");
+				insert(db, "Jitney");
+				insert(db, "Umbelled");
+				insert(db, "Vinyl");
+				insert(db, "Dwell");
+				insert(db, "Mold");
+				insert(db, "Karate");
 				dump(db);
 
 				for (String key : mKeys)
@@ -292,6 +295,23 @@ public class TestTiny
 	}
 
 
+	private static void insert(Database aDatabase, String aKey) throws IOException
+	{
+		mKeys.add(aKey);
+
+		String value = Helper.createString(rnd);
+
+		aDatabase.save(new KeyValue(aKey, value));
+		dump(aDatabase);
+
+		if (rnd.nextBoolean())
+		{
+			mTreeFrame.add(new TextSlice("committing"));
+			aDatabase.commit();
+		}
+	}
+
+
 	private static void dump(Database aDatabase) throws IOException
 	{
 		String description = aDatabase.scan(new ScanResult()).getDescription();
@@ -300,31 +320,7 @@ public class TestTiny
 	}
 
 
-	private static void insert(Database aDatabase, String aKey) throws IOException
-	{
-		mKeys.add(aKey);
-
-		String value = Helper.createString(rnd);
-
-//		arrayMap.put(new ArrayMapEntry(aKey.getBytes(), value.getBytes(), (byte)0), null);
-//		System.out.println("arrayMap=" + arrayMap);
-
-		aDatabase.save(new KeyValue(aKey, value));
-		dump(aDatabase);
-	}
-
-
-	private static void insertQ(Database aDatabase, String aKey) throws IOException
-	{
-		mKeys.add(aKey);
-
-		String value = Helper.createString(rnd);
-
-		aDatabase.save(new KeyValue(aKey, value));
-	}
-
-
-	@Entity(name = "keyvalue", implementation = "btree")
+	@Entity(implementation = "btree")
 	public static class KeyValue
 	{
 		@Id(name="id", index = 0) String mKey;

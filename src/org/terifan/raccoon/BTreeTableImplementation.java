@@ -14,7 +14,7 @@ import org.terifan.raccoon.util.Result;
 
 class BTreeTableImplementation extends TableImplementation
 {
-	static byte[] POINTER_PLACEHOLDER = new byte[BlockPointer.SIZE];
+	static byte[] POINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
 	static int mIndexSize = 512;
 	static int mLeafSize = 1024;
 
@@ -83,7 +83,7 @@ class BTreeTableImplementation extends TableImplementation
 		BlockPointer bp = new BlockPointer();
 		bp.unmarshal(buffer);
 
-		mRoot = BTreeNode.newNode(bp);
+		mRoot = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this) : new BTreeLeaf(this);
 		mRoot.mBlockPointer = bp;
 		mRoot.mMap = new ArrayMap(readBlock(bp));
 	}
@@ -96,7 +96,7 @@ class BTreeTableImplementation extends TableImplementation
 
 aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
-		return mRoot.get(aEntry);
+		return mRoot.get(new MarshalledKey(aEntry.getKey()), aEntry);
 	}
 
 
@@ -120,7 +120,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		Result<ArrayMapEntry> result = new Result<>();
 
-		if (mRoot.put(null, aEntry, result))
+		if (mRoot.put(null, new MarshalledKey(aEntry.getKey()), aEntry, result))
 		{
 			if (mRoot instanceof BTreeLeaf)
 			{
@@ -205,14 +205,12 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 			if (mChanged)
 			{
 				int modCount = mModCount; // no increment
-				Log.i("commit hash table");
+				Log.i("commit table");
 				Log.inc();
 
 				assert integrityCheck() == null : integrityCheck();
 
-				freeBlock(mRoot.mBlockPointer);
-
-				mRoot.mBlockPointer = writeBlock(mRoot.mMap.array(), BlockType.LEAF);
+				mRoot.commit();
 
 				if (mCommitChangesToBlockDevice)
 				{
@@ -387,7 +385,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	{
 		if (mClosed)
 		{
-			throw new IllegalStateException("HashTable is closed");
+			throw new IllegalStateException("Table is closed");
 		}
 	}
 
@@ -418,7 +416,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 				aScanResult.log.append(new String(key.marshall()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", ""));
 			}
 			aScanResult.log.append("'");
-			aScanResult.log.append(aNode.mBlockPointer == null ? "#f00" : "#0f0");
+			aScanResult.log.append(aNode.mModified ? "#f00" : "#0f0");
 
 			first = true;
 			aScanResult.log.append("[");
@@ -434,11 +432,13 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 				if (node == null)
 				{
-					throw new IllegalStateException("" + key + " " + aScanResult.log);
-//					BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
-//
-//					node = BTreeNode.newNode(bp);
-//					node.mMap = new ArrayMap(readBlock(bp));
+					BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
+
+					node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this) : new BTreeLeaf(this);
+					node.mBlockPointer = bp;
+					node.mMap = new ArrayMap(readBlock(bp));
+
+					((BTreeIndex)aNode).mChildren.put(key, node);
 				}
 
 				scan(node, aScanResult);
@@ -459,12 +459,12 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 				aScanResult.log.append("'" + new String(entry.getKey()).replaceAll("[^\\w]*", "").replace("_", "") + "'");
 			}
 			aScanResult.log.append("]");
-			aScanResult.log.append(aNode.mBlockPointer == null ? "#f00" : "#0f0");
+			aScanResult.log.append(aNode.mModified ? "#f00" : "#0f0");
 		}
 	}
 
 
-	private void freeBlock(BlockPointer aBlockPointer)
+	protected void freeBlock(BlockPointer aBlockPointer)
 	{
 		if (aBlockPointer != null)
 		{
@@ -473,13 +473,18 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	}
 
 
-	private byte[] readBlock(BlockPointer aBlockPointer)
+	protected byte[] readBlock(BlockPointer aBlockPointer)
 	{
+		if (aBlockPointer.getBlockType() != BlockType.INDEX && aBlockPointer.getBlockType() != BlockType.LEAF)
+		{
+			throw new IllegalArgumentException("Attempt to read bad block: " + aBlockPointer.toString());
+		}
+
 		return mBlockAccessor.readBlock(aBlockPointer);
 	}
 
 
-	private BlockPointer writeBlock(byte[] aContent, BlockType aBlockType)
+	protected BlockPointer writeBlock(byte[] aContent, BlockType aBlockType)
 	{
 		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionGroup.get(), aBlockType, 0);
 	}
@@ -487,7 +492,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 	private void setupEmptyTable()
 	{
-		mRoot = new BTreeLeaf();
+		mRoot = new BTreeLeaf(this);
 		mRoot.mMap = new ArrayMap(mLeafSize);
 	}
 }

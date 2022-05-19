@@ -10,5 +10,5 @@ public enum BlockType
 	BLOB_DATA,
 	BLOB_INDEX,
 	SPACEMAP,
-	SPECIAL
+	ILLEGAL
 }

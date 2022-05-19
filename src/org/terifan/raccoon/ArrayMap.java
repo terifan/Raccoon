@@ -56,7 +56,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		/**
 		 * the ArrayMap don't contain any entry with a larger key
 		 */
-		LAST
+		GREATER
 	}
 
 
@@ -279,41 +279,71 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			return false;
 		}
 
-		loadValue(index, aEntry);
+		loadKeyValue(index, aEntry);
 
 		return true;
 	}
 
 
 	/**
-	 * Find an entry equal or before the sought key. The provided entry is updated if the result is LOWER or MATCH.
+	 * Find an entry equal or before the sought key.
 	 */
 	public NearResult nearest(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());
 
-		if (mEntryCount == -index - 1)
+		if (index == -mEntryCount - 1)
 		{
-			return NearResult.LAST;
+			loadKeyValue(mEntryCount - 1, aEntry);
+			return NearResult.GREATER;
 		}
 		if (index < 0)
 		{
-			loadValue(-index - 1, aEntry);
+			loadKeyValue(-index - 1, aEntry);
 			return NearResult.LOWER;
 		}
 
-		loadValue(index, aEntry);
+		loadKeyValue(index, aEntry);
 
 		return NearResult.MATCH;
 	}
 
 
-	private void loadValue(int aIndex, ArrayMapEntry aEntry)
+	/**
+	 * Find an entry equal or before the sought key. This method assumes the first entry in the map is empty and values lower than the second value will return first entry as a lower key.
+	 */
+	public NearResult nearestNG(ArrayMapEntry aEntry)
+	{
+		assert readKeyLength(0) == 0;
+
+		int index = indexOf(aEntry.getKey());
+
+		if (index == -mEntryCount - 1)
+		{
+			loadKeyValue(mEntryCount - 1, aEntry);
+			return NearResult.GREATER;
+		}
+		if (index < 0)
+		{
+			loadKeyValue(-index - 2, aEntry);
+			return NearResult.LOWER;
+		}
+
+		loadKeyValue(index, aEntry);
+
+		return NearResult.MATCH;
+	}
+
+
+	private void loadKeyValue(int aIndex, ArrayMapEntry aEntry)
 	{
 		int entryOffset = readEntryOffset(aIndex);
 		int valueOffset = readValueOffset(entryOffset);
 		int valueLength = readValueLength(entryOffset);
+		int keyOffset = readKeyOffset(entryOffset);
+		int keyLength = readKeyLength(entryOffset);
 
+		aEntry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
 		aEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
 	}
 
@@ -654,14 +684,16 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	{
 		try
 		{
+			boolean first = true;
 			StringBuilder sb = new StringBuilder();
 			for (ArrayMapEntry entry : this)
 			{
-				if (sb.length() > 0)
+				if (!first)
 				{
 					sb.append(",");
 				}
-				sb.append(new String(entry.getKey(), "utf-8").replaceAll("[^\\w]*", ""));
+				sb.append("\"" + new String(entry.getKey(), "utf-8").replaceAll("[^\\w]*", "") + "\"");
+				first = false;
 			}
 			return "{" + sb.toString() + "}";
 		}
@@ -710,7 +742,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 			ArrayMapEntry entry = new ArrayMapEntry();
 			entry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
-			loadValue(mIndex, entry);
+			loadKeyValue(mIndex, entry);
 
 //			System.out.println(mIndex+" "+entry);
 
