@@ -1,6 +1,7 @@
 package org.terifan.raccoon;
 
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.TreeMap;
 import static org.terifan.raccoon.BTreeTableImplementation.POINTER_PLACEHOLDER;
 import static org.terifan.raccoon.BTreeTableImplementation.mIndexSize;
@@ -71,10 +72,12 @@ public class BTreeIndex extends BTreeNode
 
 		if (!nearestNode.put(this, aKey, aEntry, aResult))
 		{
+			if (new Random().nextBoolean())
+				commit();
+
 			return false;
 		}
 
-		mImplementation.freeBlock(nearestNode.mBlockPointer);
 		mMap.remove(nearestEntry, null);
 
 		BTreeNode[] split = nearestNode.split();
@@ -95,6 +98,8 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	BTreeNode[] split()
 	{
+		mImplementation.freeBlock(mBlockPointer);
+
 		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mIndexSize);
 
 		BTreeIndex a = new BTreeIndex(mImplementation);
@@ -129,6 +134,8 @@ public class BTreeIndex extends BTreeNode
 
 	BTreeNode grow()
 	{
+		mImplementation.freeBlock(mBlockPointer);
+
 		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mIndexSize);
 
 		BTreeIndex a = new BTreeIndex(mImplementation);
@@ -159,12 +166,12 @@ public class BTreeIndex extends BTreeNode
 		MarshalledKey keyB = new MarshalledKey(midKeyBytes.getKey());
 
 		BTreeIndex newIndex = new BTreeIndex(mImplementation);
-		newIndex.mModified = true;
 		newIndex.mMap = new ArrayMap(mIndexSize);
 		newIndex.mMap.put(new ArrayMapEntry(keyA.marshall(), POINTER_PLACEHOLDER, (byte)0x99), null);
 		newIndex.mMap.put(new ArrayMapEntry(keyB.marshall(), POINTER_PLACEHOLDER, (byte)0x22), null);
 		newIndex.mChildren.put(keyA, a);
 		newIndex.mChildren.put(keyB, b);
+		newIndex.mModified = true;
 
 		return newIndex;
 	}
@@ -181,14 +188,16 @@ public class BTreeIndex extends BTreeNode
 
 				mMap.put(new ArrayMapEntry(entry.getKey().marshall(), entry.getValue().mBlockPointer.marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array(), (byte)0x99), null);
 			}
+
+			entry.getValue().mModified = false;
 		}
 
 		mChildren.clear();
 
-		if (!mModified)
-		{
-			return false;
-		}
+//		if (!mModified)
+//		{
+//			return false;
+//		}
 
 		mImplementation.freeBlock(mBlockPointer);
 

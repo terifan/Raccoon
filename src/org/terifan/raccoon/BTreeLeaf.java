@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.util.Random;
 import static org.terifan.raccoon.BTreeTableImplementation.POINTER_PLACEHOLDER;
 import static org.terifan.raccoon.BTreeTableImplementation.mIndexSize;
 import org.terifan.raccoon.util.Result;
@@ -25,7 +26,12 @@ public class BTreeLeaf extends BTreeNode
 	{
 		mModified =  true;
 
-		return !mMap.insert(aEntry, aResult);
+		boolean b = !mMap.insert(aEntry, aResult);
+
+		if (new Random().nextBoolean())
+			commit();
+
+		return b;
 	}
 
 
@@ -83,18 +89,14 @@ public class BTreeLeaf extends BTreeNode
 	@Override
 	boolean commit()
 	{
-		if (!mModified)
+		if (mModified)
 		{
-			return false;
+			mImplementation.freeBlock(mBlockPointer);
+
+			mBlockPointer = mImplementation.writeBlock(mMap.array(), BlockType.LEAF);
 		}
 
-		mImplementation.freeBlock(mBlockPointer);
-
-		mBlockPointer = mImplementation.writeBlock(mMap.array(), BlockType.LEAF);
-
-		mModified = false;
-
-		return true;
+		return mModified;
 	}
 
 

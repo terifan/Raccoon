@@ -396,8 +396,6 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 		aScanResult.tables++;
 
 		scan(mRoot, aScanResult);
-
-		System.out.println(aScanResult.log);
 	}
 
 
@@ -415,7 +413,8 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 				}
 				first = false;
 				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
-				aScanResult.log.append(new String(key.marshall()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", ""));
+				String s = new String(key.marshall()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", "");
+				aScanResult.log.append(s.isEmpty()?"*":s);
 			}
 			aScanResult.log.append("'");
 			aScanResult.log.append(aNode.mModified ? "#f00" : "#0f0");
@@ -483,7 +482,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	{
 		if (aBlockPointer.getBlockType() != BlockType.INDEX && aBlockPointer.getBlockType() != BlockType.LEAF)
 		{
-			throw new IllegalArgumentException("Attempt to read bad block: " + aBlockPointer.toString());
+			throw new IllegalArgumentException("Attempt to read bad block: " + aBlockPointer);
 		}
 
 		return mBlockAccessor.readBlock(aBlockPointer);
