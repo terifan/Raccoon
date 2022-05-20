@@ -227,11 +227,12 @@ public class TestTiny
 				insert(db, "Karate");
 				dump(db);
 
+				boolean all = true;
 				for (String key : mKeys)
 				{
 					try
 					{
-						System.out.println(db.get(new KeyValue(key)));
+						all &= db.get(new KeyValue(key)) != null;
 					}
 					catch (Exception e)
 					{
@@ -240,6 +241,7 @@ public class TestTiny
 						break;
 					}
 				}
+				System.out.println(all ? "All keys found" : "Missing keys");
 
 //				db.list(KeyValue.class).forEach(System.out::println);
 
@@ -250,13 +252,29 @@ public class TestTiny
 
 //			System.out.println("-----------");
 
-//			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
-//			{
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
+			{
 //				db.list(KeyValue.class).forEach(System.out::print);
-//
-//				KeyValue value = db.get(new KeyValue("Goofer"));
-//				System.out.println(value);
-//			}
+
+				KeyValue value = db.get(new KeyValue("Banana"));
+				System.out.println(value);
+
+				boolean all = true;
+				for (String key : mKeys)
+				{
+					try
+					{
+						all &= db.get(new KeyValue(key)) != null;
+					}
+					catch (Exception e)
+					{
+						System.out.println(key);
+						e.printStackTrace(System.out);
+						break;
+					}
+				}
+				System.out.println(all ? "All keys found" : "Missing keys");
+			}
 
 //			System.out.println();
 
@@ -320,7 +338,7 @@ public class TestTiny
 	}
 
 
-	@Entity(implementation = "btree")
+	@Entity(name = "KeyValue", implementation = "btree")
 	public static class KeyValue
 	{
 		@Id(name="id", index = 0) String mKey;

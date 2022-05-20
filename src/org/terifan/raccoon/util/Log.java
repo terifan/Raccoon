@@ -78,8 +78,14 @@ public class Log
 			String methodName = trace[3].getMethodName();
 			String loggerName = trace[3].getFileName() + ":" + trace[3].getLineNumber();
 
-			System.out.printf("%-30s%-30s%-30s%-7s %s%n", loggerName, className, methodName, aLevel, message.toString());
+			System.out.printf("%-30s  %-30s  %-30s  %-7s  %s%n", shrink(loggerName,30), shrink(className,30), shrink(methodName,30), aLevel, message.toString());
 		}
+	}
+
+
+	private static String shrink(String aText, int aLength)
+	{
+		return aText.length() <= aLength ? aText : aText.substring(0, aLength / 2 - 2) + "[..]" + aText.substring(aText.length() - aLength / 2 + 2);
 	}
 
 

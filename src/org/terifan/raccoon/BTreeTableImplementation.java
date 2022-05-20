@@ -62,10 +62,10 @@ class BTreeTableImplementation extends TableImplementation
 	{
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(BlockPointer.SIZE + 3);
 
+		mBlockAccessor.getCompressionParam().marshal(buffer);
+
 		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeIndex ? BlockType.INDEX : BlockType.LEAF);
 		mRoot.mBlockPointer.marshal(buffer);
-
-		mBlockAccessor.getCompressionParam().marshal(buffer);
 
 		return buffer.trim().array();
 	}
@@ -432,15 +432,15 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 				if (node == null)
 				{
-					BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
-
-					node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this) : new BTreeLeaf(this);
-					node.mBlockPointer = bp;
-					node.mMap = new ArrayMap(readBlock(bp));
-
-					((BTreeIndex)aNode).mChildren.put(key, node);
+//					BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
+//
+//					node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this) : new BTreeLeaf(this);
+//					node.mBlockPointer = bp;
+//					node.mMap = new ArrayMap(readBlock(bp));
+//
+//					((BTreeIndex)aNode).mChildren.put(key, node);
 				}
-
+else
 				scan(node, aScanResult);
 			}
 			aScanResult.log.append("]");

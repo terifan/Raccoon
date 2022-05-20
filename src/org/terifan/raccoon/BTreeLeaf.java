@@ -74,6 +74,7 @@ public class BTreeLeaf extends BTreeNode
 		newIndex.mMap.put(new ArrayMapEntry(keyB.marshall(), POINTER_PLACEHOLDER, (byte)0x66), null);
 		newIndex.mChildren.put(keyA, a);
 		newIndex.mChildren.put(keyB, b);
+		newIndex.mModified = true;
 
 		return newIndex;
 	}
