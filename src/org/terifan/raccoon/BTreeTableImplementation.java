@@ -396,6 +396,8 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 		aScanResult.tables++;
 
 		scan(mRoot, aScanResult);
+
+		System.out.println(aScanResult.log);
 	}
 
 
@@ -422,12 +424,12 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 			aScanResult.log.append("[");
 			for (ArrayMapEntry entry : aNode.mMap)
 			{
-				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
 				if (!first)
 				{
 					aScanResult.log.append(",");
 				}
 				first = false;
+				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
 				BTreeNode node = ((BTreeIndex)aNode).mChildren.get(key);
 
 				if (node == null)
@@ -439,9 +441,13 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 //					node.mMap = new ArrayMap(readBlock(bp));
 //
 //					((BTreeIndex)aNode).mChildren.put(key, node);
+
+					aScanResult.log.append("'*'");
 				}
-else
-				scan(node, aScanResult);
+				else
+				{
+					scan(node, aScanResult);
+				}
 			}
 			aScanResult.log.append("]");
 		}

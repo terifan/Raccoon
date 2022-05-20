@@ -322,7 +322,7 @@ public class TestTiny
 		aDatabase.save(new KeyValue(aKey, value));
 		dump(aDatabase);
 
-		if (rnd.nextBoolean())
+		if (rnd.nextInt(10) < 3)
 		{
 			mTreeFrame.add(new TextSlice("committing"));
 			aDatabase.commit();
