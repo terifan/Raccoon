@@ -4,6 +4,7 @@ import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
@@ -22,13 +23,17 @@ class BTreeTableImplementation extends TableImplementation
 	private boolean mClosed;
 	private boolean mChanged;
 	private int mModCount;
-
 	private BTreeNode mRoot;
+
+	private TreeMap<Long, BTreeNode> mLRU;
+	private long mNodeCounter;
 
 
 	public BTreeTableImplementation(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionGroup, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName)
 	{
 		super(aBlockDevice, aTransactionGroup, aCommitChangesToBlockDevice, aCompressionParam, aTableParam, aTableName);
+
+		mLRU = new TreeMap<>();
 	}
 
 
@@ -342,34 +347,46 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	{
 		Log.i("integrity check");
 
-//		for (int index = 0; index < mNodes.length;)
-//		{
-//			if (mNodes[index] != null)
-//			{
-//				LeafNode expected = mNodes[index];
-//
-//				long range = 1 << expected.mRangeBits;
-//
-//				if (range <= 0 || index + range > mNodes.length)
-//				{
-//					return "ExtendibleHashTable node has bad range";
-//				}
-//
-//				for (long j = range; --j >= 0; index++)
-//				{
-//					if (mNodes[index] != expected)
-//					{
-//						return "ExtendibleHashTable node error at " + index;
-//					}
-//				}
-//			}
-//			else
-//			{
-//				index++;
-//			}
-//		}
-//
-//		return mDirectory.integrityCheck();
+		return integrityCheck(mRoot);
+	}
+
+
+	private String integrityCheck(BTreeNode aNode)
+	{
+		if (aNode instanceof BTreeIndex)
+		{
+			BTreeIndex indexNode = (BTreeIndex)aNode;
+
+			for (ArrayMapEntry entry : indexNode.mMap)
+			{
+				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
+
+				BTreeNode node = indexNode.mChildren.get(key);
+
+				if (node != null)
+				{
+//					String s = new String(key.marshall()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", "");
+
+					System.out.println(node.mNodeId);
+
+					String result = integrityCheck(node);
+
+					if (result != null)
+					{
+						return result;
+					}
+				}
+			}
+		}
+		else
+		{
+			BTreeLeaf leafNode = (BTreeLeaf)aNode;
+
+			for (ArrayMapEntry entry : leafNode.mMap)
+			{
+			}
+		}
+
 		return null;
 	}
 
@@ -403,9 +420,11 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	{
 		if (aNode instanceof BTreeIndex)
 		{
+			BTreeIndex indexNode = (BTreeIndex)aNode;
+
 			boolean first = true;
 			aScanResult.log.append("'");
-			for (ArrayMapEntry entry : aNode.mMap)
+			for (ArrayMapEntry entry : indexNode.mMap)
 			{
 				if (!first)
 				{
@@ -417,11 +436,11 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 				aScanResult.log.append(s.isEmpty()?"*":s);
 			}
 			aScanResult.log.append("'");
-			aScanResult.log.append(aNode.mModified ? "#f00" : "#0f0");
+			aScanResult.log.append(indexNode.mModified ? "#f00" : "#0f0");
 
 			first = true;
 			aScanResult.log.append("[");
-			for (ArrayMapEntry entry : aNode.mMap)
+			for (ArrayMapEntry entry : indexNode.mMap)
 			{
 				if (!first)
 				{
@@ -429,7 +448,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 				}
 				first = false;
 				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
-				BTreeNode node = ((BTreeIndex)aNode).mChildren.get(key);
+				BTreeNode node = indexNode.mChildren.get(key);
 
 				if (node == null)
 				{
@@ -439,7 +458,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 //					node.mBlockPointer = bp;
 //					node.mMap = new ArrayMap(readBlock(bp));
 //
-//					((BTreeIndex)aNode).mChildren.put(key, node);
+//					indexNode.mChildren.put(key, node);
 
 					aScanResult.log.append("'*'");
 				}
@@ -452,9 +471,11 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 		}
 		else
 		{
+			BTreeLeaf leafNode = (BTreeLeaf)aNode;
+
 			aScanResult.log.append("[");
 			boolean first = true;
-			for (ArrayMapEntry entry : aNode.mMap)
+			for (ArrayMapEntry entry : leafNode.mMap)
 			{
 				if (!first)
 				{
@@ -464,7 +485,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 				aScanResult.log.append("'" + new String(entry.getKey()).replaceAll("[^\\w]*", "").replace("_", "") + "'");
 			}
 			aScanResult.log.append("]");
-			aScanResult.log.append(aNode.mModified ? "#f00" : "#0f0");
+			aScanResult.log.append(leafNode.mModified ? "#f00" : "#0f0");
 		}
 	}
 
@@ -499,5 +520,17 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	{
 		mRoot = new BTreeLeaf(this);
 		mRoot.mMap = new ArrayMap(mLeafSize);
+	}
+
+
+	TreeMap<Long, BTreeNode> getLRU()
+	{
+		return mLRU;
+	}
+
+
+	synchronized long incrementAndGetNodeCounter()
+	{
+		return ++mNodeCounter;
 	}
 }

@@ -310,12 +310,10 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 
 	/**
-	 * Find an entry equal or before the sought key. This method assumes the first entry in the map is empty and values lower than the second value will return first entry as a lower key.
+	 * Find an entry equal or before the sought key.
 	 */
-	public NearResult nearestNG(ArrayMapEntry aEntry)
+	public NearResult nearestIndexEntry(ArrayMapEntry aEntry)
 	{
-		assert readKeyLength(0) == 0;
-
 		int index = indexOf(aEntry.getKey());
 
 		if (index == -mEntryCount - 1)

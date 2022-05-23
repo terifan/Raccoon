@@ -7,6 +7,7 @@ import org.terifan.raccoon.util.Result;
 abstract class BTreeNode
 {
 	final BTreeTableImplementation mImplementation;
+	final long mNodeId;
 	BlockPointer mBlockPointer;
 	ArrayMap mMap;
 	boolean mModified;
@@ -15,6 +16,7 @@ abstract class BTreeNode
 	public BTreeNode(BTreeTableImplementation aImplementation)
 	{
 		mImplementation = aImplementation;
+		mNodeId = mImplementation.incrementAndGetNodeCounter();
 	}
 
 

@@ -318,19 +318,19 @@ public class ArrayMapNGTest
 		ArrayMapEntry D = new ArrayMapEntry("d".getBytes());
 		ArrayMapEntry E = new ArrayMapEntry("e".getBytes());
 
-		assertEquals(map.nearestNG(A), NearResult.LOWER); // a is lower than b
+		assertEquals(map.nearestIndexEntry(A), NearResult.LOWER); // a is lower than b
 		assertEquals(A.getValue(), value1);
 
-		assertEquals(map.nearestNG(B), NearResult.MATCH); // b matches
+		assertEquals(map.nearestIndexEntry(B), NearResult.MATCH); // b matches
 		assertEquals(B.getValue(), value2);
 
-		assertEquals(map.nearestNG(C), NearResult.LOWER); // c is lower than d
+		assertEquals(map.nearestIndexEntry(C), NearResult.LOWER); // c is lower than d
 		assertEquals(C.getValue(), value2);
 
-		assertEquals(map.nearestNG(D), NearResult.MATCH); // d matches
+		assertEquals(map.nearestIndexEntry(D), NearResult.MATCH); // d matches
 		assertEquals(D.getValue(), value3);
 
-		assertEquals(map.nearestNG(E), NearResult.GREATER); // e is last
+		assertEquals(map.nearestIndexEntry(E), NearResult.GREATER); // e is last
 		assertEquals(E.getValue(), value3);
 	}
 

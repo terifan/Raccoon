@@ -26,7 +26,7 @@ public class BTreeIndex extends BTreeNode
 	boolean get(MarshalledKey aKey, ArrayMapEntry aEntry)
 	{
 		ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey.marshall());
-		mMap.nearestNG(nearestEntry);
+		mMap.nearestIndexEntry(nearestEntry);
 
 		MarshalledKey nearestKey = new MarshalledKey(nearestEntry.getKey());
 
@@ -53,7 +53,7 @@ public class BTreeIndex extends BTreeNode
 		mModified =  true;
 
 		ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey.marshall());
-		mMap.nearestNG(nearestEntry);
+		mMap.nearestIndexEntry(nearestEntry);
 
 		MarshalledKey nearestKey = new MarshalledKey(nearestEntry.getKey());
 
