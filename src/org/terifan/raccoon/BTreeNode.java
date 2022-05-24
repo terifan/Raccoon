@@ -16,7 +16,7 @@ abstract class BTreeNode
 	public BTreeNode(BTreeTableImplementation aImplementation)
 	{
 		mImplementation = aImplementation;
-		mNodeId = mImplementation.incrementAndGetNodeCounter();
+		mNodeId = mImplementation.nextNodeIndex();
 	}
 
 

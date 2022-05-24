@@ -26,6 +26,7 @@ class BTreeTableImplementation extends TableImplementation
 	private BTreeNode mRoot;
 
 	private TreeMap<Long, BTreeNode> mLRU;
+	private long mGenerationCounter;
 	private long mNodeCounter;
 
 
@@ -99,6 +100,8 @@ class BTreeTableImplementation extends TableImplementation
 	{
 		checkOpen();
 
+		mGenerationCounter++;
+
 aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		return mRoot.get(new MarshalledKey(aEntry.getKey()), aEntry);
@@ -109,6 +112,8 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	public ArrayMapEntry put(ArrayMapEntry aEntry)
 	{
 		checkOpen();
+
+		mGenerationCounter++;
 
 aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
@@ -150,6 +155,8 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	public ArrayMapEntry remove(ArrayMapEntry aEntry)
 	{
 		checkOpen();
+
+		mGenerationCounter++;
 
 aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
@@ -529,8 +536,14 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	}
 
 
-	synchronized long incrementAndGetNodeCounter()
+	synchronized long nextNodeIndex()
 	{
 		return ++mNodeCounter;
+	}
+
+
+	public long getGeneration()
+	{
+		return mGenerationCounter;
 	}
 }
