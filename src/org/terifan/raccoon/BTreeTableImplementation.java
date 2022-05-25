@@ -542,7 +542,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	}
 
 
-	public long getGeneration()
+	public long getGenerationCounter()
 	{
 		return mGenerationCounter;
 	}

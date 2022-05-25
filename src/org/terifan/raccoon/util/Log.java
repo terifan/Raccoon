@@ -91,6 +91,12 @@ public class Log
 
 	public static void hexDump(byte[] aBuffer)
 	{
+		hexDump(aBuffer, 48);
+	}
+
+
+	public static void hexDump(byte[] aBuffer, int aWidth)
+	{
 		if (aBuffer == null)
 		{
 			Log.out.println("hexdump: null");
@@ -102,7 +108,7 @@ public class Log
 			return;
 		}
 
-		int lw = 56;
+		int lw = aWidth;
 		int mr = 10000;
 
 		StringBuilder binText = new StringBuilder("");

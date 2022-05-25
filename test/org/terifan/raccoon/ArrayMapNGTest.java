@@ -348,7 +348,7 @@ public class ArrayMapNGTest
 		map.put(new ArrayMapEntry("bbb".getBytes(), value, (byte)77), null);
 		map.put(new ArrayMapEntry("ddd".getBytes(), value, (byte)77), null);
 
-		assertEquals(map.toString(), "{aaaaa,bbb,c,dd,ddd,eeee}");
+		assertEquals(map.toString(), "{\"aaaaa\",\"bbb\",\"c\",\"dd\",\"ddd\",\"eeee\"}");
 	}
 
 

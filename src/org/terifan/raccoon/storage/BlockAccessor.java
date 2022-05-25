@@ -82,7 +82,7 @@ else
 	buffer = new byte[aBlockPointer.getAllocatedBlocks() * mBlockDevice.getBlockSize()];
 }
 
-			mBlockDevice.readBlock(aBlockPointer.getBlockIndex0(), buffer, 0, buffer.length, aBlockPointer.getBlockKey(new long[2]));
+			mBlockDevice.readBlock(aBlockPointer.getBlockIndex0(), buffer, 0, buffer.length, aBlockPointer.getBlockKey(new long[4]));
 
 			long[] hash = MurmurHash3.hash256(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getTransactionId());
 

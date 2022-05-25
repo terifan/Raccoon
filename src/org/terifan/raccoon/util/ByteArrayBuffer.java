@@ -128,7 +128,7 @@ public final class ByteArrayBuffer
 
 	private ByteArrayBuffer ensureCapacity(int aIncrement)
 	{
-		if (mBuffer.length <= mOffset + aIncrement) // important: increase the size before it's full, ie remaining() should not return zero when buffer can grow
+		if (mBuffer.length < mOffset + aIncrement) // important: increase the size before it's full, ie remaining() should not return zero when buffer can grow
 		{
 			if (mLocked)
 			{

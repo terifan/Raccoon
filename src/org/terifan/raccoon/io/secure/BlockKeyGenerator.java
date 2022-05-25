@@ -7,6 +7,6 @@ public class BlockKeyGenerator
 {
 	public static long[] generate()
 	{
-		return new long[]{ISAAC.PRNG.nextLong(), ISAAC.PRNG.nextLong()};
+		return new long[]{ISAAC.PRNG.nextLong(), ISAAC.PRNG.nextLong(), ISAAC.PRNG.nextLong(), ISAAC.PRNG.nextLong()};
 	}
 }

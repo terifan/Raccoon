@@ -172,7 +172,7 @@ class SpaceMap
 
 			ByteArrayBuffer buffer = ByteArrayBuffer.alloc(blockSize * blockPointer.getAllocatedBlocks());
 
-			aBlockDeviceDirect.readBlock(blockPointer.getBlockIndex0(), buffer.array(), 0, blockSize * blockPointer.getAllocatedBlocks(), blockPointer.getBlockKey(new long[2]));
+			aBlockDeviceDirect.readBlock(blockPointer.getBlockIndex0(), buffer.array(), 0, blockSize * blockPointer.getAllocatedBlocks(), blockPointer.getBlockKey(new long[4]));
 
 			long[] hash = MurmurHash3.hash256(buffer.array(), 0, blockPointer.getLogicalSize(), blockPointer.getTransactionId());
 
