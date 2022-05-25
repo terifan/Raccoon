@@ -425,6 +425,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 	private void scan(BTreeNode aNode, ScanResult aScanResult)
 	{
+//		aScanResult.log.append("{"+aNode.mBlockPointer+"}");
 		if (aNode instanceof BTreeIndex)
 		{
 			BTreeIndex indexNode = (BTreeIndex)aNode;
@@ -459,15 +460,17 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 				if (node == null)
 				{
-//					BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
-//
-//					node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this) : new BTreeLeaf(this);
-//					node.mBlockPointer = bp;
-//					node.mMap = new ArrayMap(readBlock(bp));
-//
-//					indexNode.mChildren.put(key, node);
+					BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
 
-					aScanResult.log.append("'*'");
+					node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this) : new BTreeLeaf(this);
+					node.mBlockPointer = bp;
+					node.mMap = new ArrayMap(readBlock(bp));
+
+					indexNode.mChildren.put(key, node);
+
+					scan(node, aScanResult);
+
+//					aScanResult.log.append("'*'");
 				}
 				else
 				{

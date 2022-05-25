@@ -125,6 +125,11 @@ public class BTreeIndex extends BTreeNode
 			}
 		}
 
+//		ArrayMapEntry first = b.mMap.getFirst();
+//		b.mMap.remove(first, null);
+//		first.setKey(new byte[0]);
+//		b.mMap.put(first, null);
+
 		return new BTreeNode[]
 		{
 			a, b
@@ -162,8 +167,13 @@ public class BTreeIndex extends BTreeNode
 			}
 		}
 
-		MarshalledKey keyA = new MarshalledKey(a.mMap.getFirst().getKey());
-		MarshalledKey keyB = new MarshalledKey(midKeyBytes.getKey());
+		MarshalledKey keyA = MarshalledKey.unmarshall(new byte[0]);
+		MarshalledKey keyB = MarshalledKey.unmarshall(midKeyBytes.getKey());
+
+//		ArrayMapEntry first = b.mMap.getFirst();
+//		b.mMap.remove(first, null);
+//		first.setKey(new byte[0]);
+//		b.mMap.put(first, null);
 
 		BTreeIndex newIndex = new BTreeIndex(mImplementation);
 		newIndex.mMap = new ArrayMap(mIndexSize);

@@ -6,9 +6,6 @@ import java.util.TreeSet;
 
 public class MarshalledKey implements Comparable<MarshalledKey>
 {
-//	private static final byte REAL = (byte)0xfe;
-//	private static final byte FIRST = (byte)0xff;
-
 	private byte[] mBuffer;
 
 
@@ -17,56 +14,20 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 	}
 
 
-	public MarshalledKey(byte[] aKey)
+	public MarshalledKey(byte[] aBuffer)
 	{
-//		if (aKey[aKey.length - 1] == 0 || aKey[aKey.length - 1] == 1)
-//		{
-//			throw new IllegalArgumentException();
-//		}
-//		mBuffer = Arrays.copyOfRange(aKey, 0, aKey.length + 1);
-//		mBuffer[mBuffer.length - 1] = REAL;
-		mBuffer = aKey.clone();
+		mBuffer = aBuffer;
 	}
-
-
-//	public MarshalledKey(boolean aFirstKey)
-//	{
-//		mBuffer = new byte[]{(byte)(aFirstKey ? FIRST : REAL)};
-//	}
-
-
-//	public boolean isFirst()
-//	{
-//		return mBuffer[mBuffer.length - 1] == FIRST;
-//	}
-
-
-//	public byte[] getContent()
-//	{
-//		if (mBuffer[mBuffer.length - 1] != REAL && mBuffer[mBuffer.length - 1] != FIRST)
-//		{
-//			throw new IllegalArgumentException();
-//		}
-//		return Arrays.copyOfRange(mBuffer, 0, mBuffer.length - 1);
-//	}
 
 
 	public byte[] marshall()
 	{
-//		if (mBuffer[mBuffer.length - 1] != REAL && mBuffer[mBuffer.length - 1] != FIRST)
-//		{
-//			throw new IllegalArgumentException();
-//		}
 		return mBuffer.clone();
 	}
 
 
 	public static MarshalledKey unmarshall(byte[] aBuffer)
 	{
-//		if (aBuffer[aBuffer.length - 1] != REAL && aBuffer[aBuffer.length - 1] != FIRST)
-//		{
-//			throw new IllegalArgumentException();
-//		}
 		MarshalledKey k = new MarshalledKey();
 		k.mBuffer = aBuffer;
 		return k;

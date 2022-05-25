@@ -225,7 +225,8 @@ public class TestTiny
 				insert(db, "Dwell");
 				insert(db, "Mold");
 				insert(db, "Karate");
-				dump(db);
+
+//				dump(db);
 
 				boolean all = true;
 				for (String key : mKeys)

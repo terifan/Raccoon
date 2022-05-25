@@ -38,6 +38,8 @@ public class BTreeLeaf extends BTreeNode
 	@Override
 	BTreeNode[] split()
 	{
+		mImplementation.freeBlock(mBlockPointer);
+
 		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mLeafSize);
 
 		BTreeLeaf a = new BTreeLeaf(mImplementation);
@@ -56,6 +58,8 @@ public class BTreeLeaf extends BTreeNode
 
 	BTreeIndex upgrade()
 	{
+		mImplementation.freeBlock(mBlockPointer);
+
 		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mLeafSize);
 
 		BTreeLeaf a = new BTreeLeaf(mImplementation);
