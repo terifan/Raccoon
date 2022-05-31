@@ -50,6 +50,8 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	boolean put(BTreeIndex aParent, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
+		System.out.println("put");
+
 		mModified =  true;
 
 		ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey.marshall());
@@ -72,8 +74,8 @@ public class BTreeIndex extends BTreeNode
 
 		if (!nearestNode.put(this, aKey, aEntry, aResult))
 		{
-			if (new Random().nextBoolean())
-				commit();
+//			if (new Random().nextBoolean())
+//				commit();
 
 			return false;
 		}
@@ -98,9 +100,11 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	BTreeNode[] split()
 	{
+		System.out.println("split index");
+
 		mImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mIndexSize);
+		ArrayMap[] maps = mMap.split(mIndexSize);
 
 		BTreeIndex a = new BTreeIndex(mImplementation);
 		BTreeIndex b = new BTreeIndex(mImplementation);
@@ -125,10 +129,10 @@ public class BTreeIndex extends BTreeNode
 			}
 		}
 
-//		ArrayMapEntry first = b.mMap.getFirst();
-//		b.mMap.remove(first, null);
-//		first.setKey(new byte[0]);
-//		b.mMap.put(first, null);
+		ArrayMapEntry first = b.mMap.getFirst();
+		b.mMap.remove(first, null);
+		first.setKey(new byte[0]);
+		b.mMap.put(first, null);
 
 		return new BTreeNode[]
 		{
@@ -139,9 +143,11 @@ public class BTreeIndex extends BTreeNode
 
 	BTreeNode grow()
 	{
+		System.out.println("grow");
+
 		mImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mIndexSize);
+		ArrayMap[] maps = mMap.split(mIndexSize);
 
 		BTreeIndex a = new BTreeIndex(mImplementation);
 		BTreeIndex b = new BTreeIndex(mImplementation);
@@ -170,10 +176,10 @@ public class BTreeIndex extends BTreeNode
 		MarshalledKey keyA = MarshalledKey.unmarshall(new byte[0]);
 		MarshalledKey keyB = MarshalledKey.unmarshall(midKeyBytes.getKey());
 
-//		ArrayMapEntry first = b.mMap.getFirst();
-//		b.mMap.remove(first, null);
-//		first.setKey(new byte[0]);
-//		b.mMap.put(first, null);
+		ArrayMapEntry first = b.mMap.getFirst();
+		b.mMap.remove(first, null);
+		first.setKey(new byte[0]);
+		b.mMap.put(first, null);
 
 		BTreeIndex newIndex = new BTreeIndex(mImplementation);
 		newIndex.mMap = new ArrayMap(mIndexSize);

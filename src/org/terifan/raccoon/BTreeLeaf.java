@@ -28,8 +28,8 @@ public class BTreeLeaf extends BTreeNode
 
 		boolean b = !mMap.insert(aEntry, aResult);
 
-		if (new Random().nextBoolean())
-			commit();
+//		if (new Random().nextBoolean())
+//			commit();
 
 		return b;
 	}
@@ -38,6 +38,8 @@ public class BTreeLeaf extends BTreeNode
 	@Override
 	BTreeNode[] split()
 	{
+		System.out.println("split leaf");
+
 		mImplementation.freeBlock(mBlockPointer);
 
 		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mLeafSize);
@@ -58,6 +60,8 @@ public class BTreeLeaf extends BTreeNode
 
 	BTreeIndex upgrade()
 	{
+		System.out.println("upgrade");
+
 		mImplementation.freeBlock(mBlockPointer);
 
 		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mLeafSize);
