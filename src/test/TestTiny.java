@@ -1,20 +1,18 @@
 package test;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
-import org.terifan.raccoon.LogLevel;
 import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.annotations.Column;
 import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.annotations.Id;
-import org.terifan.raccoon.util.Log;
 import org.terifan.treegraph.TreeRenderer;
 import org.terifan.treegraph.VerticalLayout;
-import org.terifan.treegraph.util.TextSlice;
 import org.terifan.treegraph.util.VerticalImageFrame;
 
 
@@ -22,7 +20,7 @@ public class TestTiny
 {
 	private static VerticalImageFrame mTreeFrame = new VerticalImageFrame();
 	private static Random rnd = new Random(1);
-	private static HashSet<String> mKeys = new HashSet<>();
+	private static HashMap<String,String> mEntries = new HashMap<>();
 
 //	private static ArrayMap arrayMap = new ArrayMap(1000);
 
@@ -229,15 +227,16 @@ public class TestTiny
 //				dump(db);
 
 				boolean all = true;
-				for (String key : mKeys)
+				for (String key : mEntries.keySet())
 				{
 					try
 					{
-						all &= db.get(new KeyValue(key)) != null;
+						all &= db.get(new KeyValue(key)).mValue.equals(mEntries.get(key));
 					}
 					catch (Exception e)
 					{
-						System.out.println(key);
+						all = false;
+						System.out.println("missing: " + key);
 						e.printStackTrace(System.out);
 						break;
 					}
@@ -261,7 +260,7 @@ public class TestTiny
 				System.out.println(value);
 
 				boolean all = true;
-				for (String key : mKeys)
+				for (String key : mEntries.keySet())
 				{
 					try
 					{
@@ -316,9 +315,9 @@ public class TestTiny
 
 	private static void insert(Database aDatabase, String aKey) throws IOException
 	{
-		mKeys.add(aKey);
-
 		String value = Helper.createString(rnd);
+
+		mEntries.put(aKey, value);
 
 		aDatabase.save(new KeyValue(aKey, value));
 		dump(aDatabase);

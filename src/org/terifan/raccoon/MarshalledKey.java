@@ -29,7 +29,7 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 	public static MarshalledKey unmarshall(byte[] aBuffer)
 	{
 		MarshalledKey k = new MarshalledKey();
-		k.mBuffer = aBuffer;
+		k.mBuffer = aBuffer.clone();
 		return k;
 	}
 

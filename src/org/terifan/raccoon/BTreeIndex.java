@@ -130,6 +130,17 @@ public class BTreeIndex extends BTreeNode
 		}
 
 		ArrayMapEntry first = b.mMap.getFirst();
+
+		MarshalledKey keyA = MarshalledKey.unmarshall(new byte[0]);
+		MarshalledKey keyB = MarshalledKey.unmarshall(first.getKey());
+
+		BTreeNode firstChild = b.mChildren.get(keyB);
+		if (firstChild != null)
+		{
+			b.mChildren.remove(keyB);
+			b.mChildren.put(keyA, firstChild);
+		}
+
 		b.mMap.remove(first, null);
 		first.setKey(new byte[0]);
 		b.mMap.put(first, null);
@@ -177,6 +188,15 @@ public class BTreeIndex extends BTreeNode
 		MarshalledKey keyB = MarshalledKey.unmarshall(midKeyBytes.getKey());
 
 		ArrayMapEntry first = b.mMap.getFirst();
+
+		BTreeNode firstChild = b.mChildren.get(MarshalledKey.unmarshall(first.getKey()));
+
+		if (firstChild != null)
+		{
+			b.mChildren.remove(MarshalledKey.unmarshall(first.getKey()));
+			b.mChildren.put(keyA, firstChild);
+		}
+
 		b.mMap.remove(first, null);
 		first.setKey(new byte[0]);
 		b.mMap.put(first, null);
