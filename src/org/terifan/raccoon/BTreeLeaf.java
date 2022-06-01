@@ -36,7 +36,7 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	BTreeNode[] split()
+	Object[] split()
 	{
 		System.out.println("split leaf");
 
@@ -51,9 +51,9 @@ public class BTreeLeaf extends BTreeNode
 		a.mModified = true;
 		b.mModified = true;
 
-		return new BTreeNode[]
+		return new Object[]
 		{
-			a, b
+			a, b, MarshalledKey.unmarshall(b.mMap.getFirst().getKey())
 		};
 	}
 

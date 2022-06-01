@@ -82,12 +82,12 @@ public class BTreeIndex extends BTreeNode
 
 		mMap.remove(nearestEntry, null);
 
-		BTreeNode[] split = nearestNode.split();
+		Object[] split = nearestNode.split();
 
-		MarshalledKey rightKey = new MarshalledKey(split[1].mMap.getFirst().getKey());
+		MarshalledKey rightKey = (MarshalledKey)split[2];
 
-		mChildren.put(nearestKey, split[0]);
-		mChildren.put(rightKey, split[1]);
+		mChildren.put(nearestKey, ((BTreeNode)split[0]));
+		mChildren.put(rightKey, ((BTreeNode)split[1]));
 
 		boolean overflow = false;
 		overflow |= !mMap.insert(new ArrayMapEntry(nearestKey.marshall(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
@@ -98,7 +98,7 @@ public class BTreeIndex extends BTreeNode
 
 
 	@Override
-	BTreeNode[] split()
+	Object[] split()
 	{
 		System.out.println("split index");
 
@@ -135,19 +135,18 @@ public class BTreeIndex extends BTreeNode
 		MarshalledKey keyB = MarshalledKey.unmarshall(first.getKey());
 
 		BTreeNode firstChild = b.mChildren.get(keyB);
-		if (firstChild != null)
-		{
-			b.mChildren.remove(keyB);
-			b.mChildren.put(keyA, firstChild);
-		}
 
+		b.mChildren.remove(keyB);
 		b.mMap.remove(first, null);
-		first.setKey(new byte[0]);
+
+		first.setKey(keyA.marshall());
+
+		b.mChildren.put(keyA, firstChild);
 		b.mMap.put(first, null);
 
-		return new BTreeNode[]
+		return new Object[]
 		{
-			a, b
+			a, b, keyB
 		};
 	}
 
@@ -184,21 +183,19 @@ public class BTreeIndex extends BTreeNode
 			}
 		}
 
-		MarshalledKey keyA = MarshalledKey.unmarshall(new byte[0]);
-		MarshalledKey keyB = MarshalledKey.unmarshall(midKeyBytes.getKey());
-
 		ArrayMapEntry first = b.mMap.getFirst();
 
-		BTreeNode firstChild = b.mChildren.get(MarshalledKey.unmarshall(first.getKey()));
+		MarshalledKey keyA = MarshalledKey.unmarshall(new byte[0]);
+		MarshalledKey keyB = MarshalledKey.unmarshall(first.getKey());
 
-		if (firstChild != null)
-		{
-			b.mChildren.remove(MarshalledKey.unmarshall(first.getKey()));
-			b.mChildren.put(keyA, firstChild);
-		}
+		BTreeNode firstChild = b.mChildren.get(keyB);
 
+		b.mChildren.remove(keyB);
 		b.mMap.remove(first, null);
-		first.setKey(new byte[0]);
+
+		first.setKey(keyA.marshall());
+
+		b.mChildren.put(keyA, firstChild);
 		b.mMap.put(first, null);
 
 		BTreeIndex newIndex = new BTreeIndex(mImplementation);
