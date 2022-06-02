@@ -15,9 +15,9 @@ public class BTreeIndex extends BTreeNode
 	TreeMap<MarshalledKey, BTreeNode> mChildren;
 
 
-	BTreeIndex(BTreeTableImplementation aImplementation)
+	BTreeIndex(BTreeTableImplementation aImplementation, BTreeIndex aParent)
 	{
-		super(aImplementation);
+		super(aImplementation, aParent);
 		mChildren = new TreeMap<>((o1, o2) -> o1.compareTo(o2));
 	}
 
@@ -36,7 +36,7 @@ public class BTreeIndex extends BTreeNode
 		{
 			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(nearestEntry.getValue()));
 
-			nearestNode = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation) : new BTreeLeaf(mImplementation);
+			nearestNode = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this) : new BTreeLeaf(mImplementation, this);
 			nearestNode.mBlockPointer = bp;
 			nearestNode.mMap = new ArrayMap(mImplementation.readBlock(bp));
 
@@ -48,7 +48,7 @@ public class BTreeIndex extends BTreeNode
 
 
 	@Override
-	boolean put(BTreeIndex aParent, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	boolean put(MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
 		System.out.println("put");
 
@@ -65,14 +65,14 @@ public class BTreeIndex extends BTreeNode
 		{
 			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(nearestEntry.getValue()));
 
-			nearestNode = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation) : new BTreeLeaf(mImplementation);
+			nearestNode = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this) : new BTreeLeaf(mImplementation, this);
 			nearestNode.mBlockPointer = bp;
 			nearestNode.mMap = new ArrayMap(mImplementation.readBlock(bp));
 
 			mChildren.put(nearestKey, nearestNode);
 		}
 
-		if (!nearestNode.put(this, aKey, aEntry, aResult))
+		if (!nearestNode.put(aKey, aEntry, aResult))
 		{
 //			if (new Random().nextBoolean())
 //				commit();
@@ -98,6 +98,31 @@ public class BTreeIndex extends BTreeNode
 
 
 	@Override
+	boolean remove(MarshalledKey aKey, Result<ArrayMapEntry> aOldEntry)
+	{
+		ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey.marshall());
+		mMap.nearestIndexEntry(nearestEntry);
+
+		MarshalledKey nearestKey = new MarshalledKey(nearestEntry.getKey());
+
+		BTreeNode nearestNode = mChildren.get(nearestKey);
+
+		if (nearestNode == null)
+		{
+			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(nearestEntry.getValue()));
+
+			nearestNode = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this) : new BTreeLeaf(mImplementation, this);
+			nearestNode.mBlockPointer = bp;
+			nearestNode.mMap = new ArrayMap(mImplementation.readBlock(bp));
+
+			mChildren.put(nearestKey, nearestNode);
+		}
+
+		return nearestNode.remove(aKey, aOldEntry);
+	}
+
+
+	@Override
 	Object[] split()
 	{
 		System.out.println("split index");
@@ -106,8 +131,8 @@ public class BTreeIndex extends BTreeNode
 
 		ArrayMap[] maps = mMap.split(mIndexSize);
 
-		BTreeIndex a = new BTreeIndex(mImplementation);
-		BTreeIndex b = new BTreeIndex(mImplementation);
+		BTreeIndex a = new BTreeIndex(mImplementation, this);
+		BTreeIndex b = new BTreeIndex(mImplementation, this);
 		a.mMap = maps[0];
 		b.mMap = maps[1];
 		a.mModified = true;
@@ -159,8 +184,8 @@ public class BTreeIndex extends BTreeNode
 
 		ArrayMap[] maps = mMap.split(mIndexSize);
 
-		BTreeIndex a = new BTreeIndex(mImplementation);
-		BTreeIndex b = new BTreeIndex(mImplementation);
+		BTreeIndex a = new BTreeIndex(mImplementation, this);
+		BTreeIndex b = new BTreeIndex(mImplementation, this);
 		a.mMap = maps[0];
 		b.mMap = maps[1];
 		a.mModified = true;
@@ -198,7 +223,7 @@ public class BTreeIndex extends BTreeNode
 		b.mChildren.put(keyA, firstChild);
 		b.mMap.put(first, null);
 
-		BTreeIndex newIndex = new BTreeIndex(mImplementation);
+		BTreeIndex newIndex = new BTreeIndex(mImplementation, this);
 		newIndex.mMap = new ArrayMap(mIndexSize);
 		newIndex.mMap.put(new ArrayMapEntry(keyA.marshall(), POINTER_PLACEHOLDER, (byte)0x99), null);
 		newIndex.mMap.put(new ArrayMapEntry(keyB.marshall(), POINTER_PLACEHOLDER, (byte)0x22), null);

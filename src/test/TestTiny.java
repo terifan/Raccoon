@@ -276,35 +276,25 @@ public class TestTiny
 				System.out.println(all ? "All keys found" : "Missing keys");
 			}
 
-//			System.out.println();
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+			{
+				for (String key : mEntries.keySet())
+				{
+					try
+					{
+						db.remove(new KeyValue(key));
+						dump(db);
+					}
+					catch (Exception e)
+					{
+						System.out.println(key);
+						e.printStackTrace(System.out);
+						break;
+					}
+				}
 
-//			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE))
-//			{
-//				Fruit apple = new Fruit(1L);
-//				db.get(apple);
-//				apple.mWeight = 1.1;
-//				db.save(apple);
-//
-//				db.commit();
-//			}
-//
-//			try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
-//			{
-//				System.out.println("-------- -------- -------- -------- -------- -------- -------- -------- -------- --------");
-//
-//				for (Table table : db.getTables())
-//				{
-//					System.out.println(table.getEntityName());
-//					for (FieldDescriptor f : table.getFields())
-//					{
-//						System.out.println("\t" + f);
-//					}
-//				}
-//
-//				System.out.println("-------- -------- -------- -------- -------- -------- -------- -------- -------- --------");
-//
-//				db.list(Fruit.class).forEach(System.out::println);
-//			}
+				if (db.getTable(KeyValue.class).size() != 0) throw new IllegalStateException("size: " + db.getTable(KeyValue.class).size());
+			}
 		}
 		catch (Throwable e)
 		{

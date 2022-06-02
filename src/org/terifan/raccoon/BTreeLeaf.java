@@ -1,6 +1,5 @@
 package org.terifan.raccoon;
 
-import java.util.Random;
 import static org.terifan.raccoon.BTreeTableImplementation.POINTER_PLACEHOLDER;
 import static org.terifan.raccoon.BTreeTableImplementation.mIndexSize;
 import org.terifan.raccoon.util.Result;
@@ -8,9 +7,9 @@ import org.terifan.raccoon.util.Result;
 
 public class BTreeLeaf extends BTreeNode
 {
-	BTreeLeaf(BTreeTableImplementation aImplementation)
+	BTreeLeaf(BTreeTableImplementation aImplementation, BTreeIndex aParent)
 	{
-		super(aImplementation);
+		super(aImplementation, aParent);
 	}
 
 
@@ -22,7 +21,7 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	boolean put(BTreeIndex aParent, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	boolean put(MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
 		mModified =  true;
 
@@ -36,6 +35,13 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
+	boolean remove(MarshalledKey aKey, Result<ArrayMapEntry> aOldEntry)
+	{
+		return mMap.remove(new ArrayMapEntry(aKey.marshall()), aOldEntry);
+	}
+
+
+	@Override
 	Object[] split()
 	{
 		System.out.println("split leaf");
@@ -44,8 +50,8 @@ public class BTreeLeaf extends BTreeNode
 
 		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mLeafSize);
 
-		BTreeLeaf a = new BTreeLeaf(mImplementation);
-		BTreeLeaf b = new BTreeLeaf(mImplementation);
+		BTreeLeaf a = new BTreeLeaf(mImplementation, mParent);
+		BTreeLeaf b = new BTreeLeaf(mImplementation, mParent);
 		a.mMap = maps[0];
 		b.mMap = maps[1];
 		a.mModified = true;
@@ -66,8 +72,8 @@ public class BTreeLeaf extends BTreeNode
 
 		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mLeafSize);
 
-		BTreeLeaf a = new BTreeLeaf(mImplementation);
-		BTreeLeaf b = new BTreeLeaf(mImplementation);
+		BTreeLeaf a = new BTreeLeaf(mImplementation, mParent);
+		BTreeLeaf b = new BTreeLeaf(mImplementation, mParent);
 		a.mMap = maps[0];
 		b.mMap = maps[1];
 		a.mModified = true;
@@ -82,7 +88,7 @@ public class BTreeLeaf extends BTreeNode
 		MarshalledKey keyA = MarshalledKey.unmarshall(new byte[0]);
 		MarshalledKey keyB = MarshalledKey.unmarshall(bk.getKey());
 
-		BTreeIndex newIndex = new BTreeIndex(mImplementation);
+		BTreeIndex newIndex = new BTreeIndex(mImplementation, mParent);
 		newIndex.mMap = new ArrayMap(mIndexSize);
 		newIndex.mMap.put(new ArrayMapEntry(keyA.marshall(), POINTER_PLACEHOLDER, (byte)0x77), null);
 		newIndex.mMap.put(new ArrayMapEntry(keyB.marshall(), POINTER_PLACEHOLDER, (byte)0x66), null);

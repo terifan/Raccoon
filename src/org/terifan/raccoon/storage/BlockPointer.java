@@ -320,6 +320,13 @@ public class BlockPointer implements Serializable
 	}
 
 
+	public BlockPointer unmarshal(byte[] aBuffer, int aOffset)
+	{
+		System.arraycopy(aBuffer, aOffset, mBuffer, 0, SIZE);
+		return this;
+	}
+
+
 	@Override
 	public int hashCode()
 	{

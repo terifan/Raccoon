@@ -21,7 +21,6 @@ class BTreeTableImplementation extends TableImplementation
 
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
-	private boolean mChanged;
 	private int mModCount;
 	private BTreeNode mRoot;
 
@@ -89,7 +88,7 @@ class BTreeTableImplementation extends TableImplementation
 		BlockPointer bp = new BlockPointer();
 		bp.unmarshal(buffer);
 
-		mRoot = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this) : new BTreeLeaf(this);
+		mRoot = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, null) : new BTreeLeaf(this, null);
 		mRoot.mBlockPointer = bp;
 		mRoot.mMap = new ArrayMap(readBlock(bp));
 	}
@@ -130,7 +129,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		Result<ArrayMapEntry> result = new Result<>();
 
-		if (mRoot.put(null, new MarshalledKey(aEntry.getKey()), aEntry, result))
+		if (mRoot.put(new MarshalledKey(aEntry.getKey()), aEntry, result))
 		{
 			if (mRoot instanceof BTreeLeaf)
 			{
@@ -141,8 +140,6 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 				mRoot = ((BTreeIndex)mRoot).grow();
 			}
 		}
-
-		mChanged = true;
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
@@ -166,12 +163,8 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-//		LeafNode node = loadNode(computeIndex(aEntry));
-//
-//		boolean changed = node.mMap.remove(aEntry, oldEntry);
-//
-//		mChanged |= changed;
-//		node.mChanged |= changed;
+		mRoot.remove(new MarshalledKey(aEntry.getKey()), oldEntry);
+
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
 
@@ -203,7 +196,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	@Override
 	public boolean isChanged()
 	{
-		return mChanged;
+		return mRoot.mModified;
 	}
 
 
@@ -214,7 +207,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		try
 		{
-			if (mChanged)
+			if (mRoot.mModified)
 			{
 				int modCount = mModCount; // no increment
 				Log.i("commit table");
@@ -228,8 +221,6 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 				{
 					mBlockAccessor.getBlockDevice().commit();
 				}
-
-				mChanged = false;
 
 				Log.i("table commit finished; root block is %s", mRoot.mBlockPointer);
 
@@ -295,8 +286,6 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 //			mDirectory = new Directory(mRootBlockPointer);
 //			mNodes = new LeafNode[1 << mDirectory.getPrefixLength()];
 		}
-
-		mChanged = false;
 	}
 
 
@@ -343,7 +332,9 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		Result<Integer> result = new Result<>(0);
 
-		new BTreeNodeIterator(mRoot).forEachRemaining(node -> result.set(result.get() + node.mMap.size()));
+//		new BTreeNodeIterator(mRoot).forEachRemaining(node -> result.set(result.get() + node.mMap.size()));
+
+		visit(mRoot, node -> result.set(result.get() + node.mMap.size()));
 
 		return result.get();
 	}
@@ -460,9 +451,9 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 				if (node == null)
 				{
-					BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
+					BlockPointer bp = new BlockPointer().unmarshal(entry.getValue(), 0);
 
-					node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this) : new BTreeLeaf(this);
+					node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, indexNode) : new BTreeLeaf(this, indexNode);
 					node.mBlockPointer = bp;
 					node.mMap = new ArrayMap(readBlock(bp));
 
@@ -528,7 +519,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 	private void setupEmptyTable()
 	{
-		mRoot = new BTreeLeaf(this);
+		mRoot = new BTreeLeaf(this, null);
 		mRoot.mMap = new ArrayMap(mLeafSize);
 	}
 
@@ -548,5 +539,38 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	public long getGenerationCounter()
 	{
 		return mGenerationCounter;
+	}
+
+
+	protected void visit(BTreeNode aNode, Consumer<BTreeLeaf> aConsumer)
+	{
+		if (aNode instanceof BTreeIndex)
+		{
+			BTreeIndex indexNode = (BTreeIndex)aNode;
+
+			for (ArrayMapEntry entry : indexNode.mMap)
+			{
+				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
+				BTreeNode node = indexNode.mChildren.get(key);
+
+				if (node == null)
+				{
+					BlockPointer bp = new BlockPointer().unmarshal(entry.getValue(), 0);
+
+					node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, indexNode) : new BTreeLeaf(this, indexNode);
+					node.mBlockPointer = bp;
+					node.mMap = new ArrayMap(readBlock(bp));
+
+					indexNode.mChildren.put(key, node);
+				}
+
+				visit(node, aConsumer);
+			}
+		}
+		else
+		{
+			BTreeLeaf leafNode = (BTreeLeaf)aNode;
+			aConsumer.accept(leafNode);
+		}
 	}
 }

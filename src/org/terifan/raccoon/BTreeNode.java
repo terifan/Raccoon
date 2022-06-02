@@ -11,19 +11,25 @@ abstract class BTreeNode
 	BlockPointer mBlockPointer;
 	ArrayMap mMap;
 	boolean mModified;
+	BTreeIndex mParent;
+	long mGenerationId;
 
 
-	public BTreeNode(BTreeTableImplementation aImplementation)
+	public BTreeNode(BTreeTableImplementation aImplementation, BTreeIndex aParent)
 	{
 		mImplementation = aImplementation;
 		mNodeId = mImplementation.nextNodeIndex();
+		mParent = aParent;
 	}
 
 
-	abstract boolean get(MarshalledKey aKey, ArrayMapEntry aEntry);
+	abstract boolean get(MarshalledKey aKey, ArrayMapEntry oEntry);
 
 
-	abstract boolean put(BTreeIndex aParent, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult);
+	abstract boolean put(MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
+
+
+	abstract boolean remove(MarshalledKey aKey, Result<ArrayMapEntry> oOldEntry);
 
 
 	abstract Object[] split();

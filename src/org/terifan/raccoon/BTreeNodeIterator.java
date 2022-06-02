@@ -1,43 +1,68 @@
 package org.terifan.raccoon;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-public class BTreeNodeIterator implements Iterator<BTreeNode>
+public class BTreeNodeIterator implements Iterator<BTreeLeaf>
 {
-	private int mPosition;
-	private BTreeNode mCurrent;
+	private ArrayList<Integer> mPosition;
+	private HashMap<Integer, BTreeIndex> mIndex;
+	private BTreeLeaf mNext;
 
 
 	BTreeNodeIterator(BTreeNode aRoot)
 	{
-		mCurrent = aRoot;
+		if (aRoot instanceof BTreeLeaf)
+		{
+			mNext = (BTreeLeaf)aRoot;
+		}
+		else
+		{
+			mIndex = new HashMap<>();
+			mIndex.put(0, (BTreeIndex)aRoot);
+			mPosition = new ArrayList<>();
+			mPosition.add(0);
+		}
 	}
 
+	//         /--- a
+	//   /----o---- b
+	//   |     \--- c
+	//   |     /--- d
+	// --o----o---- e
+	//   |     \--- f
+	//   |     /--- g
+	//   \----o---- h
+	//         \--- i
 
 	@Override
 	public boolean hasNext()
 	{
-		if (mCurrent == null)
+		if (mNext != null)
 		{
-//				if (mPosition == 0)
-			{
-				return false;
-			}
-
-//				mNode = null;
-//				mPosition++;
+			return true;
 		}
 
-		return true;
+//		ArrayMapEntry entry = new ArrayMapEntry();
+//
+//		ArrayMap map = mIndex.get(mIndex.size() - 1).mMap;
+//		int pos = mPosition.get(mPosition.size() - 1);
+//
+//		map.get(pos, entry);
+
+		return false;
 	}
 
 
 	@Override
-	public BTreeNode next()
+	public BTreeLeaf next()
 	{
-		BTreeNode tmp = mCurrent;
-		mCurrent = null;
+		BTreeLeaf tmp = mNext;
+		mNext = null;
 		return tmp;
 	}
 }
