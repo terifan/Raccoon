@@ -2,7 +2,6 @@ package test;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Random;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
@@ -13,6 +12,7 @@ import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.annotations.Id;
 import org.terifan.treegraph.TreeRenderer;
 import org.terifan.treegraph.VerticalLayout;
+import org.terifan.treegraph.util.TextSlice;
 import org.terifan.treegraph.util.VerticalImageFrame;
 
 
@@ -278,12 +278,15 @@ public class TestTiny
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 			{
+				int size = db.getTable(KeyValue.class).size();
 				for (String key : mEntries.keySet())
 				{
 					try
 					{
-						db.remove(new KeyValue(key));
+						mTreeFrame.add(new TextSlice(key));
+						boolean removed = db.remove(new KeyValue(key));
 						dump(db);
+						if(!removed)throw new IllegalStateException();
 					}
 					catch (Exception e)
 					{
@@ -291,9 +294,9 @@ public class TestTiny
 						e.printStackTrace(System.out);
 						break;
 					}
-				}
 
-				if (db.getTable(KeyValue.class).size() != 0) throw new IllegalStateException("size: " + db.getTable(KeyValue.class).size());
+					if (db.getTable(KeyValue.class).size() != --size) throw new IllegalStateException("size: " + db.getTable(KeyValue.class).size() + ", expected: " + size);
+				}
 			}
 		}
 		catch (Throwable e)

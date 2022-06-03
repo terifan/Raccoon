@@ -120,16 +120,32 @@ public class BTreeIndex extends BTreeNode
 
 		boolean b = nearestNode.remove(aKey, aOldEntry);
 
-		if (nearestNode instanceof BTreeLeaf && nearestNode.mMap.size() == 0 && nearestKey.marshall().length > 0)
+		if (nearestNode.mMap.isEmpty())
 		{
 			mChildren.remove(nearestKey);
 			mMap.remove(nearestEntry, null);
+
+			if (!mMap.isEmpty())
+			{
+				ArrayMapEntry first = mMap.getFirst();
+
+				if (first.getKey().length > 0)
+				{
+					MarshalledKey keyA = MarshalledKey.unmarshall(new byte[0]);
+					MarshalledKey keyB = MarshalledKey.unmarshall(first.getKey());
+
+					BTreeNode firstChild = mChildren.get(keyB);
+
+					mChildren.remove(keyB);
+					mMap.remove(first, null);
+
+					first.setKey(keyA.marshall());
+
+					if (firstChild != null) mChildren.put(keyA, firstChild);
+					mMap.put(first, null);
+				}
+			}
 		}
-//		if (mMap.size() == 1 && mChildren.firstEntry().getValue().mMap.isEmpty())
-//		{
-//			mMap.clear();
-//			mChildren.clear();
-//		}
 
 		return b;
 	}
