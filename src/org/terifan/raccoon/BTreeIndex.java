@@ -118,7 +118,20 @@ public class BTreeIndex extends BTreeNode
 			mChildren.put(nearestKey, nearestNode);
 		}
 
-		return nearestNode.remove(aKey, aOldEntry);
+		boolean b = nearestNode.remove(aKey, aOldEntry);
+
+		if (nearestNode instanceof BTreeLeaf && nearestNode.mMap.size() == 0 && nearestKey.marshall().length > 0)
+		{
+			mChildren.remove(nearestKey);
+			mMap.remove(nearestEntry, null);
+		}
+//		if (mMap.size() == 1 && mChildren.firstEntry().getValue().mMap.isEmpty())
+//		{
+//			mMap.clear();
+//			mChildren.clear();
+//		}
+
+		return b;
 	}
 
 
