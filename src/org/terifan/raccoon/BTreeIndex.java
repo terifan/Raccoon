@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.TreeMap;
@@ -52,7 +53,7 @@ public class BTreeIndex extends BTreeNode
 	{
 		System.out.println("put");
 
-		mModified =  true;
+		mModified = true;
 
 		ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey.marshall());
 		mMap.nearestIndexEntry(nearestEntry);
@@ -141,13 +142,82 @@ public class BTreeIndex extends BTreeNode
 
 					first.setKey(keyA.marshall());
 
-					if (firstChild != null) mChildren.put(keyA, firstChild);
+					if (firstChild != null)
+					{
+						mChildren.put(keyA, firstChild);
+					}
 					mMap.put(first, null);
 				}
 			}
 		}
 
+		if (mMap.size() == 1)
+		{
+			BTreeIndex prev = null;
+			BTreeIndex next = null;
+			ArrayMapEntry entry = null;
+			for (int i = 0; i < mParent.mMap.size(); i++)
+			{
+				entry = new ArrayMapEntry();
+				mParent.mMap.get(i, entry);
+				BTreeNode node = mParent.mChildren.get(new MarshalledKey(entry.getKey()));
+				if (node == this)
+				{
+					if (prev == null)
+					{
+						ArrayMapEntry tmp = new ArrayMapEntry();
+						mParent.mMap.get(i + 1, tmp);
+						next = (BTreeIndex)mParent.mChildren.get(new MarshalledKey(tmp.getKey()));
+					}
+					break;
+				}
+				prev = (BTreeIndex)node;
+			}
+
+			BTreeNode dstNode;
+			if (next != null)
+			{
+				dstNode = next.getNode(0);
+			}
+			else
+			{
+				dstNode = prev.getNode(prev.mMap.size() - 1);
+			}
+
+			BTreeNode srcNode = mChildren.firstEntry().getValue();
+			for (int i = 0; i < srcNode.mMap.size(); i++)
+			{
+				ArrayMapEntry tmp = new ArrayMapEntry();
+				dstNode.mMap.put(srcNode.mMap.get(i, tmp), null);
+			}
+
+			mParent.mMap.remove(entry, null);
+			mParent.mChildren.remove(new MarshalledKey(entry.getKey()));
+
+//			BTreeTableImplementation.STOP = true;
+		}
+
 		return b;
+	}
+
+
+	BTreeNode getNode(int aIndex)
+	{
+		ArrayMapEntry entry = new ArrayMapEntry();
+
+		mMap.get(aIndex, entry);
+
+		BTreeNode node = mChildren.get(new MarshalledKey(entry.getKey()));
+
+		if (node == null)
+		{
+			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
+			node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this) : new BTreeLeaf(mImplementation, this);
+			node.mBlockPointer = bp;
+			node.mMap = new ArrayMap(mImplementation.readBlock(bp));
+		}
+
+		return node;
 	}
 
 
@@ -285,7 +355,6 @@ public class BTreeIndex extends BTreeNode
 //		{
 //			return false;
 //		}
-
 		mImplementation.freeBlock(mBlockPointer);
 
 		mBlockPointer = mImplementation.writeBlock(mMap.array(), BlockType.INDEX);

@@ -13,7 +13,7 @@ import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 
 
-class BTreeTableImplementation extends TableImplementation
+public class BTreeTableImplementation extends TableImplementation
 {
 	static byte[] POINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
 	static int mIndexSize = 512;
@@ -27,6 +27,8 @@ class BTreeTableImplementation extends TableImplementation
 	private TreeMap<Long, BTreeNode> mLRU;
 	private long mGenerationCounter;
 	private long mNodeCounter;
+
+	public static boolean STOP;
 
 
 	public BTreeTableImplementation(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionGroup, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName)

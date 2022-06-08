@@ -3,6 +3,7 @@ package test;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Random;
+import org.terifan.raccoon.BTreeTableImplementation;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.ScanResult;
@@ -287,6 +288,7 @@ public class TestTiny
 						boolean removed = db.remove(new KeyValue(key));
 						dump(db);
 						if(!removed)throw new IllegalStateException();
+						if (BTreeTableImplementation.STOP) throw new IllegalStateException();
 					}
 					catch (Exception e)
 					{
@@ -314,6 +316,8 @@ public class TestTiny
 
 		aDatabase.save(new KeyValue(aKey, value));
 		dump(aDatabase);
+
+		if (BTreeTableImplementation.STOP) throw new IllegalStateException();
 
 //		if (rnd.nextInt(10) < 3)
 //		{

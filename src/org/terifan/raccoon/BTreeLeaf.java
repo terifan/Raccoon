@@ -125,6 +125,6 @@ public class BTreeLeaf extends BTreeNode
 	@Override
 	public String toString()
 	{
-		return "BTreeLeaf{" + mMap + '}';
+		return "BTreeLeaf{mMap=" + mMap + '}';
 	}
 }
