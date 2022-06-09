@@ -90,7 +90,7 @@ public class BTreeTableImplementation extends TableImplementation
 		BlockPointer bp = new BlockPointer();
 		bp.unmarshal(buffer);
 
-		mRoot = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, null) : new BTreeLeaf(this, null);
+		mRoot = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, null, bp.getBlockLevel()) : new BTreeLeaf(this, null);
 		mRoot.mBlockPointer = bp;
 		mRoot.mMap = new ArrayMap(readBlock(bp));
 	}
@@ -103,7 +103,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 		mGenerationCounter++;
 
-aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
+		aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		return mRoot.get(new MarshalledKey(aEntry.getKey()), aEntry);
 	}
@@ -116,7 +116,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		mGenerationCounter++;
 
-aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
+		aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		aEntry = new ArrayMapEntry(new MarshalledKey(aEntry.getKey()).marshall(), aEntry.getValue(), aEntry.getType());
 
@@ -157,7 +157,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		mGenerationCounter++;
 
-aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
+		aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		int modCount = ++mModCount;
 		Log.i("put");
@@ -335,7 +335,6 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 		Result<Integer> result = new Result<>(0);
 
 //		new BTreeNodeIterator(mRoot).forEachRemaining(node -> result.set(result.get() + node.mMap.size()));
-
 		visit(mRoot, node -> result.set(result.get() + node.mMap.size()));
 
 		return result.get();
@@ -418,10 +417,11 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 	private void scan(BTreeNode aNode, ScanResult aScanResult)
 	{
-//		aScanResult.log.append("{"+aNode.mBlockPointer+"}");
 		if (aNode instanceof BTreeIndex)
 		{
 			BTreeIndex indexNode = (BTreeIndex)aNode;
+
+			aScanResult.log.append("{"+indexNode.mLevel+"}");
 
 			boolean first = true;
 			aScanResult.log.append("'");
@@ -434,7 +434,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 				first = false;
 				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
 				String s = new String(key.marshall()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", "");
-				aScanResult.log.append(s.isEmpty()?"*":s);
+				aScanResult.log.append(s.isEmpty() ? "*" : s);
 			}
 			aScanResult.log.append("'");
 			aScanResult.log.append(indexNode.mModified ? "#f00" : "#0f0");
@@ -455,7 +455,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 				{
 					BlockPointer bp = new BlockPointer().unmarshal(entry.getValue(), 0);
 
-					node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, indexNode) : new BTreeLeaf(this, indexNode);
+					node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, indexNode, bp.getBlockLevel()) : new BTreeLeaf(this, indexNode);
 					node.mBlockPointer = bp;
 					node.mMap = new ArrayMap(readBlock(bp));
 
@@ -513,9 +513,9 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 	}
 
 
-	protected BlockPointer writeBlock(byte[] aContent, BlockType aBlockType)
+	protected BlockPointer writeBlock(byte[] aContent, int aLevel, BlockType aBlockType)
 	{
-		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionGroup.get(), aBlockType, 0);
+		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionGroup.get(), aBlockType, 0).setBlockLevel(aLevel);
 	}
 
 
@@ -559,7 +559,7 @@ aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 				{
 					BlockPointer bp = new BlockPointer().unmarshal(entry.getValue(), 0);
 
-					node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, indexNode) : new BTreeLeaf(this, indexNode);
+					node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, indexNode, bp.getBlockLevel()) : new BTreeLeaf(this, indexNode);
 					node.mBlockPointer = bp;
 					node.mMap = new ArrayMap(readBlock(bp));
 

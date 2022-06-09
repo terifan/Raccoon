@@ -96,7 +96,7 @@ public class BTreeLeaf extends BTreeNode
 		MarshalledKey keyA = MarshalledKey.unmarshall(new byte[0]);
 		MarshalledKey keyB = MarshalledKey.unmarshall(bk.getKey());
 
-		BTreeIndex newIndex = new BTreeIndex(mImplementation, mParent);
+		BTreeIndex newIndex = new BTreeIndex(mImplementation, mParent, 1);
 		newIndex.mMap = new ArrayMap(mIndexSize);
 		newIndex.mMap.put(new ArrayMapEntry(keyA.marshall(), POINTER_PLACEHOLDER, (byte)0x77), null);
 		newIndex.mMap.put(new ArrayMapEntry(keyB.marshall(), POINTER_PLACEHOLDER, (byte)0x66), null);
@@ -115,7 +115,7 @@ public class BTreeLeaf extends BTreeNode
 		{
 			mImplementation.freeBlock(mBlockPointer);
 
-			mBlockPointer = mImplementation.writeBlock(mMap.array(), BlockType.LEAF);
+			mBlockPointer = mImplementation.writeBlock(mMap.array(), 0, BlockType.LEAF);
 		}
 
 		return mModified;

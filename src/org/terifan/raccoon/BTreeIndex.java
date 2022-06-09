@@ -14,12 +14,15 @@ import org.terifan.raccoon.util.Result;
 public class BTreeIndex extends BTreeNode
 {
 	TreeMap<MarshalledKey, BTreeNode> mChildren;
+	int mLevel;
 
 
-	BTreeIndex(BTreeTableImplementation aImplementation, BTreeIndex aParent)
+	BTreeIndex(BTreeTableImplementation aImplementation, BTreeIndex aParent, int aLevel)
 	{
 		super(aImplementation, aParent);
+
 		mChildren = new TreeMap<>((o1, o2) -> o1.compareTo(o2));
+		mLevel = aLevel;
 	}
 
 
@@ -37,7 +40,7 @@ public class BTreeIndex extends BTreeNode
 		{
 			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(nearestEntry.getValue()));
 
-			nearestNode = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this) : new BTreeLeaf(mImplementation, this);
+			nearestNode = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this, mLevel) : new BTreeLeaf(mImplementation, this);
 			nearestNode.mBlockPointer = bp;
 			nearestNode.mMap = new ArrayMap(mImplementation.readBlock(bp));
 
@@ -66,7 +69,7 @@ public class BTreeIndex extends BTreeNode
 		{
 			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(nearestEntry.getValue()));
 
-			nearestNode = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this) : new BTreeLeaf(mImplementation, this);
+			nearestNode = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this, mLevel) : new BTreeLeaf(mImplementation, this);
 			nearestNode.mBlockPointer = bp;
 			nearestNode.mMap = new ArrayMap(mImplementation.readBlock(bp));
 
@@ -112,7 +115,7 @@ public class BTreeIndex extends BTreeNode
 		{
 			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(nearestEntry.getValue()));
 
-			nearestNode = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this) : new BTreeLeaf(mImplementation, this);
+			nearestNode = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this, mLevel) : new BTreeLeaf(mImplementation, this);
 			nearestNode.mBlockPointer = bp;
 			nearestNode.mMap = new ArrayMap(mImplementation.readBlock(bp));
 
@@ -212,7 +215,7 @@ public class BTreeIndex extends BTreeNode
 		if (node == null)
 		{
 			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
-			node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this) : new BTreeLeaf(mImplementation, this);
+			node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this, mLevel) : new BTreeLeaf(mImplementation, this);
 			node.mBlockPointer = bp;
 			node.mMap = new ArrayMap(mImplementation.readBlock(bp));
 		}
@@ -230,8 +233,8 @@ public class BTreeIndex extends BTreeNode
 
 		ArrayMap[] maps = mMap.split(mIndexSize);
 
-		BTreeIndex a = new BTreeIndex(mImplementation, this);
-		BTreeIndex b = new BTreeIndex(mImplementation, this);
+		BTreeIndex a = new BTreeIndex(mImplementation, this, mLevel);
+		BTreeIndex b = new BTreeIndex(mImplementation, this, mLevel);
 		a.mMap = maps[0];
 		b.mMap = maps[1];
 		a.mModified = true;
@@ -283,8 +286,8 @@ public class BTreeIndex extends BTreeNode
 
 		ArrayMap[] maps = mMap.split(mIndexSize);
 
-		BTreeIndex a = new BTreeIndex(mImplementation, this);
-		BTreeIndex b = new BTreeIndex(mImplementation, this);
+		BTreeIndex a = new BTreeIndex(mImplementation, this, mLevel);
+		BTreeIndex b = new BTreeIndex(mImplementation, this, mLevel);
 		a.mMap = maps[0];
 		b.mMap = maps[1];
 		a.mModified = true;
@@ -322,7 +325,7 @@ public class BTreeIndex extends BTreeNode
 		b.mChildren.put(keyA, firstChild);
 		b.mMap.put(first, null);
 
-		BTreeIndex newIndex = new BTreeIndex(mImplementation, this);
+		BTreeIndex newIndex = new BTreeIndex(mImplementation, this, mLevel + 1);
 		newIndex.mMap = new ArrayMap(mIndexSize);
 		newIndex.mMap.put(new ArrayMapEntry(keyA.marshall(), POINTER_PLACEHOLDER, (byte)0x99), null);
 		newIndex.mMap.put(new ArrayMapEntry(keyB.marshall(), POINTER_PLACEHOLDER, (byte)0x22), null);
@@ -357,7 +360,7 @@ public class BTreeIndex extends BTreeNode
 //		}
 		mImplementation.freeBlock(mBlockPointer);
 
-		mBlockPointer = mImplementation.writeBlock(mMap.array(), BlockType.INDEX);
+		mBlockPointer = mImplementation.writeBlock(mMap.array(), mLevel, BlockType.INDEX);
 
 		mModified = false;
 
