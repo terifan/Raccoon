@@ -165,7 +165,17 @@ public class BTreeTableImplementation extends TableImplementation
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		mRoot.remove(new MarshalledKey(aEntry.getKey()), oldEntry);
+		if (mRoot.remove(new MarshalledKey(aEntry.getKey()), oldEntry))
+		{
+			if (mRoot.mLevel == 1)
+			{
+				mRoot = ((BTreeIndex)mRoot).downgrade();
+			}
+			else
+			{
+				mRoot = ((BTreeIndex)mRoot).shrink();
+			}
+		}
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";

@@ -13,6 +13,7 @@ abstract class BTreeNode
 	boolean mModified;
 	BTreeIndex mParent;
 	long mGenerationId;
+	int mLevel;
 
 
 	public BTreeNode(BTreeTableImplementation aImplementation, BTreeIndex aParent)

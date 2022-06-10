@@ -14,7 +14,6 @@ import org.terifan.raccoon.util.Result;
 public class BTreeIndex extends BTreeNode
 {
 	TreeMap<MarshalledKey, BTreeNode> mChildren;
-	int mLevel;
 
 
 	BTreeIndex(BTreeTableImplementation aImplementation, BTreeIndex aParent, int aLevel)
@@ -122,7 +121,7 @@ public class BTreeIndex extends BTreeNode
 			mChildren.put(nearestKey, nearestNode);
 		}
 
-		boolean b = nearestNode.remove(aKey, aOldEntry);
+		nearestNode.remove(aKey, aOldEntry);
 
 		if (nearestNode.mMap.isEmpty())
 		{
@@ -154,73 +153,53 @@ public class BTreeIndex extends BTreeNode
 			}
 		}
 
-		if (mMap.size() == 1)
-		{
-			BTreeIndex prev = null;
-			BTreeIndex next = null;
-			ArrayMapEntry entry = null;
-			for (int i = 0; i < mParent.mMap.size(); i++)
-			{
-				entry = new ArrayMapEntry();
-				mParent.mMap.get(i, entry);
-				BTreeNode node = mParent.mChildren.get(new MarshalledKey(entry.getKey()));
-				if (node == this)
-				{
-					if (prev == null)
-					{
-						ArrayMapEntry tmp = new ArrayMapEntry();
-						mParent.mMap.get(i + 1, tmp);
-						next = (BTreeIndex)mParent.mChildren.get(new MarshalledKey(tmp.getKey()));
-					}
-					break;
-				}
-				prev = (BTreeIndex)node;
-			}
+//		if (mMap.size() == 1)
+//		{
+//			BTreeIndex prev = null;
+//			BTreeIndex next = null;
+//			ArrayMapEntry entry = null;
+//			for (int i = 0; i < mParent.mMap.size(); i++)
+//			{
+//				entry = new ArrayMapEntry();
+//				mParent.mMap.get(i, entry);
+//				BTreeNode node = mParent.mChildren.get(new MarshalledKey(entry.getKey()));
+//				if (node == this)
+//				{
+//					if (prev == null)
+//					{
+//						ArrayMapEntry tmp = new ArrayMapEntry();
+//						mParent.mMap.get(i + 1, tmp);
+//						next = (BTreeIndex)mParent.mChildren.get(new MarshalledKey(tmp.getKey()));
+//					}
+//					break;
+//				}
+//				prev = (BTreeIndex)node;
+//			}
+//
+//			BTreeNode dstNode;
+//			if (next != null)
+//			{
+//				dstNode = next.getNode(0);
+//			}
+//			else
+//			{
+//				dstNode = prev.getNode(prev.mMap.size() - 1);
+//			}
+//
+//			BTreeNode srcNode = mChildren.firstEntry().getValue();
+//			for (int i = 0; i < srcNode.mMap.size(); i++)
+//			{
+//				ArrayMapEntry tmp = new ArrayMapEntry();
+//				dstNode.mMap.put(srcNode.mMap.get(i, tmp), null);
+//			}
+//
+//			mParent.mMap.remove(entry, null);
+//			mParent.mChildren.remove(new MarshalledKey(entry.getKey()));
+//
+////			BTreeTableImplementation.STOP = true;
+//		}
 
-			BTreeNode dstNode;
-			if (next != null)
-			{
-				dstNode = next.getNode(0);
-			}
-			else
-			{
-				dstNode = prev.getNode(prev.mMap.size() - 1);
-			}
-
-			BTreeNode srcNode = mChildren.firstEntry().getValue();
-			for (int i = 0; i < srcNode.mMap.size(); i++)
-			{
-				ArrayMapEntry tmp = new ArrayMapEntry();
-				dstNode.mMap.put(srcNode.mMap.get(i, tmp), null);
-			}
-
-			mParent.mMap.remove(entry, null);
-			mParent.mChildren.remove(new MarshalledKey(entry.getKey()));
-
-//			BTreeTableImplementation.STOP = true;
-		}
-
-		return b;
-	}
-
-
-	BTreeNode getNode(int aIndex)
-	{
-		ArrayMapEntry entry = new ArrayMapEntry();
-
-		mMap.get(aIndex, entry);
-
-		BTreeNode node = mChildren.get(new MarshalledKey(entry.getKey()));
-
-		if (node == null)
-		{
-			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
-			node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this, mLevel) : new BTreeLeaf(mImplementation, this);
-			node.mBlockPointer = bp;
-			node.mMap = new ArrayMap(mImplementation.readBlock(bp));
-		}
-
-		return node;
+		return mMap.size() < 4;
 	}
 
 
@@ -337,6 +316,43 @@ public class BTreeIndex extends BTreeNode
 	}
 
 
+	BTreeNode shrink()
+	{
+		BTreeIndex newIndex = new BTreeIndex(mImplementation, mParent, mLevel);
+		newIndex.mModified = true;
+		newIndex.mLevel = mLevel - 1;
+		newIndex.mMap = new ArrayMap(mIndexSize);
+
+		for (int i = 0; i < mMap.size(); i++)
+		{
+			BTreeIndex node = (BTreeIndex)getNode(i);
+			node.mMap.forEach(e -> newIndex.mMap.put(e, null));
+			mChildren.putAll(node.mChildren);
+			mImplementation.freeBlock(node.mBlockPointer);
+		}
+
+		return this;
+	}
+
+
+	BTreeNode downgrade()
+	{
+		BTreeLeaf newLeaf = new BTreeLeaf(mImplementation, this);
+		newLeaf.mModified = true;
+
+		for (int i = 0; i < mMap.size(); i++)
+		{
+			BTreeNode node = getNode(i);
+			node.mMap.forEach(e -> newLeaf.mMap.put(e, null));
+			mImplementation.freeBlock(node.mBlockPointer);
+		}
+
+		mImplementation.freeBlock(mBlockPointer);
+
+		return this;
+	}
+
+
 	@Override
 	boolean commit()
 	{
@@ -365,6 +381,26 @@ public class BTreeIndex extends BTreeNode
 		mModified = false;
 
 		return true;
+	}
+
+
+	BTreeNode getNode(int aIndex)
+	{
+		ArrayMapEntry entry = new ArrayMapEntry();
+
+		mMap.get(aIndex, entry);
+
+		BTreeNode node = mChildren.get(new MarshalledKey(entry.getKey()));
+
+		if (node == null)
+		{
+			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(entry.getValue()));
+			node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mImplementation, this, mLevel) : new BTreeLeaf(mImplementation, this);
+			node.mBlockPointer = bp;
+			node.mMap = new ArrayMap(mImplementation.readBlock(bp));
+		}
+
+		return node;
 	}
 
 
