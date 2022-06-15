@@ -14,11 +14,11 @@ public class Helper
 
 	static String createString(Random rnd, int aLength)
 	{
-		String s = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+		String alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 		StringBuilder sb = new StringBuilder();
-		for (int i = aLength; --i >= 0;)
+		for (int i = 0; i < aLength; i++)
 		{
-			sb.append(s.charAt(rnd.nextInt(s.length())));
+			sb.append(alphabet.charAt(rnd.nextInt(alphabet.length())));
 		}
 		return sb.toString();
 	}

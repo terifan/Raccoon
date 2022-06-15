@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -316,40 +317,73 @@ public class BTreeIndex extends BTreeNode
 	}
 
 
-	BTreeNode shrink()
+	/**
+	 * Shrinks the tree by removing this node and merging all child nodes into a single index nodex which is returned.
+	 */
+	BTreeIndex shrink()
 	{
-		BTreeIndex newIndex = new BTreeIndex(mImplementation, mParent, mLevel);
+		System.out.println("shrink");
+
+		BTreeIndex newIndex = new BTreeIndex(mImplementation, mParent, mLevel - 1);
 		newIndex.mModified = true;
-		newIndex.mLevel = mLevel - 1;
 		newIndex.mMap = new ArrayMap(mIndexSize);
 
 		for (int i = 0; i < mMap.size(); i++)
 		{
-			BTreeIndex node = (BTreeIndex)getNode(i);
-			node.mMap.forEach(e -> newIndex.mMap.put(e, null));
-			mChildren.putAll(node.mChildren);
+			BTreeIndex node = getNode(i);
+
+			boolean first = true;
+			for (ArrayMapEntry entry : node.mMap)
+			{
+				ArrayMapEntry newEntry;
+				if (first && i > 0)
+				{
+					newEntry = new ArrayMapEntry(mMap.get(i, new ArrayMapEntry()).getKey(), entry.getValue(), entry.getType());
+				}
+				else
+				{
+					newEntry = entry;
+				}
+				newIndex.mMap.insert(newEntry, null);
+				BTreeNode child = node.mChildren.get(new MarshalledKey(entry.getKey()));
+				if (child != null)
+				{
+					newIndex.mChildren.put(new MarshalledKey(newEntry.getKey()), child);
+				}
+				first = false;
+			}
+
 			mImplementation.freeBlock(node.mBlockPointer);
 		}
 
-		return this;
+		mImplementation.freeBlock(mBlockPointer);
+
+		return newIndex;
 	}
 
 
-	BTreeNode downgrade()
+	/**
+	 * Merge entries in all child nodes into a single LeafNode which is returned.
+	 */
+	BTreeLeaf downgrade()
 	{
+		assert mLevel == 1;
+
+		System.out.println("downgrade");
+
 		BTreeLeaf newLeaf = new BTreeLeaf(mImplementation, this);
 		newLeaf.mModified = true;
 
 		for (int i = 0; i < mMap.size(); i++)
 		{
-			BTreeNode node = getNode(i);
+			BTreeLeaf node = getNode(i);
 			node.mMap.forEach(e -> newLeaf.mMap.put(e, null));
 			mImplementation.freeBlock(node.mBlockPointer);
 		}
 
 		mImplementation.freeBlock(mBlockPointer);
 
-		return this;
+		return newLeaf;
 	}
 
 
@@ -384,7 +418,7 @@ public class BTreeIndex extends BTreeNode
 	}
 
 
-	BTreeNode getNode(int aIndex)
+	<T extends BTreeNode> T getNode(int aIndex)
 	{
 		ArrayMapEntry entry = new ArrayMapEntry();
 
@@ -400,7 +434,7 @@ public class BTreeIndex extends BTreeNode
 			node.mMap = new ArrayMap(mImplementation.readBlock(bp));
 		}
 
-		return node;
+		return (T)node;
 	}
 
 

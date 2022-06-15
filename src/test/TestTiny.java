@@ -1,8 +1,12 @@
 package test;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 import org.terifan.raccoon.BTreeTableImplementation;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
@@ -53,6 +57,9 @@ public class TestTiny
 
 	public static void main(String... args)
 	{
+		List<Date> x = Arrays.asList(new Date(),new Date(),new Date()).stream().filter(e->e.before(new Date())).collect(Collectors.toList());
+
+
 		try
 		{
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);

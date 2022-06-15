@@ -22,7 +22,7 @@ public class BTreeTableImplementation extends TableImplementation
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private int mModCount;
-	private BTreeNode mRoot;
+	BTreeNode mRoot;
 
 	private TreeMap<Long, BTreeNode> mLRU;
 	private long mGenerationCounter;
