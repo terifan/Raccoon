@@ -122,7 +122,7 @@ public class BTreeIndex extends BTreeNode
 			mChildren.put(nearestKey, nearestNode);
 		}
 
-		nearestNode.remove(aKey, aOldEntry);
+		boolean shrink = nearestNode.remove(aKey, aOldEntry);
 
 		if (nearestNode.mMap.isEmpty())
 		{
@@ -152,6 +152,16 @@ public class BTreeIndex extends BTreeNode
 					mMap.put(first, null);
 				}
 			}
+		}
+
+		if (nearestNode.mMap.size() == 1)
+//		if (shrink)
+		{
+				BTreeIndex tmp = shrink();
+
+				mChildren = tmp.mChildren;
+				mMap = tmp.mMap;
+				mLevel = tmp.mLevel;
 		}
 
 //		if (mMap.size() == 1)
@@ -200,7 +210,7 @@ public class BTreeIndex extends BTreeNode
 ////			BTreeTableImplementation.STOP = true;
 //		}
 
-		return mMap.size() < 4;
+		return shrink;
 	}
 
 

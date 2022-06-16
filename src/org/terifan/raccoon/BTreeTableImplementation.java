@@ -17,7 +17,7 @@ public class BTreeTableImplementation extends TableImplementation
 {
 	static byte[] POINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
 	static int mIndexSize = 512;
-	static int mLeafSize = 1024;
+	static int mLeafSize = 700;
 
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;

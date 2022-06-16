@@ -118,119 +118,119 @@ public class TestTiny
 				insert(db, "Female");
 				insert(db, "Internal");
 				insert(db, "Jalapeno");
-				insert(db, "Urban");
-				insert(db, "Vapor");
-				insert(db, "Dove");
-				insert(db, "Mango");
-				insert(db, "Knife");
+//				insert(db, "Urban");
+//				insert(db, "Vapor");
+//				insert(db, "Dove");
+//				insert(db, "Mango");
+//				insert(db, "Knife");
 
-				insert(db, "Clemens");
-				insert(db, "Bobby");
-				insert(db, "Wort");
-				insert(db, "Xor");
-				insert(db, "Order");
-				insert(db, "Ranger");
-				insert(db, "Surfing");
-				insert(db, "Love");
-				insert(db, "Eliot");
-				insert(db, "Asian");
-				insert(db, "Year");
-				insert(db, "Tank");
-				insert(db, "Jeans");
-				insert(db, "Queer");
-				insert(db, "Nickle");
-				insert(db, "Goat");
-				insert(db, "Happy");
-				insert(db, "Zink");
-				insert(db, "Furniture");
-				insert(db, "Immense");
-				insert(db, "Jehova");
-				insert(db, "Under");
-				insert(db, "Vital");
-				insert(db, "Dragon");
-				insert(db, "Many");
-				insert(db, "King");
-
-				insert(db, "Clemens");
-				insert(db, "Bread");
-				insert(db, "Wild");
-				insert(db, "Xanthe");
-				insert(db, "Opera");
-				insert(db, "River");
-				insert(db, "Sand");
-				insert(db, "Leach");
-				insert(db, "Electron");
-				insert(db, "Accuracy");
-				insert(db, "Yearning");
-				insert(db, "Tangent");
-				insert(db, "Jelly");
-				insert(db, "Queen");
-				insert(db, "Number");
-				insert(db, "Guts");
-				insert(db, "Harbor");
-				insert(db, "Zulu");
-				insert(db, "Fulfill");
-				insert(db, "Import");
-				insert(db, "Jupiter");
-				insert(db, "Ultra");
-				insert(db, "Voice");
-				insert(db, "Down");
-				insert(db, "Metal");
-				insert(db, "Knight");
-
-				insert(db, "Clear");
-				insert(db, "Breach");
-				insert(db, "Wilshire");
-				insert(db, "Xanthopsia");
-				insert(db, "Operation");
-				insert(db, "Robot");
-				insert(db, "Sugar");
-				insert(db, "Leather");
-				insert(db, "Ellipse");
-				insert(db, "Agree");
-				insert(db, "Yeisk");
-				insert(db, "Tartar");
-				insert(db, "Jigger");
-				insert(db, "Quelt");
-				insert(db, "Nutrition");
-				insert(db, "Gustus");
-				insert(db, "Hardner");
-				insert(db, "Zurvan");
-				insert(db, "Flead");
-				insert(db, "Instant");
-				insert(db, "Justis");
-				insert(db, "Umbrella");
-				insert(db, "Voltage");
-				insert(db, "Dwarf");
-				insert(db, "Misty");
-				insert(db, "Kart");
-
-				insert(db, "Christian");
-				insert(db, "Break");
-				insert(db, "Wilson");
-				insert(db, "Xanthoma");
-				insert(db, "Oven");
-				insert(db, "Rock");
-				insert(db, "Sudder");
-				insert(db, "Leap");
-				insert(db, "Eighty");
-				insert(db, "Alphabet");
-				insert(db, "Yekaterinburg");
-				insert(db, "Tassie");
-				insert(db, "Jewels");
-				insert(db, "Quernstone");
-				insert(db, "Nurses");
-				insert(db, "Goofer");
-				insert(db, "Hareem");
-				insert(db, "Zurek");
-				insert(db, "Flipper");
-				insert(db, "Intellectual");
-				insert(db, "Jitney");
-				insert(db, "Umbelled");
-				insert(db, "Vinyl");
-				insert(db, "Dwell");
-				insert(db, "Mold");
-				insert(db, "Karate");
+//				insert(db, "Clemens");
+//				insert(db, "Bobby");
+//				insert(db, "Wort");
+//				insert(db, "Xor");
+//				insert(db, "Order");
+//				insert(db, "Ranger");
+//				insert(db, "Surfing");
+//				insert(db, "Love");
+//				insert(db, "Eliot");
+//				insert(db, "Asian");
+//				insert(db, "Year");
+//				insert(db, "Tank");
+//				insert(db, "Jeans");
+//				insert(db, "Queer");
+//				insert(db, "Nickle");
+//				insert(db, "Goat");
+//				insert(db, "Happy");
+//				insert(db, "Zink");
+//				insert(db, "Furniture");
+//				insert(db, "Immense");
+//				insert(db, "Jehova");
+//				insert(db, "Under");
+//				insert(db, "Vital");
+//				insert(db, "Dragon");
+//				insert(db, "Many");
+//				insert(db, "King");
+//
+//				insert(db, "Clemens");
+//				insert(db, "Bread");
+//				insert(db, "Wild");
+//				insert(db, "Xanthe");
+//				insert(db, "Opera");
+//				insert(db, "River");
+//				insert(db, "Sand");
+//				insert(db, "Leach");
+//				insert(db, "Electron");
+//				insert(db, "Accuracy");
+//				insert(db, "Yearning");
+//				insert(db, "Tangent");
+//				insert(db, "Jelly");
+//				insert(db, "Queen");
+//				insert(db, "Number");
+//				insert(db, "Guts");
+//				insert(db, "Harbor");
+//				insert(db, "Zulu");
+//				insert(db, "Fulfill");
+//				insert(db, "Import");
+//				insert(db, "Jupiter");
+//				insert(db, "Ultra");
+//				insert(db, "Voice");
+//				insert(db, "Down");
+//				insert(db, "Metal");
+//				insert(db, "Knight");
+//
+//				insert(db, "Clear");
+//				insert(db, "Breach");
+//				insert(db, "Wilshire");
+//				insert(db, "Xanthopsia");
+//				insert(db, "Operation");
+//				insert(db, "Robot");
+//				insert(db, "Sugar");
+//				insert(db, "Leather");
+//				insert(db, "Ellipse");
+//				insert(db, "Agree");
+//				insert(db, "Yeisk");
+//				insert(db, "Tartar");
+//				insert(db, "Jigger");
+//				insert(db, "Quelt");
+//				insert(db, "Nutrition");
+//				insert(db, "Gustus");
+//				insert(db, "Hardner");
+//				insert(db, "Zurvan");
+//				insert(db, "Flead");
+//				insert(db, "Instant");
+//				insert(db, "Justis");
+//				insert(db, "Umbrella");
+//				insert(db, "Voltage");
+//				insert(db, "Dwarf");
+//				insert(db, "Misty");
+//				insert(db, "Kart");
+//
+//				insert(db, "Christian");
+//				insert(db, "Break");
+//				insert(db, "Wilson");
+//				insert(db, "Xanthoma");
+//				insert(db, "Oven");
+//				insert(db, "Rock");
+//				insert(db, "Sudder");
+//				insert(db, "Leap");
+//				insert(db, "Eighty");
+//				insert(db, "Alphabet");
+//				insert(db, "Yekaterinburg");
+//				insert(db, "Tassie");
+//				insert(db, "Jewels");
+//				insert(db, "Quernstone");
+//				insert(db, "Nurses");
+//				insert(db, "Goofer");
+//				insert(db, "Hareem");
+//				insert(db, "Zurek");
+//				insert(db, "Flipper");
+//				insert(db, "Intellectual");
+//				insert(db, "Jitney");
+//				insert(db, "Umbelled");
+//				insert(db, "Vinyl");
+//				insert(db, "Dwell");
+//				insert(db, "Mold");
+//				insert(db, "Karate");
 
 //				dump(db);
 
@@ -286,8 +286,8 @@ public class TestTiny
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 			{
-				int size = db.getTable(KeyValue.class).size();
-				for (String key : mEntries.keySet())
+//				for (String key : new String[]{"Jalapeno","Gloves","Head","Internal"})
+				for (String key : new String[]{"Nose","Open","Quality"})
 				{
 					try
 					{
@@ -301,12 +301,33 @@ public class TestTiny
 					{
 						System.out.println(key);
 						e.printStackTrace(System.out);
-						break;
 					}
-
-					if (db.getTable(KeyValue.class).size() != --size) throw new IllegalStateException("size: " + db.getTable(KeyValue.class).size() + ", expected: " + size);
 				}
 			}
+
+//			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+//			{
+//				int size = db.getTable(KeyValue.class).size();
+//				for (String key : mEntries.keySet())
+//				{
+//					try
+//					{
+//						mTreeFrame.add(new TextSlice(key));
+//						boolean removed = db.remove(new KeyValue(key));
+//						dump(db);
+//						if(!removed)throw new IllegalStateException();
+//						if (BTreeTableImplementation.STOP) throw new IllegalStateException();
+//					}
+//					catch (Exception e)
+//					{
+//						System.out.println(key);
+//						e.printStackTrace(System.out);
+//						break;
+//					}
+//
+//					if (db.getTable(KeyValue.class).size() != --size) throw new IllegalStateException("size: " + db.getTable(KeyValue.class).size() + ", expected: " + size);
+//				}
+//			}
 		}
 		catch (Throwable e)
 		{

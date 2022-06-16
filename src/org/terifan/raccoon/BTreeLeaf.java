@@ -39,7 +39,7 @@ public class BTreeLeaf extends BTreeNode
 	{
 		mMap.remove(new ArrayMapEntry(aKey.marshall()), aOldEntry);
 
-		return mMap.size() <= 1;
+		return mMap.size() <= 0;
 	}
 
 
