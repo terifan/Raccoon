@@ -165,16 +165,18 @@ public class BTreeTableImplementation extends TableImplementation
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		if (mRoot.remove(new MarshalledKey(aEntry.getKey()), oldEntry))
+		mRoot.remove(new MarshalledKey(aEntry.getKey()), oldEntry);
+
+		if (mRoot.getLevel() > 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
 		{
-			if (mRoot.mLevel == 1)
-			{
-				mRoot = ((BTreeIndex)mRoot).downgrade();
-			}
-			else
-			{
+//			if (mRoot.getLevel() == 1)
+//			{
+//				mRoot = ((BTreeIndex)mRoot).downgrade();
+//			}
+//			else
+//			{
 				mRoot = ((BTreeIndex)mRoot).shrink();
-			}
+//			}
 		}
 
 		Log.dec();
@@ -431,7 +433,7 @@ public class BTreeTableImplementation extends TableImplementation
 		{
 			BTreeIndex indexNode = (BTreeIndex)aNode;
 
-			aScanResult.log.append("{"+indexNode.mLevel+"}");
+			aScanResult.log.append("{"+indexNode.getLevel()+"}");
 
 			boolean first = true;
 			aScanResult.log.append("'");

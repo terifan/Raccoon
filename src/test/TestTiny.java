@@ -1,5 +1,6 @@
 package test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
@@ -286,15 +287,13 @@ public class TestTiny
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 			{
-//				for (String key : new String[]{"Jalapeno","Gloves","Head","Internal"})
 				for (String key : new String[]{"Nose","Open","Quality"})
 				{
 					try
 					{
 						mTreeFrame.add(new TextSlice(key));
 						boolean removed = db.remove(new KeyValue(key));
-						dump(db);
-						if(!removed)throw new IllegalStateException();
+//						if(!removed)throw new IllegalStateException();
 						if (BTreeTableImplementation.STOP) throw new IllegalStateException();
 					}
 					catch (Exception e)
@@ -302,6 +301,23 @@ public class TestTiny
 						System.out.println(key);
 						e.printStackTrace(System.out);
 					}
+					dump(db);
+				}
+				for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Zebra"}) //,"Silver","Turquoise"
+				{
+					try
+					{
+						mTreeFrame.add(new TextSlice(key));
+						boolean removed = db.remove(new KeyValue(key));
+//						if(!removed)throw new IllegalStateException();
+						if (BTreeTableImplementation.STOP) throw new IllegalStateException();
+					}
+					catch (Exception e)
+					{
+						System.out.println(key);
+						e.printStackTrace(System.out);
+					}
+					dump(db);
 				}
 			}
 
