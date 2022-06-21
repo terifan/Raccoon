@@ -169,14 +169,11 @@ public class BTreeTableImplementation extends TableImplementation
 
 		if (mRoot.getLevel() > 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
 		{
-//			if (mRoot.getLevel() == 1)
-//			{
-//				mRoot = ((BTreeIndex)mRoot).downgrade();
-//			}
-//			else
-//			{
-				mRoot = ((BTreeIndex)mRoot).shrink();
-//			}
+			mRoot = ((BTreeIndex)mRoot).shrink();
+		}
+		if (mRoot.getLevel() == 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
+		{
+			mRoot = ((BTreeIndex)mRoot).downgrade();
 		}
 
 		Log.dec();

@@ -303,7 +303,9 @@ public class TestTiny
 					}
 					dump(db);
 				}
-				for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Zebra"}) //,"Silver","Turquoise"
+//				for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Zebra"})
+//				for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Silver","Turquoise"})
+				for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Apple","Banana","Circus","Ear","Female","Gloves","Zebra","Silver","Turquoise"})
 				{
 					try
 					{

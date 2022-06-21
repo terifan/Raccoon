@@ -331,96 +331,47 @@ public class BTreeIndex extends BTreeNode
 		if (getLevel() > 1 && nearestNode.mMap.size() == 1)
 		{
 			int i = indexOf(nearestNode);
-			BTreeIndex prevNode = getNode(i - 1);
-			ArrayMapEntry prevEntry = prevNode.mMap.get(0, new ArrayMapEntry());
 
-			BTreeNode child = ((BTreeIndex)nearestNode).getNode(0);
-			MarshalledKey key = MarshalledKey.unmarshall(nearestEntry.getKey());
+			if (i == 0)
+			{
+				ArrayMapEntry prevEntry = nearestNode.mMap.get(0, new ArrayMapEntry());
+				MarshalledKey prevKey = MarshalledKey.unmarshall(nearestEntry.getKey());
+				BTreeNode prevChild = ((BTreeIndex)nearestNode).getNode(0);
 
-			prevEntry.setKey(key.marshall());
+				BTreeIndex nextNode = getNode(1);
 
-			System.out.println("####"+mChildren);
-			System.out.println("####"+mMap);
+				ArrayMapEntry firstEntry = nextNode.mMap.get(0, new ArrayMapEntry());
+				BTreeNode firstNode = nextNode.getNode(0);
 
-			mChildren.remove(key);
-			mMap.remove(nearestEntry, null);
+				MarshalledKey firstKey = MarshalledKey.unmarshall(mMap.get(1, new ArrayMapEntry()).getKey());
+				firstEntry.setKey(firstKey.marshall());
 
-			System.out.println("****"+mChildren);
-			System.out.println("****"+mMap);
+				mChildren.remove(prevKey);
+				mMap.remove(nearestEntry, null);
 
-			System.out.println("####"+prevNode.mMap);
-			System.out.println("####"+prevNode.mChildren);
-			System.out.println("++++"+prevEntry);
-			System.out.println("++++"+key);
+				nextNode.mMap.insert(prevEntry, null);
+				nextNode.mChildren.put(prevKey, prevChild);
 
-			prevNode.mMap.insert(prevEntry, null);
-			prevNode.mChildren.put(key, child);
+				nextNode.mMap.insert(firstEntry, null);
+				nextNode.mChildren.put(firstKey, firstNode);
+			}
+			else
+			{
+				BTreeIndex prevNode = getNode(i - 1);
+				ArrayMapEntry prevEntry = prevNode.mMap.get(0, new ArrayMapEntry());
 
-			System.out.println("****"+prevNode.mMap);
-			System.out.println("****"+prevNode.mChildren);
+				BTreeNode child = ((BTreeIndex)nearestNode).getNode(0);
+				MarshalledKey key = MarshalledKey.unmarshall(nearestEntry.getKey());
+
+				prevEntry.setKey(key.marshall());
+
+				mChildren.remove(key);
+				mMap.remove(nearestEntry, null);
+
+				prevNode.mMap.insert(prevEntry, null);
+				prevNode.mChildren.put(key, child);
+			}
 		}
-
-
-//		if (nearestNode.mMap.size() == 1)
-//		{
-//			merge(nearestNode);
-//
-////			BTreeIndex tmp = shrink();
-////
-////			mChildren = tmp.mChildren;
-////			mMap = tmp.mMap;
-////			setLevel(tmp.getLevel());
-//
-//			shrink = false;
-//		}
-
-//		if (mMap.size() == 1)
-//		{
-//			BTreeIndex prev = null;
-//			BTreeIndex next = null;
-//			ArrayMapEntry entry = null;
-//			for (int i = 0; i < mParent.mMap.size(); i++)
-//			{
-//				entry = new ArrayMapEntry();
-//				mParent.mMap.get(i, entry);
-//				BTreeNode node = mParent.mChildren.get(new MarshalledKey(entry.getKey()));
-//				if (node == this)
-//				{
-//					if (prev == null)
-//					{
-//						ArrayMapEntry tmp = new ArrayMapEntry();
-//						mParent.mMap.get(i + 1, tmp);
-//						next = (BTreeIndex)mParent.mChildren.get(new MarshalledKey(tmp.getKey()));
-//					}
-//					break;
-//				}
-//				prev = (BTreeIndex)node;
-//			}
-//
-//			BTreeNode dstNode;
-//			if (next != null)
-//			{
-//				dstNode = next.getNode(0);
-//			}
-//			else
-//			{
-//				dstNode = prev.getNode(prev.mMap.size() - 1);
-//			}
-//
-//			BTreeNode srcNode = mChildren.firstEntry().getValue();
-//			for (int i = 0; i < srcNode.mMap.size(); i++)
-//			{
-//				ArrayMapEntry tmp = new ArrayMapEntry();
-//				dstNode.mMap.put(srcNode.mMap.get(i, tmp), null);
-//			}
-//
-//			mParent.mMap.remove(entry, null);
-//			mParent.mChildren.remove(new MarshalledKey(entry.getKey()));
-//
-////			BTreeTableImplementation.STOP = true;
-//		}
-
-//		return shrink;
 	}
 
 
@@ -433,13 +384,13 @@ public class BTreeIndex extends BTreeNode
 
 		System.out.println("downgrade");
 
-		BTreeLeaf newLeaf = new BTreeLeaf(mImplementation, this);
+		BTreeLeaf newLeaf = getNode(0);
 		newLeaf.mModified = true;
 
-		for (int i = 0; i < mMap.size(); i++)
+		for (int i = 1; i < mMap.size(); i++)
 		{
 			BTreeLeaf node = getNode(i);
-			node.mMap.forEach(e -> newLeaf.mMap.put(e, null));
+			node.mMap.forEach(e -> newLeaf.mMap.insert(e, null));
 			mImplementation.freeBlock(node.mBlockPointer);
 		}
 
