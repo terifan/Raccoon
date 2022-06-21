@@ -1,8 +1,9 @@
 package test;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -285,67 +286,71 @@ public class TestTiny
 				System.out.println(all ? "All keys found" : "Missing keys");
 			}
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
-			{
-				for (String key : new String[]{"Nose","Open","Quality"})
-				{
-					try
-					{
-						mTreeFrame.add(new TextSlice(key));
-						boolean removed = db.remove(new KeyValue(key));
-//						if(!removed)throw new IllegalStateException();
-						if (BTreeTableImplementation.STOP) throw new IllegalStateException();
-					}
-					catch (Exception e)
-					{
-						System.out.println(key);
-						e.printStackTrace(System.out);
-					}
-					dump(db);
-				}
-//				for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Zebra"})
-//				for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Silver","Turquoise"})
-				for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Apple","Banana","Circus","Ear","Female","Gloves","Zebra","Silver","Turquoise"})
-				{
-					try
-					{
-						mTreeFrame.add(new TextSlice(key));
-						boolean removed = db.remove(new KeyValue(key));
-//						if(!removed)throw new IllegalStateException();
-						if (BTreeTableImplementation.STOP) throw new IllegalStateException();
-					}
-					catch (Exception e)
-					{
-						System.out.println(key);
-						e.printStackTrace(System.out);
-					}
-					dump(db);
-				}
-			}
-
 //			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 //			{
-//				int size = db.getTable(KeyValue.class).size();
-//				for (String key : mEntries.keySet())
+//				for (String key : new String[]{"Nose","Open","Quality"})
 //				{
 //					try
 //					{
 //						mTreeFrame.add(new TextSlice(key));
 //						boolean removed = db.remove(new KeyValue(key));
-//						dump(db);
-//						if(!removed)throw new IllegalStateException();
+////						if(!removed)throw new IllegalStateException();
 //						if (BTreeTableImplementation.STOP) throw new IllegalStateException();
 //					}
 //					catch (Exception e)
 //					{
 //						System.out.println(key);
 //						e.printStackTrace(System.out);
-//						break;
 //					}
-//
-//					if (db.getTable(KeyValue.class).size() != --size) throw new IllegalStateException("size: " + db.getTable(KeyValue.class).size() + ", expected: " + size);
+//					dump(db);
+//				}
+////				for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Zebra"})
+////				for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Silver","Turquoise"})
+//				for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Apple","Banana","Circus","Ear","Female","Gloves","Zebra","Silver","Turquoise"})
+//				{
+//					try
+//					{
+//						mTreeFrame.add(new TextSlice(key));
+//						boolean removed = db.remove(new KeyValue(key));
+////						if(!removed)throw new IllegalStateException();
+//						if (BTreeTableImplementation.STOP) throw new IllegalStateException();
+//					}
+//					catch (Exception e)
+//					{
+//						System.out.println(key);
+//						e.printStackTrace(System.out);
+//					}
+//					dump(db);
 //				}
 //			}
+
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+			{
+				int size = db.getTable(KeyValue.class).size();
+				List<String> keys = new ArrayList<>(mEntries.keySet());
+				int seed = -200791344;//new Random().nextInt();
+				System.out.println("seed=" + seed);
+				Collections.shuffle(keys, new Random(seed));
+				for (String key : keys)
+				{
+					try
+					{
+						mTreeFrame.add(new TextSlice(key));
+						boolean removed = db.remove(new KeyValue(key));
+						dump(db);
+						if(!removed)throw new IllegalStateException();
+						if (BTreeTableImplementation.STOP) throw new IllegalStateException();
+					}
+					catch (Exception e)
+					{
+						System.out.println(key);
+						e.printStackTrace(System.out);
+						break;
+					}
+
+					if (db.getTable(KeyValue.class).size() != --size) throw new IllegalStateException("size: " + db.getTable(KeyValue.class).size() + ", expected: " + size);
+				}
+			}
 		}
 		catch (Throwable e)
 		{

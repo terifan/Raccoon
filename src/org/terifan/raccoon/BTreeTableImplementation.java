@@ -375,8 +375,6 @@ public class BTreeTableImplementation extends TableImplementation
 				{
 //					String s = new String(key.marshall()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", "");
 
-					System.out.println(node.mNodeId);
-
 					String result = integrityCheck(node);
 
 					if (result != null)
