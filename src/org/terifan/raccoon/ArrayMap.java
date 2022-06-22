@@ -323,7 +323,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		}
 		if (index < 0)
 		{
-			loadKeyValue(-index - 2, aEntry);
+			loadKeyValue(Math.max(0, -index - 2), aEntry);
 			return NearResult.LOWER;
 		}
 
@@ -542,7 +542,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	private int readEntryOffset(int aIndex)
 	{
-		assert aIndex >= 0 && aIndex < mEntryCount;
+		assert aIndex >= 0 && aIndex < mEntryCount : aIndex;
 
 		return readInt32(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE);
 	}

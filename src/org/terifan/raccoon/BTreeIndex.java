@@ -54,8 +54,6 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	boolean put(MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
-		System.out.println("put");
-
 		mModified = true;
 
 		ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey.marshall());
@@ -166,8 +164,6 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	Object[] split()
 	{
-		System.out.println("split index");
-
 		mImplementation.freeBlock(mBlockPointer);
 
 		ArrayMap[] maps = mMap.split(mIndexSize);
@@ -219,8 +215,6 @@ public class BTreeIndex extends BTreeNode
 
 	BTreeNode grow()
 	{
-		System.out.println("grow");
-
 		mImplementation.freeBlock(mBlockPointer);
 
 		ArrayMap[] maps = mMap.split(mIndexSize);
@@ -281,8 +275,6 @@ public class BTreeIndex extends BTreeNode
 	 */
 	BTreeIndex shrink()
 	{
-		System.out.println("shrink");
-
 		BTreeIndex newIndex = new BTreeIndex(mImplementation, mParent, getLevel() - 1);
 		newIndex.mModified = true;
 		newIndex.mMap = new ArrayMap(mIndexSize);
@@ -326,8 +318,6 @@ public class BTreeIndex extends BTreeNode
 	 */
 	void merge(BTreeNode nearestNode, ArrayMapEntry nearestEntry)
 	{
-		System.out.println("merge");
-
 		if (getLevel() > 1 && nearestNode.mMap.size() == 1)
 		{
 			int i = indexOf(nearestNode);
@@ -348,6 +338,18 @@ public class BTreeIndex extends BTreeNode
 
 				mChildren.remove(prevKey);
 				mMap.remove(nearestEntry, null);
+
+				if (prevKey.marshall().length == 0)
+				{
+					ArrayMapEntry first = mMap.removeFirst();
+
+					BTreeNode tmp = mChildren.remove(MarshalledKey.unmarshall(first.getKey()));
+
+					first.setKey(new byte[0]);
+
+					mMap.insert(first, null);
+					mChildren.put(MarshalledKey.unmarshall(first.getKey()), tmp);
+				}
 
 				nextNode.mMap.insert(prevEntry, null);
 				nextNode.mChildren.put(prevKey, prevChild);
@@ -381,8 +383,6 @@ public class BTreeIndex extends BTreeNode
 	BTreeLeaf downgrade()
 	{
 		assert getLevel() == 1;
-
-		System.out.println("downgrade");
 
 		BTreeLeaf newLeaf = getNode(0);
 		newLeaf.mModified = true;
@@ -470,6 +470,6 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	public String toString()
 	{
-		return "BTreeIndex{" + "mChildren=" + mChildren + ", mMap=" + mMap + '}';
+		return "BTreeIndex{mLevel=" + getLevel() + ", mMap=" + mMap + ", mChildren=" + mChildren.keySet() + '}';
 	}
 }
