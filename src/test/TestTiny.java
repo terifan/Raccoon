@@ -23,11 +23,11 @@ import org.terifan.treegraph.util.VerticalImageFrame;
 
 public class TestTiny
 {
-	private static VerticalImageFrame mTreeFrame;
-	private static Random rnd = new Random(1);
-	private static HashMap<String,String> mEntries = new HashMap<>();
+	private final static Random RND = new Random(1);
 
-//	private static ArrayMap arrayMap = new ArrayMap(1000);
+	private static VerticalImageFrame mTreeFrame;
+	private static HashMap<String,String> mEntries;
+
 
 //	public static void main(String ... args)
 //	{
@@ -59,13 +59,13 @@ public class TestTiny
 	{
 		try
 		{
-			for (;;)
+//			for (;;)
 			{
 				mTreeFrame = new VerticalImageFrame();
 
 				test();
 
-				mTreeFrame.getFrame().dispose();
+//				mTreeFrame.getFrame().dispose();
 			}
 		}
 		catch (Exception e)
@@ -77,6 +77,8 @@ public class TestTiny
 
 	public static void test() throws Exception
 	{
+		mEntries = new HashMap<>();
+
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 //		Log.setLevel(LogLevel.DEBUG);
@@ -356,7 +358,7 @@ public class TestTiny
 
 	private static void insert(Database aDatabase, String aKey) throws IOException
 	{
-		String value = Helper.createString(rnd);
+		String value = Helper.createString(RND);
 
 		mEntries.put(aKey, value);
 
