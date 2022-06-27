@@ -23,7 +23,7 @@ import org.terifan.treegraph.util.VerticalImageFrame;
 
 public class TestTiny
 {
-	private final static Random RND = new Random(1);
+	public final static Random RND = new Random(1);
 
 	private static VerticalImageFrame mTreeFrame;
 	private static HashMap<String,String> mEntries;
@@ -65,7 +65,7 @@ public class TestTiny
 
 				test();
 
-//				mTreeFrame.getFrame().dispose();
+				mTreeFrame.getFrame().dispose();
 			}
 		}
 		catch (Exception e)
@@ -85,152 +85,15 @@ public class TestTiny
 
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 		{
-//			db.save(new Document().put("id",123).put("name","olle"));
-
-//			insert(db, "Circus");
-//			insert(db, "Banana");
-//			insert(db, "Whale");
-//			insert(db, "Xenon");
-//			insert(db, "Open");
-//			insert(db, "Rupee");
-//			insert(db, "Silver");
-//			insert(db, "Leap");
-//			insert(db, "Ear");
-//			insert(db, "Apple");
-//			insert(db, "Yellow");
-//			insert(db, "Turquoise");
-//			insert(db, "Japanese");
-//			insert(db, "Quality");
-//			insert(db, "Nose");
-//			insert(db, "Gloves");
-//			insert(db, "Head");
-//			insert(db, "Zebra");
-//			insert(db, "Female");
-//			insert(db, "Internal");
-//			insert(db, "Jalapeno");
-//			insert(db, "Urban");
-//			insert(db, "Vapor");
-//			insert(db, "Dove");
-//			insert(db, "Mango");
-//			insert(db, "Knife");
-//
-//			insert(db, "Clemens");
-//			insert(db, "Bobby");
-//			insert(db, "Wort");
-//			insert(db, "Xor");
-//			insert(db, "Order");
-//			insert(db, "Ranger");
-//			insert(db, "Surfing");
-//			insert(db, "Love");
-//			insert(db, "Eliot");
-//			insert(db, "Asian");
-//			insert(db, "Year");
-//			insert(db, "Tank");
-//			insert(db, "Jeans");
-//			insert(db, "Queer");
-//			insert(db, "Nickle");
-//			insert(db, "Goat");
-//			insert(db, "Happy");
-//			insert(db, "Zink");
-//			insert(db, "Furniture");
-//			insert(db, "Immense");
-//			insert(db, "Jehova");
-//			insert(db, "Under");
-//			insert(db, "Vital");
-//			insert(db, "Dragon");
-//			insert(db, "Many");
-//			insert(db, "King");
-//
-//			insert(db, "Clemens");
-//			insert(db, "Bread");
-//			insert(db, "Wild");
-//			insert(db, "Xanthe");
-//			insert(db, "Opera");
-//			insert(db, "River");
-//			insert(db, "Sand");
-//			insert(db, "Leach");
-//			insert(db, "Electron");
-//			insert(db, "Accuracy");
-//			insert(db, "Yearning");
-//			insert(db, "Tangent");
-//			insert(db, "Jelly");
-//			insert(db, "Queen");
-//			insert(db, "Number");
-//			insert(db, "Guts");
-//			insert(db, "Harbor");
-//			insert(db, "Zulu");
-//			insert(db, "Fulfill");
-//			insert(db, "Import");
-//			insert(db, "Jupiter");
-//			insert(db, "Ultra");
-//			insert(db, "Voice");
-//			insert(db, "Down");
-//			insert(db, "Metal");
-//			insert(db, "Knight");
-//
-//			insert(db, "Clear");
-//			insert(db, "Breach");
-//			insert(db, "Wilshire");
-//			insert(db, "Xanthopsia");
-//			insert(db, "Operation");
-//			insert(db, "Robot");
-//			insert(db, "Sugar");
-//			insert(db, "Leather");
-//			insert(db, "Ellipse");
-//			insert(db, "Agree");
-//			insert(db, "Yeisk");
-//			insert(db, "Tartar");
-//			insert(db, "Jigger");
-//			insert(db, "Quelt");
-//			insert(db, "Nutrition");
-//			insert(db, "Gustus");
-//			insert(db, "Hardner");
-//			insert(db, "Zurvan");
-//			insert(db, "Flead");
-//			insert(db, "Instant");
-//			insert(db, "Justis");
-//			insert(db, "Umbrella");
-//			insert(db, "Voltage");
-//			insert(db, "Dwarf");
-//			insert(db, "Misty");
-//			insert(db, "Kart");
-//
-//			insert(db, "Christian");
-//			insert(db, "Break");
-//			insert(db, "Wilson");
-//			insert(db, "Xanthoma");
-//			insert(db, "Oven");
-//			insert(db, "Rock");
-//			insert(db, "Sudder");
-//			insert(db, "Leap");
-//			insert(db, "Eighty");
-//			insert(db, "Alphabet");
-//			insert(db, "Yekaterinburg");
-//			insert(db, "Tassie");
-//			insert(db, "Jewels");
-//			insert(db, "Quernstone");
-//			insert(db, "Nurses");
-//			insert(db, "Goofer");
-//			insert(db, "Hareem");
-//			insert(db, "Zurek");
-//			insert(db, "Flipper");
-//			insert(db, "Intellectual");
-//			insert(db, "Jitney");
-//			insert(db, "Umbelled");
-//			insert(db, "Vinyl");
-//			insert(db, "Dwell");
-//			insert(db, "Mold");
-//			insert(db, "Karate");
-
 			ArrayList<String> list = new ArrayList<>(Arrays.asList(
-				"Circus", "Banana", "Whale", "Xenon", "Open", "Rupee", "Silver", "Leap", "Ear", "Apple", "Yellow", "Turquoise", "Japanese", "Quality", "Nose", "Gloves", "Head", "Zebra", "Female", "Internal", "Jalapeno", "Urban", "Vapor", "Dove", "Mango", "Knife",
-				"Clemens", "Bobby", "Wort", "Xor", "Order", "Ranger", "Surfing", "Love", "Eliot", "Asian", "Year", "Tank", "Jeans", "Queer", "Nickle", "Goat", "Happy", "Zink", "Furniture", "Immense", "Jehova", "Under", "Vital", "Dragon", "Many", "King",
-				"Clemens", "Bread", "Wild", "Xanthe", "Opera", "River", "Sand", "Leach", "Electron", "Accuracy", "Yearning", "Tangent", "Jelly", "Queen", "Number", "Guts", "Harbor", "Zulu", "Fulfill", "Import", "Jupiter", "Ultra", "Voice", "Down", "Metal", "Knight",
-				"Clear", "Breach", "Wilshire", "Xanthopsia", "Operation", "Robot", "Sugar", "Leather", "Ellipse", "Agree", "Yeisk", "Tartar", "Jigger", "Quelt", "Nutrition", "Gustus", "Hardner", "Zurvan", "Flead", "Instant", "Justis", "Umbrella", "Voltage", "Dwarf", "Misty", "Kart",
-				"Christian", "Break", "Wilson", "Xanthoma", "Oven", "Rock", "Sudder", "Leap", "Eighty", "Alphabet", "Yekaterinburg", "Tassie", "Jewels", "Quernstone", "Nurses", "Goofer", "Hareem", "Zurek", "Flipper", "Intellectual", "Jitney", "Umbelled", "Vinyl", "Dwell", "Mold", "Karate"
+				"Circus", "Banana", "Whale", "Xenon", "Open", "Rupee", "Silver", "Leap", "Ear", "Apple", "Yellow", "Turquoise", "Japanese", "Quality", "Nose", "Gloves", "Head", "Zebra", "Female", "Internal", "Jalapeno", "Urban", "Vapor", "Dove", "Mango", "Knife"
+//				, "Clemens", "Bobby", "Wort", "Xor", "Order", "Ranger", "Surfing", "Love", "Eliot", "Asian", "Year", "Tank", "Jeans", "Queer", "Nickle", "Goat", "Happy", "Zink", "Furniture", "Immense", "Jehova", "Under", "Vital", "Dragon", "Many", "King"
+//				, "Clemens", "Bread", "Wild", "Xanthe", "Opera", "River", "Sand", "Leach", "Electron", "Accuracy", "Yearning", "Tangent", "Jelly", "Queen", "Number", "Guts", "Harbor", "Zulu", "Fulfill", "Import", "Jupiter", "Ultra", "Voice", "Down", "Metal", "Knight"
+//				, "Clear", "Breach", "Wilshire", "Xanthopsia", "Operation", "Robot", "Sugar", "Leather", "Ellipse", "Agree", "Yeisk", "Tartar", "Jigger", "Quelt", "Nutrition", "Gustus", "Hardner", "Zurvan", "Flead", "Instant", "Justis", "Umbrella", "Voltage", "Dwarf", "Misty", "Kart"
+//				, "Christian", "Break", "Wilson", "Xanthoma", "Oven", "Rock", "Sudder", "Leap", "Eighty", "Alphabet", "Yekaterinburg", "Tassie", "Jewels", "Quernstone", "Nurses", "Goofer", "Hareem", "Zurek", "Flipper", "Intellectual", "Jitney", "Umbelled", "Vinyl", "Dwell", "Mold", "Karate"
 			));
 
-			int seed = new Random().nextInt();
+			int seed = -218589678; //new Random().nextInt();
 			System.out.println("seed=" + seed);
 			Collections.shuffle(list, new Random(seed));
 
@@ -238,8 +101,6 @@ public class TestTiny
 			{
 				insert(db, s);
 			}
-
-//			dump(db);
 
 			boolean all = true;
 			for (String key : mEntries.keySet())
@@ -258,17 +119,11 @@ public class TestTiny
 			}
 			System.out.println(all ? "All keys found" : "Missing keys");
 
-//			db.list(KeyValue.class).forEach(System.out::println);
-
 			db.commit();
 		}
 
-//		blockDevice.dump();
-
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
 		{
-//			db.list(KeyValue.class).forEach(System.out::print);
-
 			boolean all = true;
 			for (String key : mEntries.keySet())
 			{
@@ -286,49 +141,12 @@ public class TestTiny
 			System.out.println(all ? "All keys found" : "Missing keys");
 		}
 
-//		try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
-//		{
-//			for (String key : new String[]{"Nose","Open","Quality"})
-//			{
-//				try
-//				{
-//					mTreeFrame.add(new TextSlice(key));
-//					boolean removed = db.remove(new KeyValue(key));
-////				if(!removed)throw new IllegalStateException();
-//					if (BTreeTableImplementation.STOP) throw new IllegalStateException();
-//				}
-//				catch (Exception e)
-//				{
-//					System.out.println(key);
-//					e.printStackTrace(System.out);
-//				}
-//				dump(db);
-//			}
-////		for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Zebra"})
-////		for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Silver","Turquoise"})
-//			for (String key : new String[]{"Nose","Open","Quality","Rupee","Whale","Xenon","Yellow","Apple","Banana","Circus","Ear","Female","Gloves","Zebra","Silver","Turquoise"})
-//			{
-//				try
-//				{
-//					mTreeFrame.add(new TextSlice(key));
-//					boolean removed = db.remove(new KeyValue(key));
-////				if(!removed)throw new IllegalStateException();
-//					if (BTreeTableImplementation.STOP) throw new IllegalStateException();
-//				}
-//				catch (Exception e)
-//				{
-//					System.out.println(key);
-//					e.printStackTrace(System.out);
-//				}
-//				dump(db);
-//			}
-//		}
-
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 		{
+			int seed = 1532744235; //new Random().nextInt();
+
 			int size = db.getTable(KeyValue.class).size();
 			List<String> keys = new ArrayList<>(mEntries.keySet());
-			int seed = new Random().nextInt();
 			System.out.println("seed=" + seed);
 			Collections.shuffle(keys, new Random(seed));
 			for (String key : keys)
