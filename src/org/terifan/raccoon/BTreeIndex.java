@@ -331,18 +331,20 @@ public class BTreeIndex extends BTreeNode
 			{
 				MarshalledKey entryKey = MarshalledKey.unmarshall(aEntry.getKey());
 
+				ArrayMapEntry prevEntry = aNode.mMap.get(0, new ArrayMapEntry());
+				BTreeNode prevChild = aNode.getNode(0);
+
+				BTreeIndex nextChild = getNode(i + 1);
+
+				ArrayMapEntry nextChildFirstEntry = nextChild.mMap.get(0, new ArrayMapEntry());
+				BTreeNode nextChildFirstNode = nextChild.getNode(0);
+
 				if (entryKey.marshall().length == 0)
 				{
-					ArrayMapEntry prevEntry = aNode.mMap.get(0, new ArrayMapEntry());
-					BTreeNode prevChild = aNode.getNode(0);
-
-					BTreeIndex nextChild = getNode(i + 1);
-
-					ArrayMapEntry nextChildFirstEntry = nextChild.mMap.get(0, new ArrayMapEntry());
-					BTreeNode nextChildFirstNode = nextChild.getNode(0);
-
 					MarshalledKey firstKey = MarshalledKey.unmarshall(mMap.get(i + 1, new ArrayMapEntry()).getKey());
 					nextChildFirstEntry.setKey(firstKey.marshall());
+
+					mImplementation.freeBlock(prevChild.mBlockPointer);
 
 					mChildren.remove(entryKey);
 					mMap.remove(aEntry, null);
@@ -365,13 +367,8 @@ public class BTreeIndex extends BTreeNode
 				}
 				else
 				{
-					ArrayMapEntry prevEntry = aNode.mMap.get(0, new ArrayMapEntry());
-					BTreeNode prevChild = aNode.getNode(0);
-
-					BTreeIndex nextChild = getNode(i + 1);
-
-					ArrayMapEntry nextChildFirstEntry = nextChild.mMap.get(0, new ArrayMapEntry());
-					BTreeNode nextChildFirstNode = nextChild.getNode(0);
+					MarshalledKey firstKey = MarshalledKey.unmarshall(nextChildFirstNode.mMap.get(0, new ArrayMapEntry()).getKey());
+					nextChildFirstEntry.setKey(nextChildFirstNode.mMap.get(0, new ArrayMapEntry()).getKey());
 
 					mImplementation.freeBlock(prevChild.mBlockPointer);
 
@@ -381,10 +378,8 @@ public class BTreeIndex extends BTreeNode
 					nextChild.mMap.insert(prevEntry, null);
 					nextChild.mChildren.put(MarshalledKey.unmarshall(prevEntry.getKey()), prevChild);
 
-					nextChildFirstEntry.setKey(nextChildFirstNode.mMap.get(0, new ArrayMapEntry()).getKey());
-
 					nextChild.mMap.insert(nextChildFirstEntry, null);
-					nextChild.mChildren.put(MarshalledKey.unmarshall(nextChildFirstNode.mMap.get(0, new ArrayMapEntry()).getKey()), nextChildFirstNode);
+					nextChild.mChildren.put(firstKey, nextChildFirstNode);
 
 //					BTreeTableImplementation.STOP = true;
 				}
