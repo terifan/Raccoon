@@ -108,63 +108,31 @@ public class BTreeIndex extends BTreeNode
 
 		if (getLevel() == 1 && node.mMap.size() < 5)
 		{
-			if (index == 0)
+			BTreeLeaf leftChild = index == 0 ? null : getNode(index - 1);
+			BTreeLeaf rightChild = index == mMap.size() - 1 ? null : getNode(index + 1);
+
+			if (rightChild == null || leftChild != null && leftChild.mMap.getFreeSpace() > rightChild.mMap.getFreeSpace())
 			{
-				merge(getNode(index + 1), (BTreeLeaf)node);
-				mMap.remove(index + 1, null);
-			}
-			else if (index == mMap.size() - 1)
-			{
-				merge((BTreeLeaf)node, getNode(index - 1));
-				mMap.remove(index, null);
+				merge(index, (BTreeLeaf)node, leftChild);
 			}
 			else
 			{
-				BTreeLeaf leftChild = getNode(index - 1);
-				BTreeLeaf rightChild = getNode(index + 1);
-
-//				if (leftChild.mMap.size() < rightChild.mMap.size())
-				if (leftChild.mMap.getFreeSpace() > rightChild.mMap.getFreeSpace())
-				{
-					merge((BTreeLeaf)node, leftChild);
-					mMap.remove(index, null);
-				}
-				else
-				{
-					merge(rightChild, (BTreeLeaf)node);
-					mMap.remove(index + 1, null);
-				}
+				merge(index + 1, rightChild, (BTreeLeaf)node);
 			}
 		}
 
 		if (mLevel > 1 && node.mMap.size() < 5)
 		{
-			if (index == 0)
+			BTreeIndex leftChild = index == 0 ? null : getNode(index - 1);
+			BTreeIndex rightChild = index == mMap.size() - 1 ? null : getNode(index + 1);
+
+			if (rightChild == null || leftChild != null && leftChild.mMap.getFreeSpace() > rightChild.mMap.getFreeSpace())
 			{
-				merge(getNode(index + 1), (BTreeIndex)node);
-				mMap.remove(index + 1, null);
-			}
-			else if (index == mMap.size() - 1)
-			{
-				merge((BTreeIndex)node, getNode(index - 1));
-				mMap.remove(index, null);
+				merge(index, (BTreeIndex)node, leftChild);
 			}
 			else
 			{
-				BTreeIndex leftChild = getNode(index - 1);
-				BTreeIndex rightChild = getNode(index + 1);
-
-//				if (leftChild.mMap.size() < rightChild.mMap.size())
-				if (leftChild.mMap.getFreeSpace() > rightChild.mMap.getFreeSpace())
-				{
-					merge((BTreeIndex)node, leftChild);
-					mMap.remove(index, null);
-				}
-				else
-				{
-					merge(rightChild, (BTreeIndex)node);
-					mMap.remove(index + 1, null);
-				}
+				merge(index + 1, rightChild, (BTreeIndex)node);
 			}
 		}
 
@@ -324,7 +292,7 @@ public class BTreeIndex extends BTreeNode
 	}
 
 
-	private void merge(BTreeIndex aFrom, BTreeIndex aTo)
+	private void merge(int aIndex, BTreeIndex aFrom, BTreeIndex aTo)
 	{
 		while (!aFrom.mMap.isEmpty())
 		{
@@ -342,10 +310,12 @@ public class BTreeIndex extends BTreeNode
 			aFrom.mMap.remove(entry.getKey(), null);
 			aFrom.mChildren.remove(key, null);
 		}
+
+		mMap.remove(aIndex, null);
 	}
 
 
-	private void merge(BTreeLeaf aFrom, BTreeLeaf aTo)
+	private void merge(int aIndex, BTreeLeaf aFrom, BTreeLeaf aTo)
 	{
 		ArrayMapEntry temp = new ArrayMapEntry();
 
@@ -357,6 +327,8 @@ public class BTreeIndex extends BTreeNode
 		}
 
 		aFrom.mMap.clear();
+
+		mMap.remove(aIndex, null);
 	}
 
 
