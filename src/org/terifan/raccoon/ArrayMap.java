@@ -312,24 +312,30 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	/**
 	 * Find an entry equal or before the sought key.
 	 */
-	public NearResult nearestIndexEntry(ArrayMapEntry aEntry)
+	public int nearestIndexEntry(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());
+//		NearResult type;
 
 		if (index == -mEntryCount - 1)
 		{
-			loadKeyValue(mEntryCount - 1, aEntry);
-			return NearResult.GREATER;
+			index = mEntryCount - 1;
+//			type = NearResult.GREATER;
 		}
-		if (index < 0)
+		else if (index < 0)
 		{
-			loadKeyValue(Math.max(0, -index - 2), aEntry);
-			return NearResult.LOWER;
+			index = Math.max(0, -index - 2);
+//			type = NearResult.LOWER;
+		}
+		else
+		{
+//			type = NearResult.MATCH;
 		}
 
 		loadKeyValue(index, aEntry);
 
-		return NearResult.MATCH;
+//		return type;
+		return index;
 	}
 
 
