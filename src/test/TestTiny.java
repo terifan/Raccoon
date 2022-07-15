@@ -65,7 +65,7 @@ public class TestTiny
 
 				test();
 
-				mTreeFrame.getFrame().dispose();
+//				mTreeFrame.getFrame().dispose();
 			}
 		}
 		catch (Exception e)
@@ -87,13 +87,14 @@ public class TestTiny
 		{
 			ArrayList<String> list = new ArrayList<>(Arrays.asList(
 				"Circus", "Banana", "Whale", "Xenon", "Open", "Rupee", "Silver", "Leap", "Ear", "Apple", "Yellow", "Turquoise", "Japanese", "Quality", "Nose", "Gloves", "Head", "Zebra", "Female", "Internal", "Jalapeno", "Urban", "Vapor", "Dove", "Mango", "Knife"
-//				, "Clemens", "Bobby", "Wort", "Xor", "Order", "Ranger", "Surfing", "Love", "Eliot", "Asian", "Year", "Tank", "Jeans", "Queer", "Nickle", "Goat", "Happy", "Zink", "Furniture", "Immense", "Jehova", "Under", "Vital", "Dragon", "Many", "King"
-//				, "Clemens", "Bread", "Wild", "Xanthe", "Opera", "River", "Sand", "Leach", "Electron", "Accuracy", "Yearning", "Tangent", "Jelly", "Queen", "Number", "Guts", "Harbor", "Zulu", "Fulfill", "Import", "Jupiter", "Ultra", "Voice", "Down", "Metal", "Knight"
-//				, "Clear", "Breach", "Wilshire", "Xanthopsia", "Operation", "Robot", "Sugar", "Leather", "Ellipse", "Agree", "Yeisk", "Tartar", "Jigger", "Quelt", "Nutrition", "Gustus", "Hardner", "Zurvan", "Flead", "Instant", "Justis", "Umbrella", "Voltage", "Dwarf", "Misty", "Kart"
-//				, "Christian", "Break", "Wilson", "Xanthoma", "Oven", "Rock", "Sudder", "Leap", "Eighty", "Alphabet", "Yekaterinburg", "Tassie", "Jewels", "Quernstone", "Nurses", "Goofer", "Hareem", "Zurek", "Flipper", "Intellectual", "Jitney", "Umbelled", "Vinyl", "Dwell", "Mold", "Karate"
+				, "Clemens", "Bobby", "Wort", "Xor", "Order", "Ranger", "Surfing", "Love", "Eliot", "Asian", "Year", "Tank", "Jeans", "Queer", "Nickle", "Goat", "Happy", "Zink", "Furniture", "Immense", "Jehova", "Under", "Vital", "Dragon", "Many", "King"
+				, "Clemens", "Bread", "Wild", "Xanthe", "Opera", "River", "Sand", "Leach", "Electron", "Accuracy", "Yearning", "Tangent", "Jelly", "Queen", "Number", "Guts", "Harbor", "Zulu", "Fulfill", "Import", "Jupiter", "Ultra", "Voice", "Down", "Metal", "Knight"
+				, "Clear", "Breach", "Wilshire", "Xanthopsia", "Operation", "Robot", "Sugar", "Leather", "Ellipse", "Agree", "Yeisk", "Tartar", "Jigger", "Quelt", "Nutrition", "Gustus", "Hardner", "Zurvan", "Flead", "Instant", "Justis", "Umbrella", "Voltage", "Dwarf", "Misty", "Kart"
+				, "Christian", "Break", "Wilson", "Xanthoma", "Oven", "Rock", "Sudder", "Leap", "Eighty", "Alphabet", "Yekaterinburg", "Tassie", "Jewels", "Quernstone", "Nurses", "Goofer", "Hareem", "Zurek", "Flipper", "Intellectual", "Jitney", "Umbelled", "Vinyl", "Dwell", "Mold", "Karate"
 			));
 
-			int seed = -218589678; //new Random().nextInt();
+//			int seed = -218589678;
+			int seed = new Random().nextInt();
 			System.out.println("seed=" + seed);
 			Collections.shuffle(list, new Random(seed));
 
@@ -155,15 +156,18 @@ public class TestTiny
 				{
 					mTreeFrame.add(new TextSlice(key));
 					boolean removed = db.remove(new KeyValue(key));
-					dump(db);
-					if(!removed)throw new IllegalStateException();
+					if(!removed)throw new IllegalStateException(key);
 					if (BTreeTableImplementation.STOP) throw new IllegalStateException();
 				}
-				catch (Exception e)
+//				catch (Exception e)
+//				{
+//					System.out.println(key);
+//					e.printStackTrace(System.out);
+//					break;
+//				}
+				finally
 				{
-					System.out.println(key);
-					e.printStackTrace(System.out);
-					break;
+					dump(db);
 				}
 
 				if (db.getTable(KeyValue.class).size() != --size) throw new IllegalStateException("size: " + db.getTable(KeyValue.class).size() + ", expected: " + size);
@@ -176,6 +180,8 @@ public class TestTiny
 
 	private static void insert(Database aDatabase, String aKey) throws IOException
 	{
+		mTreeFrame.add(new TextSlice(aKey));
+
 		String value = Helper.createString(RND);
 
 		mEntries.put(aKey, value);

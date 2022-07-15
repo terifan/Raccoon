@@ -163,7 +163,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 		LeafNode node = loadNode(computeIndex(aEntry));
 
-		boolean changed = node.mMap.remove(aEntry, oldEntry);
+		boolean changed = node.mMap.remove(aEntry.getKey(), oldEntry);
 
 		mChanged |= changed;
 		node.mChanged |= changed;

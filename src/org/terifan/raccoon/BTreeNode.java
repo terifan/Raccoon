@@ -13,7 +13,7 @@ abstract class BTreeNode
 	boolean mModified;
 	BTreeIndex mParent;
 	long mGenerationId;
-	private int mLevel;
+	int mLevel;
 
 
 	public BTreeNode(BTreeTableImplementation aImplementation, BTreeIndex aParent)
@@ -42,11 +42,5 @@ abstract class BTreeNode
 	public int getLevel()
 	{
 		return mLevel;
-	}
-
-
-	public void setLevel(int aLevel)
-	{
-		mLevel = aLevel;
 	}
 }

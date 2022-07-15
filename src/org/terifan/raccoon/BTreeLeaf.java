@@ -37,9 +37,7 @@ public class BTreeLeaf extends BTreeNode
 	@Override
 	boolean remove(MarshalledKey aKey, Result<ArrayMapEntry> aOldEntry)
 	{
-		mMap.remove(new ArrayMapEntry(aKey.marshall()), aOldEntry);
-
-		return mMap.size() <= 0;
+		return mMap.remove(aKey.marshall(), aOldEntry);
 	}
 
 

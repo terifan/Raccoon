@@ -346,13 +346,22 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public boolean remove(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry)
+	public void remove(int aIndex, Result<ArrayMapEntry> oOldEntry)
 	{
-		int index = indexOf(aEntry.getKey());
+		removeImpl(aIndex, oOldEntry);
+	}
+
+
+	public boolean remove(byte[] aKey, Result<ArrayMapEntry> oOldEntry)
+	{
+		int index = indexOf(aKey);
 
 		if (index < 0)
 		{
-			oOldEntry.set(null);
+			if (oOldEntry != null)
+			{
+				oOldEntry.set(null);
+			}
 			return false;
 		}
 
