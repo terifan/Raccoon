@@ -294,22 +294,27 @@ public class BTreeIndex extends BTreeNode
 
 	private void merge(int aIndex, BTreeIndex aFrom, BTreeIndex aTo)
 	{
-		while (!aFrom.mMap.isEmpty())
+		ArrayMapEntry temp = new ArrayMapEntry();
+
+		for (int i = 0, sz = aFrom.mMap.size(); i < sz; i++)
 		{
-			ArrayMapEntry entry = new ArrayMapEntry();
-			aFrom.mMap.get(0, entry);
+			aFrom.mMap.get(i, temp);
 
-			MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
+			MarshalledKey key = new MarshalledKey(temp.getKey());
 
-			MarshalledKey dstKey = findFirstKey(aFrom);
-			ArrayMapEntry dstEntry = new ArrayMapEntry(dstKey.marshall(), entry.getValue(), entry.getType());
+			if (key.size() == 0)
+			{
+				MarshalledKey dstKey = findFirstKey(aFrom);
+				temp.setKey(dstKey.marshall());
+			}
 
-			aTo.mMap.insert(dstEntry, null);
-			aTo.mChildren.put(dstKey, aFrom.mChildren.get(key));
-
-			aFrom.mMap.remove(entry.getKey(), null);
-			aFrom.mChildren.remove(key, null);
+			aTo.mMap.insert(temp, null);
+			aTo.mChildren.put(new MarshalledKey(temp.getKey()), aFrom.mChildren.get(key));
 		}
+
+		aFrom.mMap.clear();
+		aFrom.mChildren.clear();
+		mImplementation.freeBlock(aFrom.mBlockPointer);
 
 		mMap.remove(aIndex, null);
 	}
@@ -319,14 +324,15 @@ public class BTreeIndex extends BTreeNode
 	{
 		ArrayMapEntry temp = new ArrayMapEntry();
 
-		for (int j = 0; j < aFrom.mMap.size(); j++)
+		for (int i = 0, sz = aFrom.mMap.size(); i < sz; i++)
 		{
-			aFrom.mMap.get(j, temp);
+			aFrom.mMap.get(i, temp);
 
 			aTo.mMap.insert(temp, null);
 		}
 
 		aFrom.mMap.clear();
+		mImplementation.freeBlock(aFrom.mBlockPointer);
 
 		mMap.remove(aIndex, null);
 	}

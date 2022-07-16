@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
 import java.util.Arrays;
-import java.util.TreeSet;
 
 
 public class MarshalledKey implements Comparable<MarshalledKey>
@@ -23,6 +22,12 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 	public byte[] marshall()
 	{
 		return mBuffer.clone();
+	}
+
+
+	public int size()
+	{
+		return mBuffer.length;
 	}
 
 
@@ -93,100 +98,4 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 	{
 		return new String(mBuffer);
 	}
-
-
-	public static void main(String ... args)
-	{
-		try
-		{
-			MarshalledKey a = new MarshalledKey("Apple".getBytes());
-			MarshalledKey b = new MarshalledKey("Banana".getBytes());
-			System.out.println(a.compareTo(b));
-			System.out.println(b.compareTo(a));
-
-			MarshalledKey c = new MarshalledKey("send".getBytes());
-			MarshalledKey d = new MarshalledKey("sender".getBytes());
-			System.out.println(c.compareTo(d));
-			System.out.println(d.compareTo(c));
-
-			ArrayMap arrayMap = new ArrayMap(1000);
-			TreeSet<MarshalledKey> db = new TreeSet<>();
-
-//			insert(arrayMap, db, "a");
-//			insert(arrayMap, db, "q");
-//			insert(arrayMap, db, "l");
-//			insert(arrayMap, db, "n");
-//			insert(arrayMap, db, "x");
-//			insert(arrayMap, db, "i");
-//			insert(arrayMap, db, "j");
-//			insert(arrayMap, db, "kkk");
-//			insert(arrayMap, db, "m");
-//			insert(arrayMap, db, "b");
-//			insert(arrayMap, db, "ddd");
-//			insert(arrayMap, db, "e");
-//			insert(arrayMap, db, "f");
-//			insert(arrayMap, db, "g");
-//			insert(arrayMap, db, "r");
-//			insert(arrayMap, db, "z");
-//			insert(arrayMap, db, "y");
-//			insert(arrayMap, db, "h");
-//			insert(arrayMap, db, "w");
-//			insert(arrayMap, db, "s");
-//			insert(arrayMap, db, "t");
-//			insert(arrayMap, db, "u");
-//			insert(arrayMap, db, "v");
-//			insert(arrayMap, db, "c");
-//			insert(arrayMap, db, "p");
-//			insert(arrayMap, db, "o");
-
-//			insert(arrayMap, db, "Banana");
-//			insert(arrayMap, db, "Nose");
-//			insert(arrayMap, db, "Urban");
-//			insert(arrayMap, db, "Vapor");
-//			insert(arrayMap, db, "Gloves");
-//			insert(arrayMap, db, "Female");
-//			insert(arrayMap, db, "Mango");
-//			insert(arrayMap, db, "Xenon");
-//			insert(arrayMap, db, "Yellow");
-//			insert(arrayMap, db, "Open");
-//			insert(arrayMap, db, "Japanese");
-//			insert(arrayMap, db, "Knife");
-//			insert(arrayMap, db, "Apple");
-//			insert(arrayMap, db, "Dove");
-//			insert(arrayMap, db, "Ear");
-//			insert(arrayMap, db, "Leap");
-//			insert(arrayMap, db, "Quality");
-//			insert(arrayMap, db, "Head");
-//			insert(arrayMap, db, "Rupee");
-//			insert(arrayMap, db, "Whale");
-//			insert(arrayMap, db, "Turquoise");
-//			insert(arrayMap, db, "Circus");
-//			insert(arrayMap, db, "Internal");
-//			insert(arrayMap, db, "Jalapeno");
-//			insert(arrayMap, db, "Silver");
-//			insert(arrayMap, db, "Zebra");
-		}
-		catch (Throwable e)
-		{
-			e.printStackTrace(System.out);
-		}
-	}
-
-
-	private static void insert(ArrayMap aArrayMap, TreeSet<MarshalledKey> aMap, String aKey)
-	{
-		aArrayMap.put(new ArrayMapEntry(new MarshalledKey(aKey.getBytes()).marshall(), new byte[0], (byte)0), null);
-		aMap.add(new MarshalledKey(aKey.getBytes()));
-//		System.out.println(aArrayMap);
-//		System.out.println(aMap);
-	}
-
-
-//	private static void insert(ArrayMap aArrayMap, TreeSet<MarshalledKey> aMap)
-//	{
-//		aArrayMap.put(new ArrayMapEntry(new MarshalledKey(true).marshall(), new byte[0], (byte)0), null);
-//		aMap.add(new MarshalledKey(true));
-//		System.out.println(aArrayMap);
-//		System.out.println(aMap);
-//	}
 }
