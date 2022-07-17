@@ -279,7 +279,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			return false;
 		}
 
-		loadKeyValue(index, aEntry);
+		loadKeyAndValue(index, aEntry);
 
 		return true;
 	}
@@ -294,18 +294,38 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 		if (index == -mEntryCount - 1)
 		{
-			loadKeyValue(mEntryCount - 1, aEntry);
+			loadKeyAndValue(mEntryCount - 1, aEntry);
 			return NearResult.GREATER;
 		}
 		if (index < 0)
 		{
-			loadKeyValue(-index - 1, aEntry);
+			loadKeyAndValue(-index - 1, aEntry);
 			return NearResult.LOWER;
 		}
 
-		loadKeyValue(index, aEntry);
+		loadKeyAndValue(index, aEntry);
 
 		return NearResult.MATCH;
+	}
+
+
+	/**
+	 * Find an entry equal or before the sought key.
+	 */
+	public int nearestIndex(byte[] aKey)
+	{
+		int index = indexOf(aKey);
+
+		if (index == -mEntryCount - 1)
+		{
+			index = mEntryCount - 1;
+		}
+		else if (index < 0)
+		{
+			index = Math.max(0, -index - 2);
+		}
+
+		return index;
 	}
 
 
@@ -315,31 +335,23 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	public int nearestIndexEntry(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());
-//		NearResult type;
 
 		if (index == -mEntryCount - 1)
 		{
 			index = mEntryCount - 1;
-//			type = NearResult.GREATER;
 		}
 		else if (index < 0)
 		{
 			index = Math.max(0, -index - 2);
-//			type = NearResult.LOWER;
-		}
-		else
-		{
-//			type = NearResult.MATCH;
 		}
 
-		loadKeyValue(index, aEntry);
+		loadKeyAndValue(index, aEntry);
 
-//		return type;
 		return index;
 	}
 
 
-	private void loadKeyValue(int aIndex, ArrayMapEntry aEntry)
+	private void loadKeyAndValue(int aIndex, ArrayMapEntry aEntry)
 	{
 		int entryOffset = readEntryOffset(aIndex);
 		int valueOffset = readValueOffset(entryOffset);
@@ -440,6 +452,16 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		aOutputEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
 
 		return aOutputEntry;
+	}
+
+
+	public byte[] getKey(int aIndex)
+	{
+		int entryOffset = readEntryOffset(aIndex);
+		int keyOffset = readKeyOffset(entryOffset);
+		int keyLength = readKeyLength(entryOffset);
+
+		return Arrays.copyOfRange(mBuffer, mStartOffset + keyOffset, mStartOffset + keyOffset + keyLength);
 	}
 
 
@@ -755,7 +777,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 			ArrayMapEntry entry = new ArrayMapEntry();
 			entry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
-			loadKeyValue(mIndex, entry);
+			loadKeyAndValue(mIndex, entry);
 
 //			System.out.println(mIndex+" "+entry);
 

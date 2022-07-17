@@ -167,11 +167,11 @@ public class BTreeTableImplementation extends TableImplementation
 
 		mRoot.remove(new MarshalledKey(aEntry.getKey()), oldEntry);
 
-		if (mRoot.getLevel() > 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
+		if (mRoot.mLevel > 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
 		{
 			mRoot = ((BTreeIndex)mRoot).shrink();
 		}
-		if (mRoot.getLevel() == 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
+		if (mRoot.mLevel == 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
 		{
 			mRoot = ((BTreeIndex)mRoot).downgrade();
 		}
