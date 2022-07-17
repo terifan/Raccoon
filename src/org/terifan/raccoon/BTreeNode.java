@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.ArrayMap.InsertResult;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Result;
 
@@ -7,40 +8,38 @@ import org.terifan.raccoon.util.Result;
 abstract class BTreeNode
 {
 	final BTreeTableImplementation mImplementation;
+	final BTreeIndex mParent;
 	final long mNodeId;
+	final int mLevel;
+
+	long mGenerationId;
 	BlockPointer mBlockPointer;
 	ArrayMap mMap;
 	boolean mModified;
-	BTreeIndex mParent;
-	long mGenerationId;
-	int mLevel;
+
+	record SplitResult (BTreeNode left, BTreeNode right, MarshalledKey key) {}
 
 
-	public BTreeNode(BTreeTableImplementation aImplementation, BTreeIndex aParent)
+	public BTreeNode(BTreeTableImplementation aImplementation, BTreeIndex aParent, int aLevel)
 	{
 		mImplementation = aImplementation;
 		mNodeId = mImplementation.nextNodeIndex();
 		mParent = aParent;
+		mLevel = aLevel;
 	}
 
 
 	abstract boolean get(MarshalledKey aKey, ArrayMapEntry oEntry);
 
 
-	abstract boolean put(MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
+	abstract InsertResult put(MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
 
 
 	abstract boolean remove(MarshalledKey aKey, Result<ArrayMapEntry> oOldEntry);
 
 
-	abstract Object[] split();
+	abstract SplitResult split();
 
 
 	abstract boolean commit();
-
-
-	public int getLevel()
-	{
-		return mLevel;
-	}
 }

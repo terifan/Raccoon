@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import org.terifan.raccoon.ArrayMap.InsertResult;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -18,6 +19,9 @@ public class BTreeTableImplementation extends TableImplementation
 	static byte[] POINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
 	static int mIndexSize = 700;
 	static int mLeafSize = 700;
+	static int mMinEntriesBeforeSplit = 3;
+	static int mMinEntriesBeforeMergeIndex = 3;
+	static int mMinEntriesBeforeMergeLeaf = 3;
 
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
@@ -118,7 +122,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 		aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
-		aEntry = new ArrayMapEntry(new MarshalledKey(aEntry.getKey()).marshall(), aEntry.getValue(), aEntry.getType());
+		aEntry = new ArrayMapEntry(new MarshalledKey(aEntry.getKey()).array(), aEntry.getValue(), aEntry.getType());
 
 		if (aEntry.getKey().length + aEntry.getValue().length > getEntrySizeLimit())
 		{
@@ -131,7 +135,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 		Result<ArrayMapEntry> result = new Result<>();
 
-		if (mRoot.put(new MarshalledKey(aEntry.getKey()), aEntry, result))
+		if (mRoot.put(new MarshalledKey(aEntry.getKey()), aEntry, result) == InsertResult.RESIZED)
 		{
 			if (mRoot instanceof BTreeLeaf)
 			{
@@ -367,7 +371,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 			for (ArrayMapEntry entry : indexNode.mMap)
 			{
-				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
+				MarshalledKey key = new MarshalledKey(entry.getKey());
 
 				BTreeNode node = indexNode.mChildren.get(key);
 
@@ -439,8 +443,8 @@ public class BTreeTableImplementation extends TableImplementation
 					aScanResult.log.append(":");
 				}
 				first = false;
-				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
-				String s = new String(key.marshall()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", "");
+				MarshalledKey key = new MarshalledKey(entry.getKey());
+				String s = new String(key.array()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", "");
 				aScanResult.log.append(s.isEmpty() ? "*" : s);
 			}
 			aScanResult.log.append("'");
@@ -455,7 +459,7 @@ public class BTreeTableImplementation extends TableImplementation
 					aScanResult.log.append(",");
 				}
 				first = false;
-				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
+				MarshalledKey key = new MarshalledKey(entry.getKey());
 				BTreeNode node = indexNode.mChildren.get(key);
 
 				if (node == null)
@@ -557,7 +561,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 			for (ArrayMapEntry entry : indexNode.mMap)
 			{
-				MarshalledKey key = MarshalledKey.unmarshall(entry.getKey());
+				MarshalledKey key = new MarshalledKey(entry.getKey());
 				BTreeNode node = indexNode.mChildren.get(key);
 
 				if (node == null)

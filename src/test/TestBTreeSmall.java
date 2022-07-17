@@ -21,7 +21,7 @@ import org.terifan.treegraph.util.TextSlice;
 import org.terifan.treegraph.util.VerticalImageFrame;
 
 
-public class TestTiny
+public class TestBTreeSmall
 {
 	public final static Random RND = new Random(1);
 

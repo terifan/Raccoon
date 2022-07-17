@@ -2,12 +2,12 @@ package org.terifan.raccoon;
 
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import org.terifan.raccoon.ArrayMap.InsertResult;
 import static org.terifan.raccoon.BTreeTableImplementation.POINTER_PLACEHOLDER;
 import static org.terifan.raccoon.BTreeTableImplementation.mIndexSize;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Result;
-import test.TestTiny;
 
 
 public class BTreeIndex extends BTreeNode
@@ -17,17 +17,16 @@ public class BTreeIndex extends BTreeNode
 
 	BTreeIndex(BTreeTableImplementation aImplementation, BTreeIndex aParent, int aLevel)
 	{
-		super(aImplementation, aParent);
+		super(aImplementation, aParent, aLevel);
 
 		mChildren = new TreeMap<>((o1, o2) -> o1.compareTo(o2));
-		mLevel = aLevel;
 	}
 
 
 	@Override
 	boolean get(MarshalledKey aKey, ArrayMapEntry aEntry)
 	{
-		ArrayMapEntry entry = new ArrayMapEntry(aKey.marshall());
+		ArrayMapEntry entry = new ArrayMapEntry(aKey.array());
 		mMap.nearestIndexEntry(entry);
 
 		MarshalledKey key = new MarshalledKey(entry.getKey());
@@ -39,36 +38,36 @@ public class BTreeIndex extends BTreeNode
 
 
 	@Override
-	boolean put(MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	InsertResult put(MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
 		mModified = true;
 
-		ArrayMapEntry entry = new ArrayMapEntry(aKey.marshall());
+		ArrayMapEntry entry = new ArrayMapEntry(aKey.array());
 		mMap.nearestIndexEntry(entry);
 
 		MarshalledKey key = new MarshalledKey(entry.getKey());
 
 		BTreeNode node = getNode(entry, key);
 
-		if (!node.put(aKey, aEntry, aResult))
+		if (node.put(aKey, aEntry, aResult) == InsertResult.PUT)
 		{
-			return false;
+			return InsertResult.PUT;
 		}
 
 		mMap.remove(entry.getKey(), null);
 
-		Object[] split = node.split();
+		SplitResult split = node.split();
 
-		MarshalledKey rightKey = (MarshalledKey)split[2];
+		MarshalledKey rightKey = split.key();
 
-		mChildren.put(key, ((BTreeNode)split[0]));
-		mChildren.put(rightKey, ((BTreeNode)split[1]));
+		mChildren.put(key, split.left());
+		mChildren.put(rightKey, split.right());
 
 		boolean overflow = false;
-		overflow |= !mMap.insert(new ArrayMapEntry(key.marshall(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
-		overflow |= !mMap.insert(new ArrayMapEntry(rightKey.marshall(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+		overflow |= mMap.insert(new ArrayMapEntry(key.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null) == InsertResult.RESIZED;
+		overflow |= mMap.insert(new ArrayMapEntry(rightKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null) == InsertResult.RESIZED;
 
-		return mMap.size() > 3 && overflow;
+		return overflow && mMap.size() > BTreeTableImplementation.mMinEntriesBeforeSplit ? InsertResult.RESIZED : InsertResult.PUT;
 	}
 
 
@@ -77,13 +76,13 @@ public class BTreeIndex extends BTreeNode
 	{
 		mModified = true;
 
-		int index = mMap.nearestIndex(aKey.marshall());
+		int index = mMap.nearestIndex(aKey.array());
 
 		BTreeNode node = getNode(index);
 
 		node.remove(aKey, aOldEntry);
 
-		if (mLevel == 1 && node.mMap.size() < 2)
+		if (mLevel == 1 && node.mMap.size() < BTreeTableImplementation.mMinEntriesBeforeMergeLeaf)
 		{
 			BTreeLeaf leftChild = index == 0 ? null : getNode(index - 1);
 			BTreeLeaf rightChild = index == mMap.size() - 1 ? null : getNode(index + 1);
@@ -98,7 +97,7 @@ public class BTreeIndex extends BTreeNode
 			}
 		}
 
-		if (mLevel > 1 && node.mMap.size() < 2)
+		if (mLevel > 1 && node.mMap.size() < BTreeTableImplementation.mMinEntriesBeforeMergeIndex)
 		{
 			BTreeIndex leftChild = index == 0 ? null : getNode(index - 1);
 			BTreeIndex rightChild = index == mMap.size() - 1 ? null : getNode(index + 1);
@@ -118,7 +117,7 @@ public class BTreeIndex extends BTreeNode
 
 
 	@Override
-	Object[] split()
+	SplitResult split()
 	{
 		mImplementation.freeBlock(mBlockPointer);
 
@@ -148,23 +147,20 @@ public class BTreeIndex extends BTreeNode
 
 		ArrayMapEntry firstRight = right.mMap.getFirst();
 
-		MarshalledKey keyLeft = MarshalledKey.unmarshall(new byte[0]);
-		MarshalledKey keyRight = MarshalledKey.unmarshall(firstRight.getKey());
+		MarshalledKey keyLeft = new MarshalledKey(new byte[0]);
+		MarshalledKey keyRight = new MarshalledKey(firstRight.getKey());
 
 		BTreeNode firstChild = right.mChildren.get(keyRight);
 
 		right.mMap.remove(firstRight.getKey(), null);
 		right.mChildren.remove(keyRight);
 
-		firstRight.setKey(keyLeft.marshall());
+		firstRight.setKey(keyLeft.array());
 
 		right.mMap.put(firstRight, null);
 		right.mChildren.put(keyLeft, firstChild);
 
-		return new Object[]
-		{
-			left, right, keyRight
-		};
+		return new SplitResult(left, right, keyRight);
 	}
 
 
@@ -199,23 +195,23 @@ public class BTreeIndex extends BTreeNode
 
 		ArrayMapEntry first = right.mMap.getFirst();
 
-		MarshalledKey keyLeft = MarshalledKey.unmarshall(new byte[0]);
-		MarshalledKey keyRight = MarshalledKey.unmarshall(first.getKey());
+		MarshalledKey keyLeft = new MarshalledKey(new byte[0]);
+		MarshalledKey keyRight = new MarshalledKey(first.getKey());
 
 		BTreeNode firstChild = right.mChildren.get(keyRight);
 
 		right.mMap.remove(first.getKey(), null);
 		right.mChildren.remove(keyRight);
 
-		first.setKey(keyLeft.marshall());
+		first.setKey(keyLeft.array());
 
 		right.mMap.put(first, null);
 		right.mChildren.put(keyLeft, firstChild);
 
 		BTreeIndex index = new BTreeIndex(mImplementation, this, mLevel + 1);
 		index.mMap = new ArrayMap(mIndexSize);
-		index.mMap.put(new ArrayMapEntry(keyLeft.marshall(), POINTER_PLACEHOLDER, (byte)0x99), null);
-		index.mMap.put(new ArrayMapEntry(keyRight.marshall(), POINTER_PLACEHOLDER, (byte)0x22), null);
+		index.mMap.put(new ArrayMapEntry(keyLeft.array(), POINTER_PLACEHOLDER, (byte)0x99), null);
+		index.mMap.put(new ArrayMapEntry(keyRight.array(), POINTER_PLACEHOLDER, (byte)0x22), null);
 		index.mChildren.put(keyLeft, left);
 		index.mChildren.put(keyRight, right);
 		index.mModified = true;
@@ -225,13 +221,13 @@ public class BTreeIndex extends BTreeNode
 
 
 	/**
-	 * Shrinks the tree by removing this node and merging all child nodes into a single index nodex which is returned.
+	 * Shrinks the tree by removing this node and merging all child nodes into a single index node which is returned.
 	 */
 	BTreeIndex shrink()
 	{
-		BTreeIndex newIndex = new BTreeIndex(mImplementation, mParent, mLevel - 1);
-		newIndex.mModified = true;
-		newIndex.mMap = new ArrayMap(mIndexSize);
+		BTreeIndex index = new BTreeIndex(mImplementation, mParent, mLevel - 1);
+		index.mModified = true;
+		index.mMap = new ArrayMap(mIndexSize);
 
 		for (int i = 0; i < mMap.size(); i++)
 		{
@@ -249,11 +245,11 @@ public class BTreeIndex extends BTreeNode
 				{
 					newEntry = entry;
 				}
-				newIndex.mMap.insert(newEntry, null);
+				index.mMap.insert(newEntry, null);
 				BTreeNode child = node.mChildren.get(new MarshalledKey(entry.getKey()));
 				if (child != null)
 				{
-					newIndex.mChildren.put(new MarshalledKey(newEntry.getKey()), child);
+					index.mChildren.put(new MarshalledKey(newEntry.getKey()), child);
 				}
 				first = false;
 			}
@@ -263,7 +259,7 @@ public class BTreeIndex extends BTreeNode
 
 		mImplementation.freeBlock(mBlockPointer);
 
-		return newIndex;
+		return index;
 	}
 
 
@@ -355,7 +351,7 @@ public class BTreeIndex extends BTreeNode
 			{
 				mModified = true;
 
-				mMap.put(new ArrayMapEntry(entry.getKey().marshall(), entry.getValue().mBlockPointer.marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array(), (byte)0x99), null);
+				mMap.put(new ArrayMapEntry(entry.getKey().array(), entry.getValue().mBlockPointer.marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array(), (byte)0x99), null);
 			}
 
 			entry.getValue().mModified = false;
@@ -378,7 +374,7 @@ public class BTreeIndex extends BTreeNode
 	}
 
 
-	<T extends BTreeNode> T getNode(int aIndex)
+	private <T extends BTreeNode> T getNode(int aIndex)
 	{
 		ArrayMapEntry entry = new ArrayMapEntry();
 
@@ -408,22 +404,6 @@ public class BTreeIndex extends BTreeNode
 		}
 
 		return node;
-	}
-
-
-	int indexOf(BTreeNode aTreeNode)
-	{
-		for (int i = 0; i < mMap.size(); i++)
-		{
-			BTreeNode node = getNode(i);
-
-			if (node == aTreeNode)
-			{
-				return i;
-			}
-		}
-
-		return -1;
 	}
 
 
