@@ -432,7 +432,8 @@ public class BTreeTableImplementation extends TableImplementation
 		{
 			BTreeIndex indexNode = (BTreeIndex)aNode;
 
-//			aScanResult.log.append("{"+indexNode.getLevel()+"}");
+			int fillRatio = indexNode.mMap.getUsedSpace()*100/mIndexSize;
+			aScanResult.log.append("{"+fillRatio+"%}");
 
 			boolean first = true;
 			aScanResult.log.append("'");
@@ -449,6 +450,7 @@ public class BTreeTableImplementation extends TableImplementation
 			}
 			aScanResult.log.append("'");
 			aScanResult.log.append(indexNode.mModified ? "#f00" : "#0f0");
+			if (fillRatio>100)aScanResult.log.append("#ddd");
 
 			first = true;
 			aScanResult.log.append("[");
@@ -484,7 +486,9 @@ public class BTreeTableImplementation extends TableImplementation
 		else
 		{
 			BTreeLeaf leafNode = (BTreeLeaf)aNode;
+			int fillRatio = leafNode.mMap.getUsedSpace()*100/mLeafSize;
 
+			aScanResult.log.append("{"+fillRatio+"%}");
 			aScanResult.log.append("[");
 			boolean first = true;
 			for (ArrayMapEntry entry : leafNode.mMap)
@@ -498,6 +502,7 @@ public class BTreeTableImplementation extends TableImplementation
 			}
 			aScanResult.log.append("]");
 			aScanResult.log.append(leafNode.mModified ? "#f00" : "#0f0");
+			if (fillRatio>100)aScanResult.log.append("#ddd");
 		}
 	}
 

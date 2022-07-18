@@ -62,7 +62,7 @@ public class TestBTreeSmall
 
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 		{
-			ArrayList<String> list = WordLists.list130;
+			ArrayList<String> list = WordLists.list78;
 
 //			int seed = -218589678;
 			int seed = new Random().nextInt();

@@ -24,7 +24,7 @@ public class BTreeLeaf extends BTreeNode
 	@Override
 	InsertResult put(MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
-		mModified =  true;
+		mModified = true;
 
 		return mMap.insert(aEntry, aResult);
 	}
@@ -33,7 +33,14 @@ public class BTreeLeaf extends BTreeNode
 	@Override
 	boolean remove(MarshalledKey aKey, Result<ArrayMapEntry> aOldEntry)
 	{
-		return mMap.remove(aKey.array(), aOldEntry);
+		boolean removed = mMap.remove(aKey.array(), aOldEntry);
+
+		if (removed)
+		{
+			mModified = true;
+		}
+
+		return removed;
 	}
 
 

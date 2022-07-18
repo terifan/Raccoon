@@ -492,6 +492,12 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
+	public int getUsedSpace()
+	{
+		return mCapacity - getFreeSpace();
+	}
+
+
 	public int indexOf(byte[] aKey)
 	{
 		int low = 0;
