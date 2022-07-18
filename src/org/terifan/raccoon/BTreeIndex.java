@@ -85,40 +85,44 @@ public class BTreeIndex extends BTreeNode
 			return false;
 		}
 
-//		if (mLevel == 1 && node.mMap.size() < BTreeTableImplementation.mMinEntriesBeforeMergeLeaf)
-//		if (mLevel == 1 && node.mMap.getFreeSpace() > node.mMap.getCapacity()/2)
-		if (mLevel == 1)
-		{
-			BTreeLeaf leftChild = index == 0 ? null : getNode(index - 1);
-			BTreeLeaf rightChild = index == mMap.size() - 1 ? null : getNode(index + 1);
+		BTreeNode leftChild = index == 0 ? null : getNode(index - 1);
+		BTreeNode rightChild = index == mMap.size() - 1 ? null : getNode(index + 1);
 
-			if (leftChild != null && leftChild.mMap.getUsedSpace() + node.mMap.getUsedSpace() < BTreeTableImplementation.mLeafSize)
+		boolean a = leftChild != null && (node.mMap.size() == 1 || node.mMap.getUsedSpace() + leftChild.mMap.getUsedSpace() < BTreeTableImplementation.mLeafSize);
+		boolean b = rightChild != null && (rightChild.mMap.size() == 1 || node.mMap.getUsedSpace() + rightChild.mMap.getUsedSpace() < BTreeTableImplementation.mLeafSize);
+
+		if (a && b)
+		{
+			if (leftChild.mMap.getUsedSpace() > rightChild.mMap.getUsedSpace())
 			{
-				merge(index, (BTreeLeaf)node, leftChild);
+				a = false;
 			}
-//			else
-			else if (rightChild != null && node.mMap.getUsedSpace() + rightChild.mMap.getUsedSpace() < BTreeTableImplementation.mLeafSize)
+			else
 			{
-				merge(index + 1, rightChild, (BTreeLeaf)node);
+				b = false;
 			}
 		}
 
-//		if (mLevel > 1 && node.mMap.size() < BTreeTableImplementation.mMinEntriesBeforeMergeIndex)
-//		if (mLevel > 1 && node.mMap.getFreeSpace() > node.mMap.getCapacity()/2)
-		if (mLevel > 1)
+		if (mLevel == 1)
 		{
-			BTreeIndex leftChild = index == 0 ? null : getNode(index - 1);
-			BTreeIndex rightChild = index == mMap.size() - 1 ? null : getNode(index + 1);
-
-//			if (rightChild == null || leftChild != null && leftChild.mMap.getFreeSpace() > rightChild.mMap.getFreeSpace())
-			if (leftChild != null && leftChild.mMap.getUsedSpace() + node.mMap.getUsedSpace() < BTreeTableImplementation.mLeafSize)
+			if (a)
 			{
-				merge(index, (BTreeIndex)node, leftChild);
+				merge(index, (BTreeLeaf)node, (BTreeLeaf)leftChild);
 			}
-//			else
-			else if (rightChild != null && node.mMap.getUsedSpace() + rightChild.mMap.getUsedSpace() < BTreeTableImplementation.mLeafSize)
+			else if (b)
 			{
-				merge(index + 1, rightChild, (BTreeIndex)node);
+				merge(index + 1, (BTreeLeaf)rightChild, (BTreeLeaf)node);
+			}
+		}
+		else
+		{
+			if (a)
+			{
+				merge(index, (BTreeIndex)node, (BTreeIndex)leftChild);
+			}
+			else if (b)
+			{
+				merge(index + 1, (BTreeIndex)rightChild, (BTreeIndex)node);
 			}
 		}
 

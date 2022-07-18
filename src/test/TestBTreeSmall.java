@@ -58,17 +58,19 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
+		int seed = -301235474;
+//		int seed = new Random().nextInt();
+		Random rnd = new Random(seed);
+
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 		{
 			ArrayList<String> list = WordLists.list78;
-
-//			int seed = -218589678;
-			int seed = new Random().nextInt();
+//			ArrayList<String> list = WordLists.list505;
 
 			System.out.println("seed=" + seed);
-			Collections.shuffle(list, new Random(seed));
+			Collections.shuffle(list, rnd);
 
 			for (String s : list)
 			{
@@ -121,10 +123,7 @@ public class TestBTreeSmall
 			int size = db.getTable(KeyValue.class).size();
 			List<String> keys = new ArrayList<>(mEntries.keySet());
 
-			int seed = new Random().nextInt();
-
-			System.out.println("seed=" + seed);
-			Collections.shuffle(keys, new Random(seed));
+			Collections.shuffle(keys, rnd);
 
 			for (String key : keys)
 			{
