@@ -4,10 +4,10 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 import org.terifan.raccoon.ArrayMap.InsertResult;
 import static org.terifan.raccoon.BTreeTableImplementation.POINTER_PLACEHOLDER;
-import static org.terifan.raccoon.BTreeTableImplementation.mIndexSize;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Result;
+import static org.terifan.raccoon.BTreeTableImplementation.INDEX_SIZE;
 
 
 public class BTreeIndex extends BTreeNode
@@ -78,22 +78,22 @@ public class BTreeIndex extends BTreeNode
 
 		int index = mMap.nearestIndex(aKey.array());
 
-		BTreeNode node = getNode(index);
+		BTreeNode curntChld = getNode(index);
 
-		if (!node.remove(aKey, aOldEntry))
+		if (!curntChld.remove(aKey, aOldEntry))
 		{
 			return false;
 		}
 
 		BTreeNode leftChild = index == 0 ? null : getNode(index - 1);
-		BTreeNode rightChild = index == mMap.size() - 1 ? null : getNode(index + 1);
+		BTreeNode rghtChild = index == mMap.size() - 1 ? null : getNode(index + 1);
 
-		boolean a = leftChild != null && (node.mMap.size() == 1 || node.mMap.getUsedSpace() + leftChild.mMap.getUsedSpace() < BTreeTableImplementation.mLeafSize);
-		boolean b = rightChild != null && (rightChild.mMap.size() == 1 || node.mMap.getUsedSpace() + rightChild.mMap.getUsedSpace() < BTreeTableImplementation.mLeafSize);
+		boolean a = leftChild != null && (curntChld.mMap.size() == 1 || curntChld.mMap.getUsedSpace() + leftChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE);
+		boolean b = rghtChild != null && (rghtChild.mMap.size() == 1 || curntChld.mMap.getUsedSpace() + rghtChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE);
 
 		if (a && b)
 		{
-			if (leftChild.mMap.getUsedSpace() > rightChild.mMap.getUsedSpace())
+			if (leftChild.mMap.getUsedSpace() > rghtChild.mMap.getUsedSpace())
 			{
 				a = false;
 			}
@@ -107,22 +107,22 @@ public class BTreeIndex extends BTreeNode
 		{
 			if (a)
 			{
-				merge(index, (BTreeLeaf)node, (BTreeLeaf)leftChild);
+				merge(index, (BTreeLeaf)curntChld, (BTreeLeaf)leftChild);
 			}
 			else if (b)
 			{
-				merge(index + 1, (BTreeLeaf)rightChild, (BTreeLeaf)node);
+				merge(index + 1, (BTreeLeaf)rghtChild, (BTreeLeaf)curntChld);
 			}
 		}
 		else
 		{
 			if (a)
 			{
-				merge(index, (BTreeIndex)node, (BTreeIndex)leftChild);
+				merge(index, (BTreeIndex)curntChld, (BTreeIndex)leftChild);
 			}
 			else if (b)
 			{
-				merge(index + 1, (BTreeIndex)rightChild, (BTreeIndex)node);
+				merge(index + 1, (BTreeIndex)rghtChild, (BTreeIndex)curntChld);
 			}
 		}
 
@@ -135,7 +135,7 @@ public class BTreeIndex extends BTreeNode
 	{
 		mImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(mIndexSize);
+		ArrayMap[] maps = mMap.split(INDEX_SIZE);
 
 		BTreeIndex left = new BTreeIndex(mImplementation, this, mLevel);
 		BTreeIndex right = new BTreeIndex(mImplementation, this, mLevel);
@@ -184,7 +184,7 @@ public class BTreeIndex extends BTreeNode
 	{
 		mImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(mIndexSize);
+		ArrayMap[] maps = mMap.split(INDEX_SIZE);
 
 		BTreeIndex left = new BTreeIndex(mImplementation, this, mLevel);
 		BTreeIndex right = new BTreeIndex(mImplementation, this, mLevel);
@@ -225,7 +225,7 @@ public class BTreeIndex extends BTreeNode
 		right.mChildren.put(keyLeft, firstChild);
 
 		BTreeIndex index = new BTreeIndex(mImplementation, this, mLevel + 1);
-		index.mMap = new ArrayMap(mIndexSize);
+		index.mMap = new ArrayMap(INDEX_SIZE);
 		index.mMap.put(new ArrayMapEntry(keyLeft.array(), POINTER_PLACEHOLDER, (byte)0x99), null);
 		index.mMap.put(new ArrayMapEntry(keyRight.array(), POINTER_PLACEHOLDER, (byte)0x22), null);
 		index.mChildren.put(keyLeft, left);
@@ -245,7 +245,7 @@ public class BTreeIndex extends BTreeNode
 	{
 		BTreeIndex index = new BTreeIndex(mImplementation, mParent, mLevel - 1);
 		index.mModified = true;
-		index.mMap = new ArrayMap(mIndexSize);
+		index.mMap = new ArrayMap(INDEX_SIZE);
 
 		for (int i = 0; i < mMap.size(); i++)
 		{

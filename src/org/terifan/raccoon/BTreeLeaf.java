@@ -2,8 +2,8 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.ArrayMap.InsertResult;
 import static org.terifan.raccoon.BTreeTableImplementation.POINTER_PLACEHOLDER;
-import static org.terifan.raccoon.BTreeTableImplementation.mIndexSize;
 import org.terifan.raccoon.util.Result;
+import static org.terifan.raccoon.BTreeTableImplementation.INDEX_SIZE;
 
 
 public class BTreeLeaf extends BTreeNode
@@ -49,7 +49,7 @@ public class BTreeLeaf extends BTreeNode
 	{
 		mImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mLeafSize);
+		ArrayMap[] maps = mMap.split(BTreeTableImplementation.LEAF_SIZE);
 
 		BTreeLeaf a = new BTreeLeaf(mImplementation, mParent);
 		BTreeLeaf b = new BTreeLeaf(mImplementation, mParent);
@@ -66,7 +66,7 @@ public class BTreeLeaf extends BTreeNode
 	{
 		mImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(BTreeTableImplementation.mLeafSize);
+		ArrayMap[] maps = mMap.split(BTreeTableImplementation.LEAF_SIZE);
 
 		BTreeLeaf a = new BTreeLeaf(mImplementation, mParent);
 		BTreeLeaf b = new BTreeLeaf(mImplementation, mParent);
@@ -81,7 +81,7 @@ public class BTreeLeaf extends BTreeNode
 		MarshalledKey keyB = new MarshalledKey(key);
 
 		BTreeIndex newIndex = new BTreeIndex(mImplementation, mParent, 1);
-		newIndex.mMap = new ArrayMap(mIndexSize);
+		newIndex.mMap = new ArrayMap(INDEX_SIZE);
 		newIndex.mMap.put(new ArrayMapEntry(keyA.array(), POINTER_PLACEHOLDER, (byte)0x77), null);
 		newIndex.mMap.put(new ArrayMapEntry(keyB.array(), POINTER_PLACEHOLDER, (byte)0x66), null);
 		newIndex.mChildren.put(keyA, a);

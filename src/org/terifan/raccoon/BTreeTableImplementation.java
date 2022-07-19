@@ -17,8 +17,8 @@ import org.terifan.raccoon.util.Result;
 public class BTreeTableImplementation extends TableImplementation
 {
 	static byte[] POINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
-	static int mIndexSize = 700;
-	static int mLeafSize = 700;
+	static int INDEX_SIZE = 700;
+	static int LEAF_SIZE = 700;
 
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
@@ -401,7 +401,7 @@ public class BTreeTableImplementation extends TableImplementation
 	@Override
 	public int getEntrySizeLimit()
 	{
-		return mLeafSize / 3;
+		return LEAF_SIZE / 3;
 	}
 
 
@@ -429,7 +429,7 @@ public class BTreeTableImplementation extends TableImplementation
 		{
 			BTreeIndex node = (BTreeIndex)aNode;
 
-			int fillRatio = node.mMap.getUsedSpace()*100/mIndexSize;
+			int fillRatio = node.mMap.getUsedSpace()*100/INDEX_SIZE;
 			aScanResult.log.append("{"+fillRatio+"%}");
 
 			boolean first = true;
@@ -484,7 +484,7 @@ public class BTreeTableImplementation extends TableImplementation
 		else
 		{
 			BTreeLeaf node = (BTreeLeaf)aNode;
-			int fillRatio = node.mMap.getUsedSpace()*100/mLeafSize;
+			int fillRatio = node.mMap.getUsedSpace()*100/LEAF_SIZE;
 
 			aScanResult.log.append("{"+fillRatio+"%}");
 			aScanResult.log.append("[");
@@ -534,7 +534,7 @@ public class BTreeTableImplementation extends TableImplementation
 	private void setupEmptyTable()
 	{
 		mRoot = new BTreeLeaf(this, null);
-		mRoot.mMap = new ArrayMap(mLeafSize);
+		mRoot.mMap = new ArrayMap(LEAF_SIZE);
 	}
 
 
