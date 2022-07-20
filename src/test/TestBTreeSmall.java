@@ -180,8 +180,10 @@ public class TestBTreeSmall
 		{
 			String description = aDatabase.scan(new ScanResult()).getDescription();
 
-			mTreeFrame.add(new TextSlice(aKey));
+			mTreeFrame.add(new TextSlice(BTreeTableImplementation.TESTINDEX + " " + aKey));
 			mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
+
+			BTreeTableImplementation.TESTINDEX++;
 		}
 	}
 

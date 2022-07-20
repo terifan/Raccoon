@@ -103,14 +103,22 @@ public class BTreeIndex extends BTreeNode
 			}
 		}
 
+		if (BTreeTableImplementation.TESTINDEX == 97)
+		{
+			System.out.println("- " + a+" "+b+" "+curntChld+" "+leftChild+" "+rghtChild);
+		}
+
+		int z = 0;
 		if (mLevel == 1)
 		{
 			if (a)
 			{
+				z=1;
 				merge(index, (BTreeLeaf)curntChld, (BTreeLeaf)leftChild);
 			}
 			else if (b)
 			{
+				z=2;
 				merge(index + 1, (BTreeLeaf)rghtChild, (BTreeLeaf)curntChld);
 			}
 		}
@@ -118,12 +126,20 @@ public class BTreeIndex extends BTreeNode
 		{
 			if (a)
 			{
+				z=3;
 				merge(index, (BTreeIndex)curntChld, (BTreeIndex)leftChild);
 			}
 			else if (b)
 			{
+				z=4;
 				merge(index + 1, (BTreeIndex)rghtChild, (BTreeIndex)curntChld);
 			}
+		}
+
+		if (BTreeTableImplementation.TESTINDEX == 97)
+		{
+			System.out.println(z+" "+a+" "+b+" "+curntChld+" "+leftChild+" "+rghtChild);
+			BTreeTableImplementation.STOP = true;
 		}
 
 		return true;
@@ -267,7 +283,7 @@ public class BTreeIndex extends BTreeNode
 
 				index.mMap.insert(newEntry, null);
 
-				BTreeNode child = node.mChildren.get(new MarshalledKey(entry.getKey()));
+				BTreeNode child = node.mChildren.remove(new MarshalledKey(entry.getKey()));
 				if (child != null)
 				{
 					index.mChildren.put(new MarshalledKey(newEntry.getKey()), child);
@@ -326,6 +342,7 @@ public class BTreeIndex extends BTreeNode
 		mImplementation.freeBlock(aFrom.mBlockPointer);
 
 		mMap.remove(aIndex, null);
+
 		aTo.mModified = true;
 	}
 
@@ -354,7 +371,9 @@ public class BTreeIndex extends BTreeNode
 		for (int i = 1; i < mMap.size(); i++)
 		{
 			BTreeLeaf node = getNode(i);
+
 			node.mMap.forEach(e -> newLeaf.mMap.insert(e, null));
+
 			mImplementation.freeBlock(node.mBlockPointer);
 		}
 
