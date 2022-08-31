@@ -371,7 +371,7 @@ public class BTreeTableImplementation extends TableImplementation
 			{
 				MarshalledKey key = new MarshalledKey(entry.getKey());
 
-				BTreeNode node = indexNode.mChildren.get(key);
+				BTreeNode node = indexNode.mBuffer.get(key);
 
 				if (node != null)
 				{
@@ -461,7 +461,7 @@ public class BTreeTableImplementation extends TableImplementation
 				}
 				first = false;
 				MarshalledKey key = new MarshalledKey(entry.getKey());
-				BTreeNode child = node.mChildren.get(key);
+				BTreeNode child = node.mBuffer.get(key);
 
 				if (child == null)
 				{
@@ -471,7 +471,7 @@ public class BTreeTableImplementation extends TableImplementation
 					child.mBlockPointer = bp;
 					child.mMap = new ArrayMap(readBlock(bp));
 
-					node.mChildren.put(key, child);
+					node.mBuffer.put(key, child);
 
 					scan(child, aScanResult);
 				}
@@ -566,7 +566,7 @@ public class BTreeTableImplementation extends TableImplementation
 			for (ArrayMapEntry entry : indexNode.mMap)
 			{
 				MarshalledKey key = new MarshalledKey(entry.getKey());
-				BTreeNode node = indexNode.mChildren.get(key);
+				BTreeNode node = indexNode.mBuffer.get(key);
 
 				if (node == null)
 				{
@@ -576,7 +576,7 @@ public class BTreeTableImplementation extends TableImplementation
 					node.mBlockPointer = bp;
 					node.mMap = new ArrayMap(readBlock(bp));
 
-					indexNode.mChildren.put(key, node);
+					indexNode.mBuffer.put(key, node);
 				}
 
 				visit(node, aConsumer);

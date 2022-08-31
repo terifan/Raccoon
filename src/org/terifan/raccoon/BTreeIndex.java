@@ -12,14 +12,14 @@ import static org.terifan.raccoon.BTreeTableImplementation.INDEX_SIZE;
 
 public class BTreeIndex extends BTreeNode
 {
-	TreeMap<MarshalledKey, BTreeNode> mChildren;
+	TreeMap<MarshalledKey, BTreeNode> mBuffer;
 
 
 	BTreeIndex(BTreeTableImplementation aImplementation, BTreeIndex aParent, int aLevel)
 	{
 		super(aImplementation, aParent, aLevel);
 
-		mChildren = new TreeMap<>((o1, o2) -> o1.compareTo(o2));
+		mBuffer = new TreeMap<>((o1, o2) -> o1.compareTo(o2));
 	}
 
 
@@ -60,8 +60,8 @@ public class BTreeIndex extends BTreeNode
 
 		MarshalledKey rightKey = split.key();
 
-		mChildren.put(key, split.left());
-		mChildren.put(rightKey, split.right());
+		mBuffer.put(key, split.left());
+		mBuffer.put(rightKey, split.right());
 
 		boolean overflow = false;
 		overflow |= mMap.insert(new ArrayMapEntry(key.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null) == InsertResult.RESIZED;
@@ -105,7 +105,7 @@ public class BTreeIndex extends BTreeNode
 
 		if (BTreeTableImplementation.TESTINDEX == 97)
 		{
-			System.out.println("- " + a+" "+b+" "+curntChld+" "+leftChild+" "+rghtChild);
+			System.out.println(mLevel + " " + "- " + a+" "+b+" "+curntChld+" "+(leftChild==null?"-":leftChild.mMap.size())+" "+(rghtChild==null?"-":rghtChild.mMap.size()));
 		}
 
 		int z = 0;
@@ -114,12 +114,12 @@ public class BTreeIndex extends BTreeNode
 			if (a)
 			{
 				z=1;
-				merge(index, (BTreeLeaf)curntChld, (BTreeLeaf)leftChild);
+				merge1(index, (BTreeLeaf)curntChld, (BTreeLeaf)leftChild);
 			}
 			else if (b)
 			{
 				z=2;
-				merge(index + 1, (BTreeLeaf)rghtChild, (BTreeLeaf)curntChld);
+				merge1(index + 1, (BTreeLeaf)rghtChild, (BTreeLeaf)curntChld);
 			}
 		}
 		else
@@ -127,18 +127,18 @@ public class BTreeIndex extends BTreeNode
 			if (a)
 			{
 				z=3;
-				merge(index, (BTreeIndex)curntChld, (BTreeIndex)leftChild);
+				merge2(index, (BTreeIndex)curntChld, (BTreeIndex)leftChild);
 			}
 			else if (b)
 			{
 				z=4;
-				merge(index + 1, (BTreeIndex)rghtChild, (BTreeIndex)curntChld);
+				merge2(index + 1, (BTreeIndex)rghtChild, (BTreeIndex)curntChld);
 			}
 		}
 
 		if (BTreeTableImplementation.TESTINDEX == 97)
 		{
-			System.out.println(z+" "+a+" "+b+" "+curntChld+" "+leftChild+" "+rghtChild);
+			System.out.println(mLevel + " " + z+" "+a+" "+b+" "+curntChld+" "+leftChild+" "+rghtChild);
 			BTreeTableImplementation.STOP = true;
 		}
 
@@ -163,15 +163,15 @@ public class BTreeIndex extends BTreeNode
 		byte[] midKeyBytes = maps[1].getKey(0);
 		MarshalledKey midKey = new MarshalledKey(midKeyBytes);
 
-		for (Entry<MarshalledKey, BTreeNode> entry : mChildren.entrySet())
+		for (Entry<MarshalledKey, BTreeNode> entry : mBuffer.entrySet())
 		{
 			if (entry.getKey().compareTo(midKey) < 0)
 			{
-				left.mChildren.put(entry.getKey(), entry.getValue());
+				left.mBuffer.put(entry.getKey(), entry.getValue());
 			}
 			else
 			{
-				right.mChildren.put(entry.getKey(), entry.getValue());
+				right.mBuffer.put(entry.getKey(), entry.getValue());
 			}
 		}
 
@@ -180,17 +180,17 @@ public class BTreeIndex extends BTreeNode
 		MarshalledKey keyLeft = new MarshalledKey(new byte[0]);
 		MarshalledKey keyRight = new MarshalledKey(firstRight.getKey());
 
-		BTreeNode firstChild = right.mChildren.get(keyRight);
+		BTreeNode firstChild = right.mBuffer.get(keyRight);
 
 		right.mMap.remove(firstRight.getKey(), null);
-		right.mChildren.remove(keyRight);
+		right.mBuffer.remove(keyRight);
 
 		firstRight.setKey(keyLeft.array());
 
 		right.mMap.put(firstRight, null);
-		right.mChildren.put(keyLeft, firstChild);
+		right.mBuffer.put(keyLeft, firstChild);
 
-		mChildren.clear();
+		mBuffer.clear();
 
 		return new SplitResult(left, right, keyRight);
 	}
@@ -213,15 +213,15 @@ public class BTreeIndex extends BTreeNode
 
 		MarshalledKey midKey = new MarshalledKey(midKeyBytes);
 
-		for (Entry<MarshalledKey, BTreeNode> entry : mChildren.entrySet())
+		for (Entry<MarshalledKey, BTreeNode> entry : mBuffer.entrySet())
 		{
 			if (entry.getKey().compareTo(midKey) < 0)
 			{
-				left.mChildren.put(entry.getKey(), entry.getValue());
+				left.mBuffer.put(entry.getKey(), entry.getValue());
 			}
 			else
 			{
-				right.mChildren.put(entry.getKey(), entry.getValue());
+				right.mBuffer.put(entry.getKey(), entry.getValue());
 			}
 		}
 
@@ -230,25 +230,25 @@ public class BTreeIndex extends BTreeNode
 		MarshalledKey keyLeft = new MarshalledKey(new byte[0]);
 		MarshalledKey keyRight = new MarshalledKey(first.getKey());
 
-		BTreeNode firstChild = right.mChildren.get(keyRight);
+		BTreeNode firstChild = right.mBuffer.get(keyRight);
 
 		right.mMap.remove(first.getKey(), null);
-		right.mChildren.remove(keyRight);
+		right.mBuffer.remove(keyRight);
 
 		first.setKey(keyLeft.array());
 
 		right.mMap.put(first, null);
-		right.mChildren.put(keyLeft, firstChild);
+		right.mBuffer.put(keyLeft, firstChild);
 
 		BTreeIndex index = new BTreeIndex(mImplementation, this, mLevel + 1);
 		index.mMap = new ArrayMap(INDEX_SIZE);
 		index.mMap.put(new ArrayMapEntry(keyLeft.array(), POINTER_PLACEHOLDER, (byte)0x99), null);
 		index.mMap.put(new ArrayMapEntry(keyRight.array(), POINTER_PLACEHOLDER, (byte)0x22), null);
-		index.mChildren.put(keyLeft, left);
-		index.mChildren.put(keyRight, right);
+		index.mBuffer.put(keyLeft, left);
+		index.mBuffer.put(keyRight, right);
 		index.mModified = true;
 
-		mChildren.clear();
+		mBuffer.clear();
 
 		return index;
 	}
@@ -283,10 +283,10 @@ public class BTreeIndex extends BTreeNode
 
 				index.mMap.insert(newEntry, null);
 
-				BTreeNode child = node.mChildren.remove(new MarshalledKey(entry.getKey()));
+				BTreeNode child = node.mBuffer.remove(new MarshalledKey(entry.getKey()));
 				if (child != null)
 				{
-					index.mChildren.put(new MarshalledKey(newEntry.getKey()), child);
+					index.mBuffer.put(new MarshalledKey(newEntry.getKey()), child);
 				}
 			}
 
@@ -299,7 +299,7 @@ public class BTreeIndex extends BTreeNode
 	}
 
 
-	private void merge(int aIndex, BTreeIndex aFrom, BTreeIndex aTo)
+	private void merge2(int aIndex, BTreeIndex aFrom, BTreeIndex aTo)
 	{
 		ArrayMapEntry temp = new ArrayMapEntry();
 
@@ -315,11 +315,11 @@ public class BTreeIndex extends BTreeNode
 			}
 
 			aTo.mMap.insert(temp, null);
-			aTo.mChildren.put(new MarshalledKey(temp.getKey()), aFrom.mChildren.get(key));
+			aTo.mBuffer.put(new MarshalledKey(temp.getKey()), aFrom.mBuffer.get(key));
 		}
 
 		aFrom.mMap.clear();
-		aFrom.mChildren.clear();
+		aFrom.mBuffer.clear();
 		mImplementation.freeBlock(aFrom.mBlockPointer);
 
 		mMap.remove(aIndex, null);
@@ -327,7 +327,7 @@ public class BTreeIndex extends BTreeNode
 	}
 
 
-	private void merge(int aIndex, BTreeLeaf aFrom, BTreeLeaf aTo)
+	private void merge1(int aIndex, BTreeLeaf aFrom, BTreeLeaf aTo)
 	{
 		ArrayMapEntry temp = new ArrayMapEntry();
 
@@ -386,7 +386,7 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	boolean commit()
 	{
-		for (Entry<MarshalledKey, BTreeNode> entry : mChildren.entrySet())
+		for (Entry<MarshalledKey, BTreeNode> entry : mBuffer.entrySet())
 		{
 			if (entry.getValue().commit())
 			{
@@ -398,7 +398,7 @@ public class BTreeIndex extends BTreeNode
 			entry.getValue().mModified = false;
 		}
 
-		mChildren.clear();
+		mBuffer.clear();
 
 //		if (!mModified)
 //		{
@@ -431,7 +431,7 @@ public class BTreeIndex extends BTreeNode
 
 	private BTreeNode getNode(ArrayMapEntry aEntry, MarshalledKey aKey)
 	{
-		BTreeNode node = mChildren.get(aKey);
+		BTreeNode node = mBuffer.get(aKey);
 
 		if (node == null)
 		{
@@ -441,7 +441,7 @@ public class BTreeIndex extends BTreeNode
 			node.mBlockPointer = bp;
 			node.mMap = new ArrayMap(mImplementation.readBlock(bp));
 
-			mChildren.put(aKey, node);
+			mBuffer.put(aKey, node);
 		}
 
 		return node;
@@ -451,8 +451,8 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	public String toString()
 	{
-		String s = "BTreeIndex{mLevel=" + mLevel + ", mMap=" + mMap + ", mChildren={";
-		for (MarshalledKey t : mChildren.keySet())
+		String s = "BTreeIndex{mLevel=" + mLevel + ", mMap=" + mMap + ", mBuffer={";
+		for (MarshalledKey t : mBuffer.keySet())
 		{
 			s += "\"" + t + "\",";
 		}
