@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import javax.swing.JFrame;
+import org.terifan.raccoon.BTreeIndex;
 import org.terifan.raccoon.BTreeTableImplementation;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
@@ -35,8 +36,8 @@ public class TestBTreeSmall
 	{
 		try
 		{
-			mTreeFrame = new VerticalImageFrame();
-			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+//			mTreeFrame = new VerticalImageFrame();
+//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
 			for (;;)
 			{
@@ -58,8 +59,12 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
+		BTreeIndex.op = 0;
+		BTreeTableImplementation.TESTINDEX = 0;
+
 //		int seed = -301235474;
-		int seed = new Random().nextInt();
+		int seed = 1573366832;
+//		int seed = new Random().nextInt();
 		Random rnd = new Random(seed);
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);

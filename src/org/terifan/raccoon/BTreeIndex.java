@@ -70,7 +70,7 @@ public class BTreeIndex extends BTreeNode
 		return overflow ? InsertResult.RESIZED : InsertResult.PUT;
 	}
 
-static int op;
+public static int op;
 
 	@Override
 	RemoveResult remove(MarshalledKey aKey, Result<ArrayMapEntry> aOldEntry)
@@ -94,21 +94,31 @@ static int op;
 //		if (result == RemoveResult.UPDATE_LOW)
 		if (index > 0)
 		{
-			ArrayMapEntry oldEntry = new ArrayMapEntry();
-			mMap.get(index, oldEntry);
-			MarshalledKey oldKey = new MarshalledKey(oldEntry.getKey());
+			if (curntChld.mMap.size() == 0)
+			{
+				Result<ArrayMapEntry> temp = new Result<>();
+				mMap.remove(index, temp);
+				mBuffer.remove(new MarshalledKey(temp.get().getKey()));
+				return RemoveResult.OK;
+			}
+			else
+			{
+				ArrayMapEntry oldEntry = new ArrayMapEntry();
+				mMap.get(index, oldEntry);
+				MarshalledKey oldKey = new MarshalledKey(oldEntry.getKey());
 
-			MarshalledKey firstKey = new MarshalledKey(findFirstKey(curntChld));
-			ArrayMapEntry firstEntry = new ArrayMapEntry(firstKey.array());
-			get(firstKey, firstEntry);
+				MarshalledKey firstKey = new MarshalledKey(findFirstKey(curntChld));
+				ArrayMapEntry firstEntry = new ArrayMapEntry(firstKey.array());
+				get(firstKey, firstEntry);
 
-//			System.out.println(firstEntry);
-//			System.out.println(this);
-//			System.out.println(index);
+	//			System.out.println(firstEntry);
+	//			System.out.println(this);
+	//			System.out.println(index);
 
-			mMap.remove(index, null);
-			mMap.put(firstEntry, null);
-			mBuffer.put(firstKey, mBuffer.remove(oldKey));
+				mMap.remove(index, null);
+				mMap.put(firstEntry, null);
+				mBuffer.put(firstKey, mBuffer.remove(oldKey));
+			}
 		}
 //		else
 		{
@@ -393,6 +403,23 @@ op++;
 
 		mMap.remove(aIndex, null);
 		aTo.mModified = true;
+
+		if (aIndex == 0)
+		{
+			System.out.println("-----"+mMap);
+
+			mMap.get(0, temp);
+			mMap.remove(0, null);
+
+			BTreeNode node = mBuffer.remove(new MarshalledKey(temp.getKey()));
+
+			temp.setKey(new byte[0]);
+			mMap.put(temp, null);
+
+			mBuffer.put(new MarshalledKey(new byte[0]), node);
+
+			System.out.println("-----"+mMap);
+		}
 	}
 
 
@@ -459,6 +486,8 @@ op++;
 		{
 			return findFirstKey(node.getNode(0));
 		}
+
+		assert aNode.mMap.size() > 0;
 
 		return aNode.mMap.getKey(0);
 	}
