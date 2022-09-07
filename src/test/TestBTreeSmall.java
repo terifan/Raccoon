@@ -63,7 +63,7 @@ public class TestBTreeSmall
 		BTreeTableImplementation.TESTINDEX = 0;
 
 //		int seed = -383991152;
-		int seed = new Random().nextInt();
+		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
