@@ -89,23 +89,6 @@ public static int op;
 			return result;
 		}
 
-//		if (curntChld.mMap.size() == 0)
-//		{
-//			Result<ArrayMapEntry> temp = new Result<>();
-//			mMap.remove(index, temp);
-//			mBuffer.remove(new MarshalledKey(temp.get().getKey()));
-//			if (index == 0)
-//			{
-//				mMap.get(0, temp.get());
-//				mMap.remove(0, null);
-//				BTreeNode node = mBuffer.remove(new MarshalledKey(temp.get().getKey()));
-//				temp.get().setKey(new byte[0]);
-//				mMap.put(temp.get(), null);
-//				mBuffer.put(new MarshalledKey(new byte[0]), node);
-//			}
-//			return RemoveResult.OK;
-//		}
-
 //		if (result == RemoveResult.UPDATE_LOW)
 		if (index > 0)
 		{
@@ -124,7 +107,6 @@ public static int op;
 			mBuffer.put(firstKey, mBuffer.remove(oldKey));
 		}
 
-//		assert mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}").equals(mMap.toString()) : mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" != "+mMap;
 		if (!mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}").equals(mMap.toString()))
 		{
 			System.out.println(mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" != "+mMap);
