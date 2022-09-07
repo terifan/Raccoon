@@ -24,12 +24,12 @@ import org.terifan.treegraph.util.VerticalImageFrame;
 
 public class TestBTreeSmall
 {
-	public final static Random RND = new Random(1);
+	public static Random RND;
 
 	private static VerticalImageFrame mTreeFrame;
 	private static HashMap<String,String> mEntries;
 
-	private static boolean mLog = true;
+	private static boolean mLog = !true;
 
 
 	public static void main(String... args)
@@ -41,11 +41,11 @@ public class TestBTreeSmall
 
 			for (;;)
 			{
-				mTreeFrame = new VerticalImageFrame();
+//				mTreeFrame = new VerticalImageFrame();
 
 				test();
 
-				mTreeFrame.getFrame().dispose();
+//				mTreeFrame.getFrame().dispose();
 			}
 		}
 		catch (Exception e)
@@ -62,21 +62,23 @@ public class TestBTreeSmall
 		BTreeIndex.op = 0;
 		BTreeTableImplementation.TESTINDEX = 0;
 
-//		int seed = -301235474;
-		int seed = 1573366832;
-//		int seed = new Random().nextInt();
-		Random rnd = new Random(seed);
+//		int seed = -383991152;
+		int seed = new Random().nextInt();
+		RND = new Random(seed);
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 		{
-			ArrayList<String> list = WordLists.list78;
+//			ArrayList<String> list = WordLists.list78;
 //			ArrayList<String> list = WordLists.list505;
 //			ArrayList<String> list = WordLists.list1007;
+			ArrayList<String> list = WordLists.list4342;
 
 			System.out.println("seed=" + seed);
-			Collections.shuffle(list, rnd);
+
+			list = new ArrayList<>(list);
+			Collections.shuffle(list, RND);
 
 			for (String s : list)
 			{
@@ -129,14 +131,14 @@ public class TestBTreeSmall
 			int size = db.getTable(KeyValue.class).size();
 			List<String> keys = new ArrayList<>(mEntries.keySet());
 
-			Collections.shuffle(keys, rnd);
+			Collections.shuffle(keys, RND);
 
 			for (String key : keys)
 			{
 //				mLog = BTreeTableImplementation.TESTINDEX > 1630;
 
 				mEntries.remove(key);
-				System.out.println(ConsoleColorCodes.BLUE + "Remove " + key + ConsoleColorCodes.RESET);
+//				System.out.println(ConsoleColorCodes.BLUE + "Remove " + key + ConsoleColorCodes.RESET);
 
 				try
 				{

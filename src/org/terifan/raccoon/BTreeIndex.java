@@ -89,46 +89,45 @@ public static int op;
 			return result;
 		}
 
-		System.out.println("###");
+//		if (curntChld.mMap.size() == 0)
+//		{
+//			Result<ArrayMapEntry> temp = new Result<>();
+//			mMap.remove(index, temp);
+//			mBuffer.remove(new MarshalledKey(temp.get().getKey()));
+//			if (index == 0)
+//			{
+//				mMap.get(0, temp.get());
+//				mMap.remove(0, null);
+//				BTreeNode node = mBuffer.remove(new MarshalledKey(temp.get().getKey()));
+//				temp.get().setKey(new byte[0]);
+//				mMap.put(temp.get(), null);
+//				mBuffer.put(new MarshalledKey(new byte[0]), node);
+//			}
+//			return RemoveResult.OK;
+//		}
 
 //		if (result == RemoveResult.UPDATE_LOW)
 		if (index > 0)
 		{
-			if (curntChld.mMap.size() == 0)
-			{
-				Result<ArrayMapEntry> temp = new Result<>();
-				mMap.remove(index, temp);
-				mBuffer.remove(new MarshalledKey(temp.get().getKey()));
-				return RemoveResult.OK;
-			}
-			else
-			{
-				ArrayMapEntry oldEntry = new ArrayMapEntry();
-				mMap.get(index, oldEntry);
-				MarshalledKey oldKey = new MarshalledKey(oldEntry.getKey());
+			ArrayMapEntry oldEntry = new ArrayMapEntry();
+			mMap.get(index, oldEntry);
+			MarshalledKey oldKey = new MarshalledKey(oldEntry.getKey());
 
-				MarshalledKey firstKey = new MarshalledKey(findFirstKey(curntChld));
-				ArrayMapEntry firstEntry = new ArrayMapEntry(firstKey.array());
-				get(firstKey, firstEntry);
+			MarshalledKey firstKey = new MarshalledKey(findFirstKey(curntChld));
+			ArrayMapEntry firstEntry = new ArrayMapEntry(firstKey.array());
+			get(firstKey, firstEntry);
 
-	//			System.out.println(firstEntry);
-	//			System.out.println(this);
-	//			System.out.println(index);
+			oldEntry.setKey(firstEntry.getKey());
 
-				mMap.remove(index, null);
-				mMap.put(firstEntry, null);
-				mBuffer.put(firstKey, mBuffer.remove(oldKey));
-			}
-		}
-//		else
-		{
-//			result = null;
+			mMap.remove(index, null);
+			mMap.put(oldEntry, null);
+			mBuffer.put(firstKey, mBuffer.remove(oldKey));
 		}
 
-		System.out.println(mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" != "+mMap);
 //		assert mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}").equals(mMap.toString()) : mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" != "+mMap;
 		if (!mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}").equals(mMap.toString()))
 		{
+			System.out.println(mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" != "+mMap);
 			BTreeTableImplementation.STOP = true;
 		}
 		if (BTreeTableImplementation.STOP) return RemoveResult.NONE;
@@ -137,7 +136,7 @@ public static int op;
 		BTreeNode rghtChild = index == mMap.size() - 1 ? null : getNode(index + 1);
 
 		boolean a = leftChild != null && (curntChld.mMap.size() == 1 || curntChld.mMap.getUsedSpace() + leftChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE);
-		boolean b = rghtChild != null && (rghtChild.mMap.size() == 1 || curntChld.mMap.getUsedSpace() + rghtChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE);
+		boolean b = rghtChild != null && (curntChld.mMap.size() == 1 || rghtChild.mMap.size() == 1 || curntChld.mMap.getUsedSpace() + rghtChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE);
 		boolean c = leftChild == null && rghtChild != null && curntChld.mMap.size() == 1;
 
 		if (a && b)
@@ -152,29 +151,13 @@ public static int op;
 			}
 		}
 
-//		if (BTreeTableImplementation.TESTINDEX == 97)
-//		{
-//			System.out.println(mLevel + " " + "- " + a+" "+b+" "+curntChld+" "+(leftChild==null?"-":leftChild.mMap.size())+" "+(rghtChild==null?"-":rghtChild.mMap.size()));
-//		}
-
 		int z = 0;
 		if (mLevel == 1)
 		{
 			if (a)
 			{
 				z=1;
-
-				if(op==18)
-				{
-					System.out.println(mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" != "+mMap);
-				}
-
 				merge1(index, (BTreeLeaf)curntChld, (BTreeLeaf)leftChild);
-
-				if(op==18)
-				{
-					System.out.println(mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" != "+mMap);
-				}
 			}
 			else if (b)
 			{
@@ -202,7 +185,7 @@ public static int op;
 			}
 		}
 
-System.out.println(BTreeTableImplementation.TESTINDEX+" "+op+" <"+z+"> "+mNodeId+" "+mMap+" "+mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" "+mLevel+" "+a+" "+b+" "+c);
+//System.out.println(BTreeTableImplementation.TESTINDEX+" "+op+" <"+z+"> "+mNodeId+" "+mMap+" "+mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" "+mLevel+" "+a+" "+b+" "+c);
 op++;
 
 		if (BTreeTableImplementation.TESTINDEX == 97)
@@ -406,8 +389,6 @@ op++;
 
 		if (aIndex == 0)
 		{
-			System.out.println("-----"+mMap);
-
 			mMap.get(0, temp);
 			mMap.remove(0, null);
 
@@ -417,8 +398,6 @@ op++;
 			mMap.put(temp, null);
 
 			mBuffer.put(new MarshalledKey(new byte[0]), node);
-
-			System.out.println("-----"+mMap);
 		}
 	}
 
