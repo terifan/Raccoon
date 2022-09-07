@@ -19,6 +19,12 @@ abstract class BTreeNode
 
 	record SplitResult (BTreeNode left, BTreeNode right, MarshalledKey key) {}
 
+	enum RemoveResult{
+		OK,
+		NONE,
+		UPDATE_LOW
+	}
+
 
 	public BTreeNode(BTreeTableImplementation aImplementation, BTreeIndex aParent, int aLevel)
 	{
@@ -35,7 +41,7 @@ abstract class BTreeNode
 	abstract InsertResult put(MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
 
 
-	abstract boolean remove(MarshalledKey aKey, Result<ArrayMapEntry> oOldEntry);
+	abstract RemoveResult remove(MarshalledKey aKey, Result<ArrayMapEntry> oOldEntry);
 
 
 	abstract SplitResult split();

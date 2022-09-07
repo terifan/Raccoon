@@ -28,7 +28,7 @@ public class TestBTreeSmall
 	private static VerticalImageFrame mTreeFrame;
 	private static HashMap<String,String> mEntries;
 
-	private static boolean log = true;
+	private static boolean mLog = true;
 
 
 	public static void main(String... args)
@@ -38,13 +38,13 @@ public class TestBTreeSmall
 			mTreeFrame = new VerticalImageFrame();
 			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-//			for (;;)
+			for (;;)
 			{
-//				mTreeFrame = new VerticalImageFrame();
+				mTreeFrame = new VerticalImageFrame();
 
 				test();
 
-//				mTreeFrame.getFrame().dispose();
+				mTreeFrame.getFrame().dispose();
 			}
 		}
 		catch (Exception e)
@@ -58,8 +58,8 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-		int seed = -301235474;
-//		int seed = new Random().nextInt();
+//		int seed = -301235474;
+		int seed = new Random().nextInt();
 		Random rnd = new Random(seed);
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
@@ -68,6 +68,7 @@ public class TestBTreeSmall
 		{
 			ArrayList<String> list = WordLists.list78;
 //			ArrayList<String> list = WordLists.list505;
+//			ArrayList<String> list = WordLists.list1007;
 
 			System.out.println("seed=" + seed);
 			Collections.shuffle(list, rnd);
@@ -118,7 +119,7 @@ public class TestBTreeSmall
 
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 		{
-			if (!log) dump(db, "x");
+			dump(db, "x");
 
 			int size = db.getTable(KeyValue.class).size();
 			List<String> keys = new ArrayList<>(mEntries.keySet());
@@ -127,13 +128,20 @@ public class TestBTreeSmall
 
 			for (String key : keys)
 			{
+//				mLog = BTreeTableImplementation.TESTINDEX > 1630;
+
 				mEntries.remove(key);
+				System.out.println(ConsoleColorCodes.BLUE + "Remove " + key + ConsoleColorCodes.RESET);
 
 				try
 				{
 					boolean removed = db.remove(new KeyValue(key));
 					if(!removed)throw new IllegalStateException(key);
-					if (BTreeTableImplementation.STOP) throw new IllegalStateException();
+					if (BTreeTableImplementation.STOP)
+					{
+						dump(db, "<stopped>");
+						throw new IllegalStateException();
+					}
 				}
 //				catch (Exception e)
 //				{
@@ -143,7 +151,7 @@ public class TestBTreeSmall
 //				}
 				finally
 				{
-					if (log) dump(db, key);
+					dump(db, key);
 				}
 
 				if (db.getTable(KeyValue.class).size() != --size) throw new IllegalStateException("size: " + db.getTable(KeyValue.class).size() + ", expected: " + size);
@@ -162,7 +170,7 @@ public class TestBTreeSmall
 
 		aDatabase.save(new KeyValue(aKey, value));
 
-		if (log) dump(aDatabase, aKey);
+		dump(aDatabase, aKey);
 
 		if (BTreeTableImplementation.STOP) throw new IllegalStateException();
 
@@ -176,15 +184,15 @@ public class TestBTreeSmall
 
 	private static void dump(Database aDatabase, String aKey) throws IOException
 	{
-		if (mTreeFrame != null)
+		if (mLog && mTreeFrame != null)
 		{
 			String description = aDatabase.scan(new ScanResult()).getDescription();
 
 			mTreeFrame.add(new TextSlice(BTreeTableImplementation.TESTINDEX + " " + aKey));
 			mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
-
-			BTreeTableImplementation.TESTINDEX++;
 		}
+
+		BTreeTableImplementation.TESTINDEX++;
 	}
 
 

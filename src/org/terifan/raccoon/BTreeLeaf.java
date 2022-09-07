@@ -31,7 +31,7 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	boolean remove(MarshalledKey aKey, Result<ArrayMapEntry> aOldEntry)
+	RemoveResult remove(MarshalledKey aKey, Result<ArrayMapEntry> aOldEntry)
 	{
 		boolean removed = mMap.remove(aKey.array(), aOldEntry);
 
@@ -40,7 +40,7 @@ public class BTreeLeaf extends BTreeNode
 			mModified = true;
 		}
 
-		return removed;
+		return removed ? RemoveResult.OK : RemoveResult.NONE;
 	}
 
 
