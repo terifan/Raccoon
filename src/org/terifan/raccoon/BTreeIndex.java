@@ -106,6 +106,33 @@ public static int op;
 			mMap.put(oldEntry, null);
 			mBuffer.put(firstKey, mBuffer.remove(oldKey));
 		}
+//		if (index > 0)
+//		{
+//			ArrayMapEntry oldEntry = new ArrayMapEntry();
+//			mMap.get(index, oldEntry);
+//			MarshalledKey oldKey = new MarshalledKey(oldEntry.getKey());
+//
+//			byte[] firstKeyBytes = findFirstKey(curntChld);
+//
+//			MarshalledKey firstKey = new MarshalledKey(firstKeyBytes == null ? new byte[0] : firstKeyBytes);
+//
+//			if (firstKeyBytes == null)
+//			{
+//				mMap.remove(index, null);
+//				mBuffer.remove(firstKey);
+//			}
+//			else
+//			{
+//				ArrayMapEntry firstEntry = new ArrayMapEntry(firstKeyBytes);
+//				get(firstKey, firstEntry);
+//
+//				oldEntry.setKey(firstKeyBytes);
+//
+//				mMap.remove(index, null);
+//				mMap.put(oldEntry, null);
+//				mBuffer.put(firstKey, mBuffer.remove(oldKey));
+//			}
+//		}
 
 		if (!mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}").equals(mMap.toString()))
 		{
@@ -448,7 +475,8 @@ op++;
 			return findFirstKey(node.getNode(0));
 		}
 
-		assert aNode.mMap.size() > 0;
+//		assert aNode.mMap.size() > 0;
+		if (aNode.mMap.size() == 0) return null;
 
 		return aNode.mMap.getKey(0);
 	}

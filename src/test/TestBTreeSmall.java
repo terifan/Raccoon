@@ -29,7 +29,7 @@ public class TestBTreeSmall
 	private static VerticalImageFrame mTreeFrame;
 	private static HashMap<String,String> mEntries;
 
-	private static boolean mLog = !true;
+	private static boolean mLog = true;
 
 
 	public static void main(String... args)
@@ -63,6 +63,7 @@ public class TestBTreeSmall
 		BTreeTableImplementation.TESTINDEX = 0;
 
 //		int seed = -383991152;
+//		int seed = 774867835;
 		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
@@ -71,9 +72,10 @@ public class TestBTreeSmall
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 		{
 //			ArrayList<String> list = WordLists.list78;
-//			ArrayList<String> list = WordLists.list505;
+			ArrayList<String> list = WordLists.list130;
+//			ArrayList<String> list = WordLists.list502;
 //			ArrayList<String> list = WordLists.list1007;
-			ArrayList<String> list = WordLists.list4342;
+//			ArrayList<String> list = WordLists.list4342;
 
 			System.out.println("seed=" + seed);
 
@@ -146,7 +148,6 @@ public class TestBTreeSmall
 					if(!removed)throw new IllegalStateException(key);
 					if (BTreeTableImplementation.STOP)
 					{
-						dump(db, "<stopped>");
 						throw new IllegalStateException();
 					}
 				}
