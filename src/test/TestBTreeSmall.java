@@ -34,17 +34,17 @@ public class TestBTreeSmall
 	private static VerticalImageFrame mTreeFrame;
 	private static HashMap<String,String> mEntries;
 
-	private static boolean mLog = true;
+	private static boolean mLog = !true;
 
 
 	public static void main(String... args)
 	{
 		try
 		{
-			mTreeFrame = new VerticalImageFrame();
-			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+//			mTreeFrame = new VerticalImageFrame();
+//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-//			for (;;)
+			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -68,8 +68,8 @@ public class TestBTreeSmall
 		BTreeTableImplementation.TESTINDEX = 0;
 
 //		int seed = 1176485217;
-		int seed = 1523829144;
-//		int seed = Math.abs(new Random().nextInt());
+//		int seed = 1523829144;
+		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);

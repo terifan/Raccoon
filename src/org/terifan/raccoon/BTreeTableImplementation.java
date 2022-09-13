@@ -432,7 +432,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 			int fillRatio = node.mMap.getUsedSpace() * 100 / INDEX_SIZE;
 //			aScanResult.log.append("{" + fillRatio + "%" + "}");
-			aScanResult.log.append("{" + node.mNodeId + ": " + fillRatio + "% " + "}");
+			aScanResult.log.append("{" + node.mNodeId + ": " + fillRatio + "%" + "}");
 
 			boolean first = true;
 			aScanResult.log.append("'");
@@ -495,7 +495,7 @@ public class BTreeTableImplementation extends TableImplementation
 			int fillRatio = node.mMap.getUsedSpace() * 100 / LEAF_SIZE;
 
 //			aScanResult.log.append("{" + fillRatio + "%" + "}");
-			aScanResult.log.append("{" + node.mNodeId + ": " + fillRatio + "% " + "}");
+			aScanResult.log.append("{" + node.mNodeId + ": " + fillRatio + "%" + "}");
 			aScanResult.log.append("[");
 			boolean first = true;
 			for (ArrayMapEntry entry : node.mMap)

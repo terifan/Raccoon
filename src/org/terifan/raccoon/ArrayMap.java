@@ -339,7 +339,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	/**
 	 * Find an entry equal or before the sought key.
 	 */
-	public int nearestIndexEntry(ArrayMapEntry aEntry)
+	public int loadNearestIndexEntry(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());
 
