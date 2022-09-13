@@ -452,10 +452,12 @@ public class BTreeTableImplementation extends TableImplementation
 			if (node.mMap.size() == 1)
 			{
 				aScanResult.log.append("#f00");
+				System.out.println("single index");
 			}
 			else if (fillRatio > 100)
 			{
 				aScanResult.log.append("#f80");
+				System.out.println("fat index");
 			}
 
 			first = true;
@@ -512,6 +514,7 @@ public class BTreeTableImplementation extends TableImplementation
 			if (fillRatio > 100)
 			{
 				aScanResult.log.append("#f80");
+				System.out.println("fat leaf");
 			}
 		}
 	}

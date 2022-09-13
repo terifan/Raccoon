@@ -8,7 +8,7 @@ import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Result;
 import static org.terifan.raccoon.BTreeTableImplementation.INDEX_SIZE;
-import test.ConsoleColorCodes;
+import test.CCC;
 
 
 public class BTreeIndex extends BTreeNode
@@ -132,21 +132,23 @@ public static int op;
 		BTreeNode leftChild = index == 0 ? null : getNode(index - 1);
 		BTreeNode rghtChild = index == mMap.size() - 1 ? null : getNode(index + 1);
 
+		int limit = mLevel == 1 ? 0 : 1;
+
 		boolean a = leftChild != null;
 		if (a)
 		{
-			a &= leftChild.mMap.size() <= 1 || curntChld.mMap.size() <= 1 || curntChld.mMap.getUsedSpace() + leftChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE;
+			a &= leftChild.mMap.size() <= limit || curntChld.mMap.size() <= limit || curntChld.mMap.getUsedSpace() + leftChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE;
 		}
 
 		boolean b = rghtChild != null;
 		if (b)
 		{
-			b &= rghtChild.mMap.size() <= 1 || curntChld.mMap.size() <= 1 || curntChld.mMap.getUsedSpace() + rghtChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE;
+			b &= rghtChild.mMap.size() <= limit || curntChld.mMap.size() <= limit || curntChld.mMap.getUsedSpace() + rghtChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE;
 		}
 
-//			System.out.println(ConsoleColorCodes.CYAN + "" + a +" "+b);
+//			System.out.println(CCC.CYAN + "" + a +" "+b);
 
-		boolean c = leftChild == null && rghtChild != null && curntChld.mMap.size() <= 1;
+//		boolean c = leftChild == null && rghtChild != null && curntChld.mMap.size() <= 1;
 
 //		boolean a = leftChild != null && (curntChld.mMap.size() == 1 || curntChld.mMap.getUsedSpace() + leftChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE);
 //		boolean b = rghtChild != null && (curntChld.mMap.size() == 1 || rghtChild.mMap.size() == 1 || curntChld.mMap.getUsedSpace() + rghtChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE);
@@ -190,22 +192,23 @@ public static int op;
 				z=4;
 				mergeIndices(index + 1, (BTreeIndex)rghtChild, (BTreeIndex)curntChld);
 			}
-			else if (c)
-			{
-				z=5;
-				result=RemoveResult.UPDATE_LOW;
-				merge3(index, (BTreeIndex)curntChld, (BTreeIndex)rghtChild);
-			}
+//			else if (c)
+//			{
+//				z=5;
+//				result=RemoveResult.UPDATE_LOW;
+//				merge3(index, (BTreeIndex)curntChld, (BTreeIndex)rghtChild);
+//				System.out.println(CCC.RED + "#");
+//			}
 		}
 
 //System.out.println(BTreeTableImplementation.TESTINDEX+" "+op+" <"+z+"> "+mNodeId+" "+mMap+" "+mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" "+mLevel+" "+a+" "+b+" "+c+" "+result);
 op++;
 
-//		if (BTreeTableImplementation.TESTINDEX == 228)
-		if (op > 282)
+		if (BTreeTableImplementation.TESTINDEX == 228+1)
+//		if (op > 201)
 		{
 //			System.out.println(mLevel + " " + z+" "+a+" "+b+" "+curntChld+" "+leftChild+" "+rghtChild);
-//			BTreeTableImplementation.STOP = true;
+			BTreeTableImplementation.STOP = true;
 		}
 
 		ArrayMapEntry temp = new ArrayMapEntry();
@@ -372,54 +375,54 @@ op++;
 	}
 
 
-	private void merge3(int aIndex, BTreeIndex aFrom, BTreeIndex aTo)
-	{
-		ArrayMapEntry firstRight = new ArrayMapEntry();
-		aTo.mMap.get(0, firstRight);
-
-		assert firstRight.getKey().length == 0;
-
-		BTreeNode node = aTo.getNode(firstRight);
-
-		firstRight.setKey(findFirstKey(aTo));
-
-		aTo.mMap.insert(firstRight, null);
-		aTo.mBuffer.put(new MarshalledKey(firstRight.getKey()), node);
-
-		ArrayMapEntry temp = new ArrayMapEntry();
-
-		for (int i = 0, sz = aFrom.mMap.size(); i < sz; i++)
-		{
-			aFrom.mMap.get(i, temp);
-
-			aTo.mMap.insert(temp, null);
-			aTo.mBuffer.put(new MarshalledKey(temp.getKey()), aFrom.getNode(temp));
-		}
-
-		aFrom.mMap.clear();
-		aFrom.mBuffer.clear();
-		mImplementation.freeBlock(aFrom.mBlockPointer);
-
-		mMap.get(aIndex, temp);
-		mMap.remove(aIndex, null);
-
-		mBuffer.remove(new MarshalledKey(temp.getKey()));
-
-		aTo.mModified = true;
-
-		if (aIndex == 0)
-		{
-			mMap.get(0, temp);
-			mMap.remove(0, null);
-
-			node = mBuffer.remove(new MarshalledKey(temp.getKey()));
-
-			temp.setKey(new byte[0]);
-			mMap.put(temp, null);
-
-			mBuffer.put(new MarshalledKey(new byte[0]), node);
-		}
-	}
+//	private void merge3(int aIndex, BTreeIndex aFrom, BTreeIndex aTo)
+//	{
+//		ArrayMapEntry firstRight = new ArrayMapEntry();
+//		aTo.mMap.get(0, firstRight);
+//
+//		assert firstRight.getKey().length == 0;
+//
+//		BTreeNode node = aTo.getNode(firstRight);
+//
+//		firstRight.setKey(findFirstKey(aTo));
+//
+//		aTo.mMap.insert(firstRight, null);
+//		aTo.mBuffer.put(new MarshalledKey(firstRight.getKey()), node);
+//
+//		ArrayMapEntry temp = new ArrayMapEntry();
+//
+//		for (int i = 0, sz = aFrom.mMap.size(); i < sz; i++)
+//		{
+//			aFrom.mMap.get(i, temp);
+//
+//			aTo.mMap.insert(temp, null);
+//			aTo.mBuffer.put(new MarshalledKey(temp.getKey()), aFrom.getNode(temp));
+//		}
+//
+//		aFrom.mMap.clear();
+//		aFrom.mBuffer.clear();
+//		mImplementation.freeBlock(aFrom.mBlockPointer);
+//
+//		mMap.get(aIndex, temp);
+//		mMap.remove(aIndex, null);
+//
+//		mBuffer.remove(new MarshalledKey(temp.getKey()));
+//
+//		aTo.mModified = true;
+//
+//		if (aIndex == 0)
+//		{
+//			mMap.get(0, temp);
+//			mMap.remove(0, null);
+//
+//			node = mBuffer.remove(new MarshalledKey(temp.getKey()));
+//
+//			temp.setKey(new byte[0]);
+//			mMap.put(temp, null);
+//
+//			mBuffer.put(new MarshalledKey(new byte[0]), node);
+//		}
+//	}
 
 
 	private void mergeIndices(int aIndex, BTreeIndex aFrom, BTreeIndex aTo)
