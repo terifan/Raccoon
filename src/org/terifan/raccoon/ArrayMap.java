@@ -881,4 +881,10 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 		return new ArrayMap[]{low, high};
 	}
+
+
+	public boolean isHalfEmpty()
+	{
+		return getFreeSpace() > mCapacity / 2;
+	}
 }
