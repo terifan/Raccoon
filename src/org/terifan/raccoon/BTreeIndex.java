@@ -146,8 +146,6 @@ public static int op;
 			b &= rghtChild.mMap.size() <= limit || curntChld.mMap.size() <= limit || curntChld.mMap.getUsedSpace() + rghtChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE;
 		}
 
-//			System.out.println(CCC.CYAN + "" + a +" "+b);
-
 //		boolean c = leftChild == null && rghtChild != null && curntChld.mMap.size() <= 1;
 
 //		boolean a = leftChild != null && (curntChld.mMap.size() == 1 || curntChld.mMap.getUsedSpace() + leftChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE);
