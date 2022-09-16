@@ -42,10 +42,10 @@ public class TestBTreeSmall
 	{
 		try
 		{
-			mTreeFrame = new VerticalImageFrame();
-			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+//			mTreeFrame = new VerticalImageFrame();
+//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-//			for (;;)
+			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -69,8 +69,8 @@ public class TestBTreeSmall
 		BTreeTableImplementation.TESTINDEX = 0;
 
 //		int seed = 175186788;
-		int seed = 80393928;
-//		int seed = Math.abs(new Random().nextInt());
+//		int seed = 80393928;
+		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
 		System.out.println("#" + ++testindex + " seed=" + seed);
@@ -146,12 +146,12 @@ public class TestBTreeSmall
 //				mLog = BTreeTableImplementation.TESTINDEX > 1630;
 
 				mEntries.remove(key);
-//				System.out.println(CCC.BLUE + "Remove " + key + CCC.RESET);
+				System.out.println(CCC.BLUE + "Remove " + key + CCC.RESET);
 
 				try
 				{
 					boolean removed = db.remove(new KeyValue(key));
-					if(!removed)throw new IllegalStateException(key);
+					if(!removed)throw new IllegalStateException("Failed to remove: " + key);
 					if (BTreeTableImplementation.STOP)
 					{
 						throw new IllegalStateException();
