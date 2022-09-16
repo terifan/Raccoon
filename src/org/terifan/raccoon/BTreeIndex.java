@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import org.terifan.raccoon.ArrayMap.InsertResult;
@@ -41,29 +42,31 @@ public class BTreeIndex extends BTreeNode
 	{
 		mModified = true;
 
-		ArrayMapEntry entry = new ArrayMapEntry(aKey.array());
-		mMap.loadNearestIndexEntry(entry);
+		ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey.array());
+		mMap.loadNearestIndexEntry(nearestEntry);
 
-		MarshalledKey key = new MarshalledKey(entry.getKey());
+		MarshalledKey nearestKey = new MarshalledKey(nearestEntry.getKey());
 
-		BTreeNode node = getNode(entry);
+		BTreeNode node = getNode(nearestEntry);
 
 		if (node.put(aKey, aEntry, aResult) == InsertResult.PUT)
 		{
 			return InsertResult.PUT;
 		}
 
-		mMap.remove(entry.getKey(), null);
+		assert Arrays.equals(nearestKey.array(), nearestEntry.getKey());
+
+		mMap.remove(nearestEntry.getKey(), null);
 
 		SplitResult split = node.split();
 
-		MarshalledKey rightKey = split.key();
+		MarshalledKey rightKey = split.rightKey();
 
-		mBuffer.put(key, split.left());
+		mBuffer.put(nearestKey, split.left());
 		mBuffer.put(rightKey, split.right());
 
 		boolean overflow = false;
-		overflow |= mMap.insert(new ArrayMapEntry(key.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null) == InsertResult.RESIZED;
+		overflow |= mMap.insert(new ArrayMapEntry(nearestKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null) == InsertResult.RESIZED;
 		overflow |= mMap.insert(new ArrayMapEntry(rightKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null) == InsertResult.RESIZED;
 
 		return overflow ? InsertResult.RESIZED : InsertResult.PUT;
@@ -132,25 +135,20 @@ public static int op;
 		BTreeNode leftChild = index == 0 ? null : getNode(index - 1);
 		BTreeNode rghtChild = index == mMap.size() - 1 ? null : getNode(index + 1);
 
-		int limit = mLevel == 1 ? 0 : 1;
+		int keyLimit = mLevel == 1 ? 0 : 1;
+		int sizeLimit = mLevel == 1 ? BTreeTableImplementation.LEAF_SIZE : BTreeTableImplementation.INDEX_SIZE;
 
 		boolean a = leftChild != null;
 		if (a)
 		{
-			a &= leftChild.mMap.size() <= limit || curntChld.mMap.size() <= limit || curntChld.mMap.getUsedSpace() + leftChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE;
+			a &= leftChild.mMap.size() <= keyLimit || curntChld.mMap.size() <= keyLimit || curntChld.mMap.getUsedSpace() + leftChild.mMap.getUsedSpace() <= sizeLimit;
 		}
 
 		boolean b = rghtChild != null;
 		if (b)
 		{
-			b &= rghtChild.mMap.size() <= limit || curntChld.mMap.size() <= limit || curntChld.mMap.getUsedSpace() + rghtChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE;
+			b &= rghtChild.mMap.size() <= keyLimit || curntChld.mMap.size() <= keyLimit || curntChld.mMap.getUsedSpace() + rghtChild.mMap.getUsedSpace() <= sizeLimit;
 		}
-
-//		boolean c = leftChild == null && rghtChild != null && curntChld.mMap.size() <= 1;
-
-//		boolean a = leftChild != null && (curntChld.mMap.size() == 1 || curntChld.mMap.getUsedSpace() + leftChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE);
-//		boolean b = rghtChild != null && (curntChld.mMap.size() == 1 || rghtChild.mMap.size() == 1 || curntChld.mMap.getUsedSpace() + rghtChild.mMap.getUsedSpace() < BTreeTableImplementation.LEAF_SIZE);
-//		boolean c = leftChild == null && rghtChild != null && curntChld.mMap.size() == 1;
 
 		if (a && b)
 		{
@@ -163,6 +161,8 @@ public static int op;
 				b = false;
 			}
 		}
+
+//		System.out.println(a+" "+b);
 
 		int z = 0;
 		if (mLevel == 1)
@@ -199,14 +199,51 @@ public static int op;
 //			}
 		}
 
-//System.out.println(BTreeTableImplementation.TESTINDEX+" "+op+" <"+z+"> "+mNodeId+" "+mMap+" "+mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" "+mLevel+" "+a+" "+b+" "+c+" "+result);
+//		System.out.println((leftChild==null?"-":leftChild.mMap.getUsedSpace())+" "+curntChld.mMap.getUsedSpace()+" "+(rghtChild==null?"-":rghtChild.mMap.getUsedSpace()));
+
+//		if (leftChild != null && leftChild.mMap.getUsedSpace() > sizeLimit)
+//		{
+//			ArrayMapEntry entry = new ArrayMapEntry();
+//			mMap.get(index - 1, entry);
+//
+//			MarshalledKey leftKey = new MarshalledKey(entry.getKey());
+//
+//			mMap.remove(leftKey.array(), null);
+//			mBuffer.remove(leftKey); // todo
+//
+//			SplitResult split = leftChild.split();
+//
+//			leftKey = split.leftKey();
+//			MarshalledKey rightKey = split.rightKey();
+//
+//			mBuffer.put(leftKey, split.left());
+//			mBuffer.put(rightKey, split.right());
+//
+//			mMap.insert(new ArrayMapEntry(leftKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+//			mMap.insert(new ArrayMapEntry(rightKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+//		}
+//		else if (curntChld.mMap.getUsedSpace() > sizeLimit)
+//		{
+//			SplitResult split = curntChld.split();
+//
+//			MarshalledKey leftKey = split.leftKey();
+//			MarshalledKey rightKey = split.rightKey();
+//
+//			mBuffer.put(leftKey, split.left());
+//			mBuffer.put(rightKey, split.right());
+//
+//			mMap.insert(new ArrayMapEntry(leftKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+//			mMap.insert(new ArrayMapEntry(rightKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+//		}
+
+//System.out.println(BTreeTableImplementation.TESTINDEX+" "+op+" <"+z+"> "+mNodeId+" "+mMap+" "+mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" "+mLevel+" "+a+" "+b+" "+result);
 op++;
 
 		if (BTreeTableImplementation.TESTINDEX == 228+1)
 //		if (op > 201)
 		{
 //			System.out.println(mLevel + " " + z+" "+a+" "+b+" "+curntChld+" "+leftChild+" "+rghtChild);
-			BTreeTableImplementation.STOP = true;
+//			BTreeTableImplementation.STOP = true;
 		}
 
 		ArrayMapEntry temp = new ArrayMapEntry();
@@ -266,7 +303,7 @@ op++;
 
 		mBuffer.clear();
 
-		return new SplitResult(left, right, keyRight);
+		return new SplitResult(left, right, keyLeft, keyRight);
 	}
 
 

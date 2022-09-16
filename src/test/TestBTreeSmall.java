@@ -68,8 +68,8 @@ public class TestBTreeSmall
 		BTreeIndex.op = 0;
 		BTreeTableImplementation.TESTINDEX = 0;
 
-//		int seed = 1176485217;
-		int seed = 1523829144;
+//		int seed = 175186788;
+		int seed = 80393928;
 //		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
@@ -146,7 +146,7 @@ public class TestBTreeSmall
 //				mLog = BTreeTableImplementation.TESTINDEX > 1630;
 
 				mEntries.remove(key);
-//				System.out.println(ConsoleColorCodes.BLUE + "Remove " + key + ConsoleColorCodes.RESET);
+//				System.out.println(CCC.BLUE + "Remove " + key + CCC.RESET);
 
 				try
 				{

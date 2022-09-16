@@ -58,7 +58,7 @@ public class BTreeLeaf extends BTreeNode
 		a.mModified = true;
 		b.mModified = true;
 
-		return new SplitResult(a, b, new MarshalledKey(b.mMap.getFirst().getKey()));
+		return new SplitResult(a, b, new MarshalledKey(a.mMap.getFirst().getKey()), new MarshalledKey(b.mMap.getFirst().getKey()));
 	}
 
 
