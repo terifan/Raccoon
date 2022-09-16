@@ -69,7 +69,7 @@ public class TestBTreeSmall
 		BTreeTableImplementation.TESTINDEX = 0;
 
 //		int seed = 175186788;
-//		int seed = 80393928;
+//		int seed = 1071310870;
 		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
@@ -146,7 +146,7 @@ public class TestBTreeSmall
 //				mLog = BTreeTableImplementation.TESTINDEX > 1630;
 
 				mEntries.remove(key);
-				System.out.println(CCC.BLUE + "Remove " + key + CCC.RESET);
+//				System.out.println(CCC.BLUE + "Remove " + key + CCC.RESET);
 
 				try
 				{

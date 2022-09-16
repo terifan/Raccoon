@@ -217,47 +217,26 @@ public static int op;
 
 			mMap.put(oldEntry, null);
 			mBuffer.put(firstKey, oldNode);
-
-			System.out.println("#" + index + " " + firstKey);
 		}
 
-//		System.out.println((leftChild==null?"-":leftChild.mMap.getUsedSpace())+" "+curntChld.mMap.getUsedSpace()+" "+(rghtChild==null?"-":rghtChild.mMap.getUsedSpace()));
+		if (mLevel > 1 && curntChld.mMap.getUsedSpace() > sizeLimit)
+		{
+			MarshalledKey leftKey = new MarshalledKey(findFirstKey(curntChld));
 
+			SplitResult split = curntChld.split();
 
-//		if (leftChild != null && leftChild.mMap.getUsedSpace() > sizeLimit)
-//		{
-//			ArrayMapEntry entry = new ArrayMapEntry();
-//			mMap.get(index - 1, entry);
-//
-//			MarshalledKey leftKey = new MarshalledKey(entry.getKey());
-//
-//			mMap.remove(leftKey.array(), null);
-//			mBuffer.remove(leftKey); // todo
-//
-//			SplitResult split = leftChild.split();
-//
-//			leftKey = split.leftKey();
-//			MarshalledKey rightKey = split.rightKey();
-//
-//			mBuffer.put(leftKey, split.left());
-//			mBuffer.put(rightKey, split.right());
-//
-//			mMap.insert(new ArrayMapEntry(leftKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
-//			mMap.insert(new ArrayMapEntry(rightKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
-//		}
-//		else if (curntChld.mMap.getUsedSpace() > sizeLimit)
-//		{
-//			SplitResult split = curntChld.split();
-//
-//			MarshalledKey leftKey = split.leftKey();
-//			MarshalledKey rightKey = split.rightKey();
-//
-//			mBuffer.put(leftKey, split.left());
-//			mBuffer.put(rightKey, split.right());
-//
-//			mMap.insert(new ArrayMapEntry(leftKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
-//			mMap.insert(new ArrayMapEntry(rightKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
-//		}
+			MarshalledKey rightKey = split.rightKey();
+
+			mMap.remove(index, null);
+
+			mBuffer.put(leftKey, split.left());
+			mBuffer.put(rightKey, split.right());
+
+			mMap.insert(new ArrayMapEntry(leftKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+			mMap.insert(new ArrayMapEntry(rightKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
+
+			clearFirstKey(this);
+		}
 
 //System.out.println(BTreeTableImplementation.TESTINDEX+" "+op+" <"+z+"> "+mNodeId+" "+mMap+" "+mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" "+mLevel+" "+a+" "+b+" "+result);
 op++;
@@ -441,8 +420,8 @@ op++;
 		fixFirstKey(aTo);
 		fixFirstKey(aFrom);
 
-		System.out.println("--v--");
-		System.out.println(aFrom.mMap + " // " + aTo.mMap);
+//		System.out.println("--v--");
+//		System.out.println(aFrom.mMap + " // " + aTo.mMap);
 
 
 		for (int i = 0, sz = aFrom.mMap.size(); i < sz; i++)
@@ -469,9 +448,9 @@ op++;
 
 		clearFirstKey(aTo);
 
-		System.out.println(aTo.mMap);
-		System.out.println(mMap);
-		System.out.println("-----");
+//		System.out.println(aTo.mMap);
+//		System.out.println(mMap);
+//		System.out.println("-----");
 
 
 		mMap.get(aFromIndex, temp);
