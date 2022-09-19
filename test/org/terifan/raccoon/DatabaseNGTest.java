@@ -397,8 +397,8 @@ public class DatabaseNGTest
 
 		try (Database database = new Database(device, DatabaseOpenOption.OPEN))
 		{
-			assertEquals(database.getTable(new _Number1K1D(true)).size(), 2);
-			assertEquals(database.getTable(new _Number1K1D(false)).size(), 1);
+			assertEquals(database.size(new _Number1K1D(true)), 2);
+			assertEquals(database.size(new _Number1K1D(false)), 1);
 		}
 	}
 
@@ -1137,7 +1137,7 @@ public class DatabaseNGTest
 				database.save(new _Fruit1K("a-" + i));
 			}
 
-			System.out.println(database.getTable(_Fruit1K.class).scan(null));
+//			System.out.println(database.getTable(_Fruit1K.class).scan(null));
 
 			database.commit();
 

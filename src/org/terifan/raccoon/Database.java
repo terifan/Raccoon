@@ -7,6 +7,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,6 +16,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.terifan.raccoon.Table.ResultSetConsumer;
 import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
@@ -48,6 +50,7 @@ public final class Database implements AutoCloseable
 	private TableParam mTableParam;
 	private TableInstance mSystemTable;
 	private CompressionParam mCompressionParam;
+	private int mReadLocked;
 
 
 	private Database()
@@ -965,7 +968,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	int size(Class aType)
+	public int size(Class aType)
 	{
 		mReadLock.lock();
 		try
@@ -984,12 +987,31 @@ public final class Database implements AutoCloseable
 	}
 
 
-	int size(DiscriminatorType aDiscriminator)
+	public int size(DiscriminatorType aDiscriminator)
 	{
 		mReadLock.lock();
 		try
 		{
 			TableInstance table = openTable(aDiscriminator.getType(), aDiscriminator, DatabaseOpenOption.OPEN);
+			if (table == null)
+			{
+				return 0;
+			}
+			return table.size();
+		}
+		finally
+		{
+			mReadLock.unlock();
+		}
+	}
+
+
+	public int size(Object aEntity)
+	{
+		mReadLock.lock();
+		try
+		{
+			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
 			if (table == null)
 			{
 				return 0;
@@ -1338,5 +1360,61 @@ public final class Database implements AutoCloseable
 		{
 			mWriteLock.unlock();
 		}
+	}
+
+
+	public <T> void forEach(Class<T> aType, Consumer<T> aConsumer)
+	{
+		aquireReadLock();
+
+		TableInstance<T> table = openTable(getTable(aType), DatabaseOpenOption.OPEN);
+
+		try
+		{
+			for (Iterator<T> it = new EntityIterator<>(table, table.getEntryIterator()); it.hasNext();)
+			{
+				aConsumer.accept(it.next());
+			}
+		}
+		finally
+		{
+			releaseReadLock();
+		}
+	}
+
+
+	public void forEachResultSet(Class aType, ResultSetConsumer aConsumer)
+	{
+		aquireReadLock();
+
+		TableInstance table = openTable(getTable(aType), DatabaseOpenOption.OPEN);
+
+		try
+		{
+			ResultSet resultSet = new ResultSet(table, table.getEntryIterator());
+
+			while (resultSet.next())
+			{
+				aConsumer.handle(resultSet);
+			}
+		}
+		finally
+		{
+			releaseReadLock();
+		}
+	}
+
+
+	private synchronized void releaseReadLock()
+	{
+		mReadLock.unlock();
+		mReadLocked--;
+	}
+
+
+	private synchronized void aquireReadLock()
+	{
+		mReadLock.lock();
+		mReadLocked++;
 	}
 }

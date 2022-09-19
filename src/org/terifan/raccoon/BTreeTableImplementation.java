@@ -4,7 +4,6 @@ import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.terifan.raccoon.ArrayMap.InsertResult;
@@ -17,26 +16,21 @@ import org.terifan.raccoon.util.Result;
 public class BTreeTableImplementation extends TableImplementation
 {
 	static byte[] POINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
-	static int INDEX_SIZE = 600;
-	static int LEAF_SIZE = 600;
+	static int INDEX_SIZE = 8192;
+	static int LEAF_SIZE = 8192;
 
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private int mModCount;
-	BTreeNode mRoot;
+	private BTreeNode mRoot;
 
-	private TreeMap<Long, BTreeNode> mLRU;
 	private long mGenerationCounter;
 	private long mNodeCounter;
-
-	public static int TESTINDEX;
 
 
 	public BTreeTableImplementation(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionGroup, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName)
 	{
 		super(aBlockDevice, aTransactionGroup, aCommitChangesToBlockDevice, aCompressionParam, aTableParam, aTableName);
-
-		mLRU = new TreeMap<>();
 	}
 
 
@@ -370,7 +364,7 @@ public class BTreeTableImplementation extends TableImplementation
 			{
 				MarshalledKey key = new MarshalledKey(entry.getKey());
 
-				BTreeNode node = indexNode.mBuffer.get(key);
+				BTreeNode node = indexNode.getBuffer(key);
 
 				if (node != null)
 				{
@@ -473,7 +467,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 				ArrayMapEntry entry = new ArrayMapEntry();
 				indexNode.mMap.get(i, entry);
-				indexNode.mBuffer.put(new MarshalledKey(entry.getKey()), child);
+				indexNode.putBuffer(new MarshalledKey(entry.getKey()), child);
 
 				scan(child, aScanResult);
 			}
@@ -569,12 +563,6 @@ public class BTreeTableImplementation extends TableImplementation
 	}
 
 
-	TreeMap<Long, BTreeNode> getLRU()
-	{
-		return mLRU;
-	}
-
-
 	synchronized long nextNodeIndex()
 	{
 		return ++mNodeCounter;
@@ -587,7 +575,7 @@ public class BTreeTableImplementation extends TableImplementation
 	}
 
 
-	protected void visit(BTreeNode aNode, Consumer<BTreeLeaf> aConsumer)
+	private void visit(BTreeNode aNode, Consumer<BTreeLeaf> aConsumer)
 	{
 		if (aNode instanceof BTreeIndex)
 		{
@@ -599,7 +587,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 				ArrayMapEntry entry = new ArrayMapEntry();
 				indexNode.mMap.get(i, entry);
-				indexNode.mBuffer.put(new MarshalledKey(entry.getKey()), node);
+				indexNode.putBuffer(new MarshalledKey(entry.getKey()), node);
 
 				visit(node, aConsumer);
 			}

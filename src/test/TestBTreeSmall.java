@@ -24,13 +24,14 @@ import org.terifan.treegraph.util.VerticalImageFrame;
 
 public class TestBTreeSmall
 {
-	public static Random RND;
+	public static int TESTROUND;
+	public static int TESTINDEX;
 
 	private static VerticalImageFrame mTreeFrame;
-	private static HashMap<String,String> mEntries;
 
-	private static boolean mLog = true;
-	private static int testindex;
+	public Random RND;
+	private HashMap<String,String> mEntries;
+	private boolean mLog;
 
 
 	public static void main(String... args)
@@ -44,7 +45,7 @@ public class TestBTreeSmall
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
-				test();
+				new TestBTreeSmall().test();
 
 //				mTreeFrame.getFrame().dispose();
 			}
@@ -56,17 +57,19 @@ public class TestBTreeSmall
 	}
 
 
-	public static void test() throws Exception
+	public void test() throws Exception
 	{
 		mEntries = new HashMap<>();
 
-//		int seed = 907111671;
+//		int seed = 2135994705;
 		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
-		System.out.println("#" + ++testindex + " seed=" + seed);
+		mLog = !true;
 
-		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+		System.out.println("#" + ++TESTROUND + " seed=" + seed);
+
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(8192);
 
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION))
 		{
@@ -81,7 +84,19 @@ public class TestBTreeSmall
 
 			for (String s : list)
 			{
-				insert(db, s);
+				String value = Helper.createString(RND);
+
+//				System.out.println(CCC.BLUE + "Save " + s + CCC.RESET);
+
+				mEntries.put(s, value);
+				db.save(new _KeyValue(s, value));
+				dump(db, s);
+
+//				if (RND.nextInt(10) < 3)
+//				{
+//					mTreeFrame.add(new TextSlice("committing"));
+//					db.commit();
+//				}
 			}
 
 			boolean all = true;
@@ -89,7 +104,7 @@ public class TestBTreeSmall
 			{
 				try
 				{
-					all &= db.get(new KeyValue(key)).mValue.equals(mEntries.get(key));
+					all &= db.get(new _KeyValue(key)).mValue.equals(mEntries.get(key));
 				}
 				catch (Exception e)
 				{
@@ -111,7 +126,7 @@ public class TestBTreeSmall
 			{
 				try
 				{
-					all &= db.get(new KeyValue(key)) != null;
+					all &= db.get(new _KeyValue(key)) != null;
 				}
 				catch (Exception e)
 				{
@@ -132,83 +147,43 @@ public class TestBTreeSmall
 
 			for (String key : keys)
 			{
+//				mLog = TESTINDEX >= 6094;
+
 				mEntries.remove(key);
 
-//				System.out.println(CCC.BLUE + "Remove " + key + CCC.RESET);
+//				System.out.println(CCC.BLUE + "Remove " + key + " " + TESTINDEX + CCC.RESET);
 
 				try
 				{
-					boolean removed = db.remove(new KeyValue(key));
+					boolean removed = db.remove(new _KeyValue(key));
 					if(!removed)throw new IllegalStateException("Failed to remove: " + key);
+				}
+				catch (Exception e)
+				{
+					mLog = true;
+					throw e;
 				}
 				finally
 				{
 					dump(db, key);
 				}
 
-				assert db.getTable(KeyValue.class).size() == --size;
+				assert db.size(_KeyValue.class) == --size : "size missmatch: " + db.size(_KeyValue.class) + " != " + size;
 			}
 		}
 	}
 
 
-	private static void insert(Database aDatabase, String aKey) throws IOException
+	private void dump(Database aDatabase, String aKey) throws IOException
 	{
-		String value = Helper.createString(RND);
-
-		mEntries.put(aKey, value);
-
-		aDatabase.save(new KeyValue(aKey, value));
-
-		dump(aDatabase, aKey);
-
-//		if (rnd.nextInt(10) < 3)
-//		{
-//			mTreeFrame.add(new TextSlice("committing"));
-//			aDatabase.commit();
-//		}
-	}
-
-
-	private static void dump(Database aDatabase, String aKey) throws IOException
-	{
-		String description = aDatabase.scan(new ScanResult()).getDescription();
-
 		if (mLog && mTreeFrame != null)
 		{
-			mTreeFrame.add(new TextSlice(BTreeTableImplementation.TESTINDEX + " " + aKey));
+			String description = aDatabase.scan(new ScanResult()).getDescription();
+
+			mTreeFrame.add(new TextSlice(TESTINDEX + " " + aKey));
 			mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
 		}
 
-		BTreeTableImplementation.TESTINDEX++;
-	}
-
-
-	@Entity(name = "KeyValue", implementation = "btree")
-	public static class KeyValue
-	{
-		@Id(name="id", index = 0) String mKey;
-		@Column(name="value") String mValue;
-
-		public KeyValue()
-		{
-		}
-
-		public KeyValue(String aKey)
-		{
-			mKey = aKey;
-		}
-
-		public KeyValue(String aKey, String aValue)
-		{
-			mKey = aKey;
-			mValue = aValue;
-		}
-
-		@Override
-		public String toString()
-		{
-			return "[" + mKey + "=" + mValue + "]";
-		}
+		TESTINDEX++;
 	}
 }

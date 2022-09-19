@@ -34,18 +34,19 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 	@Override
 	public int compareTo(MarshalledKey aOther)
 	{
+		byte[] self = mBuffer;
 		byte[] other = aOther.mBuffer;
 
-		for (int i = 0, sz = Math.min(mBuffer.length, other.length); i < sz; i++)
+		for (int i = 0, sz = Math.min(self.length, other.length); i < sz; i++)
 		{
-			int a = 0xff & mBuffer[i];
+			int a = 0xff & self[i];
 			int b = 0xff & other[i];
 			if (a < b) return -1;
 			if (a > b) return 1;
 		}
 
-		if (mBuffer.length > other.length) return 1;
-		if (mBuffer.length < other.length) return -1;
+		if (self.length < other.length) return -1;
+		if (self.length > other.length) return 1;
 
 		return 0;
 	}
