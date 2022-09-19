@@ -6,15 +6,19 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
-import org.terifan.raccoon.BTreeIndex;
+import javax.swing.JFrame;
 import org.terifan.raccoon.BTreeTableImplementation;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.annotations.Column;
 import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.annotations.Id;
+import org.terifan.treegraph.HorizontalLayout;
+import org.terifan.treegraph.TreeRenderer;
+import org.terifan.treegraph.util.TextSlice;
 import org.terifan.treegraph.util.VerticalImageFrame;
 
 
@@ -168,13 +172,15 @@ public class TestBTreeSmall
 
 	private static void dump(Database aDatabase, String aKey) throws IOException
 	{
-//		String description = aDatabase.scan(new ScanResult()).getDescription();
-//
-//		if (mLog && mTreeFrame != null)
-//		{
-//			mTreeFrame.add(new TextSlice(BTreeTableImplementation.TESTINDEX + " " + aKey));
-//			mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
-//		}
+		String description = aDatabase.scan(new ScanResult()).getDescription();
+
+		if (mLog && mTreeFrame != null)
+		{
+			mTreeFrame.add(new TextSlice(BTreeTableImplementation.TESTINDEX + " " + aKey));
+			mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
+		}
+
+		BTreeTableImplementation.TESTINDEX++;
 	}
 
 

@@ -29,6 +29,8 @@ public class BTreeTableImplementation extends TableImplementation
 	private long mGenerationCounter;
 	private long mNodeCounter;
 
+	public static int TESTINDEX;
+
 
 	public BTreeTableImplementation(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionGroup, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName)
 	{
