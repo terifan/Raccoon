@@ -109,25 +109,6 @@ public static int op;
 
 			return RemoveResult.OK;
 		}
-//		else if (index > 0)
-//		{
-//			byte[] firstKeyBytes = findFirstKey(curntChld);
-//
-//			MarshalledKey firstKey = new MarshalledKey(firstKeyBytes);
-//
-//			ArrayMapEntry firstEntry = new ArrayMapEntry(firstKeyBytes);
-//			get(firstKey, firstEntry);
-//
-//			oldEntry.setKey(firstEntry.getKey());
-//
-//			mMap.remove(index, null);
-//			BTreeNode oldNode = mBuffer.remove(oldKey);
-//
-//			mMap.put(oldEntry, null);
-//			mBuffer.put(firstKey, oldNode);
-//
-//			System.out.println("#" + index + " " + firstKey);
-//		}
 
 		if (!mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}").equals(mMap.toString()))
 		{
@@ -416,26 +397,14 @@ op++;
 	{
 		ArrayMapEntry temp = new ArrayMapEntry();
 
-
 		fixFirstKey(aTo);
 		fixFirstKey(aFrom);
-
-//		System.out.println("--v--");
-//		System.out.println(aFrom.mMap + " // " + aTo.mMap);
-
 
 		for (int i = 0, sz = aFrom.mMap.size(); i < sz; i++)
 		{
 			aFrom.mMap.get(i, temp);
 
-//			MarshalledKey key = new MarshalledKey(temp.getKey());
-
 			BTreeNode node = aFrom.getNode(temp);
-
-//			if (key.size() == 0)
-//			{
-//				temp.setKey(findFirstKey(aFrom));
-//			}
 
 			aTo.mMap.insert(temp, null);
 			aTo.mBuffer.put(new MarshalledKey(temp.getKey()), node);
@@ -445,13 +414,7 @@ op++;
 		aFrom.mBuffer.clear();
 		mImplementation.freeBlock(aFrom.mBlockPointer);
 
-
 		clearFirstKey(aTo);
-
-//		System.out.println(aTo.mMap);
-//		System.out.println(mMap);
-//		System.out.println("-----");
-
 
 		mMap.get(aFromIndex, temp);
 		mMap.remove(aFromIndex, null);
@@ -591,7 +554,7 @@ op++;
 	}
 
 
-	private <T extends BTreeNode> T getNode(int aIndex)
+	<T extends BTreeNode> T getNode(int aIndex)
 	{
 		ArrayMapEntry entry = new ArrayMapEntry();
 

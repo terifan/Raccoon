@@ -1,16 +1,11 @@
 package test;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JFrame;
 import org.terifan.raccoon.BTreeIndex;
 import org.terifan.raccoon.BTreeTableImplementation;
@@ -42,10 +37,10 @@ public class TestBTreeSmall
 	{
 		try
 		{
-//			mTreeFrame = new VerticalImageFrame();
-//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+			mTreeFrame = new VerticalImageFrame();
+			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-			for (;;)
+//			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -68,9 +63,8 @@ public class TestBTreeSmall
 		BTreeIndex.op = 0;
 		BTreeTableImplementation.TESTINDEX = 0;
 
-//		int seed = 175186788;
-//		int seed = 1071310870;
-		int seed = Math.abs(new Random().nextInt());
+		int seed = 907111671;
+//		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
 		System.out.println("#" + ++testindex + " seed=" + seed);
@@ -79,8 +73,8 @@ public class TestBTreeSmall
 
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 		{
-//			ArrayList<String> list = WordLists.list78;
-			ArrayList<String> list = WordLists.list130;
+			ArrayList<String> list = WordLists.list78;
+//			ArrayList<String> list = WordLists.list130;
 //			ArrayList<String> list = WordLists.list502;
 //			ArrayList<String> list = WordLists.list1007;
 //			ArrayList<String> list = WordLists.list4342;
@@ -134,9 +128,7 @@ public class TestBTreeSmall
 
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 		{
-			dump(db, "x");
-
-			int size = db.getTable(KeyValue.class).size();
+//			int size = db.getTable(KeyValue.class).size();
 			List<String> keys = new ArrayList<>(mEntries.keySet());
 
 			Collections.shuffle(keys, RND);
@@ -168,7 +160,7 @@ public class TestBTreeSmall
 					dump(db, key);
 				}
 
-				if (db.getTable(KeyValue.class).size() != --size) throw new IllegalStateException("size: " + db.getTable(KeyValue.class).size() + ", expected: " + size);
+//				if (db.getTable(KeyValue.class).size() != --size) throw new IllegalStateException("size: " + db.getTable(KeyValue.class).size() + ", expected: " + size);
 
 //				if (key.equals("Apple")) throw new IllegalStateException();
 			}

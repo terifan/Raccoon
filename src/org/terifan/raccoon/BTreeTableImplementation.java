@@ -428,14 +428,14 @@ public class BTreeTableImplementation extends TableImplementation
 	{
 		if (aNode instanceof BTreeIndex)
 		{
-			BTreeIndex node = (BTreeIndex)aNode;
+			BTreeIndex indexNode = (BTreeIndex)aNode;
 
-			int fillRatio = node.mMap.getUsedSpace() * 100 / INDEX_SIZE;
-			aScanResult.log.append("{" + node.mNodeId + ": " + fillRatio + "%" + "}");
+			int fillRatio = indexNode.mMap.getUsedSpace() * 100 / INDEX_SIZE;
+			aScanResult.log.append("{" + indexNode.mNodeId + ": " + fillRatio + "%" + "}");
 
 			boolean first = true;
 			aScanResult.log.append("'");
-			for (ArrayMapEntry entry : node.mMap)
+			for (ArrayMapEntry entry : indexNode.mMap)
 			{
 				if (!first)
 				{
@@ -447,8 +447,8 @@ public class BTreeTableImplementation extends TableImplementation
 				aScanResult.log.append(s.isEmpty() ? "*" : s);
 			}
 			aScanResult.log.append("'");
-			aScanResult.log.append(node.mModified ? "#f00" : "#0f0");
-			if (node.mMap.size() == 1)
+			aScanResult.log.append(indexNode.mModified ? "#f00" : "#0f0");
+			if (indexNode.mMap.size() == 1)
 			{
 				aScanResult.log.append("#f00");
 				System.out.println("single index");
@@ -461,33 +461,52 @@ public class BTreeTableImplementation extends TableImplementation
 
 			first = true;
 			aScanResult.log.append("[");
-			for (ArrayMapEntry entry : node.mMap)
+
+			for (int i = 0, sz = indexNode.mMap.size(); i < sz; i++)
 			{
 				if (!first)
 				{
 					aScanResult.log.append(",");
 				}
 				first = false;
-				MarshalledKey key = new MarshalledKey(entry.getKey());
-				BTreeNode child = node.mBuffer.get(key);
 
-				if (child == null)
-				{
-					BlockPointer bp = new BlockPointer().unmarshal(entry.getValue(), 0);
+				BTreeNode child = indexNode.getNode(i);
 
-					child = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, node, bp.getBlockLevel()) : new BTreeLeaf(this, node);
-					child.mBlockPointer = bp;
-					child.mMap = new ArrayMap(readBlock(bp));
+				ArrayMapEntry entry = new ArrayMapEntry();
+				indexNode.mMap.get(i, entry);
+				indexNode.mBuffer.put(new MarshalledKey(entry.getKey()), child);
 
-					node.mBuffer.put(key, child);
-
-					scan(child, aScanResult);
-				}
-				else
-				{
-					scan(child, aScanResult);
-				}
+				scan(child, aScanResult);
 			}
+
+//			for (ArrayMapEntry entry : node.mMap)
+//			{
+//				if (!first)
+//				{
+//					aScanResult.log.append(",");
+//				}
+//				first = false;
+//				MarshalledKey key = new MarshalledKey(entry.getKey());
+//				BTreeNode child = node.mBuffer.get(key);
+//
+//				if (child == null)
+//				{
+//					BlockPointer bp = new BlockPointer().unmarshal(entry.getValue(), 0);
+//
+//					child = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, node, bp.getBlockLevel()) : new BTreeLeaf(this, node);
+//					child.mBlockPointer = bp;
+//					child.mMap = new ArrayMap(readBlock(bp));
+//
+//					node.mBuffer.put(key, child);
+//
+//					scan(child, aScanResult);
+//				}
+//				else
+//				{
+//					scan(child, aScanResult);
+//				}
+//			}
+
 			aScanResult.log.append("]");
 		}
 		else
@@ -575,21 +594,13 @@ public class BTreeTableImplementation extends TableImplementation
 		{
 			BTreeIndex indexNode = (BTreeIndex)aNode;
 
-			for (ArrayMapEntry entry : indexNode.mMap)
+			for (int i = 0, sz = indexNode.mMap.size(); i < sz; i++)
 			{
-				MarshalledKey key = new MarshalledKey(entry.getKey());
-				BTreeNode node = indexNode.mBuffer.get(key);
+				BTreeNode node = indexNode.getNode(i);
 
-				if (node == null)
-				{
-					BlockPointer bp = new BlockPointer().unmarshal(entry.getValue(), 0);
-
-					node = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, indexNode, bp.getBlockLevel()) : new BTreeLeaf(this, indexNode);
-					node.mBlockPointer = bp;
-					node.mMap = new ArrayMap(readBlock(bp));
-
-					indexNode.mBuffer.put(key, node);
-				}
+				ArrayMapEntry entry = new ArrayMapEntry();
+				indexNode.mMap.get(i, entry);
+				indexNode.mBuffer.put(new MarshalledKey(entry.getKey()), node);
 
 				visit(node, aConsumer);
 			}
