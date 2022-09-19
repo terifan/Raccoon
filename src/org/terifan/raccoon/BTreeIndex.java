@@ -29,6 +29,7 @@ public class BTreeIndex extends BTreeNode
 	boolean get(MarshalledKey aKey, ArrayMapEntry aEntry)
 	{
 		ArrayMapEntry entry = new ArrayMapEntry(aKey.array());
+
 		mMap.loadNearestIndexEntry(entry);
 
 		BTreeNode node = getNode(entry);
@@ -62,8 +63,8 @@ public class BTreeIndex extends BTreeNode
 
 		MarshalledKey rightKey = split.rightKey();
 
-		mBuffer.put(nearestKey, split.left());
-		mBuffer.put(rightKey, split.right());
+		putBuffer(nearestKey, split.left());
+		putBuffer(rightKey, split.right());
 
 		boolean overflow = false;
 		overflow |= mMap.insert(new ArrayMapEntry(nearestKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null) == InsertResult.RESIZED;
@@ -72,13 +73,10 @@ public class BTreeIndex extends BTreeNode
 		return overflow ? InsertResult.RESIZED : InsertResult.PUT;
 	}
 
-public static int op;
 
 	@Override
 	RemoveResult remove(MarshalledKey aKey, Result<ArrayMapEntry> aOldEntry)
 	{
-		if (BTreeTableImplementation.STOP) return RemoveResult.NONE;
-
 		mModified = true;
 
 		int index = mMap.nearestIndex(aKey.array());
@@ -110,12 +108,7 @@ public static int op;
 			return RemoveResult.OK;
 		}
 
-		if (!mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}").equals(mMap.toString()))
-		{
-			System.out.println(mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" != "+mMap);
-			BTreeTableImplementation.STOP = true;
-		}
-		if (BTreeTableImplementation.STOP) return RemoveResult.NONE;
+		assert assertValidCache() == null : assertValidCache();
 
 		BTreeNode leftChild = index == 0 ? null : getNode(index - 1);
 		BTreeNode rghtChild = index == mMap.size() - 1 ? null : getNode(index + 1);
@@ -197,7 +190,7 @@ public static int op;
 			BTreeNode oldNode = mBuffer.remove(oldKey);
 
 			mMap.put(oldEntry, null);
-			mBuffer.put(firstKey, oldNode);
+			putBuffer(firstKey, oldNode);
 		}
 
 		if (mLevel > 1 && curntChld.mMap.getUsedSpace() > sizeLimit)
@@ -210,23 +203,13 @@ public static int op;
 
 			mMap.remove(index, null);
 
-			mBuffer.put(leftKey, split.left());
-			mBuffer.put(rightKey, split.right());
+			putBuffer(leftKey, split.left());
+			putBuffer(rightKey, split.right());
 
 			mMap.insert(new ArrayMapEntry(leftKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
 			mMap.insert(new ArrayMapEntry(rightKey.array(), BTreeTableImplementation.POINTER_PLACEHOLDER, (byte)0x44), null);
 
 			clearFirstKey(this);
-		}
-
-//System.out.println(BTreeTableImplementation.TESTINDEX+" "+op+" <"+z+"> "+mNodeId+" "+mMap+" "+mBuffer.keySet().toString().replace(", ", "\",\"").replace("[", "{\"").replace("]", "\"}")+" "+mLevel+" "+a+" "+b+" "+result);
-op++;
-
-		if (BTreeTableImplementation.TESTINDEX == 154)
-//		if (op > 201)
-		{
-//			System.out.println(mLevel + " " + z+" "+a+" "+b+" "+curntChld+" "+leftChild+" "+rghtChild);
-//			BTreeTableImplementation.STOP = true;
 		}
 
 		ArrayMapEntry temp = new ArrayMapEntry();
@@ -261,11 +244,11 @@ op++;
 		{
 			if (entry.getKey().compareTo(midKey) < 0)
 			{
-				left.mBuffer.put(entry.getKey(), entry.getValue());
+				left.putBuffer(entry.getKey(), entry.getValue());
 			}
 			else
 			{
-				right.mBuffer.put(entry.getKey(), entry.getValue());
+				right.putBuffer(entry.getKey(), entry.getValue());
 			}
 		}
 
@@ -282,7 +265,7 @@ op++;
 		firstRight.setKey(keyLeft.array());
 
 		right.mMap.put(firstRight, null);
-		right.mBuffer.put(keyLeft, firstChild);
+		right.putBuffer(keyLeft, firstChild);
 
 		mBuffer.clear();
 
@@ -311,11 +294,11 @@ op++;
 		{
 			if (entry.getKey().compareTo(midKey) < 0)
 			{
-				left.mBuffer.put(entry.getKey(), entry.getValue());
+				left.putBuffer(entry.getKey(), entry.getValue());
 			}
 			else
 			{
-				right.mBuffer.put(entry.getKey(), entry.getValue());
+				right.putBuffer(entry.getKey(), entry.getValue());
 			}
 		}
 
@@ -332,14 +315,14 @@ op++;
 		firstRight.setKey(keyLeft.array());
 
 		right.mMap.put(firstRight, null);
-		right.mBuffer.put(keyLeft, firstChild);
+		right.putBuffer(keyLeft, firstChild);
 
 		BTreeIndex index = new BTreeIndex(mImplementation, this, mLevel + 1);
 		index.mMap = new ArrayMap(INDEX_SIZE);
 		index.mMap.put(new ArrayMapEntry(keyLeft.array(), POINTER_PLACEHOLDER, (byte)0x99), null);
 		index.mMap.put(new ArrayMapEntry(keyRight.array(), POINTER_PLACEHOLDER, (byte)0x22), null);
-		index.mBuffer.put(keyLeft, left);
-		index.mBuffer.put(keyRight, right);
+		index.putBuffer(keyLeft, left);
+		index.putBuffer(keyRight, right);
 		index.mModified = true;
 
 		mBuffer.clear();
@@ -380,7 +363,7 @@ op++;
 				BTreeNode child = node.mBuffer.remove(new MarshalledKey(entry.getKey()));
 				if (child != null)
 				{
-					index.mBuffer.put(new MarshalledKey(newEntry.getKey()), child);
+					index.putBuffer(new MarshalledKey(newEntry.getKey()), child);
 				}
 			}
 
@@ -407,7 +390,7 @@ op++;
 			BTreeNode node = aFrom.getNode(temp);
 
 			aTo.mMap.insert(temp, null);
-			aTo.mBuffer.put(new MarshalledKey(temp.getKey()), node);
+			aTo.putBuffer(new MarshalledKey(temp.getKey()), node);
 		}
 
 		aFrom.mMap.clear();
@@ -444,7 +427,7 @@ op++;
 		aNode.mBuffer.remove(new MarshalledKey(new byte[0]));
 
 		aNode.mMap.insert(firstEntry, null);
-		aNode.mBuffer.put(new MarshalledKey(firstEntry.getKey()), firstNode);
+		aNode.putBuffer(new MarshalledKey(firstEntry.getKey()), firstNode);
 	}
 
 
@@ -456,7 +439,7 @@ op++;
 		firstEntry.setKey(new byte[0]);
 
 		aNode.mMap.insert(firstEntry, null);
-		aNode.mBuffer.put(new MarshalledKey(new byte[0]), firstNode);
+		aNode.putBuffer(new MarshalledKey(new byte[0]), firstNode);
 	}
 
 
@@ -522,6 +505,13 @@ op++;
 	}
 
 
+	private void putBuffer(MarshalledKey aKey, BTreeNode aNode)
+	{
+//		System.out.printf(CCC.CYAN + "Write cache %3d %15s = %s" + CCC.RESET + "%n", mNodeId, "\"" + aKey + "\"", aNode);
+		mBuffer.put(aKey, aNode);
+	}
+
+
 	@Override
 	boolean commit()
 	{
@@ -580,7 +570,7 @@ op++;
 			node.mBlockPointer = bp;
 			node.mMap = new ArrayMap(mImplementation.readBlock(bp));
 
-			mBuffer.put(key, node);
+			putBuffer(key, node);
 		}
 
 		return node;
@@ -596,5 +586,19 @@ op++;
 			s += "\"" + t + "\",";
 		}
 		return s.substring(0, s.length() - 1) + '}';
+	}
+
+
+	private String assertValidCache()
+	{
+		for (MarshalledKey key : mBuffer.keySet())
+		{
+			ArrayMapEntry entry = new ArrayMapEntry(key.array());
+			if (!mMap.get(entry))
+			{
+				return entry.toString();
+			}
+		}
+		return null;
 	}
 }

@@ -6,19 +6,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
-import javax.swing.JFrame;
 import org.terifan.raccoon.BTreeIndex;
 import org.terifan.raccoon.BTreeTableImplementation;
+import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
-import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.annotations.Column;
 import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.annotations.Id;
-import org.terifan.treegraph.HorizontalLayout;
-import org.terifan.treegraph.TreeRenderer;
-import org.terifan.treegraph.util.TextSlice;
 import org.terifan.treegraph.util.VerticalImageFrame;
 
 
@@ -37,10 +33,10 @@ public class TestBTreeSmall
 	{
 		try
 		{
-			mTreeFrame = new VerticalImageFrame();
-			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+//			mTreeFrame = new VerticalImageFrame();
+//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-//			for (;;)
+			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -60,24 +56,21 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-		BTreeIndex.op = 0;
-		BTreeTableImplementation.TESTINDEX = 0;
-
-		int seed = 907111671;
-//		int seed = Math.abs(new Random().nextInt());
+//		int seed = 907111671;
+		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
 		System.out.println("#" + ++testindex + " seed=" + seed);
 
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
+		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION))
 		{
-			ArrayList<String> list = WordLists.list78;
+//			ArrayList<String> list = WordLists.list78;
 //			ArrayList<String> list = WordLists.list130;
 //			ArrayList<String> list = WordLists.list502;
 //			ArrayList<String> list = WordLists.list1007;
-//			ArrayList<String> list = WordLists.list4342;
+			ArrayList<String> list = WordLists.list4342;
 
 			list = new ArrayList<>(list);
 			Collections.shuffle(list, RND);
@@ -128,41 +121,28 @@ public class TestBTreeSmall
 
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 		{
-//			int size = db.getTable(KeyValue.class).size();
 			List<String> keys = new ArrayList<>(mEntries.keySet());
+			int size = keys.size();
 
 			Collections.shuffle(keys, RND);
 
 			for (String key : keys)
 			{
-//				mLog = BTreeTableImplementation.TESTINDEX > 1630;
-
 				mEntries.remove(key);
+
 //				System.out.println(CCC.BLUE + "Remove " + key + CCC.RESET);
 
 				try
 				{
 					boolean removed = db.remove(new KeyValue(key));
 					if(!removed)throw new IllegalStateException("Failed to remove: " + key);
-					if (BTreeTableImplementation.STOP)
-					{
-						throw new IllegalStateException();
-					}
 				}
-//				catch (Exception e)
-//				{
-//					System.out.println(key);
-//					e.printStackTrace(System.out);
-//					break;
-//				}
 				finally
 				{
 					dump(db, key);
 				}
 
-//				if (db.getTable(KeyValue.class).size() != --size) throw new IllegalStateException("size: " + db.getTable(KeyValue.class).size() + ", expected: " + size);
-
-//				if (key.equals("Apple")) throw new IllegalStateException();
+				assert db.getTable(KeyValue.class).size() == --size;
 			}
 		}
 	}
@@ -178,8 +158,6 @@ public class TestBTreeSmall
 
 		dump(aDatabase, aKey);
 
-		if (BTreeTableImplementation.STOP) throw new IllegalStateException();
-
 //		if (rnd.nextInt(10) < 3)
 //		{
 //			mTreeFrame.add(new TextSlice("committing"));
@@ -190,15 +168,13 @@ public class TestBTreeSmall
 
 	private static void dump(Database aDatabase, String aKey) throws IOException
 	{
-		String description = aDatabase.scan(new ScanResult()).getDescription();
-
-		if (mLog && mTreeFrame != null)
-		{
-			mTreeFrame.add(new TextSlice(BTreeTableImplementation.TESTINDEX + " " + aKey));
-			mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
-		}
-
-		BTreeTableImplementation.TESTINDEX++;
+//		String description = aDatabase.scan(new ScanResult()).getDescription();
+//
+//		if (mLog && mTreeFrame != null)
+//		{
+//			mTreeFrame.add(new TextSlice(BTreeTableImplementation.TESTINDEX + " " + aKey));
+//			mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
+//		}
 	}
 
 

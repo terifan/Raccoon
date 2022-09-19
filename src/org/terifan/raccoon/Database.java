@@ -733,12 +733,6 @@ public final class Database implements AutoCloseable
 	 */
 	public <T> T get(T aEntity) throws DatabaseException
 	{
-		return getImpl(aEntity);
-	}
-
-
-	private <T> T getImpl(T aEntity) throws DatabaseException
-	{
 		Assert.notNull(aEntity, "Argument is null");
 
 		mReadLock.lock();
