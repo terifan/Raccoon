@@ -83,15 +83,15 @@ public class TestBTreeSmall
 			list = new ArrayList<>(list);
 			Collections.shuffle(list, RND);
 
-			for (String s : list)
+			for (String key : list)
 			{
 				String value = Helper.createString(RND);
 
-//				System.out.println(CCC.BLUE + "Save " + s + CCC.RESET);
+//				System.out.println(CCC.BLUE + "Save " + key + CCC.RESET);
 
-				mEntries.put(s, value);
-				db.save(new _KeyValue(s, value));
-				dump(db, s);
+				mEntries.put(key, value);
+				db.save(new _KeyValue(key, value));
+				dump(db, key);
 
 //				if (RND.nextInt(10) < 3)
 //				{
