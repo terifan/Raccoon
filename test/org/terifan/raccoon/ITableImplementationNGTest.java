@@ -34,7 +34,7 @@ public class ITableImplementationNGTest
 				map.put(key, value);
 			}
 
-			root = hashTable.commit(null);
+			root = hashTable.commit(new TransactionGroup(0), null);
 		}
 
 		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
@@ -67,7 +67,7 @@ public class ITableImplementationNGTest
 			{
 				hashTable.put(new ArrayMapEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), (byte)0));
 			}
-			hashTable.commit(null);
+			hashTable.commit(new TransactionGroup(0), null);
 
 			for (Map.Entry<String,String> entry : map.entrySet())
 			{
@@ -121,7 +121,7 @@ public class ITableImplementationNGTest
 
 			hashTable.put(new ArrayMapEntry(k1, v1, (byte)0));
 
-			root = hashTable.commit(null);
+			root = hashTable.commit(new TransactionGroup(0), null);
 
 			assertEquals(hashTable.size(), 2);
 		}
@@ -134,7 +134,7 @@ public class ITableImplementationNGTest
 
 			assertEquals(hashTable.size(), 3);
 
-			hashTable.commit(null);
+			hashTable.commit(new TransactionGroup(0), null);
 
 			hashTable.put(new ArrayMapEntry(k1, v1, (byte)0)); // replace value
 
@@ -150,7 +150,7 @@ public class ITableImplementationNGTest
 			{
 				hashTable.put(new ArrayMapEntry(tb(), tb(), (byte)0));
 			}
-			hashTable.commit(null);
+			hashTable.commit(new TransactionGroup(0), null);
 
 			assertEquals(hashTable.size(), 3 + aSize);
 		}
@@ -179,7 +179,7 @@ public class ITableImplementationNGTest
 				hashTable.put(new ArrayMapEntry(key.getBytes(), value.getBytes(), (byte)0));
 			}
 
-			root = hashTable.commit(null);
+			root = hashTable.commit(new TransactionGroup(0), null);
 		}
 
 		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
@@ -217,7 +217,7 @@ public class ITableImplementationNGTest
 				hashTable.put(new ArrayMapEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), (byte)0));
 			}
 
-			root = hashTable.commit(null);
+			root = hashTable.commit(new TransactionGroup(0), null);
 		}
 
 		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
@@ -255,13 +255,13 @@ public class ITableImplementationNGTest
 				hashTable.put(new ArrayMapEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), (byte)0));
 			}
 
-			root = hashTable.commit(null);
+			root = hashTable.commit(new TransactionGroup(0), null);
 		}
 
 		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
 		{
 			hashTable.removeAll(c->{});
-			hashTable.commit(null);
+			hashTable.commit(new TransactionGroup(0), null);
 
 			assertEquals(hashTable.size(), 0);
 		}
@@ -289,7 +289,7 @@ public class ITableImplementationNGTest
 				hashTable.put(new ArrayMapEntry(entry.getKey().getBytes(), entry.getValue().getBytes(), (byte)0));
 			}
 
-			root = hashTable.commit(null);
+			root = hashTable.commit(new TransactionGroup(0), null);
 		}
 
 		try (TableImplementation hashTable = newHashTable(aTable, root, tx, blockDevice))
@@ -300,7 +300,7 @@ public class ITableImplementationNGTest
 				assertTrue(hashTable.remove(leafEntry) != null);
 				assertEquals(leafEntry.getValue(), entry.getValue().getBytes());
 			}
-			hashTable.commit(null);
+			hashTable.commit(new TransactionGroup(0), null);
 
 			assertEquals(hashTable.size(), 0);
 		}
@@ -354,11 +354,11 @@ public class ITableImplementationNGTest
 	}
 
 
-	private TableImplementation newHashTable(Class<TableImplementation> aImplementation, byte[] aRoot, TransactionGroup aTransactionId, MemoryBlockDevice aBlockDevice) throws IOException
+	private TableImplementation newHashTable(Class<TableImplementation> aImplementation, byte[] aRoot, TransactionGroup aTransactionGroup, MemoryBlockDevice aBlockDevice) throws IOException
 	{
 		try
 		{
-			TableImplementation table = (TableImplementation)aImplementation.getDeclaredConstructors()[0].newInstance(new ManagedBlockDevice(aBlockDevice), aTransactionId, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname");
+			TableImplementation table = (TableImplementation)aImplementation.getDeclaredConstructors()[0].newInstance(new ManagedBlockDevice(aBlockDevice), aTransactionGroup, true, CompressionParam.BEST_SPEED, TableParam.DEFAULT, "noname");
 			table.openOrCreateTable(aRoot);
 			return table;
 		}

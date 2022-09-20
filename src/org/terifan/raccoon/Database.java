@@ -368,7 +368,7 @@ public final class Database implements AutoCloseable
 
 			try
 			{
-				boolean tableExists = mSystemTable.get(aTableMetadata);
+				boolean tableExists = mSystemTable.get(this, aTableMetadata);
 
 				if (!tableExists && (aOptions == DatabaseOpenOption.OPEN || aOptions == DatabaseOpenOption.READ_ONLY))
 				{
@@ -379,14 +379,14 @@ public final class Database implements AutoCloseable
 
 				if (!tableExists)
 				{
-					mSystemTable.save(aTableMetadata);
+					mSystemTable.save(this, aTableMetadata);
 				}
 
 				mOpenTables.put(aTableMetadata, table);
 
 				if (aOptions == DatabaseOpenOption.CREATE_NEW)
 				{
-					table.clear();
+					table.clear(this);
 				}
 			}
 			finally
@@ -439,7 +439,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public long flush()
+	public long flush(TransactionGroup mTransactionGroup)
 	{
 		checkOpen();
 
@@ -454,7 +454,7 @@ public final class Database implements AutoCloseable
 
 			for (Entry<Table, TableInstance> entry : mOpenTables.entrySet())
 			{
-				nodesWritten = entry.getValue().flush();
+				nodesWritten = entry.getValue().flush(mTransactionGroup);
 			}
 
 			Log.dec();
@@ -482,13 +482,15 @@ public final class Database implements AutoCloseable
 			Log.i("commit database");
 			Log.inc();
 
+			TransactionGroup tx = getTransactionGroup();
+
 			for (Entry<Table, TableInstance> entry : mOpenTables.entrySet())
 			{
-				if (entry.getValue().commit())
+				if (entry.getValue().commit(tx))
 				{
 					Log.i("table updated '%s'", entry.getKey());
 
-					mSystemTable.save(entry.getKey());
+					mSystemTable.save(this, entry.getKey());
 
 					mModified = true;
 				}
@@ -498,7 +500,7 @@ public final class Database implements AutoCloseable
 
 			if (mModified)
 			{
-				mSystemTable.commit();
+				mSystemTable.commit(tx);
 
 				updateSuperBlock();
 
@@ -663,7 +665,7 @@ public final class Database implements AutoCloseable
 		try
 		{
 			TableInstance table = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.CREATE);
-			return table.save(aEntity);
+			return table.save(this, aEntity);
 		}
 		catch (DatabaseException e)
 		{
@@ -712,7 +714,7 @@ public final class Database implements AutoCloseable
 			{
 				return false;
 			}
-			return table.get(aEntity);
+			return table.get(this, aEntity);
 		}
 		catch (DatabaseException e)
 		{
@@ -747,7 +749,7 @@ public final class Database implements AutoCloseable
 			{
 				throw new NoSuchEntityException("No table exists matching type " + aEntity.getClass());
 			}
-			if (!tableInstance.get(aEntity))
+			if (!tableInstance.get(this, aEntity))
 			{
 				throw new NoSuchEntityException("No entity exists matching key");
 			}
@@ -782,7 +784,7 @@ public final class Database implements AutoCloseable
 			{
 				return false;
 			}
-			return table.remove(aEntity);
+			return table.remove(this, aEntity);
 		}
 		catch (DatabaseException e)
 		{
@@ -822,7 +824,7 @@ public final class Database implements AutoCloseable
 			TableInstance table = openTable(aType, new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
 			if (table != null)
 			{
-				table.clear();
+				table.clear(this);
 			}
 		}
 		catch (DatabaseException e)
@@ -854,7 +856,7 @@ public final class Database implements AutoCloseable
 			throw new DatabaseException("Failed to create table");
 		}
 
-		return table.openBlob(aEntity, aOpenOption);
+		return table.openBlob(this, aEntity, aOpenOption);
 	}
 
 
@@ -899,7 +901,7 @@ public final class Database implements AutoCloseable
 
 			if (tableInstance != null)
 			{
-				list = tableInstance.list(aType, aLimit <= 0 ? Integer.MAX_VALUE : aLimit);
+				list = tableInstance.list(this, aType, aLimit <= 0 ? Integer.MAX_VALUE : aLimit);
 
 				Log.i("list %s", aType.getSimpleName());
 			}
@@ -962,7 +964,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public TransactionGroup getTransactionId()
+	public TransactionGroup getTransactionGroup()
 	{
 		return new TransactionGroup(mBlockDevice.getTransactionId());
 	}
@@ -1073,7 +1075,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return mSystemTable.list(Table.class, Integer.MAX_VALUE);
+			return mSystemTable.list(this, Table.class, Integer.MAX_VALUE);
 		}
 		finally
 		{
@@ -1129,7 +1131,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return (Table)mSystemTable.list(Table.class, Integer.MAX_VALUE).stream().filter(e ->
+			return (Table)mSystemTable.list(this, Table.class, Integer.MAX_VALUE).stream().filter(e ->
 			{
 				String tm = ((Table)e).getEntityName();
 				return tm.equals(aTypeName) || tm.endsWith("." + aTypeName);
@@ -1150,7 +1152,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return (List<Table>)mSystemTable.list(Table.class, Integer.MAX_VALUE).stream().filter(e ->
+			return (List<Table>)mSystemTable.list(this, Table.class, Integer.MAX_VALUE).stream().filter(e ->
 			{
 				String tm = ((Table)e).getEntityName();
 				return tm.equals(aTypeName) || tm.endsWith("." + aTypeName);
@@ -1171,7 +1173,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return (List<Table<T>>)mSystemTable.list(Table.class, Integer.MAX_VALUE).stream().filter(e -> e == aType).collect(Collectors.toList());
+			return (List<Table<T>>)mSystemTable.list(this, Table.class, Integer.MAX_VALUE).stream().filter(e -> e == aType).collect(Collectors.toList());
 		}
 		finally
 		{
@@ -1208,7 +1210,7 @@ public final class Database implements AutoCloseable
 				name = aType.getName();
 			}
 
-			for (Table tableMetadata : (List<Table>)mSystemTable.list(Table.class, Integer.MAX_VALUE))
+			for (Table tableMetadata : (List<Table>)mSystemTable.list(this, Table.class, Integer.MAX_VALUE))
 			{
 				if (name.equals(tableMetadata.getEntityName()))
 				{
@@ -1371,7 +1373,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			for (Iterator<T> it = new EntityIterator<>(table, table.getEntryIterator()); it.hasNext();)
+			for (Iterator<T> it = new EntityIterator<>(this, table, table.getEntryIterator()); it.hasNext();)
 			{
 				aConsumer.accept(it.next());
 			}

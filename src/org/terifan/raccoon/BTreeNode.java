@@ -7,8 +7,8 @@ import org.terifan.raccoon.util.Result;
 
 abstract class BTreeNode
 {
-	final BTreeTableImplementation mImplementation;
-	final BTreeIndex mParent;
+//	final BTreeTableImplementation mImplementation;
+//	final BTreeIndex mParent;
 	final long mNodeId;
 	final int mLevel;
 
@@ -26,26 +26,27 @@ abstract class BTreeNode
 	}
 
 
-	public BTreeNode(BTreeTableImplementation aImplementation, BTreeIndex aParent, int aLevel)
+	public BTreeNode(int aLevel, long aNodeId)
 	{
-		mImplementation = aImplementation;
-		mNodeId = mImplementation.nextNodeIndex();
-		mParent = aParent;
+//		mImplementation = aImplementation;
+//		mNodeId = mImplementation.nextNodeIndex();
+		mNodeId = aNodeId;
+//		mParent = aParent;
 		mLevel = aLevel;
 	}
 
 
-	abstract boolean get(MarshalledKey aKey, ArrayMapEntry oEntry);
+	abstract boolean get(BTreeTableImplementation mImplementation, MarshalledKey aKey, ArrayMapEntry oEntry);
 
 
-	abstract InsertResult put(MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
+	abstract InsertResult put(BTreeTableImplementation mImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
 
 
-	abstract RemoveResult remove(MarshalledKey aKey, Result<ArrayMapEntry> oOldEntry);
+	abstract RemoveResult remove(BTreeTableImplementation mImplementation, MarshalledKey aKey, Result<ArrayMapEntry> oOldEntry);
 
 
-	abstract SplitResult split();
+	abstract SplitResult split(BTreeTableImplementation mImplementation);
 
 
-	abstract boolean commit();
+	abstract boolean commit(BTreeTableImplementation mImplementation, TransactionGroup mTransactionGroup);
 }

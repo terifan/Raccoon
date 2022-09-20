@@ -85,7 +85,7 @@ public class BTreeTableImplementation extends TableImplementation
 		BlockPointer bp = new BlockPointer();
 		bp.unmarshal(buffer);
 
-		mRoot = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, null, bp.getBlockLevel()) : new BTreeLeaf(this, null);
+		mRoot = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(bp.getBlockLevel(), nextNodeIndex()) : new BTreeLeaf(nextNodeIndex());
 		mRoot.mBlockPointer = bp;
 		mRoot.mMap = new ArrayMap(readBlock(bp));
 	}
@@ -100,7 +100,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 		aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
-		return mRoot.get(new MarshalledKey(aEntry.getKey()), aEntry);
+		return mRoot.get(this, new MarshalledKey(aEntry.getKey()), aEntry);
 	}
 
 
@@ -126,15 +126,15 @@ public class BTreeTableImplementation extends TableImplementation
 
 		Result<ArrayMapEntry> result = new Result<>();
 
-		if (mRoot.put(new MarshalledKey(aEntry.getKey()), aEntry, result) == InsertResult.RESIZED)
+		if (mRoot.put(this, new MarshalledKey(aEntry.getKey()), aEntry, result) == InsertResult.RESIZED)
 		{
 			if (mRoot instanceof BTreeLeaf)
 			{
-				mRoot = ((BTreeLeaf)mRoot).upgrade();
+				mRoot = ((BTreeLeaf)mRoot).upgrade(this);
 			}
 			else
 			{
-				mRoot = ((BTreeIndex)mRoot).grow();
+				mRoot = ((BTreeIndex)mRoot).grow(this);
 			}
 		}
 
@@ -160,15 +160,15 @@ public class BTreeTableImplementation extends TableImplementation
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		mRoot.remove(new MarshalledKey(aEntry.getKey()), oldEntry);
+		mRoot.remove(this, new MarshalledKey(aEntry.getKey()), oldEntry);
 
 		if (mRoot.mLevel > 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
 		{
-			mRoot = ((BTreeIndex)mRoot).shrink();
+			mRoot = ((BTreeIndex)mRoot).shrink(this);
 		}
 		if (mRoot.mLevel == 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
 		{
-			mRoot = ((BTreeIndex)mRoot).downgrade();
+			mRoot = ((BTreeIndex)mRoot).downgrade(this);
 		}
 
 		Log.dec();
@@ -207,7 +207,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 
 	@Override
-	public byte[] commit(AtomicBoolean oChanged)
+	public byte[] commit(TransactionGroup mTransactionGroup, AtomicBoolean oChanged)
 	{
 		checkOpen();
 
@@ -221,7 +221,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 				assert integrityCheck() == null : integrityCheck();
 
-				mRoot.commit();
+				mRoot.commit(this, mTransactionGroup);
 
 				if (mCommitChangesToBlockDevice)
 				{
@@ -261,7 +261,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 
 	@Override
-	public long flush()
+	public long flush(TransactionGroup mTransactionGroup)
 	{
 		return 0l;
 	}
@@ -463,7 +463,7 @@ public class BTreeTableImplementation extends TableImplementation
 				}
 				first = false;
 
-				BTreeNode child = indexNode.getNode(i);
+				BTreeNode child = indexNode.getNode(this, i);
 
 				ArrayMapEntry entry = new ArrayMapEntry();
 				indexNode.mMap.get(i, entry);
@@ -550,7 +550,7 @@ public class BTreeTableImplementation extends TableImplementation
 	}
 
 
-	protected BlockPointer writeBlock(byte[] aContent, int aLevel, BlockType aBlockType)
+	protected BlockPointer writeBlock(TransactionGroup mTransactionGroup, byte[] aContent, int aLevel, BlockType aBlockType)
 	{
 		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionGroup.get(), aBlockType, 0).setBlockLevel(aLevel);
 	}
@@ -558,7 +558,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 	private void setupEmptyTable()
 	{
-		mRoot = new BTreeLeaf(this, null);
+		mRoot = new BTreeLeaf(nextNodeIndex());
 		mRoot.mMap = new ArrayMap(LEAF_SIZE);
 	}
 
@@ -583,7 +583,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 			for (int i = 0, sz = indexNode.mMap.size(); i < sz; i++)
 			{
-				BTreeNode node = indexNode.getNode(i);
+				BTreeNode node = indexNode.getNode(this, i);
 
 				ArrayMapEntry entry = new ArrayMapEntry();
 				indexNode.mMap.get(i, entry);

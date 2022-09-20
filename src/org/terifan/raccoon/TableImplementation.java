@@ -10,7 +10,6 @@ import org.terifan.raccoon.storage.BlockAccessor;
 public abstract class TableImplementation implements Iterable<ArrayMapEntry>, AutoCloseable
 {
 	protected final String mTableName;
-	protected final TransactionGroup mTransactionGroup;
 	protected final boolean mCommitChangesToBlockDevice;
 	protected BlockAccessor mBlockAccessor;
 
@@ -18,7 +17,6 @@ public abstract class TableImplementation implements Iterable<ArrayMapEntry>, Au
 	public TableImplementation(IManagedBlockDevice aBlockDevice, TransactionGroup aTransactionGroup, boolean aCommitChangesToBlockDevice, CompressionParam aCompressionParam, TableParam aTableParam, String aTableName)
 	{
 		mTableName = aTableName;
-		mTransactionGroup = aTransactionGroup;
 		mBlockAccessor = new BlockAccessor(aBlockDevice, aCompressionParam);
 		mCommitChangesToBlockDevice = aCommitChangesToBlockDevice;
 	}
@@ -52,7 +50,7 @@ public abstract class TableImplementation implements Iterable<ArrayMapEntry>, Au
 	public abstract void close();
 
 
-	public abstract long flush();
+	public abstract long flush(TransactionGroup mTransactionGroup);
 
 
 	/**
@@ -62,7 +60,7 @@ public abstract class TableImplementation implements Iterable<ArrayMapEntry>, Au
 	 * @return
 	 *   the TableHeader for this table
 	 */
-	abstract byte[] commit(AtomicBoolean oChanged);
+	abstract byte[] commit(TransactionGroup mTransactionGroup, AtomicBoolean oChanged);
 
 
 	abstract void rollback();

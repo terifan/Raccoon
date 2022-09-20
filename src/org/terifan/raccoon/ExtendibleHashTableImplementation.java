@@ -204,7 +204,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 
 	@Override
-	public long flush()
+	public long flush(TransactionGroup mTransactionGroup)
 	{
 		checkOpen();
 
@@ -216,7 +216,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 			Log.i("commit hash table");
 			Log.inc();
 
-			blocksWritten = flushImpl();
+			blocksWritten = flushImpl(mTransactionGroup);
 
 			Log.dec();
 			assert mModCount == modCount : "concurrent modification";
@@ -227,7 +227,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 
 	@Override
-	public byte[] commit(AtomicBoolean oChanged)
+	public byte[] commit(TransactionGroup mTransactionGroup, AtomicBoolean oChanged)
 	{
 		checkOpen();
 
@@ -239,13 +239,13 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 				Log.i("commit hash table");
 				Log.inc();
 
-				flushImpl();
+				flushImpl(mTransactionGroup);
 
 				assert integrityCheck() == null : integrityCheck();
 
 				freeBlock(mRootBlockPointer);
 
-				mRootBlockPointer = mDirectory.writeBuffer();
+				mRootBlockPointer = mDirectory.writeBuffer(mTransactionGroup);
 
 				if (mCommitChangesToBlockDevice)
 				{
@@ -286,7 +286,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 	}
 
 
-	private long flushImpl()
+	private long flushImpl(TransactionGroup mTransactionGroup)
 	{
 		long nodesWritten = 0;
 
@@ -298,7 +298,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 			{
 				freeBlock(node.mBlockPointer);
 
-				node.mBlockPointer = writeBlock(node.mMap.array(), BlockType.LEAF, node.mRangeBits);
+				node.mBlockPointer = writeBlock(mTransactionGroup, node.mMap.array(), BlockType.LEAF, node.mRangeBits);
 				node.mChanged = false;
 
 				mDirectory.setBlockPointer(i, node.mBlockPointer);
@@ -694,7 +694,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 	}
 
 
-	private BlockPointer writeBlock(byte[] aContent, BlockType aBlockType, long aUserData)
+	private BlockPointer writeBlock(TransactionGroup mTransactionGroup, byte[] aContent, BlockType aBlockType, long aUserData)
 	{
 		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionGroup.get(), aBlockType, aUserData);
 	}
@@ -813,9 +813,9 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 		}
 
 
-		private BlockPointer writeBuffer()
+		private BlockPointer writeBuffer(TransactionGroup mTransactionGroup)
 		{
-			return writeBlock(mBuffer, BlockType.INDEX, 0L);
+			return writeBlock(mTransactionGroup, mBuffer, BlockType.INDEX, 0L);
 		}
 
 
