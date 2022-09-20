@@ -18,8 +18,8 @@ import org.terifan.security.messagedigest.MurmurHash3;
 final class ExtendibleHashTableImplementation extends TableImplementation
 {
 	private BlockPointer mRootBlockPointer;
-	private Directory mDirectory;
-	private LeafNode[] mNodes;
+	private ExtendibleHashTableDirectory mDirectory;
+	private ExtendibleHashTableLeafNode[] mNodes;
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
 	private boolean mChanged;
@@ -56,8 +56,8 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 			unmarshalHeader(aTableHeader);
 
-			mDirectory = new Directory(mRootBlockPointer);
-			mNodes = new LeafNode[1 << mDirectory.getPrefixLength()];
+			mDirectory = new ExtendibleHashTableDirectory(mRootBlockPointer, readBlock(mRootBlockPointer));
+			mNodes = new ExtendibleHashTableLeafNode[1 << mDirectory.getPrefixLength()];
 
 			Log.dec();
 		}
@@ -123,7 +123,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 		int index = computeIndex(aEntry);
 
-		LeafNode node = loadNode(index);
+		ExtendibleHashTableLeafNode node = loadNode(index);
 
 		for (;;)
 		{
@@ -161,7 +161,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		LeafNode node = loadNode(computeIndex(aEntry));
+		ExtendibleHashTableLeafNode node = loadNode(computeIndex(aEntry));
 
 		boolean changed = node.mMap.remove(aEntry.getKey(), oldEntry);
 
@@ -245,7 +245,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 				freeBlock(mRootBlockPointer);
 
-				mRootBlockPointer = mDirectory.writeBuffer(mTransactionGroup);
+				mRootBlockPointer = mDirectory.writeBuffer(this, mTransactionGroup);
 
 				if (mCommitChangesToBlockDevice)
 				{
@@ -292,7 +292,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 		for (int i = 0; i < mNodes.length; i++)
 		{
-			LeafNode node = mNodes[i];
+			ExtendibleHashTableLeafNode node = mNodes[i];
 
 			if (node != null && node.mChanged)
 			{
@@ -335,8 +335,8 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 		{
 			Log.d("rollback");
 
-			mDirectory = new Directory(mRootBlockPointer);
-			mNodes = new LeafNode[1 << mDirectory.getPrefixLength()];
+			mDirectory = new ExtendibleHashTableDirectory(mRootBlockPointer, readBlock(mRootBlockPointer));
+			mNodes = new ExtendibleHashTableLeafNode[1 << mDirectory.getPrefixLength()];
 		}
 
 		mChanged = false;
@@ -396,10 +396,10 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 	private void setupEmptyTable()
 	{
-		mDirectory = new Directory(mBlockAccessor.getBlockDevice().getBlockSize());
-		mNodes = new LeafNode[1 << mDirectory.getPrefixLength()];
+		mDirectory = new ExtendibleHashTableDirectory(mBlockAccessor.getBlockDevice().getBlockSize());
+		mNodes = new ExtendibleHashTableLeafNode[1 << mDirectory.getPrefixLength()];
 
-		LeafNode node = new LeafNode();
+		ExtendibleHashTableLeafNode node = new ExtendibleHashTableLeafNode();
 		node.mMap = new ArrayMap(mLeafSize);
 		node.mRangeBits = mDirectory.getPrefixLength();
 		node.mChanged = true;
@@ -425,7 +425,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 		{
 			if (mNodes[index] != null)
 			{
-				LeafNode expected = mNodes[index];
+				ExtendibleHashTableLeafNode expected = mNodes[index];
 
 				long range = 1 << expected.mRangeBits;
 
@@ -477,7 +477,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 	}
 
 
-	private void scanLeaf(ScanResult aScanResult, LeafNode aNode)
+	private void scanLeaf(ScanResult aScanResult, ExtendibleHashTableLeafNode aNode)
 	{
 		aScanResult.enterLeafNode(aNode.mBlockPointer, aNode.mMap.array());
 		aScanResult.leafNodes++;
@@ -530,7 +530,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 	 */
 	private void growDirectory()
 	{
-		LeafNode[] newNodes = new LeafNode[2 * mNodes.length];
+		ExtendibleHashTableLeafNode[] newNodes = new ExtendibleHashTableLeafNode[2 * mNodes.length];
 		byte[] newBuffer = new byte[2 * mDirectory.mBuffer.length];
 
 		for (int src = 0, dst = 0; src < mNodes.length; src++, dst+=2)
@@ -582,7 +582,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 	 * 110 |                    110 |
 	 * 111 |                    111 |
 	 */
-	private LeafNode splitNode(int aIndex, LeafNode aNode)
+	private ExtendibleHashTableLeafNode splitNode(int aIndex, ExtendibleHashTableLeafNode aNode)
 	{
 		assert integrityCheck() == null : integrityCheck();
 
@@ -594,12 +594,12 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 		long newRange = aNode.mRangeBits - 1;
 
-		LeafNode lowNode = new LeafNode();
+		ExtendibleHashTableLeafNode lowNode = new ExtendibleHashTableLeafNode();
 		lowNode.mChanged = true;
 		lowNode.mRangeBits = newRange;
 		lowNode.mMap = new ArrayMap(mLeafSize);
 
-		LeafNode highNode = new LeafNode();
+		ExtendibleHashTableLeafNode highNode = new ExtendibleHashTableLeafNode();
 		highNode.mChanged = true;
 		highNode.mRangeBits = newRange;
 		highNode.mMap = new ArrayMap(mLeafSize);
@@ -632,9 +632,9 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 	}
 
 
-	private LeafNode loadNode(int aIndex)
+	private ExtendibleHashTableLeafNode loadNode(int aIndex)
 	{
-		LeafNode node = mNodes[aIndex];
+		ExtendibleHashTableLeafNode node = mNodes[aIndex];
 
 		if (node != null)
 		{
@@ -662,7 +662,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 				{
 					BlockPointer bp = mDirectory.readBlockPointer(index);
 
-					node = new LeafNode();
+					node = new ExtendibleHashTableLeafNode();
 					node.mBlockPointer = bp;
 					node.mMap = new ArrayMap(readBlock(bp));
 					node.mRangeBits = mDirectory.getRangeBits(index);
@@ -694,7 +694,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 	}
 
 
-	private BlockPointer writeBlock(TransactionGroup mTransactionGroup, byte[] aContent, BlockType aBlockType, long aUserData)
+	BlockPointer writeBlock(TransactionGroup mTransactionGroup, byte[] aContent, BlockType aBlockType, long aUserData)
 	{
 		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mTransactionGroup.get(), aBlockType, aUserData);
 	}
@@ -743,10 +743,10 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 	}
 
 
-	private class NodeIterator implements Iterator<LeafNode>
+	private class NodeIterator implements Iterator<ExtendibleHashTableLeafNode>
 	{
 		private int mIndex;
-		private LeafNode mNode;
+		private ExtendibleHashTableLeafNode mNode;
 
 
 		@Override
@@ -769,108 +769,11 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 
 		@Override
-		public LeafNode next()
+		public ExtendibleHashTableLeafNode next()
 		{
-			LeafNode tmp = mNode;
+			ExtendibleHashTableLeafNode tmp = mNode;
 			mNode = null;
 			return tmp;
-		}
-	}
-
-
-	private class LeafNode
-	{
-		BlockPointer mBlockPointer;
-		ArrayMap mMap;
-		long mRangeBits;
-		boolean mChanged;
-	}
-
-
-	private class Directory
-	{
-		private byte[] mBuffer;
-		private int mPrefixLength;
-
-
-		private Directory(int aCapacity)
-		{
-			mBuffer = new byte[aCapacity];
-			mPrefixLength = (int)Math.ceil(Math.log(mBuffer.length / BlockPointer.SIZE) / Math.log(2));
-		}
-
-
-		private Directory(BlockPointer aRootNodeBlockPointer)
-		{
-			mBuffer = readBlock(aRootNodeBlockPointer);
-			mPrefixLength = (int)Math.ceil(Math.log(mBuffer.length / BlockPointer.SIZE) / Math.log(2));
-		}
-
-
-		private int getPrefixLength()
-		{
-			return mPrefixLength;
-		}
-
-
-		private BlockPointer writeBuffer(TransactionGroup mTransactionGroup)
-		{
-			return writeBlock(mTransactionGroup, mBuffer, BlockType.INDEX, 0L);
-		}
-
-
-		private void setBlockPointer(int aIndex, BlockPointer aBlockPointer)
-		{
-			aBlockPointer.marshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
-		}
-
-
-		private long getRangeBits(int aIndex)
-		{
-			return BlockPointer.readUserData(mBuffer, aIndex * BlockPointer.SIZE);
-		}
-
-
-		private BlockPointer readBlockPointer(int aIndex)
-		{
-			BlockPointer bp = new BlockPointer();
-			bp.unmarshal(ByteArrayBuffer.wrap(mBuffer).position(aIndex * BlockPointer.SIZE));
-			return bp;
-		}
-
-
-		private String integrityCheck()
-		{
-			for (int offset = 0; offset < mBuffer.length; )
-			{
-				BlockType blockType = BlockPointer.readBlockType(mBuffer, offset);
-
-				if (blockType != BlockType.LEAF && blockType != BlockType.ILLEGAL)
-				{
-					return "ExtendibleHashTable directory has bad block type";
-				}
-
-				long rangeBits = BlockPointer.readUserData(mBuffer, offset);
-				long range = BlockPointer.SIZE * (1 << rangeBits);
-
-				if (range <= 0 || offset + range > mBuffer.length)
-				{
-					return "ExtendibleHashTable directory has bad range";
-				}
-
-				offset += BlockPointer.SIZE;
-				range -= BlockPointer.SIZE;
-
-				for (long j = range; --j >= 0; offset++)
-				{
-					if (mBuffer[offset] != 0)
-					{
-						return "ExtendibleHashTable directory error at " + offset;
-					}
-				}
-			}
-
-			return null;
 		}
 	}
 }
