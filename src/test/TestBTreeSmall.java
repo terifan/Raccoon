@@ -70,15 +70,12 @@ public class TestBTreeSmall
 		RND = new Random(seed);
 
 		mLog = true;
-
-		System.out.println("#" + Console.BLUE + ++TESTROUND + Console.RESET + " time=" + Console.BLUE + Helper.formatTime(System.currentTimeMillis() - mInitTime) + Console.RESET + " duration=" + Console.BLUE + Helper.formatTime(mStopTime - mStartTime) + Console.RESET + " seed=" + Console.BLUE + seed + Console.RESET);
-
 		mStartTime = System.currentTimeMillis();
 
-		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-
-		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION))
+		try
 		{
+			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+
 //			ArrayList<String> list = WordLists.list78;
 //			ArrayList<String> list = WordLists.list130;
 //			ArrayList<String> list = WordLists.list502;
@@ -88,97 +85,90 @@ public class TestBTreeSmall
 			list = new ArrayList<>(list);
 			Collections.shuffle(list, RND);
 
-			for (String key : list)
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION))
 			{
-				String value = Helper.createString(RND);
-
-//				System.out.println(CCC.BLUE + "Save " + key + CCC.RESET);
-
-				mEntries.put(key, value);
-				db.save(new _KeyValue(key, value));
-				dump(db, key);
-
-//				if (RND.nextInt(10) < 3)
-//				{
-//					mTreeFrame.add(new TextSlice("committing"));
-//					db.commit();
-//				}
-			}
-
-			boolean all = true;
-			for (String key : mEntries.keySet())
-			{
-				try
+				for (String key : list)
 				{
-					all &= db.get(new _KeyValue(key)).mValue.equals(mEntries.get(key));
-				}
-				catch (Exception e)
-				{
-					all = false;
-					System.out.println("missing: " + key);
-					e.printStackTrace(System.out);
-					break;
-				}
-			}
-			if (!all) throw new Exception("Not all keys found");
-
-			db.commit();
-		}
-
-		try (Database db = new Database(blockDevice, DatabaseOpenOption.READ_ONLY))
-		{
-			boolean all = true;
-			for (String key : mEntries.keySet())
-			{
-				try
-				{
-					all &= db.get(new _KeyValue(key)) != null;
-				}
-				catch (Exception e)
-				{
-					System.out.println(key);
-					e.printStackTrace(System.out);
-					break;
-				}
-			}
-			if (!all) throw new Exception("Not all keys found");
-		}
-
-		try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
-		{
-			List<String> keys = new ArrayList<>(mEntries.keySet());
-			int size = keys.size();
-
-			Collections.shuffle(keys, RND);
-
-			for (String key : keys)
-			{
-//				mLog = TESTINDEX >= 6094;
-
-				mEntries.remove(key);
-
-//				System.out.println(CCC.BLUE + "Remove " + key + " " + TESTINDEX + CCC.RESET);
-
-				try
-				{
-					boolean removed = db.remove(new _KeyValue(key));
-					if(!removed)throw new IllegalStateException("Failed to remove: " + key);
-				}
-				catch (Exception e)
-				{
-					mLog = true;
-					throw e;
-				}
-				finally
-				{
+					String value = Helper.createString(RND);
+					mEntries.put(key, value);
+					db.save(new _KeyValue(key, value));
 					dump(db, key);
 				}
 
-				assert db.size(_KeyValue.class) == --size : "size missmatch: " + db.size(_KeyValue.class) + " != " + size;
+				boolean all = true;
+				for (String key : mEntries.keySet())
+				{
+					all &= db.get(new _KeyValue(key)).mValue.equals(mEntries.get(key));
+				}
+				if (!all) throw new Exception("Not all keys found");
+
+				db.commit();
+			}
+
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+			{
+				boolean all = true;
+				for (String key : mEntries.keySet())
+				{
+					all &= db.get(new _KeyValue(key)) != null;
+				}
+				if (!all) throw new Exception("Not all keys found");
+
+				Collections.shuffle(list, RND);
+
+				for (int i = list.size()/2; --i >= 0;)
+				{
+					String key = list.get(i);
+					mEntries.remove(key);
+					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
+					dump(db, key);
+				}
+
+				db.commit();
+			}
+
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+			{
+				boolean all = true;
+				for (String key : mEntries.keySet())
+				{
+					all &= db.get(new _KeyValue(key)) != null;
+				}
+				if (!all) throw new Exception("Not all keys found");
+
+				Collections.shuffle(list, RND);
+
+				for (int i = list.size()/2; --i >= 0;)
+				{
+					String key = list.get(i);
+					String value = Helper.createString(RND);
+					mEntries.put(key, value);
+					db.save(new _KeyValue(key, value));
+					dump(db, key);
+				}
+
+				db.commit();
+			}
+
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+			{
+				List<String> keys = new ArrayList<>(mEntries.keySet());
+				Collections.shuffle(keys, RND);
+
+				for (String key : keys)
+				{
+					mEntries.remove(key);
+					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
+					dump(db, key);
+				}
 			}
 		}
+		finally
+		{
+			mStopTime = System.currentTimeMillis();
 
-		mStopTime = System.currentTimeMillis();
+			System.out.printf("#" + Console.BLUE + "%d" + Console.RESET + " time=" + Console.BLUE + "%s" + Console.RESET + " duration=" + Console.BLUE + "%s" + Console.RESET + " seed=" + Console.BLUE + "%s" + Console.RESET + "%n", ++TESTROUND, Helper.formatTime(System.currentTimeMillis() - mInitTime), Helper.formatTime(mStopTime - mStartTime), seed);
+		}
 	}
 
 
