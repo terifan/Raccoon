@@ -1,6 +1,7 @@
 package test;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -21,7 +22,6 @@ import org.terifan.treegraph.TreeRenderer;
 import org.terifan.treegraph.util.TextSlice;
 import org.terifan.treegraph.util.VerticalImageFrame;
 
-// 518
 
 public class TestBTreeSmall
 {
@@ -29,6 +29,9 @@ public class TestBTreeSmall
 	public static int TESTINDEX;
 
 	private static VerticalImageFrame mTreeFrame;
+	private static long mInitTime = System.currentTimeMillis();
+	private static long mStartTime;
+	private static long mStopTime;
 
 	public Random RND;
 	private HashMap<String,String> mEntries;
@@ -66,11 +69,13 @@ public class TestBTreeSmall
 		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
-		mLog = !true;
+		mLog = true;
 
-		System.out.println("#" + ++TESTROUND + " seed=" + seed);
+		System.out.println("#" + Console.BLUE + ++TESTROUND + Console.RESET + " time=" + Console.BLUE + Helper.formatTime(System.currentTimeMillis() - mInitTime) + Console.RESET + " duration=" + Console.BLUE + Helper.formatTime(mStopTime - mStartTime) + Console.RESET + " seed=" + Console.BLUE + seed + Console.RESET);
 
-		MemoryBlockDevice blockDevice = new MemoryBlockDevice(8192);
+		mStartTime = System.currentTimeMillis();
+
+		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION))
 		{
@@ -115,7 +120,7 @@ public class TestBTreeSmall
 					break;
 				}
 			}
-			System.out.println(all ? "All keys found" : "Missing keys");
+			if (!all) throw new Exception("Not all keys found");
 
 			db.commit();
 		}
@@ -136,7 +141,7 @@ public class TestBTreeSmall
 					break;
 				}
 			}
-			System.out.println(all ? "All keys found" : "Missing keys");
+			if (!all) throw new Exception("Not all keys found");
 		}
 
 		try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
@@ -172,6 +177,8 @@ public class TestBTreeSmall
 				assert db.size(_KeyValue.class) == --size : "size missmatch: " + db.size(_KeyValue.class) + " != " + size;
 			}
 		}
+
+		mStopTime = System.currentTimeMillis();
 	}
 
 

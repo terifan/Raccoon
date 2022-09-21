@@ -1,7 +1,7 @@
 package test;
 
 
-public enum CCC
+public enum Console
 {
 	// Color end string, color reset
 	RESET("\033[0m"),
@@ -79,7 +79,7 @@ public enum CCC
     private final String code;
 
 
-	CCC(String code)
+	Console(String code)
 	{
 		this.code = code;
 	}

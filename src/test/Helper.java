@@ -30,4 +30,10 @@ public class Helper
 		rnd.nextBytes(bytes);
 		return bytes;
 	}
+
+
+	static String formatTime(long aMillis)
+	{
+		return String.format("%d:%02d.%03d", aMillis/60000, (aMillis/1000)%60, aMillis % 1000);
+	}
 }

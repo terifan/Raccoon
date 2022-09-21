@@ -4,6 +4,7 @@ import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.io.managed.DeviceHeader;
 import java.io.File;
+import java.lang.ref.PhantomReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -255,6 +256,7 @@ public final class Database implements AutoCloseable
 
 		mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
 
+		// remove this?
 		mShutdownHook = new Thread()
 		{
 			@Override
@@ -271,6 +273,14 @@ public final class Database implements AutoCloseable
 
 		Runtime.getRuntime().addShutdownHook(mShutdownHook);
 	}
+
+//	https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/ref/Cleaner.html
+//
+//	@Override
+//	protected void finalize() throws Throwable
+//	{
+//		super.finalize();
+//	}
 
 
 	private void create(IManagedBlockDevice aBlockDevice, OpenParam[] aParameters)
@@ -574,6 +584,11 @@ public final class Database implements AutoCloseable
 	@Override
 	public void close()
 	{
+		if (mShutdownHook != null)
+		{
+			Runtime.getRuntime().removeShutdownHook(mShutdownHook);
+		}
+
 		if (mBlockDevice == null)
 		{
 			Log.w("database already closed");

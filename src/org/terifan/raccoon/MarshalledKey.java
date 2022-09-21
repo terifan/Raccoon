@@ -21,7 +21,7 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 
 	public byte[] array()
 	{
-		return mBuffer.clone();
+		return mBuffer;
 	}
 
 
@@ -64,7 +64,7 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 	{
 		if (aOther instanceof MarshalledKey other)
 		{
-			return Arrays.equals(this.mBuffer, other.mBuffer);
+			return Arrays.equals(mBuffer, other.mBuffer);
 		}
 		return false;
 	}

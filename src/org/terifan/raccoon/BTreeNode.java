@@ -17,9 +17,12 @@ abstract class BTreeNode
 	ArrayMap mMap;
 	boolean mModified;
 
-	record SplitResult (BTreeNode left, BTreeNode right, MarshalledKey leftKey, MarshalledKey rightKey) {}
 
-	enum RemoveResult{
+	static record SplitResult(BTreeNode left, BTreeNode right, MarshalledKey leftKey, MarshalledKey rightKey) {}
+
+
+	enum RemoveResult
+	{
 		OK,
 		NONE,
 		UPDATE_LOW
