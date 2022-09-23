@@ -1,26 +1,25 @@
 package test;
 
+import java.awt.Color;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import javax.swing.JFrame;
-import org.terifan.raccoon.BTreeTableImplementation;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.ScanResult;
-import org.terifan.raccoon.annotations.Column;
-import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
-import org.terifan.raccoon.annotations.Id;
 import org.terifan.treegraph.HorizontalLayout;
 import org.terifan.treegraph.TreeRenderer;
 import org.terifan.treegraph.util.TextSlice;
 import org.terifan.treegraph.util.VerticalImageFrame;
+
+
+// https://www.tutorialspoint.com/mongodb/mongodb_java.htm
 
 
 public class TestBTreeSmall
@@ -42,10 +41,10 @@ public class TestBTreeSmall
 	{
 		try
 		{
-//			mTreeFrame = new VerticalImageFrame();
-//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+			mTreeFrame = new VerticalImageFrame();
+			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-			for (;;)
+//			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -77,10 +76,10 @@ public class TestBTreeSmall
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 //			ArrayList<String> list = WordLists.list78;
-//			ArrayList<String> list = WordLists.list130;
+			ArrayList<String> list = WordLists.list130;
 //			ArrayList<String> list = WordLists.list502;
 //			ArrayList<String> list = WordLists.list1007;
-			ArrayList<String> list = WordLists.list4342;
+//			ArrayList<String> list = WordLists.list4342;
 
 			list = new ArrayList<>(list);
 			Collections.shuffle(list, RND);
@@ -93,6 +92,8 @@ public class TestBTreeSmall
 					mEntries.put(key, value);
 					db.save(new _KeyValue(key, value));
 					dump(db, key);
+
+					commit(db, 0);
 				}
 
 				boolean all = true;
@@ -102,7 +103,10 @@ public class TestBTreeSmall
 				}
 				if (!all) throw new Exception("Not all keys found");
 
-				db.commit();
+				commit(db, 10);
+
+//				ScanResult result = db.scan(new ScanResult());
+//				System.out.println(result);
 			}
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
@@ -122,9 +126,11 @@ public class TestBTreeSmall
 					mEntries.remove(key);
 					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
 					dump(db, key);
+
+					commit(db, 0);
 				}
 
-				db.commit();
+				commit(db, 10);
 			}
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
@@ -145,9 +151,11 @@ public class TestBTreeSmall
 					mEntries.put(key, value);
 					db.save(new _KeyValue(key, value));
 					dump(db, key);
+
+					commit(db, 0);
 				}
 
-				db.commit();
+				commit(db, 10);
 			}
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
@@ -160,6 +168,8 @@ public class TestBTreeSmall
 					mEntries.remove(key);
 					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
 					dump(db, key);
+
+					commit(db, 0);
 				}
 			}
 		}
@@ -168,6 +178,16 @@ public class TestBTreeSmall
 			mStopTime = System.currentTimeMillis();
 
 			System.out.printf("#" + Console.BLUE + "%d" + Console.RESET + " time=" + Console.BLUE + "%s" + Console.RESET + " duration=" + Console.BLUE + "%s" + Console.RESET + " seed=" + Console.BLUE + "%s" + Console.RESET + "%n", ++TESTROUND, Helper.formatTime(System.currentTimeMillis() - mInitTime), Helper.formatTime(mStopTime - mStartTime), seed);
+		}
+	}
+
+
+	private void commit(Database aDatabase, int aProb)
+	{
+		if (RND.nextInt(10) <= aProb)
+		{
+			mTreeFrame.add(new TextSlice("Commit", Color.GREEN, Color.WHITE, 10));
+			aDatabase.commit();
 		}
 	}
 

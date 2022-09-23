@@ -440,7 +440,7 @@ public class BTreeTableImplementation extends TableImplementation
 				aScanResult.log.append(s.isEmpty() ? "*" : s);
 			}
 			aScanResult.log.append("'");
-			aScanResult.log.append(indexNode.mModified ? "#f00" : "#0f0");
+			aScanResult.log.append(indexNode.mModified ? "#f00#f00#fff" : "#0f0");
 			if (indexNode.mMap.size() == 1)
 			{
 				aScanResult.log.append("#f00");
@@ -472,34 +472,6 @@ public class BTreeTableImplementation extends TableImplementation
 				scan(child, aScanResult);
 			}
 
-//			for (ArrayMapEntry entry : node.mMap)
-//			{
-//				if (!first)
-//				{
-//					aScanResult.log.append(",");
-//				}
-//				first = false;
-//				MarshalledKey key = new MarshalledKey(entry.getKey());
-//				BTreeNode child = node.mBuffer.get(key);
-//
-//				if (child == null)
-//				{
-//					BlockPointer bp = new BlockPointer().unmarshal(entry.getValue(), 0);
-//
-//					child = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(this, node, bp.getBlockLevel()) : new BTreeLeaf(this, node);
-//					child.mBlockPointer = bp;
-//					child.mMap = new ArrayMap(readBlock(bp));
-//
-//					node.mBuffer.put(key, child);
-//
-//					scan(child, aScanResult);
-//				}
-//				else
-//				{
-//					scan(child, aScanResult);
-//				}
-//			}
-
 			aScanResult.log.append("]");
 		}
 		else
@@ -520,7 +492,7 @@ public class BTreeTableImplementation extends TableImplementation
 				aScanResult.log.append("'" + new String(entry.getKey()).replaceAll("[^\\w]*", "").replace("_", "") + "'");
 			}
 			aScanResult.log.append("]");
-			aScanResult.log.append(node.mModified ? "#f00" : "#0f0");
+			aScanResult.log.append(node.mModified ? "#f00#f00#fff" : "#0f0");
 			if (fillRatio > 100)
 			{
 				aScanResult.log.append("#f80");

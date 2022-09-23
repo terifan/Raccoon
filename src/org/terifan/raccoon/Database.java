@@ -586,7 +586,14 @@ public final class Database implements AutoCloseable
 	{
 		if (mShutdownHook != null)
 		{
-			Runtime.getRuntime().removeShutdownHook(mShutdownHook);
+			try
+			{
+				Runtime.getRuntime().removeShutdownHook(mShutdownHook);
+			}
+			catch (Exception e)
+			{
+				// ignore this
+			}
 		}
 
 		if (mBlockDevice == null)
@@ -594,6 +601,7 @@ public final class Database implements AutoCloseable
 			Log.w("database already closed");
 			return;
 		}
+
 		if (mReadOnly)
 		{
 			if (mModified)
