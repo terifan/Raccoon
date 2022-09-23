@@ -364,7 +364,7 @@ public class BTreeTableImplementation extends TableImplementation
 			{
 				MarshalledKey key = new MarshalledKey(entry.getKey());
 
-				BTreeNode node = indexNode.getBuffer(key);
+				BTreeNode node = indexNode.mBuffer.get(key);
 
 				if (node != null)
 				{
@@ -467,7 +467,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 				ArrayMapEntry entry = new ArrayMapEntry();
 				indexNode.mMap.get(i, entry);
-				indexNode.putBuffer(new MarshalledKey(entry.getKey()), child);
+				indexNode.mBuffer.put(new MarshalledKey(entry.getKey()), child);
 
 				scan(child, aScanResult);
 			}
@@ -559,7 +559,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 				ArrayMapEntry entry = new ArrayMapEntry();
 				indexNode.mMap.get(i, entry);
-				indexNode.putBuffer(new MarshalledKey(entry.getKey()), node);
+				indexNode.mBuffer.put(new MarshalledKey(entry.getKey()), node);
 
 				visit(node, aConsumer);
 			}

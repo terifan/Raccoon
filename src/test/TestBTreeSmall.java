@@ -7,12 +7,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import javax.swing.JFrame;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.ScanResult;
-import org.terifan.raccoon.io.managed.ManagedBlockDevice;
-import org.terifan.raccoon.io.managed.RangeMap;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.treegraph.HorizontalLayout;
 import org.terifan.treegraph.TreeRenderer;
@@ -42,10 +41,10 @@ public class TestBTreeSmall
 	{
 		try
 		{
-//			mTreeFrame = new VerticalImageFrame();
-//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+			mTreeFrame = new VerticalImageFrame();
+			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-//			for (;;)
+			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -185,10 +184,15 @@ public class TestBTreeSmall
 	}
 
 
-	private void commit(Database aDatabase, int aProb)
+	private void commit(Database aDatabase, int aProb) throws IOException
 	{
 		if (RND.nextInt(10) <= aProb)
 		{
+			String description = aDatabase.scan(new ScanResult()).getDescription();
+
+			mTreeFrame.add(new TextSlice("" + TESTINDEX));
+			mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
+
 			if (mTreeFrame != null)
 			{
 				mTreeFrame.add(new TextSlice("Commit", Color.GREEN, Color.WHITE, 10));
@@ -219,10 +223,8 @@ public class TestBTreeSmall
 	{
 		if (mLog && mTreeFrame != null)
 		{
-			String description = aDatabase.scan(new ScanResult()).getDescription();
-
 			mTreeFrame.add(new TextSlice(TESTINDEX + " " + aKey));
-			mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
+//			mTreeFrame.add(new TreeRenderer(aDatabase.scan(new ScanResult()).getDescription()).render(new HorizontalLayout()));
 		}
 
 		TESTINDEX++;
