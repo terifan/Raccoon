@@ -99,7 +99,7 @@ class SpaceMap
 	}
 
 
-	public void clearUncommitted()
+	public void reset()
 	{
 		mUncommittedAllocations.clear();
 	}

@@ -205,7 +205,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public void forceClose()
 	{
-		mSpaceMap.clearUncommitted();
+		mSpaceMap.reset();
 
 		if (mBlockDevice != null)
 		{
@@ -353,7 +353,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 			mBlockDevice.commit(aMetadata);
 
-			mSpaceMap.clearUncommitted();
+			mSpaceMap.reset();
 			mWasCreated = false;
 			mModified = false;
 
@@ -377,7 +377,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			Log.i("rollbacking block device");
 			Log.inc();
 
-			mSpaceMap.clearUncommitted();
+			mSpaceMap.reset();
 			mSpaceMap.rollback();
 
 			init();
@@ -447,6 +447,10 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		return mSpaceMap.getRangeMap().toString();
 	}
+	public RangeMap getRangeMap()
+	{
+		return mSpaceMap.getRangeMap();
+	}
 
 
 	/**
@@ -501,7 +505,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		mBlockDevice.setLength(0);
 
-		mSpaceMap.clearUncommitted();
+		mSpaceMap.reset();
 
 		createBlockDevice();
 	}

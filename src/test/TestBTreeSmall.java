@@ -7,11 +7,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
-import javax.swing.JFrame;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.ScanResult;
+import org.terifan.raccoon.io.managed.ManagedBlockDevice;
+import org.terifan.raccoon.io.managed.RangeMap;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.treegraph.HorizontalLayout;
 import org.terifan.treegraph.TreeRenderer;
@@ -41,8 +42,8 @@ public class TestBTreeSmall
 	{
 		try
 		{
-			mTreeFrame = new VerticalImageFrame();
-			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+//			mTreeFrame = new VerticalImageFrame();
+//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
 //			for (;;)
 			{
@@ -64,9 +65,11 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-//		int seed = 2135994705;
-		int seed = Math.abs(new Random().nextInt());
+		int seed = 1131648982;
+//		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
+
+		System.out.println(seed);
 
 		mLog = true;
 		mStartTime = System.currentTimeMillis();
@@ -76,9 +79,9 @@ public class TestBTreeSmall
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 //			ArrayList<String> list = WordLists.list78;
-			ArrayList<String> list = WordLists.list130;
+//			ArrayList<String> list = WordLists.list130;
 //			ArrayList<String> list = WordLists.list502;
-//			ArrayList<String> list = WordLists.list1007;
+			ArrayList<String> list = WordLists.list1007;
 //			ArrayList<String> list = WordLists.list4342;
 
 			list = new ArrayList<>(list);
@@ -186,8 +189,28 @@ public class TestBTreeSmall
 	{
 		if (RND.nextInt(10) <= aProb)
 		{
-			mTreeFrame.add(new TextSlice("Commit", Color.GREEN, Color.WHITE, 10));
+			if (mTreeFrame != null)
+			{
+				mTreeFrame.add(new TextSlice("Commit", Color.GREEN, Color.WHITE, 10));
+			}
+
 			aDatabase.commit();
+
+//			long alloc = aDatabase.getBlockDevice().getAllocatedSpace() / 10;
+//			long used = aDatabase.getBlockDevice().getUsedSpace() / 10;
+//
+//			RangeMap rangeMap = ((ManagedBlockDevice)aDatabase.getBlockDevice()).getRangeMap();
+//
+//			for (int i = 0; i < alloc; i++)
+//			{
+//				boolean f = true;
+//				for (int j = 0; j < 10; j++) f &= rangeMap.isFree(10*i+j, 1);
+//
+//				System.out.print(i < used ? f?"+":"*" : "-");
+//			}
+//			System.out.println();
+
+//			System.out.printf("%5d %5d %5d%n", aDatabase.getBlockDevice().getUsedSpace(), free, alloc);
 		}
 	}
 

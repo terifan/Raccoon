@@ -314,13 +314,13 @@ public final class TableInstance<T>
 	}
 
 
-	long flush(TransactionGroup mTransactionGroup)
+	long flush(TransactionGroup aTransactionGroup)
 	{
-		return mTableImplementation.flush(mTransactionGroup);
+		return mTableImplementation.flush(aTransactionGroup);
 	}
 
 
-	boolean commit(TransactionGroup mTransactionGroup)
+	boolean commit(TransactionGroup aTransactionGroup)
 	{
 		synchronized (this)
 		{
@@ -337,14 +337,9 @@ public final class TableInstance<T>
 		}
 
 		AtomicBoolean changed = new AtomicBoolean();
-		byte[] newPointer = mTableImplementation.commit(mTransactionGroup, changed);
+		byte[] newPointer = mTableImplementation.commit(aTransactionGroup, changed);
 
-		if (!changed.get())
-		{
-			return false;
-		}
-
-		if (Arrays.equals(newPointer, mTable.getTableHeader()))
+		if (!changed.get() || Arrays.equals(newPointer, mTable.getTableHeader()))
 		{
 			return false;
 		}

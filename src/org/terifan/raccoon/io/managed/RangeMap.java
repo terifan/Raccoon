@@ -5,7 +5,7 @@ import java.util.TreeMap;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
-class RangeMap implements Cloneable
+public class RangeMap implements Cloneable
 {
 	private TreeMap<Integer,Integer> mMap;
 	private int mSpace;

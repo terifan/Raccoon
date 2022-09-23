@@ -512,6 +512,8 @@ public class BTreeIndex extends BTreeNode
 
 	void putBuffer(MarshalledKey aKey, BTreeNode aNode)
 	{
+		assert aNode != null;
+
 //		System.out.printf(CCC.CYAN + "Write cache %3d %15s = %s" + CCC.RESET + "%n", mNodeId, "\"" + aKey + "\"", aNode);
 		mBuffer.put(aKey, aNode);
 	}
@@ -522,6 +524,8 @@ public class BTreeIndex extends BTreeNode
 	{
 		for (Entry<MarshalledKey, BTreeNode> entry : mBuffer.entrySet())
 		{
+			System.out.println("#"+entry.getKey().array().length+" "+entry.getValue());
+
 			if (entry.getValue().commit(mImplementation, mTransactionGroup))
 			{
 				mModified = true;
