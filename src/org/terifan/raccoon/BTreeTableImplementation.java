@@ -16,7 +16,7 @@ import org.terifan.raccoon.util.Result;
 
 public class BTreeTableImplementation extends TableImplementation
 {
-	static byte[] POINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
+	static byte[] BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
 	static int INDEX_SIZE = 600;
 	static int LEAF_SIZE = 600;
 
@@ -86,9 +86,10 @@ public class BTreeTableImplementation extends TableImplementation
 		BlockPointer bp = new BlockPointer();
 		bp.unmarshal(buffer);
 
-		mRoot = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(bp.getBlockLevel(), nextNodeIndex()) : new BTreeLeaf(nextNodeIndex());
+		mRoot = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(bp.getBlockLevel()) : new BTreeLeaf();
 		mRoot.mBlockPointer = bp;
 		mRoot.mMap = new ArrayMap(readBlock(bp));
+		mRoot.mNodeId = nextNodeIndex();
 	}
 
 
@@ -376,7 +377,7 @@ public class BTreeTableImplementation extends TableImplementation
 			{
 				MarshalledKey key = new MarshalledKey(entry.getKey());
 
-				BTreeNode node = indexNode.mBuffer.get(key);
+				BTreeNode node = indexNode.mChildNodes.get(key);
 
 				if (node != null)
 				{
@@ -479,7 +480,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 				ArrayMapEntry entry = new ArrayMapEntry();
 				indexNode.mMap.get(i, entry);
-				indexNode.mBuffer.put(new MarshalledKey(entry.getKey()), child);
+				indexNode.mChildNodes.put(new MarshalledKey(entry.getKey()), child);
 
 				scan(child, aScanResult);
 			}
@@ -542,8 +543,9 @@ public class BTreeTableImplementation extends TableImplementation
 
 	private void setupEmptyTable()
 	{
-		mRoot = new BTreeLeaf(nextNodeIndex());
+		mRoot = new BTreeLeaf();
 		mRoot.mMap = new ArrayMap(LEAF_SIZE);
+		mRoot.mNodeId = nextNodeIndex();
 	}
 
 
@@ -571,7 +573,7 @@ public class BTreeTableImplementation extends TableImplementation
 
 				ArrayMapEntry entry = new ArrayMapEntry();
 				indexNode.mMap.get(i, entry);
-				indexNode.mBuffer.put(new MarshalledKey(entry.getKey()), node);
+				indexNode.mChildNodes.put(new MarshalledKey(entry.getKey()), node);
 
 				visit(node, aConsumer);
 			}

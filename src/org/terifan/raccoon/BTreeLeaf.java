@@ -1,16 +1,16 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.ArrayMap.InsertResult;
-import static org.terifan.raccoon.BTreeTableImplementation.POINTER_PLACEHOLDER;
 import org.terifan.raccoon.util.Result;
 import static org.terifan.raccoon.BTreeTableImplementation.INDEX_SIZE;
+import static org.terifan.raccoon.BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER;
 
 
 public class BTreeLeaf extends BTreeNode
 {
-	BTreeLeaf(long aNodeId)
+	BTreeLeaf()
 	{
-		super(0, aNodeId);
+		super(0);
 	}
 
 
@@ -51,12 +51,14 @@ public class BTreeLeaf extends BTreeNode
 
 		ArrayMap[] maps = mMap.split(BTreeTableImplementation.LEAF_SIZE);
 
-		BTreeLeaf a = new BTreeLeaf(aImplementation.nextNodeIndex());
-		BTreeLeaf b = new BTreeLeaf(aImplementation.nextNodeIndex());
+		BTreeLeaf a = new BTreeLeaf();
+		BTreeLeaf b = new BTreeLeaf();
 		a.mMap = maps[0];
 		b.mMap = maps[1];
 		a.mModified = true;
 		b.mModified = true;
+		a.mNodeId = aImplementation.nextNodeIndex();
+		b.mNodeId = aImplementation.nextNodeIndex();
 
 		return new SplitResult(a, b, new MarshalledKey(a.mMap.getFirst().getKey()), new MarshalledKey(b.mMap.getFirst().getKey()));
 	}
@@ -68,25 +70,28 @@ public class BTreeLeaf extends BTreeNode
 
 		ArrayMap[] maps = mMap.split(BTreeTableImplementation.LEAF_SIZE);
 
-		BTreeLeaf a = new BTreeLeaf(aImplementation.nextNodeIndex());
-		BTreeLeaf b = new BTreeLeaf(aImplementation.nextNodeIndex());
+		BTreeLeaf a = new BTreeLeaf();
+		BTreeLeaf b = new BTreeLeaf();
 		a.mMap = maps[0];
 		b.mMap = maps[1];
 		a.mModified = true;
 		b.mModified = true;
+		a.mNodeId = aImplementation.nextNodeIndex();
+		b.mNodeId = aImplementation.nextNodeIndex();
 
 		byte[] key = b.mMap.getKey(0);
 
 		MarshalledKey keyA = new MarshalledKey(new byte[0]);
 		MarshalledKey keyB = new MarshalledKey(key);
 
-		BTreeIndex newIndex = new BTreeIndex(1, aImplementation.nextNodeIndex());
-		newIndex.mMap = new ArrayMap(INDEX_SIZE);
-		newIndex.mMap.put(new ArrayMapEntry(keyA.array(), POINTER_PLACEHOLDER, (byte)0x77), null);
-		newIndex.mMap.put(new ArrayMapEntry(keyB.array(), POINTER_PLACEHOLDER, (byte)0x66), null);
-		newIndex.mBuffer.put(keyA, a);
-		newIndex.mBuffer.put(keyB, b);
+		BTreeIndex newIndex = new BTreeIndex(1);
+		newIndex.mNodeId = aImplementation.nextNodeIndex();
 		newIndex.mModified = true;
+		newIndex.mMap = new ArrayMap(INDEX_SIZE);
+		newIndex.mMap.put(new ArrayMapEntry(keyA.array(), BLOCKPOINTER_PLACEHOLDER), null);
+		newIndex.mMap.put(new ArrayMapEntry(keyB.array(), BLOCKPOINTER_PLACEHOLDER), null);
+		newIndex.mChildNodes.put(keyA, a);
+		newIndex.mChildNodes.put(keyB, b);
 
 		return newIndex;
 	}

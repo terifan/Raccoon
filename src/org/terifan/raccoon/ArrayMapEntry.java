@@ -21,6 +21,14 @@ public final class ArrayMapEntry
 	}
 
 
+	public ArrayMapEntry(byte[] aKey, byte[] aValue)
+	{
+		mKey = aKey;
+		mValue = aValue;
+		mType = 0;
+	}
+
+
 	public ArrayMapEntry(byte[] aKey, byte[] aValue, byte aType)
 	{
 		mKey = aKey;

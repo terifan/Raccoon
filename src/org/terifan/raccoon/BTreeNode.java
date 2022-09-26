@@ -7,15 +7,13 @@ import org.terifan.raccoon.util.Result;
 
 abstract class BTreeNode
 {
-//	final BTreeTableImplementation mImplementation;
-//	final BTreeIndex mParent;
-	final long mNodeId;
 	final int mLevel;
 
-	long mGenerationId;
 	BlockPointer mBlockPointer;
 	ArrayMap mMap;
 	boolean mModified;
+
+	long mNodeId;
 
 
 	static record SplitResult(BTreeNode left, BTreeNode right, MarshalledKey leftKey, MarshalledKey rightKey) {}
@@ -28,12 +26,8 @@ abstract class BTreeNode
 	}
 
 
-	public BTreeNode(int aLevel, long aNodeId)
+	protected BTreeNode(int aLevel)
 	{
-//		mImplementation = aImplementation;
-//		mNodeId = mImplementation.nextNodeIndex();
-		mNodeId = aNodeId;
-//		mParent = aParent;
 		mLevel = aLevel;
 	}
 

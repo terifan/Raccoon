@@ -164,6 +164,31 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	 * @param oExistingEntry optional; output for an existing entry with the entry key
 	 * @return true if the entry was inserted without resizing the buffer and false if the buffer was resized
 	 */
+	public InsertResult insert(ArrayMapEntry aEntry)
+	{
+		if (put(aEntry, null))
+		{
+			return InsertResult.PUT;
+		}
+
+		resize(mCapacity + ENTRY_OVERHEAD + aEntry.getMarshalledLength());
+
+		if (!put(aEntry, null))
+		{
+			throw new IllegalStateException("failed to put entity");
+		}
+
+		return InsertResult.RESIZED;
+	}
+
+
+	/**
+	 * Add the entry to the map resizing the internal buffer if necessary.
+	 *
+	 * @param aEntry entry to add
+	 * @param oExistingEntry optional; output for an existing entry with the entry key
+	 * @return true if the entry was inserted without resizing the buffer and false if the buffer was resized
+	 */
 	public InsertResult insert(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
 		if (put(aEntry, oExistingEntry))
@@ -870,11 +895,11 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		{
 			if (low.getFreeSpace() > high.getFreeSpace())
 			{
-				low.insert(get(i++, tmp), null);
+				low.insert(get(i++, tmp));
 			}
 			else
 			{
-				high.insert(get(--j, tmp), null);
+				high.insert(get(--j, tmp));
 			}
 		}
 

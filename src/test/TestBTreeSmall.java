@@ -44,7 +44,7 @@ public class TestBTreeSmall
 //			mTreeFrame = new VerticalImageFrame();
 //			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-//			for (;;)
+			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -64,11 +64,9 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-		int seed = 1131648982;
-//		int seed = Math.abs(new Random().nextInt());
+//		int seed = 1131648982;
+		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
-
-		System.out.println(seed);
 
 		mLog = true;
 		mStartTime = System.currentTimeMillis();
@@ -79,8 +77,8 @@ public class TestBTreeSmall
 
 //			ArrayList<String> list = WordLists.list78;
 //			ArrayList<String> list = WordLists.list130;
-//			ArrayList<String> list = WordLists.list502;
-			ArrayList<String> list = WordLists.list1007;
+			ArrayList<String> list = WordLists.list502;
+//			ArrayList<String> list = WordLists.list1007;
 //			ArrayList<String> list = WordLists.list4342;
 
 			list = new ArrayList<>(list);
@@ -196,11 +194,14 @@ public class TestBTreeSmall
 				mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
 			}
 
-			if (mTreeFrame != null)
+//			if (aProb == 10)
 			{
-				mTreeFrame.add(new TextSlice("Commit", Color.GREEN, Color.WHITE, 10));
+				if (mTreeFrame != null)
+				{
+					mTreeFrame.add(new TextSlice("Commit", Color.GREEN, Color.WHITE, 10));
+				}
+				aDatabase.commit();
 			}
-			aDatabase.commit();
 
 //			long alloc = aDatabase.getBlockDevice().getAllocatedSpace() / 10;
 //			long used = aDatabase.getBlockDevice().getUsedSpace() / 10;
