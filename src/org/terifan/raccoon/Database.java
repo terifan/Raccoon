@@ -265,6 +265,8 @@ public final class Database implements AutoCloseable
 				Log.i("shutdown hook executing");
 				Log.inc();
 
+				mShutdownHook = null;
+
 				close();
 
 				Log.dec();

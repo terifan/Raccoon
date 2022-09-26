@@ -84,10 +84,10 @@ public class TestBTreeSmall
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 //			ArrayList<String> list = WordLists.list78;
-			ArrayList<String> list = WordLists.list130;
+//			ArrayList<String> list = WordLists.list130;
 //			ArrayList<String> list = WordLists.list502;
 //			ArrayList<String> list = WordLists.list1007;
-//			ArrayList<String> list = WordLists.list4342;
+			ArrayList<String> list = WordLists.list4342;
 
 			list = new ArrayList<>(list);
 			Collections.shuffle(list, RND);
