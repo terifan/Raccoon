@@ -7,11 +7,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
-import javax.swing.JFrame;
-import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.ScanResult;
+import org.terifan.raccoon.io.managed.ManagedBlockDevice;
+import org.terifan.raccoon.io.managed.RangeMap;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.treegraph.HorizontalLayout;
 import org.terifan.treegraph.TreeRenderer;
@@ -35,6 +35,8 @@ public class TestBTreeSmall
 	public Random RND;
 	private HashMap<String,String> mEntries;
 	private boolean mLog;
+
+	private int COMMIT;
 
 
 	public static void main(String... args)
@@ -64,20 +66,26 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-//		int seed = 1131648982;
+//		int seed = 1427423377;
 		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
 		mLog = true;
 		mStartTime = System.currentTimeMillis();
 
+		int FETCH = 0;
+		int INSERT = 0;
+		int UPDATE = 0;
+		int DELETE = 0;
+		COMMIT = 0;
+
 		try
 		{
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 //			ArrayList<String> list = WordLists.list78;
-//			ArrayList<String> list = WordLists.list130;
-			ArrayList<String> list = WordLists.list502;
+			ArrayList<String> list = WordLists.list130;
+//			ArrayList<String> list = WordLists.list502;
 //			ArrayList<String> list = WordLists.list1007;
 //			ArrayList<String> list = WordLists.list4342;
 
@@ -89,7 +97,7 @@ public class TestBTreeSmall
 				for (String key : list)
 				{
 					String value = Helper.createString(RND);
-					mEntries.put(key, value);
+					if (mEntries.put(key, value) != null) UPDATE++; else INSERT++;
 					db.save(new _KeyValue(key, value));
 					dump(db, key);
 
@@ -100,10 +108,11 @@ public class TestBTreeSmall
 				for (String key : mEntries.keySet())
 				{
 					all &= db.get(new _KeyValue(key)).mValue.equals(mEntries.get(key));
+					FETCH++;
 				}
 				if (!all) throw new Exception("Not all keys found");
 
-				commit(db, 10);
+				commit(db, 100);
 
 //				ScanResult result = db.scan(new ScanResult());
 //				System.out.println(result);
@@ -115,6 +124,7 @@ public class TestBTreeSmall
 				for (String key : mEntries.keySet())
 				{
 					all &= db.get(new _KeyValue(key)) != null;
+					FETCH++;
 				}
 				if (!all) throw new Exception("Not all keys found");
 
@@ -126,11 +136,12 @@ public class TestBTreeSmall
 					mEntries.remove(key);
 					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
 					dump(db, key);
+					DELETE++;
 
 					commit(db, 0);
 				}
 
-				commit(db, 10);
+				commit(db, 100);
 			}
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
@@ -139,6 +150,7 @@ public class TestBTreeSmall
 				for (String key : mEntries.keySet())
 				{
 					all &= db.get(new _KeyValue(key)) != null;
+					FETCH++;
 				}
 				if (!all) throw new Exception("Not all keys found");
 
@@ -148,14 +160,14 @@ public class TestBTreeSmall
 				{
 					String key = list.get(i);
 					String value = Helper.createString(RND);
-					mEntries.put(key, value);
+					if (mEntries.put(key, value) != null) UPDATE++; else INSERT++;
 					db.save(new _KeyValue(key, value));
 					dump(db, key);
 
 					commit(db, 0);
 				}
 
-				commit(db, 10);
+				commit(db, 100);
 			}
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
@@ -168,6 +180,7 @@ public class TestBTreeSmall
 					mEntries.remove(key);
 					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
 					dump(db, key);
+					DELETE++;
 
 					commit(db, 0);
 				}
@@ -177,14 +190,14 @@ public class TestBTreeSmall
 		{
 			mStopTime = System.currentTimeMillis();
 
-			System.out.printf("#" + Console.BLUE + "%d" + Console.RESET + " time=" + Console.BLUE + "%s" + Console.RESET + " duration=" + Console.BLUE + "%s" + Console.RESET + " seed=" + Console.BLUE + "%s" + Console.RESET + "%n", ++TESTROUND, Helper.formatTime(System.currentTimeMillis() - mInitTime), Helper.formatTime(mStopTime - mStartTime), seed);
+			System.out.printf("#" + Console.BLUE + "%d" + Console.RESET + " time=" + Console.BLUE + "%s" + Console.RESET + " duration=" + Console.BLUE + "%s" + Console.RESET + " seed=" + Console.BLUE + "%-10d" + Console.RESET + " operations=[" + Console.CYAN + "%d,%d,%d,%d" + Console.RESET + "]" + "%n", ++TESTROUND, Helper.formatTime(System.currentTimeMillis() - mInitTime), Helper.formatTime(mStopTime - mStartTime), seed, FETCH, INSERT, UPDATE, DELETE, COMMIT);
 		}
 	}
 
 
 	private void commit(Database aDatabase, int aProb) throws IOException
 	{
-		if (RND.nextInt(10) <= aProb)
+		if (RND.nextInt(100) <= aProb)
 		{
 			String description = aDatabase.scan(new ScanResult()).getDescription();
 
@@ -194,30 +207,44 @@ public class TestBTreeSmall
 				mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
 			}
 
-//			if (aProb == 10)
+//			if (aProb == 100)
 			{
 				if (mTreeFrame != null)
 				{
 					mTreeFrame.add(new TextSlice("Commit", Color.GREEN, Color.WHITE, 10));
 				}
 				aDatabase.commit();
+				COMMIT++;
 			}
 
-//			long alloc = aDatabase.getBlockDevice().getAllocatedSpace() / 10;
-//			long used = aDatabase.getBlockDevice().getUsedSpace() / 10;
-//
-//			RangeMap rangeMap = ((ManagedBlockDevice)aDatabase.getBlockDevice()).getRangeMap();
-//
-//			for (int i = 0; i < alloc; i++)
-//			{
-//				boolean f = true;
-//				for (int j = 0; j < 10; j++) f &= rangeMap.isFree(10*i+j, 1);
-//
-//				System.out.print(i < used ? f?"+":"*" : "-");
-//			}
-//			System.out.println();
+			if (false)
+			{
+				long alloc = aDatabase.getBlockDevice().getAllocatedSpace() / 10;
 
-//			System.out.printf("%5d %5d %5d%n", aDatabase.getBlockDevice().getUsedSpace(), free, alloc);
+				RangeMap rangeMap = ((ManagedBlockDevice)aDatabase.getBlockDevice()).getRangeMap();
+
+				int x = 0;
+				for (int i = 0; i < alloc; i++)
+				{
+					int used = 0;
+					for (int j = 0; j < 10; j++)
+					{
+						if (rangeMap.isFree(10 * i + j, 1))
+						{
+							used++;
+							x++;
+						}
+					}
+
+					System.out.print(used <= 1 ? "-" : "█");
+				}
+				System.out.println();
+
+//				System.out.println(rangeMap);
+//				System.out.println(x+" "+rangeMap.getFreeSpace()+" "+rangeMap.getUsedSpace());
+
+//				System.out.printf("%5d %5d %5d%n", aDatabase.getBlockDevice().getUsedSpace(), free, alloc);
+			}
 		}
 	}
 

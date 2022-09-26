@@ -463,6 +463,7 @@ public class BTreeTableImplementation extends TableImplementation
 			{
 				aScanResult.log.append("#f80");
 				System.out.println("fat index");
+				System.exit(0);
 			}
 
 			first = true;
@@ -510,6 +511,7 @@ public class BTreeTableImplementation extends TableImplementation
 			{
 				aScanResult.log.append("#f80");
 				System.out.println("fat leaf");
+				System.exit(0);
 			}
 		}
 	}
