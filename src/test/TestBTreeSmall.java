@@ -41,10 +41,10 @@ public class TestBTreeSmall
 	{
 		try
 		{
-			mTreeFrame = new VerticalImageFrame();
-			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+//			mTreeFrame = new VerticalImageFrame();
+//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-			for (;;)
+//			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -86,7 +86,7 @@ public class TestBTreeSmall
 			list = new ArrayList<>(list);
 			Collections.shuffle(list, RND);
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION))
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
 			{
 				for (String key : list)
 				{
@@ -190,14 +190,16 @@ public class TestBTreeSmall
 		{
 			String description = aDatabase.scan(new ScanResult()).getDescription();
 
-			mTreeFrame.add(new TextSlice("" + TESTINDEX));
-			mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
+			if (mTreeFrame != null)
+			{
+				mTreeFrame.add(new TextSlice("" + TESTINDEX));
+				mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
+			}
 
 			if (mTreeFrame != null)
 			{
 				mTreeFrame.add(new TextSlice("Commit", Color.GREEN, Color.WHITE, 10));
 			}
-
 			aDatabase.commit();
 
 //			long alloc = aDatabase.getBlockDevice().getAllocatedSpace() / 10;

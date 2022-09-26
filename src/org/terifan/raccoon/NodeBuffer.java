@@ -35,7 +35,7 @@ class NodeBuffer
 
 	BTreeNode remove(MarshalledKey aKey)
 	{
-		assert mBuffer.containsKey(aKey) : "key already removed: " + aKey;
+		assert mBuffer.containsKey(aKey) : "key not found: " + aKey;
 
 		return mBuffer.remove(aKey);
 	}

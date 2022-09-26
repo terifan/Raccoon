@@ -23,9 +23,8 @@ abstract class BTreeNode
 
 	enum RemoveResult
 	{
-		OK,
-		NONE,
-		UPDATE_LOW
+		REMOVED,
+		NO_MATCH
 	}
 
 
@@ -52,4 +51,7 @@ abstract class BTreeNode
 
 
 	abstract boolean commit(BTreeTableImplementation mImplementation, TransactionGroup mTransactionGroup);
+
+
+	protected abstract void postCommit();
 }

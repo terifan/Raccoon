@@ -3,6 +3,7 @@ package org.terifan.raccoon;
 import org.terifan.raccoon.storage.BlockPointer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -211,6 +212,8 @@ public class BTreeTableImplementation extends TableImplementation
 	{
 		checkOpen();
 
+		mCommitHistory.clear();
+
 		try
 		{
 			if (mRoot.mModified)
@@ -227,6 +230,8 @@ public class BTreeTableImplementation extends TableImplementation
 				{
 					mBlockAccessor.getBlockDevice().commit();
 				}
+
+				mRoot.postCommit();
 
 				Log.i("table commit finished; root block is %s", mRoot.mBlockPointer);
 
@@ -257,6 +262,13 @@ public class BTreeTableImplementation extends TableImplementation
 		{
 			mWasEmptyInstance = false;
 		}
+	}
+
+	private HashSet<BlockPointer> mCommitHistory = new HashSet<>();
+
+	void hasCommitted(BTreeNode aNode)
+	{
+		if (!mCommitHistory.add(aNode.mBlockPointer)) System.out.println(aNode);
 	}
 
 
