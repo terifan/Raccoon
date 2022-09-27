@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import javax.swing.JFrame;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.ScanResult;
@@ -46,7 +47,7 @@ public class TestBTreeSmall
 //			mTreeFrame = new VerticalImageFrame();
 //			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-			for (;;)
+//			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -78,6 +79,7 @@ public class TestBTreeSmall
 		int UPDATE = 0;
 		int DELETE = 0;
 		COMMIT = 0;
+		int COMMIT_FREQ = 10;
 
 		try
 		{
@@ -101,7 +103,7 @@ public class TestBTreeSmall
 					db.save(new _KeyValue(key, value));
 					dump(db, key);
 
-					commit(db, 0);
+					commit(db, COMMIT_FREQ);
 				}
 
 				boolean all = true;
@@ -138,7 +140,7 @@ public class TestBTreeSmall
 					dump(db, key);
 					DELETE++;
 
-					commit(db, 0);
+					commit(db, COMMIT_FREQ);
 				}
 
 				commit(db, 100);
@@ -164,7 +166,7 @@ public class TestBTreeSmall
 					db.save(new _KeyValue(key, value));
 					dump(db, key);
 
-					commit(db, 0);
+					commit(db, COMMIT_FREQ);
 				}
 
 				commit(db, 100);
@@ -182,15 +184,17 @@ public class TestBTreeSmall
 					dump(db, key);
 					DELETE++;
 
-					commit(db, 0);
+					commit(db, COMMIT_FREQ);
 				}
+
+				commit(db, 100);
 			}
 		}
 		finally
 		{
 			mStopTime = System.currentTimeMillis();
 
-			System.out.printf("#" + Console.BLUE + "%d" + Console.RESET + " time=" + Console.BLUE + "%s" + Console.RESET + " duration=" + Console.BLUE + "%s" + Console.RESET + " seed=" + Console.BLUE + "%-10d" + Console.RESET + " operations=[" + Console.CYAN + "%d,%d,%d,%d" + Console.RESET + "]" + "%n", ++TESTROUND, Helper.formatTime(System.currentTimeMillis() - mInitTime), Helper.formatTime(mStopTime - mStartTime), seed, FETCH, INSERT, UPDATE, DELETE, COMMIT);
+			System.out.printf("#" + Console.BLUE + "%d" + Console.RESET + " time=" + Console.BLUE + "%s" + Console.RESET + " duration=" + Console.BLUE + "%s" + Console.RESET + " seed=" + Console.BLUE + "%-10d" + Console.RESET + " operations=[" + Console.CYAN + "%d,%d,%d,%d,%d" + Console.RESET + "]" + "%n", ++TESTROUND, Helper.formatTime(System.currentTimeMillis() - mInitTime), Helper.formatTime(mStopTime - mStartTime), seed, FETCH, INSERT, UPDATE, DELETE, COMMIT);
 		}
 	}
 
@@ -199,12 +203,12 @@ public class TestBTreeSmall
 	{
 		if (RND.nextInt(100) <= aProb)
 		{
-			String description = aDatabase.scan(new ScanResult()).getDescription();
-
 			if (mTreeFrame != null)
 			{
+				String description = aDatabase.scan(new ScanResult()).getDescription();
+
 				mTreeFrame.add(new TextSlice("" + TESTINDEX));
-				mTreeFrame.add(new TreeRenderer(description).render(new HorizontalLayout()));
+				mTreeFrame.add(new TreeRenderer(new HorizontalLayout(), description));
 			}
 
 //			if (aProb == 100)
@@ -217,7 +221,7 @@ public class TestBTreeSmall
 				COMMIT++;
 			}
 
-			if (false)
+			if (!false)
 			{
 				long alloc = aDatabase.getBlockDevice().getAllocatedSpace() / 10;
 
@@ -253,8 +257,8 @@ public class TestBTreeSmall
 	{
 		if (mLog && mTreeFrame != null)
 		{
-			mTreeFrame.add(new TextSlice(TESTINDEX + " " + aKey));
-//			mTreeFrame.add(new TreeRenderer(aDatabase.scan(new ScanResult()).getDescription()).render(new HorizontalLayout()));
+//			mTreeFrame.add(new TextSlice(TESTINDEX + " " + aKey));
+//			mTreeFrame.add(new TreeRenderer(new HorizontalLayout(), aDatabase.scan(new ScanResult()).getDescription()));
 		}
 
 		TESTINDEX++;

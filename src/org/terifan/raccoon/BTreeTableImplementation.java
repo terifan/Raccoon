@@ -463,7 +463,7 @@ public class BTreeTableImplementation extends TableImplementation
 			{
 				aScanResult.log.append("#f80");
 				System.out.println("fat index");
-				System.exit(0);
+//				System.exit(0);
 			}
 
 			first = true;
