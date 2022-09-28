@@ -127,7 +127,7 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 		for (;;)
 		{
-			if (node.mMap.put(aEntry, oldEntry))
+			if (node.mMap.put(aEntry, oldEntry) != ArrayMap.PutResult.OVERFLOW)
 			{
 				node.mChanged = true;
 				break;

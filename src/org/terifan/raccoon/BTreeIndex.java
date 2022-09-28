@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
 import java.util.Map.Entry;
-import org.terifan.raccoon.ArrayMap.InsertResult;
+import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Result;
@@ -26,9 +26,7 @@ public class BTreeIndex extends BTreeNode
 	boolean get(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry)
 	{
 		ArrayMapEntry entry = new ArrayMapEntry(aKey.array());
-
 		mMap.loadNearestIndexEntry(entry);
-
 		BTreeNode node = getNode(aImplementation, entry);
 
 		return node.get(aImplementation, aKey, aEntry);
@@ -36,7 +34,7 @@ public class BTreeIndex extends BTreeNode
 
 
 	@Override
-	void put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	PutResult put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
 		BTreeNode nearestNode;
 
@@ -69,8 +67,8 @@ public class BTreeIndex extends BTreeNode
 			}
 		}
 
-		nearestNode.put(aImplementation, aKey, aEntry, aResult);
 		mModified = true;
+		return nearestNode.put(aImplementation, aKey, aEntry, aResult);
 	}
 
 

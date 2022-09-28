@@ -59,6 +59,14 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
+	public enum PutResult
+	{
+		OVERFLOW,
+		PUT,
+		UPDATE
+	}
+
+
 	/**
 	 * Create a new ArrayMap with specified capacity.
 	 *
@@ -150,10 +158,32 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public enum InsertResult
+	/**
+	 * Add the entry to the map resizing the internal buffer if necessary.
+	 *
+	 * @param aEntry entry to add
+	 * @param oExistingEntry optional; output for an existing entry with the entry key
+	 * @return true if the entry was inserted without resizing the buffer and false if the buffer was resized
+	 */
+	public PutResult insert(ArrayMapEntry aEntry)
 	{
-		PUT,
-		RESIZED
+		PutResult result = put(aEntry, null);
+
+		if (result != PutResult.OVERFLOW)
+		{
+			return result;
+		}
+
+		resize(mCapacity + ENTRY_OVERHEAD + aEntry.getMarshalledLength());
+
+		result = put(aEntry, null);
+
+		if (result == PutResult.OVERFLOW)
+		{
+			throw new IllegalStateException("failed to put entity");
+		}
+
+		return result;
 	}
 
 
@@ -164,46 +194,25 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	 * @param oExistingEntry optional; output for an existing entry with the entry key
 	 * @return true if the entry was inserted without resizing the buffer and false if the buffer was resized
 	 */
-	public InsertResult insert(ArrayMapEntry aEntry)
+	public PutResult insert(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
-		if (put(aEntry, null))
+		PutResult result = put(aEntry, oExistingEntry);
+
+		if (result != PutResult.OVERFLOW)
 		{
-			return InsertResult.PUT;
+			return result;
 		}
 
 		resize(mCapacity + ENTRY_OVERHEAD + aEntry.getMarshalledLength());
 
-		if (!put(aEntry, null))
+		result = put(aEntry, oExistingEntry);
+
+		if (result == PutResult.OVERFLOW)
 		{
 			throw new IllegalStateException("failed to put entity");
 		}
 
-		return InsertResult.RESIZED;
-	}
-
-
-	/**
-	 * Add the entry to the map resizing the internal buffer if necessary.
-	 *
-	 * @param aEntry entry to add
-	 * @param oExistingEntry optional; output for an existing entry with the entry key
-	 * @return true if the entry was inserted without resizing the buffer and false if the buffer was resized
-	 */
-	public InsertResult insert(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
-	{
-		if (put(aEntry, oExistingEntry))
-		{
-			return InsertResult.PUT;
-		}
-
-		resize(mCapacity + ENTRY_OVERHEAD + aEntry.getMarshalledLength());
-
-		if (!put(aEntry, oExistingEntry))
-		{
-			throw new IllegalStateException("failed to put entity");
-		}
-
-		return InsertResult.RESIZED;
+		return result;
 	}
 
 
@@ -214,7 +223,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	 * @param oExistingEntry optional; output for an existing entry with the entry key
 	 * @return true if the operation was successful and entry inserted into the map
 	 */
-	public boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
+	public PutResult put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
 		byte[] key = aEntry.getKey();
 		int valueLength = aEntry.getMarshalledValueLength();
@@ -250,12 +259,12 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 				assert integrityCheck() == null : integrityCheck();
 
-				return true;
+				return PutResult.UPDATE;
 			}
 
 			if (valueLength - oldValueLength > getFreeSpace())
 			{
-				return false;
+				return PutResult.OVERFLOW;
 			}
 
 			removeImpl(index, oExistingEntry);
@@ -264,7 +273,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		}
 		else if (getFreeSpace() < ENTRY_HEADER_SIZE + keyLength + valueLength + ENTRY_POINTER_SIZE)
 		{
-			return false;
+			return PutResult.OVERFLOW;
 		}
 		else
 		{
@@ -273,7 +282,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 		if (++mEntryCount > MAX_ENTRY_COUNT)
 		{
-			return false;
+			return PutResult.OVERFLOW;
 		}
 
 		int modCount = ++mModCount;
@@ -297,7 +306,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		assert integrityCheck() == null : integrityCheck();
 		assert mModCount == modCount : mModCount + " == " + modCount;
 
-		return true;
+		return PutResult.PUT;
 	}
 
 

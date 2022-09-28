@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.ArrayMap.InsertResult;
+import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.util.Result;
 import static org.terifan.raccoon.BTreeTableImplementation.INDEX_SIZE;
 import static org.terifan.raccoon.BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER;
@@ -22,10 +22,10 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	void put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	PutResult put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
-		mMap.insert(aEntry, aResult);
 		mModified = true;
+		return mMap.insert(aEntry, aResult);
 	}
 
 

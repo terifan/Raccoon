@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.ArrayMap.InsertResult;
+import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Result;
 
@@ -35,7 +35,7 @@ abstract class BTreeNode
 	abstract boolean get(BTreeTableImplementation mImplementation, MarshalledKey aKey, ArrayMapEntry oEntry);
 
 
-	abstract void put(BTreeTableImplementation mImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
+	abstract PutResult put(BTreeTableImplementation mImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
 
 
 	abstract RemoveResult remove(BTreeTableImplementation mImplementation, MarshalledKey aKey, Result<ArrayMapEntry> oOldEntry);
