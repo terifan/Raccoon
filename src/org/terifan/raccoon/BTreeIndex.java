@@ -36,38 +36,41 @@ public class BTreeIndex extends BTreeNode
 
 
 	@Override
-	InsertResult put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	void put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
-		mModified = true;
+		BTreeNode nearestNode;
 
-		ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey.array());
-
-		mMap.loadNearestIndexEntry(nearestEntry);
-
-		BTreeNode nearestNode = getNode(aImplementation, nearestEntry);
-
-		if (nearestNode.put(aImplementation, aKey, aEntry, aResult) == InsertResult.PUT)
+		synchronized (this)
 		{
-			return InsertResult.PUT;
+			ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey.array());
+			mMap.loadNearestIndexEntry(nearestEntry);
+			nearestNode = getNode(aImplementation, nearestEntry);
+
+			if (nearestNode.mMap.getFreeSpace() < (mLevel == 1 ? aEntry.getMarshalledLength() : aEntry.getKey().length + BlockPointer.SIZE))
+			{
+				MarshalledKey leftKey = new MarshalledKey(nearestEntry.getKey());
+
+				mChildNodes.remove(leftKey);
+				mMap.remove(leftKey.array(), null);
+
+				SplitResult split = nearestNode.split(aImplementation);
+
+				MarshalledKey rightKey = split.rightKey();
+
+				mChildNodes.put(leftKey, split.left());
+				mChildNodes.put(rightKey, split.right());
+
+				mMap.insert(new ArrayMapEntry(leftKey.array(), BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER));
+				mMap.insert(new ArrayMapEntry(rightKey.array(), BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER));
+
+				nearestEntry = new ArrayMapEntry(aKey.array());
+				mMap.loadNearestIndexEntry(nearestEntry);
+				nearestNode = getNode(aImplementation, nearestEntry);
+			}
 		}
 
-		MarshalledKey leftKey = new MarshalledKey(nearestEntry.getKey());
-
-		mChildNodes.remove(leftKey);
-		mMap.remove(leftKey.array(), null);
-
-		SplitResult split = nearestNode.split(aImplementation);
-
-		MarshalledKey rightKey = split.rightKey();
-
-		mChildNodes.put(leftKey, split.left());
-		mChildNodes.put(rightKey, split.right());
-
-		boolean resized = false;
-		resized |= mMap.insert(new ArrayMapEntry(leftKey.array(), BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER)) == InsertResult.RESIZED;
-		resized |= mMap.insert(new ArrayMapEntry(rightKey.array(), BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER)) == InsertResult.RESIZED;
-
-		return resized ? InsertResult.RESIZED : InsertResult.PUT;
+		nearestNode.put(aImplementation, aKey, aEntry, aResult);
+		mModified = true;
 	}
 
 

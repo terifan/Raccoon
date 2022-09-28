@@ -47,7 +47,7 @@ public class TestBTreeSmall
 //			mTreeFrame = new VerticalImageFrame();
 //			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-//			for (;;)
+			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -67,7 +67,7 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-//		int seed = 1427423377;
+//		int seed = 1106717180;
 		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
@@ -203,13 +203,12 @@ public class TestBTreeSmall
 	{
 		if (RND.nextInt(100) <= aProb)
 		{
-			if (mTreeFrame != null)
-			{
-				String description = aDatabase.scan(new ScanResult()).getDescription();
-
-				mTreeFrame.add(new TextSlice("" + TESTINDEX));
-				mTreeFrame.add(new TreeRenderer(new HorizontalLayout(), description));
-			}
+//			if (mTreeFrame != null)
+//			{
+//				String description = aDatabase.scan(new ScanResult()).getDescription();
+//				mTreeFrame.add(new TextSlice("" + TESTINDEX));
+//				mTreeFrame.add(new TreeRenderer(new HorizontalLayout(), description));
+//			}
 
 //			if (aProb == 100)
 			{
@@ -221,7 +220,7 @@ public class TestBTreeSmall
 				COMMIT++;
 			}
 
-			if (!false)
+			if (false)
 			{
 				long alloc = aDatabase.getBlockDevice().getAllocatedSpace() / 10;
 
@@ -257,8 +256,8 @@ public class TestBTreeSmall
 	{
 		if (mLog && mTreeFrame != null)
 		{
-//			mTreeFrame.add(new TextSlice(TESTINDEX + " " + aKey));
-//			mTreeFrame.add(new TreeRenderer(new HorizontalLayout(), aDatabase.scan(new ScanResult()).getDescription()));
+			mTreeFrame.add(new TextSlice(TESTINDEX + " " + aKey));
+			mTreeFrame.add(new TreeRenderer(new HorizontalLayout(), aDatabase.scan(new ScanResult()).getDescription()));
 		}
 
 		TESTINDEX++;

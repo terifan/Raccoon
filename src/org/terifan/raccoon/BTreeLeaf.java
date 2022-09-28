@@ -22,11 +22,10 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	InsertResult put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	void put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
+		mMap.insert(aEntry, aResult);
 		mModified = true;
-
-		return mMap.insert(aEntry, aResult);
 	}
 
 

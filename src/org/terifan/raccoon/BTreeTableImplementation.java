@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import org.terifan.raccoon.ArrayMap.InsertResult;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
@@ -105,6 +106,7 @@ public class BTreeTableImplementation extends TableImplementation
 		return mRoot.get(this, new MarshalledKey(aEntry.getKey()), aEntry);
 	}
 
+	ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
 	@Override
 	public ArrayMapEntry put(ArrayMapEntry aEntry)
@@ -128,17 +130,24 @@ public class BTreeTableImplementation extends TableImplementation
 
 		Result<ArrayMapEntry> result = new Result<>();
 
-		if (mRoot.put(this, new MarshalledKey(aEntry.getKey()), aEntry, result) == InsertResult.RESIZED)
+//		lock.writeLock().lock();
+		synchronized (this)
 		{
-			if (mRoot instanceof BTreeLeaf)
+			if (mRoot.mMap.getFreeSpace() < (mRoot.mLevel == 0 ? aEntry.getMarshalledLength() : aEntry.getKey().length + BlockPointer.SIZE))
 			{
-				mRoot = ((BTreeLeaf)mRoot).upgrade(this);
-			}
-			else
-			{
-				mRoot = ((BTreeIndex)mRoot).grow(this);
+				if (mRoot instanceof BTreeLeaf)
+				{
+					mRoot = ((BTreeLeaf)mRoot).upgrade(this);
+				}
+				else
+				{
+					mRoot = ((BTreeIndex)mRoot).grow(this);
+				}
 			}
 		}
+//		lock.writeLock().unlock();
+
+		mRoot.put(this, new MarshalledKey(aEntry.getKey()), aEntry, result);
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
@@ -511,7 +520,7 @@ public class BTreeTableImplementation extends TableImplementation
 			{
 				aScanResult.log.append("#f80");
 				System.out.println("fat leaf");
-				System.exit(0);
+//				System.exit(0);
 			}
 		}
 	}
