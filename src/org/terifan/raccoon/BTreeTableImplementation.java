@@ -89,7 +89,6 @@ public class BTreeTableImplementation extends TableImplementation
 		mRoot = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(bp.getBlockLevel()) : new BTreeLeaf();
 		mRoot.mBlockPointer = bp;
 		mRoot.mMap = new ArrayMap(readBlock(bp));
-		mRoot.mNodeId = nextNodeIndex();
 	}
 
 
@@ -132,7 +131,7 @@ public class BTreeTableImplementation extends TableImplementation
 //		lock.writeLock().lock();
 		synchronized (this)
 		{
-			if (mRoot.mMap.getFreeSpace() < (mRoot.mLevel == 0 ? aEntry.getMarshalledLength() : aEntry.getKey().length + BlockPointer.SIZE))
+			if (mRoot.mLevel == 0 ? mRoot.mMap.getFreeSpace() < aEntry.getMarshalledLength() : mRoot.mMap.getUsedSpace() > BTreeTableImplementation.INDEX_SIZE)
 			{
 				if (mRoot instanceof BTreeLeaf)
 				{
@@ -445,7 +444,7 @@ public class BTreeTableImplementation extends TableImplementation
 			BTreeIndex indexNode = (BTreeIndex)aNode;
 
 			int fillRatio = indexNode.mMap.getUsedSpace() * 100 / INDEX_SIZE;
-			aScanResult.log.append("{" + indexNode.mNodeId + ": " + fillRatio + "%" + "}");
+			aScanResult.log.append("{" + fillRatio + "%" + "}");
 
 			boolean first = true;
 			aScanResult.log.append("'");
@@ -461,17 +460,18 @@ public class BTreeTableImplementation extends TableImplementation
 				aScanResult.log.append(s.isEmpty() ? "*" : s);
 			}
 			aScanResult.log.append("'");
-			aScanResult.log.append(indexNode.mModified ? "#f00#f00#fff" : "#0f0");
+
 			if (indexNode.mMap.size() == 1)
 			{
-				aScanResult.log.append("#f00");
-				System.out.println("single index");
+				aScanResult.log.append("#000#ff0#000");
 			}
 			else if (fillRatio > 100)
 			{
-				aScanResult.log.append("#f80");
-				System.out.println("fat index");
-//				System.exit(0);
+				aScanResult.log.append(indexNode.mModified ? "#a00#a00#fff" : "#666#666#fff");
+			}
+			else
+			{
+				aScanResult.log.append(indexNode.mModified ? "#f00#f00#fff" : "#888#fff#000");
 			}
 
 			first = true;
@@ -501,7 +501,7 @@ public class BTreeTableImplementation extends TableImplementation
 			BTreeLeaf node = (BTreeLeaf)aNode;
 			int fillRatio = node.mMap.getUsedSpace() * 100 / LEAF_SIZE;
 
-			aScanResult.log.append("{" + node.mNodeId + ": " + fillRatio + "%" + "}");
+			aScanResult.log.append("{" + fillRatio + "%" + "}");
 			aScanResult.log.append("[");
 			boolean first = true;
 			for (ArrayMapEntry entry : node.mMap)
@@ -514,12 +514,13 @@ public class BTreeTableImplementation extends TableImplementation
 				aScanResult.log.append("'" + new String(entry.getKey()).replaceAll("[^\\w]*", "").replace("_", "") + "'");
 			}
 			aScanResult.log.append("]");
-			aScanResult.log.append(node.mModified ? "#f00#f00#fff" : "#0f0");
 			if (fillRatio > 100)
 			{
-				aScanResult.log.append("#f80");
-				System.out.println("fat leaf");
-//				System.exit(0);
+				aScanResult.log.append(node.mModified ? "#a00#a00#fff" : "#666#666#fff");
+			}
+			else
+			{
+				aScanResult.log.append(node.mModified ? "#f00#f00#fff" : "#888#fff#000");
 			}
 		}
 	}
@@ -555,7 +556,6 @@ public class BTreeTableImplementation extends TableImplementation
 	{
 		mRoot = new BTreeLeaf();
 		mRoot.mMap = new ArrayMap(LEAF_SIZE);
-		mRoot.mNodeId = nextNodeIndex();
 	}
 
 

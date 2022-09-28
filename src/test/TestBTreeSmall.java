@@ -44,10 +44,10 @@ public class TestBTreeSmall
 	{
 		try
 		{
-//			mTreeFrame = new VerticalImageFrame();
-//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+			mTreeFrame = new VerticalImageFrame();
+			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-			for (;;)
+//			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -67,7 +67,7 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-//		int seed = 1106717180;
+//		int seed = 1899703225;
 		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
@@ -86,10 +86,10 @@ public class TestBTreeSmall
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 //			ArrayList<String> list = WordLists.list78;
-//			ArrayList<String> list = WordLists.list130;
+			ArrayList<String> list = WordLists.list130;
 //			ArrayList<String> list = WordLists.list502;
 //			ArrayList<String> list = WordLists.list1007;
-			ArrayList<String> list = WordLists.list4342;
+//			ArrayList<String> list = WordLists.list4342;
 
 			list = new ArrayList<>(list);
 			Collections.shuffle(list, RND);
@@ -99,8 +99,8 @@ public class TestBTreeSmall
 				for (String key : list)
 				{
 					String value = Helper.createString(RND);
-					if (mEntries.put(key, value) != null) UPDATE++; else INSERT++;
-					db.save(new _KeyValue(key, value));
+					mEntries.put(key, value);
+					if (db.save(new _KeyValue(key, value))) UPDATE++; else INSERT++;
 					dump(db, key);
 
 					commit(db, COMMIT_FREQ);
@@ -162,8 +162,8 @@ public class TestBTreeSmall
 				{
 					String key = list.get(i);
 					String value = Helper.createString(RND);
-					if (mEntries.put(key, value) != null) UPDATE++; else INSERT++;
-					db.save(new _KeyValue(key, value));
+					mEntries.put(key, value);
+					if (db.save(new _KeyValue(key, value))) UPDATE++; else INSERT++;
 					dump(db, key);
 
 					commit(db, COMMIT_FREQ);
@@ -218,6 +218,9 @@ public class TestBTreeSmall
 				}
 				aDatabase.commit();
 				COMMIT++;
+
+//				ScanResult sr = aDatabase.scan(new ScanResult());
+//				System.out.println(sr);
 			}
 
 			if (false)

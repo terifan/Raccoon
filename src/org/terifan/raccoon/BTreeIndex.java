@@ -44,7 +44,7 @@ public class BTreeIndex extends BTreeNode
 			mMap.loadNearestIndexEntry(nearestEntry);
 			nearestNode = getNode(aImplementation, nearestEntry);
 
-			if (nearestNode.mMap.getFreeSpace() < (mLevel == 1 ? aEntry.getMarshalledLength() : aEntry.getKey().length + BlockPointer.SIZE))
+			if (mLevel == 1 ? nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > BTreeTableImplementation.INDEX_SIZE)
 			{
 				MarshalledKey leftKey = new MarshalledKey(nearestEntry.getKey());
 
@@ -228,13 +228,12 @@ public class BTreeIndex extends BTreeNode
 		ArrayMap[] maps = mMap.split(INDEX_SIZE);
 
 		BTreeIndex left = new BTreeIndex(mLevel);
-		BTreeIndex right = new BTreeIndex(mLevel);
 		left.mMap = maps[0];
-		right.mMap = maps[1];
 		left.mModified = true;
+
+		BTreeIndex right = new BTreeIndex(mLevel);
+		right.mMap = maps[1];
 		right.mModified = true;
-		left.mNodeId = aImplementation.nextNodeIndex();
-		right.mNodeId = aImplementation.nextNodeIndex();
 
 		byte[] midKeyBytes = maps[1].getKey(0);
 		MarshalledKey midKey = new MarshalledKey(midKeyBytes);
@@ -266,7 +265,7 @@ public class BTreeIndex extends BTreeNode
 		right.mMap.insert(firstRight);
 		right.mChildNodes.put(keyLeft, firstChild);
 
-		mChildNodes.clear();
+//		mChildNodes.clear();
 
 		return new SplitResult(left, right, keyLeft, keyRight);
 	}
@@ -284,8 +283,6 @@ public class BTreeIndex extends BTreeNode
 		right.mMap = maps[1];
 		left.mModified = true;
 		right.mModified = true;
-		left.mNodeId = aImplementation.nextNodeIndex();
-		right.mNodeId = aImplementation.nextNodeIndex();
 
 		byte[] midKeyBytes = right.mMap.getKey(0);
 
@@ -319,7 +316,6 @@ public class BTreeIndex extends BTreeNode
 		right.mChildNodes.put(keyLeft, firstChild);
 
 		BTreeIndex index = new BTreeIndex(mLevel + 1);
-		index.mNodeId = aImplementation.nextNodeIndex();
 		index.mModified = true;
 		index.mMap = new ArrayMap(INDEX_SIZE);
 		index.mMap.insert(new ArrayMapEntry(keyLeft.array(), BLOCKPOINTER_PLACEHOLDER));
@@ -339,7 +335,6 @@ public class BTreeIndex extends BTreeNode
 	BTreeIndex shrink(BTreeTableImplementation aImplementation)
 	{
 		BTreeIndex index = new BTreeIndex(mLevel - 1);
-		index.mNodeId = aImplementation.nextNodeIndex();
 		index.mModified = true;
 		index.mMap = new ArrayMap(INDEX_SIZE);
 
@@ -585,7 +580,6 @@ public class BTreeIndex extends BTreeNode
 			childNode = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mLevel - 1) : new BTreeLeaf();
 			childNode.mBlockPointer = bp;
 			childNode.mMap = new ArrayMap(aImplementation.readBlock(bp));
-			childNode.mNodeId = aImplementation.nextNodeIndex();
 
 			mChildNodes.put(key, childNode);
 		}

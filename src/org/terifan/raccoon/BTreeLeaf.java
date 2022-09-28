@@ -56,8 +56,6 @@ public class BTreeLeaf extends BTreeNode
 		b.mMap = maps[1];
 		a.mModified = true;
 		b.mModified = true;
-		a.mNodeId = aImplementation.nextNodeIndex();
-		b.mNodeId = aImplementation.nextNodeIndex();
 
 		return new SplitResult(a, b, new MarshalledKey(a.mMap.getFirst().getKey()), new MarshalledKey(b.mMap.getFirst().getKey()));
 	}
@@ -75,8 +73,6 @@ public class BTreeLeaf extends BTreeNode
 		b.mMap = maps[1];
 		a.mModified = true;
 		b.mModified = true;
-		a.mNodeId = aImplementation.nextNodeIndex();
-		b.mNodeId = aImplementation.nextNodeIndex();
 
 		byte[] key = b.mMap.getKey(0);
 
@@ -84,7 +80,6 @@ public class BTreeLeaf extends BTreeNode
 		MarshalledKey keyB = new MarshalledKey(key);
 
 		BTreeIndex newIndex = new BTreeIndex(1);
-		newIndex.mNodeId = aImplementation.nextNodeIndex();
 		newIndex.mModified = true;
 		newIndex.mMap = new ArrayMap(INDEX_SIZE);
 		newIndex.mMap.put(new ArrayMapEntry(keyA.array(), BLOCKPOINTER_PLACEHOLDER), null);

@@ -13,8 +13,6 @@ abstract class BTreeNode
 	ArrayMap mMap;
 	boolean mModified;
 
-	long mNodeId;
-
 
 	static record SplitResult(BTreeNode left, BTreeNode right, MarshalledKey leftKey, MarshalledKey rightKey) {}
 
