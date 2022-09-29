@@ -67,8 +67,8 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-//		int seed = 1899703225;
-		int seed = Math.abs(new Random().nextInt());
+		int seed = 1572969700;
+//		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
 		mLog = true;
@@ -85,8 +85,8 @@ public class TestBTreeSmall
 		{
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-//			ArrayList<String> list = WordLists.list78;
-			ArrayList<String> list = WordLists.list130;
+			ArrayList<String> list = WordLists.list78;
+//			ArrayList<String> list = WordLists.list130;
 //			ArrayList<String> list = WordLists.list502;
 //			ArrayList<String> list = WordLists.list1007;
 //			ArrayList<String> list = WordLists.list4342;
@@ -101,7 +101,7 @@ public class TestBTreeSmall
 					String value = Helper.createString(RND);
 					mEntries.put(key, value);
 					if (db.save(new _KeyValue(key, value))) UPDATE++; else INSERT++;
-					dump(db, key);
+//					dump(db, key);
 
 					commit(db, COMMIT_FREQ);
 				}
@@ -164,7 +164,7 @@ public class TestBTreeSmall
 					String value = Helper.createString(RND);
 					mEntries.put(key, value);
 					if (db.save(new _KeyValue(key, value))) UPDATE++; else INSERT++;
-					dump(db, key);
+//					dump(db, key);
 
 					commit(db, COMMIT_FREQ);
 				}
@@ -180,8 +180,11 @@ public class TestBTreeSmall
 				for (String key : keys)
 				{
 					mEntries.remove(key);
+					try{
 					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
+					}finally{
 					dump(db, key);
+					}
 					DELETE++;
 
 					commit(db, COMMIT_FREQ);
