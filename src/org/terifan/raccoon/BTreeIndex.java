@@ -26,7 +26,9 @@ public class BTreeIndex extends BTreeNode
 	boolean get(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry)
 	{
 		ArrayMapEntry entry = new ArrayMapEntry(aKey.array());
+
 		mMap.loadNearestIndexEntry(entry);
+
 		BTreeNode node = getNode(aImplementation, entry);
 
 		return node.get(aImplementation, aKey, aEntry);
@@ -82,7 +84,6 @@ public class BTreeIndex extends BTreeNode
 		BTreeNode curntChld = getNode(aImplementation, index);
 
 
-
 		BTreeNode leftChild = index == 0 ? null : getNode(aImplementation, index - 1);
 		BTreeNode rghtChild = index + 1 == mMap.size() ? null : getNode(aImplementation, index + 1);
 
@@ -93,16 +94,16 @@ public class BTreeIndex extends BTreeNode
 		{
 			index = mergeNodes(aImplementation, index, curntChld, leftChild, rghtChild, keyLimit, sizeLimit);
 
-			ArrayMapEntry nearestEntry = mMap.get(index, new ArrayMapEntry());
-			MarshalledKey nearestKey = new MarshalledKey(nearestEntry.getKey());
-
 			if (index > 0)
 			{
+				ArrayMapEntry nearestEntry = mMap.get(index, new ArrayMapEntry());
+				MarshalledKey nearestKey = new MarshalledKey(nearestEntry.getKey());
+
 				byte[] firstKeyBytes = findLowestLeafKey(aImplementation, curntChld);
 
 				MarshalledKey firstKey = new MarshalledKey(firstKeyBytes);
-
 				ArrayMapEntry firstEntry = new ArrayMapEntry(firstKeyBytes);
+
 				get(aImplementation, firstKey, firstEntry);
 
 				nearestEntry.setKey(firstEntry.getKey());
@@ -126,10 +127,12 @@ public class BTreeIndex extends BTreeNode
 			return result;
 		}
 
+
+
 //		ArrayMapEntry nearestEntry = mMap.get(index, new ArrayMapEntry());
 //		MarshalledKey nearestKey = new MarshalledKey(nearestEntry.getKey());
 //
-//		if (curntChld.mMap.size() == 0)
+//		if (curntChld.mMap.isEmpty())
 //		{
 //			mMap.remove(index, null);
 //			mChildNodes.remove(nearestKey);
@@ -143,7 +146,7 @@ public class BTreeIndex extends BTreeNode
 //
 //			return RemoveResult.REMOVED;
 //		}
-
+//
 //		BTreeNode leftChild = index == 0 ? null : getNode(aImplementation, index - 1);
 //		BTreeNode rghtChild = index + 1 == mMap.size() ? null : getNode(aImplementation, index + 1);
 //
@@ -157,8 +160,8 @@ public class BTreeIndex extends BTreeNode
 //			byte[] firstKeyBytes = findLowestLeafKey(aImplementation, curntChld);
 //
 //			MarshalledKey firstKey = new MarshalledKey(firstKeyBytes);
-//
 //			ArrayMapEntry firstEntry = new ArrayMapEntry(firstKeyBytes);
+//
 //			get(aImplementation, firstKey, firstEntry);
 //
 //			nearestEntry.setKey(firstEntry.getKey());
@@ -175,10 +178,9 @@ public class BTreeIndex extends BTreeNode
 //
 //		if (mLevel > 1 && curntChld.mMap.getUsedSpace() > sizeLimit)
 //		{
-//			MarshalledKey leftKey = new MarshalledKey(findLowestLeafKey(aImplementation, curntChld));
-//
 //			SplitResult split = curntChld.split(aImplementation);
 //
+//			MarshalledKey leftKey = new MarshalledKey(findLowestLeafKey(aImplementation, curntChld));
 //			MarshalledKey rightKey = split.rightKey();
 //
 //			mMap.remove(index, null);
@@ -191,9 +193,9 @@ public class BTreeIndex extends BTreeNode
 //
 //			clearFirstKey(this);
 //		}
-//
-//		assert assertValidCache() == null : assertValidCache();
-//		assert mMap.get(0, new ArrayMapEntry()).getKey().length == 0 : "First key expected to be empty: " + mMap.toString();
+
+		assert assertValidCache() == null : assertValidCache();
+		assert mMap.get(0, new ArrayMapEntry()).getKey().length == 0 : "First key expected to be empty: " + mMap.toString();
 
 		return result;
 	}
@@ -518,7 +520,7 @@ public class BTreeIndex extends BTreeNode
 			return findLowestLeafKey(aImplementation, node.getNode(aImplementation, 0));
 		}
 
-		assert aNode.mMap.size() > 0;
+		assert !aNode.mMap.isEmpty();
 
 		return aNode.mMap.getKey(0);
 	}
