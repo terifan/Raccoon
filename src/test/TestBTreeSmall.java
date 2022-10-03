@@ -67,7 +67,7 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-		int seed = 1572969700;
+		int seed = 388927596;
 //		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
@@ -85,8 +85,8 @@ public class TestBTreeSmall
 		{
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-			ArrayList<String> list = WordLists.list78;
-//			ArrayList<String> list = WordLists.list130;
+//			ArrayList<String> list = WordLists.list78;
+			ArrayList<String> list = WordLists.list130;
 //			ArrayList<String> list = WordLists.list502;
 //			ArrayList<String> list = WordLists.list1007;
 //			ArrayList<String> list = WordLists.list4342;

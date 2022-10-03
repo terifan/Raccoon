@@ -89,7 +89,7 @@ public class BTreeIndex extends BTreeNode
 		int keyLimit = mLevel == 1 ? 0 : 1;
 		int sizeLimit = mLevel == 1 ? BTreeTableImplementation.LEAF_SIZE : BTreeTableImplementation.INDEX_SIZE;
 
-		if (leftChild != null && (curntChld.mMap.size() + leftChild.mMap.size()) < BTreeTableImplementation.LEAF_SIZE || rghtChild != null && (curntChld.mMap.size() + rghtChild.mMap.size()) < BTreeTableImplementation.LEAF_SIZE)
+		if (leftChild != null && (curntChld.mMap.size() + leftChild.mMap.size()) < sizeLimit || rghtChild != null && (curntChld.mMap.size() + rghtChild.mMap.size()) < sizeLimit)
 		{
 			index = mergeNodes(aImplementation, index, curntChld, leftChild, rghtChild, keyLimit, sizeLimit);
 
