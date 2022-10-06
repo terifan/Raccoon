@@ -44,10 +44,10 @@ public class TestBTreeSmall
 	{
 		try
 		{
-//			mTreeFrame = new VerticalImageFrame();
-//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+			mTreeFrame = new VerticalImageFrame();
+			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-			for (;;)
+//			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -67,8 +67,8 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-//		int seed = 519553204;
-		int seed = Math.abs(new Random().nextInt());
+		int seed = 519553204;
+//		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
 		mLog = true;
@@ -85,8 +85,8 @@ public class TestBTreeSmall
 		{
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-//			ArrayList<String> list = WordLists.list78;
-			ArrayList<String> list = WordLists.list130;
+			ArrayList<String> list = WordLists.list78;
+//			ArrayList<String> list = WordLists.list130;
 //			ArrayList<String> list = WordLists.list502;
 //			ArrayList<String> list = WordLists.list1007;
 //			ArrayList<String> list = WordLists.list4342;
@@ -101,7 +101,7 @@ public class TestBTreeSmall
 					String value = Helper.createString(RND);
 					mEntries.put(key, value);
 					if (db.save(new _KeyValue(key, value))) UPDATE++; else INSERT++;
-//					dump(db, key);
+					dump(db, key);
 
 					commit(db, COMMIT_FREQ);
 				}
@@ -164,7 +164,7 @@ public class TestBTreeSmall
 					String value = Helper.createString(RND);
 					mEntries.put(key, value);
 					if (db.save(new _KeyValue(key, value))) UPDATE++; else INSERT++;
-//					dump(db, key);
+					dump(db, key);
 
 					commit(db, COMMIT_FREQ);
 				}

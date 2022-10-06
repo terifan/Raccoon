@@ -305,8 +305,6 @@ public class BTreeIndex extends BTreeNode
 		right.mMap.insert(firstRight);
 		right.mChildNodes.put(keyLeft, firstChild);
 
-//		mChildNodes.clear();
-
 		return new SplitResult(left, right, keyLeft, keyRight);
 	}
 
