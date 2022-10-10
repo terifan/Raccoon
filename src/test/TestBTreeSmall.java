@@ -41,24 +41,7 @@ public class TestBTreeSmall
 	private int COMMIT;
 
 
-	public static void main(String ... args)
-	{
-		try
-		{
-			URL url = new URL("https://fatlynx.surikat.net/ci_scanbio/Lynx/748843021337EA9FDBC93E48538A92AF.cache.html");
-			try (InputStream in = url.openStream())
-			{
-				for (int i; (i = in.read())!=-1;)
-				System.out.print((char)i);
-			}
-		}
-		catch (Throwable e)
-		{
-			e.printStackTrace(System.out);
-		}
-	}
-
-	public static void xmain(String... args)
+	public static void main(String... args)
 	{
 		try
 		{
