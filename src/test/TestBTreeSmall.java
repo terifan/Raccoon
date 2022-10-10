@@ -2,12 +2,13 @@ package test;
 
 import java.awt.Color;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
-import javax.swing.JFrame;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.ScanResult;
@@ -40,14 +41,31 @@ public class TestBTreeSmall
 	private int COMMIT;
 
 
-	public static void main(String... args)
+	public static void main(String ... args)
 	{
 		try
 		{
-			mTreeFrame = new VerticalImageFrame();
-			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+			URL url = new URL("https://fatlynx.surikat.net/ci_scanbio/Lynx/748843021337EA9FDBC93E48538A92AF.cache.html");
+			try (InputStream in = url.openStream())
+			{
+				for (int i; (i = in.read())!=-1;)
+				System.out.print((char)i);
+			}
+		}
+		catch (Throwable e)
+		{
+			e.printStackTrace(System.out);
+		}
+	}
 
-//			for (;;)
+	public static void xmain(String... args)
+	{
+		try
+		{
+//			mTreeFrame = new VerticalImageFrame();
+//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+
+			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -67,8 +85,8 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-		int seed = 519553204;
-//		int seed = Math.abs(new Random().nextInt());
+//		int seed = 519553204;
+		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
 		mLog = true;
@@ -79,17 +97,17 @@ public class TestBTreeSmall
 		int UPDATE = 0;
 		int DELETE = 0;
 		COMMIT = 0;
-		int COMMIT_FREQ = 10;
+		int COMMIT_FREQ = 1;
 
 		try
 		{
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-			ArrayList<String> list = WordLists.list78;
+//			ArrayList<String> list = WordLists.list78;
 //			ArrayList<String> list = WordLists.list130;
 //			ArrayList<String> list = WordLists.list502;
 //			ArrayList<String> list = WordLists.list1007;
-//			ArrayList<String> list = WordLists.list4342;
+			ArrayList<String> list = WordLists.list4342;
 
 			list = new ArrayList<>(list);
 			Collections.shuffle(list, RND);
