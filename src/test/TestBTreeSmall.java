@@ -2,13 +2,12 @@ package test;
 
 import java.awt.Color;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import javax.swing.JFrame;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.ScanResult;
@@ -45,10 +44,10 @@ public class TestBTreeSmall
 	{
 		try
 		{
-//			mTreeFrame = new VerticalImageFrame();
-//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+			mTreeFrame = new VerticalImageFrame();
+			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-			for (;;)
+//			for (;;)
 			{
 //				mTreeFrame = new VerticalImageFrame();
 
@@ -68,8 +67,8 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-//		int seed = 519553204;
-		int seed = Math.abs(new Random().nextInt());
+		int seed = 1630990893;
+//		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
 		mLog = true;
@@ -86,11 +85,11 @@ public class TestBTreeSmall
 		{
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-//			ArrayList<String> list = WordLists.list78;
+			ArrayList<String> list = WordLists.list78;
 //			ArrayList<String> list = WordLists.list130;
 //			ArrayList<String> list = WordLists.list502;
 //			ArrayList<String> list = WordLists.list1007;
-			ArrayList<String> list = WordLists.list4342;
+//			ArrayList<String> list = WordLists.list4342;
 
 			list = new ArrayList<>(list);
 			Collections.shuffle(list, RND);
@@ -102,18 +101,18 @@ public class TestBTreeSmall
 					String value = Helper.createString(RND);
 					mEntries.put(key, value);
 					if (db.save(new _KeyValue(key, value))) UPDATE++; else INSERT++;
-					dump(db, key);
+//					dump(db, key);
 
 					commit(db, COMMIT_FREQ);
 				}
 
-				boolean all = true;
-				for (String key : mEntries.keySet())
-				{
-					all &= db.get(new _KeyValue(key)).mValue.equals(mEntries.get(key));
-					FETCH++;
-				}
-				if (!all) throw new Exception("Not all keys found");
+//				boolean all = true;
+//				for (String key : mEntries.keySet())
+//				{
+//					all &= db.get(new _KeyValue(key)).mValue.equals(mEntries.get(key));
+//					FETCH++;
+//				}
+//				if (!all) throw new Exception("Not all keys found");
 
 				commit(db, 100);
 
@@ -123,6 +122,7 @@ public class TestBTreeSmall
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 			{
+				try{
 				boolean all = true;
 				for (String key : mEntries.keySet())
 				{
@@ -136,6 +136,7 @@ public class TestBTreeSmall
 				for (int i = list.size()/2; --i >= 0;)
 				{
 					String key = list.get(i);
+					System.out.println(key);
 					mEntries.remove(key);
 					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
 					dump(db, key);
@@ -143,8 +144,10 @@ public class TestBTreeSmall
 
 					commit(db, COMMIT_FREQ);
 				}
-
 				commit(db, 100);
+				}finally{
+					dump(db, "?");
+				}
 			}
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
@@ -165,7 +168,7 @@ public class TestBTreeSmall
 					String value = Helper.createString(RND);
 					mEntries.put(key, value);
 					if (db.save(new _KeyValue(key, value))) UPDATE++; else INSERT++;
-					dump(db, key);
+//					dump(db, key);
 
 					commit(db, COMMIT_FREQ);
 				}
