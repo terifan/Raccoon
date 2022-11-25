@@ -67,8 +67,8 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-		int seed = 1838291525;
-//		int seed = Math.abs(new Random().nextInt());
+//		int seed = 1838291525;
+		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
 		mLog = true;
@@ -101,7 +101,7 @@ public class TestBTreeSmall
 					String value = Helper.createString(RND);
 					mEntries.put(key, value);
 					if (db.save(new _KeyValue(key, value))) UPDATE++; else INSERT++;
-//					dump(db, key);
+//					dump(db, "save", key);
 
 					commit(db, COMMIT_FREQ);
 				}
@@ -115,6 +115,7 @@ public class TestBTreeSmall
 //				if (!all) throw new Exception("Not all keys found");
 
 				commit(db, 100);
+				dump(db, "commit", "");
 
 //				ScanResult result = db.scan(new ScanResult());
 //				System.out.println(result);
@@ -139,14 +140,16 @@ public class TestBTreeSmall
 //					System.out.println(key);
 					mEntries.remove(key);
 					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
-					dump(db, key);
+					dump(db, "remove", key);
 					DELETE++;
 
 					commit(db, COMMIT_FREQ);
 				}
 				commit(db, 100);
-				}finally{
-					dump(db, "?");
+				dump(db, "commit", "");
+				}catch(Exception e){
+					dump(db, "remove exception", "?");
+					throw e;
 				}
 			}
 
@@ -168,12 +171,13 @@ public class TestBTreeSmall
 					String value = Helper.createString(RND);
 					mEntries.put(key, value);
 					if (db.save(new _KeyValue(key, value))) UPDATE++; else INSERT++;
-//					dump(db, key);
+//					dump(db, "save", key);
 
 					commit(db, COMMIT_FREQ);
 				}
 
 				commit(db, 100);
+				dump(db, "commit", "");
 			}
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
@@ -187,11 +191,12 @@ public class TestBTreeSmall
 					try{
 					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
 					}finally{
-					dump(db, key);
+					dump(db, "remove", key);
 					}
 					DELETE++;
 
 					commit(db, COMMIT_FREQ);
+//					if(TESTINDEX>=54)return;
 				}
 
 				commit(db, 100);
@@ -262,11 +267,11 @@ public class TestBTreeSmall
 	}
 
 
-	private void dump(Database aDatabase, String aKey) throws IOException
+	private void dump(Database aDatabase, String aOperation, String aKey) throws IOException
 	{
 		if (mLog && mTreeFrame != null)
 		{
-			mTreeFrame.add(new TextSlice(TESTINDEX + " " + aKey));
+			mTreeFrame.add(new TextSlice("#" + TESTINDEX + " " + aOperation + ": " + aKey));
 			mTreeFrame.add(new TreeRenderer(new HorizontalLayout(), aDatabase.scan(new ScanResult()).getDescription()));
 		}
 

@@ -84,10 +84,6 @@ public class BTreeIndex extends BTreeNode
 		BTreeNode curntChld = getNode(aImplementation, index);
 
 
-
-
-
-
 		BTreeNode leftChild = index == 0 ? null : getNode(aImplementation, index - 1);
 		BTreeNode rghtChild = index + 1 == mMap.size() ? null : getNode(aImplementation, index + 1);
 
@@ -121,58 +117,13 @@ public class BTreeIndex extends BTreeNode
 					mChildNodes.put(firstKey, childNode);
 				}
 			}
-//			else if (curntChld.mMap.size() == 0)
-//			{
-//				mMap.remove(new byte[0], null);
-//				mChildNodes.remove(new MarshalledKey(new byte[0]));
-//
-//				ArrayMapEntry firstEntry = mMap.get(0, new ArrayMapEntry());
-//
-//				BTreeNode firstNode = getNode(aImplementation, firstEntry);
-//
-//				mMap.remove(firstEntry.getKey(), null);
-//				mChildNodes.remove(new MarshalledKey(firstEntry.getKey()));
-//
-//				firstEntry.setKey(new byte[0]);
-//
-//				mMap.insert(firstEntry);
-//				mChildNodes.put(new MarshalledKey(firstEntry.getKey()), firstNode);
-//
-//				aImplementation.freeBlock(curntChld.mBlockPointer);
-//
-//
-//				index = mMap.nearestIndex(aKey.array());
-//				curntChld = getNode(aImplementation, index);
-//			}
 		}
 
 		RemoveResult result = curntChld.remove(aImplementation, aKey, aOldEntry);
 
-		if (mLevel == 1 && curntChld.mMap.size() == 0 && mMap.size() > 1)
+		if (curntChld.mLevel == 0 && curntChld.mMap.size() == 0)
 		{
-			if (index == 0)
-			{
-				mMap.remove(new byte[0], null);
-				mChildNodes.remove(new MarshalledKey(new byte[0]));
-
-				ArrayMapEntry firstEntry = mMap.get(0, new ArrayMapEntry());
-
-				BTreeNode firstNode = getNode(aImplementation, firstEntry);
-
-				mMap.remove(firstEntry.getKey(), null);
-				mChildNodes.remove(new MarshalledKey(firstEntry.getKey()));
-
-				firstEntry.setKey(new byte[0]);
-
-				mMap.insert(firstEntry);
-				mChildNodes.put(new MarshalledKey(firstEntry.getKey()), firstNode);
-
-				mModified = true;
-
-				aImplementation.freeBlock(curntChld.mBlockPointer);
-
-				throw new IllegalStateException();
-			}
+			removeEmptyLeafNode(aImplementation, curntChld, index);
 		}
 
 		if (result == RemoveResult.NO_MATCH)
@@ -523,6 +474,36 @@ public class BTreeIndex extends BTreeNode
 		aTo.mModified = true;
 	}
 
+
+	private void removeEmptyLeafNode(BTreeTableImplementation aImplementation, BTreeNode aNode, int aIndex)
+	{
+		if (aIndex == 0)
+		{
+			mMap.remove(new byte[0], null);
+			mChildNodes.remove(new MarshalledKey(new byte[0]));
+
+			ArrayMapEntry firstEntry = mMap.get(0, new ArrayMapEntry());
+
+			BTreeNode firstNode = getNode(aImplementation, firstEntry);
+
+			mMap.remove(firstEntry.getKey(), null);
+			mChildNodes.remove(new MarshalledKey(firstEntry.getKey()));
+
+			firstEntry.setKey(new byte[0]);
+
+			mMap.insert(firstEntry);
+			mChildNodes.put(new MarshalledKey(firstEntry.getKey()), firstNode);
+		}
+		else
+		{
+			ArrayMapEntry targetEntry = mMap.get(aIndex, new ArrayMapEntry());
+
+			mMap.remove(targetEntry.getKey(), null);
+			mChildNodes.remove(new MarshalledKey(targetEntry.getKey()));
+		}
+
+		aImplementation.freeBlock(aNode.mBlockPointer);
+	}
 
 	private void fixFirstKey(BTreeTableImplementation aImplementation, BTreeIndex aNode)
 	{
