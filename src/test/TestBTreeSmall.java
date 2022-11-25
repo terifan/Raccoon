@@ -67,7 +67,7 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-		int seed = 1630990893;
+		int seed = 1838291525;
 //		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
@@ -136,7 +136,7 @@ public class TestBTreeSmall
 				for (int i = list.size()/2; --i >= 0;)
 				{
 					String key = list.get(i);
-					System.out.println(key);
+//					System.out.println(key);
 					mEntries.remove(key);
 					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
 					dump(db, key);
