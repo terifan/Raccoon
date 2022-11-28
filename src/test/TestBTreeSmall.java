@@ -128,7 +128,7 @@ public class TestBTreeSmall
 //				System.out.println(result);
 			}
 
-for (int loop = 0; loop < 2; loop++)
+for (int loop = 0; loop < 100; loop++)
 {
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN); MonitorInstance mi = mDatabaseMonitorWindow.attach(db))
 			{
@@ -149,7 +149,7 @@ for (int loop = 0; loop < 2; loop++)
 				{
 					String key = list.get(i);
 //					System.out.println(key);
-					mEntries.remove(key);
+					if(mEntries.remove(key)==null) continue;
 					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
 					dump(db, "remove", key);
 					DELETE++;
