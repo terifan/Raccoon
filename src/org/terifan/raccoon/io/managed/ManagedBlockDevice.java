@@ -509,4 +509,11 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		createBlockDevice();
 	}
+
+
+	public int roundUp(int aSize)
+	{
+		int s = mBlockDevice.getBlockSize();
+		return aSize + ((s - (aSize % s)) % s);
+	}
 }

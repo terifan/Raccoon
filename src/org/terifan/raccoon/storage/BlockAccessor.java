@@ -196,7 +196,7 @@ else
 	}
 
 
-	private int roundUp(int aSize)
+	public int roundUp(int aSize)
 	{
 		int s = mBlockDevice.getBlockSize();
 		return aSize + ((s - (aSize % s)) % s);

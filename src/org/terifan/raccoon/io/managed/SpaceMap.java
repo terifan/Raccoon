@@ -121,7 +121,7 @@ class SpaceMap
 
 		mPendingRangeMap.marshal(buffer);
 
-		int allocSize = (buffer.position() + blockSize - 1);
+		int allocSize = aBlockDevice.roundUp(buffer.position());
 
 		long blockIndex = aBlockDevice.allocBlockInternal(allocSize / blockSize);
 		long[] blockKey = BlockKeyGenerator.generate();
@@ -131,7 +131,7 @@ class SpaceMap
 		aSpaceMapBlockPointer.setAllocatedSize(allocSize);
 		aSpaceMapBlockPointer.setBlockIndex0(blockIndex);
 		aSpaceMapBlockPointer.setLogicalSize(buffer.position());
-		aSpaceMapBlockPointer.setPhysicalSize(allocSize);
+		aSpaceMapBlockPointer.setPhysicalSize(buffer.position());
 		aSpaceMapBlockPointer.setChecksumAlgorithm((byte)0); // not used
 		aSpaceMapBlockPointer.setChecksum(MurmurHash3.hash256(buffer.array(), 0, buffer.position(), aSpaceMapBlockPointer.getTransactionId()));
 		aSpaceMapBlockPointer.setBlockKey(blockKey);
@@ -172,7 +172,7 @@ class SpaceMap
 
 			ByteArrayBuffer buffer = ByteArrayBuffer.alloc(blockPointer.getAllocatedSize());
 
-			aBlockDeviceDirect.readBlock(blockPointer.getBlockIndex0(), buffer.array(), 0, blockPointer.getAllocatedSize() / blockSize, blockPointer.getBlockKey(new long[4]));
+			aBlockDeviceDirect.readBlock(blockPointer.getBlockIndex0(), buffer.array(), 0, blockPointer.getAllocatedSize(), blockPointer.getBlockKey(new long[4]));
 
 			long[] hash = MurmurHash3.hash256(buffer.array(), 0, blockPointer.getLogicalSize(), blockPointer.getTransactionId());
 

@@ -13,6 +13,8 @@ import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.managed.RangeMap;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.monitoring.DatabaseMonitorWindow;
+import org.terifan.raccoon.monitoring.MonitorInstance;
 import org.terifan.raccoon.util.Console;
 import org.terifan.treegraph.HorizontalLayout;
 import org.terifan.treegraph.TreeRenderer;
@@ -39,11 +41,15 @@ public class TestBTreeSmall
 
 	private int COMMIT;
 
+	private static DatabaseMonitorWindow mDatabaseMonitorWindow;
+
 
 	public static void main(String... args)
 	{
 		try
 		{
+			mDatabaseMonitorWindow = new DatabaseMonitorWindow();
+
 //			mTreeFrame = new VerticalImageFrame();
 //			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
@@ -85,16 +91,16 @@ public class TestBTreeSmall
 		{
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
-			ArrayList<String> list = WordLists.list78;
+//			ArrayList<String> list = WordLists.list78;
 //			ArrayList<String> list = WordLists.list130;
 //			ArrayList<String> list = WordLists.list502;
 //			ArrayList<String> list = WordLists.list1007;
-//			ArrayList<String> list = WordLists.list4342;
+			ArrayList<String> list = WordLists.list4342;
 
 			list = new ArrayList<>(list);
 			Collections.shuffle(list, RND);
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW); MonitorInstance mi = mDatabaseMonitorWindow.attach(db))
 			{
 				for (String key : list)
 				{
@@ -104,6 +110,7 @@ public class TestBTreeSmall
 //					dump(db, "save", key);
 
 					commit(db, COMMIT_FREQ);
+					mi.update();
 				}
 
 //				boolean all = true;
@@ -121,7 +128,9 @@ public class TestBTreeSmall
 //				System.out.println(result);
 			}
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+for (int loop = 0; loop < 2; loop++)
+{
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN); MonitorInstance mi = mDatabaseMonitorWindow.attach(db))
 			{
 				db.scan(new ScanResult());
 
@@ -146,6 +155,7 @@ public class TestBTreeSmall
 					DELETE++;
 
 					commit(db, COMMIT_FREQ);
+					mi.update();
 				}
 				commit(db, 100);
 				dump(db, "commit", "");
@@ -155,7 +165,7 @@ public class TestBTreeSmall
 				}
 			}
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN); MonitorInstance mi = mDatabaseMonitorWindow.attach(db))
 			{
 				boolean all = true;
 				for (String key : mEntries.keySet())
@@ -171,18 +181,21 @@ public class TestBTreeSmall
 				{
 					String key = list.get(i);
 					String value = Helper.createString(RND);
+					mEntries.remove(key);
 					mEntries.put(key, value);
 					if (db.save(new _KeyValue(key, value))) UPDATE++; else INSERT++;
 //					dump(db, "save", key);
 
 					commit(db, COMMIT_FREQ);
+					mi.update();
 				}
 
 				commit(db, 100);
 				dump(db, "commit", "");
 			}
+}
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN); MonitorInstance mi = mDatabaseMonitorWindow.attach(db))
 			{
 				List<String> keys = new ArrayList<>(mEntries.keySet());
 				Collections.shuffle(keys, RND);
@@ -198,6 +211,7 @@ public class TestBTreeSmall
 					DELETE++;
 
 					commit(db, COMMIT_FREQ);
+					mi.update();
 //					if(TESTINDEX>=54)return;
 				}
 
