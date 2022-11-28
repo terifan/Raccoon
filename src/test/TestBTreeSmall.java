@@ -73,8 +73,8 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-		int seed = 1838291525;
-//		int seed = Math.abs(new Random().nextInt());
+//		int seed = 1838291525;
+		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
 		mLog = true;
@@ -128,7 +128,7 @@ public class TestBTreeSmall
 //				System.out.println(result);
 			}
 
-for (int loop = 0; loop < 100; loop++)
+//for (int loop = 0; loop < 10; loop++)
 {
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN); MonitorInstance mi = mDatabaseMonitorWindow.attach(db))
 			{
@@ -202,7 +202,7 @@ for (int loop = 0; loop < 100; loop++)
 
 				for (String key : keys)
 				{
-					mEntries.remove(key);
+					if(mEntries.remove(key)==null) continue;
 					try{
 					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
 					}finally{
@@ -216,6 +216,8 @@ for (int loop = 0; loop < 100; loop++)
 				}
 
 				commit(db, 100);
+
+				Thread.sleep(10000_000);
 			}
 		}
 		finally

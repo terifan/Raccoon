@@ -439,7 +439,7 @@ public class BTreeTableImplementation extends TableImplementation
 	{
 		aScanResult.tables++;
 
-		scan(mRoot, aScanResult, 0);
+//		scan(mRoot, aScanResult, 0);
 	}
 
 

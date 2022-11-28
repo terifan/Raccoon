@@ -40,6 +40,7 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	PutResult put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
+		mModified = true;
 		BTreeNode nearestNode;
 
 		synchronized (this)
@@ -71,7 +72,6 @@ public class BTreeIndex extends BTreeNode
 			}
 		}
 
-		mModified = true;
 		return nearestNode.put(aImplementation, aKey, aEntry, aResult);
 	}
 
