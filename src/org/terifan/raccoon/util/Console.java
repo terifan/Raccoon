@@ -21,14 +21,24 @@ public class Console
 		WHITE("\033[0;37m"),    // WHITE
 
 		// Bold
-		BLACK_BOLD("\033[1;30m"),   // BLACK
-		RED_BOLD("\033[1;31m"),     // RED
-		GREEN_BOLD("\033[1;32m"),   // GREEN
-		YELLOW_BOLD("\033[1;33m"),  // YELLOW
-		BLUE_BOLD("\033[1;34m"),    // BLUE
-		MAGENTA_BOLD("\033[1;35m"), // MAGENTA
-		CYAN_BOLD("\033[1;36m"),    // CYAN
-		WHITE_BOLD("\033[1;37m"),   // WHITE
+		BLACK_LIGHT("\033[1;30m"),   // BLACK
+		RED_LIGHT("\033[1;31m"),     // RED
+		GREEN_LIGHT("\033[1;32m"),   // GREEN
+		YELLOW_LIGHT("\033[1;33m"),  // YELLOW
+		BLUE_LIGHT("\033[1;34m"),    // BLUE
+		MAGENTA_LIGHT("\033[1;35m"), // MAGENTA
+		CYAN_LIGHT("\033[1;36m"),    // CYAN
+		WHITE_LIGHT("\033[1;37m"),   // WHITE
+
+		// Dark
+		BLACK_DARK("\033[2;30m"),   // BLACK
+		RED_DARK("\033[2;31m"),     // RED
+		GREEN_DARK("\033[2;32m"),   // GREEN
+		YELLOW_DARK("\033[2;33m"),  // YELLOW
+		BLUE_DARK("\033[2;34m"),    // BLUE
+		MAGENTA_DARK("\033[2;35m"), // MAGENTA
+		CYAN_DARK("\033[2;36m"),    // CYAN
+		WHITE_DARK("\033[2;37m"),   // WHITE
 
 		// Underline
 		BLACK_UNDERLINED("\033[4;30m"),     // BLACK
@@ -116,7 +126,7 @@ public class Console
 	}
 
 
-	public static void indent(int aLevel, Object aText)
+	public static void repeat(int aLevel, Object aText)
 	{
 		for (int i = 0; i < aLevel; i++)
 		{
@@ -139,7 +149,7 @@ public class Console
 				if (j != -1)
 				{
 					j++;
-					text = text.substring(0, j) + Color.BLACK_BOLD + text.substring(j,i) + Color.RESET + text.substring(i);
+					text = text.substring(0, j) + Color.BLACK_LIGHT + text.substring(j,i) + Color.RESET + text.substring(i);
 				}
 				i = j;
 			}

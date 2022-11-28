@@ -445,8 +445,8 @@ public class BTreeTableImplementation extends TableImplementation
 
 	private void scan(BTreeNode aNode, ScanResult aScanResult, int aLevel)
 	{
-		System.out.print((aNode.mBlockPointer + "              ").substring(0,170));
-		Console.indent(aLevel, "... ");
+		System.out.print((aNode.mBlockPointer + "              ").substring(0,200));
+		Console.repeat(aLevel, "... ");
 		Console.println(aNode);
 
 		if (aNode instanceof BTreeIndex)

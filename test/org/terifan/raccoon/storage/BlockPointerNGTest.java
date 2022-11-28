@@ -18,7 +18,7 @@ public class BlockPointerNGTest
 			.setBlockLevel(0x02)
 			.setChecksumAlgorithm((byte)0x03)
 			.setCompressionAlgorithm((byte)0x04)
-			.setAllocatedBlocks(0x05060708)
+			.setAllocatedSize(0x05060708)
 			.setLogicalSize(0x09101112)
 			.setPhysicalSize(0x13141516)
 			.setBlockIndex0(0x1718192021222324L)

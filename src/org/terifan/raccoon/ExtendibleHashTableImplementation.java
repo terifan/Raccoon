@@ -303,8 +303,6 @@ final class ExtendibleHashTableImplementation extends TableImplementation
 
 				mDirectory.setBlockPointer(i, node.mBlockPointer);
 
-				node.mBlockPointer.getAllocatedBlocks();
-
 				nodesWritten++;
 			}
 		}
