@@ -7,13 +7,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
-import javax.swing.JFrame;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.managed.RangeMap;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.util.Console;
 import org.terifan.treegraph.HorizontalLayout;
 import org.terifan.treegraph.TreeRenderer;
 import org.terifan.treegraph.util.TextSlice;
@@ -44,8 +44,8 @@ public class TestBTreeSmall
 	{
 		try
 		{
-			mTreeFrame = new VerticalImageFrame();
-			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
+//			mTreeFrame = new VerticalImageFrame();
+//			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
 //			for (;;)
 			{
@@ -67,8 +67,8 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-//		int seed = 1838291525;
-		int seed = Math.abs(new Random().nextInt());
+		int seed = 1838291525;
+//		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
 		mLog = true;
@@ -123,6 +123,8 @@ public class TestBTreeSmall
 
 			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
 			{
+				db.scan(new ScanResult());
+
 				try{
 				boolean all = true;
 				for (String key : mEntries.keySet())
@@ -206,7 +208,7 @@ public class TestBTreeSmall
 		{
 			mStopTime = System.currentTimeMillis();
 
-			System.out.printf("#" + Console.BLUE + "%d" + Console.RESET + " time=" + Console.BLUE + "%s" + Console.RESET + " duration=" + Console.BLUE + "%s" + Console.RESET + " seed=" + Console.BLUE + "%-10d" + Console.RESET + " operations=[" + Console.CYAN + "%d,%d,%d,%d,%d" + Console.RESET + "]" + "%n", ++TESTROUND, Helper.formatTime(System.currentTimeMillis() - mInitTime), Helper.formatTime(mStopTime - mStartTime), seed, FETCH, INSERT, UPDATE, DELETE, COMMIT);
+			Console.println("#%d time=%s duration=%s seed=%d operations=[%d,%d,%d,%d,%d]", ++TESTROUND, Helper.formatTime(System.currentTimeMillis() - mInitTime), Helper.formatTime(mStopTime - mStartTime), seed, FETCH, INSERT, UPDATE, DELETE, COMMIT);
 		}
 	}
 

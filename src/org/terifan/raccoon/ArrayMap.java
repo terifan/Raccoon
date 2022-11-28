@@ -6,6 +6,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.terifan.raccoon.util.ByteArrayUtil;
+import org.terifan.raccoon.util.Console;
 import org.terifan.raccoon.util.Result;
 
 
@@ -773,7 +774,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 				{
 					sb.append(",");
 				}
-				sb.append("\"" + new String(entry.getKey(), "utf-8").replaceAll("[^\\w]*", "") + "\"");
+				sb.append(Console.format("\"%s\"", new String(entry.getKey(), "utf-8").replaceAll("[^\\w]*", "")));
 				first = false;
 			}
 			return "{" + sb.toString() + "}";

@@ -4,6 +4,7 @@ import java.io.Serializable;
 import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.ByteArrayUtil;
+import org.terifan.raccoon.util.Console;
 
 
 /*
@@ -116,12 +117,9 @@ public class BlockPointer implements Serializable
 	/**
 	 * Return the 'type' field from a BlockPointer stored in the buffer provided.
 	 *
-	 * @param aBuffer
-	 *   a buffer containing a BlockPointer
-	 * @param aBlockPointerOffset
-	 *   start offset of the BlockPointer in the buffer
-	 * @return
-	 *   the 'type' field
+	 * @param aBuffer a buffer containing a BlockPointer
+	 * @param aBlockPointerOffset start offset of the BlockPointer in the buffer
+	 * @return the 'type' field
 	 */
 	public static BlockType readBlockType(byte[] aBuffer, int aBlockPointerOffset)
 	{
@@ -373,6 +371,6 @@ public class BlockPointer implements Serializable
 	@Override
 	public String toString()
 	{
-		return "{type=" + getBlockType() + ", offset=" + getBlockIndex0() + ", phys=" + getPhysicalSize() + ", logic=" + getLogicalSize() + ", tx=" + getTransactionId() + ")";
+		return Console.format("{type=%s, offset=%d, phys=%d, logic=%d, tx=%d}", getBlockType(), getBlockIndex0(), getPhysicalSize(), getLogicalSize(), getTransactionId());
 	}
 }

@@ -10,6 +10,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.raccoon.util.Console;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 
@@ -105,6 +106,7 @@ public class BTreeTableImplementation extends TableImplementation
 	}
 
 	ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
 
 	@Override
 	public ArrayMapEntry put(ArrayMapEntry aEntry)
@@ -274,9 +276,13 @@ public class BTreeTableImplementation extends TableImplementation
 
 	private HashSet<BlockPointer> mCommitHistory = new HashSet<>();
 
+
 	void hasCommitted(BTreeNode aNode)
 	{
-		if (!mCommitHistory.add(aNode.mBlockPointer)) System.out.println(aNode);
+		if (!mCommitHistory.add(aNode.mBlockPointer))
+		{
+			System.out.println(aNode);
+		}
 	}
 
 
@@ -433,18 +439,45 @@ public class BTreeTableImplementation extends TableImplementation
 	{
 		aScanResult.tables++;
 
-		scan(mRoot, aScanResult);
+		scan(mRoot, aScanResult, 0);
 	}
 
 
-	private void scan(BTreeNode aNode, ScanResult aScanResult)
+	private void scan(BTreeNode aNode, ScanResult aScanResult, int aLevel)
+	{
+		System.out.print((aNode.mBlockPointer + "              ").substring(0,170));
+		Console.indent(aLevel, "... ");
+		Console.println(aNode);
+
+		if (aNode instanceof BTreeIndex)
+		{
+			BTreeIndex indexNode = (BTreeIndex)aNode;
+
+			for (int i = 0, sz = indexNode.mMap.size(); i < sz; i++)
+			{
+				BTreeNode child = indexNode.getNode(this, i);
+
+				ArrayMapEntry entry = new ArrayMapEntry();
+				indexNode.mMap.get(i, entry);
+				indexNode.mChildNodes.put(new MarshalledKey(entry.getKey()), child);
+
+				scan(child, aScanResult, aLevel + 1);
+			}
+		}
+		else
+		{
+		}
+	}
+
+
+	private void scanX(BTreeNode aNode, ScanResult aScanResult)
 	{
 		if (aNode instanceof BTreeIndex)
 		{
 			BTreeIndex indexNode = (BTreeIndex)aNode;
 
 			int fillRatio = indexNode.mMap.getUsedSpace() * 100 / INDEX_SIZE;
-			aScanResult.log.append("{" + (aNode.mBlockPointer==null?"":aNode.mBlockPointer.getBlockIndex0()) + ":" + fillRatio + "%" + "}");
+			aScanResult.log.append("{" + (aNode.mBlockPointer == null ? "" : aNode.mBlockPointer.getBlockIndex0()) + ":" + fillRatio + "%" + "}");
 
 			boolean first = true;
 			aScanResult.log.append("'");
@@ -455,8 +488,7 @@ public class BTreeTableImplementation extends TableImplementation
 					aScanResult.log.append(":");
 				}
 				first = false;
-				MarshalledKey key = new MarshalledKey(entry.getKey());
-				String s = new String(key.array()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", "");
+				String s = new String(entry.getKey()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", "");
 				aScanResult.log.append(s.isEmpty() ? "*" : s);
 			}
 			aScanResult.log.append("'");
@@ -491,20 +523,21 @@ public class BTreeTableImplementation extends TableImplementation
 				indexNode.mMap.get(i, entry);
 				indexNode.mChildNodes.put(new MarshalledKey(entry.getKey()), child);
 
-				scan(child, aScanResult);
+				scanX(child, aScanResult);
 			}
 
 			aScanResult.log.append("]");
 		}
 		else
 		{
-			BTreeLeaf node = (BTreeLeaf)aNode;
-			int fillRatio = node.mMap.getUsedSpace() * 100 / LEAF_SIZE;
+			int fillRatio = aNode.mMap.getUsedSpace() * 100 / LEAF_SIZE;
 
-			aScanResult.log.append("{" + (aNode.mBlockPointer==null?"":aNode.mBlockPointer.getBlockIndex0()) + ":" + fillRatio + "%" + "}");
+			aScanResult.log.append("{" + (aNode.mBlockPointer == null ? "" : aNode.mBlockPointer.getBlockIndex0()) + ":" + fillRatio + "%" + "}");
 			aScanResult.log.append("[");
+
 			boolean first = true;
-			for (ArrayMapEntry entry : node.mMap)
+
+			for (ArrayMapEntry entry : aNode.mMap)
 			{
 				if (!first)
 				{
@@ -513,14 +546,16 @@ public class BTreeTableImplementation extends TableImplementation
 				first = false;
 				aScanResult.log.append("'" + new String(entry.getKey()).replaceAll("[^\\w]*", "").replace("_", "") + "'");
 			}
+
 			aScanResult.log.append("]");
+
 			if (fillRatio > 100)
 			{
-				aScanResult.log.append(node.mModified ? "#a00#a00#fff" : "#666#666#fff");
+				aScanResult.log.append(aNode.mModified ? "#a00#a00#fff" : "#666#666#fff");
 			}
 			else
 			{
-				aScanResult.log.append(node.mModified ? "#f00#f00#fff" : "#888#fff#000");
+				aScanResult.log.append(aNode.mModified ? "#f00#f00#fff" : "#888#fff#000");
 			}
 		}
 	}

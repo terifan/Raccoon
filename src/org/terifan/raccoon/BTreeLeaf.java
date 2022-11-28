@@ -4,6 +4,7 @@ import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.util.Result;
 import static org.terifan.raccoon.BTreeTableImplementation.INDEX_SIZE;
 import static org.terifan.raccoon.BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER;
+import org.terifan.raccoon.util.Console;
 
 
 public class BTreeLeaf extends BTreeNode
@@ -75,7 +76,6 @@ public class BTreeLeaf extends BTreeNode
 		b.mModified = true;
 
 		MarshalledKey keyA = new MarshalledKey(new byte[0]);
-//		MarshalledKey keyA = new MarshalledKey(a.mMap.getKey(0));
 		MarshalledKey keyB = new MarshalledKey(b.mMap.getKey(0));
 
 		BTreeIndex newIndex = new BTreeIndex(1);
@@ -116,6 +116,6 @@ public class BTreeLeaf extends BTreeNode
 	@Override
 	public String toString()
 	{
-		return "BTreeLeaf{mMap=" + mMap + '}';
+		return Console.format("BTreeLeaf{mMap=" + mMap + '}');
 	}
 }
