@@ -1,8 +1,8 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.btree.BTree;
 import org.terifan.raccoon.io.DatabaseIOException;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,8 +16,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.terifan.bundle.Document;
 import org.terifan.raccoon.storage.BlockAccessor;
-import org.terifan.raccoon.serialization.Marshaller;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
@@ -29,7 +29,7 @@ public final class TableInstance<T>
 
 	private final Table mTable;
 	private final HashSet<CommitLock> mCommitLocks;
-	private final TableImplementation mTableImplementation;
+	private final BTree mTableImplementation;
 
 
 	TableInstance(Database mDatabase, Table aTable, byte[] aTableHeader)
@@ -38,48 +38,26 @@ public final class TableInstance<T>
 
 		mTable = aTable;
 
-		try
-		{
-			Class<? extends TableImplementation> type;
-
-			if ("btree".equals(aTable.getImplementation()))
-			{
-				type = BTreeTableImplementation.class;
-			}
-			else if ("hashtable".equals(aTable.getImplementation()))
-			{
-				type = ExtendibleHashTableImplementation.class;
-			}
-			else
-			{
-				throw new IllegalArgumentException("No supported table implementation: " + aTable.getImplementation());
-			}
-
-			mTableImplementation = (TableImplementation)type.getDeclaredConstructors()[0].newInstance(mDatabase.getBlockDevice(), mDatabase.getTransactionGroup(), false, mDatabase.getCompressionParameter(), mDatabase.getTableParameter(), aTable.getEntityName());
-		}
-		catch (IllegalAccessException | InstantiationException | SecurityException | InvocationTargetException e)
-		{
-			throw new IllegalArgumentException(e);
-		}
+		mTableImplementation = new BTree(mDatabase.getBlockDevice(), mDatabase.getTransactionGroup(), false, mDatabase.getCompressionParameter(), mDatabase.getTableParameter(), aTable.getEntityName());
 
 		mTableImplementation.openOrCreateTable(aTableHeader);
 	}
 
 
-	public boolean get(Database mDatabase, T aEntity)
+	public boolean get(Database aDatabase, Document aDocument)
 	{
-		Log.i("get entity %s", aEntity);
+		Log.i("get entity %s", aDocument);
 		Log.inc();
 
 		try
 		{
-			ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
+			ArrayMapEntry entry = new ArrayMapEntry(getKeys(aDocument));
 
 			if (mTableImplementation.get(entry))
 			{
-				TransactionGroup tx = mDatabase.getTransactionGroup();
+				TransactionGroup tx = aDatabase.getTransactionGroup();
 
-				unmarshalToObjectValues(mDatabase, entry, aEntity, tx);
+				unmarshalToObjectValues(aDatabase, entry, aDocument, tx);
 
 				Log.dec();
 
@@ -112,20 +90,20 @@ public final class TableInstance<T>
 	 * @return
 	 * true if this table did not already contain the specified entity
 	 */
-	public boolean save(Database mDatabase, T aEntity)
+	public boolean save(Database aDatabase, Document aDocument) throws IOException
 	{
-		Log.i("save %s", aEntity.getClass());
+		Log.i("save %s", aDocument.getClass());
 		Log.inc();
 
-		byte[] key = getKeys(aEntity);
-		byte[] value = getNonKeys(aEntity);
+		byte[] key = aDocument.getString("_id").getBytes();
+		byte[] value = aDocument.marshal();
 		byte type = TYPE_DEFAULT;
 
 		if (key.length + value.length + 1 > mTableImplementation.getEntrySizeLimit())
 		{
 			type = TYPE_BLOB;
 
-			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(mDatabase), mDatabase.getTransactionGroup(), null, LobOpenOption.WRITE))
+			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(aDatabase), aDatabase.getTransactionGroup(), null, LobOpenOption.WRITE))
 			{
 				blob.write(ByteBuffer.wrap(value));
 				value = blob.finish();
@@ -142,7 +120,7 @@ public final class TableInstance<T>
 
 		if (oldEntry != null)
 		{
-			deleteIfBlob(mDatabase, oldEntry);
+			deleteIfBlob(aDatabase, oldEntry);
 		}
 
 		Log.dec();
@@ -151,16 +129,16 @@ public final class TableInstance<T>
 	}
 
 
-	private void deleteIfBlob(Database mDatabase, ArrayMapEntry aEntry)
+	private void deleteIfBlob(Database aDatabase, ArrayMapEntry aEntry)
 	{
 		if (aEntry.getType() == TYPE_BLOB)
 		{
-			LobByteChannelImpl.deleteBlob(getBlockAccessor(mDatabase), aEntry.getValue());
+			LobByteChannelImpl.deleteBlob(getBlockAccessor(aDatabase), aEntry.getValue());
 		}
 	}
 
 
-	public LobByteChannelImpl openBlob(Database mDatabase, T aEntityKey, LobOpenOption aOpenOption)
+	public LobByteChannelImpl openBlob(Database aDatabase, T aEntityKey, LobOpenOption aOpenOption)
 	{
 		try
 		{
@@ -185,7 +163,7 @@ public final class TableInstance<T>
 
 				if (aOpenOption == LobOpenOption.REPLACE)
 				{
-					deleteIfBlob(mDatabase, entry);
+					deleteIfBlob(aDatabase, entry);
 
 					header = null;
 				}
@@ -199,7 +177,7 @@ public final class TableInstance<T>
 				header = null;
 			}
 
-			LobByteChannelImpl out = new LobByteChannelImpl(getBlockAccessor(mDatabase), mDatabase.getTransactionGroup(), header, aOpenOption)
+			LobByteChannelImpl out = new LobByteChannelImpl(getBlockAccessor(aDatabase), aDatabase.getTransactionGroup(), header, aOpenOption)
 			{
 				@Override
 				public void close()
@@ -214,7 +192,7 @@ public final class TableInstance<T>
 
 								byte[] header = finish();
 
-								mDatabase.aquireWriteLock();
+								aDatabase.aquireWriteLock();
 								try
 								{
 									ArrayMapEntry entry = new ArrayMapEntry(key, header, TYPE_BLOB);
@@ -222,12 +200,12 @@ public final class TableInstance<T>
 								}
 								catch (DatabaseException e)
 								{
-									mDatabase.forceClose(e);
+									aDatabase.forceClose(e);
 									throw e;
 								}
 								finally
 								{
-									mDatabase.releaseWriteLock();
+									aDatabase.releaseWriteLock();
 								}
 							}
 						}
@@ -264,15 +242,15 @@ public final class TableInstance<T>
 	}
 
 
-	public boolean remove(Database mDatabase, T aEntity)
+	public boolean remove(Database aDatabase, Document aDocument)
 	{
-		ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
+		ArrayMapEntry entry = new ArrayMapEntry(getKeys(aDocument));
 
 		ArrayMapEntry oldEntry = mTableImplementation.remove(entry);
 
 		if (oldEntry != null)
 		{
-			deleteIfBlob(mDatabase, oldEntry);
+			deleteIfBlob(aDatabase, oldEntry);
 
 			return true;
 		}
@@ -284,9 +262,9 @@ public final class TableInstance<T>
 	/**
 	 * Creates an iterator over all items in this table. This iterator will reconstruct entities.
 	 */
-	public Iterator<T> iterator(Database mDatabase)
+	public Iterator<T> iterator(Database aDatabase)
 	{
-		return new EntityIterator(mDatabase, this, getEntryIterator());
+		return new DocumentIterator(aDatabase, this);
 	}
 
 
@@ -368,14 +346,6 @@ public final class TableInstance<T>
 	}
 
 
-	void unmarshalToObjectKeys(ArrayMapEntry aBuffer, Object aOutput)
-	{
-		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aBuffer.getKey());
-
-		mTable.getMarshaller().unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_ID);
-	}
-
-
 	void unmarshalToObjectValues(Database mDatabase, ArrayMapEntry aBuffer, Object aOutput, TransactionGroup aTransactionGroup)
 	{
 		ByteArrayBuffer buffer;
@@ -403,73 +373,43 @@ public final class TableInstance<T>
 	}
 
 
-	private byte[] getKeys(Object aInput)
-	{
-		return mTable.getMarshaller().marshal(ByteArrayBuffer.alloc(16), aInput, Table.FIELD_CATEGORY_ID).trim().array();
-	}
-
-
-	private byte[] getNonKeys(Object aInput)
-	{
-		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(16);
-
-		Marshaller marshaller = mTable.getMarshaller();
-		marshaller.marshal(buffer, aInput, Table.FIELD_CATEGORY_DISCRIMINATOR | Table.FIELD_CATEGORY_VALUE);
-
-		return buffer.trim().array();
-	}
-
-
-	public Table getTable()
-	{
-		return mTable;
-	}
-
-
-	@Override
-	public String toString()
-	{
-		return mTable.toString();
-	}
-
-
 	void scan(ScanResult aScanResult)
 	{
 		mTableImplementation.scan(aScanResult);
 	}
 
 
-	<T> Stream<T> stream(Database mDatabase, Lock aReadLock)
-	{
-		try
-		{
-			Stream<T> tmp = StreamSupport.stream(new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
-			{
-				EntityIterator entityIterator = new EntityIterator(mDatabase, TableInstance.this, mTableImplementation.iterator());
-
-				@Override
-				public boolean tryAdvance(Consumer<? super T> aConsumer)
-				{
-					if (!entityIterator.hasNext())
-					{
-						aReadLock.unlock();
-
-						return false;
-					}
-					aConsumer.accept((T)entityIterator.next());
-					return true;
-				}
-			}, false);
-
-			return tmp;
-		}
-		catch (Throwable e)
-		{
-			aReadLock.unlock();
-
-			throw e;
-		}
-	}
+//	<T> Stream<T> stream(Database mDatabase, Lock aReadLock)
+//	{
+//		try
+//		{
+//			Stream<T> tmp = StreamSupport.stream(new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+//			{
+//				EntityIterator entityIterator = new EntityIterator(mDatabase, TableInstance.this, mTableImplementation.iterator());
+//
+//				@Override
+//				public boolean tryAdvance(Consumer<? super T> aConsumer)
+//				{
+//					if (!entityIterator.hasNext())
+//					{
+//						aReadLock.unlock();
+//
+//						return false;
+//					}
+//					aConsumer.accept((T)entityIterator.next());
+//					return true;
+//				}
+//			}, false);
+//
+//			return tmp;
+//		}
+//		catch (Throwable e)
+//		{
+//			aReadLock.unlock();
+//
+//			throw e;
+//		}
+//	}
 
 
 	private synchronized BlockAccessor getBlockAccessor(Database mDatabase)

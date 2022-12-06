@@ -4,10 +4,8 @@ import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.io.managed.DeviceHeader;
 import java.io.File;
-import java.lang.ref.PhantomReference;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -15,10 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.terifan.raccoon.Table.ResultSetConsumer;
-import org.terifan.raccoon.annotations.Entity;
+import org.terifan.bundle.Document;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
@@ -38,18 +34,13 @@ public final class Database implements AutoCloseable
 	private final Lock mWriteLock = mReadWriteLock.writeLock();
 
 	private IManagedBlockDevice mBlockDevice;
-	private final HashMap<Class, Supplier> mFactories;
-	private final HashMap<Class, Initializer> mInitializers;
-	private final ConcurrentHashMap<Table, TableInstance> mOpenTables;
-	private final TableMetadataProvider mTableMetadatas;
+	private final ConcurrentHashMap<String, TableInstance> mOpenTables;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 	private boolean mModified;
 	private boolean mCloseDeviceOnCloseDatabase;
 	private boolean mReadOnly;
-	private Table mSystemTableMetadata;
 	private Thread mShutdownHook;
-	private TableParam mTableParam;
-	private TableInstance mSystemTable;
+	private Document mSystemTable;
 	private CompressionParam mCompressionParam;
 	private int mReadLocked;
 
@@ -57,9 +48,6 @@ public final class Database implements AutoCloseable
 	private Database()
 	{
 		mOpenTables = new ConcurrentHashMap<>();
-		mTableMetadatas = new TableMetadataProvider();
-		mFactories = new HashMap<>();
-		mInitializers = new HashMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
 	}
 
@@ -192,7 +180,6 @@ public final class Database implements AutoCloseable
 		DeviceHeader tenantHeader = getParameter(DeviceHeader.class, aOpenParams, null);
 
 		mCompressionParam = getParameter(CompressionParam.class, aOpenParams, CompressionParam.BEST_SPEED);
-		mTableParam = getParameter(TableParam.class, aOpenParams, TableParam.DEFAULT);
 
 		IManagedBlockDevice device;
 
@@ -298,8 +285,7 @@ public final class Database implements AutoCloseable
 		}
 
 		mBlockDevice = aBlockDevice;
-		mSystemTableMetadata = new Table(this, Table.class, null);
-		mSystemTable = new TableInstance(this, mSystemTableMetadata, null);
+		mSystemTable = new Document();
 		mModified = true;
 
 		commit();
@@ -333,8 +319,7 @@ public final class Database implements AutoCloseable
 		}
 
 		mBlockDevice = aBlockDevice;
-		mSystemTableMetadata = new Table(this, Table.class, null);
-		mSystemTable = new TableInstance(this, mSystemTableMetadata, tableHeader);
+		mSystemTable = mBlockDevice.new TableInstance(this, mSystemTableMetadata, tableHeader);
 		mReadOnly = aReadOnly;
 
 		Log.dec();
@@ -351,36 +336,34 @@ public final class Database implements AutoCloseable
 	}
 
 
-	protected TableInstance openTable(Table aTableMetadata, DatabaseOpenOption aOptions)
+	protected TableInstance openTable(String aName, DatabaseOpenOption aOptions)
 	{
 		checkOpen();
 
-		TableInstance instance = mOpenTables.get(aTableMetadata);
+		TableInstance instance = mOpenTables.get(aName);
 
 		if (instance != null)
 		{
 			return instance;
 		}
 
-		synchronized (aTableMetadata)
+		synchronized (aName)
 		{
 			checkOpen();
 
-			instance = mOpenTables.get(aTableMetadata);
+			instance = mOpenTables.get(aName);
 
 			if (instance != null)
 			{
 				return instance;
 			}
 
-			aTableMetadata.initialize(this);
-
-			Log.i("open table '%s' with option %s", aTableMetadata.getEntityName(), aOptions);
+			Log.i("open table '%s' with option %s", aName, aOptions);
 			Log.inc();
 
 			try
 			{
-				boolean tableExists = mSystemTable.get(this, aTableMetadata);
+				boolean tableExists = mSystemTable.containsKey(aName);
 
 				if (!tableExists && (aOptions == DatabaseOpenOption.OPEN || aOptions == DatabaseOpenOption.READ_ONLY))
 				{
@@ -391,7 +374,7 @@ public final class Database implements AutoCloseable
 
 				if (!tableExists)
 				{
-					mSystemTable.save(this, aTableMetadata);
+					mSystemTable.putString(aName, instance);
 				}
 
 				mOpenTables.put(aTableMetadata, instance);
@@ -451,7 +434,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public long flush(TransactionGroup mTransactionGroup)
+	public long flush(TransactionGroup aTransactionGroup)
 	{
 		checkOpen();
 
@@ -464,9 +447,9 @@ public final class Database implements AutoCloseable
 			Log.i("flush changes");
 			Log.inc();
 
-			for (Entry<Table, TableInstance> entry : mOpenTables.entrySet())
+			for (TableInstance entry : mOpenTables.values())
 			{
-				nodesWritten = entry.getValue().flush(mTransactionGroup);
+				nodesWritten = entry.flush(aTransactionGroup);
 			}
 
 			Log.dec();
@@ -684,13 +667,13 @@ public final class Database implements AutoCloseable
 	 * @return
 	 * true if this table did not already contain the specified entity
 	 */
-	public boolean save(Object aEntity)
+	public boolean save(Document aDocument)
 	{
 		aquireWriteLock();
 		try
 		{
-			TableInstance instance = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.CREATE);
-			return instance.save(this, aEntity);
+			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.CREATE);
+			return instance.save(this, aDocument);
 		}
 		catch (DatabaseException e)
 		{
@@ -724,22 +707,22 @@ public final class Database implements AutoCloseable
 	/**
 	 * Attempts to retrieves an entity returning true if entity found and updating the provided instance.
 	 *
-	 * @param aEntity
+	 * @param aDocument
 	 *   an entity with discriminator/key fields set
 	 * @return
 	 *   true if the entity was found.
 	 */
-	public boolean tryGet(Object aEntity)
+	public boolean tryGet(Document aDocument)
 	{
 		mReadLock.lock();
 		try
 		{
-			TableInstance instance = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
+			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
 			if (instance == null)
 			{
 				return false;
 			}
-			return instance.get(this, aEntity);
+			return instance.get(this, aDocument);
 		}
 		catch (DatabaseException e)
 		{
@@ -756,30 +739,30 @@ public final class Database implements AutoCloseable
 	/**
 	 * Retrieves an entity throwing and exception if the entity wasn't found.
 	 *
-	 * @param aEntity
+	 * @param aDocument
 	 *   an entity with discriminator/key fields set
 	 * @throws NoSuchEntityException
 	 *   if the entity cannot be found
 	 */
-	public <T> T get(T aEntity) throws DatabaseException
+	public Document get(Document aDocument) throws DatabaseException
 	{
-		Assert.notNull(aEntity, "Argument is null");
+		Assert.notNull(aDocument, "Argument is null");
 
 		mReadLock.lock();
 		try
 		{
-			TableInstance instance = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
+			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
 
 			if (instance == null)
 			{
-				throw new NoSuchEntityException("No table exists matching type " + aEntity.getClass());
+				throw new NoSuchEntityException("No table exists matching type " + aDocument.getClass());
 			}
-			if (!instance.get(this, aEntity))
+			if (!instance.get(this, aDocument))
 			{
 				throw new NoSuchEntityException("No entity exists matching key");
 			}
 
-			return aEntity;
+			return aDocument;
 		}
 		catch (DatabaseException e)
 		{
@@ -799,17 +782,17 @@ public final class Database implements AutoCloseable
 	 * @return
 	 *   true if the entity was removed.
 	 */
-	public boolean remove(Object aEntity)
+	public boolean remove(Document aDocument)
 	{
 		aquireWriteLock();
 		try
 		{
-			TableInstance instance = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
+			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
 			if (instance == null)
 			{
 				return false;
 			}
-			return instance.remove(this, aEntity);
+			return instance.remove(this, aDocument);
 		}
 		catch (DatabaseException e)
 		{
@@ -846,7 +829,7 @@ public final class Database implements AutoCloseable
 		aquireWriteLock();
 		try
 		{
-			TableInstance instance = openTable(aType, new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
+			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
 			if (instance != null)
 			{
 				instance.clear(this);
@@ -867,9 +850,9 @@ public final class Database implements AutoCloseable
 	/**
 	 * The contents of the stream is associated with the key found in the entity provided. The stream will persist the entity when it's closed.
 	 */
-	public LobByteChannel openLob(Object aEntity, LobOpenOption aOpenOption)
+	public LobByteChannel openLob(Document aDocument, LobOpenOption aOpenOption)
 	{
-		TableInstance instance = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), aOpenOption == LobOpenOption.READ ? DatabaseOpenOption.OPEN : DatabaseOpenOption.CREATE);
+		TableInstance instance = openTable(aDocument.getString("_collection"), aOpenOption == LobOpenOption.READ ? DatabaseOpenOption.OPEN : DatabaseOpenOption.CREATE);
 
 		if (instance == null)
 		{
@@ -881,54 +864,28 @@ public final class Database implements AutoCloseable
 			throw new DatabaseException("Failed to create table");
 		}
 
-		return instance.openBlob(this, aEntity, aOpenOption);
+		return instance.openBlob(this, aDocument, aOpenOption);
 	}
 
 
 	/**
 	 * List entities matching the provided discriminator.
 	 */
-	public <T> List<T> list(T aDiscriminator)
+	public List<Document> list(Document aDocument)
 	{
-		return list(aDiscriminator.getClass(), getDiscriminator(aDiscriminator));
-	}
+		List<Document> list = null;
 
-
-	public <T> List<T> list(Class<T> aType)
-	{
-		return listFirst(aType, (T)null, -1);
-	}
-
-
-	public <T> List<T> list(Class<T> aType, DiscriminatorType<T> aDiscriminator)
-	{
-		return listFirst(aType, aDiscriminator.getInstance(), -1);
-	}
-
-
-	public <T> List<T> list(Class<T> aType, T aEntity)
-	{
-		return listFirst(aType, aEntity, -1);
-	}
-
-
-	public <T> List<T> listFirst(Class<T> aType, T aEntity, int aLimit)
-	{
-		List<T> list = null;
-
-		Log.i("list items %s", aType);
+		Log.i("list items %s", aDocument.getString("_collection"));
 		Log.inc();
 
 		mReadLock.lock();
 		try
 		{
-			TableInstance instance = openTable(aType, new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
+			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
 
 			if (instance != null)
 			{
-				list = instance.list(this, aType, aLimit <= 0 ? Integer.MAX_VALUE : aLimit);
-
-				Log.i("list %s", aType.getSimpleName());
+				list = instance.list(this);
 			}
 		}
 		catch (DatabaseException e)
@@ -950,36 +907,6 @@ public final class Database implements AutoCloseable
 		}
 
 		return list != null ? list : new ArrayList<>();
-	}
-
-
-	/**
-	 * Sets a Supplier associated with the specified type. The Supplier is used to create instances of specified types.
-	 *
-	 * E.g:
-	 * mDatabase.setSupplier(Photo.class, ()-&gt;new Photo(PhotoAlbum.this));
-	 */
-	public <T> void setSupplier(Class<T> aType, Supplier<T> aSupplier)
-	{
-		mFactories.put(aType, aSupplier);
-	}
-
-
-	<T> Supplier<T> getSupplier(Class<T> aType)
-	{
-		return mFactories.get(aType);
-	}
-
-
-	public <T> void setInitializer(Class<T> aType, Initializer<T> aSupplier)
-	{
-		mInitializers.put(aType, aSupplier);
-	}
-
-
-	<T> Initializer<T> getInitializer(Class<T> aType)
-	{
-		return mInitializers.get(aType);
 	}
 
 
@@ -1207,62 +1134,6 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public DiscriminatorType getDiscriminator(Object aType)
-	{
-		return new DiscriminatorType(aType);
-	}
-
-
-	public synchronized <T> List<DiscriminatorType<T>> getDiscriminators(Class<T> aType)
-	{
-		mReadLock.lock();
-
-		try
-		{
-			Log.i("get discriminators %s", aType);
-			Log.inc();
-
-			ArrayList<DiscriminatorType<T>> result = new ArrayList<>();
-
-			String name;
-			Entity entity = (Entity)aType.getAnnotation(Entity.class);
-			if (entity != null)
-			{
-				name = entity.name();
-			}
-			else
-			{
-				name = aType.getName();
-			}
-
-			for (Table tableMetadata : (List<Table>)mSystemTable.list(this, Table.class, Integer.MAX_VALUE))
-			{
-				if (name.equals(tableMetadata.getEntityName()))
-				{
-					try
-					{
-						T instance = (T)aType.newInstance();
-						tableMetadata.getMarshaller().unmarshal(ByteArrayBuffer.wrap(tableMetadata.getDiscriminatorKey()), instance, Table.FIELD_CATEGORY_DISCRIMINATOR);
-						result.add(new DiscriminatorType<>(instance));
-					}
-					catch (InstantiationException | IllegalAccessException e)
-					{
-						throw new IllegalArgumentException("Failed to instantiate object: " + aType, e);
-					}
-				}
-			}
-
-			return result;
-		}
-		finally
-		{
-			mReadLock.unlock();
-
-			Log.dec();
-		}
-	}
-
-
 	public ScanResult scan(ScanResult aScanResult)
 	{
 		mReadLock.lock();
@@ -1398,7 +1269,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			for (Iterator<T> it = new EntityIterator<>(this, table, table.getEntryIterator()); it.hasNext();)
+			for (Iterator<T> it = new DocumentIterator<>(this, table, table.getEntryIterator()); it.hasNext();)
 			{
 				aConsumer.accept(it.next());
 			}

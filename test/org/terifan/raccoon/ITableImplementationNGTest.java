@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.btree.BTree;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -350,7 +351,7 @@ public class ITableImplementationNGTest
 	@DataProvider(name="tableTypes")
 	private Object[][] tableTypes()
 	{
-		return new Object[][]{{ExtendibleHashTableImplementation.class}, {BTreeTableImplementation.class}};
+		return new Object[][]{{ExtendibleHashTableImplementation.class}, {BTree.class}};
 	}
 
 
