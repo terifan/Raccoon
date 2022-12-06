@@ -22,6 +22,7 @@ import org.terifan.raccoon.io.secure.SecureBlockDevice;
 import org.terifan.raccoon.io.managed.UnsupportedVersionException;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.io.physical.FileBlockDevice;
+import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -30,8 +31,8 @@ import org.terifan.raccoon.util.Log;
 public final class Database implements AutoCloseable
 {
 	private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
-	private final Lock mReadLock = mReadWriteLock.readLock();
-	private final Lock mWriteLock = mReadWriteLock.writeLock();
+//	private final Lock mReadLock = mReadWriteLock.readLock();
+//	private final Lock mWriteLock = mReadWriteLock.writeLock();
 
 	private IManagedBlockDevice mBlockDevice;
 	private final ConcurrentHashMap<String, TableInstance> mOpenTables;
@@ -91,9 +92,7 @@ public final class Database implements AutoCloseable
 
 			boolean newFile = !aFile.exists();
 
-			BlockSizeParam blockSizeParam = getParameter(BlockSizeParam.class, aParameters, new BlockSizeParam(Constants.DEFAULT_BLOCK_SIZE));
-
-			fileBlockDevice = new FileBlockDevice(aFile, blockSizeParam.getValue(), aOpenOptions == DatabaseOpenOption.READ_ONLY);
+			fileBlockDevice = new FileBlockDevice(aFile, 4096, aOpenOptions == DatabaseOpenOption.READ_ONLY);
 
 			init(fileBlockDevice, newFile, true, aOpenOptions, aParameters);
 		}
@@ -318,21 +317,13 @@ public final class Database implements AutoCloseable
 			throw new UnsupportedVersionException("The application pointer is too short: " + tableHeader.length);
 		}
 
+		BlockAccessor accessor = new BlockAccessor(aBlockDevice, mCompressionParam);
+
 		mBlockDevice = aBlockDevice;
-		mSystemTable = mBlockDevice.new TableInstance(this, mSystemTableMetadata, tableHeader);
+		mSystemTable = new Document().unmarshal(accessor.readBlock(new BlockPointer().unmarshal(tableHeader, 0)));
 		mReadOnly = aReadOnly;
 
 		Log.dec();
-	}
-
-
-	protected TableInstance openTable(Class aType, DiscriminatorType aDiscriminator, DatabaseOpenOption aOptions)
-	{
-		checkOpen();
-
-		Assert.notEquals(aType.getName(), Table.class.getName());
-
-		return openTable(mTableMetadatas.getOrCreate(this, aType, aDiscriminator), aOptions);
 	}
 
 
@@ -605,9 +596,9 @@ public final class Database implements AutoCloseable
 
 			if (!mModified)
 			{
-				for (Entry<Table, TableInstance> entry : mOpenTables.entrySet())
+				for (TableInstance entry : mOpenTables.values())
 				{
-					mModified |= entry.getValue().isModified();
+					mModified |= entry.isModified();
 				}
 			}
 
@@ -868,9 +859,6 @@ public final class Database implements AutoCloseable
 	}
 
 
-	/**
-	 * List entities matching the provided discriminator.
-	 */
 	public List<Document> list(Document aDocument)
 	{
 		List<Document> list = null;
@@ -922,44 +910,6 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public int size(Class aType)
-	{
-		mReadLock.lock();
-		try
-		{
-			TableInstance instance = openTable(aType, null, DatabaseOpenOption.OPEN);
-			if (instance == null)
-			{
-				return 0;
-			}
-			return instance.size();
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
-	}
-
-
-	public int size(DiscriminatorType aDiscriminator)
-	{
-		mReadLock.lock();
-		try
-		{
-			TableInstance instance = openTable(aDiscriminator.getType(), aDiscriminator, DatabaseOpenOption.OPEN);
-			if (instance == null)
-			{
-				return 0;
-			}
-			return instance.size();
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
-	}
-
-
 	public int size(Object aEntity)
 	{
 		mReadLock.lock();
@@ -1002,23 +952,6 @@ public final class Database implements AutoCloseable
 	}
 
 
-	private static <T extends OpenParam> T getParameter(Class<T> aType, OpenParam[] aParameters, T aDefaultValue)
-	{
-		if (aParameters != null)
-		{
-			for (OpenParam param : aParameters)
-			{
-				if (param != null && aType.isAssignableFrom(param.getClass()))
-				{
-					return (T)param;
-				}
-			}
-		}
-
-		return aDefaultValue;
-	}
-
-
 	public List<Table> getTables()
 	{
 		checkOpen();
@@ -1036,45 +969,6 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public <T> Table<T> getTable(T aObject)
-	{
-		TableInstance instance = openTable(aObject.getClass(), getDiscriminator(aObject), DatabaseOpenOption.OPEN);
-
-		if (instance == null)
-		{
-			return null;
-		}
-
-		return instance.getTable();
-	}
-
-
-	public <T> Table<T> getTable(Class<T> aType)
-	{
-		TableInstance instance = openTable(aType, null, DatabaseOpenOption.OPEN);
-
-		if (instance == null)
-		{
-			return null;
-		}
-
-		return instance.getTable();
-	}
-
-
-	public <T> Table<T> getTable(Class<T> aType, DiscriminatorType aDiscriminator)
-	{
-		TableInstance instance = openTable(aType, aDiscriminator, DatabaseOpenOption.OPEN);
-
-		if (instance == null)
-		{
-			return null;
-		}
-
-		return instance.getTable();
-	}
-
-
 	public Table getTable(String aTypeName)
 	{
 		checkOpen();
@@ -1088,44 +982,6 @@ public final class Database implements AutoCloseable
 				String tm = ((Table)e).getEntityName();
 				return tm.equals(aTypeName) || tm.endsWith("." + aTypeName);
 			}).findFirst().orElse(null);
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
-	}
-
-
-	public List<Table> getTables(String aTypeName)
-	{
-		checkOpen();
-
-		mReadLock.lock();
-
-		try
-		{
-			return (List<Table>)mSystemTable.list(this, Table.class, Integer.MAX_VALUE).stream().filter(e ->
-			{
-				String tm = ((Table)e).getEntityName();
-				return tm.equals(aTypeName) || tm.endsWith("." + aTypeName);
-			}).collect(Collectors.toList());
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
-	}
-
-
-	public <T> List<Table<T>> getTables(Class<T> aType)
-	{
-		checkOpen();
-
-		mReadLock.lock();
-
-		try
-		{
-			return (List<Table<T>>)mSystemTable.list(this, Table.class, Integer.MAX_VALUE).stream().filter(e -> e == aType).collect(Collectors.toList());
 		}
 		finally
 		{
@@ -1240,12 +1096,6 @@ public final class Database implements AutoCloseable
 	}
 
 
-	TableParam getTableParameter()
-	{
-		return mTableParam;
-	}
-
-
 	public void execute(Consumer<Database> aConsumer)
 	{
 		mWriteLock.lock(); // note: allow this lock even on read-only databases
@@ -1261,46 +1111,46 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public <T> void forEach(Class<T> aType, Consumer<T> aConsumer)
-	{
-		aquireReadLock();
-
-		TableInstance<T> table = openTable(getTable(aType), DatabaseOpenOption.OPEN);
-
-		try
-		{
-			for (Iterator<T> it = new DocumentIterator<>(this, table, table.getEntryIterator()); it.hasNext();)
-			{
-				aConsumer.accept(it.next());
-			}
-		}
-		finally
-		{
-			releaseReadLock();
-		}
-	}
-
-
-	public void forEachResultSet(Class aType, ResultSetConsumer aConsumer)
-	{
-		aquireReadLock();
-
-		TableInstance instance = openTable(getTable(aType), DatabaseOpenOption.OPEN);
-
-		try
-		{
-			ResultSet resultSet = new ResultSet(instance, instance.getEntryIterator());
-
-			while (resultSet.next())
-			{
-				aConsumer.handle(resultSet);
-			}
-		}
-		finally
-		{
-			releaseReadLock();
-		}
-	}
+//	public <T> void forEach(Class<T> aType, Consumer<T> aConsumer)
+//	{
+//		aquireReadLock();
+//
+//		TableInstance<T> table = openTable(getTable(aType), DatabaseOpenOption.OPEN);
+//
+//		try
+//		{
+//			for (Iterator<T> it = new DocumentIterator<>(this, table, table.getEntryIterator()); it.hasNext();)
+//			{
+//				aConsumer.accept(it.next());
+//			}
+//		}
+//		finally
+//		{
+//			releaseReadLock();
+//		}
+//	}
+//
+//
+//	public void forEachResultSet(Class aType, ResultSetConsumer aConsumer)
+//	{
+//		aquireReadLock();
+//
+//		TableInstance instance = openTable(getTable(aType), DatabaseOpenOption.OPEN);
+//
+//		try
+//		{
+//			ResultSet resultSet = new ResultSet(instance, instance.getEntryIterator());
+//
+//			while (resultSet.next())
+//			{
+//				aConsumer.handle(resultSet);
+//			}
+//		}
+//		finally
+//		{
+//			releaseReadLock();
+//		}
+//	}
 
 
 	private synchronized void releaseReadLock()

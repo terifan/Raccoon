@@ -2,6 +2,7 @@ package org.terifan.raccoon;
 
 import java.util.Iterator;
 import org.terifan.bundle.Document;
+import org.terifan.raccoon.btree.ArrayMapEntry;
 import org.terifan.raccoon.util.Log;
 
 
