@@ -1,9 +1,10 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.ArrayMap.InsertResult;
+import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.util.Result;
 import static org.terifan.raccoon.BTreeTableImplementation.INDEX_SIZE;
 import static org.terifan.raccoon.BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER;
+import org.terifan.raccoon.util.Console;
 
 
 public class BTreeLeaf extends BTreeNode
@@ -22,10 +23,9 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	InsertResult put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	PutResult put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
 		mModified = true;
-
 		return mMap.insert(aEntry, aResult);
 	}
 
@@ -57,8 +57,6 @@ public class BTreeLeaf extends BTreeNode
 		b.mMap = maps[1];
 		a.mModified = true;
 		b.mModified = true;
-		a.mNodeId = aImplementation.nextNodeIndex();
-		b.mNodeId = aImplementation.nextNodeIndex();
 
 		return new SplitResult(a, b, new MarshalledKey(a.mMap.getFirst().getKey()), new MarshalledKey(b.mMap.getFirst().getKey()));
 	}
@@ -76,16 +74,11 @@ public class BTreeLeaf extends BTreeNode
 		b.mMap = maps[1];
 		a.mModified = true;
 		b.mModified = true;
-		a.mNodeId = aImplementation.nextNodeIndex();
-		b.mNodeId = aImplementation.nextNodeIndex();
-
-		byte[] key = b.mMap.getKey(0);
 
 		MarshalledKey keyA = new MarshalledKey(new byte[0]);
-		MarshalledKey keyB = new MarshalledKey(key);
+		MarshalledKey keyB = new MarshalledKey(b.mMap.getKey(0));
 
 		BTreeIndex newIndex = new BTreeIndex(1);
-		newIndex.mNodeId = aImplementation.nextNodeIndex();
 		newIndex.mModified = true;
 		newIndex.mMap = new ArrayMap(INDEX_SIZE);
 		newIndex.mMap.put(new ArrayMapEntry(keyA.array(), BLOCKPOINTER_PLACEHOLDER), null);
@@ -123,6 +116,6 @@ public class BTreeLeaf extends BTreeNode
 	@Override
 	public String toString()
 	{
-		return "BTreeLeaf{mMap=" + mMap + '}';
+		return Console.format("BTreeLeaf{mMap=" + mMap + '}');
 	}
 }

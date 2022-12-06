@@ -73,13 +73,13 @@ public class BlockAccessor implements IBlockAccessor
 
 // TODO: remove
 byte[] buffer;
-if (aBlockPointer.getAllocatedBlocks() == 0)
+if (aBlockPointer.getAllocatedSize() == 0)
 {
 	buffer = new byte[roundUp(aBlockPointer.getLogicalSize())];
 }
 else
 {
-	buffer = new byte[aBlockPointer.getAllocatedBlocks() * mBlockDevice.getBlockSize()];
+	buffer = new byte[aBlockPointer.getAllocatedSize()];
 }
 
 			mBlockDevice.readBlock(aBlockPointer.getBlockIndex0(), buffer, 0, buffer.length, aBlockPointer.getBlockKey(new long[4]));
@@ -146,14 +146,12 @@ else
 
 			assert aBuffer.length % mBlockDevice.getBlockSize() == 0;
 
-			int allocatedBlocks = aBuffer.length / mBlockDevice.getBlockSize();
-
-			long blockIndex = mBlockDevice.allocBlock(allocatedBlocks);
+			long blockIndex = mBlockDevice.allocBlock(aBuffer.length / mBlockDevice.getBlockSize());
 			long[] blockKey = BlockKeyGenerator.generate();
 
 			blockPointer = new BlockPointer();
 			blockPointer.setCompressionAlgorithm(compressor);
-			blockPointer.setAllocatedBlocks(allocatedBlocks);
+			blockPointer.setAllocatedSize(aBuffer.length);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
 			blockPointer.setTransactionId(aTransactionId);
@@ -198,7 +196,7 @@ else
 	}
 
 
-	private int roundUp(int aSize)
+	public int roundUp(int aSize)
 	{
 		int s = mBlockDevice.getBlockSize();
 		return aSize + ((s - (aSize % s)) % s);

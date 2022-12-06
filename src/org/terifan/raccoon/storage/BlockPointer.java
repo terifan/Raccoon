@@ -4,6 +4,7 @@ import java.io.Serializable;
 import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.ByteArrayUtil;
+import org.terifan.raccoon.util.Console;
 
 
 /*
@@ -45,7 +46,7 @@ import org.terifan.raccoon.util.ByteArrayUtil;
  *   8 checksum algorithm
  *   8 compression algorithm
  *   8 block level
- *  32 allocated blocks
+ *  32 allocated size
  *  32 logical size
  *  32 physical size
  *  64 block index 1
@@ -66,7 +67,7 @@ public class BlockPointer implements Serializable
 	private final static int OFS_FLAG_LEVEL = 1;
 	private final static int OFS_FLAG_CHECKSUM = 2;
 	private final static int OFS_FLAG_COMPRESSION = 3;
-	private final static int OFS_ALLOCATED_BLOCKS = 4;
+	private final static int OFS_ALLOCATED_SIZE = 4;
 	private final static int OFS_LOGICAL_SIZE = 8;
 	private final static int OFS_PHYSICAL_SIZE = 12;
 	private final static int OFS_OFFSET0 = 16;
@@ -116,12 +117,9 @@ public class BlockPointer implements Serializable
 	/**
 	 * Return the 'type' field from a BlockPointer stored in the buffer provided.
 	 *
-	 * @param aBuffer
-	 *   a buffer containing a BlockPointer
-	 * @param aBlockPointerOffset
-	 *   start offset of the BlockPointer in the buffer
-	 * @return
-	 *   the 'type' field
+	 * @param aBuffer a buffer containing a BlockPointer
+	 * @param aBlockPointerOffset start offset of the BlockPointer in the buffer
+	 * @return the 'type' field
 	 */
 	public static BlockType readBlockType(byte[] aBuffer, int aBlockPointerOffset)
 	{
@@ -155,17 +153,17 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public int getAllocatedBlocks()
+	public int getAllocatedSize()
 	{
-		return ByteArrayUtil.getInt32(mBuffer, OFS_ALLOCATED_BLOCKS);
+		return ByteArrayUtil.getInt32(mBuffer, OFS_ALLOCATED_SIZE);
 	}
 
 
-	public BlockPointer setAllocatedBlocks(int aAllocBlocks)
+	public BlockPointer setAllocatedSize(int aAllocBlocks)
 	{
 		assert aAllocBlocks >= 0;
 
-		ByteArrayUtil.putInt32(mBuffer, OFS_ALLOCATED_BLOCKS, aAllocBlocks);
+		ByteArrayUtil.putInt32(mBuffer, OFS_ALLOCATED_SIZE, aAllocBlocks);
 		return this;
 	}
 
@@ -373,6 +371,6 @@ public class BlockPointer implements Serializable
 	@Override
 	public String toString()
 	{
-		return "{type=" + getBlockType() + ", offset=" + getBlockIndex0() + ", phys=" + getPhysicalSize() + ", logic=" + getLogicalSize() + ", tx=" + getTransactionId() + ")";
+		return Console.format("{type=%s, offset=%d, alloc=%d, phys=%d, logic=%d, tx=%d}", getBlockType(), getBlockIndex0(), getAllocatedSize(), getPhysicalSize(), getLogicalSize(), getTransactionId());
 	}
 }

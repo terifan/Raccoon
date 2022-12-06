@@ -7,13 +7,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
-import javax.swing.JFrame;
 import org.terifan.raccoon.Database;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.managed.RangeMap;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.monitoring.DatabaseMonitorWindow;
+import org.terifan.raccoon.monitoring.MonitorInstance;
+import org.terifan.raccoon.util.Console;
 import org.terifan.treegraph.HorizontalLayout;
 import org.terifan.treegraph.TreeRenderer;
 import org.terifan.treegraph.util.TextSlice;
@@ -39,11 +41,15 @@ public class TestBTreeSmall
 
 	private int COMMIT;
 
+	private static DatabaseMonitorWindow mDatabaseMonitorWindow;
+
 
 	public static void main(String... args)
 	{
 		try
 		{
+			mDatabaseMonitorWindow = new DatabaseMonitorWindow();
+
 //			mTreeFrame = new VerticalImageFrame();
 //			mTreeFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
 
@@ -67,7 +73,7 @@ public class TestBTreeSmall
 	{
 		mEntries = new HashMap<>();
 
-//		int seed = 1427423377;
+//		int seed = 1838291525;
 		int seed = Math.abs(new Random().nextInt());
 		RND = new Random(seed);
 
@@ -79,7 +85,7 @@ public class TestBTreeSmall
 		int UPDATE = 0;
 		int DELETE = 0;
 		COMMIT = 0;
-		int COMMIT_FREQ = 10;
+		int COMMIT_FREQ = 1;
 
 		try
 		{
@@ -94,34 +100,41 @@ public class TestBTreeSmall
 			list = new ArrayList<>(list);
 			Collections.shuffle(list, RND);
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW); MonitorInstance mi = mDatabaseMonitorWindow.attach(db))
 			{
 				for (String key : list)
 				{
 					String value = Helper.createString(RND);
-					if (mEntries.put(key, value) != null) UPDATE++; else INSERT++;
-					db.save(new _KeyValue(key, value));
-					dump(db, key);
+					mEntries.put(key, value);
+					if (db.save(new _KeyValue(key, value))) UPDATE++; else INSERT++;
+//					dump(db, "save", key);
 
 					commit(db, COMMIT_FREQ);
+					mi.update();
 				}
 
-				boolean all = true;
-				for (String key : mEntries.keySet())
-				{
-					all &= db.get(new _KeyValue(key)).mValue.equals(mEntries.get(key));
-					FETCH++;
-				}
-				if (!all) throw new Exception("Not all keys found");
+//				boolean all = true;
+//				for (String key : mEntries.keySet())
+//				{
+//					all &= db.get(new _KeyValue(key)).mValue.equals(mEntries.get(key));
+//					FETCH++;
+//				}
+//				if (!all) throw new Exception("Not all keys found");
 
 				commit(db, 100);
+				dump(db, "commit", "");
 
 //				ScanResult result = db.scan(new ScanResult());
 //				System.out.println(result);
 			}
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+//for (int loop = 0; loop < 10; loop++)
+{
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN); MonitorInstance mi = mDatabaseMonitorWindow.attach(db))
 			{
+				db.scan(new ScanResult());
+
+				try{
 				boolean all = true;
 				for (String key : mEntries.keySet())
 				{
@@ -135,18 +148,24 @@ public class TestBTreeSmall
 				for (int i = list.size()/2; --i >= 0;)
 				{
 					String key = list.get(i);
-					mEntries.remove(key);
+//					System.out.println(key);
+					if(mEntries.remove(key)==null) continue;
 					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
-					dump(db, key);
+					dump(db, "remove", key);
 					DELETE++;
 
 					commit(db, COMMIT_FREQ);
+					mi.update();
 				}
-
 				commit(db, 100);
+				dump(db, "commit", "");
+				}catch(Exception e){
+					dump(db, "remove exception", "?");
+					throw e;
+				}
 			}
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN); MonitorInstance mi = mDatabaseMonitorWindow.attach(db))
 			{
 				boolean all = true;
 				for (String key : mEntries.keySet())
@@ -162,39 +181,50 @@ public class TestBTreeSmall
 				{
 					String key = list.get(i);
 					String value = Helper.createString(RND);
-					if (mEntries.put(key, value) != null) UPDATE++; else INSERT++;
-					db.save(new _KeyValue(key, value));
-					dump(db, key);
+					mEntries.remove(key);
+					mEntries.put(key, value);
+					if (db.save(new _KeyValue(key, value))) UPDATE++; else INSERT++;
+//					dump(db, "save", key);
 
 					commit(db, COMMIT_FREQ);
+					mi.update();
 				}
 
 				commit(db, 100);
+				dump(db, "commit", "");
 			}
+}
 
-			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
+			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN); MonitorInstance mi = mDatabaseMonitorWindow.attach(db))
 			{
 				List<String> keys = new ArrayList<>(mEntries.keySet());
 				Collections.shuffle(keys, RND);
 
 				for (String key : keys)
 				{
-					mEntries.remove(key);
+					if(mEntries.remove(key)==null) continue;
+					try{
 					if(!db.remove(new _KeyValue(key))) throw new IllegalStateException("Failed to remove: " + key);
-					dump(db, key);
+					}finally{
+					dump(db, "remove", key);
+					}
 					DELETE++;
 
 					commit(db, COMMIT_FREQ);
+					mi.update();
+//					if(TESTINDEX>=54)return;
 				}
 
 				commit(db, 100);
+
+				Thread.sleep(10000_000);
 			}
 		}
 		finally
 		{
 			mStopTime = System.currentTimeMillis();
 
-			System.out.printf("#" + Console.BLUE + "%d" + Console.RESET + " time=" + Console.BLUE + "%s" + Console.RESET + " duration=" + Console.BLUE + "%s" + Console.RESET + " seed=" + Console.BLUE + "%-10d" + Console.RESET + " operations=[" + Console.CYAN + "%d,%d,%d,%d,%d" + Console.RESET + "]" + "%n", ++TESTROUND, Helper.formatTime(System.currentTimeMillis() - mInitTime), Helper.formatTime(mStopTime - mStartTime), seed, FETCH, INSERT, UPDATE, DELETE, COMMIT);
+			Console.println("#%d time=%s duration=%s seed=%d operations=[%d,%d,%d,%d,%d]", ++TESTROUND, Helper.formatTime(System.currentTimeMillis() - mInitTime), Helper.formatTime(mStopTime - mStartTime), seed, FETCH, INSERT, UPDATE, DELETE, COMMIT);
 		}
 	}
 
@@ -203,13 +233,12 @@ public class TestBTreeSmall
 	{
 		if (RND.nextInt(100) <= aProb)
 		{
-			if (mTreeFrame != null)
-			{
-				String description = aDatabase.scan(new ScanResult()).getDescription();
-
-				mTreeFrame.add(new TextSlice("" + TESTINDEX));
-				mTreeFrame.add(new TreeRenderer(new HorizontalLayout(), description));
-			}
+//			if (mTreeFrame != null)
+//			{
+//				String description = aDatabase.scan(new ScanResult()).getDescription();
+//				mTreeFrame.add(new TextSlice("" + TESTINDEX));
+//				mTreeFrame.add(new TreeRenderer(new HorizontalLayout(), description));
+//			}
 
 //			if (aProb == 100)
 			{
@@ -219,9 +248,12 @@ public class TestBTreeSmall
 				}
 				aDatabase.commit();
 				COMMIT++;
+
+//				ScanResult sr = aDatabase.scan(new ScanResult());
+//				System.out.println(sr);
 			}
 
-			if (!false)
+			if (false)
 			{
 				long alloc = aDatabase.getBlockDevice().getAllocatedSpace() / 10;
 
@@ -253,12 +285,12 @@ public class TestBTreeSmall
 	}
 
 
-	private void dump(Database aDatabase, String aKey) throws IOException
+	private void dump(Database aDatabase, String aOperation, String aKey) throws IOException
 	{
 		if (mLog && mTreeFrame != null)
 		{
-//			mTreeFrame.add(new TextSlice(TESTINDEX + " " + aKey));
-//			mTreeFrame.add(new TreeRenderer(new HorizontalLayout(), aDatabase.scan(new ScanResult()).getDescription()));
+			mTreeFrame.add(new TextSlice("#" + TESTINDEX + " " + aOperation + ": " + aKey));
+			mTreeFrame.add(new TreeRenderer(new HorizontalLayout(), aDatabase.scan(new ScanResult()).getDescription()));
 		}
 
 		TESTINDEX++;

@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import org.terifan.raccoon.ArrayMap.NearResult;
-import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.util.Result;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
@@ -31,9 +31,9 @@ public class ArrayMapNGTest
 
 		Result<ArrayMapEntry> existing = new Result<>();
 
-		boolean wasAdd = map.put(out, existing);
+		PutResult wasAdd = map.put(out, existing);
 
-		assertTrue(wasAdd);
+		assertNotEquals(wasAdd, PutResult.OVERFLOW);
 		assertNull(existing.get());
 
 		ArrayMapEntry in = new ArrayMapEntry(out.getKey());
@@ -49,7 +49,7 @@ public class ArrayMapNGTest
 
 		wasAdd = map.put(out, existing);
 
-		assertTrue(wasAdd);
+		assertNotEquals(wasAdd, PutResult.OVERFLOW);
 		assertNotNull(existing.get());
 		assertEquals(existing.get().getValue(), original);
 
@@ -87,7 +87,7 @@ public class ArrayMapNGTest
 
 		ArrayMapEntry entry = new ArrayMapEntry(key, value, flags);
 
-		assertTrue(map.put(entry, null));
+		assertNotEquals(map.put(entry, null), PutResult.OVERFLOW);
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
@@ -144,12 +144,12 @@ public class ArrayMapNGTest
 		{
 			byte[] key = ("" + i).getBytes();
 
-			assertTrue(map.put(new ArrayMapEntry(key, value, (byte)77), null));
+			assertNotEquals(map.put(new ArrayMapEntry(key, value, (byte)77), null), PutResult.OVERFLOW);
 		}
 
 		byte[] key = ("" + ArrayMap.MAX_ENTRY_COUNT).getBytes();
 
-		assertFalse(map.put(new ArrayMapEntry(key, value, (byte)77), null));
+		assertEquals(map.put(new ArrayMapEntry(key, value, (byte)77), null), PutResult.OVERFLOW);
 	}
 
 
@@ -218,7 +218,7 @@ public class ArrayMapNGTest
 			String keyString = keys[j];
 			byte[] key = keyString.getBytes("utf-8");
 
-			if (map.put(new ArrayMapEntry(key, value, type), null))
+			if (map.put(new ArrayMapEntry(key, value, type), null) != PutResult.OVERFLOW)
 			{
 				values.put(keyString, value);
 			}
@@ -335,7 +335,7 @@ public class ArrayMapNGTest
 					continue;
 				}
 
-				if (!aMap.put(entry, null))
+				if (aMap.put(entry, null) == PutResult.OVERFLOW)
 				{
 					break;
 				}

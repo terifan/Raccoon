@@ -6,10 +6,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
-import org.terifan.raccoon.ArrayMap.InsertResult;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.raccoon.util.Console;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
 
@@ -17,8 +18,8 @@ import org.terifan.raccoon.util.Result;
 public class BTreeTableImplementation extends TableImplementation
 {
 	static byte[] BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
-	static int INDEX_SIZE = 600;
-	static int LEAF_SIZE = 600;
+	static int INDEX_SIZE = 1000;
+	static int LEAF_SIZE = 500;
 
 	private boolean mWasEmptyInstance;
 	private boolean mClosed;
@@ -89,7 +90,6 @@ public class BTreeTableImplementation extends TableImplementation
 		mRoot = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(bp.getBlockLevel()) : new BTreeLeaf();
 		mRoot.mBlockPointer = bp;
 		mRoot.mMap = new ArrayMap(readBlock(bp));
-		mRoot.mNodeId = nextNodeIndex();
 	}
 
 
@@ -104,6 +104,8 @@ public class BTreeTableImplementation extends TableImplementation
 
 		return mRoot.get(this, new MarshalledKey(aEntry.getKey()), aEntry);
 	}
+
+	ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
 
 	@Override
@@ -128,17 +130,24 @@ public class BTreeTableImplementation extends TableImplementation
 
 		Result<ArrayMapEntry> result = new Result<>();
 
-		if (mRoot.put(this, new MarshalledKey(aEntry.getKey()), aEntry, result) == InsertResult.RESIZED)
+//		lock.writeLock().lock();
+		synchronized (this)
 		{
-			if (mRoot instanceof BTreeLeaf)
+			if (mRoot.mLevel == 0 ? mRoot.mMap.getFreeSpace() < aEntry.getMarshalledLength() : mRoot.mMap.getUsedSpace() > BTreeTableImplementation.INDEX_SIZE)
 			{
-				mRoot = ((BTreeLeaf)mRoot).upgrade(this);
-			}
-			else
-			{
-				mRoot = ((BTreeIndex)mRoot).grow(this);
+				if (mRoot instanceof BTreeLeaf)
+				{
+					mRoot = ((BTreeLeaf)mRoot).upgrade(this);
+				}
+				else
+				{
+					mRoot = ((BTreeIndex)mRoot).grow(this);
+				}
 			}
 		}
+//		lock.writeLock().unlock();
+
+		mRoot.put(this, new MarshalledKey(aEntry.getKey()), aEntry, result);
 
 		Log.dec();
 		assert mModCount == modCount : "concurrent modification";
@@ -267,9 +276,13 @@ public class BTreeTableImplementation extends TableImplementation
 
 	private HashSet<BlockPointer> mCommitHistory = new HashSet<>();
 
+
 	void hasCommitted(BTreeNode aNode)
 	{
-		if (!mCommitHistory.add(aNode.mBlockPointer)) System.out.println(aNode);
+		if (!mCommitHistory.add(aNode.mBlockPointer))
+		{
+			System.out.println(aNode);
+		}
 	}
 
 
@@ -426,18 +439,45 @@ public class BTreeTableImplementation extends TableImplementation
 	{
 		aScanResult.tables++;
 
-		scan(mRoot, aScanResult);
+//		scan(mRoot, aScanResult, 0);
 	}
 
 
-	private void scan(BTreeNode aNode, ScanResult aScanResult)
+	private void scan(BTreeNode aNode, ScanResult aScanResult, int aLevel)
+	{
+		System.out.print((aNode.mBlockPointer + "              ").substring(0,200));
+		Console.repeat(aLevel, "... ");
+		Console.println(aNode);
+
+		if (aNode instanceof BTreeIndex)
+		{
+			BTreeIndex indexNode = (BTreeIndex)aNode;
+
+			for (int i = 0, sz = indexNode.mMap.size(); i < sz; i++)
+			{
+				BTreeNode child = indexNode.getNode(this, i);
+
+				ArrayMapEntry entry = new ArrayMapEntry();
+				indexNode.mMap.get(i, entry);
+				indexNode.mChildNodes.put(new MarshalledKey(entry.getKey()), child);
+
+				scan(child, aScanResult, aLevel + 1);
+			}
+		}
+		else
+		{
+		}
+	}
+
+
+	private void scanX(BTreeNode aNode, ScanResult aScanResult)
 	{
 		if (aNode instanceof BTreeIndex)
 		{
 			BTreeIndex indexNode = (BTreeIndex)aNode;
 
 			int fillRatio = indexNode.mMap.getUsedSpace() * 100 / INDEX_SIZE;
-			aScanResult.log.append("{" + indexNode.mNodeId + ": " + fillRatio + "%" + "}");
+			aScanResult.log.append("{" + (aNode.mBlockPointer == null ? "" : aNode.mBlockPointer.getBlockIndex0()) + ":" + fillRatio + "%" + "}");
 
 			boolean first = true;
 			aScanResult.log.append("'");
@@ -448,22 +488,22 @@ public class BTreeTableImplementation extends TableImplementation
 					aScanResult.log.append(":");
 				}
 				first = false;
-				MarshalledKey key = new MarshalledKey(entry.getKey());
-				String s = new String(key.array()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", "");
+				String s = new String(entry.getKey()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", "");
 				aScanResult.log.append(s.isEmpty() ? "*" : s);
 			}
 			aScanResult.log.append("'");
-			aScanResult.log.append(indexNode.mModified ? "#f00#f00#fff" : "#0f0");
+
 			if (indexNode.mMap.size() == 1)
 			{
-				aScanResult.log.append("#f00");
-				System.out.println("single index");
+				aScanResult.log.append("#000#ff0#000");
 			}
 			else if (fillRatio > 100)
 			{
-				aScanResult.log.append("#f80");
-				System.out.println("fat index");
-//				System.exit(0);
+				aScanResult.log.append(indexNode.mModified ? "#a00#a00#fff" : "#666#666#fff");
+			}
+			else
+			{
+				aScanResult.log.append(indexNode.mModified ? "#f00#f00#fff" : "#888#fff#000");
 			}
 
 			first = true;
@@ -483,20 +523,21 @@ public class BTreeTableImplementation extends TableImplementation
 				indexNode.mMap.get(i, entry);
 				indexNode.mChildNodes.put(new MarshalledKey(entry.getKey()), child);
 
-				scan(child, aScanResult);
+				scanX(child, aScanResult);
 			}
 
 			aScanResult.log.append("]");
 		}
 		else
 		{
-			BTreeLeaf node = (BTreeLeaf)aNode;
-			int fillRatio = node.mMap.getUsedSpace() * 100 / LEAF_SIZE;
+			int fillRatio = aNode.mMap.getUsedSpace() * 100 / LEAF_SIZE;
 
-			aScanResult.log.append("{" + node.mNodeId + ": " + fillRatio + "%" + "}");
+			aScanResult.log.append("{" + (aNode.mBlockPointer == null ? "" : aNode.mBlockPointer.getBlockIndex0()) + ":" + fillRatio + "%" + "}");
 			aScanResult.log.append("[");
+
 			boolean first = true;
-			for (ArrayMapEntry entry : node.mMap)
+
+			for (ArrayMapEntry entry : aNode.mMap)
 			{
 				if (!first)
 				{
@@ -505,13 +546,16 @@ public class BTreeTableImplementation extends TableImplementation
 				first = false;
 				aScanResult.log.append("'" + new String(entry.getKey()).replaceAll("[^\\w]*", "").replace("_", "") + "'");
 			}
+
 			aScanResult.log.append("]");
-			aScanResult.log.append(node.mModified ? "#f00#f00#fff" : "#0f0");
+
 			if (fillRatio > 100)
 			{
-				aScanResult.log.append("#f80");
-				System.out.println("fat leaf");
-				System.exit(0);
+				aScanResult.log.append(aNode.mModified ? "#a00#a00#fff" : "#666#666#fff");
+			}
+			else
+			{
+				aScanResult.log.append(aNode.mModified ? "#f00#f00#fff" : "#888#fff#000");
 			}
 		}
 	}
@@ -547,7 +591,6 @@ public class BTreeTableImplementation extends TableImplementation
 	{
 		mRoot = new BTreeLeaf();
 		mRoot.mMap = new ArrayMap(LEAF_SIZE);
-		mRoot.mNodeId = nextNodeIndex();
 	}
 
 

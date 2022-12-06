@@ -1,6 +1,7 @@
 package org.terifan.raccoon;
 
 import java.util.Arrays;
+import org.terifan.raccoon.util.Console;
 
 
 public final class ArrayMapEntry
@@ -108,6 +109,6 @@ public final class ArrayMapEntry
 	@Override
 	public String toString()
 	{
-		return "ArrayMapEntry{" + "mType=" + mType + ", mKey=" + (mKey == null ? "null" : "\"" + new String(mKey).replaceAll("[^\\w]*", "") + "\"") + ", mValue=" + (mValue == null ? "null" : "\"" + new String(mValue).replace('\u0000', '.').replaceAll("[^\\w\\.]*", "") + "\"") + "}";
+		return Console.format("ArrayMapEntry{mType=%s, mKey=%s, mValue=%s}", mType, (mKey == null ? "null" : "\"" + new String(mKey).replaceAll("[^\\w]*", "") + "\""), (mValue == null ? "null" : "\"" + new String(mValue).replace('\u0000', '.').replaceAll("[^\\w\\.]*", "") + "\""));
 	}
 }

@@ -1,17 +1,19 @@
 package org.terifan.raccoon;
 
+import java.util.Arrays;
 import java.util.Map.Entry;
-import org.terifan.raccoon.ArrayMap.InsertResult;
+import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Result;
 import static org.terifan.raccoon.BTreeTableImplementation.INDEX_SIZE;
 import static org.terifan.raccoon.BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER;
+import org.terifan.raccoon.util.Console;
 
 
 public class BTreeIndex extends BTreeNode
 {
-	public NodeBuffer mChildNodes;
+	NodeBuffer mChildNodes;
 
 
 	BTreeIndex(int aLevel)
@@ -36,38 +38,41 @@ public class BTreeIndex extends BTreeNode
 
 
 	@Override
-	InsertResult put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	PutResult put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
 		mModified = true;
+		BTreeNode nearestNode;
 
-		ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey.array());
-
-		mMap.loadNearestIndexEntry(nearestEntry);
-
-		BTreeNode nearestNode = getNode(aImplementation, nearestEntry);
-
-		if (nearestNode.put(aImplementation, aKey, aEntry, aResult) == InsertResult.PUT)
+		synchronized (this)
 		{
-			return InsertResult.PUT;
+			ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey.array());
+			mMap.loadNearestIndexEntry(nearestEntry);
+			nearestNode = getNode(aImplementation, nearestEntry);
+
+			if (mLevel == 1 ? nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > BTreeTableImplementation.INDEX_SIZE)
+			{
+				MarshalledKey leftKey = new MarshalledKey(nearestEntry.getKey());
+
+				mChildNodes.remove(leftKey);
+				mMap.remove(leftKey.array(), null);
+
+				SplitResult split = nearestNode.split(aImplementation);
+
+				MarshalledKey rightKey = split.rightKey();
+
+				mChildNodes.put(leftKey, split.left());
+				mChildNodes.put(rightKey, split.right());
+
+				mMap.insert(new ArrayMapEntry(leftKey.array(), BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER));
+				mMap.insert(new ArrayMapEntry(rightKey.array(), BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER));
+
+				nearestEntry = new ArrayMapEntry(aKey.array());
+				mMap.loadNearestIndexEntry(nearestEntry);
+				nearestNode = getNode(aImplementation, nearestEntry);
+			}
 		}
 
-		MarshalledKey leftKey = new MarshalledKey(nearestEntry.getKey());
-
-		mChildNodes.remove(leftKey);
-		mMap.remove(leftKey.array(), null);
-
-		SplitResult split = nearestNode.split(aImplementation);
-
-		MarshalledKey rightKey = split.rightKey();
-
-		mChildNodes.put(leftKey, split.left());
-		mChildNodes.put(rightKey, split.right());
-
-		boolean resized = false;
-		resized |= mMap.insert(new ArrayMapEntry(leftKey.array(), BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER)) == InsertResult.RESIZED;
-		resized |= mMap.insert(new ArrayMapEntry(rightKey.array(), BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER)) == InsertResult.RESIZED;
-
-		return resized ? InsertResult.RESIZED : InsertResult.PUT;
+		return nearestNode.put(aImplementation, aKey, aEntry, aResult);
 	}
 
 
@@ -79,78 +84,27 @@ public class BTreeIndex extends BTreeNode
 		int index = mMap.nearestIndex(aKey.array());
 
 		BTreeNode curntChld = getNode(aImplementation, index);
-
-		RemoveResult result = curntChld.remove(aImplementation, aKey, aOldEntry);
-
-		if (result == RemoveResult.NO_MATCH)
-		{
-			return result;
-		}
-
-		ArrayMapEntry nearestEntry = mMap.get(index, new ArrayMapEntry());
-		MarshalledKey nearestKey = new MarshalledKey(nearestEntry.getKey());
-
-		if (curntChld.mMap.size() == 0)
-		{
-			mMap.remove(index, null);
-			mChildNodes.remove(nearestKey);
-
-			if (index == 0)
-			{
-				clearFirstKey(this);
-			}
-
-			assert assertValidCache() == null : assertValidCache();
-
-			return RemoveResult.REMOVED;
-		}
-
 		BTreeNode leftChild = index == 0 ? null : getNode(aImplementation, index - 1);
 		BTreeNode rghtChild = index + 1 == mMap.size() ? null : getNode(aImplementation, index + 1);
 
 		int keyLimit = mLevel == 1 ? 0 : 1;
 		int sizeLimit = mLevel == 1 ? BTreeTableImplementation.LEAF_SIZE : BTreeTableImplementation.INDEX_SIZE;
 
-		index = mergeNodes(aImplementation, index, curntChld, leftChild, rghtChild, keyLimit, sizeLimit);
-
-		if (index > 0)
+		if (leftChild != null && (curntChld.mMap.size() + leftChild.mMap.size()) < sizeLimit || rghtChild != null && (curntChld.mMap.size() + rghtChild.mMap.size()) < sizeLimit)
 		{
-			byte[] firstKeyBytes = findLowestLeafKey(aImplementation, curntChld);
-
-			MarshalledKey firstKey = new MarshalledKey(firstKeyBytes);
-
-			ArrayMapEntry firstEntry = new ArrayMapEntry(firstKeyBytes);
-			get(aImplementation, firstKey, firstEntry);
-
-			nearestEntry.setKey(firstEntry.getKey());
-
-			mMap.remove(index, null);
-			mMap.insert(nearestEntry);
-
-			BTreeNode childNode = mChildNodes.remove(nearestKey);
-			if (childNode != null)
-			{
-				mChildNodes.put(firstKey, childNode);
-			}
+			index = mergeNodes(aImplementation, index, curntChld, leftChild, rghtChild, keyLimit, sizeLimit);
 		}
 
-		if (mLevel > 1 && curntChld.mMap.getUsedSpace() > sizeLimit)
+		RemoveResult result = curntChld.remove(aImplementation, aKey, aOldEntry);
+
+		if (curntChld.mLevel == 0 && curntChld.mMap.size() == 0)
 		{
-			MarshalledKey leftKey = new MarshalledKey(findLowestLeafKey(aImplementation, curntChld));
+			removeEmptyLeafNode(aImplementation, curntChld, index);
+		}
 
-			SplitResult split = curntChld.split(aImplementation);
-
-			MarshalledKey rightKey = split.rightKey();
-
-			mMap.remove(index, null);
-
-			mChildNodes.put(leftKey, split.left());
-			mChildNodes.put(rightKey, split.right());
-
-			mMap.insert(new ArrayMapEntry(leftKey.array(), BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER));
-			mMap.insert(new ArrayMapEntry(rightKey.array(), BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER));
-
-			clearFirstKey(this);
+		if (result == RemoveResult.NO_MATCH)
+		{
+			return result;
 		}
 
 		assert assertValidCache() == null : assertValidCache();
@@ -162,6 +116,8 @@ public class BTreeIndex extends BTreeNode
 
 	private int mergeNodes(BTreeTableImplementation aImplementation, int aIndex, BTreeNode aCurntChld, BTreeNode aLeftChild, BTreeNode aRghtChild, int aKeyLimit, int aSizeLimit)
 	{
+		int newIndex = aIndex;
+
 		boolean a = aLeftChild != null;
 		if (a)
 		{
@@ -190,14 +146,14 @@ public class BTreeIndex extends BTreeNode
 		{
 			if (a)
 			{
-				mergeLeafs(aImplementation, aIndex - 1, (BTreeLeaf)aLeftChild, (BTreeLeaf)aCurntChld);
-				aIndex--;
+				mergeLeafs(aImplementation, newIndex - 1, (BTreeLeaf)aLeftChild, (BTreeLeaf)aCurntChld);
+				newIndex--;
 			}
 			else if (b)
 			{
-				mergeLeafs(aImplementation, aIndex + 1, (BTreeLeaf)aRghtChild, (BTreeLeaf)aCurntChld);
+				mergeLeafs(aImplementation, newIndex + 1, (BTreeLeaf)aRghtChild, (BTreeLeaf)aCurntChld);
 			}
-			if (aIndex <= 0)
+			if (newIndex <= 0)
 			{
 				clearFirstKey(this);
 			}
@@ -206,16 +162,39 @@ public class BTreeIndex extends BTreeNode
 		{
 			if (a)
 			{
-				mergeIndices(aImplementation, aIndex - 1, (BTreeIndex)aLeftChild, aIndex, (BTreeIndex)aCurntChld);
-				aIndex--;
+				mergeIndices(aImplementation, newIndex - 1, (BTreeIndex)aLeftChild, newIndex, (BTreeIndex)aCurntChld);
+				newIndex--;
 			}
 			else if (b)
 			{
-				mergeIndices(aImplementation, aIndex + 1, (BTreeIndex)aRghtChild, aIndex, (BTreeIndex)aCurntChld);
+				mergeIndices(aImplementation, newIndex + 1, (BTreeIndex)aRghtChild, newIndex, (BTreeIndex)aCurntChld);
 			}
 		}
 
-		return aIndex;
+		// update lowest key after a merge
+		if (newIndex > 0)
+		{
+			ArrayMapEntry nearestEntry = mMap.get(newIndex, new ArrayMapEntry());
+			MarshalledKey nearestKey = new MarshalledKey(nearestEntry.getKey());
+
+			byte[] firstKeyBytes = findLowestLeafKey(aImplementation, aCurntChld);
+
+			if (!Arrays.equals(firstKeyBytes, nearestEntry.getKey()))
+			{
+				nearestEntry.setKey(firstKeyBytes);
+
+				mMap.remove(newIndex, null);
+				mMap.insert(nearestEntry);
+
+				BTreeNode childNode = mChildNodes.remove(nearestKey);
+				if (childNode != null)
+				{
+					mChildNodes.put(new MarshalledKey(firstKeyBytes), childNode);
+				}
+			}
+		}
+
+		return newIndex;
 	}
 
 
@@ -227,13 +206,12 @@ public class BTreeIndex extends BTreeNode
 		ArrayMap[] maps = mMap.split(INDEX_SIZE);
 
 		BTreeIndex left = new BTreeIndex(mLevel);
-		BTreeIndex right = new BTreeIndex(mLevel);
 		left.mMap = maps[0];
-		right.mMap = maps[1];
 		left.mModified = true;
+
+		BTreeIndex right = new BTreeIndex(mLevel);
+		right.mMap = maps[1];
 		right.mModified = true;
-		left.mNodeId = aImplementation.nextNodeIndex();
-		right.mNodeId = aImplementation.nextNodeIndex();
 
 		byte[] midKeyBytes = maps[1].getKey(0);
 		MarshalledKey midKey = new MarshalledKey(midKeyBytes);
@@ -265,8 +243,6 @@ public class BTreeIndex extends BTreeNode
 		right.mMap.insert(firstRight);
 		right.mChildNodes.put(keyLeft, firstChild);
 
-		mChildNodes.clear();
-
 		return new SplitResult(left, right, keyLeft, keyRight);
 	}
 
@@ -283,8 +259,6 @@ public class BTreeIndex extends BTreeNode
 		right.mMap = maps[1];
 		left.mModified = true;
 		right.mModified = true;
-		left.mNodeId = aImplementation.nextNodeIndex();
-		right.mNodeId = aImplementation.nextNodeIndex();
 
 		byte[] midKeyBytes = right.mMap.getKey(0);
 
@@ -318,7 +292,6 @@ public class BTreeIndex extends BTreeNode
 		right.mChildNodes.put(keyLeft, firstChild);
 
 		BTreeIndex index = new BTreeIndex(mLevel + 1);
-		index.mNodeId = aImplementation.nextNodeIndex();
 		index.mModified = true;
 		index.mMap = new ArrayMap(INDEX_SIZE);
 		index.mMap.insert(new ArrayMapEntry(keyLeft.array(), BLOCKPOINTER_PLACEHOLDER));
@@ -338,7 +311,6 @@ public class BTreeIndex extends BTreeNode
 	BTreeIndex shrink(BTreeTableImplementation aImplementation)
 	{
 		BTreeIndex index = new BTreeIndex(mLevel - 1);
-		index.mNodeId = aImplementation.nextNodeIndex();
 		index.mModified = true;
 		index.mMap = new ArrayMap(INDEX_SIZE);
 
@@ -437,6 +409,37 @@ public class BTreeIndex extends BTreeNode
 	}
 
 
+	private void removeEmptyLeafNode(BTreeTableImplementation aImplementation, BTreeNode aNode, int aIndex)
+	{
+		if (aIndex == 0)
+		{
+			mMap.remove(new byte[0], null);
+			mChildNodes.remove(new MarshalledKey(new byte[0]));
+
+			ArrayMapEntry firstEntry = mMap.get(0, new ArrayMapEntry());
+
+			BTreeNode firstNode = getNode(aImplementation, firstEntry);
+
+			mMap.remove(firstEntry.getKey(), null);
+			mChildNodes.remove(new MarshalledKey(firstEntry.getKey()));
+
+			firstEntry.setKey(new byte[0]);
+
+			mMap.insert(firstEntry);
+			mChildNodes.put(new MarshalledKey(firstEntry.getKey()), firstNode);
+		}
+		else
+		{
+			ArrayMapEntry targetEntry = mMap.get(aIndex, new ArrayMapEntry());
+
+			mMap.remove(targetEntry.getKey(), null);
+			mChildNodes.remove(new MarshalledKey(targetEntry.getKey()));
+		}
+
+		aImplementation.freeBlock(aNode.mBlockPointer);
+	}
+
+
 	private void fixFirstKey(BTreeTableImplementation aImplementation, BTreeIndex aNode)
 	{
 		ArrayMapEntry firstEntry = aNode.mMap.get(0, new ArrayMapEntry());
@@ -481,10 +484,19 @@ public class BTreeIndex extends BTreeNode
 	{
 		if (aNode instanceof BTreeIndex node)
 		{
-			return findLowestLeafKey(aImplementation, node.getNode(aImplementation, 0));
+			for (int i = 0; i < mMap.size() ; i++)
+			{
+				byte[] b = findLowestLeafKey(aImplementation, node.getNode(aImplementation, i));
+				if (b.length > 0)
+				{
+					return b;
+				}
+			}
+			throw new IllegalStateException();
 		}
 
-		assert aNode.mMap.size() > 0;
+//		assert !aNode.mMap.isEmpty();
+		if (aNode.mMap.isEmpty()) return new byte[0];
 
 		return aNode.mMap.getKey(0);
 	}
@@ -584,7 +596,6 @@ public class BTreeIndex extends BTreeNode
 			childNode = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(mLevel - 1) : new BTreeLeaf();
 			childNode.mBlockPointer = bp;
 			childNode.mMap = new ArrayMap(aImplementation.readBlock(bp));
-			childNode.mNodeId = aImplementation.nextNodeIndex();
 
 			mChildNodes.put(key, childNode);
 		}
@@ -596,10 +607,10 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	public String toString()
 	{
-		String s = "BTreeIndex{mLevel=" + mLevel + ", mMap=" + mMap + ", mBuffer={";
+		String s = Console.format("BTreeIndex{mLevel=%d, mMap=" + mMap + ", mBuffer={", mLevel);
 		for (MarshalledKey t : mChildNodes.keySet())
 		{
-			s += "\"" + t + "\",";
+			s += Console.format("\"%s\",", t);
 		}
 		return s.substring(0, s.length() - 1) + '}';
 	}
