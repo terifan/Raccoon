@@ -482,8 +482,9 @@ public class BTreeIndex extends BTreeNode
 
 	private byte[] findLowestLeafKey(BTreeTableImplementation aImplementation, BTreeNode aNode)
 	{
-		if (aNode instanceof BTreeIndex node)
+		if (aNode instanceof BTreeIndex)
 		{
+			BTreeIndex node = (BTreeIndex)aNode;
 			for (int i = 0; i < mMap.size() ; i++)
 			{
 				byte[] b = findLowestLeafKey(aImplementation, node.getNode(aImplementation, i));

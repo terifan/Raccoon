@@ -62,8 +62,9 @@ public class MarshalledKey implements Comparable<MarshalledKey>
 	@Override
 	public boolean equals(Object aOther)
 	{
-		if (aOther instanceof MarshalledKey other)
+		if (aOther instanceof MarshalledKey)
 		{
+			MarshalledKey other = (MarshalledKey)aOther;
 			return Arrays.equals(mBuffer, other.mBuffer);
 		}
 		return false;

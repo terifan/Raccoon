@@ -850,9 +850,6 @@ is divided into following sections:
                     <classpath>
                         <path path="@{classpath}"/>
                     </classpath>
-                    <bootclasspath>
-                        <path path="${platform.bootcp}"/>
-                    </bootclasspath>
                 </nbjpdastart>
             </sequential>
         </macrodef>

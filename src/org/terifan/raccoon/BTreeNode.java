@@ -14,7 +14,44 @@ abstract class BTreeNode
 	boolean mModified;
 
 
-	static record SplitResult(BTreeNode left, BTreeNode right, MarshalledKey leftKey, MarshalledKey rightKey) {}
+	static class SplitResult
+	{
+		private final BTreeNode left;
+		private final BTreeNode right;
+		private final MarshalledKey leftKey;
+		private final MarshalledKey rightKey;
+		SplitResult(BTreeNode left, BTreeNode right, MarshalledKey leftKey, MarshalledKey rightKey)
+		{
+			this.left = left;
+			this.right = right;
+			this.leftKey = leftKey;
+			this.rightKey = rightKey;
+		}
+
+
+		public BTreeNode left()
+		{
+			return left;
+		}
+
+
+		public MarshalledKey leftKey()
+		{
+			return leftKey;
+		}
+
+
+		public BTreeNode right()
+		{
+			return right;
+		}
+
+
+		public MarshalledKey rightKey()
+		{
+			return rightKey;
+		}
+	}
 
 
 	enum RemoveResult
