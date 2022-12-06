@@ -133,4 +133,13 @@ public final class ByteArrayUtil
 			+ ((long)(255 & aBuffer[aOffset + 6]) << 48)
 			+ ((long)(255 & aBuffer[aOffset + 7]) << 56);
 	}
+
+
+	public static void toLong(byte[] aSource, long[] aDest)
+	{
+		for (int i = 0; i < aDest.length; i++)
+		{
+			aDest[i] = getInt64(aSource, 8 * i);
+		}
+	}
 }

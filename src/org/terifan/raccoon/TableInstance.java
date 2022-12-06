@@ -27,17 +27,15 @@ public final class TableInstance<T>
 	public final static byte TYPE_DEFAULT = 0;
 	public final static byte TYPE_BLOB = 1;
 
-	private final Database mDatabase;
 	private final Table mTable;
 	private final HashSet<CommitLock> mCommitLocks;
 	private final TableImplementation mTableImplementation;
 
 
-	TableInstance(Database aDatabase, Table aTable, byte[] aTableHeader)
+	TableInstance(Database mDatabase, Table aTable, byte[] aTableHeader)
 	{
 		mCommitLocks = new HashSet<>();
 
-		mDatabase = aDatabase;
 		mTable = aTable;
 
 		try
@@ -57,7 +55,7 @@ public final class TableInstance<T>
 				throw new IllegalArgumentException("No supported table implementation: " + aTable.getImplementation());
 			}
 
-			mTableImplementation = (TableImplementation)type.getDeclaredConstructors()[0].newInstance(mDatabase.getBlockDevice(), mDatabase.getTransactionId(), false, mDatabase.getCompressionParameter(), mDatabase.getTableParameter(), aTable.getEntityName());
+			mTableImplementation = (TableImplementation)type.getDeclaredConstructors()[0].newInstance(mDatabase.getBlockDevice(), mDatabase.getTransactionGroup(), false, mDatabase.getCompressionParameter(), mDatabase.getTableParameter(), aTable.getEntityName());
 		}
 		catch (IllegalAccessException | InstantiationException | SecurityException | InvocationTargetException e)
 		{
@@ -68,13 +66,7 @@ public final class TableInstance<T>
 	}
 
 
-	public Database getDatabase()
-	{
-		return mDatabase;
-	}
-
-
-	public boolean get(T aEntity)
+	public boolean get(Database mDatabase, T aEntity)
 	{
 		Log.i("get entity %s", aEntity);
 		Log.inc();
@@ -85,7 +77,9 @@ public final class TableInstance<T>
 
 			if (mTableImplementation.get(entry))
 			{
-				unmarshalToObjectValues(entry, aEntity);
+				TransactionGroup tx = mDatabase.getTransactionGroup();
+
+				unmarshalToObjectValues(mDatabase, entry, aEntity, tx);
 
 				Log.dec();
 
@@ -101,10 +95,10 @@ public final class TableInstance<T>
 	}
 
 
-	public <T> List<T> list(Class<T> aType, int aLimit)
+	public <T> List<T> list(Database mDatabase, Class<T> aType, int aLimit)
 	{
 		ArrayList<T> list = new ArrayList<>();
-		for (Iterator<T> it = (Iterator<T>)iterator(); list.size() < aLimit && it.hasNext();)
+		for (Iterator<T> it = (Iterator<T>)iterator(mDatabase); list.size() < aLimit && it.hasNext();)
 		{
 			list.add(it.next());
 		}
@@ -118,7 +112,7 @@ public final class TableInstance<T>
 	 * @return
 	 * true if this table did not already contain the specified entity
 	 */
-	public boolean save(T aEntity)
+	public boolean save(Database mDatabase, T aEntity)
 	{
 		Log.i("save %s", aEntity.getClass());
 		Log.inc();
@@ -131,7 +125,7 @@ public final class TableInstance<T>
 		{
 			type = TYPE_BLOB;
 
-			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), null, LobOpenOption.WRITE))
+			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(mDatabase), mDatabase.getTransactionGroup(), null, LobOpenOption.WRITE))
 			{
 				blob.write(ByteBuffer.wrap(value));
 				value = blob.finish();
@@ -148,7 +142,7 @@ public final class TableInstance<T>
 
 		if (oldEntry != null)
 		{
-			deleteIfBlob(oldEntry);
+			deleteIfBlob(mDatabase, oldEntry);
 		}
 
 		Log.dec();
@@ -157,16 +151,16 @@ public final class TableInstance<T>
 	}
 
 
-	private void deleteIfBlob(ArrayMapEntry aEntry)
+	private void deleteIfBlob(Database mDatabase, ArrayMapEntry aEntry)
 	{
 		if (aEntry.getType() == TYPE_BLOB)
 		{
-			LobByteChannelImpl.deleteBlob(getBlockAccessor(), aEntry.getValue());
+			LobByteChannelImpl.deleteBlob(getBlockAccessor(mDatabase), aEntry.getValue());
 		}
 	}
 
 
-	public LobByteChannelImpl openBlob(T aEntityKey, LobOpenOption aOpenOption)
+	public LobByteChannelImpl openBlob(Database mDatabase, T aEntityKey, LobOpenOption aOpenOption)
 	{
 		try
 		{
@@ -191,7 +185,7 @@ public final class TableInstance<T>
 
 				if (aOpenOption == LobOpenOption.REPLACE)
 				{
-					deleteIfBlob(entry);
+					deleteIfBlob(mDatabase, entry);
 
 					header = null;
 				}
@@ -205,7 +199,7 @@ public final class TableInstance<T>
 				header = null;
 			}
 
-			LobByteChannelImpl out = new LobByteChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), header, aOpenOption)
+			LobByteChannelImpl out = new LobByteChannelImpl(getBlockAccessor(mDatabase), mDatabase.getTransactionGroup(), header, aOpenOption)
 			{
 				@Override
 				public void close()
@@ -270,7 +264,7 @@ public final class TableInstance<T>
 	}
 
 
-	public boolean remove(T aEntity)
+	public boolean remove(Database mDatabase, T aEntity)
 	{
 		ArrayMapEntry entry = new ArrayMapEntry(getKeys(aEntity));
 
@@ -278,7 +272,7 @@ public final class TableInstance<T>
 
 		if (oldEntry != null)
 		{
-			deleteIfBlob(oldEntry);
+			deleteIfBlob(mDatabase, oldEntry);
 
 			return true;
 		}
@@ -290,9 +284,9 @@ public final class TableInstance<T>
 	/**
 	 * Creates an iterator over all items in this table. This iterator will reconstruct entities.
 	 */
-	public Iterator<T> iterator()
+	public Iterator<T> iterator(Database mDatabase)
 	{
-		return new EntityIterator(this, getEntryIterator());
+		return new EntityIterator(mDatabase, this, getEntryIterator());
 	}
 
 
@@ -302,9 +296,9 @@ public final class TableInstance<T>
 	}
 
 
-	public void clear()
+	public void clear(Database mDatabase)
 	{
-		mTableImplementation.removeAll(this::deleteIfBlob);
+		mTableImplementation.removeAll(e -> deleteIfBlob(mDatabase, e));
 	}
 
 
@@ -320,13 +314,13 @@ public final class TableInstance<T>
 	}
 
 
-	long flush()
+	long flush(TransactionGroup aTransactionGroup)
 	{
-		return mTableImplementation.flush();
+		return mTableImplementation.flush(aTransactionGroup);
 	}
 
 
-	boolean commit()
+	boolean commit(TransactionGroup aTransactionGroup)
 	{
 		synchronized (this)
 		{
@@ -343,14 +337,9 @@ public final class TableInstance<T>
 		}
 
 		AtomicBoolean changed = new AtomicBoolean();
-		byte[] newPointer = mTableImplementation.commit(changed);
+		byte[] newPointer = mTableImplementation.commit(aTransactionGroup, changed);
 
-		if (!changed.get())
-		{
-			return false;
-		}
-
-		if (Arrays.equals(newPointer, mTable.getTableHeader()))
+		if (!changed.get() || Arrays.equals(newPointer, mTable.getTableHeader()))
 		{
 			return false;
 		}
@@ -387,13 +376,13 @@ public final class TableInstance<T>
 	}
 
 
-	void unmarshalToObjectValues(ArrayMapEntry aBuffer, Object aOutput)
+	void unmarshalToObjectValues(Database mDatabase, ArrayMapEntry aBuffer, Object aOutput, TransactionGroup aTransactionGroup)
 	{
 		ByteArrayBuffer buffer;
 
 		if (aBuffer.getType() == TYPE_BLOB)
 		{
-			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(), mDatabase.getTransactionId(), aBuffer.getValue(), LobOpenOption.READ))
+			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(mDatabase), aTransactionGroup, aBuffer.getValue(), LobOpenOption.READ))
 			{
 				byte[] buf = new byte[(int)blob.size()];
 				blob.read(ByteBuffer.wrap(buf));
@@ -450,13 +439,13 @@ public final class TableInstance<T>
 	}
 
 
-	<T> Stream<T> stream(Lock aReadLock)
+	<T> Stream<T> stream(Database mDatabase, Lock aReadLock)
 	{
 		try
 		{
 			Stream<T> tmp = StreamSupport.stream(new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
 			{
-				EntityIterator entityIterator = new EntityIterator(TableInstance.this, mTableImplementation.iterator());
+				EntityIterator entityIterator = new EntityIterator(mDatabase, TableInstance.this, mTableImplementation.iterator());
 
 				@Override
 				public boolean tryAdvance(Consumer<? super T> aConsumer)
@@ -483,7 +472,7 @@ public final class TableInstance<T>
 	}
 
 
-	private synchronized BlockAccessor getBlockAccessor()
+	private synchronized BlockAccessor getBlockAccessor(Database mDatabase)
 	{
 		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter());
 	}

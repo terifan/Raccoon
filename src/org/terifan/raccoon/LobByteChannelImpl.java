@@ -647,8 +647,8 @@ class LobByteChannelImpl implements LobByteChannel
 			aScanResult.blobData(bp);
 
 			aScanResult.blobDataBlocks++;
-			aScanResult.blobAllocatedSize += bp.getAllocatedBlocks() * blockSize;
-			aScanResult.blobPhysicalSize += bp.getAllocatedBlocks() * blockSize; // why not phys size???
+			aScanResult.blobAllocatedSize += bp.getAllocatedSize();
+			aScanResult.blobPhysicalSize += bp.getAllocatedSize(); // why not phys size???
 		}
 
 		aScanResult.exitBlob();

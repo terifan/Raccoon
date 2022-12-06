@@ -1,6 +1,7 @@
 package org.terifan.raccoon;
 
 import java.util.Arrays;
+import org.terifan.raccoon.util.Console;
 
 
 public final class ArrayMapEntry
@@ -18,6 +19,14 @@ public final class ArrayMapEntry
 	public ArrayMapEntry(byte[] aKey)
 	{
 		mKey = aKey;
+	}
+
+
+	public ArrayMapEntry(byte[] aKey, byte[] aValue)
+	{
+		mKey = aKey;
+		mValue = aValue;
+		mType = 0;
 	}
 
 
@@ -94,5 +103,12 @@ public final class ArrayMapEntry
 	public int getMarshalledValueLength()
 	{
 		return 1 + mValue.length;
+	}
+
+
+	@Override
+	public String toString()
+	{
+		return Console.format("ArrayMapEntry{mType=%s, mKey=%s, mValue=%s}", mType, (mKey == null ? "null" : "\"" + new String(mKey).replaceAll("[^\\w]*", "") + "\""), (mValue == null ? "null" : "\"" + new String(mValue).replace('\u0000', '.').replaceAll("[^\\w\\.]*", "") + "\""));
 	}
 }

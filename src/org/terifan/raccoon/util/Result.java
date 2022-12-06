@@ -57,4 +57,11 @@ public class Result<E>
 	{
 		mValue = value;
 	}
+
+
+	@Override
+	public String toString()
+	{
+		return mValue == null ? "null" : mValue.toString();
+	}
 }

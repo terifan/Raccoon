@@ -147,7 +147,7 @@ public class TableNGTest
 			Table table = database.getTable(_Animal1K.class);
 			FieldDescriptor[] fields = table.getFields();
 
-			table.forEachResultSet(e->{
+			database.forEachResultSet(_Animal1K.class, e->{
 				for (int i = 0; i < fields.length; i++)
 				{
 					assertEquals(e.getField(i), fields[i]);
@@ -173,9 +173,7 @@ public class TableNGTest
 			HashSet<String> nameLookup = new HashSet<>(Arrays.asList("cat","dog","horse","cow"));
 			HashSet<Integer> numberLookup = new HashSet<>(Arrays.asList(1,2,3,4));
 
-			Table table = database.getTable(_Animal1K.class);
-
-			table.forEachResultSet(e->{
+			database.forEachResultSet(_Animal1K.class, e->{
 				assertTrue(nameLookup.remove((String)e.get("_name")));
 				assertTrue(numberLookup.remove((int)e.get("number")));
 			});
@@ -201,7 +199,7 @@ public class TableNGTest
 			HashSet<String> nameLookup = new HashSet<>(Arrays.asList("cat","dog","horse","cow"));
 			HashSet<Integer> numberLookup = new HashSet<>(Arrays.asList(1,2,3,4));
 
-			database.getTable(_Animal1K.class).forEach(e->{
+			database.forEach(_Animal1K.class, e->{
 				assertTrue(nameLookup.remove(e._name));
 				assertTrue(numberLookup.remove(e.number));
 			});
@@ -228,7 +226,7 @@ public class TableNGTest
 
 			try
 			{
-				table.forEach(e->{
+				database.forEach(_Animal1K.class, e->{
 					throw new IllegalStateException();
 				});
 
@@ -239,7 +237,7 @@ public class TableNGTest
 				// ignore
 			}
 
-			assertFalse(table.isReadLocked());
+//			assertFalse(table.isReadLocked());
 		}
 	}
 }

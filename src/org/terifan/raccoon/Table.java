@@ -4,8 +4,6 @@ import org.terifan.raccoon.annotations.Discriminator;
 import org.terifan.raccoon.annotations.Id;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.function.Consumer;
 import org.terifan.raccoon.annotations.Column;
 import org.terifan.raccoon.annotations.Entity;
 import org.terifan.raccoon.serialization.FieldDescriptor;
@@ -31,8 +29,6 @@ public final class Table<T>
 
 	private transient Class mType;
 	private transient Marshaller mMarshaller;
-	private transient Database mDatabase;
-	private transient int mReadLocked;
 
 
 	Table()
@@ -70,7 +66,6 @@ public final class Table<T>
 
 	synchronized Table initialize(Database aDatabase)
 	{
-		mDatabase = aDatabase;
 		mMarshaller = new Marshaller(mEntityDescriptor);
 
 		try
@@ -320,36 +315,6 @@ public final class Table<T>
 	}
 
 
-	public int size()
-	{
-		return getTableInstance().size();
-	}
-
-
-	private TableInstance getTableInstance()
-	{
-		return mDatabase.openTable(this, DatabaseOpenOption.OPEN);
-	}
-
-
-	public void forEach(Consumer<T> aConsumer)
-	{
-		aquireReadLock();
-
-		try
-		{
-			for (Iterator<T> it = new EntityIterator(getTableInstance(), getTableInstance().getEntryIterator()); it.hasNext();)
-			{
-				aConsumer.accept(it.next());
-			}
-		}
-		finally
-		{
-			releaseReadLock();
-		}
-	}
-
-
 	public String getImplementation()
 	{
 		return mImplementation;
@@ -359,58 +324,5 @@ public final class Table<T>
 	public interface ResultSetConsumer
 	{
 		void handle(ResultSet aResultSet);
-	}
-
-
-	public void forEachResultSet(ResultSetConsumer aConsumer)
-	{
-		aquireReadLock();
-
-		try
-		{
-			ResultSet resultSet = new ResultSet(getTableInstance(), getTableInstance().getEntryIterator());
-
-			while (resultSet.next())
-			{
-				aConsumer.handle(resultSet);
-			}
-		}
-		finally
-		{
-			releaseReadLock();
-		}
-	}
-
-
-	private synchronized void releaseReadLock()
-	{
-		mDatabase.getReadLock().unlock();
-		mReadLocked--;
-	}
-
-
-	private synchronized void aquireReadLock()
-	{
-		mDatabase.getReadLock().lock();
-		mReadLocked++;
-	}
-
-
-	synchronized boolean isReadLocked()
-	{
-		return mReadLocked > 0;
-	}
-
-
-	public ScanResult scan(ScanResult aScanResult)
-	{
-		if (aScanResult == null)
-		{
-			aScanResult = new ScanResult();
-		}
-
-		getTableInstance().scan(aScanResult);
-
-		return aScanResult;
 	}
 }

@@ -6,6 +6,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.terifan.raccoon.util.ByteArrayUtil;
+import org.terifan.raccoon.util.Console;
 import org.terifan.raccoon.util.Result;
 
 
@@ -42,11 +43,28 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	private int mModCount;
 
 
-	public enum NearestState
+	public enum NearResult
 	{
+		/**
+		 * the ArrayMap contain an entry with the key provided
+		 */
 		MATCH,
-		NEAR,
-		FINAL
+		/**
+		 * the ArrayMap contain an entry with a larger key
+		 */
+		LOWER,
+		/**
+		 * the ArrayMap don't contain any entry with a larger key
+		 */
+		GREATER
+	}
+
+
+	public enum PutResult
+	{
+		OVERFLOW,
+		PUT,
+		UPDATE
 	}
 
 
@@ -142,13 +160,71 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 
 	/**
+	 * Add the entry to the map resizing the internal buffer if necessary.
+	 *
+	 * @param aEntry entry to add
+	 * @param oExistingEntry optional; output for an existing entry with the entry key
+	 * @return true if the entry was inserted without resizing the buffer and false if the buffer was resized
+	 */
+	public PutResult insert(ArrayMapEntry aEntry)
+	{
+		PutResult result = put(aEntry, null);
+
+		if (result != PutResult.OVERFLOW)
+		{
+			return result;
+		}
+
+		resize(mCapacity + ENTRY_OVERHEAD + aEntry.getMarshalledLength());
+
+		result = put(aEntry, null);
+
+		if (result == PutResult.OVERFLOW)
+		{
+			throw new IllegalStateException("failed to put entity");
+		}
+
+		return result;
+	}
+
+
+	/**
+	 * Add the entry to the map resizing the internal buffer if necessary.
+	 *
+	 * @param aEntry entry to add
+	 * @param oExistingEntry optional; output for an existing entry with the entry key
+	 * @return true if the entry was inserted without resizing the buffer and false if the buffer was resized
+	 */
+	public PutResult insert(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
+	{
+		PutResult result = put(aEntry, oExistingEntry);
+
+		if (result != PutResult.OVERFLOW)
+		{
+			return result;
+		}
+
+		resize(mCapacity + ENTRY_OVERHEAD + aEntry.getMarshalledLength());
+
+		result = put(aEntry, oExistingEntry);
+
+		if (result == PutResult.OVERFLOW)
+		{
+			throw new IllegalStateException("failed to put entity");
+		}
+
+		return result;
+	}
+
+
+	/**
 	 * Add the entry to the map
 	 *
 	 * @param aEntry entry to add
 	 * @param oExistingEntry optional; output for an existing entry with the entry key
 	 * @return true if the operation was successful and entry inserted into the map
 	 */
-	public boolean put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
+	public PutResult put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
 		byte[] key = aEntry.getKey();
 		int valueLength = aEntry.getMarshalledValueLength();
@@ -184,12 +260,12 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 				assert integrityCheck() == null : integrityCheck();
 
-				return true;
+				return PutResult.UPDATE;
 			}
 
 			if (valueLength - oldValueLength > getFreeSpace())
 			{
-				return false;
+				return PutResult.OVERFLOW;
 			}
 
 			removeImpl(index, oExistingEntry);
@@ -198,7 +274,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		}
 		else if (getFreeSpace() < ENTRY_HEADER_SIZE + keyLength + valueLength + ENTRY_POINTER_SIZE)
 		{
-			return false;
+			return PutResult.OVERFLOW;
 		}
 		else
 		{
@@ -207,7 +283,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 		if (++mEntryCount > MAX_ENTRY_COUNT)
 		{
-			return false;
+			return PutResult.OVERFLOW;
 		}
 
 		int modCount = ++mModCount;
@@ -231,7 +307,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		assert integrityCheck() == null : integrityCheck();
 		assert mModCount == modCount : mModCount + " == " + modCount;
 
-		return true;
+		return PutResult.PUT;
 	}
 
 
@@ -244,54 +320,107 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			return false;
 		}
 
-		loadValue(index, aEntry);
+		loadKeyAndValue(index, aEntry);
 
 		return true;
 	}
 
 
 	/**
-	 * Find an entry equal or before the sought key
-	 *
-	 * @return one of NEAR, EXACT or LAST depending on what entry was found. LAST indicated no identical or smaller key was found.
+	 * Find an entry equal or before the sought key.
 	 */
-	public NearestState nearest(ArrayMapEntry aEntry)
+	public NearResult nearest(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());
 
-		if (mEntryCount == -index - 1)
+		if (index == -mEntryCount - 1)
 		{
-			return NearestState.FINAL;
+			loadKeyAndValue(mEntryCount - 1, aEntry);
+			return NearResult.GREATER;
 		}
 		if (index < 0)
 		{
-			loadValue(-index - 1, aEntry);
-			return NearestState.NEAR;
+			loadKeyAndValue(-index - 1, aEntry);
+			return NearResult.LOWER;
 		}
 
-		loadValue(index, aEntry);
+		loadKeyAndValue(index, aEntry);
 
-		return NearestState.MATCH;
+		return NearResult.MATCH;
 	}
 
 
-	private void loadValue(int aIndex, ArrayMapEntry aEntry)
+	/**
+	 * Find an entry equal or before the sought key.
+	 */
+	public int nearestIndex(byte[] aKey)
+	{
+		int index = indexOf(aKey);
+
+		if (index == -mEntryCount - 1)
+		{
+			index = mEntryCount - 1;
+		}
+		else if (index < 0)
+		{
+			index = Math.max(0, -index - 2);
+		}
+
+		return index;
+	}
+
+
+	/**
+	 * Find an entry equal or before the sought key.
+	 */
+	public int loadNearestIndexEntry(ArrayMapEntry aEntry)
+	{
+		int index = indexOf(aEntry.getKey());
+
+		if (index == -mEntryCount - 1)
+		{
+			index = mEntryCount - 1;
+		}
+		else if (index < 0)
+		{
+			index = Math.max(0, -index - 2);
+		}
+
+		loadKeyAndValue(index, aEntry);
+
+		return index;
+	}
+
+
+	private void loadKeyAndValue(int aIndex, ArrayMapEntry aEntry)
 	{
 		int entryOffset = readEntryOffset(aIndex);
 		int valueOffset = readValueOffset(entryOffset);
 		int valueLength = readValueLength(entryOffset);
+		int keyOffset = readKeyOffset(entryOffset);
+		int keyLength = readKeyLength(entryOffset);
 
+		aEntry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
 		aEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
 	}
 
 
-	public boolean remove(ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry)
+	public void remove(int aIndex, Result<ArrayMapEntry> oOldEntry)
 	{
-		int index = indexOf(aEntry.getKey());
+		removeImpl(aIndex, oOldEntry);
+	}
+
+
+	public boolean remove(byte[] aKey, Result<ArrayMapEntry> oOldEntry)
+	{
+		int index = indexOf(aKey);
 
 		if (index < 0)
 		{
-			oOldEntry.set(null);
+			if (oOldEntry != null)
+			{
+				oOldEntry.set(null);
+			}
 			return false;
 		}
 
@@ -352,7 +481,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public ArrayMapEntry get(int aIndex, ArrayMapEntry aEntry)
+	public ArrayMapEntry get(int aIndex, ArrayMapEntry aOutputEntry)
 	{
 		int entryOffset = readEntryOffset(aIndex);
 		int keyOffset = readKeyOffset(entryOffset);
@@ -360,10 +489,20 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		int valueOffset = readValueOffset(entryOffset);
 		int valueLength = readValueLength(entryOffset);
 
-		aEntry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
-		aEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
+		aOutputEntry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
+		aOutputEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
 
-		return aEntry;
+		return aOutputEntry;
+	}
+
+
+	public byte[] getKey(int aIndex)
+	{
+		int entryOffset = readEntryOffset(aIndex);
+		int keyOffset = readKeyOffset(entryOffset);
+		int keyLength = readKeyLength(entryOffset);
+
+		return Arrays.copyOfRange(mBuffer, mStartOffset + keyOffset, mStartOffset + keyOffset + keyLength);
 	}
 
 
@@ -384,6 +523,12 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		assert mPointerListOffset - mFreeSpaceOffset >= 0 : mPointerListOffset + " " + mFreeSpaceOffset;
 
 		return mPointerListOffset - mFreeSpaceOffset;
+	}
+
+
+	public int getUsedSpace()
+	{
+		return mCapacity - getFreeSpace();
 	}
 
 
@@ -422,6 +567,27 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	private int compare(byte[] aBufferA, int aOffsetA, int aLengthA, byte[] aBufferB, int aOffsetB, int aLengthB)
 	{
+//		byte[] bufferA = aBufferA;
+//		byte[] bufferB = aBufferB;
+//
+//		for (int i = 0, len = Math.min(aLengthA, aLengthB); i < len; i++)
+//		{
+//			int a = 0xff & bufferA[aOffsetA + i];
+//			int b = 0xff & bufferB[aOffsetB + i];
+//			if (a < b) return -1;
+//			if (a > b) return 1;
+////			int c = (0xff & bufferA[aOffsetA + i]) - (0xff & bufferB[aOffsetB + i]);
+////			if (c != 0)
+////			{
+////				return c;
+////			}
+//		}
+//
+//		if (aLengthA < aLengthB) return -1;
+//		if (aLengthA > aLengthB) return 1;
+//
+//		return 0;
+
 		for (int end = aOffsetA + Math.min(aLengthA, aLengthB); aOffsetA < end; aOffsetA++, aOffsetB++)
 		{
 			byte a = aBufferA[aOffsetA];
@@ -460,7 +626,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	private int readEntryOffset(int aIndex)
 	{
-		assert aIndex >= 0 && aIndex < mEntryCount;
+		assert aIndex >= 0 && aIndex < mEntryCount : aIndex;
 
 		return readInt32(mPointerListOffset + aIndex * ENTRY_POINTER_SIZE);
 	}
@@ -600,16 +766,18 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	{
 		try
 		{
+			boolean first = true;
 			StringBuilder sb = new StringBuilder();
 			for (ArrayMapEntry entry : this)
 			{
-				if (sb.length() > 0)
+				if (!first)
 				{
-					sb.append(", ");
+					sb.append(",");
 				}
-				sb.append(new String(entry.getKey(), "utf-8"));
+				sb.append(Console.format("\"%s\"", new String(entry.getKey(), "utf-8").replaceAll("[^\\w]*", "")));
+				first = false;
 			}
-			return "[" + sb.toString() + "]";
+			return "{" + sb.toString() + "}";
 		}
 		catch (UnsupportedEncodingException e)
 		{
@@ -656,7 +824,9 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 			ArrayMapEntry entry = new ArrayMapEntry();
 			entry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
-			loadValue(mIndex, entry);
+			loadKeyAndValue(mIndex, entry);
+
+//			System.out.println(mIndex+" "+entry);
 
 			mIndex++;
 
@@ -704,14 +874,51 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public ArrayMap resize(int aNewSize)
+	public ArrayMap resize(int aNewCapacity)
 	{
+		if (aNewCapacity < mCapacity && mCapacity - aNewCapacity > getFreeSpace())
+		{
+			throw new IllegalArgumentException();
+		}
+
 		int s = ENTRY_POINTER_SIZE * mEntryCount;
-		byte[] buffer = new byte[aNewSize];
+		byte[] buffer = new byte[aNewCapacity];
 
 		System.arraycopy(mBuffer, 0, buffer, 0, mFreeSpaceOffset);
-		System.arraycopy(mBuffer, mBuffer.length - s, buffer, aNewSize - s, s);
+		System.arraycopy(mBuffer, mBuffer.length - s, buffer, aNewCapacity - s, s);
 
-		return new ArrayMap(buffer);
+		mBuffer = buffer;
+		mCapacity = buffer.length;
+		mPointerListOffset = mCapacity - ENTRY_POINTER_SIZE * mEntryCount;
+
+		return this;
+	}
+
+
+	public ArrayMap[] split(int aCapacity)
+	{
+		ArrayMap low = new ArrayMap(aCapacity);
+		ArrayMap high = new ArrayMap(aCapacity);
+		ArrayMapEntry tmp = new ArrayMapEntry();
+
+		for (int i = 0, j = mEntryCount; i < j; )
+		{
+			if (low.getFreeSpace() > high.getFreeSpace())
+			{
+				low.insert(get(i++, tmp));
+			}
+			else
+			{
+				high.insert(get(--j, tmp));
+			}
+		}
+
+		return new ArrayMap[]{low, high};
+	}
+
+
+	public boolean isHalfEmpty()
+	{
+		return getFreeSpace() > mCapacity / 2;
 	}
 }

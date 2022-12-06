@@ -5,7 +5,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import org.terifan.raccoon.ArrayMap.NearestState;
+import org.terifan.raccoon.ArrayMap.NearResult;
+import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.util.Result;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
@@ -30,9 +31,9 @@ public class ArrayMapNGTest
 
 		Result<ArrayMapEntry> existing = new Result<>();
 
-		boolean wasAdd = map.put(out, existing);
+		PutResult wasAdd = map.put(out, existing);
 
-		assertTrue(wasAdd);
+		assertNotEquals(wasAdd, PutResult.OVERFLOW);
 		assertNull(existing.get());
 
 		ArrayMapEntry in = new ArrayMapEntry(out.getKey());
@@ -48,7 +49,7 @@ public class ArrayMapNGTest
 
 		wasAdd = map.put(out, existing);
 
-		assertTrue(wasAdd);
+		assertNotEquals(wasAdd, PutResult.OVERFLOW);
 		assertNotNull(existing.get());
 		assertEquals(existing.get().getValue(), original);
 
@@ -61,14 +62,14 @@ public class ArrayMapNGTest
 		assertEquals(in.getType(), out.getType());
 		assertEquals(map.getFreeSpace(), 77);
 
-		wasFound = map.remove(in, existing);
+		wasFound = map.remove(in.getKey(), existing);
 
 		assertTrue(wasFound);
 		assertEquals(existing.get().getValue(), out.getValue());
 		assertEquals(existing.get().getType(), out.getType());
 		assertEquals(map.getFreeSpace(), 94);
 
-		wasFound = map.remove(in, existing);
+		wasFound = map.remove(in.getKey(), existing);
 
 		assertFalse(wasFound);
 		assertNull(existing.get());
@@ -86,11 +87,11 @@ public class ArrayMapNGTest
 
 		ArrayMapEntry entry = new ArrayMapEntry(key, value, flags);
 
-		assertTrue(map.put(entry, null));
+		assertNotEquals(map.put(entry, null), PutResult.OVERFLOW);
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		assertTrue(map.remove(entry, oldEntry));
+		assertTrue(map.remove(entry.getKey(), oldEntry));
 
 		assertEquals(entry.getValue(), oldEntry.get().getValue());
 	}
@@ -107,7 +108,7 @@ public class ArrayMapNGTest
 
 		Result<ArrayMapEntry> oldEntry = new Result<>();
 
-		assertFalse(map.remove(entry, oldEntry));
+		assertFalse(map.remove(entry.getKey(), oldEntry));
 
 		assertNull(oldEntry.get());
 	}
@@ -143,12 +144,12 @@ public class ArrayMapNGTest
 		{
 			byte[] key = ("" + i).getBytes();
 
-			assertTrue(map.put(new ArrayMapEntry(key, value, (byte)77), null));
+			assertNotEquals(map.put(new ArrayMapEntry(key, value, (byte)77), null), PutResult.OVERFLOW);
 		}
 
 		byte[] key = ("" + ArrayMap.MAX_ENTRY_COUNT).getBytes();
 
-		assertFalse(map.put(new ArrayMapEntry(key, value, (byte)77), null));
+		assertEquals(map.put(new ArrayMapEntry(key, value, (byte)77), null), PutResult.OVERFLOW);
 	}
 
 
@@ -217,7 +218,7 @@ public class ArrayMapNGTest
 			String keyString = keys[j];
 			byte[] key = keyString.getBytes("utf-8");
 
-			if (map.put(new ArrayMapEntry(key, value, type), null))
+			if (map.put(new ArrayMapEntry(key, value, type), null) != PutResult.OVERFLOW)
 			{
 				values.put(keyString, value);
 			}
@@ -236,7 +237,7 @@ public class ArrayMapNGTest
 
 
 	@Test
-	public void testNearest() throws IOException
+	public void testNearestA() throws IOException
 	{
 		byte[] value1 = "123".getBytes();
 		byte[] value2 = "456".getBytes();
@@ -251,19 +252,68 @@ public class ArrayMapNGTest
 		ArrayMapEntry D = new ArrayMapEntry("d".getBytes());
 		ArrayMapEntry E = new ArrayMapEntry("e".getBytes());
 
-		assertEquals(map.nearest(A), NearestState.NEAR); // a is lower than b
+		assertEquals(map.nearest(A), NearResult.LOWER); // a is lower than b
 		assertEquals(A.getValue(), value1);
 
-		assertEquals(map.nearest(B), NearestState.MATCH); // b matches
+		assertEquals(map.nearest(B), NearResult.MATCH); // b matches
 		assertEquals(B.getValue(), value1);
 
-		assertEquals(map.nearest(C), NearestState.NEAR); // c is lower than d
+		assertEquals(map.nearest(C), NearResult.LOWER); // c is lower than d
 		assertEquals(C.getValue(), value2);
 
-		assertEquals(map.nearest(D), NearestState.MATCH); // d matches
+		assertEquals(map.nearest(D), NearResult.MATCH); // d matches
 		assertEquals(D.getValue(), value2);
 
-		assertEquals(map.nearest(E), NearestState.FINAL); // e is last
+		assertEquals(map.nearest(E), NearResult.GREATER); // e is greater
+	}
+
+
+	@Test
+	public void testNearestB() throws IOException
+	{
+		byte[] value1 = "123".getBytes();
+		byte[] value2 = "456".getBytes();
+
+		ArrayMap map = new ArrayMap(new byte[512]);
+		map.put(new ArrayMapEntry("bbb".getBytes(), value1, (byte)77), null);
+		map.put(new ArrayMapEntry("dd".getBytes(), value2, (byte)77), null);
+
+		ArrayMapEntry A = new ArrayMapEntry("aaaaa".getBytes());
+		ArrayMapEntry B = new ArrayMapEntry("bbb".getBytes());
+		ArrayMapEntry C = new ArrayMapEntry("c".getBytes());
+		ArrayMapEntry D = new ArrayMapEntry("dd".getBytes());
+		ArrayMapEntry E = new ArrayMapEntry("eeee".getBytes());
+
+		assertEquals(map.nearest(A), NearResult.LOWER); // a is lower than b
+		assertEquals(A.getValue(), value1);
+
+		assertEquals(map.nearest(B), NearResult.MATCH); // b matches
+		assertEquals(B.getValue(), value1);
+
+		assertEquals(map.nearest(C), NearResult.LOWER); // c is lower than d
+		assertEquals(C.getValue(), value2);
+
+		assertEquals(map.nearest(D), NearResult.MATCH); // d matches
+		assertEquals(D.getValue(), value2);
+
+		assertEquals(map.nearest(E), NearResult.GREATER); // e is last
+	}
+
+
+	@Test
+	public void testKeyOrder() throws IOException
+	{
+		byte[] value = "123".getBytes();
+
+		ArrayMap map = new ArrayMap(new byte[512]);
+		map.put(new ArrayMapEntry("eeee".getBytes(), value, (byte)77), null);
+		map.put(new ArrayMapEntry("c".getBytes(), value, (byte)77), null);
+		map.put(new ArrayMapEntry("aaaaa".getBytes(), value, (byte)77), null);
+		map.put(new ArrayMapEntry("dd".getBytes(), value, (byte)77), null);
+		map.put(new ArrayMapEntry("bbb".getBytes(), value, (byte)77), null);
+		map.put(new ArrayMapEntry("ddd".getBytes(), value, (byte)77), null);
+
+		assertEquals(map.toString(), "{\"aaaaa\",\"bbb\",\"c\",\"dd\",\"ddd\",\"eeee\"}");
 	}
 
 
@@ -285,7 +335,7 @@ public class ArrayMapNGTest
 					continue;
 				}
 
-				if (!aMap.put(entry, null))
+				if (aMap.put(entry, null) == PutResult.OVERFLOW)
 				{
 					break;
 				}

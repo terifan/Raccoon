@@ -11,10 +11,12 @@ final class EntityIterator<T> implements Iterator<T>
 {
 	private final Iterator<ArrayMapEntry> mIterator;
 	private final TableInstance mTableInstance;
+	private final Database mDatabase;
 
 
-	EntityIterator(TableInstance aTable, Iterator<ArrayMapEntry> aIterator)
+	EntityIterator(Database aDatabase, TableInstance aTable, Iterator<ArrayMapEntry> aIterator)
 	{
+		mDatabase = aDatabase;
 		mIterator = aIterator;
 		mTableInstance = aTable;
 	}
@@ -36,9 +38,10 @@ final class EntityIterator<T> implements Iterator<T>
 		T outputEntity = (T)newEntityInstance();
 
 		ArrayMapEntry entry = mIterator.next();
+		TransactionGroup tx = mDatabase.getTransactionGroup();
 
 		mTableInstance.unmarshalToObjectKeys(entry, outputEntity);
-		mTableInstance.unmarshalToObjectValues(entry, outputEntity);
+		mTableInstance.unmarshalToObjectValues(mDatabase, entry, outputEntity, tx);
 
 		initializeNewEntity(outputEntity);
 
@@ -57,7 +60,7 @@ final class EntityIterator<T> implements Iterator<T>
 		{
 			Class type = mTableInstance.getTable().getType();
 
-			Supplier supplier = mTableInstance.getDatabase().getSupplier(type);
+			Supplier supplier = mDatabase.getSupplier(type);
 
 			if (supplier != null)
 			{
@@ -88,11 +91,11 @@ final class EntityIterator<T> implements Iterator<T>
 
 		if (type == Table.class)
 		{
-			((Table)aEntity).initialize(mTableInstance.getDatabase());
+			((Table)aEntity).initialize(mDatabase);
 		}
 		else
 		{
-			Initializer initializer = mTableInstance.getDatabase().getInitializer(type);
+			Initializer initializer = mDatabase.getInitializer(type);
 
 			if (initializer != null)
 			{

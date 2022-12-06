@@ -4,29 +4,30 @@ import java.io.Serializable;
 import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.ByteArrayUtil;
+import org.terifan.raccoon.util.Console;
 
 
 /*
  *   +------+------+------+------+------+------+------+------+
- * 0 | type | chk  | comp |             |  allocated blocks  |
+ * 0 | type | lvl  | chk  | comp |     allocated blocks      |
  *   +------+------+------+------+------+------+------+------+
  * 1 |        logical size       |       physical size       |
  *   +------+------+------+------+------+------+------+------+
  * 2 |                      block index                      |
  *   +------+------+------+------+------+------+------+------+
- * 3 |                                                       |
+ * 3 |                      block index                      |
  *   +------+------+------+------+------+------+------+------+
  * 4 |                      block index                      |
  *   +------+------+------+------+------+------+------+------+
  * 5 |                                                       |
  *   +------+------+------+------+------+------+------+------+
- * 6 |                      block index                      |
+ * 6 |                       user data                       |
  *   +------+------+------+------+------+------+------+------+
- * 7 |                                                       |
+ * 7 |                      transaction                      |
  *   +------+------+------+------+------+------+------+------+
- * 8 |                       user data                       |
+ * 8 |                       block key                       |
  *   +------+------+------+------+------+------+------+------+
- * 9 |                      transaction                      |
+ * 9 |                       block key                       |
  *   +------+------+------+------+------+------+------+------+
  * A |                       block key                       |
  *   +------+------+------+------+------+------+------+------+
@@ -43,15 +44,18 @@ import org.terifan.raccoon.util.ByteArrayUtil;
  *
  *   8 block type
  *   8 checksum algorithm
- *   8 encryption algorithm
  *   8 compression algorithm
- *  32 allocated blocks
+ *   8 block level
+ *  32 allocated size
  *  32 logical size
  *  32 physical size
- * 128 block address
+ *  64 block index 1
+ *  64 block index 2
+ *  64 block index 3
+ *  64 unused
  *  64 user data
  *  64 transaction
- * 128 block key (initialization vector)
+ * 256 block key (initialization vector)
  * 256 checksum
  */
 public class BlockPointer implements Serializable
@@ -60,15 +64,19 @@ public class BlockPointer implements Serializable
 	public final static int SIZE = 128;
 
 	private final static int OFS_FLAG_TYPE = 0;
-	private final static int OFS_FLAG_CHECKSUM = 1;
-	private final static int OFS_FLAG_COMPRESSION = 2;
-	private final static int OFS_ALLOCATED_BLOCKS = 5;
+	private final static int OFS_FLAG_LEVEL = 1;
+	private final static int OFS_FLAG_CHECKSUM = 2;
+	private final static int OFS_FLAG_COMPRESSION = 3;
+	private final static int OFS_ALLOCATED_SIZE = 4;
 	private final static int OFS_LOGICAL_SIZE = 8;
 	private final static int OFS_PHYSICAL_SIZE = 12;
-	private final static int OFS_OFFSET1 = 32;
-	private final static int OFS_USER_DATA = 64;
-	private final static int OFS_TRANSACTION = 72;
-	private final static int OFS_BLOCK_KEY = 80;
+	private final static int OFS_OFFSET0 = 16;
+	private final static int OFS_OFFSET1 = 24;
+	private final static int OFS_OFFSET2 = 32;
+	private final static int OFS_unused = 40;
+	private final static int OFS_USER_DATA = 48;
+	private final static int OFS_TRANSACTION = 56;
+	private final static int OFS_BLOCK_KEY = 64;
 	private final static int OFS_CHECKSUM = 96;
 
 	private byte[] mBuffer;
@@ -93,15 +101,25 @@ public class BlockPointer implements Serializable
 	}
 
 
+	public int getBlockLevel()
+	{
+		return 0xff & mBuffer[OFS_FLAG_LEVEL];
+	}
+
+
+	public BlockPointer setBlockLevel(int aLevel)
+	{
+		mBuffer[OFS_FLAG_LEVEL] = (byte)aLevel;
+		return this;
+	}
+
+
 	/**
 	 * Return the 'type' field from a BlockPointer stored in the buffer provided.
 	 *
-	 * @param aBuffer
-	 *   a buffer containing a BlockPointer
-	 * @param aBlockPointerOffset
-	 *   start offset of the BlockPointer in the buffer
-	 * @return
-	 *   the 'type' field
+	 * @param aBuffer a buffer containing a BlockPointer
+	 * @param aBlockPointerOffset start offset of the BlockPointer in the buffer
+	 * @return the 'type' field
 	 */
 	public static BlockType readBlockType(byte[] aBuffer, int aBlockPointerOffset)
 	{
@@ -135,17 +153,17 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public int getAllocatedBlocks()
+	public int getAllocatedSize()
 	{
-		return ByteArrayUtil.getInt24(mBuffer, OFS_ALLOCATED_BLOCKS);
+		return ByteArrayUtil.getInt32(mBuffer, OFS_ALLOCATED_SIZE);
 	}
 
 
-	public BlockPointer setAllocatedBlocks(int aAllocBlocks)
+	public BlockPointer setAllocatedSize(int aAllocBlocks)
 	{
-		assert aAllocBlocks >= 0 && aAllocBlocks < 1 << 24;
+		assert aAllocBlocks >= 0;
 
-		ByteArrayUtil.putInt24(mBuffer, OFS_ALLOCATED_BLOCKS, aAllocBlocks);
+		ByteArrayUtil.putInt32(mBuffer, OFS_ALLOCATED_SIZE, aAllocBlocks);
 		return this;
 	}
 
@@ -178,33 +196,63 @@ public class BlockPointer implements Serializable
 
 	public long[] getBlockKey(long[] aBlockKey)
 	{
-		assert aBlockKey.length == 2;
+		assert aBlockKey.length == 4;
 
 		aBlockKey[0] = ByteArrayUtil.getInt64(mBuffer, OFS_BLOCK_KEY + 0);
 		aBlockKey[1] = ByteArrayUtil.getInt64(mBuffer, OFS_BLOCK_KEY + 8);
+		aBlockKey[2] = ByteArrayUtil.getInt64(mBuffer, OFS_BLOCK_KEY + 16);
+		aBlockKey[3] = ByteArrayUtil.getInt64(mBuffer, OFS_BLOCK_KEY + 24);
 		return aBlockKey;
 	}
 
 
 	public BlockPointer setBlockKey(long[] aBlockKey)
 	{
-		assert aBlockKey.length == 2;
+		assert aBlockKey.length == 4;
 
 		ByteArrayUtil.putInt64(mBuffer, OFS_BLOCK_KEY + 0, aBlockKey[0]);
 		ByteArrayUtil.putInt64(mBuffer, OFS_BLOCK_KEY + 8, aBlockKey[1]);
+		ByteArrayUtil.putInt64(mBuffer, OFS_BLOCK_KEY + 16, aBlockKey[2]);
+		ByteArrayUtil.putInt64(mBuffer, OFS_BLOCK_KEY + 24, aBlockKey[3]);
 		return this;
 	}
 
 
 	public long getBlockIndex0()
 	{
-		return ByteArrayUtil.getInt64(mBuffer, OFS_OFFSET1);
+		return ByteArrayUtil.getInt64(mBuffer, OFS_OFFSET0);
 	}
 
 
 	public BlockPointer setBlockIndex0(long aBlockIndex)
 	{
+		ByteArrayUtil.putInt64(mBuffer, OFS_OFFSET0, aBlockIndex);
+		return this;
+	}
+
+
+	public long getBlockIndex1()
+	{
+		return ByteArrayUtil.getInt64(mBuffer, OFS_OFFSET1);
+	}
+
+
+	public BlockPointer setBlockIndex1(long aBlockIndex)
+	{
 		ByteArrayUtil.putInt64(mBuffer, OFS_OFFSET1, aBlockIndex);
+		return this;
+	}
+
+
+	public long getBlockIndex2()
+	{
+		return ByteArrayUtil.getInt64(mBuffer, OFS_OFFSET2);
+	}
+
+
+	public BlockPointer setBlockIndex2(long aBlockIndex)
+	{
+		ByteArrayUtil.putInt64(mBuffer, OFS_OFFSET2, aBlockIndex);
 		return this;
 	}
 
@@ -270,6 +318,13 @@ public class BlockPointer implements Serializable
 	}
 
 
+	public BlockPointer unmarshal(byte[] aBuffer, int aOffset)
+	{
+		System.arraycopy(aBuffer, aOffset, mBuffer, 0, SIZE);
+		return this;
+	}
+
+
 	@Override
 	public int hashCode()
 	{
@@ -316,6 +371,6 @@ public class BlockPointer implements Serializable
 	@Override
 	public String toString()
 	{
-		return "{type=" + getBlockType() + ", offset=" + getBlockIndex0() + ", phys=" + getPhysicalSize() + ", logic=" + getLogicalSize() + ", tx=" + getTransactionId() + ")";
+		return Console.format("{type=%s, offset=%d, alloc=%d, phys=%d, logic=%d, tx=%d}", getBlockType(), getBlockIndex0(), getAllocatedSize(), getPhysicalSize(), getLogicalSize(), getTransactionId());
 	}
 }
