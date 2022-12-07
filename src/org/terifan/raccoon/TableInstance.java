@@ -91,7 +91,7 @@ public final class TableInstance<T>
 	 * @return
 	 * true if this table did not already contain the specified entity
 	 */
-	public boolean save(Database aDatabase, Document aDocument) throws IOException
+	public boolean save(Database aDatabase, Document aDocument)
 	{
 		Log.i("save %s", aDocument.getClass());
 		Log.inc();

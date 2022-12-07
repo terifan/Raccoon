@@ -730,11 +730,18 @@ public abstract class Container<K, R> implements Externalizable
 	public abstract boolean same(Container aOther);
 
 
-	public byte[] marshal() throws IOException
+	public byte[] marshal()
 	{
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		marshal(baos);
-		return baos.toByteArray();
+		try
+		{
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			marshal(baos);
+			return baos.toByteArray();
+		}
+		catch (IOException e)
+		{
+			throw new IllegalArgumentException(e);
+		}
 	}
 
 

@@ -31,11 +31,11 @@ import org.terifan.raccoon.util.Log;
 public final class Database implements AutoCloseable
 {
 	private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
-//	private final Lock mReadLock = mReadWriteLock.readLock();
-//	private final Lock mWriteLock = mReadWriteLock.writeLock();
+	private final Lock mReadLock = mReadWriteLock.readLock();
+	private final Lock mWriteLock = mReadWriteLock.writeLock();
 
 	private IManagedBlockDevice mBlockDevice;
-	private final ConcurrentHashMap<String, TableInstance> mOpenTables;
+	private final ConcurrentHashMap<String, TableInstance> mOpenCollections;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 	private boolean mModified;
 	private boolean mCloseDeviceOnCloseDatabase;
@@ -48,7 +48,7 @@ public final class Database implements AutoCloseable
 
 	private Database()
 	{
-		mOpenTables = new ConcurrentHashMap<>();
+		mOpenCollections = new ConcurrentHashMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
 	}
 
@@ -175,10 +175,9 @@ public final class Database implements AutoCloseable
 
 	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption, OpenParam[] aOpenParams)
 	{
-		AccessCredentials accessCredentials = getParameter(AccessCredentials.class, aOpenParams, null);
-		DeviceHeader tenantHeader = getParameter(DeviceHeader.class, aOpenParams, null);
-
-		mCompressionParam = getParameter(CompressionParam.class, aOpenParams, CompressionParam.BEST_SPEED);
+		AccessCredentials accessCredentials = null; //getParameter(AccessCredentials.class, aOpenParams, null);
+		DeviceHeader tenantHeader = null; //getParameter(DeviceHeader.class, aOpenParams, null);
+		mCompressionParam = CompressionParam.NO_COMPRESSION; //getParameter(CompressionParam.class, aOpenParams, CompressionParam.BEST_SPEED);
 
 		IManagedBlockDevice device;
 
@@ -331,7 +330,7 @@ public final class Database implements AutoCloseable
 	{
 		checkOpen();
 
-		TableInstance instance = mOpenTables.get(aName);
+		TableInstance instance = mOpenCollections.get(aName);
 
 		if (instance != null)
 		{
@@ -342,7 +341,7 @@ public final class Database implements AutoCloseable
 		{
 			checkOpen();
 
-			instance = mOpenTables.get(aName);
+			instance = mOpenCollections.get(aName);
 
 			if (instance != null)
 			{
@@ -361,14 +360,14 @@ public final class Database implements AutoCloseable
 					return null;
 				}
 
-				instance = new TableInstance(this, aTableMetadata, aTableMetadata.getTableHeader());
+				instance = new TableInstance(this, aTableMetadata.getTableHeader());
 
-				if (!tableExists)
-				{
-					mSystemTable.putString(aName, instance);
-				}
+//				if (!tableExists)
+//				{
+//					mSystemTable.putString(aName, instance);
+//				}
 
-				mOpenTables.put(aTableMetadata, instance);
+				mOpenCollections.put(aName, instance);
 
 				if (aOptions == DatabaseOpenOption.CREATE_NEW)
 				{
@@ -402,7 +401,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			for (TableInstance instance : mOpenTables.values())
+			for (TableInstance instance : mOpenCollections.values())
 			{
 				if (instance.isModified())
 				{
@@ -438,7 +437,7 @@ public final class Database implements AutoCloseable
 			Log.i("flush changes");
 			Log.inc();
 
-			for (TableInstance entry : mOpenTables.values())
+			for (TableInstance entry : mOpenCollections.values())
 			{
 				nodesWritten = entry.flush(aTransactionGroup);
 			}
@@ -470,7 +469,7 @@ public final class Database implements AutoCloseable
 
 			TransactionGroup tx = getTransactionGroup();
 
-			for (Entry<Table, TableInstance> entry : mOpenTables.entrySet())
+			for (Entry<Table, TableInstance> entry : mOpenCollections.entrySet())
 			{
 				if (entry.getValue().commit(tx))
 				{
@@ -521,7 +520,7 @@ public final class Database implements AutoCloseable
 			Log.i("rollback");
 			Log.inc();
 
-			for (TableInstance instance : mOpenTables.values())
+			for (TableInstance instance : mOpenCollections.values())
 			{
 				instance.rollback();
 			}
@@ -596,7 +595,7 @@ public final class Database implements AutoCloseable
 
 			if (!mModified)
 			{
-				for (TableInstance entry : mOpenTables.values())
+				for (TableInstance entry : mOpenCollections.values())
 				{
 					mModified |= entry.isModified();
 				}
@@ -607,7 +606,7 @@ public final class Database implements AutoCloseable
 				Log.w("rollback on close");
 				Log.inc();
 
-				for (TableInstance instance : mOpenTables.values())
+				for (TableInstance instance : mOpenCollections.values())
 				{
 					instance.rollback();
 				}
@@ -624,12 +623,12 @@ public final class Database implements AutoCloseable
 
 			if (mSystemTable != null)
 			{
-				for (TableInstance instance : mOpenTables.values())
+				for (TableInstance instance : mOpenCollections.values())
 				{
 					instance.close();
 				}
 
-				mOpenTables.clear();
+				mOpenCollections.clear();
 
 				mSystemTable.close();
 				mSystemTable = null;
@@ -797,30 +796,12 @@ public final class Database implements AutoCloseable
 	}
 
 
-	/**
-	 * Remove all entries of the entities type.
-	 */
-	public void clear(Class aType)
-	{
-		clearImpl(aType, null);
-	}
-
-
-	/**
-	 * Remove all entries of the entities type and possible it's discriminator.
-	 */
-	public void clear(Object aEntity)
-	{
-		clearImpl(aEntity.getClass(), aEntity);
-	}
-
-
-	private void clearImpl(Class aType, Object aEntity)
+	public void clear(String aCollection)
 	{
 		aquireWriteLock();
 		try
 		{
-			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
+			TableInstance instance = openTable(aCollection, DatabaseOpenOption.OPEN);
 			if (instance != null)
 			{
 				instance.clear(this);
@@ -886,10 +867,6 @@ public final class Database implements AutoCloseable
 			mReadLock.unlock();
 
 			System.setErr(System.out);
-			if (list != null && list.size() == 3886)
-			{
-				Thread.dumpStack();
-			}
 
 			Log.dec();
 		}
@@ -910,12 +887,12 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public int size(Object aEntity)
+	public int size(String aCollection)
 	{
 		mReadLock.lock();
 		try
 		{
-			TableInstance instance = openTable(aEntity.getClass(), new DiscriminatorType(aEntity), DatabaseOpenOption.OPEN);
+			TableInstance instance = openTable(aCollection, DatabaseOpenOption.OPEN);
 			if (instance == null)
 			{
 				return 0;
@@ -934,7 +911,7 @@ public final class Database implements AutoCloseable
 		aquireWriteLock();
 		try
 		{
-			for (TableInstance instance : mOpenTables.values())
+			for (TableInstance instance : mOpenCollections.values())
 			{
 				String s = instance.integrityCheck();
 				if (s != null)
@@ -952,7 +929,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public List<Table> getTables()
+	public List<RaccoonCollection> getCollections()
 	{
 		checkOpen();
 
@@ -960,7 +937,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return mSystemTable.list(this, Table.class, Integer.MAX_VALUE);
+			return mSystemTable.keySet().toArray(new String[0]);
 		}
 		finally
 		{
@@ -969,7 +946,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public Table getTable(String aTypeName)
+	public RaccoonCollection getCollection(String aName)
 	{
 		checkOpen();
 
@@ -977,11 +954,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return (Table)mSystemTable.list(this, Table.class, Integer.MAX_VALUE).stream().filter(e ->
-			{
-				String tm = ((Table)e).getEntityName();
-				return tm.equals(aTypeName) || tm.endsWith("." + aTypeName);
-			}).findFirst().orElse(null);
+			return mSystemTable.getBinary(aName);
 		}
 		finally
 		{
@@ -1007,11 +980,11 @@ public final class Database implements AutoCloseable
 
 			aScanResult.exitTable();
 
-			for (Table tableMetadata : getTables())
+			for (RaccoonCollection collection : getCollections())
 			{
-				boolean wasOpen = mOpenTables.containsKey(tableMetadata);
+				boolean wasOpen = mOpenCollections.containsKey(collection.getName());
 
-				TableInstance instance = openTable(tableMetadata, DatabaseOpenOption.OPEN);
+				TableInstance instance = openTable(collection, DatabaseOpenOption.OPEN);
 
 				aScanResult.enterTable(instance);
 
@@ -1022,7 +995,7 @@ public final class Database implements AutoCloseable
 				if (!wasOpen)
 				{
 					instance.close();
-					mOpenTables.remove(tableMetadata);
+					mOpenCollections.remove(collection.getName());
 				}
 			}
 
