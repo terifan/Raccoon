@@ -1,6 +1,6 @@
 package org.terifan.raccoon.io.managed;
 
-import java.io.IOException;
+import org.terifan.bundle.Document;
 import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.secure.SecureBlockDevice;
@@ -15,16 +15,13 @@ class SuperBlock
 	private final static byte FORMAT_VERSION = 1;
 	private final static int CHECKSUM_SIZE = 16;
 	private final static int IV_SIZE = 16;
-	public static final int DEVICE_HEADER_LABEL_MAX_LENGTH = 32;
 
 	private int mFormatVersion;
 	private long mCreateTime;
 	private long mModifiedTime;
 	private long mTransactionId;
-	private DeviceHeader mTenantHeader;
-	private DeviceHeader mApplicationHeader;
 	private BlockPointer mSpaceMapPointer;
-	private byte[] mApplicationPointer;
+	private Document mApplicationHeader;
 
 
 	public SuperBlock()
@@ -33,10 +30,7 @@ class SuperBlock
 		mCreateTime = System.currentTimeMillis();
 		mSpaceMapPointer = new BlockPointer();
 		mTransactionId = -1L;
-
-		mApplicationHeader = new DeviceHeader();
-		mTenantHeader = new DeviceHeader();
-		mApplicationPointer = new byte[0];
+		mApplicationHeader = new Document();
 	}
 
 
@@ -104,39 +98,9 @@ class SuperBlock
 	}
 
 
-	DeviceHeader getApplicationHeader()
+	public Document getApplicationHeader()
 	{
 		return mApplicationHeader;
-	}
-
-
-	void setApplicationHeader(DeviceHeader aApplicationHeader)
-	{
-		mApplicationHeader = aApplicationHeader;
-	}
-
-
-	DeviceHeader getTenantHeader()
-	{
-		return mTenantHeader;
-	}
-
-
-	void setTenantHeader(DeviceHeader aTenantHeader)
-	{
-		mTenantHeader = aTenantHeader;
-	}
-
-
-	public byte[] getApplicationPointer()
-	{
-		return mApplicationPointer;
-	}
-
-
-	public void setApplicationPointer(byte[] aApplicationPointer)
-	{
-		mApplicationPointer = aApplicationPointer;
 	}
 
 
@@ -213,24 +177,14 @@ class SuperBlock
 
 	private void marshal(ByteArrayBuffer aBuffer)
 	{
-		if (mApplicationPointer == null)
-		{
-			throw new IllegalStateException("The application pointer must be specified");
-		}
-		if (mApplicationPointer.length > IManagedBlockDevice.APPLICATION_POINTER_MAX_SIZE)
-		{
-			throw new IllegalStateException("The application pointer is too long");
-		}
-
 		aBuffer.writeInt8(mFormatVersion);
 		aBuffer.writeInt64(mCreateTime);
 		aBuffer.writeInt64(mModifiedTime);
 		aBuffer.writeInt64(mTransactionId);
 		mSpaceMapPointer.marshal(aBuffer);
-		aBuffer.writeInt8(mApplicationPointer.length);
-		aBuffer.write(mApplicationPointer);
-		mApplicationHeader.marshal(aBuffer);
-		mTenantHeader.marshal(aBuffer);
+		byte[] x = mApplicationHeader.marshal();
+		aBuffer.writeVar32(x.length);
+		aBuffer.write(x);
 	}
 
 
@@ -247,8 +201,6 @@ class SuperBlock
 		mModifiedTime = aBuffer.readInt64();
 		mTransactionId = aBuffer.readInt64();
 		mSpaceMapPointer.unmarshal(aBuffer);
-		mApplicationPointer = aBuffer.read(new byte[aBuffer.readInt8()]);
-		mApplicationHeader.unmarshal(aBuffer);
-		mTenantHeader.unmarshal(aBuffer);
+		mApplicationHeader = Document.unmarshal(aBuffer.read(new byte[aBuffer.readVar32()]));
 	}
 }

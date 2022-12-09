@@ -2,7 +2,6 @@ package org.terifan.raccoon;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import org.terifan.raccoon.io.managed.DeviceHeader;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;

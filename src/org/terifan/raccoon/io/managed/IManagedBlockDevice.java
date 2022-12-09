@@ -1,13 +1,11 @@
 package org.terifan.raccoon.io.managed;
 
+import org.terifan.bundle.Document;
 import org.terifan.raccoon.io.IBlockDevice;
 
 
 public interface IManagedBlockDevice extends IBlockDevice
 {
-	final static int APPLICATION_POINTER_MAX_SIZE = 255;
-
-
 	/**
 	 * @return true if the block device has pending changes requiring a commit.
 	 */
@@ -43,22 +41,10 @@ public interface IManagedBlockDevice extends IBlockDevice
 	void clear();
 
 
-	DeviceHeader getApplicationHeader();
-
-
-	void setApplicationHeader(DeviceHeader aApplicationHeader);
-
-
-	DeviceHeader getTenantHeader();
-
-
-	void setTenantHeader(DeviceHeader aTenantHeader);
-
-
-	byte[] getApplicationPointer();
-
-
-	void setApplicationPointer(byte[] aApplicationPointer);
+	/**
+	 * Returns a Document containing information to load the application using the block device.
+	 */
+	Document getApplicationHeader();
 
 
 	long getTransactionId();

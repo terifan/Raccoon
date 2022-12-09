@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.bundle.Document;
 
 
 public final class CompressionParam implements OpenParam
@@ -15,9 +15,7 @@ public final class CompressionParam implements OpenParam
 	public final static CompressionParam BEST_COMPRESSION = new CompressionParam(DEFLATE_DEFAULT, DEFLATE_DEFAULT, DEFLATE_BEST);
 	public final static CompressionParam NO_COMPRESSION = new CompressionParam(NONE, NONE, NONE);
 
-	private byte mNode;
-	private byte mLeaf;
-	private byte mBlob;
+	private Document mConf;
 
 
 	public CompressionParam()
@@ -28,34 +26,10 @@ public final class CompressionParam implements OpenParam
 
 	public CompressionParam(byte aNode, byte aLeaf, byte aBlob)
 	{
-		mNode = aNode;
-		mLeaf = aLeaf;
-		mBlob = aBlob;
-	}
-
-
-	public byte getLeaf()
-	{
-		return mLeaf;
-	}
-
-
-	public byte getNode()
-	{
-		return mNode;
-	}
-
-
-	public byte getBlob()
-	{
-		return mBlob;
-	}
-
-
-	@Override
-	public String toString()
-	{
-		return "{node=" + mNode + ", leaf=" + mLeaf + ", blob=" + mBlob + "}";
+		mConf = new Document()
+			.putNumber("leaf", aLeaf)
+			.putNumber("node", aNode)
+			.putNumber("blob", aBlob);
 	}
 
 
@@ -64,30 +38,34 @@ public final class CompressionParam implements OpenParam
 		switch (aType)
 		{
 			case LEAF:
-				return mLeaf;
+				return mConf.getByte("leaf");
 			case INDEX:
 			case BLOB_INDEX:
-				return mNode;
+				return mConf.getByte("node");
 			case BLOB_DATA:
-				return mBlob;
+				return mConf.getByte("blob");
 			default:
 				return NONE;
 		}
 	}
 
 
-	public void marshal(ByteArrayBuffer aBuffer)
+	public Document marshal()
 	{
-		aBuffer.writeInt8(mLeaf);
-		aBuffer.writeInt8(mNode);
-		aBuffer.writeInt8(mBlob);
+		return mConf;
 	}
 
 
-	public void unmarshal(ByteArrayBuffer aBuffer)
+	public CompressionParam unmarshal(Document aDocument)
 	{
-		mLeaf = (byte)aBuffer.readInt8();
-		mNode = (byte)aBuffer.readInt8();
-		mBlob = (byte)aBuffer.readInt8();
+		mConf.replaceAll(aDocument);
+		return this;
+	}
+
+
+	@Override
+	public String toString()
+	{
+		return mConf.toString();
 	}
 }

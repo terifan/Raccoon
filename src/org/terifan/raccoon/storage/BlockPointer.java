@@ -305,6 +305,18 @@ public class BlockPointer implements Serializable
 	}
 
 
+	public byte[] marshal()
+	{
+		return marshal(ByteArrayBuffer.alloc(SIZE)).array();
+	}
+
+
+	public BlockPointer unmarshal(byte[] aBinary)
+	{
+		return unmarshal(ByteArrayBuffer.wrap(aBinary));
+	}
+
+
 	public ByteArrayBuffer marshal(ByteArrayBuffer aBuffer)
 	{
 		return aBuffer.write(mBuffer);

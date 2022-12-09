@@ -2,7 +2,6 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.storage.BlockPointer;
-import org.terifan.raccoon.io.managed.DeviceHeader;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,7 +23,6 @@ import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.io.physical.FileBlockDevice;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Assert;
-import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 
 
@@ -35,20 +33,21 @@ public final class Database implements AutoCloseable
 	private final Lock mWriteLock = mReadWriteLock.writeLock();
 
 	private IManagedBlockDevice mBlockDevice;
-	private final ConcurrentHashMap<String, TableInstance> mOpenCollections;
+	private final ConcurrentHashMap<String, TableInstance> mTables;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 	private boolean mModified;
 	private boolean mCloseDeviceOnCloseDatabase;
 	private boolean mReadOnly;
 	private Thread mShutdownHook;
-	private Document mSystemTable;
+	private ApplicationHeader mApplicationHeader;
 	private CompressionParam mCompressionParam;
 	private int mReadLocked;
+	private DatabaseOpenOption mDatabaseOpenOption;
 
 
 	private Database()
 	{
-		mOpenCollections = new ConcurrentHashMap<>();
+		mTables = new ConcurrentHashMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
 	}
 
@@ -56,12 +55,9 @@ public final class Database implements AutoCloseable
 	/**
 	 * Create a new or open an existing database
 	 *
-	 * @param aFile
-	 * the database file
-	 * @param aOpenOptions
-	 * OpenOption enum constant describing the options for creating the database instance
-	 * @param aParameters
-	 * parameters for the database
+	 * @param aFile the database file
+	 * @param aOpenOptions OpenOption enum constant describing the options for creating the database instance
+	 * @param aParameters parameters for the database
 	 */
 	public Database(File aFile, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws UnsupportedVersionException
 	{
@@ -132,12 +128,9 @@ public final class Database implements AutoCloseable
 	/**
 	 * Create a new or open an existing database
 	 *
-	 * @param aBlockDevice
-	 * a block device containing a database
-	 * @param aOpenOptions
-	 * OpenOptions enum constant describing the options for creating the database instance
-	 * @param aParameters
-	 * parameters for the database
+	 * @param aBlockDevice a block device containing a database
+	 * @param aOpenOptions OpenOptions enum constant describing the options for creating the database instance
+	 * @param aParameters parameters for the database
 	 */
 	public Database(IPhysicalBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws UnsupportedVersionException
 	{
@@ -154,12 +147,9 @@ public final class Database implements AutoCloseable
 	/**
 	 * Create a new or open an existing database
 	 *
-	 * @param aBlockDevice
-	 * a block device containing a database
-	 * @param aOpenOptions
-	 * OpenOptions enum constant describing the options for creating the database instance
-	 * @param aParameters
-	 * parameters for the database
+	 * @param aBlockDevice a block device containing a database
+	 * @param aOpenOptions OpenOptions enum constant describing the options for creating the database instance
+	 * @param aParameters parameters for the database
 	 */
 	public Database(IManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws UnsupportedVersionException
 	{
@@ -176,25 +166,25 @@ public final class Database implements AutoCloseable
 	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption, OpenParam[] aOpenParams)
 	{
 		AccessCredentials accessCredentials = null; //getParameter(AccessCredentials.class, aOpenParams, null);
-		DeviceHeader tenantHeader = null; //getParameter(DeviceHeader.class, aOpenParams, null);
 		mCompressionParam = CompressionParam.NO_COMPRESSION; //getParameter(CompressionParam.class, aOpenParams, CompressionParam.BEST_SPEED);
+		mDatabaseOpenOption = aOpenOption;
 
-		IManagedBlockDevice device;
+		IManagedBlockDevice blockDevice;
 
 		if (aBlockDevice instanceof IManagedBlockDevice)
 		{
 			if (accessCredentials != null)
 			{
-				throw new IllegalArgumentException("The BlockDevice provided cannot be secured, ensure that the BlockDevice it writes to is a secure BlockDevice.");
+				throw new IllegalArgumentException("The BlockDevice provided cannot be secured.");
 			}
 
-			device = (IManagedBlockDevice)aBlockDevice;
+			blockDevice = (IManagedBlockDevice)aBlockDevice;
 		}
 		else if (accessCredentials == null)
 		{
 			Log.d("creating a managed block device");
 
-			device = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice);
+			blockDevice = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice);
 		}
 		else
 		{
@@ -217,26 +207,44 @@ public final class Database implements AutoCloseable
 				throw new InvalidPasswordException("Incorrect password or not a secure BlockDevice");
 			}
 
-			device = new ManagedBlockDevice(secureDevice);
+			blockDevice = new ManagedBlockDevice(secureDevice);
 		}
+
+		mApplicationHeader = new ApplicationHeader();
 
 		if (aCreate)
 		{
-			if (tenantHeader != null)
+			Log.i("create database");
+			Log.inc();
+
+			if (blockDevice.length() > 0)
 			{
-				device.setTenantHeader(tenantHeader);
+				blockDevice.clear();
+				blockDevice.commit();
 			}
 
-			create(device, aOpenParams);
+			mBlockDevice = blockDevice;
+			mModified = true;
+
+			commit();
+
+			Log.dec();
 		}
 		else
 		{
-			open(device, aOpenOption == DatabaseOpenOption.READ_ONLY, aOpenParams);
+			Log.i("open database");
+			Log.inc();
 
-			if (tenantHeader != null && !tenantHeader.getLabel().equals(device.getTenantHeader().getLabel()))
+			mBlockDevice = blockDevice;
+			mApplicationHeader.readFromDevice(mBlockDevice);
+			mReadOnly = mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY;
+
+			for (String name : mApplicationHeader.list())
 			{
-				throw new UnsupportedVersionException("Device tenant header labels don't match: expected: " + tenantHeader + ", actual:" + device.getTenantHeader());
+				mTables.put(name, new TableInstance(this, name, mApplicationHeader.get(name)));
 			}
+
+			Log.dec();
 		}
 
 		mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
@@ -261,132 +269,49 @@ public final class Database implements AutoCloseable
 		Runtime.getRuntime().addShutdownHook(mShutdownHook);
 	}
 
-//	https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/ref/Cleaner.html
-//
-//	@Override
-//	protected void finalize() throws Throwable
-//	{
-//		super.finalize();
-//	}
 
-
-	private void create(IManagedBlockDevice aBlockDevice, OpenParam[] aParameters)
-	{
-		Log.i("create database");
-		Log.inc();
-
-		if (aBlockDevice.length() > 0)
-		{
-			aBlockDevice.setApplicationPointer(new byte[0]);
-			aBlockDevice.clear();
-			aBlockDevice.commit();
-		}
-
-		mBlockDevice = aBlockDevice;
-		mSystemTable = new Document();
-		mModified = true;
-
-		commit();
-
-		Log.dec();
-	}
-
-
-	private void open(IManagedBlockDevice aBlockDevice, boolean aReadOnly, OpenParam[] aParameters) throws UnsupportedVersionException
-	{
-		Log.i("open database");
-		Log.inc();
-
-		DeviceHeader applicationHeader = aBlockDevice.getApplicationHeader();
-
-		if (!Arrays.equals(applicationHeader.getSerialNumberBytes(), Constants.DEVICE_HEADER.getSerialNumberBytes()))
-		{
-			throw new UnsupportedVersionException("This block device does not contain a Raccoon database (serialno): " + applicationHeader);
-		}
-
-		if (applicationHeader.getMajorVersion() != Constants.DEVICE_HEADER.getMajorVersion() || applicationHeader.getMinorVersion() != Constants.DEVICE_HEADER.getMinorVersion())
-		{
-			throw new UnsupportedVersionException("Unsupported database version: " + applicationHeader);
-		}
-
-		byte[] tableHeader = aBlockDevice.getApplicationPointer();
-
-		if (tableHeader.length < BlockPointer.SIZE)
-		{
-			throw new UnsupportedVersionException("The application pointer is too short: " + tableHeader.length);
-		}
-
-		BlockAccessor accessor = new BlockAccessor(aBlockDevice, mCompressionParam);
-
-		mBlockDevice = aBlockDevice;
-		mSystemTable = new Document().unmarshal(accessor.readBlock(new BlockPointer().unmarshal(tableHeader, 0)));
-		mReadOnly = aReadOnly;
-
-		Log.dec();
-	}
-
-
-	protected TableInstance openTable(String aName, DatabaseOpenOption aOptions)
+	protected TableInstance openTable(String aName)
 	{
 		checkOpen();
 
-		TableInstance instance = mOpenCollections.get(aName);
+		TableInstance instance = mTables.get(aName);
 
 		if (instance != null)
 		{
 			return instance;
 		}
 
-		synchronized (aName)
+		if (mDatabaseOpenOption == DatabaseOpenOption.OPEN || mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY)
 		{
-			checkOpen();
-
-			instance = mOpenCollections.get(aName);
-
-			if (instance != null)
-			{
-				return instance;
-			}
-
-			Log.i("open table '%s' with option %s", aName, aOptions);
-			Log.inc();
-
-			try
-			{
-				boolean tableExists = mSystemTable.containsKey(aName);
-
-				if (!tableExists && (aOptions == DatabaseOpenOption.OPEN || aOptions == DatabaseOpenOption.READ_ONLY))
-				{
-					return null;
-				}
-
-				instance = new TableInstance(this, aTableMetadata.getTableHeader());
-
-//				if (!tableExists)
-//				{
-//					mSystemTable.putString(aName, instance);
-//				}
-
-				mOpenCollections.put(aName, instance);
-
-				if (aOptions == DatabaseOpenOption.CREATE_NEW)
-				{
-					instance.clear(this);
-				}
-			}
-			finally
-			{
-				Log.dec();
-			}
-
-			return instance;
+			throw new IllegalStateException("Collection doesn't exist.");
 		}
+
+		Log.i("create table '%s' with option %s", aName, mDatabaseOpenOption);
+		Log.inc();
+
+		try
+		{
+			instance = new TableInstance(this, aName, new Document());
+
+			mTables.put(aName, instance);
+
+			if (mDatabaseOpenOption == DatabaseOpenOption.CREATE_NEW)
+			{
+				instance.clear();
+			}
+		}
+		finally
+		{
+			Log.dec();
+		}
+
+		return instance;
 	}
 
 
-	private void checkOpen() throws IllegalStateException
+	private void checkOpen()
 	{
-		if (mSystemTable == null)
+		if (mApplicationHeader == null)
 		{
 			throw new DatabaseClosedException("Database is closed");
 		}
@@ -401,7 +326,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			for (TableInstance instance : mOpenCollections.values())
+			for (TableInstance instance : mTables.values())
 			{
 				if (instance.isModified())
 				{
@@ -420,34 +345,34 @@ public final class Database implements AutoCloseable
 
 	public boolean isOpen()
 	{
-		return mSystemTable != null;
+		return mApplicationHeader != null;
 	}
 
 
-	public long flush(TransactionGroup aTransactionGroup)
+	public long flush()
 	{
 		checkOpen();
 
-		aquireWriteLock();
+//		aquireWriteLock();
 
 		long nodesWritten = 0;
 
-		try
-		{
+//		try
+//		{
 			Log.i("flush changes");
 			Log.inc();
 
-			for (TableInstance entry : mOpenCollections.values())
+			for (TableInstance entry : mTables.values())
 			{
-				nodesWritten = entry.flush(aTransactionGroup);
+				nodesWritten = entry.flush(getTransactionGroup());
 			}
 
 			Log.dec();
-		}
-		finally
-		{
-			mWriteLock.unlock();
-		}
+//		}
+//		finally
+//		{
+//			mWriteLock.unlock();
+//		}
 
 		return nodesWritten;
 	}
@@ -460,22 +385,20 @@ public final class Database implements AutoCloseable
 	{
 		checkOpen();
 
-		aquireWriteLock();
-
-		try
-		{
+//		aquireWriteLock();
+//
+//		try
+//		{
 			Log.i("commit database");
 			Log.inc();
 
-			TransactionGroup tx = getTransactionGroup();
-
-			for (Entry<Table, TableInstance> entry : mOpenCollections.entrySet())
+			for (Entry<String, TableInstance> entry : mTables.entrySet())
 			{
-				if (entry.getValue().commit(tx))
+				if (entry.getValue().commit())
 				{
 					Log.i("table updated '%s'", entry.getKey());
 
-					mSystemTable.save(this, entry.getKey());
+					mApplicationHeader.put(entry.getKey(), entry.getValue().getTableHeader());
 
 					mModified = true;
 				}
@@ -485,25 +408,26 @@ public final class Database implements AutoCloseable
 
 			if (mModified)
 			{
-				mSystemTable.commit(tx);
+				Log.i("updating super block");
+				Log.inc();
 
-				updateSuperBlock();
-
+				mApplicationHeader.writeToDevice(mBlockDevice);
 				mBlockDevice.commit();
-
 				mModified = false;
 
 				assert integrityCheck() == null : integrityCheck();
+
+				Log.dec();
 			}
 
 			Log.dec();
 
 			return returnModified;
-		}
-		finally
-		{
-			mWriteLock.unlock();
-		}
+//		}
+//		finally
+//		{
+//			mWriteLock.unlock();
+//		}
 	}
 
 
@@ -514,45 +438,26 @@ public final class Database implements AutoCloseable
 	{
 		checkOpen();
 
-		aquireWriteLock();
-		try
-		{
+//		aquireWriteLock();
+//		try
+//		{
 			Log.i("rollback");
 			Log.inc();
 
-			for (TableInstance instance : mOpenCollections.values())
+			for (TableInstance instance : mTables.values())
 			{
 				instance.rollback();
 			}
 
-			mSystemTable.rollback();
+			mApplicationHeader.readFromDevice(mBlockDevice);
 			mBlockDevice.rollback();
 
 			Log.dec();
-		}
-		finally
-		{
-			mWriteLock.unlock();
-		}
-	}
-
-
-	private void updateSuperBlock()
-	{
-		Log.i("updating super block");
-		Log.inc();
-
-		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(IManagedBlockDevice.APPLICATION_POINTER_MAX_SIZE);
-		if (mSystemTableMetadata.getTableHeader() != null)
-		{
-			buffer.write(mSystemTableMetadata.getTableHeader());
-		}
-		buffer.trim();
-
-		mBlockDevice.setApplicationPointer(buffer.array());
-		mBlockDevice.setApplicationHeader(Constants.DEVICE_HEADER);
-
-		Log.dec();
+//		}
+//		finally
+//		{
+//			mWriteLock.unlock();
+//		}
 	}
 
 
@@ -586,16 +491,16 @@ public final class Database implements AutoCloseable
 			return;
 		}
 
-		aquireWriteLock();
-
-		try
-		{
+//		aquireWriteLock();
+//
+//		try
+//		{
 			Log.d("begin closing database");
 			Log.inc();
 
 			if (!mModified)
 			{
-				for (TableInstance entry : mOpenCollections.values())
+				for (TableInstance entry : mTables.values())
 				{
 					mModified |= entry.isModified();
 				}
@@ -606,32 +511,28 @@ public final class Database implements AutoCloseable
 				Log.w("rollback on close");
 				Log.inc();
 
-				for (TableInstance instance : mOpenCollections.values())
+				for (TableInstance instance : mTables.values())
 				{
 					instance.rollback();
 				}
 
-				if (mSystemTable != null)
-				{
-					mSystemTable.rollback();
-				}
-
+				mApplicationHeader.readFromDevice(mBlockDevice);
 				mBlockDevice.rollback();
 
 				Log.dec();
 			}
 
-			if (mSystemTable != null)
+			if (mApplicationHeader != null)
 			{
-				for (TableInstance instance : mOpenCollections.values())
+				for (TableInstance instance : mTables.values())
 				{
 					instance.close();
 				}
 
-				mOpenCollections.clear();
+				mTables.clear();
 
-				mSystemTable.close();
-				mSystemTable = null;
+				mApplicationHeader.writeToDevice(mBlockDevice);
+				mApplicationHeader = null;
 			}
 
 			if (mBlockDevice != null && mCloseDeviceOnCloseDatabase)
@@ -643,236 +544,231 @@ public final class Database implements AutoCloseable
 
 			Log.i("database finished closing");
 			Log.dec();
-		}
-		finally
-		{
-			mWriteLock.unlock();
-		}
+//		}
+//		finally
+//		{
+//			mWriteLock.unlock();
+//		}
 	}
 
 
 	/**
 	 * Saves an entity.
 	 *
-	 * @return
-	 * true if this table did not already contain the specified entity
+	 * @return true if this table did not already contain the specified entity
 	 */
-	public boolean save(Document aDocument)
-	{
-		aquireWriteLock();
-		try
-		{
-			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.CREATE);
-			return instance.save(this, aDocument);
-		}
-		catch (DatabaseException e)
-		{
-			forceClose(e);
-			throw e;
-		}
-		finally
-		{
-			mWriteLock.unlock();
-		}
-	}
-
-
-	void aquireWriteLock()
-	{
-		if (mReadOnly)
-		{
-			throw new ReadOnlyDatabaseException();
-		}
-
-		mWriteLock.lock();
-	}
-
-
-	void releaseWriteLock()
-	{
-		mWriteLock.unlock();
-	}
-
-
-	/**
-	 * Attempts to retrieves an entity returning true if entity found and updating the provided instance.
-	 *
-	 * @param aDocument
-	 *   an entity with discriminator/key fields set
-	 * @return
-	 *   true if the entity was found.
-	 */
-	public boolean tryGet(Document aDocument)
-	{
-		mReadLock.lock();
-		try
-		{
-			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
-			if (instance == null)
-			{
-				return false;
-			}
-			return instance.get(this, aDocument);
-		}
-		catch (DatabaseException e)
-		{
-			forceClose(e);
-			throw e;
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
-	}
-
-
-	/**
-	 * Retrieves an entity throwing and exception if the entity wasn't found.
-	 *
-	 * @param aDocument
-	 *   an entity with discriminator/key fields set
-	 * @throws NoSuchEntityException
-	 *   if the entity cannot be found
-	 */
-	public Document get(Document aDocument) throws DatabaseException
-	{
-		Assert.notNull(aDocument, "Argument is null");
-
-		mReadLock.lock();
-		try
-		{
-			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
-
-			if (instance == null)
-			{
-				throw new NoSuchEntityException("No table exists matching type " + aDocument.getClass());
-			}
-			if (!instance.get(this, aDocument))
-			{
-				throw new NoSuchEntityException("No entity exists matching key");
-			}
-
-			return aDocument;
-		}
-		catch (DatabaseException e)
-		{
-			forceClose(e);
-			throw e;
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
-	}
-
-
-	/**
-	 * Removes the entity.
-	 *
-	 * @return
-	 *   true if the entity was removed.
-	 */
-	public boolean remove(Document aDocument)
-	{
-		aquireWriteLock();
-		try
-		{
-			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
-			if (instance == null)
-			{
-				return false;
-			}
-			return instance.remove(this, aDocument);
-		}
-		catch (DatabaseException e)
-		{
-			forceClose(e);
-			throw e;
-		}
-		finally
-		{
-			mWriteLock.unlock();
-		}
-	}
-
-
-	public void clear(String aCollection)
-	{
-		aquireWriteLock();
-		try
-		{
-			TableInstance instance = openTable(aCollection, DatabaseOpenOption.OPEN);
-			if (instance != null)
-			{
-				instance.clear(this);
-			}
-		}
-		catch (DatabaseException e)
-		{
-			forceClose(e);
-			throw e;
-		}
-		finally
-		{
-			mWriteLock.unlock();
-		}
-	}
-
-
-	/**
-	 * The contents of the stream is associated with the key found in the entity provided. The stream will persist the entity when it's closed.
-	 */
-	public LobByteChannel openLob(Document aDocument, LobOpenOption aOpenOption)
-	{
-		TableInstance instance = openTable(aDocument.getString("_collection"), aOpenOption == LobOpenOption.READ ? DatabaseOpenOption.OPEN : DatabaseOpenOption.CREATE);
-
-		if (instance == null)
-		{
-			if (aOpenOption == LobOpenOption.READ)
-			{
-				return null;
-			}
-
-			throw new DatabaseException("Failed to create table");
-		}
-
-		return instance.openBlob(this, aDocument, aOpenOption);
-	}
-
-
-	public List<Document> list(Document aDocument)
-	{
-		List<Document> list = null;
-
-		Log.i("list items %s", aDocument.getString("_collection"));
-		Log.inc();
-
-		mReadLock.lock();
-		try
-		{
-			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
-
-			if (instance != null)
-			{
-				list = instance.list(this);
-			}
-		}
-		catch (DatabaseException e)
-		{
-			forceClose(e);
-			throw e;
-		}
-		finally
-		{
-			mReadLock.unlock();
-
-			System.setErr(System.out);
-
-			Log.dec();
-		}
-
-		return list != null ? list : new ArrayList<>();
-	}
+//	public boolean save(Document aDocument)
+//	{
+//		aquireWriteLock();
+//		try
+//		{
+//			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.CREATE);
+//			return instance.save(this, aDocument);
+//		}
+//		catch (DatabaseException e)
+//		{
+//			forceClose(e);
+//			throw e;
+//		}
+//		finally
+//		{
+//			mWriteLock.unlock();
+//		}
+//	}
+//
+//
+//	void aquireWriteLock()
+//	{
+//		if (mReadOnly)
+//		{
+//			throw new ReadOnlyDatabaseException();
+//		}
+//
+//		mWriteLock.lock();
+//	}
+//
+//
+//	void releaseWriteLock()
+//	{
+//		mWriteLock.unlock();
+//	}
+//
+//
+//	/**
+//	 * Attempts to retrieves an entity returning true if entity found and updating the provided instance.
+//	 *
+//	 * @param aDocument an entity with discriminator/key fields set
+//	 * @return true if the entity was found.
+//	 */
+//	public boolean tryGet(Document aDocument)
+//	{
+//		mReadLock.lock();
+//		try
+//		{
+//			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
+//			if (instance == null)
+//			{
+//				return false;
+//			}
+//			return instance.get(this, aDocument);
+//		}
+//		catch (DatabaseException e)
+//		{
+//			forceClose(e);
+//			throw e;
+//		}
+//		finally
+//		{
+//			mReadLock.unlock();
+//		}
+//	}
+//
+//
+//	/**
+//	 * Retrieves an entity throwing and exception if the entity wasn't found.
+//	 *
+//	 * @param aDocument an entity with discriminator/key fields set
+//	 * @throws NoSuchEntityException if the entity cannot be found
+//	 */
+//	public Document get(Document aDocument) throws DatabaseException
+//	{
+//		Assert.notNull(aDocument, "Argument is null");
+//
+//		mReadLock.lock();
+//		try
+//		{
+//			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
+//
+//			if (instance == null)
+//			{
+//				throw new NoSuchEntityException("No table exists matching type " + aDocument.getClass());
+//			}
+//			if (!instance.get(this, aDocument))
+//			{
+//				throw new NoSuchEntityException("No entity exists matching key");
+//			}
+//
+//			return aDocument;
+//		}
+//		catch (DatabaseException e)
+//		{
+//			forceClose(e);
+//			throw e;
+//		}
+//		finally
+//		{
+//			mReadLock.unlock();
+//		}
+//	}
+//
+//
+//	/**
+//	 * Removes the entity.
+//	 *
+//	 * @return true if the entity was removed.
+//	 */
+//	public boolean remove(Document aDocument)
+//	{
+//		aquireWriteLock();
+//		try
+//		{
+//			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
+//			if (instance == null)
+//			{
+//				return false;
+//			}
+//			return instance.remove(this, aDocument);
+//		}
+//		catch (DatabaseException e)
+//		{
+//			forceClose(e);
+//			throw e;
+//		}
+//		finally
+//		{
+//			mWriteLock.unlock();
+//		}
+//	}
+//
+//
+//	public void clear(String aCollection)
+//	{
+//		aquireWriteLock();
+//		try
+//		{
+//			TableInstance instance = openTable(aCollection, DatabaseOpenOption.OPEN);
+//			if (instance != null)
+//			{
+//				instance.clear(this);
+//			}
+//		}
+//		catch (DatabaseException e)
+//		{
+//			forceClose(e);
+//			throw e;
+//		}
+//		finally
+//		{
+//			mWriteLock.unlock();
+//		}
+//	}
+//
+//
+//	/**
+//	 * The contents of the stream is associated with the key found in the entity provided. The stream will persist the entity when it's
+//	 * closed.
+//	 */
+//	public LobByteChannel openLob(Document aDocument, LobOpenOption aOpenOption)
+//	{
+//		TableInstance instance = openTable(aDocument.getString("_collection"), aOpenOption == LobOpenOption.READ ? DatabaseOpenOption.OPEN : DatabaseOpenOption.CREATE);
+//
+//		if (instance == null)
+//		{
+//			if (aOpenOption == LobOpenOption.READ)
+//			{
+//				return null;
+//			}
+//
+//			throw new DatabaseException("Failed to create table");
+//		}
+//
+//		return instance.openBlob(this, aDocument, aOpenOption);
+//	}
+//
+//
+//	public List<Document> list(Document aDocument)
+//	{
+//		List<Document> list = null;
+//
+//		Log.i("list items %s", aDocument.getString("_collection"));
+//		Log.inc();
+//
+//		mReadLock.lock();
+//		try
+//		{
+//			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
+//
+//			if (instance != null)
+//			{
+//				list = instance.list(this);
+//			}
+//		}
+//		catch (DatabaseException e)
+//		{
+//			forceClose(e);
+//			throw e;
+//		}
+//		finally
+//		{
+//			mReadLock.unlock();
+//
+//			System.setErr(System.out);
+//
+//			Log.dec();
+//		}
+//
+//		return list != null ? list : new ArrayList<>();
+//	}
 
 
 	public IManagedBlockDevice getBlockDevice()
@@ -881,37 +777,37 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public TransactionGroup getTransactionGroup()
+	TransactionGroup getTransactionGroup()
 	{
 		return new TransactionGroup(mBlockDevice.getTransactionId());
 	}
 
 
-	public int size(String aCollection)
-	{
-		mReadLock.lock();
-		try
-		{
-			TableInstance instance = openTable(aCollection, DatabaseOpenOption.OPEN);
-			if (instance == null)
-			{
-				return 0;
-			}
-			return instance.size();
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
-	}
+//	public int size(String aCollection)
+//	{
+//		mReadLock.lock();
+//		try
+//		{
+//			TableInstance instance = openTable(aCollection, DatabaseOpenOption.OPEN);
+//			if (instance == null)
+//			{
+//				return 0;
+//			}
+//			return instance.size();
+//		}
+//		finally
+//		{
+//			mReadLock.unlock();
+//		}
+//	}
 
 
 	public String integrityCheck()
 	{
-		aquireWriteLock();
-		try
-		{
-			for (TableInstance instance : mOpenCollections.values())
+//		aquireWriteLock();
+//		try
+//		{
+			for (TableInstance instance : mTables.values())
 			{
 				String s = instance.integrityCheck();
 				if (s != null)
@@ -921,15 +817,15 @@ public final class Database implements AutoCloseable
 			}
 
 			return null;
-		}
-		finally
-		{
-			mWriteLock.unlock();
-		}
+//		}
+//		finally
+//		{
+//			mWriteLock.unlock();
+//		}
 	}
 
 
-	public List<RaccoonCollection> getCollections()
+	public List<TableInstance> getCollections()
 	{
 		checkOpen();
 
@@ -937,7 +833,9 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return mSystemTable.keySet().toArray(new String[0]);
+			ArrayList<TableInstance> list = new ArrayList<>();
+			list.addAll(mTables.values());
+			return list;
 		}
 		finally
 		{
@@ -946,7 +844,7 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public RaccoonCollection getCollection(String aName)
+	public TableInstance getCollection(String aName)
 	{
 		checkOpen();
 
@@ -954,7 +852,7 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			return mSystemTable.getBinary(aName);
+			return openTable(aName);
 		}
 		finally
 		{
@@ -963,54 +861,54 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public ScanResult scan(ScanResult aScanResult)
-	{
-		mReadLock.lock();
-
-		try
-		{
-			if (aScanResult == null)
-			{
-				aScanResult = new ScanResult();
-			}
-
-			aScanResult.enterTable(mSystemTable);
-
-			mSystemTable.scan(aScanResult);
-
-			aScanResult.exitTable();
-
-			for (RaccoonCollection collection : getCollections())
-			{
-				boolean wasOpen = mOpenCollections.containsKey(collection.getName());
-
-				TableInstance instance = openTable(collection, DatabaseOpenOption.OPEN);
-
-				aScanResult.enterTable(instance);
-
-				instance.scan(aScanResult);
-
-				aScanResult.exitTable();
-
-				if (!wasOpen)
-				{
-					instance.close();
-					mOpenCollections.remove(collection.getName());
-				}
-			}
-
-			return aScanResult;
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
-	}
+//	public ScanResult scan(ScanResult aScanResult)
+//	{
+//		mReadLock.lock();
+//
+//		try
+//		{
+//			if (aScanResult == null)
+//			{
+//				aScanResult = new ScanResult();
+//			}
+//
+//			aScanResult.enterTable(mSystemTable);
+//
+//			mSystemTable.scan(aScanResult);
+//
+//			aScanResult.exitTable();
+//
+//			for (RaccoonCollection collection : getCollections())
+//			{
+//				boolean wasOpen = mOpenCollections.containsKey(collection.getName());
+//
+//				TableInstance instance = openTable(collection, DatabaseOpenOption.OPEN);
+//
+//				aScanResult.enterTable(instance);
+//
+//				instance.scan(aScanResult);
+//
+//				aScanResult.exitTable();
+//
+//				if (!wasOpen)
+//				{
+//					instance.close();
+//					mOpenCollections.remove(collection.getName());
+//				}
+//			}
+//
+//			return aScanResult;
+//		}
+//		finally
+//		{
+//			mReadLock.unlock();
+//		}
+//	}
 
 
 	protected synchronized void forceClose(Throwable aException)
 	{
-		if (mSystemTable == null)
+		if (mApplicationHeader == null)
 		{
 			return;
 		}
@@ -1018,7 +916,7 @@ public final class Database implements AutoCloseable
 		reportStatus(LogLevel.FATAL, "an error was detected, forcefully closing block device to prevent damage, uncommitted changes were lost.", aException);
 
 		mBlockDevice.forceClose();
-		mSystemTable = null;
+		mApplicationHeader = null;
 	}
 
 
@@ -1069,21 +967,21 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public void execute(Consumer<Database> aConsumer)
-	{
-		mWriteLock.lock(); // note: allow this lock even on read-only databases
-
-		try
-		{
-			aConsumer.accept(this);
-		}
-		finally
-		{
-			mWriteLock.unlock();
-		}
-	}
-
-
+//	public void execute(Consumer<Database> aConsumer)
+//	{
+//		mWriteLock.lock(); // note: allow this lock even on read-only databases
+//
+//		try
+//		{
+//			aConsumer.accept(this);
+//		}
+//		finally
+//		{
+//			mWriteLock.unlock();
+//		}
+//	}
+//
+//
 //	public <T> void forEach(Class<T> aType, Consumer<T> aConsumer)
 //	{
 //		aquireReadLock();
@@ -1124,8 +1022,6 @@ public final class Database implements AutoCloseable
 //			releaseReadLock();
 //		}
 //	}
-
-
 	private synchronized void releaseReadLock()
 	{
 		mReadLock.unlock();

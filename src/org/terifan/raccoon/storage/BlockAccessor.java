@@ -4,6 +4,7 @@ import org.terifan.raccoon.BlockType;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.zip.Deflater;
+import org.terifan.bundle.Document;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
@@ -38,9 +39,9 @@ public class BlockAccessor implements IBlockAccessor
 	}
 
 
-	public CompressionParam getCompressionParam()
+	public Document getCompressionParam()
 	{
-		return mCompressionParam;
+		return mCompressionParam.marshal();
 	}
 
 

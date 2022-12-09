@@ -1,5 +1,6 @@
 package org.terifan.raccoon.io.managed;
 
+import org.terifan.bundle.Document;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
@@ -19,27 +20,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private SpaceMap mSpaceMap;
 
 
-	/**
-	 * Create/open a ManagedBlockDevice with an user defined label.
-	 *
-	 * @param aApplicationHeader
-	 * a label describing contents of the block device. If a non-null value is provided then this value must match the value found inside
-	 * the block device opened or an exception is thrown.
-	 */
 	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice)
-	{
-		this(aBlockDevice, new DeviceHeader(), new DeviceHeader());
-	}
-
-
-	/**
-	 * Create/open a ManagedBlockDevice with an user defined label.
-	 *
-	 * @param aApplicationHeader
-	 * a label describing contents of the block device. If a non-null value is provided then this value must match the value found inside
-	 * the block device opened or an exception is thrown.
-	 */
-	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice, DeviceHeader aApplicationHeader, DeviceHeader aTenantHeader)
 	{
 		if (aBlockDevice.getBlockSize() < 512)
 		{
@@ -52,12 +33,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		mDoubleCommit = true;
 
 		init();
-
-		if (mWasCreated)
-		{
-			setApplicationHeader(aApplicationHeader);
-			setTenantHeader(aTenantHeader);
-		}
 	}
 
 
@@ -131,44 +106,9 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public byte[] getApplicationPointer()
-	{
-		return mSuperBlock.getApplicationPointer();
-	}
-
-
-	@Override
-	public void setApplicationPointer(byte[] aApplicationPointer)
-	{
-		mSuperBlock.setApplicationPointer(aApplicationPointer);
-	}
-
-
-	@Override
-	public DeviceHeader getApplicationHeader()
+	public Document getApplicationHeader()
 	{
 		return mSuperBlock.getApplicationHeader();
-	}
-
-
-	@Override
-	public void setApplicationHeader(DeviceHeader aApplicationHeader)
-	{
-		mSuperBlock.setApplicationHeader(aApplicationHeader);
-	}
-
-
-	@Override
-	public DeviceHeader getTenantHeader()
-	{
-		return mSuperBlock.getTenantHeader();
-	}
-
-
-	@Override
-	public void setTenantHeader(DeviceHeader aTenantHeader)
-	{
-		mSuperBlock.setTenantHeader(aTenantHeader);
 	}
 
 

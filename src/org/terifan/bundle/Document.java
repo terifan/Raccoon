@@ -207,6 +207,14 @@ public class Document extends Container<String, Document> implements Externaliza
 	}
 
 
+	public Document replaceAll(Document aOther)
+	{
+		clear();
+		mValues.entrySet().forEach(entry -> mValues.put(entry.getKey(), entry.getValue()));
+		return this;
+	}
+
+
 	@Override
 	public Map<String, Object> toMap()
 	{

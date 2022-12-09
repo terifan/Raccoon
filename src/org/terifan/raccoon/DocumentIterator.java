@@ -9,12 +9,12 @@ import org.terifan.raccoon.util.Log;
 final class DocumentIterator implements Iterator<Document>
 {
 	private final Iterator<ArrayMapEntry> mIterator;
-	private final Database mDatabase;
+	private final TableInstance mTable;
 
 
-	DocumentIterator(Database aDatabase, TableInstance aTable, Iterator<ArrayMapEntry> aIterator)
+	public DocumentIterator(TableInstance aTable, Iterator<ArrayMapEntry> aIterator)
 	{
-		mDatabase = aDatabase;
+		mTable = aTable;
 		mIterator = aIterator;
 	}
 

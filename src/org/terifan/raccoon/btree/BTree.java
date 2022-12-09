@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
+import org.terifan.bundle.Document;
 import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.ScanResult;
@@ -31,9 +32,6 @@ public class BTree
 	private int mModCount;
 	private BTreeNode mRoot;
 
-	private long mGenerationCounter;
-	private long mNodeCounter;
-
 	protected final boolean mCommitChangesToBlockDevice;
 	protected BlockAccessor mBlockAccessor;
 
@@ -45,9 +43,9 @@ public class BTree
 	}
 
 
-	public void openOrCreateTable(String aTableName, byte[] aTableHeader)
+	public void openOrCreateTable(String aTableName, Document aTableHeader)
 	{
-		if (aTableHeader == null)
+		if (!aTableHeader.containsKey("pointer"))
 		{
 			Log.i("create table %s", aTableName);
 			Log.inc();
@@ -70,30 +68,23 @@ public class BTree
 	}
 
 
-	private byte[] marshalHeader()
+	private Document marshalHeader()
 	{
-		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(BlockPointer.SIZE + 3);
-
-		mBlockAccessor.getCompressionParam().marshal(buffer);
+		Document doc = new Document();
+		doc.put("compression", mBlockAccessor.getCompressionParam());
 
 		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeIndex ? BlockType.INDEX : BlockType.LEAF);
-		mRoot.mBlockPointer.marshal(buffer);
+		doc.putBinary("pointer", mRoot.mBlockPointer.marshal());
 
-		return buffer.trim().array();
+		return doc;
 	}
 
 
-	private void unmarshalHeader(byte[] aTableHeader)
+	private void unmarshalHeader(Document aTableHeader)
 	{
-		ByteArrayBuffer buffer = ByteArrayBuffer.wrap(aTableHeader);
+		mBlockAccessor.setCompressionParam(new CompressionParam().unmarshal(aTableHeader.getBundle("compression")));
 
-		CompressionParam compressionParam = new CompressionParam();
-		compressionParam.unmarshal(buffer);
-
-		mBlockAccessor.setCompressionParam(compressionParam);
-
-		BlockPointer bp = new BlockPointer();
-		bp.unmarshal(buffer);
+		BlockPointer bp = new BlockPointer().unmarshal(aTableHeader.getBinary("pointer"));
 
 		mRoot = bp.getBlockType() == BlockType.INDEX ? new BTreeIndex(bp.getBlockLevel()) : new BTreeLeaf();
 		mRoot.mBlockPointer = bp;
@@ -105,10 +96,6 @@ public class BTree
 	{
 		checkOpen();
 
-		mGenerationCounter++;
-
-		aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
-
 		return mRoot.get(this, new MarshalledKey(aEntry.getKey()), aEntry);
 	}
 
@@ -118,10 +105,6 @@ public class BTree
 	public ArrayMapEntry put(ArrayMapEntry aEntry)
 	{
 		checkOpen();
-
-		mGenerationCounter++;
-
-		aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		aEntry = new ArrayMapEntry(new MarshalledKey(aEntry.getKey()).array(), aEntry.getValue(), aEntry.getType());
 
@@ -162,13 +145,9 @@ public class BTree
 	}
 
 
-		public ArrayMapEntry remove(ArrayMapEntry aEntry)
+	public ArrayMapEntry remove(ArrayMapEntry aEntry)
 	{
 		checkOpen();
-
-		mGenerationCounter++;
-
-		aEntry.setKey(Arrays.copyOfRange(aEntry.getKey(), 2, aEntry.getKey().length));
 
 		int modCount = ++mModCount;
 		Log.i("put");
@@ -219,7 +198,7 @@ public class BTree
 	}
 
 
-	public byte[] commit(TransactionGroup mTransactionGroup, AtomicBoolean oChanged)
+	public Document commit(TransactionGroup mTransactionGroup, AtomicBoolean oChanged)
 	{
 		checkOpen();
 
@@ -584,18 +563,6 @@ public class BTree
 	{
 		mRoot = new BTreeLeaf();
 		mRoot.mMap = new ArrayMap(LEAF_SIZE);
-	}
-
-
-	synchronized long nextNodeIndex()
-	{
-		return ++mNodeCounter;
-	}
-
-
-	public long getGenerationCounter()
-	{
-		return mGenerationCounter;
 	}
 
 

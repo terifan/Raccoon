@@ -7,6 +7,7 @@ import org.terifan.raccoon.util.Result;
 import static org.terifan.raccoon.btree.BTree.INDEX_SIZE;
 import static org.terifan.raccoon.btree.BTree.BLOCKPOINTER_PLACEHOLDER;
 import org.terifan.raccoon.util.Console;
+import org.terifan.raccoon.util.Log;
 
 
 public class BTreeLeaf extends BTreeNode
