@@ -7,21 +7,21 @@ import org.terifan.raccoon.btree.BTreeEntryIterator;
 import org.terifan.raccoon.util.Log;
 
 
-final class DocumentIterator implements Iterator<Document>
+final public class DocumentIterator implements Iterator<Document>
 {
-	private final BTreeEntryIterator mIterator;
+	private final BTreeEntryIterator mEntryIterator;
 
 
 	public DocumentIterator(BTreeEntryIterator aIterator)
 	{
-		mIterator = aIterator;
+		mEntryIterator = aIterator;
 	}
 
 
 	@Override
 	public boolean hasNext()
 	{
-		return mIterator.hasNext();
+		return mEntryIterator.hasNext();
 	}
 
 
@@ -33,7 +33,7 @@ final class DocumentIterator implements Iterator<Document>
 
 		try
 		{
-			return Document.unmarshal(mIterator.next().getValue());
+			return Document.unmarshal(mEntryIterator.next().getValue());
 		}
 		finally
 		{
@@ -45,6 +45,6 @@ final class DocumentIterator implements Iterator<Document>
 	@Override
 	public void remove()
 	{
-		mIterator.remove();
+		mEntryIterator.remove();
 	}
 }

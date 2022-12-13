@@ -1,12 +1,13 @@
 package org.terifan.raccoon.btree;
 
 import java.util.Iterator;
+import org.terifan.raccoon.btree.ArrayMap.MapEntryIterator;
 
 
 public class BTreeEntryIterator implements Iterator<ArrayMapEntry>
 {
 	private BTreeNodeIterator mNodeIterator;
-	private Iterator<ArrayMapEntry> mMapIterator;
+	private MapEntryIterator mMapIterator;
 
 
 	BTreeEntryIterator(BTree aTree)

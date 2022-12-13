@@ -571,6 +571,12 @@ public class BTreeIndex extends BTreeNode
 	}
 
 
+	int size()
+	{
+		return mMap.size();
+	}
+
+
 	<T extends BTreeNode> T getNode(BTree aImplementation, int aIndex)
 	{
 		ArrayMapEntry entry = new ArrayMapEntry();

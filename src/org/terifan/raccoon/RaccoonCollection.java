@@ -260,7 +260,7 @@ public final class RaccoonCollection implements BTreeStorage
 	/**
 	 * Creates an iterator over all items in this table.
 	 */
-	public Iterator<Document> iterator()
+	public DocumentIterator iterator()
 	{
 		return new DocumentIterator(getEntryIterator());
 	}

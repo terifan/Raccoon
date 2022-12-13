@@ -787,13 +787,13 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 
 	@Override
-	public Iterator<ArrayMapEntry> iterator()
+	public MapEntryIterator iterator()
 	{
-		return new EntryIterator();
+		return new MapEntryIterator();
 	}
 
 
-	public class EntryIterator implements Iterator<ArrayMapEntry>
+	public class MapEntryIterator implements Iterator<ArrayMapEntry>
 	{
 		private final int mExpectedModCount = mModCount;
 		private int mIndex;

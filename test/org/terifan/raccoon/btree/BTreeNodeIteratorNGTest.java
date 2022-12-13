@@ -1,19 +1,12 @@
 package org.terifan.raccoon.btree;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.terifan.bundle.Document;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
-import org.testng.annotations.Test;
 import static org.terifan.raccoon.btree._Tools.createStorage;
 import static org.terifan.raccoon.btree._Tools.showTree;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.testng.annotations.Test;
 
 
 public class BTreeNodeIteratorNGTest
@@ -22,38 +15,18 @@ public class BTreeNodeIteratorNGTest
 	public void test() throws InterruptedException
 	{
 		IPhysicalBlockDevice device = new MemoryBlockDevice(512);
-//		Supplier<IPhysicalBlockDevice> device = () -> new FileBlockDevice(new File("d:/test.rdb"));
 
 		try (BTreeStorage storage = createStorage(device); BTree tree = new BTree(storage, new Document()))
 		{
-			List<Integer> arr = IntStream.range(0, 1000).boxed().collect(Collectors.toList());
-			int seed = new Random().nextInt();
-			System.out.println("SEED=" + seed);
-			Collections.shuffle(arr, new Random(seed));
-			for (int i = 0; i < 1000; i++)
+			for (int i = 0; i < 100_000; i++)
 			{
-				int _i = arr.get(i);
-				tree.put(new ArrayMapEntry(("key"+_i).getBytes(), ("value"+_i).getBytes(), TYPE_DOCUMENT));
-//				tree.put(new ArrayMapEntry(("key"+_i).getBytes(), new Document().putNumber("_id", i).putString("name", "olle-"+i).marshal(), TYPE_DOCUMENT));
-				showTree(tree);
-//				Thread.sleep(1);
+				tree.put(new ArrayMapEntry(("key"+i).getBytes(), ("value"+i).getBytes(), TYPE_DOCUMENT));
 			}
-			tree.commit();
-			storage.getApplicationHeader().putBundle("conf", tree.getConfiguration());
+
+			new BTreeNodeIterator(tree, tree.getRoot()).forEachRemaining(node -> {});
+//System.out.println(node)
+//			showTree(tree);
+//			Thread.sleep(100000);
 		}
-
-		try (BTreeStorage storage = createStorage(device); BTree tree = new BTree(storage, storage.getApplicationHeader().getBundle("conf")))
-		{
-			tree.iterator().forEachRemaining(e -> System.out.println(e));
-
-//			for (int i = 0; i < 100; i++)
-//			{
-//				ArrayMapEntry entry = new ArrayMapEntry(("key"+i).getBytes());
-//				assertTrue(tree.get(entry));
-//				assertEquals(entry.getValue(), ("value"+i).getBytes());
-//			}
-		}
-
-		Thread.sleep(100000);
 	}
 }

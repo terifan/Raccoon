@@ -5,6 +5,7 @@ import org.terifan.bundle.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.LogLevel;
+import org.terifan.raccoon.RaccoonCollection;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.util.Log;
@@ -18,7 +19,7 @@ public class TestDocumentDB
 	{
 		try
 		{
-			Log.setLevel(LogLevel.DEBUG);
+//			Log.setLevel(LogLevel.DEBUG);
 
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 			AccessCredentials ac = new AccessCredentials("password");
@@ -27,11 +28,12 @@ public class TestDocumentDB
 			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE_NEW, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.CREATE_NEW))
 			{
+				RaccoonCollection collection = db.getCollection("people");
 				for (int i = 0, z=0; i < 1; i++)
 				{
 					for (int j = 0; j < 2; j++,z++)
 					{
-						db.getCollection("people").save(new Document().putNumber("_id", z).putString("name", "olle-"+i+"-"+j));
+						collection.save(new Document().putNumber("_id", z).putString("name", "olle-"+i+"-"+j));
 					}
 				}
 
@@ -55,11 +57,11 @@ public class TestDocumentDB
 			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN))
 			{
-				Document doc = db.getCollection("people").get(new Document().putNumber("_id", 0));
-				System.out.println(doc);
+//				Document doc = db.getCollection("people").get(new Document().putNumber("_id", 0));
+//				System.out.println(doc);
 
-				List<Document> docs = db.getCollection("people").list(100);
-				System.out.println(docs);
+//				List<Document> docs = db.getCollection("people").list(100);
+//				System.out.println(docs);
 
 				db.getCollection("people").iterator().forEachRemaining(e->System.out.println(e));
 			}

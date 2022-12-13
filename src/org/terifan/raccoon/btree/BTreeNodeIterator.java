@@ -1,40 +1,43 @@
 package org.terifan.raccoon.btree;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
-import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
-import org.terifan.raccoon.storage.BlockPointer;
 
 
 public class BTreeNodeIterator implements Iterator<BTreeLeaf>
 {
-	private BTree mTree;
-	private ArrayList<BTreeNode> mNodes;
-	private ArrayList<Iterator<ArrayMapEntry>> mIterators;
+	private BTree mImplementation;
+	private BTreeNode mRoot;
 	private BTreeLeaf mPending;
+	private int[] mCounters;
 
 
 	BTreeNodeIterator(BTree aTree, BTreeNode aRoot)
 	{
-		mTree = aTree;
+		mImplementation = aTree;
+		mRoot = aRoot;
+		mCounters = new int[10];
 
-		mNodes = new ArrayList<>();
-		mNodes.add(aRoot);
-
-		mIterators = new ArrayList<>();
-		mIterators.add(aRoot.mMap.iterator());
+		if (aRoot instanceof BTreeLeaf)
+		{
+			mPending = (BTreeLeaf)aRoot;
+			mRoot = null;
+		}
 	}
 
+	// 0----0----0
+	//       ----1
+	//       ----2
+	//      1----0
+	//       ----1
+	//       ----2
+	// 1----0----0
+	//       ----1
+	//       ----2
+	//      1----0
+	//       ----1
+	//       ----2
 
-//      /-- a
-//   /--o-- b
-//   |  \-- c
-//   |  /-- d
-// --o--o-- e
-//   |  \-- f
-//   |  /-- g
-//   \--o-- h
-//      \-- i
 	@Override
 	public boolean hasNext()
 	{
@@ -42,35 +45,49 @@ public class BTreeNodeIterator implements Iterator<BTreeLeaf>
 		{
 			return true;
 		}
-
-		while (!mIterators.isEmpty())
+		if (mRoot == null)
 		{
-			Iterator<ArrayMapEntry> it = mIterators.get(mIterators.size() - 1);
-
-			if (!it.hasNext())
-			{
-				mIterators.remove(mIterators.size() - 1);
-				mNodes.remove(mNodes.size() - 1);
-				continue;
-			}
-
-			ArrayMapEntry entry = it.next();
-			BTreeNode node = mNodes.get(mNodes.size() - 1);
-
-			if (node instanceof BTreeIndex)
-			{
-				node = ((BTreeIndex)node).getNode(mTree, entry);
-				mIterators.add(node.mMap.iterator());
-				mNodes.add(node);
-			}
-			else
-			{
-				mPending = (BTreeLeaf)node;
-				return true;
-			}
+			return false;
 		}
 
-		return false;
+		BTreeNode node = mRoot;
+
+		int level = 0;
+
+		while (node instanceof BTreeIndex)
+		{
+			BTreeIndex indexNode = (BTreeIndex)node;
+
+			if (level >= mCounters.length)
+			{
+				mCounters = Arrays.copyOfRange(mCounters, 0, level * 3 / 2 + 1);
+			}
+
+			if (mCounters[level] >= indexNode.size())
+			{
+				if (level == 0)
+				{
+					mImplementation = null;
+					mRoot = null;
+					return false;
+				}
+				mCounters[level - 1]++;
+				mCounters[level] = 0;
+				return hasNext();
+			}
+
+			node = indexNode.getNode(mImplementation, mCounters[level]);
+
+			if (node instanceof BTreeLeaf) break;
+
+			level++;
+		}
+
+		mCounters[level]++;
+
+		mPending = (BTreeLeaf)node;
+
+		return true;
 	}
 
 
