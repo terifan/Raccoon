@@ -6,7 +6,7 @@ import java.util.Iterator;
 public class BTreeEntryIterator implements Iterator<ArrayMapEntry>
 {
 	private BTreeNodeIterator mNodeIterator;
-	private Iterator<ArrayMapEntry> mElements;
+	private Iterator<ArrayMapEntry> mMapIterator;
 
 
 	BTreeEntryIterator(BTree aTree)
@@ -18,19 +18,19 @@ public class BTreeEntryIterator implements Iterator<ArrayMapEntry>
 	@Override
 	public boolean hasNext()
 	{
-		if (mElements == null)
+		if (mMapIterator == null)
 		{
 			if (!mNodeIterator.hasNext())
 			{
 				return false;
 			}
 
-			mElements = mNodeIterator.next().mMap.iterator();
+			mMapIterator = mNodeIterator.next().mMap.iterator();
 		}
 
-		if (!mElements.hasNext())
+		if (!mMapIterator.hasNext())
 		{
-			mElements = null;
+			mMapIterator = null;
 			return hasNext();
 		}
 
@@ -41,6 +41,6 @@ public class BTreeEntryIterator implements Iterator<ArrayMapEntry>
 	@Override
 	public ArrayMapEntry next()
 	{
-		return mElements.next();
+		return mMapIterator.next();
 	}
 }

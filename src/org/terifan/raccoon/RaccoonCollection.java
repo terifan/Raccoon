@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.btree.ArrayMapEntry;
+import org.terifan.raccoon.btree.BTreeEntryIterator;
 import org.terifan.raccoon.btree.BTreeStorage;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.ByteArrayUtil;
@@ -265,7 +266,7 @@ public final class RaccoonCollection implements BTreeStorage
 	}
 
 
-	Iterator<ArrayMapEntry> getEntryIterator()
+	BTreeEntryIterator getEntryIterator()
 	{
 		return mTableImplementation.iterator();
 	}
@@ -411,9 +412,9 @@ public final class RaccoonCollection implements BTreeStorage
 
 	private byte[] getKey(Document aDocument)
 	{
-		byte[] buf = new byte[8];
-		ByteArrayUtil.putInt64(buf, 0, aDocument.getNumber("_id").longValue());
-//		Log.hexDump(buf);
+//		byte[] buf = new byte[8];
+//		ByteArrayUtil.putInt64(buf, 0, aDocument.getNumber("_id").longValue());
+		byte[] buf = String.format("%08d", aDocument.getNumber("_id").longValue()).getBytes();
 		return buf;
 	}
 
@@ -429,5 +430,11 @@ public final class RaccoonCollection implements BTreeStorage
 	public long getTransaction()
 	{
 		return mDatabase.getTransaction();
+	}
+
+
+	public BTree getTableImplementation()
+	{
+		return mTableImplementation;
 	}
 }

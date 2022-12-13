@@ -3,15 +3,16 @@ package org.terifan.raccoon;
 import java.util.Iterator;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.btree.ArrayMapEntry;
+import org.terifan.raccoon.btree.BTreeEntryIterator;
 import org.terifan.raccoon.util.Log;
 
 
 final class DocumentIterator implements Iterator<Document>
 {
-	private final Iterator<ArrayMapEntry> mIterator;
+	private final BTreeEntryIterator mIterator;
 
 
-	public DocumentIterator(Iterator<ArrayMapEntry> aIterator)
+	public DocumentIterator(BTreeEntryIterator aIterator)
 	{
 		mIterator = aIterator;
 	}

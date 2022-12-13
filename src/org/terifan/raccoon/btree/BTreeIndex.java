@@ -50,7 +50,7 @@ public class BTreeIndex extends BTreeNode
 			mMap.loadNearestIndexEntry(nearestEntry);
 			nearestNode = getNode(aImplementation, nearestEntry);
 
-			if (mLevel == 1 ? nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > aImplementation.mConfiguration.getInt("indexSize"))
+			if (mLevel == 1 ? nearestNode.mMap.getCapacity() > aImplementation.mConfiguration.getInt("leafSize") || nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > aImplementation.mConfiguration.getInt("indexSize"))
 			{
 				MarshalledKey leftKey = new MarshalledKey(nearestEntry.getKey());
 

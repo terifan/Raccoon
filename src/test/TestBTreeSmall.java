@@ -17,7 +17,7 @@ import org.terifan.raccoon.monitoring.DatabaseMonitorWindow;
 import org.terifan.raccoon.monitoring.MonitorInstance;
 import org.terifan.raccoon.util.Console;
 import org.terifan.treegraph.HorizontalLayout;
-import org.terifan.treegraph.TreeRenderer;
+import org.terifan.treegraph.TreeGraph;
 import org.terifan.treegraph.util.TextSlice;
 import org.terifan.treegraph.util.VerticalImageFrame;
 

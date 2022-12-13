@@ -164,7 +164,7 @@ public class BTree implements AutoCloseable
 	}
 
 
-	public Iterator<ArrayMapEntry> iterator()
+	public BTreeEntryIterator iterator()
 	{
 		assertNotClosed();
 

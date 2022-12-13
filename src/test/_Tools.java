@@ -1,5 +1,6 @@
-package org.terifan.raccoon.btree;
+package test;
 
+import org.terifan.raccoon.btree.*;
 import java.util.function.Supplier;
 import javax.swing.JFrame;
 import org.terifan.raccoon.CompressionParam;

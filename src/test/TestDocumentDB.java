@@ -8,6 +8,7 @@ import org.terifan.raccoon.LogLevel;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.util.Log;
+import static test._Tools.showTree;
 
 
 // https://www.tutorialspoint.com/mongodb/mongodb_java.htm
@@ -32,7 +33,6 @@ public class TestDocumentDB
 					{
 						db.getCollection("people").save(new Document().putNumber("_id", z).putString("name", "olle-"+i+"-"+j));
 					}
-					db.commit();
 				}
 
 //				RaccoonCollection collection = db.createCollection("people");
@@ -46,6 +46,8 @@ public class TestDocumentDB
 //				collection.find().forEach(doc -> System.out.println(doc));
 
 				db.commit();
+
+//				showTree(db.getCollection("people").getTableImplementation());
 			}
 
 //			blockDevice.dump();
@@ -58,6 +60,8 @@ public class TestDocumentDB
 
 				List<Document> docs = db.getCollection("people").list(100);
 				System.out.println(docs);
+
+				db.getCollection("people").iterator().forEachRemaining(e->System.out.println(e));
 			}
 		}
 		catch (Exception e)

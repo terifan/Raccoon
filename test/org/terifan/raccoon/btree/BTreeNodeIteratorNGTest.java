@@ -1,5 +1,12 @@
 package org.terifan.raccoon.btree;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.terifan.bundle.Document;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
 import org.testng.annotations.Test;
@@ -19,9 +26,17 @@ public class BTreeNodeIteratorNGTest
 
 		try (BTreeStorage storage = createStorage(device); BTree tree = new BTree(storage, new Document()))
 		{
-			for (int i = 0; i < 100; i++)
+			List<Integer> arr = IntStream.range(0, 1000).boxed().collect(Collectors.toList());
+			int seed = new Random().nextInt();
+			System.out.println("SEED=" + seed);
+			Collections.shuffle(arr, new Random(seed));
+			for (int i = 0; i < 1000; i++)
 			{
-				tree.put(new ArrayMapEntry(("key"+i).getBytes(), ("value"+i).getBytes(), TYPE_DOCUMENT));
+				int _i = arr.get(i);
+				tree.put(new ArrayMapEntry(("key"+_i).getBytes(), ("value"+_i).getBytes(), TYPE_DOCUMENT));
+//				tree.put(new ArrayMapEntry(("key"+_i).getBytes(), new Document().putNumber("_id", i).putString("name", "olle-"+i).marshal(), TYPE_DOCUMENT));
+				showTree(tree);
+//				Thread.sleep(1);
 			}
 			tree.commit();
 			storage.getApplicationHeader().putBundle("conf", tree.getConfiguration());
@@ -30,8 +45,6 @@ public class BTreeNodeIteratorNGTest
 		try (BTreeStorage storage = createStorage(device); BTree tree = new BTree(storage, storage.getApplicationHeader().getBundle("conf")))
 		{
 			tree.iterator().forEachRemaining(e -> System.out.println(e));
-
-			showTree(tree);
 
 //			for (int i = 0; i < 100; i++)
 //			{
