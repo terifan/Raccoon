@@ -1,6 +1,5 @@
 package org.terifan.raccoon.io.secure;
 
-import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -11,10 +10,12 @@ import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.security.cryptography.SecretKey;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
+import java.util.Random;
+import java.util.random.RandomGenerator;
 import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.security.cryptography.CipherMode;
-import org.terifan.security.cryptography.ISAAC;
 import static org.terifan.raccoon.util.ByteArrayUtil.*;
+import org.terifan.security.cryptography.ISAAC;
 
 
 /**
@@ -32,7 +33,22 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	private final static int KEY_SIZE_BYTES = 32;
 	private final static int IV_SIZE = 16;
 	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
-	private final static int CHECKSUM_SEED = 0x2fc8d359; // (random number)
+	private final static int CHECKSUM_SEED = 0xfedcba98; // (a random number)
+
+	private final static RandomGenerator PRNG;
+	static
+	{
+		RandomGenerator tmp;
+		try
+		{
+			tmp = SecureRandom.getInstanceStrong();
+		}
+		catch (NoSuchAlgorithmException e)
+		{
+			tmp = new SecureRandom();
+		}
+		PRNG = tmp;
+	}
 
 	private transient IPhysicalBlockDevice mBlockDevice;
 	private transient CipherImplementation mCipherImplementation;
@@ -74,24 +90,15 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		for (;;)
 		{
 			// create the secret keys
-			try
+			byte[] raw = new byte[PAYLOAD_SIZE * 8];
+			PRNG.nextBytes(raw);
+
+			for (int dst = 0, src = 0; dst < payload.length; dst++)
 			{
-				byte[] raw = new byte[PAYLOAD_SIZE * 8];
-
-				SecureRandom rnd = SecureRandom.getInstanceStrong();
-				rnd.nextBytes(raw);
-
-				for (int dst = 0, src = 0; dst < payload.length; dst++)
+				for (long i = System.nanoTime() & 7; i >= 0; i--)
 				{
-					for (long i = System.nanoTime() & 7; i >= 0; i--)
-					{
-						payload[dst] ^= raw[src++];
-					}
+					payload[dst] ^= raw[src++];
 				}
-			}
-			catch (NoSuchAlgorithmException e)
-			{
-				throw new IllegalStateException(e);
 			}
 
 			if (createImpl(aAccessCredentials, device, payload, 0L) && createImpl(aAccessCredentials, device, payload, 1L))
@@ -134,8 +141,8 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 		byte[] padding = new byte[aBlockSize - SALT_SIZE - PAYLOAD_SIZE];
 
 		// padding and salt
-		ISAAC.PRNG.nextBytes(padding);
-		ISAAC.PRNG.nextBytes(salt);
+		PRNG.nextBytes(padding);
+		PRNG.nextBytes(salt);
 
 		// compute checksum
 		int checksum = computeChecksum(salt, aPayload);
@@ -326,11 +333,9 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 
 		byte[] workBuffer = aBuffer.clone();
 
-		long[] iv =
-		{
-			ISAAC.PRNG.nextLong(),
-			ISAAC.PRNG.nextLong()
-		};
+		long[] iv = new long[2];
+		iv[0] = PRNG.nextLong();
+		iv[1] = PRNG.nextLong();
 
 		putInt64(workBuffer, workBuffer.length - 16, iv[0]);
 		putInt64(workBuffer, workBuffer.length - 8, iv[1]);

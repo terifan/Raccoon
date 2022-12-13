@@ -177,6 +177,10 @@ class JSONEncoder
 		{
 			mWriter.print("\"" + escapeString(aValue.toString()) + "\"");
 		}
+		else if (aValue instanceof Long && Math.abs(((Long)aValue)) > 1000_000_000)
+		{
+			mWriter.print("0x" + String.format("%016x", (Long)aValue));
+		}
 		else if (aValue instanceof Number || aValue instanceof Boolean)
 		{
 			mWriter.print(aValue);
@@ -202,9 +206,7 @@ class JSONEncoder
 
 	private String marshalBinary(byte[] aBuffer)
 	{
-		String encoded = Base64.getEncoder().encodeToString(aBuffer);
-		int hash = new Checksum().update(encoded).getValue();
-		return String.format("%08x:%s", hash, encoded);
+		return Base64.getEncoder().encodeToString(aBuffer);
 	}
 
 

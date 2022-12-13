@@ -5,13 +5,13 @@ import java.util.Iterator;
 
 public class BTreeEntryIterator implements Iterator<ArrayMapEntry>
 {
-	private BTreeNodeIterator mIterator;
+	private BTreeNodeIterator mNodeIterator;
 	private Iterator<ArrayMapEntry> mElements;
 
 
-	BTreeEntryIterator(BTreeNode aRoot)
+	BTreeEntryIterator(BTree aTree, BTreeNode aRoot)
 	{
-		mIterator = new BTreeNodeIterator(aRoot);
+		mNodeIterator = new BTreeNodeIterator(aTree, aRoot);
 	}
 
 
@@ -20,12 +20,12 @@ public class BTreeEntryIterator implements Iterator<ArrayMapEntry>
 	{
 		if (mElements == null)
 		{
-			if (!mIterator.hasNext())
+			if (!mNodeIterator.hasNext())
 			{
 				return false;
 			}
 
-			mElements = mIterator.next().mMap.iterator();
+			mElements = mNodeIterator.next().mMap.iterator();
 		}
 
 		if (!mElements.hasNext())

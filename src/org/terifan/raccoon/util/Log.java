@@ -70,7 +70,7 @@ public class Log
 			{
 				message.append("... ");
 			}
-			message.append(String.format(aMessage, aParams));
+			message.append(Console.format(aMessage, aParams));
 
 			StackTraceElement[] trace = Thread.currentThread().getStackTrace();
 			String className = trace[3].getClassName();
@@ -95,37 +95,97 @@ public class Log
 	}
 
 
-	public static void hexDump(byte[] aBuffer, int aWidth)
-	{
-		if (aBuffer == null)
-		{
-			Log.out.println("hexdump: null");
-			return;
-		}
-		if (aBuffer.length == 0)
-		{
-			Log.out.println("hexdump: empty");
-			return;
-		}
+//	public static void hexDump(byte[] aBuffer, int aWidth)
+//	{
+//		if (aBuffer == null)
+//		{
+//			Log.out.println("hexdump: null");
+//			return;
+//		}
+//		if (aBuffer.length == 0)
+//		{
+//			Log.out.println("hexdump: empty");
+//			return;
+//		}
+//
+//		int lw = aWidth;
+//		int mr = 10000;
+//
+//		StringBuilder binText = new StringBuilder("");
+//		StringBuilder hexText = new StringBuilder("");
+//
+//		for (int row = 0, offset = 0; row < mr && offset < aBuffer.length; row++)
+//		{
+//			hexText.append(String.format("%04d: ", row * lw));
+//
+//			int padding = 3 * lw + lw / 8;
+//
+//			for (int i = 0; offset < aBuffer.length && i < lw; i++)
+//			{
+//				int c = 0xff & aBuffer[offset++];
+//
+//				hexText.append(String.format("%02x ", c));
+//				binText.append(Character.isISOControl(c) ? '.' : (char)c);
+//				padding -= 3;
+//
+//				if ((i & 7) == 7)
+//				{
+//					hexText.append(" ");
+//					padding--;
+//				}
+//			}
+//
+//			for (int i = 0; i < padding; i++)
+//			{
+//				hexText.append(" ");
+//			}
+//
+//			Log.out.println(hexText.append(binText).toString());
+//
+//			binText.setLength(0);
+//			hexText.setLength(0);
+//		}
+//	}
 
-		int lw = aWidth;
-		int mr = 10000;
+
+	public static void hexDump(byte[] aBuffer, int LW)
+	{
+		int MR = 1000;
 
 		StringBuilder binText = new StringBuilder("");
 		StringBuilder hexText = new StringBuilder("");
 
-		for (int row = 0, offset = 0; row < mr && offset < aBuffer.length; row++)
+		for (int row = 0, offset = 0; offset < aBuffer.length && row < MR; row++)
 		{
-			hexText.append(String.format("%04d: ", row * lw));
+			hexText.append(String.format("%04d: ", row * LW));
 
-			int padding = 3 * lw + lw / 8;
+			int padding = 3 * LW + LW / 8;
 
-			for (int i = 0; offset < aBuffer.length && i < lw; i++)
+			for (int i = 0; offset < aBuffer.length && i < LW; i++)
 			{
 				int c = 0xff & aBuffer[offset++];
 
+				if (!(c < ' ' || c >= 128))
+				{
+					hexText.append(Console.Color.BLUE);
+					binText.append(Console.Color.BLUE);
+				}
+				if (c >= '0' && c <= '9')
+				{
+					hexText.append(Console.Color.MAGENTA);
+					binText.append(Console.Color.MAGENTA);
+				}
+
 				hexText.append(String.format("%02x ", c));
 				binText.append(Character.isISOControl(c) ? '.' : (char)c);
+
+				if (c < ' ' || c >= 128 || c >= '0' && c <= '9')
+				{
+					hexText.append(Console.Color.RESET);
+					binText.append(Console.Color.RESET);
+				}
+
+
 				padding -= 3;
 
 				if ((i & 7) == 7)
@@ -140,7 +200,7 @@ public class Log
 				hexText.append(" ");
 			}
 
-			Log.out.println(hexText.append(binText).toString());
+			System.out.println(hexText.append(binText).toString());
 
 			binText.setLength(0);
 			hexText.setLength(0);

@@ -3,14 +3,14 @@ package org.terifan.raccoon.monitoring;
 import java.util.HashMap;
 import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
-import org.terifan.raccoon.Database;
+import org.terifan.raccoon.RaccoonDatabase;
 
 
 public class DatabaseMonitorWindow extends JFrame
 {
 	private final static long serialVersionUID = 1L;
 	private JTabbedPane mTabbedPane;
-	private HashMap<Database, DatabaseMonitorPanel> mPanels;
+	private HashMap<RaccoonDatabase, DatabaseMonitorPanel> mPanels;
 
 
 	public DatabaseMonitorWindow()
@@ -26,7 +26,7 @@ public class DatabaseMonitorWindow extends JFrame
 	}
 
 
-	public MonitorInstance attach(Database aDatabase)
+	public MonitorInstance attach(RaccoonDatabase aDatabase)
 	{
 		DatabaseMonitorPanel panel = new DatabaseMonitorPanel(aDatabase);
 		mPanels.put(aDatabase, panel);
@@ -35,7 +35,7 @@ public class DatabaseMonitorWindow extends JFrame
 	}
 
 
-	public void detach(Database aDatabase)
+	public void detach(RaccoonDatabase aDatabase)
 	{
 		mTabbedPane.remove(mPanels.remove(aDatabase));
 	}

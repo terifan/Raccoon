@@ -1,11 +1,9 @@
 package resources.entities;
 
-import org.terifan.raccoon.annotations.Id;
-
 
 public class _Fruit1K
 {
-	@Id public String _name;
+	public String _name;
 	public double calories;
 
 

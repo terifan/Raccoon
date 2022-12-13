@@ -2,7 +2,7 @@ package org.terifan.raccoon.io.managed;
 
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import java.io.IOException;
-import org.terifan.raccoon.Database;
+import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
@@ -110,7 +110,7 @@ public class ManagedBlockDeviceNGTest
 			blockDevice.commit();
 		}
 
-		try (Database db = new Database(device, DatabaseOpenOption.OPEN)) // throws exception
+		try (RaccoonDatabase db = new RaccoonDatabase(device, DatabaseOpenOption.OPEN)) // throws exception
 		{
 			fail();
 		}

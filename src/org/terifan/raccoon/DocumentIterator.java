@@ -9,12 +9,10 @@ import org.terifan.raccoon.util.Log;
 final class DocumentIterator implements Iterator<Document>
 {
 	private final Iterator<ArrayMapEntry> mIterator;
-	private final TableInstance mTable;
 
 
-	public DocumentIterator(TableInstance aTable, Iterator<ArrayMapEntry> aIterator)
+	public DocumentIterator(Iterator<ArrayMapEntry> aIterator)
 	{
-		mTable = aTable;
 		mIterator = aIterator;
 	}
 
@@ -32,12 +30,14 @@ final class DocumentIterator implements Iterator<Document>
 		Log.d("next entity");
 		Log.inc();
 
-		ArrayMapEntry entry = mIterator.next();
-		Document document = Document.unmarshal(entry.getValue());
-
-		Log.dec();
-
-		return document;
+		try
+		{
+			return Document.unmarshal(mIterator.next().getValue());
+		}
+		finally
+		{
+			Log.dec();
+		}
 	}
 
 

@@ -25,7 +25,7 @@ public class BlockAccessorNGTest
 
 		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
 		BlockAccessor blockAccessor = new BlockAccessor(managedBlockDevice, CompressionParam.NO_COMPRESSION);
-		BlockPointer blockPointer = blockAccessor.writeBlock(in, 100, length, 0L, BlockType.FREE, 0);
+		BlockPointer blockPointer = blockAccessor.writeBlock(in, 100, length, 0L, BlockType.FREE);
 		managedBlockDevice.commit();
 
 		assertEquals(2 + 1 + 3, managedBlockDevice.getAllocatedSpace()); // 2 superblock + 1 spacemap + 3 data

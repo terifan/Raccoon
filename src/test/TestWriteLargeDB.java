@@ -3,7 +3,7 @@ package test;
 import java.awt.Dimension;
 import java.io.File;
 import java.util.Random;
-import org.terifan.raccoon.Database;
+import org.terifan.raccoon.RaccoonDatabase;
 
 
 /*

@@ -192,6 +192,10 @@ class JSONDecoder
 		{
 			return Double.valueOf(in);
 		}
+		if (in.startsWith("0x"))
+		{
+			return Long.parseLong(in.substring(2), 16);
+		}
 
 		long v = Long.parseLong(in);
 		if (v >= Byte.MIN_VALUE && v <= Byte.MAX_VALUE)

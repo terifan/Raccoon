@@ -1,19 +1,14 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.io.DatabaseIOException;
-import org.terifan.raccoon.storage.BlockPointer;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.terifan.bundle.Document;
+import org.terifan.raccoon.btree.BTreeStorage;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
@@ -26,14 +21,14 @@ import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.Log;
 
 
-public final class Database implements AutoCloseable
+public final class RaccoonDatabase implements AutoCloseable
 {
 	private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
-	private final Lock mReadLock = mReadWriteLock.readLock();
-	private final Lock mWriteLock = mReadWriteLock.writeLock();
+//	private final Lock mReadLock = mReadWriteLock.readLock();
+//	private final Lock mWriteLock = mReadWriteLock.writeLock();
 
 	private IManagedBlockDevice mBlockDevice;
-	private final ConcurrentHashMap<String, TableInstance> mTables;
+	private final ConcurrentHashMap<String, RaccoonCollection> mCollections;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 	private boolean mModified;
 	private boolean mCloseDeviceOnCloseDatabase;
@@ -45,9 +40,9 @@ public final class Database implements AutoCloseable
 	private DatabaseOpenOption mDatabaseOpenOption;
 
 
-	private Database()
+	private RaccoonDatabase()
 	{
-		mTables = new ConcurrentHashMap<>();
+		mCollections = new ConcurrentHashMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
 	}
 
@@ -59,7 +54,7 @@ public final class Database implements AutoCloseable
 	 * @param aOpenOptions OpenOption enum constant describing the options for creating the database instance
 	 * @param aParameters parameters for the database
 	 */
-	public Database(File aFile, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws UnsupportedVersionException
+	public RaccoonDatabase(File aFile, DatabaseOpenOption aOpenOptions) throws UnsupportedVersionException
 	{
 		this();
 
@@ -90,7 +85,7 @@ public final class Database implements AutoCloseable
 
 			fileBlockDevice = new FileBlockDevice(aFile, 4096, aOpenOptions == DatabaseOpenOption.READ_ONLY);
 
-			init(fileBlockDevice, newFile, true, aOpenOptions, aParameters);
+			init(fileBlockDevice, newFile, true, aOpenOptions);
 		}
 		catch (DatabaseException | DatabaseIOException | DatabaseClosedException e)
 		{
@@ -132,7 +127,7 @@ public final class Database implements AutoCloseable
 	 * @param aOpenOptions OpenOptions enum constant describing the options for creating the database instance
 	 * @param aParameters parameters for the database
 	 */
-	public Database(IPhysicalBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws UnsupportedVersionException
+	public RaccoonDatabase(IPhysicalBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions) throws UnsupportedVersionException
 	{
 		this();
 
@@ -140,7 +135,7 @@ public final class Database implements AutoCloseable
 
 		boolean create = aBlockDevice.length() == 0 || aOpenOptions == DatabaseOpenOption.CREATE_NEW;
 
-		init(aBlockDevice, create, false, aOpenOptions, aParameters);
+		init(aBlockDevice, create, false, aOpenOptions);
 	}
 
 
@@ -151,7 +146,7 @@ public final class Database implements AutoCloseable
 	 * @param aOpenOptions OpenOptions enum constant describing the options for creating the database instance
 	 * @param aParameters parameters for the database
 	 */
-	public Database(IManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, OpenParam... aParameters) throws UnsupportedVersionException
+	public RaccoonDatabase(IManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions) throws UnsupportedVersionException
 	{
 		this();
 
@@ -159,11 +154,11 @@ public final class Database implements AutoCloseable
 
 		boolean create = aBlockDevice.length() == 0 || aOpenOptions == DatabaseOpenOption.CREATE_NEW;
 
-		init(aBlockDevice, create, false, aOpenOptions, aParameters);
+		init(aBlockDevice, create, false, aOpenOptions);
 	}
 
 
-	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption, OpenParam[] aOpenParams)
+	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption)
 	{
 		AccessCredentials accessCredentials = null; //getParameter(AccessCredentials.class, aOpenParams, null);
 		mCompressionParam = CompressionParam.NO_COMPRESSION; //getParameter(CompressionParam.class, aOpenParams, CompressionParam.BEST_SPEED);
@@ -241,7 +236,14 @@ public final class Database implements AutoCloseable
 
 			for (String name : mApplicationHeader.list())
 			{
-				mTables.put(name, new TableInstance(this, name, mApplicationHeader.get(name)));
+				Document conf = mApplicationHeader.get(name);
+
+				if (conf == null)
+				{
+					conf = createDefaultConfig(name);
+				}
+
+				mCollections.put(name, new RaccoonCollection(this, conf));
 			}
 
 			Log.dec();
@@ -270,11 +272,11 @@ public final class Database implements AutoCloseable
 	}
 
 
-	protected TableInstance openTable(String aName)
+	public RaccoonCollection getCollection(String aName)
 	{
 		checkOpen();
 
-		TableInstance instance = mTables.get(aName);
+		RaccoonCollection instance = mCollections.get(aName);
 
 		if (instance != null)
 		{
@@ -283,7 +285,7 @@ public final class Database implements AutoCloseable
 
 		if (mDatabaseOpenOption == DatabaseOpenOption.OPEN || mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY)
 		{
-			throw new IllegalStateException("Collection doesn't exist.");
+			throw new IllegalStateException("Collection doesn't exist: " + aName);
 		}
 
 		Log.i("create table '%s' with option %s", aName, mDatabaseOpenOption);
@@ -291,9 +293,9 @@ public final class Database implements AutoCloseable
 
 		try
 		{
-			instance = new TableInstance(this, aName, new Document());
+			instance = new RaccoonCollection(this, createDefaultConfig(aName));
 
-			mTables.put(aName, instance);
+			mCollections.put(aName, instance);
 
 			if (mDatabaseOpenOption == DatabaseOpenOption.CREATE_NEW)
 			{
@@ -322,22 +324,21 @@ public final class Database implements AutoCloseable
 	{
 		checkOpen();
 
-		mReadLock.lock();
-
-		try
-		{
-			for (TableInstance instance : mTables.values())
+//		mReadLock.lock();
+//		try
+//		{
+			for (RaccoonCollection instance : mCollections.values())
 			{
 				if (instance.isModified())
 				{
 					return true;
 				}
 			}
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
+//		}
+//		finally
+//		{
+//			mReadLock.unlock();
+//		}
 
 		return false;
 	}
@@ -353,18 +354,17 @@ public final class Database implements AutoCloseable
 	{
 		checkOpen();
 
-//		aquireWriteLock();
-
 		long nodesWritten = 0;
 
+//		aquireWriteLock();
 //		try
 //		{
 			Log.i("flush changes");
 			Log.inc();
 
-			for (TableInstance entry : mTables.values())
+			for (RaccoonCollection entry : mCollections.values())
 			{
-				nodesWritten = entry.flush(getTransactionGroup());
+				nodesWritten = entry.flush();
 			}
 
 			Log.dec();
@@ -392,15 +392,16 @@ public final class Database implements AutoCloseable
 			Log.i("commit database");
 			Log.inc();
 
-			for (Entry<String, TableInstance> entry : mTables.entrySet())
+			for (Entry<String, RaccoonCollection> entry : mCollections.entrySet())
 			{
 				if (entry.getValue().commit())
 				{
 					Log.i("table updated '%s'", entry.getKey());
 
-					mApplicationHeader.put(entry.getKey(), entry.getValue().getTableHeader());
-
+					mApplicationHeader.put(entry.getKey(), entry.getValue().getConfiguration());
 					mModified = true;
+
+					System.out.println(entry.getValue().getConfiguration());
 				}
 			}
 
@@ -411,6 +412,7 @@ public final class Database implements AutoCloseable
 				Log.i("updating super block");
 				Log.inc();
 
+				mApplicationHeader.nextTransaction();
 				mApplicationHeader.writeToDevice(mBlockDevice);
 				mBlockDevice.commit();
 				mModified = false;
@@ -444,7 +446,7 @@ public final class Database implements AutoCloseable
 			Log.i("rollback");
 			Log.inc();
 
-			for (TableInstance instance : mTables.values())
+			for (RaccoonCollection instance : mCollections.values())
 			{
 				instance.rollback();
 			}
@@ -500,7 +502,7 @@ public final class Database implements AutoCloseable
 
 			if (!mModified)
 			{
-				for (TableInstance entry : mTables.values())
+				for (RaccoonCollection entry : mCollections.values())
 				{
 					mModified |= entry.isModified();
 				}
@@ -511,7 +513,7 @@ public final class Database implements AutoCloseable
 				Log.w("rollback on close");
 				Log.inc();
 
-				for (TableInstance instance : mTables.values())
+				for (RaccoonCollection instance : mCollections.values())
 				{
 					instance.rollback();
 				}
@@ -524,12 +526,12 @@ public final class Database implements AutoCloseable
 
 			if (mApplicationHeader != null)
 			{
-				for (TableInstance instance : mTables.values())
+				for (RaccoonCollection instance : mCollections.values())
 				{
 					instance.close();
 				}
 
-				mTables.clear();
+				mCollections.clear();
 
 				mApplicationHeader.writeToDevice(mBlockDevice);
 				mApplicationHeader = null;
@@ -777,12 +779,6 @@ public final class Database implements AutoCloseable
 	}
 
 
-	TransactionGroup getTransactionGroup()
-	{
-		return new TransactionGroup(mBlockDevice.getTransactionId());
-	}
-
-
 //	public int size(String aCollection)
 //	{
 //		mReadLock.lock();
@@ -807,7 +803,7 @@ public final class Database implements AutoCloseable
 //		aquireWriteLock();
 //		try
 //		{
-			for (TableInstance instance : mTables.values())
+			for (RaccoonCollection instance : mCollections.values())
 			{
 				String s = instance.integrityCheck();
 				if (s != null)
@@ -825,39 +821,22 @@ public final class Database implements AutoCloseable
 	}
 
 
-	public List<TableInstance> getCollections()
+	public List<RaccoonCollection> getCollections()
 	{
 		checkOpen();
 
-		mReadLock.lock();
-
-		try
-		{
-			ArrayList<TableInstance> list = new ArrayList<>();
-			list.addAll(mTables.values());
+//		mReadLock.lock();
+//
+//		try
+//		{
+			ArrayList<RaccoonCollection> list = new ArrayList<>();
+			list.addAll(mCollections.values());
 			return list;
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
-	}
-
-
-	public TableInstance getCollection(String aName)
-	{
-		checkOpen();
-
-		mReadLock.lock();
-
-		try
-		{
-			return openTable(aName);
-		}
-		finally
-		{
-			mReadLock.unlock();
-		}
+//		}
+//		finally
+//		{
+//			mReadLock.unlock();
+//		}
 	}
 
 
@@ -955,10 +934,10 @@ public final class Database implements AutoCloseable
 	}
 
 
-	Lock getReadLock()
-	{
-		return mReadLock;
-	}
+//	Lock getReadLock()
+//	{
+//		return mReadLock;
+//	}
 
 
 	CompressionParam getCompressionParameter()
@@ -1022,16 +1001,39 @@ public final class Database implements AutoCloseable
 //			releaseReadLock();
 //		}
 //	}
-	private synchronized void releaseReadLock()
+//	private synchronized void releaseReadLock()
+//	{
+//		mReadLock.unlock();
+//		mReadLocked--;
+//	}
+//
+//
+//	private synchronized void aquireReadLock()
+//	{
+//		mReadLock.lock();
+//		mReadLocked++;
+//	}
+
+
+	public BlockAccessor getBlockAccessor()
 	{
-		mReadLock.unlock();
-		mReadLocked--;
+		return new BlockAccessor(getBlockDevice(), getCompressionParameter());
 	}
 
 
-	private synchronized void aquireReadLock()
+	public long getTransaction()
 	{
-		mReadLock.lock();
-		mReadLocked++;
+		return mApplicationHeader.getTransaction();
+	}
+
+
+	private Document createDefaultConfig(String aName)
+	{
+		return new Document()
+			.putString("name", aName)
+			.putNumber("indexSize", mBlockDevice.getBlockSize())
+			.putNumber("leafSize", mBlockDevice.getBlockSize())
+			.putNumber("entrySizeLimit", mBlockDevice.getBlockSize() / 4)
+			.putBundle("compression", CompressionParam.NO_COMPRESSION.marshal());
 	}
 }

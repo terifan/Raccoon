@@ -3,41 +3,38 @@ package org.terifan.raccoon;
 import org.terifan.raccoon.btree.BTree;
 import org.terifan.raccoon.io.DatabaseIOException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.btree.ArrayMapEntry;
+import org.terifan.raccoon.btree.BTreeStorage;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.ByteArrayUtil;
 import org.terifan.raccoon.util.Log;
 
 
-public final class TableInstance
+public final class RaccoonCollection implements BTreeStorage
 {
-	public final static byte TYPE_DEFAULT = 0;
-	public final static byte TYPE_BLOB = 1;
+	public final static byte TYPE_TREENODE = 0;
+	public final static byte TYPE_DOCUMENT = 1;
+	public final static byte TYPE_EXTERNAL = 2;
 
-	private final Database mDatabase;
-	private final String mName;
+	private final RaccoonDatabase mDatabase;
 	private final HashSet<CommitLock> mCommitLocks;
 	private final BTree mTableImplementation;
-	private Document mTableHeader;
+	private final Document mConfiguration;
 
 
-	TableInstance(Database aDatabase, String aName, Document aTableHeader)
+	RaccoonCollection(RaccoonDatabase aDatabase, Document aConfiguration)
 	{
 		mCommitLocks = new HashSet<>();
 
-		mTableHeader = aTableHeader;
+		mConfiguration = aConfiguration;
 		mDatabase = aDatabase;
-		mName = aName;
 
-		mTableImplementation = new BTree(aDatabase.getBlockDevice(), aDatabase.getTransactionGroup(), false);
-		mTableImplementation.openOrCreateTable(aName, aTableHeader);
+		mTableImplementation = new BTree((BTreeStorage)this, mConfiguration);
 	}
 
 
@@ -92,16 +89,16 @@ public final class TableInstance
 	 */
 	public boolean save(Document aDocument)
 	{
-		Log.i("save %s", aDocument.getClass());
+		Log.i("save %s", aDocument);
 		Log.inc();
 
 		byte[] key = getKey(aDocument);
 		byte[] value = aDocument.marshal();
-		byte type = TYPE_DEFAULT;
+		byte type = TYPE_DOCUMENT;
 
-//		if (key.length + value.length + 1 > mTableImplementation.getEntrySizeLimit())
+//		if (key.length + value.length + 1 > mConfiguration.getInt("entrySizeLimit"))
 //		{
-//			type = TYPE_BLOB;
+//			type = TYPE_EXTERNAL;
 //
 //			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(mDatabase), mDatabase.getTransactionGroup(), null, LobOpenOption.WRITE))
 //			{
@@ -131,9 +128,9 @@ public final class TableInstance
 
 	private void deleteIfBlob(ArrayMapEntry aEntry)
 	{
-		if (aEntry.getType() == TYPE_BLOB)
+		if (aEntry.getType() == TYPE_EXTERNAL)
 		{
-			LobByteChannelImpl.deleteBlob(getBlockAccessor(mDatabase), aEntry.getValue());
+			LobByteChannelImpl.deleteBlob(mDatabase.getBlockAccessor(), aEntry.getValue());
 		}
 	}
 
@@ -151,7 +148,7 @@ public final class TableInstance
 
 			if (mTableImplementation.get(entry))
 			{
-				if (entry.getType() != TYPE_BLOB)
+				if (entry.getType() != TYPE_EXTERNAL)
 				{
 					throw new IllegalArgumentException("Not a blob");
 				}
@@ -177,7 +174,7 @@ public final class TableInstance
 				header = null;
 			}
 
-			LobByteChannelImpl out = new LobByteChannelImpl(getBlockAccessor(mDatabase), mDatabase.getTransactionGroup(), header, aOpenOption)
+			LobByteChannelImpl out = new LobByteChannelImpl(mDatabase, header, aOpenOption)
 			{
 				@Override
 				public void close()
@@ -195,7 +192,7 @@ public final class TableInstance
 //								mDatabase.aquireWriteLock();
 //								try
 //								{
-									ArrayMapEntry entry = new ArrayMapEntry(key, header, TYPE_BLOB);
+									ArrayMapEntry entry = new ArrayMapEntry(key, header, TYPE_EXTERNAL);
 									mTableImplementation.put(entry);
 //								}
 //								catch (DatabaseException e)
@@ -211,7 +208,7 @@ public final class TableInstance
 						}
 						finally
 						{
-							synchronized (TableInstance.this)
+							synchronized (RaccoonCollection.this)
 							{
 								mCommitLocks.remove(lock);
 							}
@@ -260,11 +257,11 @@ public final class TableInstance
 
 
 	/**
-	 * Creates an iterator over all items in this table. This iterator will reconstruct entities.
+	 * Creates an iterator over all items in this table.
 	 */
 	public Iterator<Document> iterator()
 	{
-		return new DocumentIterator(this, getEntryIterator());
+		return new DocumentIterator(getEntryIterator());
 	}
 
 
@@ -295,9 +292,9 @@ public final class TableInstance
 	}
 
 
-	long flush(TransactionGroup aTransactionGroup)
+	long flush()
 	{
-		return mTableImplementation.flush(aTransactionGroup);
+		return mTableImplementation.flush();
 	}
 
 
@@ -317,23 +314,13 @@ public final class TableInstance
 			}
 		}
 
-		AtomicBoolean changed = new AtomicBoolean();
-		Document tableHeader = mTableImplementation.commit(mDatabase.getTransactionGroup(), changed);
-
-		if (!changed.get() || mTableHeader.equals(tableHeader))
-		{
-			return false;
-		}
-
-		mTableHeader = tableHeader;
-
-		return true;
+		return mTableImplementation.commit();
 	}
 
 
-	public Document getTableHeader()
+	public Document getConfiguration()
 	{
-		return mTableHeader;
+		return mConfiguration;
 	}
 
 
@@ -421,17 +408,25 @@ public final class TableInstance
 //	}
 
 
-	private synchronized BlockAccessor getBlockAccessor(Database mDatabase)
-	{
-		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter());
-	}
-
-
 	private byte[] getKey(Document aDocument)
 	{
 		byte[] buf = new byte[8];
 		ByteArrayUtil.putInt64(buf, 0, aDocument.getNumber("_id").longValue());
 //		Log.hexDump(buf);
 		return buf;
+	}
+
+
+	@Override
+	public BlockAccessor getBlockAccessor()
+	{
+		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter());
+	}
+
+
+	@Override
+	public long getTransaction()
+	{
+		return mDatabase.getTransaction();
 	}
 }

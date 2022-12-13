@@ -1,5 +1,6 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.btree;
 
+import org.terifan.raccoon.btree.ArrayMapEntry;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 

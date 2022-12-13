@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
 import java.util.ArrayList;
-import java.util.List;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.storage.BlockAccessor;
@@ -12,21 +11,24 @@ public class ApplicationHeader
 {
 	private Document mMetadata;
 	private BlockPointer mBlockPointer;
+	private long mTransactionId;
 
 
 	public ApplicationHeader()
 	{
-		mMetadata = new Document().putBundle("tables", new Document());
+		mMetadata = new Document()
+			.putBundle("collections", new Document());
 	}
 
 
 	public void readFromDevice(IManagedBlockDevice aBlockDevice)
 	{
-		mBlockPointer = new BlockPointer().unmarshal(aBlockDevice.getApplicationHeader().getBinary("pointer"));
+		mBlockPointer = new BlockPointer().unmarshal(aBlockDevice.getApplicationHeader().getBinary("root"));
 
 		byte[] buffer = new BlockAccessor(aBlockDevice, CompressionParam.BEST_COMPRESSION).readBlock(mBlockPointer);
 
 		mMetadata = Document.unmarshal(buffer);
+		mTransactionId = mBlockPointer.getTransactionId(); // TODO: use trans id from super block?
 	}
 
 
@@ -41,26 +43,38 @@ public class ApplicationHeader
 
 		byte[] buffer = mMetadata.marshal();
 
-		mBlockPointer = blockAccessor.writeBlock(buffer, 0, buffer.length, 0, BlockType.HEADER, 0);
+		mBlockPointer = blockAccessor.writeBlock(buffer, 0, buffer.length, mTransactionId, BlockType.APPLICATION_HEADER);
 
-		aBlockDevice.getApplicationHeader().putBinary("pointer", mBlockPointer.marshal());
+		aBlockDevice.getApplicationHeader().putBinary("root", mBlockPointer.marshal());
 	}
 
 
 	ArrayList<String> list()
 	{
-		return new ArrayList<>(mMetadata.getBundle("tables").keySet());
+		return new ArrayList<>(mMetadata.getBundle("collections").keySet());
 	}
 
 
-	Document get(String aTableName)
+	Document get(String aCollectionName)
 	{
-		return mMetadata.getBundle("tables").getBundle(aTableName);
+		return mMetadata.getBundle("collections").getBundle(aCollectionName);
 	}
 
 
-	void put(String aTableName, Document aTableHeader)
+	void put(String aCollectionName, Document aConfiguration)
 	{
-		mMetadata.getBundle("tables").putBundle(aTableName, aTableHeader);
+		mMetadata.getBundle("collections").putBundle(aCollectionName, aConfiguration);
+	}
+
+
+	public synchronized void nextTransaction()
+	{
+		mTransactionId++;
+	}
+
+
+	public synchronized long getTransaction()
+	{
+		return mTransactionId;
 	}
 }

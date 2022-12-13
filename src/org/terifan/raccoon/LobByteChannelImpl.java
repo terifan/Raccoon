@@ -25,7 +25,7 @@ class LobByteChannelImpl implements LobByteChannel
 	private final static int INDIRECT_POINTER_THRESHOLD = 4;
 
 	private BlockAccessor mBlockAccessor;
-	private TransactionGroup mTransactionId;
+	private RaccoonDatabase mDatabase;
 	private ByteArrayBuffer mPersistedPointerBuffer;
 	private ByteArrayBuffer mPersistedIndirectPointerBuffer;
 	private HashMap<Integer,BlockPointer> mPendingBlockPointsers;
@@ -43,10 +43,10 @@ class LobByteChannelImpl implements LobByteChannel
 	private byte[] mHeader;
 
 
-	LobByteChannelImpl(BlockAccessor aBlockAccessor, TransactionGroup aTransactionId, byte[] aHeader, LobOpenOption aOpenOption) throws IOException
+	LobByteChannelImpl(RaccoonDatabase aDatabase, byte[] aHeader, LobOpenOption aOpenOption) throws IOException
 	{
-		mBlockAccessor = aBlockAccessor;
-		mTransactionId = aTransactionId;
+		mDatabase = aDatabase;
+		mBlockAccessor = aDatabase.getBlockAccessor();
 		mHeader = aHeader;
 
 		mBuffer = new byte[MAX_BLOCK_SIZE];
@@ -280,7 +280,7 @@ class LobByteChannelImpl implements LobByteChannel
 			Log.inc();
 
 			buf.position(HEADER_SIZE);
-			BlockPointer bp = mBlockAccessor.writeBlock(buf.array(), 0, buf.capacity(), mTransactionId.get(), BlockType.BLOB_INDEX, 0);
+			BlockPointer bp = mBlockAccessor.writeBlock(buf.array(), 0, buf.capacity(), mDatabase.getTransaction(), BlockType.BLOB_INDEX);
 			bp.marshal(buf);
 			buf.trim();
 
@@ -343,7 +343,7 @@ class LobByteChannelImpl implements LobByteChannel
 				}
 				else
 				{
-					BlockPointer bp = mBlockAccessor.writeBlock(mBuffer, 0, len, mTransactionId.get(), BlockType.BLOB_DATA, 0);
+					BlockPointer bp = mBlockAccessor.writeBlock(mBuffer, 0, len, mDatabase.getTransaction(), BlockType.BLOB_LEAF);
 					mPendingBlockPointsers.put(mChunkIndex, bp);
 				}
 			}

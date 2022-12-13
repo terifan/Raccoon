@@ -126,7 +126,7 @@ class SpaceMap
 		long blockIndex = aBlockDevice.allocBlockInternal(allocSize / blockSize);
 		long[] blockKey = BlockKeyGenerator.generate();
 
-		aSpaceMapBlockPointer.setCompressionAlgorithm(CompressionParam.NONE);
+		aSpaceMapBlockPointer.setCompressionAlgorithm(CompressionParam.Level.NONE.ordinal());
 		aSpaceMapBlockPointer.setBlockType(BlockType.SPACEMAP);
 		aSpaceMapBlockPointer.setAllocatedSize(allocSize);
 		aSpaceMapBlockPointer.setBlockIndex0(blockIndex);

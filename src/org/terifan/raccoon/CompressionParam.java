@@ -1,49 +1,59 @@
 package org.terifan.raccoon;
 
 import org.terifan.bundle.Document;
+import static org.terifan.raccoon.CompressionParam.Level.DEFLATE_BEST;
+import static org.terifan.raccoon.CompressionParam.Level.DEFLATE_DEFAULT;
+import static org.terifan.raccoon.CompressionParam.Level.DEFLATE_FAST;
+import static org.terifan.raccoon.CompressionParam.Level.NONE;
+import static org.terifan.raccoon.CompressionParam.Level.ZLE;
 
 
 public final class CompressionParam implements OpenParam
 {
-	public final static byte NONE = 0;
-	public final static byte ZLE = 1;
-	public final static byte DEFLATE_FAST = 2;
-	public final static byte DEFLATE_DEFAULT = 3;
-	public final static byte DEFLATE_BEST = 4;
+	public enum Level
+	{
+		NONE,
+		ZLE,
+		DEFLATE_FAST,
+		DEFLATE_DEFAULT,
+		DEFLATE_BEST
+	}
 
-	public final static CompressionParam BEST_SPEED = new CompressionParam(DEFLATE_FAST, ZLE, NONE);
-	public final static CompressionParam BEST_COMPRESSION = new CompressionParam(DEFLATE_DEFAULT, DEFLATE_DEFAULT, DEFLATE_BEST);
-	public final static CompressionParam NO_COMPRESSION = new CompressionParam(NONE, NONE, NONE);
+	public final static CompressionParam BEST_SPEED = new CompressionParam(DEFLATE_FAST, ZLE, ZLE, NONE);
+	public final static CompressionParam BEST_COMPRESSION = new CompressionParam(DEFLATE_DEFAULT, DEFLATE_DEFAULT, DEFLATE_DEFAULT, DEFLATE_BEST);
+	public final static CompressionParam NO_COMPRESSION = new CompressionParam(NONE, NONE, NONE, NONE);
 
-	private Document mConf;
+	private Document mConfiguration;
 
 
 	public CompressionParam()
 	{
-		this(NONE, NONE, NONE);
+		this(NONE, NONE, NONE, NONE);
 	}
 
 
-	public CompressionParam(byte aNode, byte aLeaf, byte aBlob)
+	public CompressionParam(Level aTreeIndex, Level aTreeLeaf, Level aBlobIndex, Level aBlobLeaf)
 	{
-		mConf = new Document()
-			.putNumber("leaf", aLeaf)
-			.putNumber("node", aNode)
-			.putNumber("blob", aBlob);
+		mConfiguration = new Document()
+			.putNumber("treeLeaf", aTreeLeaf.ordinal())
+			.putNumber("treeIndex", aTreeIndex.ordinal())
+			.putNumber("blobLeaf", aBlobLeaf.ordinal())
+			.putNumber("blobIndex", aBlobIndex.ordinal());
 	}
 
 
-	public byte getCompressorId(BlockType aType)
+	public Level getCompressorLevel(BlockType aType)
 	{
 		switch (aType)
 		{
-			case LEAF:
-				return mConf.getByte("leaf");
-			case INDEX:
+			case TREE_INDEX:
+				return Level.values()[mConfiguration.getInt("treeIndex", NONE.ordinal())];
+			case TREE_LEAF:
+				return Level.values()[mConfiguration.getInt("treeLeaf", NONE.ordinal())];
 			case BLOB_INDEX:
-				return mConf.getByte("node");
-			case BLOB_DATA:
-				return mConf.getByte("blob");
+				return Level.values()[mConfiguration.getInt("blobIndex", NONE.ordinal())];
+			case BLOB_LEAF:
+				return Level.values()[mConfiguration.getInt("blobNode", NONE.ordinal())];
 			default:
 				return NONE;
 		}
@@ -52,20 +62,21 @@ public final class CompressionParam implements OpenParam
 
 	public Document marshal()
 	{
-		return mConf;
+		return mConfiguration;
 	}
 
 
-	public CompressionParam unmarshal(Document aDocument)
+	public static CompressionParam unmarshal(Document aDocument)
 	{
-		mConf.replaceAll(aDocument);
-		return this;
+		CompressionParam cp = new CompressionParam();
+		cp.mConfiguration = aDocument;
+		return cp;
 	}
 
 
 	@Override
 	public String toString()
 	{
-		return mConf.toString();
+		return mConfiguration.toString();
 	}
 }

@@ -11,7 +11,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 {
 	private final static int RESERVED_BLOCKS = 2;
 
-	private IPhysicalBlockDevice mBlockDevice;
+	private IPhysicalBlockDevice mPhysBlockDevice;
 	private SuperBlock mSuperBlock;
 	private int mBlockSize;
 	private boolean mModified;
@@ -27,9 +27,9 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			throw new IllegalArgumentException("The block device must have 512 byte block size or larger.");
 		}
 
-		mBlockDevice = aBlockDevice;
+		mPhysBlockDevice = aBlockDevice;
 		mBlockSize = aBlockDevice.getBlockSize();
-		mWasCreated = mBlockDevice.length() < RESERVED_BLOCKS;
+		mWasCreated = mPhysBlockDevice.length() < RESERVED_BLOCKS;
 		mDoubleCommit = true;
 
 		init();
@@ -80,7 +80,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		readSuperBlock();
 
-		mSpaceMap = new SpaceMap(mSuperBlock, this, mBlockDevice);
+		mSpaceMap = new SpaceMap(mSuperBlock, this, mPhysBlockDevice);
 
 		Log.dec();
 	}
@@ -122,7 +122,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public long length()
 	{
-		return mBlockDevice.length() - RESERVED_BLOCKS;
+		return mPhysBlockDevice.length() - RESERVED_BLOCKS;
 	}
 
 
@@ -134,10 +134,10 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			rollback();
 		}
 
-		if (mBlockDevice != null)
+		if (mPhysBlockDevice != null)
 		{
-			mBlockDevice.close();
-			mBlockDevice = null;
+			mPhysBlockDevice.close();
+			mPhysBlockDevice = null;
 		}
 	}
 
@@ -147,10 +147,10 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	{
 		mSpaceMap.reset();
 
-		if (mBlockDevice != null)
+		if (mPhysBlockDevice != null)
 		{
-			mBlockDevice.forceClose();
-			mBlockDevice = null;
+			mPhysBlockDevice.forceClose();
+			mPhysBlockDevice = null;
 		}
 	}
 
@@ -234,7 +234,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 		Log.inc();
 
-		mBlockDevice.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mPhysBlockDevice.writeBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 
 		Log.dec();
 	}
@@ -266,7 +266,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 		Log.inc();
 
-		mBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
+		mPhysBlockDevice.readBlock(aBlockIndex, aBuffer, aBufferOffset, aBufferLength, aBlockKey);
 
 		Log.dec();
 	}
@@ -280,18 +280,18 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			Log.i("committing managed block device");
 			Log.inc();
 
-			mSpaceMap.write(mSuperBlock.getSpaceMapPointer(), this, mBlockDevice);
+			mSpaceMap.write(mSuperBlock.getSpaceMapPointer(), this, mPhysBlockDevice);
 
 			if (mDoubleCommit) // enabled by default
 			{
 				// commit twice since write operations on disk may occur out of order ie. superblock may be written before spacemap even
 				// tough calls made in reverse order
-				mBlockDevice.commit(false);
+				mPhysBlockDevice.commit(false);
 			}
 
 			writeSuperBlock();
 
-			mBlockDevice.commit(aMetadata);
+			mPhysBlockDevice.commit(aMetadata);
 
 			mSpaceMap.reset();
 			mWasCreated = false;
@@ -334,8 +334,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.d("read super block");
 		Log.inc();
 
-		SuperBlock superBlockOne = new SuperBlock(mBlockDevice, 0L);
-		SuperBlock superBlockTwo = new SuperBlock(mBlockDevice, 1L);
+		SuperBlock superBlockOne = new SuperBlock(mPhysBlockDevice, 0L);
+		SuperBlock superBlockTwo = new SuperBlock(mPhysBlockDevice, 1L);
 
 		if (superBlockOne.getTransactionId() == superBlockTwo.getTransactionId() + 1)
 		{
@@ -367,7 +367,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.i("write super block %d", pageIndex);
 		Log.inc();
 
-		mSuperBlock.write(mBlockDevice, pageIndex);
+		mSuperBlock.write(mPhysBlockDevice, pageIndex);
 
 		Log.dec();
 	}
@@ -409,7 +409,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public long getAllocatedSpace()
 	{
-		return mBlockDevice.length();
+		return mPhysBlockDevice.length();
 	}
 
 
@@ -419,7 +419,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public long getFreeSpace()
 	{
-		return mBlockDevice.length() - mSpaceMap.getRangeMap().getUsedSpace();
+		return mPhysBlockDevice.length() - mSpaceMap.getRangeMap().getUsedSpace();
 	}
 
 
@@ -436,14 +436,14 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public void setLength(long aNewLength)
 	{
-		mBlockDevice.setLength(aNewLength + RESERVED_BLOCKS);
+		mPhysBlockDevice.setLength(aNewLength + RESERVED_BLOCKS);
 	}
 
 
 	@Override
 	public void clear()
 	{
-		mBlockDevice.setLength(0);
+		mPhysBlockDevice.setLength(0);
 
 		mSpaceMap.reset();
 
@@ -451,9 +451,15 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	}
 
 
-	public int roundUp(int aSize)
+	int roundUp(int aSize)
 	{
-		int s = mBlockDevice.getBlockSize();
+		int s = mPhysBlockDevice.getBlockSize();
 		return aSize + ((s - (aSize % s)) % s);
+	}
+
+
+	public IPhysicalBlockDevice getPhysicalBlockDevice()
+	{
+		return mPhysBlockDevice;
 	}
 }

@@ -42,7 +42,7 @@ public interface IManagedBlockDevice extends IBlockDevice
 
 
 	/**
-	 * Returns a Document containing information to load the application using the block device.
+	 * Returns a Document containing information about the application using the block device. This is where block pointers for the master table is stored.
 	 */
 	Document getApplicationHeader();
 

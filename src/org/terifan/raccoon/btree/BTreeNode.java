@@ -1,6 +1,5 @@
 package org.terifan.raccoon.btree;
 
-import org.terifan.raccoon.TransactionGroup;
 import org.terifan.raccoon.btree.ArrayMap.PutResult;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Result;
@@ -68,19 +67,19 @@ abstract class BTreeNode
 	}
 
 
-	abstract boolean get(BTree mImplementation, MarshalledKey aKey, ArrayMapEntry oEntry);
+	abstract boolean get(BTree aImplementation, MarshalledKey aKey, ArrayMapEntry oEntry);
 
 
-	abstract PutResult put(BTree mImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
+	abstract PutResult put(BTree aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
 
 
-	abstract RemoveResult remove(BTree mImplementation, MarshalledKey aKey, Result<ArrayMapEntry> oOldEntry);
+	abstract RemoveResult remove(BTree aImplementation, MarshalledKey aKey, Result<ArrayMapEntry> oOldEntry);
 
 
-	abstract SplitResult split(BTree mImplementation);
+	abstract SplitResult split(BTree aImplementation);
 
 
-	abstract boolean commit(BTree mImplementation, TransactionGroup mTransactionGroup);
+	abstract boolean commit(BTree aImplementation);
 
 
 	protected abstract void postCommit();

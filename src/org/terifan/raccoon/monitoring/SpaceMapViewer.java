@@ -3,7 +3,7 @@ package org.terifan.raccoon.monitoring;
 import java.awt.Color;
 import java.awt.Graphics;
 import javax.swing.JPanel;
-import org.terifan.raccoon.Database;
+import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.managed.RangeMap;
 
@@ -12,10 +12,10 @@ public class SpaceMapViewer extends JPanel
 {
 	private final static long serialVersionUID = 1L;
 
-	private transient Database mDatabase;
+	private transient RaccoonDatabase mDatabase;
 
 
-	public SpaceMapViewer(Database aDatabase)
+	public SpaceMapViewer(RaccoonDatabase aDatabase)
 	{
 		mDatabase = aDatabase;
 	}

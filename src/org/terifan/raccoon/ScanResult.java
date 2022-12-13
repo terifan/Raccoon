@@ -91,7 +91,7 @@ public class ScanResult
 	}
 
 
-	public void enterTable(TableInstance aTable)
+	public void enterTable(RaccoonCollection aTable)
 	{
 //		sb.append("<table border=1><tr><td>" + aTable.toString() + "</td></tr><tr><td>");
 	}

@@ -1,10 +1,14 @@
 package org.terifan.raccoon.storage;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import org.terifan.bundle.Array;
+import org.terifan.bundle.Document;
 import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.ByteArrayUtil;
 import org.terifan.raccoon.util.Console;
+import org.terifan.raccoon.util.Log;
 
 
 /*
@@ -19,9 +23,9 @@ import org.terifan.raccoon.util.Console;
  *   +------+------+------+------+------+------+------+------+
  * 4 |                      block index                      |
  *   +------+------+------+------+------+------+------+------+
- * 5 |                                                       |
+ * 5 |                         unused                        |
  *   +------+------+------+------+------+------+------+------+
- * 6 |                       user data                       |
+ * 6 |                         unused                        |
  *   +------+------+------+------+------+------+------+------+
  * 7 |                      transaction                      |
  *   +------+------+------+------+------+------+------+------+
@@ -52,8 +56,7 @@ import org.terifan.raccoon.util.Console;
  *  64 block index 1
  *  64 block index 2
  *  64 block index 3
- *  64 unused
- *  64 user data
+ * 128 unused
  *  64 transaction
  * 256 block key (initialization vector)
  * 256 checksum
@@ -140,15 +143,16 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public byte getCompressionAlgorithm()
+	public int getCompressionAlgorithm()
 	{
-		return mBuffer[OFS_FLAG_COMPRESSION];
+		return 0xff & mBuffer[OFS_FLAG_COMPRESSION];
 	}
 
 
-	public BlockPointer setCompressionAlgorithm(byte aCompressionAlgorithm)
+	public BlockPointer setCompressionAlgorithm(int aCompressionAlgorithm)
 	{
-		mBuffer[OFS_FLAG_COMPRESSION] = aCompressionAlgorithm;
+		assert aCompressionAlgorithm >= 0 && aCompressionAlgorithm <= 255;
+		mBuffer[OFS_FLAG_COMPRESSION] = (byte)aCompressionAlgorithm;
 		return this;
 	}
 
@@ -330,10 +334,45 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public BlockPointer unmarshal(byte[] aBuffer, int aOffset)
+//	public BlockPointer unmarshal(byte[] aBuffer, int aOffset)
+//	{
+//		System.arraycopy(aBuffer, aOffset, mBuffer, 0, SIZE);
+//		return this;
+//	}
+
+
+	public BlockPointer unmarshalDoc(Document aDocument)
 	{
-		System.arraycopy(aBuffer, aOffset, mBuffer, 0, SIZE);
+		setBlockType(BlockType.values()[aDocument.getInt("type")]);
+		setBlockLevel(aDocument.getInt("lvl"));
+		setCompressionAlgorithm(aDocument.getInt("comp"));
+		setAllocatedSize(aDocument.getInt("alloc"));
+		setLogicalSize(aDocument.getInt("logic"));
+		setPhysicalSize(aDocument.getInt("phys"));
+		setBlockIndex0(aDocument.getLongArray("blocks")[0]);
+		setTransactionId(aDocument.getInt("tx"));
+		setBlockKey(aDocument.getLongArray("key"));
+		setChecksum(aDocument.getLongArray("chk"));
 		return this;
+	}
+
+
+	public Document marshalDoc()
+	{
+		Document doc = new Document()
+			.putNumber("type", getBlockType().ordinal())
+			.putNumber("lvl", getBlockLevel())
+			.putNumber("comp", getCompressionAlgorithm())
+			.putNumber("alloc", getAllocatedSize())
+			.putNumber("logic", getLogicalSize())
+			.putNumber("phys", getPhysicalSize())
+			.putArray("blocks", Array.of(getBlockIndex0()))
+			.putNumber("tx", getTransactionId())
+			.putArray("key", Array.of(getBlockKey(new long[4])))
+			.putArray("chk", Array.of(getChecksum(new long[4])))
+			;
+
+		return doc;
 	}
 
 
@@ -355,29 +394,29 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public long getUserData()
-	{
-		return ByteArrayUtil.getInt64(mBuffer, OFS_USER_DATA);
-	}
-
-
-	public BlockPointer setUserData(long aUserData)
-	{
-		ByteArrayUtil.putInt64(mBuffer, OFS_USER_DATA, aUserData);
-		return this;
-	}
-
-
-	public static long readUserData(byte[] aBuffer, int aBlockPointerOffset)
-	{
-		return ByteArrayUtil.getInt64(aBuffer, aBlockPointerOffset + OFS_USER_DATA);
-	}
-
-
-	public static void writeUserData(byte[] aBuffer, int aBlockPointerOffset, long aValue)
-	{
-		ByteArrayUtil.putInt64(aBuffer, aBlockPointerOffset + OFS_USER_DATA, aValue);
-	}
+//	public long getUserData()
+//	{
+//		return ByteArrayUtil.getInt64(mBuffer, OFS_USER_DATA);
+//	}
+//
+//
+//	public BlockPointer setUserData(long aUserData)
+//	{
+//		ByteArrayUtil.putInt64(mBuffer, OFS_USER_DATA, aUserData);
+//		return this;
+//	}
+//
+//
+//	public static long readUserData(byte[] aBuffer, int aBlockPointerOffset)
+//	{
+//		return ByteArrayUtil.getInt64(aBuffer, aBlockPointerOffset + OFS_USER_DATA);
+//	}
+//
+//
+//	public static void writeUserData(byte[] aBuffer, int aBlockPointerOffset, long aValue)
+//	{
+//		ByteArrayUtil.putInt64(aBuffer, aBlockPointerOffset + OFS_USER_DATA, aValue);
+//	}
 
 
 	@Override

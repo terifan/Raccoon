@@ -1,10 +1,12 @@
 package test;
 
-import java.io.File;
 import java.util.List;
 import org.terifan.bundle.Document;
-import org.terifan.raccoon.Database;
+import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.LogLevel;
+import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.util.Log;
 
 
 // https://www.tutorialspoint.com/mongodb/mongodb_java.htm
@@ -14,14 +16,16 @@ public class TestDocumentDB
 	{
 		try
 		{
-//			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+			Log.setLevel(LogLevel.DEBUG);
 
-//			try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW))
-			try (Database db = new Database(new File("d:\\test.rdb"), DatabaseOpenOption.CREATE_NEW))
+			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+
+			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE_NEW))
+//			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.CREATE_NEW))
 			{
-				for (int i = 0, z=0; i < 100; i++)
+				for (int i = 0, z=0; i < 1; i++)
 				{
-					for (int j = 0; j < 100; j++,z++)
+					for (int j = 0; j < 2; j++,z++)
 					{
 						db.getCollection("people").save(new Document().putNumber("_id", z).putString("name", "olle-"+i+"-"+j));
 					}
@@ -43,8 +47,8 @@ public class TestDocumentDB
 
 //			blockDevice.dump();
 
-//			try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
-			try (Database db = new Database(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN))
+			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN))
+//			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN))
 			{
 				Document doc = db.getCollection("people").get(new Document().putNumber("_id", 0));
 				System.out.println(doc);

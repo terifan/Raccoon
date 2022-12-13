@@ -92,7 +92,7 @@ else
 				throw new IOException("Checksum error in block " + aBlockPointer);
 			}
 
-			if (aBlockPointer.getCompressionAlgorithm() != CompressionParam.NONE)
+			if (aBlockPointer.getCompressionAlgorithm() != CompressionParam.Level.NONE.ordinal())
 			{
 				byte[] tmp = new byte[aBlockPointer.getLogicalSize()];
 				getCompressor(aBlockPointer.getCompressionAlgorithm()).decompress(buffer, 0, aBlockPointer.getPhysicalSize(), tmp, 0, tmp.length);
@@ -115,20 +115,20 @@ else
 
 
 	@Override
-	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType, long aUserData)
+	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType)
 	{
 		BlockPointer blockPointer = null;
 
 		try
 		{
 			ByteBlockOutputStream compressedBlock = null;
-			byte compressor = mCompressionParam.getCompressorId(aType);
+			CompressionParam.Level compressor = mCompressionParam.getCompressorLevel(aType);
 			boolean compressed = false;
 
-			if (compressor != CompressionParam.NONE)
+			if (compressor != CompressionParam.Level.NONE)
 			{
 				compressedBlock = new ByteBlockOutputStream(mBlockDevice.getBlockSize());
-				compressed = getCompressor(compressor).compress(aBuffer, aOffset, aLength, compressedBlock);
+				compressed = getCompressor(compressor.ordinal()).compress(aBuffer, aOffset, aLength, compressedBlock);
 			}
 
 			int physicalSize;
@@ -142,7 +142,7 @@ else
 			{
 				physicalSize = aLength;
 				aBuffer = Arrays.copyOfRange(aBuffer, aOffset, aOffset + roundUp(aLength));
-				compressor = CompressionParam.NONE;
+				compressor = CompressionParam.Level.NONE;
 			}
 
 			assert aBuffer.length % mBlockDevice.getBlockSize() == 0;
@@ -151,13 +151,12 @@ else
 			long[] blockKey = BlockKeyGenerator.generate();
 
 			blockPointer = new BlockPointer();
-			blockPointer.setCompressionAlgorithm(compressor);
+			blockPointer.setCompressionAlgorithm(compressor.ordinal());
 			blockPointer.setAllocatedSize(aBuffer.length);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
 			blockPointer.setTransactionId(aTransactionId);
 			blockPointer.setBlockType(aType);
-			blockPointer.setUserData(aUserData);
 			blockPointer.setChecksumAlgorithm((byte)0); // not used
 			blockPointer.setChecksum(MurmurHash3.hash256(aBuffer, 0, physicalSize, aTransactionId));
 			blockPointer.setBlockKey(blockKey);
@@ -179,25 +178,25 @@ else
 	}
 
 
-	private Compressor getCompressor(int aCompressorId)
+	private Compressor getCompressor(int aLevel)
 	{
-		switch (aCompressorId)
+		switch (CompressionParam.Level.values()[aLevel])
 		{
-			case CompressionParam.ZLE:
+			case ZLE:
 				return new ZLE(mBlockDevice.getBlockSize());
-			case CompressionParam.DEFLATE_FAST:
+			case DEFLATE_FAST:
 				return new DeflateCompressor(Deflater.BEST_SPEED);
-			case CompressionParam.DEFLATE_DEFAULT:
+			case DEFLATE_DEFAULT:
 				return new DeflateCompressor(Deflater.DEFAULT_COMPRESSION);
-			case CompressionParam.DEFLATE_BEST:
+			case DEFLATE_BEST:
 				return new DeflateCompressor(Deflater.BEST_COMPRESSION);
 			default:
-				throw new IllegalStateException("Illegal compressor: " + aCompressorId);
+				throw new IllegalStateException("Illegal compressor: " + aLevel);
 		}
 	}
 
 
-	public int roundUp(int aSize)
+	private int roundUp(int aSize)
 	{
 		int s = mBlockDevice.getBlockSize();
 		return aSize + ((s - (aSize % s)) % s);

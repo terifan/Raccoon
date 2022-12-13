@@ -587,15 +587,6 @@ public abstract class Container<K, R> implements Externalizable
 		{
 			String s = (String)value;
 
-			if (s.length() > 9 && s.charAt(8) == ':')
-			{
-				int foundHash = (int)Long.parseLong(s.substring(0, 8), 16);
-				int expectedHash = new Checksum().update(s.substring(9)).getValue();
-				if (expectedHash == foundHash)
-				{
-					return Base64.getDecoder().decode(s.substring(9));
-				}
-			}
 			if (s.matches("[a-zA-Z0-9\\-\\=\\\\].*"))
 			{
 				return Base64.getDecoder().decode(s);

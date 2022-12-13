@@ -1,18 +1,21 @@
 package org.terifan.security.cryptography;
 
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.random.RandomGenerator;
+
 
 /**
  * ISAAC is a fast cryptographic random number generator. This implementation is not thread safe.
  *
  * See http://burtleburtle.net/bob/rand/isaacafa.html
  */
-public final class ISAAC
+public final class ISAAC implements RandomGenerator
 {
 	private transient int[] set;
 	private transient int[] mem;
 	private transient int ma, mb, mc, count;
-	private transient double nextNextGaussian;
-	private transient boolean haveNextNextGaussian;
+
+	private final static AtomicLong seedUniquifier = new AtomicLong(8682522807148012L);
 
 
 	/**
@@ -20,7 +23,22 @@ public final class ISAAC
 	 */
 	public ISAAC()
 	{
-		this(System.nanoTime());
+		this(seedUniquifier() ^ System.nanoTime());
+	}
+
+
+	private static long seedUniquifier()
+	{
+		// L'Ecuyer, "Tables of Linear Congruential Generators of Different Sizes and Good Lattice Structure", 1999
+		for (;;)
+		{
+			long current = seedUniquifier.get();
+			long next = current * 1181783497276652981L;
+			if (seedUniquifier.compareAndSet(current, next))
+			{
+				return next;
+			}
+		}
 	}
 
 
@@ -28,12 +46,6 @@ public final class ISAAC
 	 * Constructs a new ISAAC object with a predefined seed.
 	 */
 	public ISAAC(long aSeed)
-	{
-		setSeed(aSeed);
-	}
-
-
-	public void setSeed(long aSeed)
 	{
 		int[] seed = new int[256];
 		long s = aSeed;
@@ -47,7 +59,6 @@ public final class ISAAC
 				s = (s * 0x5DEECE66DL + 0xBL) & 281474976710655L;
 
 				seed[i] ^= s >>> j;
-
 			}
 		}
 
@@ -60,8 +71,6 @@ public final class ISAAC
 		mem = new int[256];
 		set = new int[256];
 		ma = mb = mc = count = 0;
-		nextNextGaussian = 0;
-		haveNextNextGaussian = false;
 
 		int a, b, c, d, e, f, g, h, i;
 		a = b = c = d = e = f = g = h = 0x9e3779b9;
@@ -220,26 +229,9 @@ public final class ISAAC
 
 
 	/**
-	 * Returns a random boolean.
-	 */
-	public boolean nextBoolean()
-	{
-		return nextInt() < 0;
-	}
-
-
-	/**
-	 * Returns a random byte.
-	 */
-	public byte nextByte()
-	{
-		return (byte)nextInt();
-	}
-
-
-	/**
 	 * Returns a random integer.
 	 */
+	@Override
 	public int nextInt()
 	{
 		if (count == 0)
@@ -250,89 +242,10 @@ public final class ISAAC
 	}
 
 
-	/**
-	 * Returns a random integer.
-	 *
-	 * @param aMaxValue the bound on the random number to be returned. Must be positive.
-	 */
-	public int nextInt(int aMaxValue)
-	{
-		return Math.abs(nextInt()) % aMaxValue;
-	}
-
-
-	private int[] nextInts(int[] aBuffer)
-	{
-		return nextInts(aBuffer, 0, aBuffer.length);
-	}
-
-
-	private int[] nextInts(int[] aBuffer, int aOffset, int aLength)
-	{
-		for (int i = 0; i < aLength; i++)
-		{
-			aBuffer[aOffset++] = nextInt();
-		}
-		return aBuffer;
-	}
-
-
-	/**
-	 * Returns a random long.
-	 */
+	@Override
 	public long nextLong()
 	{
 		return (((long)nextInt()) << 32) + nextInt();
-	}
-
-
-	// copy from java.util.Random
-	public double nextDouble()
-	{
-		return (((long)nextInt(1 << 26) << 27) + nextInt(1 << 27)) / (double)(1L << 53);
-	}
-
-
-	// copy from java.util.Random
-	public float nextFloat()
-	{
-		return nextInt(1 << 24) / ((float)(1 << 24));
-	}
-
-
-	// copy from java.util.Random
-	public double nextGaussian()
-	{
-		if (haveNextNextGaussian)
-		{
-			haveNextNextGaussian = false;
-			return nextNextGaussian;
-		}
-		else
-		{
-			double v1, v2, s;
-			do
-			{
-				v1 = 2 * nextDouble() - 1; // between -1 and 1
-				v2 = 2 * nextDouble() - 1; // between -1 and 1
-				s = v1 * v1 + v2 * v2;
-			}
-			while (s >= 1 || s == 0);
-			double multiplier = StrictMath.sqrt(-2 * StrictMath.log(s) / s);
-			nextNextGaussian = v2 * multiplier;
-			haveNextNextGaussian = true;
-			return v1 * multiplier;
-		}
-	}
-
-
-	/**
-	 * Fills the buffer supplied with random bytes.
-	 */
-	public byte[] nextBytes(byte[] aBuffer)
-	{
-		nextBytes(aBuffer, 0, aBuffer.length);
-		return aBuffer;
 	}
 
 
@@ -363,154 +276,5 @@ public final class ISAAC
 			aBuffer[aOffset++] = (byte)set[--count];
 		}
 		return aBuffer;
-	}
-
-
-	/**
-	 * Get an integer value based on the probability of it.<p>
-	 *
-	 * E.g. if the probabilities {25,25,50} are provided the integer value 0 and 1 will be returned 25% of the time each and value 2
-	 * returned 50% of the time.
-	 *
-	 * @param aProbabilties an array of probabilities, any positive values can be provided as these are normalized by the implementation.
-	 * @return an integer value ranging from 0 to the length of the provided probabilities array.
-	 */
-	public int nextProb(double... aProbabilties)
-	{
-		double v = nextInt(Integer.MAX_VALUE) / (double)Integer.MAX_VALUE;
-
-		double range = 0;
-		for (double p : aProbabilties)
-		{
-			range += p;
-		}
-
-		for (int i = 0; i < aProbabilties.length; i++)
-		{
-			double p = aProbabilties[i] / range;
-			if (v < p)
-			{
-				return i;
-			}
-			v -= p;
-		}
-
-		return aProbabilties.length - 1;
-	}
-
-
-	/**
-	 * General purpose static instance of ISAAC. This implementation is not thread safe.
-	 */
-	public static class PRNG
-	{
-		private final static ISAAC instance = new ISAAC();
-
-
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextBoolean
-		 */
-		public static boolean nextBoolean()
-		{
-			return instance.nextBoolean();
-		}
-
-
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextByte
-		 */
-		public static byte nextByte()
-		{
-			return instance.nextByte();
-		}
-
-
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextInt
-		 */
-		public static int nextInt()
-		{
-			return instance.nextInt();
-		}
-
-
-		/**
-		 * @param aMaxValue the bound on the random number to be returned. Must be positive.
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextInt
-		 */
-		public static int nextInt(int aMaxValue)
-		{
-			return instance.nextInt(aMaxValue);
-		}
-
-
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextLong
-		 */
-		public static long nextLong()
-		{
-			return instance.nextLong();
-		}
-
-
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextFloat
-		 */
-		public static float nextFloat()
-		{
-			return instance.nextFloat();
-		}
-
-
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextDouble
-		 */
-		public static double nextDouble()
-		{
-			return instance.nextDouble();
-		}
-
-
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextBytes
-		 */
-		public static byte[] nextBytes(byte[] aBuffer)
-		{
-			instance.nextBytes(aBuffer);
-			return aBuffer;
-		}
-
-
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextBytes
-		 */
-		public static byte[] nextBytes(byte[] aBuffer, int aOffset, int aLength)
-		{
-			instance.nextBytes(aBuffer, aOffset, aLength);
-			return aBuffer;
-		}
-
-
-		/**
-		 * @see org.terifan.v1.raccoon.security.ISAAC#nextProb
-		 */
-		public static int nextProb(double... aProbabilities)
-		{
-			return instance.nextProb(aProbabilities);
-		}
-
-
-		public static int[] nextInts(int[] aBuffer)
-		{
-			instance.nextInts(aBuffer);
-			return aBuffer;
-		}
-
-
-		public static int[] nextInts(int[] aBuffer, int aOffset, int aLength)
-		{
-			instance.nextInts(aBuffer, aOffset, aLength);
-			return aBuffer;
-		}
 	}
 }

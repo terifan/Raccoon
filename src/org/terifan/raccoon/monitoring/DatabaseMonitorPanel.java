@@ -2,16 +2,16 @@ package org.terifan.raccoon.monitoring;
 
 import java.awt.BorderLayout;
 import javax.swing.JPanel;
-import org.terifan.raccoon.Database;
+import org.terifan.raccoon.RaccoonDatabase;
 
 
 public class DatabaseMonitorPanel extends JPanel
 {
 	private final static long serialVersionUID = 1L;
-	private transient Database mDatabase;
+	private transient RaccoonDatabase mDatabase;
 
 
-	public DatabaseMonitorPanel(Database aDatabase)
+	public DatabaseMonitorPanel(RaccoonDatabase aDatabase)
 	{
 		mDatabase = aDatabase;
 
@@ -20,13 +20,13 @@ public class DatabaseMonitorPanel extends JPanel
 	}
 
 
-	public Database getDatabase()
+	public RaccoonDatabase getDatabase()
 	{
 		return mDatabase;
 	}
 
 
-	public void setDatabase(Database aDatabase)
+	public void setDatabase(RaccoonDatabase aDatabase)
 	{
 		mDatabase = aDatabase;
 	}

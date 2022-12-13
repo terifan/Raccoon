@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.Random;
 import org.terifan.raccoon.LobOpenOption;
 import org.terifan.raccoon.CompressionParam;
-import org.terifan.raccoon.Database;
+import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.LogLevel;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;

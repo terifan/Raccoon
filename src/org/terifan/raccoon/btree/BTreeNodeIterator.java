@@ -1,58 +1,74 @@
 package org.terifan.raccoon.btree;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
+import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
 import org.terifan.raccoon.storage.BlockPointer;
-import org.terifan.raccoon.util.ByteArrayBuffer;
 
 
 public class BTreeNodeIterator implements Iterator<BTreeLeaf>
 {
-	private ArrayList<Integer> mPosition;
-	private HashMap<Integer, BTreeIndex> mIndex;
-	private BTreeLeaf mNext;
+	private BTree mTree;
+	private ArrayList<BTreeNode> mNodes;
+	private ArrayList<Iterator<ArrayMapEntry>> mIterators;
+	private BTreeLeaf mPending;
 
 
-	BTreeNodeIterator(BTreeNode aRoot)
+	BTreeNodeIterator(BTree aTree, BTreeNode aRoot)
 	{
-		if (aRoot instanceof BTreeLeaf)
-		{
-			mNext = (BTreeLeaf)aRoot;
-		}
-		else
-		{
-			mIndex = new HashMap<>();
-			mIndex.put(0, (BTreeIndex)aRoot);
-			mPosition = new ArrayList<>();
-			mPosition.add(0);
-		}
+		mTree = aTree;
+
+		mNodes = new ArrayList<>();
+		mNodes.add(aRoot);
+
+		mIterators = new ArrayList<>();
+		mIterators.add(aRoot.mMap.iterator());
 	}
 
-	//         /--- a
-	//   /----o---- b
-	//   |     \--- c
-	//   |     /--- d
-	// --o----o---- e
-	//   |     \--- f
-	//   |     /--- g
-	//   \----o---- h
-	//         \--- i
 
+//      /-- a
+//   /--o-- b
+//   |  \-- c
+//   |  /-- d
+// --o--o-- e
+//   |  \-- f
+//   |  /-- g
+//   \--o-- h
+//      \-- i
 	@Override
 	public boolean hasNext()
 	{
-		if (mNext != null)
+		if (mPending != null)
 		{
 			return true;
 		}
 
-//		ArrayMapEntry entry = new ArrayMapEntry();
-//
-//		ArrayMap map = mIndex.get(mIndex.size() - 1).mMap;
-//		int pos = mPosition.get(mPosition.size() - 1);
-//
-//		map.get(pos, entry);
+		while (!mIterators.isEmpty())
+		{
+			Iterator<ArrayMapEntry> it = mIterators.get(mIterators.size() - 1);
+
+			if (!it.hasNext())
+			{
+				mIterators.remove(mIterators.size() - 1);
+				mNodes.remove(mNodes.size() - 1);
+				continue;
+			}
+
+			ArrayMapEntry entry = it.next();
+			BTreeNode node = mNodes.get(mNodes.size() - 1);
+
+			if (node instanceof BTreeIndex)
+			{
+				node = ((BTreeIndex)node).getNode(mTree, entry);
+				mIterators.add(node.mMap.iterator());
+				mNodes.add(node);
+			}
+			else
+			{
+				mPending = (BTreeLeaf)node;
+				return true;
+			}
+		}
 
 		return false;
 	}
@@ -61,8 +77,8 @@ public class BTreeNodeIterator implements Iterator<BTreeLeaf>
 	@Override
 	public BTreeLeaf next()
 	{
-		BTreeLeaf tmp = mNext;
-		mNext = null;
+		BTreeLeaf tmp = mPending;
+		mPending = null;
 		return tmp;
 	}
 }

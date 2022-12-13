@@ -1,13 +1,11 @@
 package org.terifan.raccoon.btree;
 
 import org.terifan.raccoon.BlockType;
-import org.terifan.raccoon.TransactionGroup;
+import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
 import org.terifan.raccoon.btree.ArrayMap.PutResult;
 import org.terifan.raccoon.util.Result;
-import static org.terifan.raccoon.btree.BTree.INDEX_SIZE;
 import static org.terifan.raccoon.btree.BTree.BLOCKPOINTER_PLACEHOLDER;
 import org.terifan.raccoon.util.Console;
-import org.terifan.raccoon.util.Log;
 
 
 public class BTreeLeaf extends BTreeNode
@@ -52,7 +50,7 @@ public class BTreeLeaf extends BTreeNode
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(BTree.LEAF_SIZE);
+		ArrayMap[] maps = mMap.split(aImplementation.mConfiguration.getInt("leafSize"));
 
 		BTreeLeaf a = new BTreeLeaf();
 		BTreeLeaf b = new BTreeLeaf();
@@ -69,7 +67,7 @@ public class BTreeLeaf extends BTreeNode
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(BTree.LEAF_SIZE);
+		ArrayMap[] maps = mMap.split(aImplementation.mConfiguration.getInt("leafSize"));
 
 		BTreeLeaf a = new BTreeLeaf();
 		BTreeLeaf b = new BTreeLeaf();
@@ -83,9 +81,9 @@ public class BTreeLeaf extends BTreeNode
 
 		BTreeIndex newIndex = new BTreeIndex(1);
 		newIndex.mModified = true;
-		newIndex.mMap = new ArrayMap(INDEX_SIZE);
-		newIndex.mMap.put(new ArrayMapEntry(keyA.array(), BLOCKPOINTER_PLACEHOLDER), null);
-		newIndex.mMap.put(new ArrayMapEntry(keyB.array(), BLOCKPOINTER_PLACEHOLDER), null);
+		newIndex.mMap = new ArrayMap(aImplementation.mConfiguration.getInt("indexSize"));
+		newIndex.mMap.put(new ArrayMapEntry(keyA.array(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
+		newIndex.mMap.put(new ArrayMapEntry(keyB.array(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
 		newIndex.mChildNodes.put(keyA, a);
 		newIndex.mChildNodes.put(keyB, b);
 
@@ -94,15 +92,13 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	boolean commit(BTree aImplementation, TransactionGroup aTransactionGroup)
+	boolean commit(BTree aImplementation)
 	{
 		if (mModified)
 		{
 			aImplementation.freeBlock(mBlockPointer);
 
-			mBlockPointer = aImplementation.writeBlock(aTransactionGroup, mMap.array(), 0, BlockType.LEAF);
-
-			aImplementation.hasCommitted(this);
+			mBlockPointer = aImplementation.writeBlock(mMap.array(), 0, BlockType.TREE_LEAF);
 		}
 
 		return mModified;

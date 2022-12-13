@@ -15,6 +15,7 @@ class SuperBlock
 	private final static byte FORMAT_VERSION = 1;
 	private final static int CHECKSUM_SIZE = 16;
 	private final static int IV_SIZE = 16;
+	private final static ISAAC PRNG = new ISAAC();
 
 	private int mFormatVersion;
 	private long mCreateTime;
@@ -155,7 +156,7 @@ class SuperBlock
 
 		if (aBlockDevice instanceof SecureBlockDevice)
 		{
-			ISAAC.PRNG.nextBytes(buffer.array(), buffer.position(), buffer.remaining() - IV_SIZE);
+			PRNG.nextBytes(buffer.array(), buffer.position(), buffer.remaining() - IV_SIZE);
 		}
 
 		long[] hash = MurmurHash3.hash256(buffer.array(), CHECKSUM_SIZE, blockSize - CHECKSUM_SIZE - IV_SIZE, aBlockIndex);
