@@ -1,5 +1,7 @@
 package org.terifan.raccoon.btree;
 
+import org.terifan.bundle.Document;
+import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.storage.BlockAccessor;
 
 
@@ -11,10 +13,22 @@ public interface BTreeStorage extends AutoCloseable
 	long getTransaction();
 
 
+	default IManagedBlockDevice getBlockDevice()
+	{
+		return getBlockAccessor().getBlockDevice();
+	}
+
+
 	@Override
 	default void close()
 	{
-		getBlockAccessor().getBlockDevice().commit();
-		getBlockAccessor().getBlockDevice().close();
+		getBlockDevice().commit();
+		getBlockDevice().close();
+	}
+
+
+	default Document getApplicationHeader()
+	{
+		return getBlockAccessor().getBlockDevice().getApplicationHeader();
 	}
 }

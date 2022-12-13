@@ -13,8 +13,10 @@ import org.terifan.security.messagedigest.MurmurHash3;
 class SuperBlock
 {
 	private final static byte FORMAT_VERSION = 1;
-	private final static int CHECKSUM_SIZE = 16;
-	private final static int IV_SIZE = 16;
+	private final static int CHECKSUM_SIZE = 32;
+	private final static int IV_SIZE = 16; // same as in SecureBlockDevice
+	private final static int HEADER_SIZE = 1 + 3 * 8 + 2;
+	private final static int TOTAL_OVERHEAD = IV_SIZE + CHECKSUM_SIZE + HEADER_SIZE + BlockPointer.SIZE;
 	private final static ISAAC PRNG = new ISAAC();
 
 	private int mFormatVersion;
@@ -124,7 +126,7 @@ class SuperBlock
 
 		buffer.position(0);
 
-		if (buffer.readInt64() != hash[0] || buffer.readInt64() != hash[1])
+		if (buffer.readInt64() != hash[0] || buffer.readInt64() != hash[1] || buffer.readInt64() != hash[2] || buffer.readInt64() != hash[3])
 		{
 			throw new DatabaseIOException("Checksum error at block index " + aBlockIndex);
 		}
@@ -143,16 +145,17 @@ class SuperBlock
 		mModifiedTime = System.currentTimeMillis();
 
 		int blockSize = aBlockDevice.getBlockSize();
+		byte[] applicationHeader = mApplicationHeader.marshal();
+
+		if (TOTAL_OVERHEAD + applicationHeader.length > blockSize)
+		{
+			throw new DatabaseIOException("Application header exeeds maximum size: ");
+		}
 
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(blockSize, true);
 		buffer.position(CHECKSUM_SIZE); // reserve space for checksum
 
-		marshal(buffer);
-
-		if (buffer.remaining() < IV_SIZE)
-		{
-			throw new DatabaseIOException("SuperBlock marshalled into a too large buffer");
-		}
+		marshal(buffer, applicationHeader);
 
 		if (aBlockDevice instanceof SecureBlockDevice)
 		{
@@ -164,6 +167,8 @@ class SuperBlock
 		buffer.position(0);
 		buffer.writeInt64(hash[0]);
 		buffer.writeInt64(hash[1]);
+		buffer.writeInt64(hash[2]);
+		buffer.writeInt64(hash[3]);
 
 		if (aBlockDevice instanceof SecureBlockDevice)
 		{
@@ -176,16 +181,15 @@ class SuperBlock
 	}
 
 
-	private void marshal(ByteArrayBuffer aBuffer)
+	private void marshal(ByteArrayBuffer aBuffer, byte[] aApplicationHeader)
 	{
 		aBuffer.writeInt8(mFormatVersion);
 		aBuffer.writeInt64(mCreateTime);
 		aBuffer.writeInt64(mModifiedTime);
 		aBuffer.writeInt64(mTransactionId);
 		mSpaceMapPointer.marshal(aBuffer);
-		byte[] x = mApplicationHeader.marshal();
-		aBuffer.writeVar32(x.length);
-		aBuffer.write(x);
+		aBuffer.writeInt16(aApplicationHeader.length);
+		aBuffer.write(aApplicationHeader);
 	}
 
 
@@ -202,6 +206,6 @@ class SuperBlock
 		mModifiedTime = aBuffer.readInt64();
 		mTransactionId = aBuffer.readInt64();
 		mSpaceMapPointer.unmarshal(aBuffer);
-		mApplicationHeader = Document.unmarshal(aBuffer.read(new byte[aBuffer.readVar32()]));
+		mApplicationHeader = Document.unmarshal(aBuffer.read(new byte[aBuffer.readInt16()]));
 	}
 }

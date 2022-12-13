@@ -280,6 +280,7 @@ public final class RaccoonCollection implements BTreeStorage
 	}
 
 
+	@Override
 	public void close()
 	{
 		mTableImplementation.close();

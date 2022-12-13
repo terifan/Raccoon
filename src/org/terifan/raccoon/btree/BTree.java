@@ -20,10 +20,7 @@ public class BTree implements AutoCloseable
 
 	protected BTreeStorage mStorage;
 	protected Document mConfiguration;
-	protected BlockAccessor mBlockAccessor;
-
 	private BTreeNode mRoot;
-	private boolean mClosed;
 	private int mModCount;
 
 
@@ -31,11 +28,10 @@ public class BTree implements AutoCloseable
 	{
 		mStorage = aStorage;
 		mConfiguration = aConfiguration;
-		mBlockAccessor = aStorage.getBlockAccessor();
 
-		mConfiguration.putNumber("leafSize", mConfiguration.getInt("leafSize", aStorage.getBlockAccessor().getBlockDevice().getBlockSize()));
-		mConfiguration.putNumber("indexSize", mConfiguration.getInt("indexSize", aStorage.getBlockAccessor().getBlockDevice().getBlockSize()));
-		mConfiguration.putNumber("entrySizeLimit", mConfiguration.getInt("entrySizeLimit", aStorage.getBlockAccessor().getBlockDevice().getBlockSize()) / 4);
+		mConfiguration.putNumber("leafSize", mConfiguration.getInt("leafSize", k -> mStorage.getBlockDevice().getBlockSize()));
+		mConfiguration.putNumber("indexSize", mConfiguration.getInt("indexSize", k -> mStorage.getBlockDevice().getBlockSize()));
+		mConfiguration.putNumber("entrySizeLimit", mConfiguration.getInt("entrySizeLimit", k -> mStorage.getBlockDevice().getBlockSize()) / 4);
 
 		if (mConfiguration.containsKey("treeRoot"))
 		{
@@ -80,6 +76,12 @@ public class BTree implements AutoCloseable
 	{
 		mRoot = new BTreeLeaf();
 		mRoot.mMap = new ArrayMap(mConfiguration.getInt("leafSize"));
+	}
+
+
+	BTreeNode getRoot()
+	{
+		return mRoot;
 	}
 
 
@@ -166,7 +168,7 @@ public class BTree implements AutoCloseable
 	{
 		assertNotClosed();
 
-		return new BTreeEntryIterator(this, mRoot);
+		return new BTreeEntryIterator(this);
 	}
 
 
@@ -270,11 +272,9 @@ public class BTree implements AutoCloseable
 	@Override
 	public void close()
 	{
-		if (!mClosed)
+		if (mConfiguration != null)
 		{
-			mClosed = true;
 			mRoot = null;
-			mBlockAccessor = null;
 			mStorage = null;
 			mConfiguration = null;
 		}
@@ -342,18 +342,20 @@ public class BTree implements AutoCloseable
 
 	private void assertNotClosed()
 	{
-		if (mClosed)
+		if (mRoot == null)
 		{
-			throw new IllegalStateException("Table is closed");
+			throw new IllegalStateException("BTree is closed");
 		}
 	}
 
 
-	public void scan(ScanResult aScanResult)
+	public ScanResult scan(ScanResult aScanResult)
 	{
 		aScanResult.tables++;
 
-//		scan(mRoot, aScanResult, 0);
+		scanX(mRoot, aScanResult, 0);
+
+		return aScanResult;
 	}
 
 
@@ -384,7 +386,7 @@ public class BTree implements AutoCloseable
 	}
 
 
-	private void scanX(BTreeNode aNode, ScanResult aScanResult)
+	private void scanX(BTreeNode aNode, ScanResult aScanResult, int aLevel)
 	{
 		if (aNode instanceof BTreeIndex)
 		{
@@ -437,7 +439,7 @@ public class BTree implements AutoCloseable
 				indexNode.mMap.get(i, entry);
 				indexNode.mChildNodes.put(new MarshalledKey(entry.getKey()), child);
 
-				scanX(child, aScanResult);
+				scanX(child, aScanResult, aLevel + 1);
 			}
 
 			aScanResult.log.append("]");
@@ -479,7 +481,7 @@ public class BTree implements AutoCloseable
 	{
 		if (aBlockPointer != null)
 		{
-			mBlockAccessor.freeBlock(aBlockPointer);
+			mStorage.getBlockAccessor().freeBlock(aBlockPointer);
 		}
 	}
 
@@ -491,13 +493,13 @@ public class BTree implements AutoCloseable
 			throw new IllegalArgumentException("Attempt to read bad block: " + aBlockPointer);
 		}
 
-		return mBlockAccessor.readBlock(aBlockPointer);
+		return mStorage.getBlockAccessor().readBlock(aBlockPointer);
 	}
 
 
 	protected BlockPointer writeBlock(byte[] aContent, int aLevel, BlockType aBlockType)
 	{
-		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mStorage.getTransaction(), aBlockType).setBlockLevel(aLevel);
+		return mStorage.getBlockAccessor().writeBlock(aContent, 0, aContent.length, mStorage.getTransaction(), aBlockType).setBlockLevel(aLevel);
 	}
 
 
@@ -523,5 +525,11 @@ public class BTree implements AutoCloseable
 			BTreeLeaf leafNode = (BTreeLeaf)aNode;
 			aConsumer.accept(leafNode);
 		}
+	}
+
+
+	public Document getConfiguration()
+	{
+		return mConfiguration;
 	}
 }

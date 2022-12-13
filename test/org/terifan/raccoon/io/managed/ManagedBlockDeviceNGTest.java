@@ -110,7 +110,7 @@ public class ManagedBlockDeviceNGTest
 			blockDevice.commit();
 		}
 
-		try (RaccoonDatabase db = new RaccoonDatabase(device, DatabaseOpenOption.OPEN)) // throws exception
+		try (RaccoonDatabase db = new RaccoonDatabase(device, DatabaseOpenOption.OPEN, null)) // throws exception
 		{
 			fail();
 		}

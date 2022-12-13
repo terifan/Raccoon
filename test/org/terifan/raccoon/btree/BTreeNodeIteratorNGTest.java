@@ -2,51 +2,45 @@ package org.terifan.raccoon.btree;
 
 import org.terifan.bundle.Document;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
-import org.terifan.raccoon.io.managed.ManagedBlockDevice;
-import org.terifan.raccoon.io.physical.MemoryBlockDevice;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import static org.terifan.raccoon.btree._Tools.createStorage;
-import static org.terifan.raccoon.btree._Tools.createMemoryStorage;
-import static org.terifan.raccoon.btree._Tools.createSecureStorage;
-import static org.terifan.raccoon.btree._Tools.createSecureMemoryStorage;
+import static org.terifan.raccoon.btree._Tools.showTree;
+import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
+import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 
 
 public class BTreeNodeIteratorNGTest
 {
 	@Test
-	public void testSomeMethod()
+	public void test() throws InterruptedException
 	{
-		MemoryBlockDevice memoryBlockDevice = new MemoryBlockDevice(512);
+		IPhysicalBlockDevice device = new MemoryBlockDevice(512);
+//		Supplier<IPhysicalBlockDevice> device = () -> new FileBlockDevice(new File("d:/test.rdb"));
 
-		byte[] key = "aaaaaaaaaaaaa".getBytes();
-		byte[] value = "AAAAAAAAAAA".getBytes();
-
-//		try (BTreeStorage storage = createSecureMemoryStorage(memoryBlockDevice))
-		try (BTreeStorage storage = createStorage(memoryBlockDevice))
+		try (BTreeStorage storage = createStorage(device); BTree tree = new BTree(storage, new Document()))
 		{
-			Document conf = new Document();
-			try (BTree tree = new BTree(storage, conf))
+			for (int i = 0; i < 100; i++)
 			{
-				tree.put(new ArrayMapEntry(key, value, TYPE_DOCUMENT));
-				tree.commit();
-				storage.getBlockAccessor().getBlockDevice().getApplicationHeader().putBundle("conf", conf);
+				tree.put(new ArrayMapEntry(("key"+i).getBytes(), ("value"+i).getBytes(), TYPE_DOCUMENT));
 			}
+			tree.commit();
+			storage.getApplicationHeader().putBundle("conf", tree.getConfiguration());
 		}
 
-//		try (BTreeStorage storage = createSecureMemoryStorage(memoryBlockDevice))
-		try (BTreeStorage storage = createStorage(memoryBlockDevice))
+		try (BTreeStorage storage = createStorage(device); BTree tree = new BTree(storage, storage.getApplicationHeader().getBundle("conf")))
 		{
-			Document conf = storage.getBlockAccessor().getBlockDevice().getApplicationHeader().getBundle("conf");
-			System.out.println(conf);
+			tree.iterator().forEachRemaining(e -> System.out.println(e));
 
-			try (BTree tree = new BTree(storage, conf))
-			{
-				ArrayMapEntry entry = new ArrayMapEntry(key);
-				assertTrue(tree.get(entry));
-				assertEquals(entry.getValue(), value);
-			}
+			showTree(tree);
+
+//			for (int i = 0; i < 100; i++)
+//			{
+//				ArrayMapEntry entry = new ArrayMapEntry(("key"+i).getBytes());
+//				assertTrue(tree.get(entry));
+//				assertEquals(entry.getValue(), ("value"+i).getBytes());
+//			}
 		}
+
+		Thread.sleep(100000);
 	}
 }

@@ -6,6 +6,7 @@ import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.LogLevel;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.util.Log;
 
 
@@ -19,8 +20,10 @@ public class TestDocumentDB
 			Log.setLevel(LogLevel.DEBUG);
 
 			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+			AccessCredentials ac = new AccessCredentials("password");
+//			AccessCredentials ac = null;
 
-			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE_NEW))
+			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE_NEW, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.CREATE_NEW))
 			{
 				for (int i = 0, z=0; i < 1; i++)
@@ -47,7 +50,7 @@ public class TestDocumentDB
 
 //			blockDevice.dump();
 
-			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN))
+			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN))
 			{
 				Document doc = db.getCollection("people").get(new Document().putNumber("_id", 0));

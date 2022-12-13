@@ -9,9 +9,9 @@ public class BTreeEntryIterator implements Iterator<ArrayMapEntry>
 	private Iterator<ArrayMapEntry> mElements;
 
 
-	BTreeEntryIterator(BTree aTree, BTreeNode aRoot)
+	BTreeEntryIterator(BTree aTree)
 	{
-		mNodeIterator = new BTreeNodeIterator(aTree, aRoot);
+		mNodeIterator = new BTreeNodeIterator(aTree, aTree.getRoot());
 	}
 
 

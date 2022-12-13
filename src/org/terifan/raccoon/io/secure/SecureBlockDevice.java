@@ -10,12 +10,10 @@ import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.security.cryptography.SecretKey;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
-import java.util.Random;
 import java.util.random.RandomGenerator;
 import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.security.cryptography.CipherMode;
 import static org.terifan.raccoon.util.ByteArrayUtil.*;
-import org.terifan.security.cryptography.ISAAC;
 
 
 /**

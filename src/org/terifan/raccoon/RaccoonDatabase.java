@@ -54,7 +54,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	 * @param aOpenOptions OpenOption enum constant describing the options for creating the database instance
 	 * @param aParameters parameters for the database
 	 */
-	public RaccoonDatabase(File aFile, DatabaseOpenOption aOpenOptions) throws UnsupportedVersionException
+	public RaccoonDatabase(File aFile, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
 
@@ -85,7 +85,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			fileBlockDevice = new FileBlockDevice(aFile, 4096, aOpenOptions == DatabaseOpenOption.READ_ONLY);
 
-			init(fileBlockDevice, newFile, true, aOpenOptions);
+			init(fileBlockDevice, newFile, true, aOpenOptions, aAccessCredentials);
 		}
 		catch (DatabaseException | DatabaseIOException | DatabaseClosedException e)
 		{
@@ -127,7 +127,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	 * @param aOpenOptions OpenOptions enum constant describing the options for creating the database instance
 	 * @param aParameters parameters for the database
 	 */
-	public RaccoonDatabase(IPhysicalBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions) throws UnsupportedVersionException
+	public RaccoonDatabase(IPhysicalBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
 
@@ -135,7 +135,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		boolean create = aBlockDevice.length() == 0 || aOpenOptions == DatabaseOpenOption.CREATE_NEW;
 
-		init(aBlockDevice, create, false, aOpenOptions);
+		init(aBlockDevice, create, false, aOpenOptions, aAccessCredentials);
 	}
 
 
@@ -146,7 +146,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	 * @param aOpenOptions OpenOptions enum constant describing the options for creating the database instance
 	 * @param aParameters parameters for the database
 	 */
-	public RaccoonDatabase(IManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions) throws UnsupportedVersionException
+	public RaccoonDatabase(IManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
 
@@ -154,13 +154,12 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		boolean create = aBlockDevice.length() == 0 || aOpenOptions == DatabaseOpenOption.CREATE_NEW;
 
-		init(aBlockDevice, create, false, aOpenOptions);
+		init(aBlockDevice, create, false, aOpenOptions, aAccessCredentials);
 	}
 
 
-	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption)
+	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption, AccessCredentials aAccessCredentials)
 	{
-		AccessCredentials accessCredentials = null; //getParameter(AccessCredentials.class, aOpenParams, null);
 		mCompressionParam = CompressionParam.NO_COMPRESSION; //getParameter(CompressionParam.class, aOpenParams, CompressionParam.BEST_SPEED);
 		mDatabaseOpenOption = aOpenOption;
 
@@ -168,14 +167,14 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		if (aBlockDevice instanceof IManagedBlockDevice)
 		{
-			if (accessCredentials != null)
+			if (aAccessCredentials != null)
 			{
 				throw new IllegalArgumentException("The BlockDevice provided cannot be secured.");
 			}
 
 			blockDevice = (IManagedBlockDevice)aBlockDevice;
 		}
-		else if (accessCredentials == null)
+		else if (aAccessCredentials == null)
 		{
 			Log.d("creating a managed block device");
 
@@ -190,11 +189,11 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			if (aCreate)
 			{
-				secureDevice = SecureBlockDevice.create(accessCredentials, physicalDevice);
+				secureDevice = SecureBlockDevice.create(aAccessCredentials, physicalDevice);
 			}
 			else
 			{
-				secureDevice = SecureBlockDevice.open(accessCredentials, physicalDevice);
+				secureDevice = SecureBlockDevice.open(aAccessCredentials, physicalDevice);
 			}
 
 			if (secureDevice == null)

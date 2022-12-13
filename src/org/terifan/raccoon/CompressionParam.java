@@ -8,7 +8,7 @@ import static org.terifan.raccoon.CompressionParam.Level.NONE;
 import static org.terifan.raccoon.CompressionParam.Level.ZLE;
 
 
-public final class CompressionParam implements OpenParam
+public final class CompressionParam
 {
 	public enum Level
 	{

@@ -19,9 +19,9 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	protected int mBlockSize;
 
 
-	public FileBlockDevice(File aFile, boolean aReadOnly)
+	public FileBlockDevice(File aFile)
 	{
-		this(aFile, 4096, aReadOnly);
+		this(aFile, 4096, false);
 	}
 
 
