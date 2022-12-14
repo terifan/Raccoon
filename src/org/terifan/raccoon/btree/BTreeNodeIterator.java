@@ -4,6 +4,19 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 
+// 0----0----0
+//       ----1
+//       ----2
+//      1----0
+//       ----1
+//       ----2
+// 1----0----0
+//       ----1
+//       ----2
+//      1----0
+//       ----1
+//       ----2
+
 public class BTreeNodeIterator implements Iterator<BTreeLeaf>
 {
 	private BTree mImplementation;
@@ -25,19 +38,6 @@ public class BTreeNodeIterator implements Iterator<BTreeLeaf>
 		}
 	}
 
-	// 0----0----0
-	//       ----1
-	//       ----2
-	//      1----0
-	//       ----1
-	//       ----2
-	// 1----0----0
-	//       ----1
-	//       ----2
-	//      1----0
-	//       ----1
-	//       ----2
-
 	@Override
 	public boolean hasNext()
 	{
@@ -50,9 +50,8 @@ public class BTreeNodeIterator implements Iterator<BTreeLeaf>
 			return false;
 		}
 
-		BTreeNode node = mRoot;
-
 		int level = 0;
+		BTreeNode node = mRoot;
 
 		while (node instanceof BTreeIndex)
 		{
@@ -79,7 +78,6 @@ public class BTreeNodeIterator implements Iterator<BTreeLeaf>
 			node = indexNode.getNode(mImplementation, mCounters[level]);
 
 			if (node instanceof BTreeLeaf) break;
-
 			level++;
 		}
 

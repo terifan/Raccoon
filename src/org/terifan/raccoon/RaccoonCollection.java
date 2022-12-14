@@ -3,16 +3,19 @@ package org.terifan.raccoon;
 import org.terifan.raccoon.btree.BTree;
 import org.terifan.raccoon.io.DatabaseIOException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators.AbstractSpliterator;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.btree.ArrayMapEntry;
 import org.terifan.raccoon.btree.BTreeEntryIterator;
 import org.terifan.raccoon.btree.BTreeStorage;
 import org.terifan.raccoon.storage.BlockAccessor;
-import org.terifan.raccoon.util.ByteArrayUtil;
 import org.terifan.raccoon.util.Log;
 
 
@@ -73,12 +76,7 @@ public final class RaccoonCollection implements BTreeStorage
 
 	public List<Document> list(int aLimit)
 	{
-		ArrayList<Document> list = new ArrayList<>();
-		for (Iterator<Document> it = iterator(); list.size() < aLimit && it.hasNext();)
-		{
-			list.add(it.next());
-		}
-		return list;
+		return stream().limit(aLimit).collect(Collectors.toList());
 	}
 
 
@@ -136,108 +134,108 @@ public final class RaccoonCollection implements BTreeStorage
 	}
 
 
-	public LobByteChannelImpl openBlob(Document aEntityKey, LobOpenOption aOpenOption)
-	{
-		try
-		{
-			CommitLock lock = new CommitLock();
-
-			byte[] key = getKey(aEntityKey);
-			ArrayMapEntry entry = new ArrayMapEntry(key);
-
-			byte[] header;
-
-			if (mTableImplementation.get(entry))
-			{
-				if (entry.getType() != TYPE_EXTERNAL)
-				{
-					throw new IllegalArgumentException("Not a blob");
-				}
-
-				if (aOpenOption == LobOpenOption.CREATE)
-				{
-					throw new IllegalArgumentException("A blob already exists with this key.");
-				}
-
-				if (aOpenOption == LobOpenOption.REPLACE)
-				{
-					deleteIfBlob(entry);
-
-					header = null;
-				}
-				else
-				{
-					header = entry.getValue();
-				}
-			}
-			else
-			{
-				header = null;
-			}
-
-			LobByteChannelImpl out = new LobByteChannelImpl(mDatabase, header, aOpenOption)
-			{
-				@Override
-				public void close()
-				{
-					try
-					{
-						try
-						{
-							if (isModified())
-							{
-								Log.d("write blob entry");
-
-								byte[] header = finish();
-
-//								mDatabase.aquireWriteLock();
-//								try
-//								{
-									ArrayMapEntry entry = new ArrayMapEntry(key, header, TYPE_EXTERNAL);
-									mTableImplementation.put(entry);
-//								}
-//								catch (DatabaseException e)
-//								{
-//									mDatabase.forceClose(e);
-//									throw e;
-//								}
-//								finally
-//								{
-//									mDatabase.releaseWriteLock();
-//								}
-							}
-						}
-						finally
-						{
-							synchronized (RaccoonCollection.this)
-							{
-								mCommitLocks.remove(lock);
-							}
-
-							super.close();
-						}
-					}
-					catch (IOException e)
-					{
-						throw new DatabaseIOException(e);
-					}
-				}
-			};
-
-			lock.setBlob(out);
-
-			synchronized (this)
-			{
-				mCommitLocks.add(lock);
-			}
-
-			return out;
-		}
-		catch (IOException e)
-		{
-			throw new DatabaseIOException(e);
-		}
-	}
+//	public LobByteChannelImpl openBlob(Document aEntityKey, LobOpenOption aOpenOption)
+//	{
+//		try
+//		{
+//			CommitLock lock = new CommitLock();
+//
+//			byte[] key = getKey(aEntityKey);
+//			ArrayMapEntry entry = new ArrayMapEntry(key);
+//
+//			byte[] header;
+//
+//			if (mTableImplementation.get(entry))
+//			{
+//				if (entry.getType() != TYPE_EXTERNAL)
+//				{
+//					throw new IllegalArgumentException("Not a blob");
+//				}
+//
+//				if (aOpenOption == LobOpenOption.CREATE)
+//				{
+//					throw new IllegalArgumentException("A blob already exists with this key.");
+//				}
+//
+//				if (aOpenOption == LobOpenOption.REPLACE)
+//				{
+//					deleteIfBlob(entry);
+//
+//					header = null;
+//				}
+//				else
+//				{
+//					header = entry.getValue();
+//				}
+//			}
+//			else
+//			{
+//				header = null;
+//			}
+//
+//			LobByteChannelImpl out = new LobByteChannelImpl(mDatabase, header, aOpenOption)
+//			{
+//				@Override
+//				public void close()
+//				{
+//					try
+//					{
+//						try
+//						{
+//							if (isModified())
+//							{
+//								Log.d("write blob entry");
+//
+//								byte[] header = finish();
+//
+////								mDatabase.aquireWriteLock();
+////								try
+////								{
+//									ArrayMapEntry entry = new ArrayMapEntry(key, header, TYPE_EXTERNAL);
+//									mTableImplementation.put(entry);
+////								}
+////								catch (DatabaseException e)
+////								{
+////									mDatabase.forceClose(e);
+////									throw e;
+////								}
+////								finally
+////								{
+////									mDatabase.releaseWriteLock();
+////								}
+//							}
+//						}
+//						finally
+//						{
+//							synchronized (RaccoonCollection.this)
+//							{
+//								mCommitLocks.remove(lock);
+//							}
+//
+//							super.close();
+//						}
+//					}
+//					catch (IOException e)
+//					{
+//						throw new DatabaseIOException(e);
+//					}
+//				}
+//			};
+//
+//			lock.setBlob(out);
+//
+//			synchronized (this)
+//			{
+//				mCommitLocks.add(lock);
+//			}
+//
+//			return out;
+//		}
+//		catch (IOException e)
+//		{
+//			throw new DatabaseIOException(e);
+//		}
+//	}
 
 
 	public boolean remove(Document aDocument)
@@ -257,13 +255,31 @@ public final class RaccoonCollection implements BTreeStorage
 	}
 
 
-	/**
-	 * Creates an iterator over all items in this table.
-	 */
-	public DocumentIterator iterator()
-	{
-		return new DocumentIterator(getEntryIterator());
-	}
+//	void unmarshalToObjectValues(ArrayMapEntry aEntry, TransactionGroup aTransactionGroup)
+//	{
+//		ByteArrayBuffer buffer;
+//
+//		if (aEntry.getType() == TYPE_BLOB)
+//		{
+//			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(mDatabase), aTransactionGroup, aEntry.getValue(), LobOpenOption.READ))
+//			{
+//				byte[] buf = new byte[(int)blob.size()];
+//				blob.read(ByteBuffer.wrap(buf));
+//				buffer = ByteArrayBuffer.wrap(buf);
+//			}
+//			catch (IOException e)
+//			{
+//				throw new DatabaseException(e);
+//			}
+//		}
+//		else
+//		{
+//			buffer = ByteArrayBuffer.wrap(aEntry.getValue(), false);
+//		}
+//
+//		Marshaller marshaller = mName.getMarshaller();
+//		marshaller.unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_DISCRIMINATOR | Table.FIELD_CATEGORY_VALUE);
+//	}
 
 
 	BTreeEntryIterator getEntryIterator()
@@ -344,70 +360,32 @@ public final class RaccoonCollection implements BTreeStorage
 	}
 
 
-//	void unmarshalToObjectValues(ArrayMapEntry aEntry, TransactionGroup aTransactionGroup)
-//	{
-//		ByteArrayBuffer buffer;
-//
-//		if (aEntry.getType() == TYPE_BLOB)
-//		{
-//			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(mDatabase), aTransactionGroup, aEntry.getValue(), LobOpenOption.READ))
-//			{
-//				byte[] buf = new byte[(int)blob.size()];
-//				blob.read(ByteBuffer.wrap(buf));
-//				buffer = ByteArrayBuffer.wrap(buf);
-//			}
-//			catch (IOException e)
-//			{
-//				throw new DatabaseException(e);
-//			}
-//		}
-//		else
-//		{
-//			buffer = ByteArrayBuffer.wrap(aEntry.getValue(), false);
-//		}
-//
-//		Marshaller marshaller = mName.getMarshaller();
-//		marshaller.unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_DISCRIMINATOR | Table.FIELD_CATEGORY_VALUE);
-//	}
-
-
 	void scan(ScanResult aScanResult)
 	{
 		mTableImplementation.scan(aScanResult);
 	}
 
 
-//	<T> Stream<T> stream(Database mDatabase, Lock aReadLock)
-//	{
-//		try
-//		{
-//			Stream<T> tmp = StreamSupport.stream(new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
-//			{
-//				EntityIterator entityIterator = new EntityIterator(mDatabase, TableInstance.this, mTableImplementation.iterator());
-//
-//				@Override
-//				public boolean tryAdvance(Consumer<? super T> aConsumer)
-//				{
-//					if (!entityIterator.hasNext())
-//					{
-//						aReadLock.unlock();
-//
-//						return false;
-//					}
-//					aConsumer.accept((T)entityIterator.next());
-//					return true;
-//				}
-//			}, false);
-//
-//			return tmp;
-//		}
-//		catch (Throwable e)
-//		{
-//			aReadLock.unlock();
-//
-//			throw e;
-//		}
-//	}
+	public Stream<Document> stream()
+	{
+		Stream<Document> tmp = StreamSupport.stream(new AbstractSpliterator<Document>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+		{
+			private DocumentIterator iterator = new DocumentIterator(getEntryIterator());
+
+			@Override
+			public boolean tryAdvance(Consumer<? super Document> aConsumer)
+			{
+				if (!iterator.hasNext())
+				{
+					return false;
+				}
+				aConsumer.accept(iterator.next());
+				return true;
+			}
+		}, false);
+
+		return tmp;
+	}
 
 
 	private byte[] getKey(Document aDocument)

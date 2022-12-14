@@ -64,7 +64,7 @@ public final class RaccoonDatabase implements AutoCloseable
 		{
 			if (aFile.exists())
 			{
-				if (aOpenOptions == DatabaseOpenOption.CREATE_NEW)
+				if (aOpenOptions == DatabaseOpenOption.REPLACE)
 				{
 					if (!aFile.delete())
 					{
@@ -133,7 +133,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		Assert.fail((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.length() == 0, "Block device is empty.");
 
-		boolean create = aBlockDevice.length() == 0 || aOpenOptions == DatabaseOpenOption.CREATE_NEW;
+		boolean create = aBlockDevice.length() == 0 || aOpenOptions == DatabaseOpenOption.REPLACE;
 
 		init(aBlockDevice, create, false, aOpenOptions, aAccessCredentials);
 	}
@@ -152,7 +152,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		Assert.fail((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.length() == 0, "Block device is empty.");
 
-		boolean create = aBlockDevice.length() == 0 || aOpenOptions == DatabaseOpenOption.CREATE_NEW;
+		boolean create = aBlockDevice.length() == 0 || aOpenOptions == DatabaseOpenOption.REPLACE;
 
 		init(aBlockDevice, create, false, aOpenOptions, aAccessCredentials);
 	}
@@ -296,7 +296,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			mCollections.put(aName, instance);
 
-			if (mDatabaseOpenOption == DatabaseOpenOption.CREATE_NEW)
+			if (mDatabaseOpenOption == DatabaseOpenOption.REPLACE)
 			{
 				instance.clear();
 			}

@@ -25,13 +25,13 @@ public class TestDocumentDB
 			AccessCredentials ac = new AccessCredentials("password");
 //			AccessCredentials ac = null;
 
-			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE_NEW, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.REPLACE, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.CREATE_NEW))
 			{
 				RaccoonCollection collection = db.getCollection("people");
-				for (int i = 0, z=0; i < 1; i++)
+				for (int i = 0, z=0; i < 10; i++)
 				{
-					for (int j = 0; j < 2; j++,z++)
+					for (int j = 0; j < 10; j++,z++)
 					{
 						collection.save(new Document().putNumber("_id", z).putString("name", "olle-"+i+"-"+j));
 					}
@@ -63,7 +63,8 @@ public class TestDocumentDB
 //				List<Document> docs = db.getCollection("people").list(100);
 //				System.out.println(docs);
 
-				db.getCollection("people").iterator().forEachRemaining(e->System.out.println(e));
+				System.out.println(db.getCollection("people").stream().count());
+//				db.getCollection("people").iterator().forEachRemaining(e->System.out.println(e));
 			}
 		}
 		catch (Exception e)
