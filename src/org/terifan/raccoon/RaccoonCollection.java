@@ -75,7 +75,7 @@ public final class RaccoonCollection implements BTreeStorage
 		{
 			type = TYPE_EXTERNAL;
 
-			try (LobByteChannelImpl blob = new LobByteChannelImpl(mDatabase, null, LobOpenOption.WRITE))
+			try (LobByteChannel blob = new LobByteChannel(mDatabase, null, LobOpenOption.WRITE))
 			{
 				value = blob.writeAllBytes(value).finish();
 			}
@@ -225,7 +225,7 @@ public final class RaccoonCollection implements BTreeStorage
 	{
 		if (aEntry != null && aEntry.getType() == TYPE_EXTERNAL)
 		{
-			try (LobByteChannelImpl blob = new LobByteChannelImpl(mDatabase, aEntry.getValue(), LobOpenOption.REPLACE))
+			try (LobByteChannel blob = new LobByteChannel(mDatabase, aEntry.getValue(), LobOpenOption.REPLACE))
 			{
 			}
 			catch (IOException e)
@@ -254,7 +254,7 @@ public final class RaccoonCollection implements BTreeStorage
 
 		if (aEntry.getType() == TYPE_EXTERNAL)
 		{
-			try (LobByteChannelImpl blob = new LobByteChannelImpl(mDatabase, aEntry.getValue(), LobOpenOption.READ))
+			try (LobByteChannel blob = new LobByteChannel(mDatabase, aEntry.getValue(), LobOpenOption.READ))
 			{
 				buffer = blob.readAllBytes();
 			}

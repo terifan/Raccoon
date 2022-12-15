@@ -803,7 +803,7 @@ public final class RaccoonDatabase implements AutoCloseable
 //		{
 			for (RaccoonCollection instance : mCollections.values())
 			{
-				String s = new BTreeScanner().integrityCheck(instance.getImplementation());
+				String s = instance.getImplementation().integrityCheck();
 				if (s != null)
 				{
 					return s;
