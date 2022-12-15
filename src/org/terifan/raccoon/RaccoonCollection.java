@@ -1,7 +1,5 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.btree.BTree;
-import org.terifan.raccoon.io.DatabaseIOException;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -12,9 +10,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.terifan.bundle.Document;
-import org.terifan.raccoon.btree.ArrayMapEntry;
-import org.terifan.raccoon.btree.BTreeEntryIterator;
-import org.terifan.raccoon.btree.BTreeStorage;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Log;
 
@@ -25,26 +20,16 @@ public final class RaccoonCollection implements BTreeStorage
 	public final static byte TYPE_DOCUMENT = 1;
 	public final static byte TYPE_EXTERNAL = 2;
 
-	private final RaccoonDatabase mDatabase;
-	private final HashSet<CommitLock> mCommitLocks;
-	private final BTree mTableImplementation;
-	private final Document mConfiguration;
+	private RaccoonDatabase mDatabase;
+	private HashSet<CommitLock> mCommitLocks;
+	private BTree mImplementation;
 
 
 	RaccoonCollection(RaccoonDatabase aDatabase, Document aConfiguration)
 	{
-		mCommitLocks = new HashSet<>();
-
-		mConfiguration = aConfiguration;
 		mDatabase = aDatabase;
-
-		mTableImplementation = new BTree((BTreeStorage)this, mConfiguration);
-	}
-
-
-	public boolean tryGet(Document aDocument)
-	{
-		return get(aDocument) != null;
+		mCommitLocks = new HashSet<>();
+		mImplementation = new BTree(this, aConfiguration);
 	}
 
 
@@ -55,14 +40,11 @@ public final class RaccoonCollection implements BTreeStorage
 
 		try
 		{
-			ArrayMapEntry entry = new ArrayMapEntry(getKey(aDocument));
+			ArrayMapEntry entry = new ArrayMapEntry(marshalKey(aDocument));
 
-			if (mTableImplementation.get(entry))
+			if (mImplementation.get(entry))
 			{
-				return Document.unmarshal(entry.getValue());
-
-//				TransactionGroup tx = mDatabase.getTransactionGroup();
-//				unmarshalToObjectValues(mDatabase, entry, aDocument, tx);
+				return unmarshalDocument(entry);
 			}
 		}
 		finally
@@ -74,225 +56,77 @@ public final class RaccoonCollection implements BTreeStorage
 	}
 
 
-	public List<Document> list(int aLimit)
+	public boolean tryGet(Document aDocument)
 	{
-		return stream().limit(aLimit).collect(Collectors.toList());
+		return get(aDocument) != null;
 	}
 
 
-	/**
-	 * Saves an entity.
-	 *
-	 * @return
-	 * true if this table did not already contain the specified entity
-	 */
 	public boolean save(Document aDocument)
 	{
 		Log.i("save %s", aDocument);
 		Log.inc();
 
-		byte[] key = getKey(aDocument);
+		byte[] key = marshalKey(aDocument);
 		byte[] value = aDocument.marshal();
 		byte type = TYPE_DOCUMENT;
 
-//		if (key.length + value.length + 1 > mConfiguration.getInt("entrySizeLimit"))
-//		{
-//			type = TYPE_EXTERNAL;
-//
-//			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(mDatabase), mDatabase.getTransactionGroup(), null, LobOpenOption.WRITE))
-//			{
-//				blob.write(ByteBuffer.wrap(value));
-//				value = blob.finish();
-//			}
-//			catch (IOException e)
-//			{
-//				throw new DatabaseException(e);
-//			}
-//		}
+		if (key.length + value.length + 1 > mImplementation.getConfiguration().getInt("entrySizeLimit"))
+		{
+			type = TYPE_EXTERNAL;
+
+			try (LobByteChannelImpl blob = new LobByteChannelImpl(mDatabase, null, LobOpenOption.WRITE))
+			{
+				value = blob.writeAllBytes(value).finish();
+			}
+			catch (IOException e)
+			{
+				throw new DatabaseException(e);
+			}
+		}
 
 		ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
-
-		ArrayMapEntry oldEntry = mTableImplementation.put(entry);
-
-		if (oldEntry != null)
-		{
-			deleteIfBlob(oldEntry);
-		}
+		ArrayMapEntry prev = mImplementation.put(entry);
+		deleteIfBlob(prev);
 
 		Log.dec();
 
-		return oldEntry == null;
+		return prev == null;
 	}
-
-
-	private void deleteIfBlob(ArrayMapEntry aEntry)
-	{
-		if (aEntry.getType() == TYPE_EXTERNAL)
-		{
-			LobByteChannelImpl.deleteBlob(mDatabase.getBlockAccessor(), aEntry.getValue());
-		}
-	}
-
-
-//	public LobByteChannelImpl openBlob(Document aEntityKey, LobOpenOption aOpenOption)
-//	{
-//		try
-//		{
-//			CommitLock lock = new CommitLock();
-//
-//			byte[] key = getKey(aEntityKey);
-//			ArrayMapEntry entry = new ArrayMapEntry(key);
-//
-//			byte[] header;
-//
-//			if (mTableImplementation.get(entry))
-//			{
-//				if (entry.getType() != TYPE_EXTERNAL)
-//				{
-//					throw new IllegalArgumentException("Not a blob");
-//				}
-//
-//				if (aOpenOption == LobOpenOption.CREATE)
-//				{
-//					throw new IllegalArgumentException("A blob already exists with this key.");
-//				}
-//
-//				if (aOpenOption == LobOpenOption.REPLACE)
-//				{
-//					deleteIfBlob(entry);
-//
-//					header = null;
-//				}
-//				else
-//				{
-//					header = entry.getValue();
-//				}
-//			}
-//			else
-//			{
-//				header = null;
-//			}
-//
-//			LobByteChannelImpl out = new LobByteChannelImpl(mDatabase, header, aOpenOption)
-//			{
-//				@Override
-//				public void close()
-//				{
-//					try
-//					{
-//						try
-//						{
-//							if (isModified())
-//							{
-//								Log.d("write blob entry");
-//
-//								byte[] header = finish();
-//
-////								mDatabase.aquireWriteLock();
-////								try
-////								{
-//									ArrayMapEntry entry = new ArrayMapEntry(key, header, TYPE_EXTERNAL);
-//									mTableImplementation.put(entry);
-////								}
-////								catch (DatabaseException e)
-////								{
-////									mDatabase.forceClose(e);
-////									throw e;
-////								}
-////								finally
-////								{
-////									mDatabase.releaseWriteLock();
-////								}
-//							}
-//						}
-//						finally
-//						{
-//							synchronized (RaccoonCollection.this)
-//							{
-//								mCommitLocks.remove(lock);
-//							}
-//
-//							super.close();
-//						}
-//					}
-//					catch (IOException e)
-//					{
-//						throw new DatabaseIOException(e);
-//					}
-//				}
-//			};
-//
-//			lock.setBlob(out);
-//
-//			synchronized (this)
-//			{
-//				mCommitLocks.add(lock);
-//			}
-//
-//			return out;
-//		}
-//		catch (IOException e)
-//		{
-//			throw new DatabaseIOException(e);
-//		}
-//	}
 
 
 	public boolean remove(Document aDocument)
 	{
-		ArrayMapEntry entry = new ArrayMapEntry(getKey(aDocument));
+		ArrayMapEntry entry = new ArrayMapEntry(marshalKey(aDocument));
+		ArrayMapEntry prev = mImplementation.remove(entry);
+		deleteIfBlob(prev);
 
-		ArrayMapEntry oldEntry = mTableImplementation.remove(entry);
-
-		if (oldEntry != null)
-		{
-//			deleteIfBlob(mDatabase, oldEntry);
-
-			return true;
-		}
-
-		return false;
+		return prev != null;
 	}
 
 
-//	void unmarshalToObjectValues(ArrayMapEntry aEntry, TransactionGroup aTransactionGroup)
-//	{
-//		ByteArrayBuffer buffer;
-//
-//		if (aEntry.getType() == TYPE_BLOB)
-//		{
-//			try (LobByteChannelImpl blob = new LobByteChannelImpl(getBlockAccessor(mDatabase), aTransactionGroup, aEntry.getValue(), LobOpenOption.READ))
-//			{
-//				byte[] buf = new byte[(int)blob.size()];
-//				blob.read(ByteBuffer.wrap(buf));
-//				buffer = ByteArrayBuffer.wrap(buf);
-//			}
-//			catch (IOException e)
-//			{
-//				throw new DatabaseException(e);
-//			}
-//		}
-//		else
-//		{
-//			buffer = ByteArrayBuffer.wrap(aEntry.getValue(), false);
-//		}
-//
-//		Marshaller marshaller = mName.getMarshaller();
-//		marshaller.unmarshal(buffer, aOutput, Table.FIELD_CATEGORY_DISCRIMINATOR | Table.FIELD_CATEGORY_VALUE);
-//	}
-
-
-	BTreeEntryIterator getEntryIterator()
+	public long size()
 	{
-		return mTableImplementation.iterator();
+		return mImplementation.size();
+	}
+
+
+	public List<Document> list()
+	{
+		return stream().collect(Collectors.toList());
 	}
 
 
 	public void clear()
 	{
-		getEntryIterator().forEachRemaining(entry -> {
-			deleteIfBlob(entry);
-			mTableImplementation.remove(entry);
+		BTree prev = mImplementation;
+
+		mImplementation = new BTree(this, mImplementation.getConfiguration().clone().remove("treeRoot"));
+
+		new BTreeNodeVisitor().visitAll(prev, node ->
+		{
+			node.mMap.forEach(this::deleteIfBlob);
+			prev.freeBlock(node.mBlockPointer);
 		});
 	}
 
@@ -300,19 +134,19 @@ public final class RaccoonCollection implements BTreeStorage
 	@Override
 	public void close()
 	{
-		mTableImplementation.close();
+		mImplementation.close();
 	}
 
 
 	boolean isModified()
 	{
-		return mTableImplementation.isChanged();
+		return mImplementation.isChanged();
 	}
 
 
 	long flush()
 	{
-		return mTableImplementation.flush();
+		return mImplementation.flush();
 	}
 
 
@@ -332,37 +166,13 @@ public final class RaccoonCollection implements BTreeStorage
 			}
 		}
 
-		return mTableImplementation.commit();
-	}
-
-
-	public Document getConfiguration()
-	{
-		return mConfiguration;
+		return mImplementation.commit();
 	}
 
 
 	void rollback()
 	{
-		mTableImplementation.rollback();
-	}
-
-
-	int size()
-	{
-		return mTableImplementation.size();
-	}
-
-
-	String integrityCheck()
-	{
-		return mTableImplementation.integrityCheck();
-	}
-
-
-	void scan(ScanResult aScanResult)
-	{
-		mTableImplementation.scan(aScanResult);
+		mImplementation.rollback();
 	}
 
 
@@ -370,7 +180,7 @@ public final class RaccoonCollection implements BTreeStorage
 	{
 		Stream<Document> tmp = StreamSupport.stream(new AbstractSpliterator<Document>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
 		{
-			private DocumentIterator iterator = new DocumentIterator(getEntryIterator());
+			private DocumentIterator iterator = new DocumentIterator(RaccoonCollection.this);
 
 			@Override
 			public boolean tryAdvance(Consumer<? super Document> aConsumer)
@@ -388,15 +198,6 @@ public final class RaccoonCollection implements BTreeStorage
 	}
 
 
-	private byte[] getKey(Document aDocument)
-	{
-//		byte[] buf = new byte[8];
-//		ByteArrayUtil.putInt64(buf, 0, aDocument.getNumber("_id").longValue());
-		byte[] buf = String.format("%08d", aDocument.getNumber("_id").longValue()).getBytes();
-		return buf;
-	}
-
-
 	@Override
 	public BlockAccessor getBlockAccessor()
 	{
@@ -411,8 +212,62 @@ public final class RaccoonCollection implements BTreeStorage
 	}
 
 
-	public BTree getTableImplementation()
+	private byte[] marshalKey(Document aDocument)
 	{
-		return mTableImplementation;
+//		byte[] buf = new byte[8];
+//		ByteArrayUtil.putInt64(buf, 0, aDocument.getNumber("_id").longValue());
+		byte[] buf = String.format("%08d", aDocument.getNumber("_id").longValue()).getBytes();
+		return buf;
+	}
+
+
+	private void deleteIfBlob(ArrayMapEntry aEntry)
+	{
+		if (aEntry != null && aEntry.getType() == TYPE_EXTERNAL)
+		{
+			try (LobByteChannelImpl blob = new LobByteChannelImpl(mDatabase, aEntry.getValue(), LobOpenOption.REPLACE))
+			{
+			}
+			catch (IOException e)
+			{
+				throw new DatabaseException(e);
+			}
+		}
+	}
+
+
+	public BTree getImplementation()
+	{
+		return mImplementation;
+	}
+
+
+	Document getConfiguration()
+	{
+		return mImplementation.getConfiguration();
+	}
+
+
+	Document unmarshalDocument(ArrayMapEntry aEntry)
+	{
+		byte[] buffer;
+
+		if (aEntry.getType() == TYPE_EXTERNAL)
+		{
+			try (LobByteChannelImpl blob = new LobByteChannelImpl(mDatabase, aEntry.getValue(), LobOpenOption.READ))
+			{
+				buffer = blob.readAllBytes();
+			}
+			catch (IOException e)
+			{
+				throw new DatabaseException(e);
+			}
+		}
+		else
+		{
+			buffer = aEntry.getValue();
+		}
+
+		return Document.unmarshal(buffer);
 	}
 }

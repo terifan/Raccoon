@@ -1,14 +1,14 @@
-package org.terifan.raccoon.btree;
+package org.terifan.raccoon;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import org.terifan.raccoon.btree.ArrayMap;
-import org.terifan.raccoon.btree.ArrayMap.NearResult;
-import org.terifan.raccoon.btree.ArrayMap.PutResult;
-import org.terifan.raccoon.btree.ArrayMapEntry;
+import org.terifan.raccoon.ArrayMap;
+import org.terifan.raccoon.ArrayMap.NearResult;
+import org.terifan.raccoon.ArrayMap.PutResult;
+import org.terifan.raccoon.ArrayMapEntry;
 import org.terifan.raccoon.util.Result;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;

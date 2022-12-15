@@ -1,14 +1,13 @@
-package org.terifan.raccoon.btree;
+package org.terifan.raccoon;
 
 import java.util.Arrays;
 import java.util.Map.Entry;
-import org.terifan.raccoon.BlockType;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
-import org.terifan.raccoon.btree.ArrayMap.PutResult;
+import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Result;
-import static org.terifan.raccoon.btree.BTree.BLOCKPOINTER_PLACEHOLDER;
+import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import org.terifan.raccoon.util.Console;
 
 
@@ -50,7 +49,7 @@ public class BTreeIndex extends BTreeNode
 			mMap.loadNearestIndexEntry(nearestEntry);
 			nearestNode = getNode(aImplementation, nearestEntry);
 
-			if (mLevel == 1 ? nearestNode.mMap.getCapacity() > aImplementation.mConfiguration.getInt("leafSize") || nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > aImplementation.mConfiguration.getInt("indexSize"))
+			if (mLevel == 1 ? nearestNode.mMap.getCapacity() > aImplementation.getConfiguration().getInt("leafSize") || nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > aImplementation.getConfiguration().getInt("indexSize"))
 			{
 				MarshalledKey leftKey = new MarshalledKey(nearestEntry.getKey());
 
@@ -89,7 +88,7 @@ public class BTreeIndex extends BTreeNode
 		BTreeNode rghtChild = index + 1 == mMap.size() ? null : getNode(aImplementation, index + 1);
 
 		int keyLimit = mLevel == 1 ? 0 : 1;
-		int sizeLimit = mLevel == 1 ? aImplementation.mConfiguration.getInt("leafSize") : aImplementation.mConfiguration.getInt("indexSize");
+		int sizeLimit = mLevel == 1 ? aImplementation.getConfiguration().getInt("leafSize") : aImplementation.getConfiguration().getInt("indexSize");
 
 		if (leftChild != null && (curntChld.mMap.size() + leftChild.mMap.size()) < sizeLimit || rghtChild != null && (curntChld.mMap.size() + rghtChild.mMap.size()) < sizeLimit)
 		{
@@ -204,7 +203,7 @@ public class BTreeIndex extends BTreeNode
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(aImplementation.mConfiguration.getInt("indexSize"));
+		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("indexSize"));
 
 		BTreeIndex left = new BTreeIndex(mLevel);
 		left.mMap = maps[0];
@@ -252,7 +251,7 @@ public class BTreeIndex extends BTreeNode
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(aImplementation.mConfiguration.getInt("indexSize"));
+		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("indexSize"));
 
 		BTreeIndex left = new BTreeIndex(mLevel);
 		BTreeIndex right = new BTreeIndex(mLevel);
@@ -294,7 +293,7 @@ public class BTreeIndex extends BTreeNode
 
 		BTreeIndex index = new BTreeIndex(mLevel + 1);
 		index.mModified = true;
-		index.mMap = new ArrayMap(aImplementation.mConfiguration.getInt("indexSize"));
+		index.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("indexSize"));
 		index.mMap.insert(new ArrayMapEntry(keyLeft.array(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
 		index.mMap.insert(new ArrayMapEntry(keyRight.array(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
 		index.mChildNodes.put(keyLeft, left);
@@ -313,7 +312,7 @@ public class BTreeIndex extends BTreeNode
 	{
 		BTreeIndex index = new BTreeIndex(mLevel - 1);
 		index.mModified = true;
-		index.mMap = new ArrayMap(aImplementation.mConfiguration.getInt("indexSize"));
+		index.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("indexSize"));
 
 		for (int i = 0; i < mMap.size(); i++)
 		{

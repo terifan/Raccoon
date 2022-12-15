@@ -57,14 +57,15 @@ public class TestDocumentDB
 			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN))
 			{
-//				Document doc = db.getCollection("people").get(new Document().putNumber("_id", 0));
-//				System.out.println(doc);
+				Document doc = db.getCollection("people").get(new Document().putNumber("_id", 0));
+				System.out.println(doc);
 
-//				List<Document> docs = db.getCollection("people").list(100);
-//				System.out.println(docs);
+				List<Document> docs = db.getCollection("people").list();
+				System.out.println(docs);
 
-				System.out.println(db.getCollection("people").stream().count());
-//				db.getCollection("people").iterator().forEachRemaining(e->System.out.println(e));
+				System.out.println(db.getCollection("people").size());
+
+				db.getCollection("people").stream().forEach(e -> System.out.println(e));
 			}
 		}
 		catch (Exception e)

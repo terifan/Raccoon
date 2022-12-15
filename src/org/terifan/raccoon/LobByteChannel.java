@@ -31,4 +31,7 @@ public interface LobByteChannel extends SeekableByteChannel
 
 
 	boolean isModified();
+
+
+	void delete();
 }

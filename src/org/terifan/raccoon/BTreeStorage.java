@@ -1,4 +1,4 @@
-package org.terifan.raccoon.btree;
+package org.terifan.raccoon;
 
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;

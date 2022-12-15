@@ -1,5 +1,9 @@
-package org.terifan.raccoon.btree;
+package org.terifan.raccoon;
 
+import org.terifan.raccoon.ArrayMapEntry;
+import org.terifan.raccoon.BTree;
+import org.terifan.raccoon.BTreeNodeIterator;
+import org.terifan.raccoon.BTreeStorage;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -10,8 +14,8 @@ import java.util.stream.IntStream;
 import org.terifan.bundle.Document;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
 import org.testng.annotations.Test;
-import static org.terifan.raccoon.btree._Tools.createStorage;
-import static org.terifan.raccoon.btree._Tools.showTree;
+import static org.terifan.raccoon._Tools.createStorage;
+import static org.terifan.raccoon._Tools.showTree;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 
@@ -44,7 +48,7 @@ public class BTreeEntryIteratorNGTest
 
 		try (BTreeStorage storage = createStorage(device); BTree tree = new BTree(storage, storage.getApplicationHeader().getBundle("conf")))
 		{
-			tree.iterator().forEachRemaining(e -> System.out.println(e));
+			new BTreeNodeIterator(tree).forEachRemaining(e -> System.out.println(e));
 
 //			for (int i = 0; i < 100; i++)
 //			{

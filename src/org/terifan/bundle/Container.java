@@ -22,7 +22,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 
-public abstract class Container<K, R> implements Externalizable
+public abstract class Container<K, R> implements Externalizable, Cloneable
 {
 	private final static long serialVersionUID = 1L;
 
@@ -890,4 +890,14 @@ public abstract class Container<K, R> implements Externalizable
 
 
 	public abstract Set<K> keySet();
+
+
+	/**
+	 * Performs a deep clone of this Container.
+	 */
+	@Override
+	public R clone()
+	{
+		return unmarshal(marshal());
+	}
 }

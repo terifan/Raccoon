@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 
-public class Array extends Container<Integer, Array> implements Externalizable, Iterable
+public class Array extends Container<Integer, Array> implements Externalizable, Iterable, Cloneable
 {
 	private final static long serialVersionUID = 1L;
 

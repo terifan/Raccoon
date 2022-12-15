@@ -2,25 +2,34 @@ package org.terifan.raccoon;
 
 import java.util.Iterator;
 import org.terifan.bundle.Document;
-import org.terifan.raccoon.btree.BTreeEntryIterator;
 import org.terifan.raccoon.util.Log;
 
 
-final public class DocumentIterator implements Iterator<Document>
+public final class DocumentIterator implements Iterator<Document>
 {
-	private final BTreeEntryIterator mEntryIterator;
+	private RaccoonCollection mCollection;
+	private BTreeEntryIterator mEntryIterator;
 
 
-	public DocumentIterator(BTreeEntryIterator aIterator)
+	public DocumentIterator(RaccoonCollection aCollection)
 	{
-		mEntryIterator = aIterator;
+		mCollection = aCollection;
+		mEntryIterator = new BTreeEntryIterator(aCollection.getImplementation());
 	}
 
 
 	@Override
 	public boolean hasNext()
 	{
-		return mEntryIterator.hasNext();
+		boolean hasMore = mEntryIterator.hasNext();
+
+		if (!hasMore)
+		{
+			mCollection = null;
+			mEntryIterator = null;
+		}
+
+		return hasMore;
 	}
 
 
@@ -32,7 +41,7 @@ final public class DocumentIterator implements Iterator<Document>
 
 		try
 		{
-			return Document.unmarshal(mEntryIterator.next().getValue());
+			return mCollection.unmarshalDocument(mEntryIterator.next());
 		}
 		finally
 		{

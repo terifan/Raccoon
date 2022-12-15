@@ -1,16 +1,16 @@
-package org.terifan.raccoon.btree;
+package org.terifan.raccoon;
 
-import org.terifan.raccoon.btree.ArrayMap.PutResult;
+import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.Result;
 
 
-abstract class BTreeNode
+public abstract class BTreeNode
 {
 	final int mLevel;
 
 	BlockPointer mBlockPointer;
-	ArrayMap mMap;
+	public ArrayMap mMap;
 	boolean mModified;
 
 

@@ -1,10 +1,12 @@
-package org.terifan.raccoon.btree;
+package org.terifan.raccoon;
 
+import org.terifan.raccoon.BTreeScanner;
+import org.terifan.raccoon.BTree;
+import org.terifan.raccoon.BTreeStorage;
 import java.util.function.Supplier;
 import javax.swing.JFrame;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.ScanResult;
-import org.terifan.raccoon.io.IBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
@@ -14,7 +16,7 @@ import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.treegraph.HorizontalLayout;
 import org.terifan.treegraph.TreeGraph;
 import org.terifan.treegraph.util.VerticalImageFrame;
- 
+
 
 public class _Tools
 {
@@ -33,7 +35,7 @@ public class _Tools
 		{
 			mFrame.remove(mGraph);
 		}
-		mGraph = new TreeGraph(new HorizontalLayout(), aTree.scan(new ScanResult()).getDescription());
+		mGraph = new TreeGraph(new HorizontalLayout(), new BTreeScanner().scan(aTree, new ScanResult()).getDescription());
 		mFrame.add(mGraph);
 	}
 

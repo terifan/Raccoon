@@ -1,7 +1,7 @@
-package org.terifan.raccoon.btree;
+package org.terifan.raccoon;
 
 import java.util.Iterator;
-import org.terifan.raccoon.btree.ArrayMap.MapEntryIterator;
+import org.terifan.raccoon.ArrayMap.MapEntryIterator;
 
 
 public class BTreeEntryIterator implements Iterator<ArrayMapEntry>
@@ -10,9 +10,9 @@ public class BTreeEntryIterator implements Iterator<ArrayMapEntry>
 	private MapEntryIterator mMapIterator;
 
 
-	BTreeEntryIterator(BTree aTree)
+	public BTreeEntryIterator(BTree aTree)
 	{
-		mNodeIterator = new BTreeNodeIterator(aTree, aTree.getRoot());
+		mNodeIterator = new BTreeNodeIterator(aTree);
 	}
 
 
@@ -23,6 +23,8 @@ public class BTreeEntryIterator implements Iterator<ArrayMapEntry>
 		{
 			if (!mNodeIterator.hasNext())
 			{
+				mMapIterator = null;
+				mNodeIterator = null;
 				return false;
 			}
 
@@ -32,7 +34,16 @@ public class BTreeEntryIterator implements Iterator<ArrayMapEntry>
 		if (!mMapIterator.hasNext())
 		{
 			mMapIterator = null;
-			return hasNext();
+
+			boolean hasNext = hasNext();
+
+			if (!hasNext)
+			{
+				mMapIterator = null;
+				mNodeIterator = null;
+			}
+
+			return hasNext;
 		}
 
 		return true;

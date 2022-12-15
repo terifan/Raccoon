@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.terifan.bundle.Document;
-import org.terifan.raccoon.btree.BTreeStorage;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
@@ -804,7 +803,7 @@ public final class RaccoonDatabase implements AutoCloseable
 //		{
 			for (RaccoonCollection instance : mCollections.values())
 			{
-				String s = instance.integrityCheck();
+				String s = new BTreeScanner().integrityCheck(instance.getImplementation());
 				if (s != null)
 				{
 					return s;

@@ -46,16 +46,22 @@ class LobByteChannelImpl implements LobByteChannel
 	LobByteChannelImpl(RaccoonDatabase aDatabase, byte[] aHeader, LobOpenOption aOpenOption) throws IOException
 	{
 		mDatabase = aDatabase;
-		mBlockAccessor = aDatabase.getBlockAccessor();
 		mHeader = aHeader;
+
+		mBlockAccessor = mDatabase.getBlockAccessor();
+
+		if (aOpenOption == LobOpenOption.REPLACE && aHeader != null)
+		{
+			delete();
+		}
 
 		mBuffer = new byte[MAX_BLOCK_SIZE];
 		mPendingBlockPointsers = new HashMap<>();
 		mEmptyBlocks = new HashSet<>();
 
-		if (aHeader != null)
+		if (mHeader != null)
 		{
-			mPersistedPointerBuffer = ByteArrayBuffer.wrap(aHeader);
+			mPersistedPointerBuffer = ByteArrayBuffer.wrap(mHeader);
 			mTotalSize = mPersistedPointerBuffer.readInt64();
 
 			BlockPointer bp = new BlockPointer();
@@ -393,13 +399,14 @@ class LobByteChannelImpl implements LobByteChannel
 	}
 
 
-	static void deleteBlob(BlockAccessor aBlockAccessor, byte[] aHeader)
+	@Override
+	public void delete()
 	{
-		freeBlocks(aBlockAccessor, ByteArrayBuffer.wrap(aHeader).position(HEADER_SIZE));
+		freeBlocks(ByteArrayBuffer.wrap(mHeader).position(HEADER_SIZE));
 	}
 
 
-	private static void freeBlocks(BlockAccessor aBlockAccessor, ByteArrayBuffer aBuffer)
+	private void freeBlocks(ByteArrayBuffer aBuffer)
 	{
 		while (aBuffer.remaining() > 0)
 		{
@@ -407,10 +414,10 @@ class LobByteChannelImpl implements LobByteChannel
 
 			if (bp.getBlockType() == BlockType.BLOB_INDEX)
 			{
-				freeBlocks(aBlockAccessor, ByteArrayBuffer.wrap(aBlockAccessor.readBlock(bp)).limit(bp.getLogicalSize()).position(HEADER_SIZE));
+				freeBlocks(ByteArrayBuffer.wrap(mBlockAccessor.readBlock(bp)).limit(bp.getLogicalSize()).position(HEADER_SIZE));
 			}
 
-			aBlockAccessor.freeBlock(bp);
+			mBlockAccessor.freeBlock(bp);
 		}
 	}
 

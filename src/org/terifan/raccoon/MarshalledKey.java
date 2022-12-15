@@ -1,16 +1,11 @@
-package org.terifan.raccoon.btree;
+package org.terifan.raccoon;
 
 import java.util.Arrays;
 
 
-public class MarshalledKey implements Comparable<MarshalledKey>
+class MarshalledKey implements Comparable<MarshalledKey>
 {
 	private byte[] mBuffer;
-
-
-	private MarshalledKey()
-	{
-	}
 
 
 	public MarshalledKey(byte[] aBuffer)

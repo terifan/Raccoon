@@ -18,7 +18,7 @@ import java.util.function.Function;
  * Note: the hashCode and equals methods are order independent even though the Bundle maintains elements in the inserted order.
  * </p>
  */
-public class Document extends Container<String, Document> implements Externalizable
+public class Document extends Container<String, Document> implements Externalizable, Cloneable
 {
 	private final static long serialVersionUID = 1L;
 

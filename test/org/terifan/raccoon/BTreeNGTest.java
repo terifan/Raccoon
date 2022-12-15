@@ -1,8 +1,11 @@
-package org.terifan.raccoon.btree;
+package org.terifan.raccoon;
 
+import org.terifan.raccoon.ArrayMapEntry;
+import org.terifan.raccoon.BTree;
+import org.terifan.raccoon.BTreeStorage;
 import org.terifan.bundle.Document;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
-import static org.terifan.raccoon.btree._Tools.createSecureStorage;
+import static org.terifan.raccoon._Tools.createSecureStorage;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import static org.testng.Assert.*;

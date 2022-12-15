@@ -1,6 +1,8 @@
 package test;
 
-import org.terifan.raccoon.btree.*;
+import org.terifan.raccoon.BTreeStorage;
+import org.terifan.raccoon.BTree;
+import org.terifan.raccoon.BTreeScanner;
 import java.util.function.Supplier;
 import javax.swing.JFrame;
 import org.terifan.raccoon.CompressionParam;
@@ -34,7 +36,7 @@ public class _Tools
 		{
 			mFrame.remove(mGraph);
 		}
-		mGraph = new TreeGraph(new HorizontalLayout(), aTree.scan(new ScanResult()).getDescription());
+		mGraph = new TreeGraph(new HorizontalLayout(), new BTreeScanner().scan(aTree, new ScanResult()).getDescription());
 		mFrame.add(mGraph);
 	}
 
