@@ -48,7 +48,7 @@ public class BTreeEntryIteratorNGTest
 
 		try (BTreeStorage storage = createStorage(device); BTree tree = new BTree(storage, storage.getApplicationHeader().getBundle("conf")))
 		{
-			new BTreeNodeIterator(tree).forEachRemaining(e -> System.out.println(e));
+//			new BTreeNodeIterator(tree).forEachRemaining(e -> System.out.println(e));
 
 //			for (int i = 0; i < 100; i++)
 //			{

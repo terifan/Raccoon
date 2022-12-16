@@ -232,9 +232,9 @@ public final class RaccoonDatabase implements AutoCloseable
 			mApplicationHeader.readFromDevice(mBlockDevice);
 			mReadOnly = mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY;
 
-			for (String name : mApplicationHeader.list())
+			for (String name : mApplicationHeader.listCollections())
 			{
-				Document conf = mApplicationHeader.get(name);
+				Document conf = mApplicationHeader.getCollection(name);
 
 				if (conf == null)
 				{
@@ -396,7 +396,7 @@ public final class RaccoonDatabase implements AutoCloseable
 				{
 					Log.i("table updated '%s'", entry.getKey());
 
-					mApplicationHeader.put(entry.getKey(), entry.getValue().getConfiguration());
+					mApplicationHeader.putCollection(entry.getKey(), entry.getValue().getConfiguration());
 					mModified = true;
 
 					System.out.println(entry.getValue().getConfiguration());
@@ -1021,7 +1021,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	public long getTransaction()
 	{
-		return mApplicationHeader.getTransaction();
+		return mApplicationHeader.getTransactionId();
 	}
 
 

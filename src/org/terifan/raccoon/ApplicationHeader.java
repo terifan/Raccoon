@@ -17,12 +17,18 @@ public class ApplicationHeader
 	public ApplicationHeader()
 	{
 		mMetadata = new Document()
+			.putString("tenant", "raccoondatabase")
 			.putBundle("collections", new Document());
 	}
 
 
 	public void readFromDevice(IManagedBlockDevice aBlockDevice)
 	{
+		if (!"raccoondatabase".equals(aBlockDevice.getApplicationHeader().getString("tenant")))
+		{
+			throw new DatabaseException("Not a RaccoonDatabase file");
+		}
+
 		mBlockPointer = new BlockPointer().unmarshal(aBlockDevice.getApplicationHeader().getBinary("root"));
 
 		byte[] buffer = new BlockAccessor(aBlockDevice, CompressionParam.BEST_COMPRESSION).readBlock(mBlockPointer);
@@ -49,21 +55,21 @@ public class ApplicationHeader
 	}
 
 
-	ArrayList<String> list()
+	ArrayList<String> listCollections()
 	{
 		return new ArrayList<>(mMetadata.getBundle("collections").keySet());
 	}
 
 
-	Document get(String aCollectionName)
+	Document getCollection(String aName)
 	{
-		return mMetadata.getBundle("collections").getBundle(aCollectionName);
+		return mMetadata.getBundle("collections").getBundle(aName);
 	}
 
 
-	void put(String aCollectionName, Document aConfiguration)
+	void putCollection(String aName, Document aConfiguration)
 	{
-		mMetadata.getBundle("collections").putBundle(aCollectionName, aConfiguration);
+		mMetadata.getBundle("collections").putBundle(aName, aConfiguration);
 	}
 
 
@@ -73,7 +79,7 @@ public class ApplicationHeader
 	}
 
 
-	public synchronized long getTransaction()
+	public synchronized long getTransactionId()
 	{
 		return mTransactionId;
 	}

@@ -139,27 +139,27 @@ public class Console
 	{
 		String text = aText.toString();
 
-		if (mEnabled)
-		{
-			for (int i = text.length() - 1;;)
-			{
-				i = text.lastIndexOf('=', i);
-				if (i == -1) break;
-				int j = Math.max(Math.max(text.lastIndexOf(' ', i), text.lastIndexOf('(', i)), text.lastIndexOf('{', i));
-				if (j != -1)
-				{
-					j++;
-					text = text.substring(0, j) + Color.BLACK_LIGHT + text.substring(j,i) + Color.RESET + text.substring(i);
-				}
-				i = j;
-			}
-
-			text = text
-				.replace("%s", Color.BLUE + "%s" + Color.RESET)
-				.replace("#%d", Color.MAGENTA + "#%d")
-				.replace("%d", Color.MAGENTA + "%d" + Color.RESET)
-				.replace("%f", Color.MAGENTA + "%f" + Color.RESET);
-		}
+//		if (mEnabled)
+//		{
+//			for (int i = text.length() - 1;;)
+//			{
+//				i = text.lastIndexOf('=', i);
+//				if (i == -1) break;
+//				int j = Math.max(Math.max(text.lastIndexOf(' ', i), text.lastIndexOf('(', i)), text.lastIndexOf('{', i));
+//				if (j != -1)
+//				{
+//					j++;
+//					text = text.substring(0, j) + Color.BLACK_LIGHT + text.substring(j,i) + Color.RESET + text.substring(i);
+//				}
+//				i = j;
+//			}
+//
+//			text = text
+//				.replace("%s", Color.BLUE + "%s" + Color.RESET)
+//				.replace("#%d", Color.MAGENTA + "#%d")
+//				.replace("%d", Color.MAGENTA + "%d" + Color.RESET)
+//				.replace("%f", Color.MAGENTA + "%f" + Color.RESET);
+//		}
 
 		return String.format(text, aParams);
 	}

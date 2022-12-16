@@ -49,7 +49,7 @@ public class TestDocumentDB
 
 				db.commit();
 
-//				showTree(db.getCollection("people").getTableImplementation());
+//				showTree(db.getCollection("people").getImplementation());
 			}
 
 //			blockDevice.dump();

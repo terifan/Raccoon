@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.terifan.raccoon.util.ByteArrayUtil;
 import org.terifan.raccoon.util.Console;
+import org.terifan.raccoon.util.FormattedOutput;
+import org.terifan.raccoon.util.FormattedToString;
 import org.terifan.raccoon.util.Result;
 
 
@@ -22,7 +24,7 @@ import org.terifan.raccoon.util.Result;
  * [header] 2 bytes - entry count 4 bytes - free space offset (minus HEADER_SIZE) [list of entries] (entry 1..n) 2 bytes - key length 2
  * bytes - value length n bytes - key n bytes - value [free space] n bytes - zeros [list of pointers] (pointer 1..n) 4 bytes - offset
  */
-public class ArrayMap implements Iterable<ArrayMapEntry>
+public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 {
 	final static int HEADER_SIZE = 2 + 4;
 	final static int ENTRY_POINTER_SIZE = 4;
@@ -766,23 +768,28 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	{
 		try
 		{
-			boolean first = true;
 			StringBuilder sb = new StringBuilder();
 			for (ArrayMapEntry entry : this)
 			{
-				if (!first)
+				if (sb.length() > 0)
 				{
 					sb.append(",");
 				}
-				sb.append(Console.format("\"%s\"", new String(entry.getKey(), "utf-8").replaceAll("[^\\w]*", "")));
-				first = false;
+				sb.append("\"" + new String(entry.getKey(), "utf-8").replaceAll("[^\\w]*", "") + "\"");
 			}
-			return "{" + sb.toString() + "}";
+			return sb.insert(0, "[").append("]").toString();
 		}
 		catch (UnsupportedEncodingException e)
 		{
 			throw new IllegalStateException(e);
 		}
+	}
+
+
+	@Override
+	public void toFormattedString(FormattedOutput aOutput)
+	{
+		aOutput.array(e -> aOutput.append("\"%s\"", new String(e.getKey(), "utf-8").replaceAll("[^\\w]*", "")), this);
 	}
 
 
