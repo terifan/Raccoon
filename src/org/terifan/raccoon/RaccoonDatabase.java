@@ -30,7 +30,7 @@ public final class RaccoonDatabase implements AutoCloseable
 //	private final Lock mWriteLock = mReadWriteLock.writeLock();
 
 	private IManagedBlockDevice mBlockDevice;
-	private DatabaseRoot mApplicationHeader;
+	private DatabaseRoot mDatabaseRoot;
 	private CompressionParam mCompressionParam;
 	private DatabaseOpenOption mDatabaseOpenOption;
 	private final ConcurrentHashMap<String, RaccoonCollection> mCollections;
@@ -207,7 +207,7 @@ public final class RaccoonDatabase implements AutoCloseable
 			blockDevice = new ManagedBlockDevice(secureDevice);
 		}
 
-		mApplicationHeader = new DatabaseRoot();
+		mDatabaseRoot = new DatabaseRoot();
 
 		if (aCreate)
 		{
@@ -244,12 +244,12 @@ public final class RaccoonDatabase implements AutoCloseable
 			}
 
 			mBlockDevice = blockDevice;
-			mApplicationHeader.readFromDevice(mBlockDevice);
+			mDatabaseRoot.readFromDevice(mBlockDevice);
 			mReadOnly = mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY;
 
-			for (String name : mApplicationHeader.listCollections())
+			for (String name : mDatabaseRoot.listCollections())
 			{
-				Document conf = mApplicationHeader.getCollection(name);
+				Document conf = mDatabaseRoot.getCollection(name);
 
 				if (conf == null)
 				{
@@ -326,7 +326,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	private void checkOpen()
 	{
-		if (mApplicationHeader == null)
+		if (mDatabaseRoot == null)
 		{
 			throw new DatabaseClosedException("Database is closed");
 		}
@@ -359,7 +359,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	public boolean isOpen()
 	{
-		return mApplicationHeader != null;
+		return mDatabaseRoot != null;
 	}
 
 
@@ -411,7 +411,7 @@ public final class RaccoonDatabase implements AutoCloseable
 				{
 					Log.i("table updated '%s'", entry.getKey());
 
-					mApplicationHeader.putCollection(entry.getKey(), entry.getValue().getConfiguration());
+					mDatabaseRoot.putCollection(entry.getKey(), entry.getValue().getConfiguration());
 					mModified = true;
 
 					System.out.println(entry.getValue().getConfiguration());
@@ -425,8 +425,8 @@ public final class RaccoonDatabase implements AutoCloseable
 				Log.i("updating super block");
 				Log.inc();
 
-				mApplicationHeader.nextTransaction();
-				mApplicationHeader.writeToDevice(mBlockDevice);
+				mDatabaseRoot.nextTransaction();
+				mDatabaseRoot.writeToDevice(mBlockDevice);
 				mBlockDevice.commit();
 				mModified = false;
 
@@ -464,7 +464,7 @@ public final class RaccoonDatabase implements AutoCloseable
 				instance.rollback();
 			}
 
-			mApplicationHeader.readFromDevice(mBlockDevice);
+			mDatabaseRoot.readFromDevice(mBlockDevice);
 			mBlockDevice.rollback();
 
 			Log.dec();
@@ -531,13 +531,13 @@ public final class RaccoonDatabase implements AutoCloseable
 					instance.rollback();
 				}
 
-				mApplicationHeader.readFromDevice(mBlockDevice);
+				mDatabaseRoot.readFromDevice(mBlockDevice);
 				mBlockDevice.rollback();
 
 				Log.dec();
 			}
 
-			if (mApplicationHeader != null)
+			if (mDatabaseRoot != null)
 			{
 				for (RaccoonCollection instance : mCollections.values())
 				{
@@ -546,8 +546,8 @@ public final class RaccoonDatabase implements AutoCloseable
 
 				mCollections.clear();
 
-				mApplicationHeader.writeToDevice(mBlockDevice);
-				mApplicationHeader = null;
+				mDatabaseRoot.writeToDevice(mBlockDevice);
+				mDatabaseRoot = null;
 			}
 
 			if (mBlockDevice != null && mCloseDeviceOnCloseDatabase)
@@ -900,7 +900,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	protected synchronized void forceClose(Throwable aException)
 	{
-		if (mApplicationHeader == null)
+		if (mDatabaseRoot == null)
 		{
 			return;
 		}
@@ -908,7 +908,7 @@ public final class RaccoonDatabase implements AutoCloseable
 		reportStatus(LogLevel.FATAL, "an error was detected, forcefully closing block device to prevent damage, uncommitted changes were lost.", aException);
 
 		mBlockDevice.forceClose();
-		mApplicationHeader = null;
+		mDatabaseRoot = null;
 	}
 
 
@@ -1036,7 +1036,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	public long getTransaction()
 	{
-		return mApplicationHeader.getTransactionId();
+		return mDatabaseRoot.getTransactionId();
 	}
 
 

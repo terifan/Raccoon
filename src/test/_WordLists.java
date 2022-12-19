@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Random;
 
 
-public class WordLists
+public class _WordLists
 {
 	public final static ArrayList<String> list26 = new ArrayList<>(Arrays.asList(
 		"Circus", "Banana", "Whale", "Xenon", "Open", "Rupee", "Silver", "Leap", "Ear", "Apple", "Yellow", "Turquoise", "Japanese", "Quality", "Nose", "Gloves", "Head", "Zebra", "Female", "Internal", "Jalapeno", "Urban", "Vapor", "Dove", "Mango", "Knife"

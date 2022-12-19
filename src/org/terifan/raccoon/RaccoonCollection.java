@@ -22,6 +22,7 @@ public final class RaccoonCollection implements BTreeStorage
 
 	private RaccoonDatabase mDatabase;
 	private HashSet<CommitLock> mCommitLocks;
+	private IdentityCounter mIdentityCounter;
 	private BTree mImplementation;
 
 
@@ -30,6 +31,7 @@ public final class RaccoonCollection implements BTreeStorage
 		mDatabase = aDatabase;
 		mCommitLocks = new HashSet<>();
 		mImplementation = new BTree(this, aConfiguration);
+		mIdentityCounter = new IdentityCounter(aConfiguration);
 	}
 
 
@@ -40,7 +42,7 @@ public final class RaccoonCollection implements BTreeStorage
 
 		try
 		{
-			ArrayMapEntry entry = new ArrayMapEntry(marshalKey(aDocument));
+			ArrayMapEntry entry = new ArrayMapEntry(marshalKey(aDocument, false));
 
 			if (mImplementation.get(entry))
 			{
@@ -67,7 +69,7 @@ public final class RaccoonCollection implements BTreeStorage
 		Log.i("save %s", aDocument);
 		Log.inc();
 
-		byte[] key = marshalKey(aDocument);
+		byte[] key = marshalKey(aDocument, true);
 		byte[] value = aDocument.marshal();
 		byte type = TYPE_DOCUMENT;
 
@@ -97,7 +99,7 @@ public final class RaccoonCollection implements BTreeStorage
 
 	public boolean remove(Document aDocument)
 	{
-		ArrayMapEntry entry = new ArrayMapEntry(marshalKey(aDocument));
+		ArrayMapEntry entry = new ArrayMapEntry(marshalKey(aDocument, false));
 		ArrayMapEntry prev = mImplementation.remove(entry);
 		deleteIfBlob(prev);
 
@@ -212,11 +214,21 @@ public final class RaccoonCollection implements BTreeStorage
 	}
 
 
-	private byte[] marshalKey(Document aDocument)
+	private byte[] marshalKey(Document aDocument, boolean aCreateKey)
 	{
+		Number id = aDocument.getNumber("_id");
+		if (id == null)
+		{
+			if (!aCreateKey)
+			{
+				throw new IllegalStateException();
+			}
+			id = mIdentityCounter.next();
+			aDocument.putNumber("_id", id);
+		}
 //		byte[] buf = new byte[8];
 //		ByteArrayUtil.putInt64(buf, 0, aDocument.getNumber("_id").longValue());
-		byte[] buf = String.format("%08d", aDocument.getNumber("_id").longValue()).getBytes();
+		byte[] buf = String.format("%08d", id.longValue()).getBytes();
 		return buf;
 	}
 
