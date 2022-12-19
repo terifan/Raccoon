@@ -7,29 +7,23 @@ import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
 
 
-public class ApplicationHeader
+public class DatabaseRoot
 {
 	private Document mMetadata;
 	private BlockPointer mBlockPointer;
 	private long mTransactionId;
 
 
-	public ApplicationHeader()
+	public DatabaseRoot()
 	{
 		mMetadata = new Document()
-			.putString("tenant", "raccoondatabase")
 			.putBundle("collections", new Document());
 	}
 
 
 	public void readFromDevice(IManagedBlockDevice aBlockDevice)
 	{
-		if (!"raccoondatabase".equals(aBlockDevice.getApplicationHeader().getString("tenant")))
-		{
-			throw new DatabaseException("Not a RaccoonDatabase file");
-		}
-
-		mBlockPointer = new BlockPointer().unmarshal(aBlockDevice.getApplicationHeader().getBinary("root"));
+		mBlockPointer = new BlockPointer().unmarshal(aBlockDevice.getApplicationMetadata().getBinary("root"));
 
 		byte[] buffer = new BlockAccessor(aBlockDevice, CompressionParam.BEST_COMPRESSION).readBlock(mBlockPointer);
 
@@ -51,7 +45,7 @@ public class ApplicationHeader
 
 		mBlockPointer = blockAccessor.writeBlock(buffer, 0, buffer.length, mTransactionId, BlockType.APPLICATION_HEADER);
 
-		aBlockDevice.getApplicationHeader().putBinary("root", mBlockPointer.marshal());
+		aBlockDevice.getApplicationMetadata().putBinary("root", mBlockPointer.marshal());
 	}
 
 

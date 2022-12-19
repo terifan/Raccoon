@@ -24,30 +24,22 @@ class SuperBlock
 	private long mModifiedTime;
 	private long mTransactionId;
 	private BlockPointer mSpaceMapPointer;
-	private Document mApplicationHeader;
-
-
-	public SuperBlock()
-	{
-		mFormatVersion = FORMAT_VERSION;
-		mCreateTime = System.currentTimeMillis();
-		mSpaceMapPointer = new BlockPointer();
-		mTransactionId = -1L;
-		mApplicationHeader = new Document();
-	}
+	private Document mApplicationMetadata;
 
 
 	public SuperBlock(long aTransactionId)
 	{
-		this();
-
+		mFormatVersion = FORMAT_VERSION;
+		mCreateTime = System.currentTimeMillis();
+		mSpaceMapPointer = new BlockPointer();
+		mApplicationMetadata = new Document();
 		mTransactionId = aTransactionId;
 	}
 
 
-	public SuperBlock(IPhysicalBlockDevice aBlockDevice, long aBlockIndex)
+	public SuperBlock(IPhysicalBlockDevice aBlockDevice, long aBlockIndex, long aTransactionId)
 	{
-		this();
+		this(aTransactionId);
 
 		read(aBlockDevice, aBlockIndex);
 	}
@@ -101,9 +93,9 @@ class SuperBlock
 	}
 
 
-	public Document getApplicationHeader()
+	public Document getApplicationMetadata()
 	{
-		return mApplicationHeader;
+		return mApplicationMetadata;
 	}
 
 
@@ -145,17 +137,17 @@ class SuperBlock
 		mModifiedTime = System.currentTimeMillis();
 
 		int blockSize = aBlockDevice.getBlockSize();
-		byte[] applicationHeader = mApplicationHeader.marshal();
+		byte[] metadata = mApplicationMetadata.marshal();
 
-		if (TOTAL_OVERHEAD + applicationHeader.length > blockSize)
+		if (TOTAL_OVERHEAD + metadata.length > blockSize)
 		{
-			throw new DatabaseIOException("Application header exeeds maximum size: ");
+			throw new DatabaseIOException("Application metadata exeeds maximum size: limit: " + (blockSize - TOTAL_OVERHEAD) + ", metadata: " + metadata.length);
 		}
 
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(blockSize, true);
 		buffer.position(CHECKSUM_SIZE); // reserve space for checksum
 
-		marshal(buffer, applicationHeader);
+		marshal(buffer, metadata);
 
 		if (aBlockDevice instanceof SecureBlockDevice)
 		{
@@ -206,6 +198,6 @@ class SuperBlock
 		mModifiedTime = aBuffer.readInt64();
 		mTransactionId = aBuffer.readInt64();
 		mSpaceMapPointer.unmarshal(aBuffer);
-		mApplicationHeader = Document.unmarshal(aBuffer.read(new byte[aBuffer.readInt16()]));
+		mApplicationMetadata = Document.unmarshal(aBuffer.read(new byte[aBuffer.readInt16()]));
 	}
 }

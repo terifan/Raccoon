@@ -55,7 +55,6 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.inc();
 
 		mSpaceMap = new SpaceMap();
-
 		mSuperBlock = new SuperBlock(-1L); // counter is incremented in writeSuperBlock method and we want to ensure we write block 0 before block 1
 
 		long index = allocBlockInternal(2);
@@ -106,9 +105,9 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	@Override
-	public Document getApplicationHeader()
+	public Document getApplicationMetadata()
 	{
-		return mSuperBlock.getApplicationHeader();
+		return mSuperBlock.getApplicationMetadata();
 	}
 
 
@@ -334,8 +333,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.d("read super block");
 		Log.inc();
 
-		SuperBlock superBlockOne = new SuperBlock(mPhysBlockDevice, 0L);
-		SuperBlock superBlockTwo = new SuperBlock(mPhysBlockDevice, 1L);
+		SuperBlock superBlockOne = new SuperBlock(mPhysBlockDevice, 0L, -1L);
+		SuperBlock superBlockTwo = new SuperBlock(mPhysBlockDevice, 1L, -1L);
 
 		if (superBlockOne.getTransactionId() == superBlockTwo.getTransactionId() + 1)
 		{

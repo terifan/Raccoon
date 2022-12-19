@@ -22,21 +22,25 @@ import org.terifan.raccoon.util.Log;
 
 public final class RaccoonDatabase implements AutoCloseable
 {
-	private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
+	public final static String TENANT_NAME = "RaccoonDB";
+	public final static int TENANT_VERSION = 1;
+
+//	private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
 //	private final Lock mReadLock = mReadWriteLock.readLock();
 //	private final Lock mWriteLock = mReadWriteLock.writeLock();
 
 	private IManagedBlockDevice mBlockDevice;
+	private DatabaseRoot mApplicationHeader;
+	private CompressionParam mCompressionParam;
+	private DatabaseOpenOption mDatabaseOpenOption;
 	private final ConcurrentHashMap<String, RaccoonCollection> mCollections;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
+
+	private int mReadLocked;
 	private boolean mModified;
 	private boolean mCloseDeviceOnCloseDatabase;
 	private boolean mReadOnly;
 	private Thread mShutdownHook;
-	private ApplicationHeader mApplicationHeader;
-	private CompressionParam mCompressionParam;
-	private int mReadLocked;
-	private DatabaseOpenOption mDatabaseOpenOption;
 
 
 	private RaccoonDatabase()
@@ -203,12 +207,14 @@ public final class RaccoonDatabase implements AutoCloseable
 			blockDevice = new ManagedBlockDevice(secureDevice);
 		}
 
-		mApplicationHeader = new ApplicationHeader();
+		mApplicationHeader = new DatabaseRoot();
 
 		if (aCreate)
 		{
 			Log.i("create database");
 			Log.inc();
+
+			blockDevice.getApplicationMetadata().putString("tenantName", TENANT_NAME).putNumber("tenantVersion", TENANT_VERSION);
 
 			if (blockDevice.length() > 0)
 			{
@@ -227,6 +233,15 @@ public final class RaccoonDatabase implements AutoCloseable
 		{
 			Log.i("open database");
 			Log.inc();
+
+			if (!TENANT_NAME.equals(blockDevice.getApplicationMetadata().getString("tenantName")))
+			{
+				throw new DatabaseException("Not a Raccoon database file");
+			}
+			if (blockDevice.getApplicationMetadata().getInt("tenantVersion", -1) != TENANT_VERSION)
+			{
+				throw new DatabaseException("Unsupported Raccoon database version");
+			}
 
 			mBlockDevice = blockDevice;
 			mApplicationHeader.readFromDevice(mBlockDevice);
@@ -283,7 +298,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		if (mDatabaseOpenOption == DatabaseOpenOption.OPEN || mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY)
 		{
-			throw new IllegalStateException("Collection doesn't exist: " + aName);
+			throw new DatabaseException("No such collection: " + aName);
 		}
 
 		Log.i("create table '%s' with option %s", aName, mDatabaseOpenOption);
@@ -900,19 +915,19 @@ public final class RaccoonDatabase implements AutoCloseable
 	/**
 	 * Return true if the database is being read by a thread at this time.
 	 */
-	public boolean isReadLocked()
-	{
-		return mReadWriteLock.getReadHoldCount() > 0;
-	}
+//	public boolean isReadLocked()
+//	{
+//		return mReadWriteLock.getReadHoldCount() > 0;
+//	}
 
 
 	/**
 	 * Return true if the database is being written to a thread at this time.
 	 */
-	public boolean isWriteLocked()
-	{
-		return mReadWriteLock.isWriteLocked();
-	}
+//	public boolean isWriteLocked()
+//	{
+//		return mReadWriteLock.isWriteLocked();
+//	}
 
 
 	private void reportStatus(LogLevel aLevel, String aMessage, Throwable aThrowable)

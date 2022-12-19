@@ -13,12 +13,6 @@ public interface BTreeStorage extends AutoCloseable
 	long getTransaction();
 
 
-	default IManagedBlockDevice getBlockDevice()
-	{
-		return getBlockAccessor().getBlockDevice();
-	}
-
-
 	@Override
 	default void close()
 	{
@@ -27,8 +21,14 @@ public interface BTreeStorage extends AutoCloseable
 	}
 
 
-	default Document getApplicationHeader()
+	default IManagedBlockDevice getBlockDevice()
 	{
-		return getBlockAccessor().getBlockDevice().getApplicationHeader();
+		return getBlockAccessor().getBlockDevice();
+	}
+
+
+	default Document getApplicationMetadata()
+	{
+		return getBlockAccessor().getBlockDevice().getApplicationMetadata();
 	}
 }
