@@ -108,7 +108,7 @@ public class BTree implements AutoCloseable
 //		lock.writeLock().lock();
 		synchronized (this)
 		{
-			if (mRoot.mLevel == 0 ? mRoot.mMap.getFreeSpace() < aEntry.getMarshalledLength() : mRoot.mMap.getUsedSpace() > mConfiguration.getInt("indexSize"))
+			if (mRoot.mLevel == 0 ? mRoot.mMap.getCapacity() > mConfiguration.getInt("leafSize") || mRoot.mMap.getFreeSpace() < aEntry.getMarshalledLength() : mRoot.mMap.getUsedSpace() > mConfiguration.getInt("indexSize"))
 			{
 				if (mRoot instanceof BTreeLeaf)
 				{

@@ -413,8 +413,6 @@ public final class RaccoonDatabase implements AutoCloseable
 
 					mDatabaseRoot.putCollection(entry.getKey(), entry.getValue().getConfiguration());
 					mModified = true;
-
-					System.out.println(entry.getValue().getConfiguration());
 				}
 			}
 

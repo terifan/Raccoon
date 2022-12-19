@@ -26,4 +26,11 @@ public class IdentityCounter
 		mConfiguration.putNumber("identityCounter", value);
 		return value;
 	}
+
+
+	@Override
+	public String toString()
+	{
+		return "" + get();
+	}
 }

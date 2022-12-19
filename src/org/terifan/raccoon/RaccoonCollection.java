@@ -168,6 +168,8 @@ public final class RaccoonCollection implements BTreeStorage
 			}
 		}
 
+		mImplementation.getConfiguration().put("identityCounter", mIdentityCounter.get());
+
 		return mImplementation.commit();
 	}
 
@@ -216,7 +218,8 @@ public final class RaccoonCollection implements BTreeStorage
 
 	private byte[] marshalKey(Document aDocument, boolean aCreateKey)
 	{
-		Number id = aDocument.getNumber("_id");
+		Object id = aDocument.get("_id");
+
 		if (id == null)
 		{
 			if (!aCreateKey)
@@ -224,11 +227,12 @@ public final class RaccoonCollection implements BTreeStorage
 				throw new IllegalStateException();
 			}
 			id = mIdentityCounter.next();
-			aDocument.putNumber("_id", id);
+			aDocument.put("_id", id);
 		}
+
 //		byte[] buf = new byte[8];
 //		ByteArrayUtil.putInt64(buf, 0, aDocument.getNumber("_id").longValue());
-		byte[] buf = String.format("%08d", id.longValue()).getBytes();
+		byte[] buf = String.format("%08d", ((Number)id).longValue()).getBytes();
 		return buf;
 	}
 
@@ -281,5 +285,11 @@ public final class RaccoonCollection implements BTreeStorage
 		}
 
 		return Document.unmarshal(buffer);
+	}
+
+
+	public IdentityCounter getIdentityCounter()
+	{
+		return mIdentityCounter;
 	}
 }
