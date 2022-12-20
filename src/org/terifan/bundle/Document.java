@@ -197,20 +197,12 @@ public class Document extends Container<String, Document> implements Externaliza
 	/**
 	 * Puts all entries from the provided Bundle to this Bundle.
 	 *
-	 * @param aOther another bundle
+	 * @param aSource another bundle
 	 * @return this bundle
 	 */
-	public Document putAll(Document aOther)
+	public Document putAll(Document aSource)
 	{
-		mValues.entrySet().forEach(entry -> mValues.put(entry.getKey(), entry.getValue()));
-		return this;
-	}
-
-
-	public Document replaceAll(Document aOther)
-	{
-		clear();
-		mValues.entrySet().forEach(entry -> mValues.put(entry.getKey(), entry.getValue()));
+		aSource.entrySet().forEach(entry -> mValues.put(entry.getKey(), entry.getValue()));
 		return this;
 	}
 

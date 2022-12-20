@@ -41,7 +41,7 @@ public final class DocumentIterator implements Iterator<Document>
 
 		try
 		{
-			return mCollection.unmarshalDocument(mEntryIterator.next());
+			return mCollection.unmarshalDocument(mEntryIterator.next(), new Document());
 		}
 		finally
 		{

@@ -46,7 +46,7 @@ public final class RaccoonCollection implements BTreeStorage
 
 			if (mImplementation.get(entry))
 			{
-				return unmarshalDocument(entry);
+				return unmarshalDocument(entry, aDocument);
 			}
 		}
 		finally
@@ -264,7 +264,7 @@ public final class RaccoonCollection implements BTreeStorage
 	}
 
 
-	Document unmarshalDocument(ArrayMapEntry aEntry)
+	Document unmarshalDocument(ArrayMapEntry aEntry, Document aDestination)
 	{
 		byte[] buffer;
 
@@ -284,7 +284,7 @@ public final class RaccoonCollection implements BTreeStorage
 			buffer = aEntry.getValue();
 		}
 
-		return Document.unmarshal(buffer);
+		return aDestination.putAll(Document.unmarshal(buffer));
 	}
 
 
