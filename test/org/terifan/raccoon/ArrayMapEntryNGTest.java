@@ -10,7 +10,7 @@ public class ArrayMapEntryNGTest
 	@Test
 	public void testPutGet()
 	{
-		ArrayMapEntry entry1 = new ArrayMapEntry("abc".getBytes(), "def".getBytes(), (byte)77);
+		ArrayMapEntry entry1 = new ArrayMapEntry(new ArrayMapKey("abc"), "def".getBytes(), (byte)77);
 
 		byte[] buf = new byte[10 + entry1.getMarshalledValueLength() + 10];
 

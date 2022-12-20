@@ -18,9 +18,9 @@ public abstract class BTreeNode
 	{
 		private final BTreeNode left;
 		private final BTreeNode right;
-		private final MarshalledKey leftKey;
-		private final MarshalledKey rightKey;
-		SplitResult(BTreeNode left, BTreeNode right, MarshalledKey leftKey, MarshalledKey rightKey)
+		private final ArrayMapKey leftKey;
+		private final ArrayMapKey rightKey;
+		SplitResult(BTreeNode left, BTreeNode right, ArrayMapKey leftKey, ArrayMapKey rightKey)
 		{
 			this.left = left;
 			this.right = right;
@@ -35,7 +35,7 @@ public abstract class BTreeNode
 		}
 
 
-		public MarshalledKey leftKey()
+		public ArrayMapKey leftKey()
 		{
 			return leftKey;
 		}
@@ -47,7 +47,7 @@ public abstract class BTreeNode
 		}
 
 
-		public MarshalledKey rightKey()
+		public ArrayMapKey rightKey()
 		{
 			return rightKey;
 		}
@@ -67,13 +67,13 @@ public abstract class BTreeNode
 	}
 
 
-	abstract boolean get(BTree aImplementation, MarshalledKey aKey, ArrayMapEntry oEntry);
+	abstract boolean get(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry oEntry);
 
 
-	abstract PutResult put(BTree aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
+	abstract PutResult put(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
 
 
-	abstract RemoveResult remove(BTree aImplementation, MarshalledKey aKey, Result<ArrayMapEntry> oOldEntry);
+	abstract RemoveResult remove(BTree aImplementation, ArrayMapKey aKey, Result<ArrayMapEntry> oOldEntry);
 
 
 	abstract SplitResult split(BTree aImplementation);

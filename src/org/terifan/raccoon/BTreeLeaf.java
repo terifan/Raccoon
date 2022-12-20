@@ -17,14 +17,14 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	boolean get(BTree aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry)
+	boolean get(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry aEntry)
 	{
 		return mMap.get(aEntry);
 	}
 
 
 	@Override
-	PutResult put(BTree aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	synchronized PutResult put(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
 		mModified = true;
 		return mMap.insert(aEntry, aResult);
@@ -32,9 +32,9 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	RemoveResult remove(BTree aImplementation, MarshalledKey aKey, Result<ArrayMapEntry> aOldEntry)
+	RemoveResult remove(BTree aImplementation, ArrayMapKey aKey, Result<ArrayMapEntry> aOldEntry)
 	{
-		boolean removed = mMap.remove(aKey.array(), aOldEntry);
+		boolean removed = mMap.remove(aKey, aOldEntry);
 
 		if (removed)
 		{
@@ -59,7 +59,7 @@ public class BTreeLeaf extends BTreeNode
 		a.mModified = true;
 		b.mModified = true;
 
-		return new SplitResult(a, b, new MarshalledKey(a.mMap.getFirst().getKey()), new MarshalledKey(b.mMap.getFirst().getKey()));
+		return new SplitResult(a, b, a.mMap.getFirst().getKey(), b.mMap.getFirst().getKey());
 	}
 
 
@@ -76,14 +76,14 @@ public class BTreeLeaf extends BTreeNode
 		a.mModified = true;
 		b.mModified = true;
 
-		MarshalledKey keyA = new MarshalledKey(new byte[0]);
-		MarshalledKey keyB = new MarshalledKey(b.mMap.getKey(0));
+		ArrayMapKey keyA = new ArrayMapKey(new byte[0]);
+		ArrayMapKey keyB = b.mMap.getKey(0);
 
 		BTreeIndex newIndex = new BTreeIndex(1);
 		newIndex.mModified = true;
 		newIndex.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("indexSize"));
-		newIndex.mMap.put(new ArrayMapEntry(keyA.array(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
-		newIndex.mMap.put(new ArrayMapEntry(keyB.array(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
+		newIndex.mMap.put(new ArrayMapEntry(keyA, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
+		newIndex.mMap.put(new ArrayMapEntry(keyB, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
 		newIndex.mChildNodes.put(keyA, a);
 		newIndex.mChildNodes.put(keyB, b);
 

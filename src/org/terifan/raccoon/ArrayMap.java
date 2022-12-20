@@ -228,9 +228,9 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	 */
 	public PutResult put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
-		byte[] key = aEntry.getKey();
+		ArrayMapKey key = aEntry.getKey();
 		int valueLength = aEntry.getMarshalledValueLength();
-		int keyLength = key.length;
+		int keyLength = key.size();
 
 		if (keyLength > MAX_VALUE_SIZE || valueLength > MAX_VALUE_SIZE || keyLength + valueLength > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
 		{
@@ -299,7 +299,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 		writeEntryOffset(index, entryOffset);
 		writeKeyLength(entryOffset, keyLength);
 		writeValueLength(entryOffset, valueLength);
-		System.arraycopy(key, 0, mBuffer, mStartOffset + readKeyOffset(entryOffset), keyLength);
+		System.arraycopy(key.array(), 0, mBuffer, mStartOffset + readKeyOffset(entryOffset), keyLength);
 		aEntry.marshallValue(mBuffer, mStartOffset + readValueOffset(entryOffset));
 
 		mFreeSpaceOffset += ENTRY_HEADER_SIZE + keyLength + valueLength;
@@ -355,7 +355,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	/**
 	 * Find an entry equal or before the sought key.
 	 */
-	public int nearestIndex(byte[] aKey)
+	public int nearestIndex(ArrayMapKey aKey)
 	{
 		int index = indexOf(aKey);
 
@@ -413,7 +413,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	public boolean remove(byte[] aKey, Result<ArrayMapEntry> oOldEntry)
+	public boolean remove(ArrayMapKey aKey, Result<ArrayMapEntry> oOldEntry)
 	{
 		int index = indexOf(aKey);
 
@@ -498,13 +498,13 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	public byte[] getKey(int aIndex)
+	public ArrayMapKey getKey(int aIndex)
 	{
 		int entryOffset = readEntryOffset(aIndex);
 		int keyOffset = readKeyOffset(entryOffset);
 		int keyLength = readKeyLength(entryOffset);
 
-		return Arrays.copyOfRange(mBuffer, mStartOffset + keyOffset, mStartOffset + keyOffset + keyLength);
+		return new ArrayMapKey(Arrays.copyOfRange(mBuffer, mStartOffset + keyOffset, mStartOffset + keyOffset + keyLength));
 	}
 
 
@@ -534,7 +534,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	public int indexOf(byte[] aKey)
+	public int indexOf(ArrayMapKey aKey)
 	{
 		int low = 0;
 		int high = mEntryCount - 1;
@@ -547,7 +547,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 			int keyOffset = readKeyOffset(entryOffset);
 			int keyLength = readKeyLength(entryOffset);
 
-			int cmp = compare(aKey, 0, aKey.length, mBuffer, mStartOffset + keyOffset, keyLength);
+			int cmp = compare(aKey.array(), 0, aKey.size(), mBuffer, mStartOffset + keyOffset, keyLength);
 
 			if (cmp > 0)
 			{
@@ -775,7 +775,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 				{
 					sb.append(",");
 				}
-				sb.append("\"" + new String(entry.getKey(), "utf-8").replaceAll("[^\\w]*", "") + "\"");
+				sb.append("\"" + new String(entry.getKey().array(), "utf-8").replaceAll("[^\\w]*", "") + "\"");
 			}
 			return sb.insert(0, "[").append("]").toString();
 		}
@@ -789,7 +789,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	@Override
 	public void toFormattedString(FormattedOutput aOutput)
 	{
-		aOutput.array(e -> aOutput.append("\"%s\"", new String(e.getKey(), "utf-8").replaceAll("[^\\w]*", "")), this);
+		aOutput.array(e -> aOutput.append("\"%s\"", new String(e.getKey().array(), "utf-8").replaceAll("[^\\w]*", "")), this);
 	}
 
 

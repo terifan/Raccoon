@@ -285,7 +285,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public RaccoonCollection getCollection(String aName)
+	public synchronized RaccoonCollection getCollection(String aName)
 	{
 		checkOpen();
 

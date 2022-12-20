@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.storage.BlockAccessor;
+import org.terifan.raccoon.util.ByteArrayUtil;
 import org.terifan.raccoon.util.Log;
 
 
@@ -69,11 +70,11 @@ public final class RaccoonCollection implements BTreeStorage
 		Log.i("save %s", aDocument);
 		Log.inc();
 
-		byte[] key = marshalKey(aDocument, true);
+		ArrayMapKey key = marshalKey(aDocument, true);
 		byte[] value = aDocument.marshal();
 		byte type = TYPE_DOCUMENT;
 
-		if (key.length + value.length + 1 > mImplementation.getConfiguration().getInt("entrySizeLimit"))
+		if (key.size() + value.length + 1 > mImplementation.getConfiguration().getInt("entrySizeLimit"))
 		{
 			type = TYPE_EXTERNAL;
 
@@ -216,7 +217,7 @@ public final class RaccoonCollection implements BTreeStorage
 	}
 
 
-	private byte[] marshalKey(Document aDocument, boolean aCreateKey)
+	private ArrayMapKey marshalKey(Document aDocument, boolean aCreateKey)
 	{
 		Object id = aDocument.get("_id");
 
@@ -230,10 +231,14 @@ public final class RaccoonCollection implements BTreeStorage
 			aDocument.put("_id", id);
 		}
 
-//		byte[] buf = new byte[8];
-//		ByteArrayUtil.putInt64(buf, 0, aDocument.getNumber("_id").longValue());
-		byte[] buf = String.format("%08d", ((Number)id).longValue()).getBytes();
-		return buf;
+		if (id instanceof Number)
+		{
+			byte[] buf = new byte[8];
+			ByteArrayUtil.putInt64(buf, 0, ((Number)id).longValue());
+			return new ArrayMapKey(buf);
+		}
+
+		return new ArrayMapKey(id.toString());
 	}
 
 

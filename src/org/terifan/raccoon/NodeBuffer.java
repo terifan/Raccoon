@@ -6,7 +6,7 @@ import java.util.TreeMap;
 
 class NodeBuffer
 {
-	private TreeMap<MarshalledKey, BTreeNode> mMap;
+	private TreeMap<ArrayMapKey, BTreeNode> mMap;
 
 
 	public NodeBuffer()
@@ -15,19 +15,19 @@ class NodeBuffer
 	}
 
 
-	BTreeNode get(MarshalledKey aKey)
+	BTreeNode get(ArrayMapKey aKey)
 	{
 		return mMap.get(aKey);
 	}
 
 
-	void put(MarshalledKey aKey, BTreeNode aNode)
+	void put(ArrayMapKey aKey, BTreeNode aNode)
 	{
 		mMap.put(aKey, aNode);
 	}
 
 
-	BTreeNode remove(MarshalledKey aKey)
+	BTreeNode remove(ArrayMapKey aKey)
 	{
 		return mMap.remove(aKey);
 	}
@@ -39,13 +39,13 @@ class NodeBuffer
 	}
 
 
-	Iterable<Entry<MarshalledKey, BTreeNode>> entrySet()
+	Iterable<Entry<ArrayMapKey, BTreeNode>> entrySet()
 	{
 		return mMap.entrySet();
 	}
 
 
-	Iterable<MarshalledKey> keySet()
+	Iterable<ArrayMapKey> keySet()
 	{
 		return mMap.keySet();
 	}

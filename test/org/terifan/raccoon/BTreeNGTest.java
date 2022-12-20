@@ -20,7 +20,7 @@ public class BTreeNGTest
 		IPhysicalBlockDevice device = new MemoryBlockDevice(512);
 //		Supplier<IPhysicalBlockDevice> device = () -> new FileBlockDevice(new File("d:/test.rdb"));
 
-		byte[] key = "key".getBytes();
+		ArrayMapKey key = new ArrayMapKey("key");
 		byte[] value = "value".getBytes();
 
 		try (BTreeStorage storage = createSecureStorage(device); BTree tree = new BTree(storage, new Document()))

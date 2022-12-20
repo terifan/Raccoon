@@ -1,16 +1,23 @@
 package org.terifan.raccoon;
 
+import java.nio.charset.Charset;
 import java.util.Arrays;
 
 
-class MarshalledKey implements Comparable<MarshalledKey>
+public class ArrayMapKey implements Comparable<ArrayMapKey>
 {
-	private byte[] mBuffer;
+	private final byte[] mBuffer;
 
 
-	public MarshalledKey(byte[] aBuffer)
+	public ArrayMapKey(byte[] aBuffer)
 	{
 		mBuffer = aBuffer;
+	}
+
+
+	public ArrayMapKey(String aValue)
+	{
+		mBuffer = aValue.getBytes(Charset.forName("utf-8"));
 	}
 
 
@@ -27,7 +34,7 @@ class MarshalledKey implements Comparable<MarshalledKey>
 
 
 	@Override
-	public int compareTo(MarshalledKey aOther)
+	public int compareTo(ArrayMapKey aOther)
 	{
 		byte[] self = mBuffer;
 		byte[] other = aOther.mBuffer;
@@ -57,9 +64,9 @@ class MarshalledKey implements Comparable<MarshalledKey>
 	@Override
 	public boolean equals(Object aOther)
 	{
-		if (aOther instanceof MarshalledKey)
+		if (aOther instanceof ArrayMapKey)
 		{
-			MarshalledKey other = (MarshalledKey)aOther;
+			ArrayMapKey other = (ArrayMapKey)aOther;
 			return Arrays.equals(mBuffer, other.mBuffer);
 		}
 		return false;

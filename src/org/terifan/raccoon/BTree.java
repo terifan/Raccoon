@@ -86,7 +86,7 @@ public class BTree implements AutoCloseable
 	{
 		assertNotClosed();
 
-		return mRoot.get(this, new MarshalledKey(aEntry.getKey()), aEntry);
+		return mRoot.get(this, aEntry.getKey(), aEntry);
 	}
 
 
@@ -94,12 +94,11 @@ public class BTree implements AutoCloseable
 	{
 		assertNotClosed();
 
-		if (aEntry.getKey().length + aEntry.getValue().length > mConfiguration.getInt("entrySizeLimit"))
+		if (aEntry.getKey().size() + aEntry.getValue().length > mConfiguration.getInt("entrySizeLimit"))
 		{
-			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().length + ", value: " + aEntry.getValue().length + ", maximum: " + mConfiguration.getInt("entrySizeLimit"));
+			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().size() + ", value: " + aEntry.getValue().length + ", maximum: " + mConfiguration.getInt("entrySizeLimit"));
 		}
 
-		int modCount = ++mModCount;
 		Log.i("put");
 		Log.inc();
 
@@ -122,10 +121,9 @@ public class BTree implements AutoCloseable
 		}
 //		lock.writeLock().unlock();
 
-		mRoot.put(this, new MarshalledKey(aEntry.getKey()), aEntry, result);
+		mRoot.put(this, aEntry.getKey(), aEntry, result);
 
 		Log.dec();
-		assert mModCount == modCount : "concurrent modification";
 
 		return result.get();
 	}
@@ -135,13 +133,12 @@ public class BTree implements AutoCloseable
 	{
 		assertNotClosed();
 
-		int modCount = ++mModCount;
 		Log.i("put");
 		Log.inc();
 
 		Result<ArrayMapEntry> prev = new Result<>();
 
-		RemoveResult result = mRoot.remove(this, new MarshalledKey(aEntry.getKey()), prev);
+		RemoveResult result = mRoot.remove(this, aEntry.getKey(), prev);
 
 		if (result == RemoveResult.REMOVED)
 		{
@@ -156,7 +153,6 @@ public class BTree implements AutoCloseable
 		}
 
 		Log.dec();
-		assert mModCount == modCount : "concurrent modification";
 
 		return prev.get();
 	}
@@ -341,7 +337,7 @@ public class BTree implements AutoCloseable
 					aScanResult.log.append(":");
 				}
 				first = false;
-				String s = new String(entry.getKey()).replaceAll("[^\\w]*", "").replace("'", "").replace("_", "");
+				String s = entry.getKey().toString().replaceAll("[^\\w]*", "").replace("'", "").replace("_", "");
 				aScanResult.log.append(s.isEmpty() ? "*" : s);
 			}
 			aScanResult.log.append("'");
@@ -374,7 +370,7 @@ public class BTree implements AutoCloseable
 
 				ArrayMapEntry entry = new ArrayMapEntry();
 				indexNode.mMap.get(i, entry);
-				indexNode.mChildNodes.put(new MarshalledKey(entry.getKey()), child);
+				indexNode.mChildNodes.put(entry.getKey(), child);
 
 				scan(child, aScanResult, aLevel + 1);
 			}
@@ -397,7 +393,7 @@ public class BTree implements AutoCloseable
 					aScanResult.log.append(",");
 				}
 				first = false;
-				aScanResult.log.append("'" + new String(entry.getKey()).replaceAll("[^\\w]*", "").replace("_", "") + "'");
+				aScanResult.log.append("'" + entry.getKey().toString().replaceAll("[^\\w]*", "").replace("_", "") + "'");
 			}
 
 			aScanResult.log.append("]");

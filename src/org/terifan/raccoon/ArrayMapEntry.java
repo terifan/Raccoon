@@ -7,7 +7,7 @@ import org.terifan.raccoon.util.Console;
 public final class ArrayMapEntry
 {
 	private byte mType;
-	private byte[] mKey;
+	private ArrayMapKey mKey;
 	private byte[] mValue;
 
 
@@ -16,21 +16,13 @@ public final class ArrayMapEntry
 	}
 
 
-	public ArrayMapEntry(byte[] aKey)
+	public ArrayMapEntry(ArrayMapKey aKey)
 	{
 		mKey = aKey;
 	}
 
 
-//	public ArrayMapEntry(byte[] aKey, byte[] aValue)
-//	{
-//		mKey = aKey;
-//		mValue = aValue;
-//		mType = 0;
-//	}
-
-
-	public ArrayMapEntry(byte[] aKey, byte[] aValue, byte aType)
+	public ArrayMapEntry(ArrayMapKey aKey, byte[] aValue, byte aType)
 	{
 		mKey = aKey;
 		mValue = aValue;
@@ -38,13 +30,13 @@ public final class ArrayMapEntry
 	}
 
 
-	public byte[] getKey()
+	public ArrayMapKey getKey()
 	{
 		return mKey;
 	}
 
 
-	public void setKey(byte[] aKey)
+	public void setKey(ArrayMapKey aKey)
 	{
 		mKey = aKey;
 	}
@@ -52,7 +44,7 @@ public final class ArrayMapEntry
 
 	public void unmarshallKey(byte[] aBuffer, int aOffset, int aLength)
 	{
-		setKey(Arrays.copyOfRange(aBuffer, aOffset, aOffset + aLength));
+		setKey(new ArrayMapKey(Arrays.copyOfRange(aBuffer, aOffset, aOffset + aLength)));
 	}
 
 
@@ -96,7 +88,7 @@ public final class ArrayMapEntry
 
 	public int getMarshalledLength()
 	{
-		return 1 + mValue.length + mKey.length;
+		return 1 + mValue.length + mKey.size();
 	}
 
 
@@ -109,6 +101,6 @@ public final class ArrayMapEntry
 	@Override
 	public String toString()
 	{
-		return Console.format("ArrayMapEntry{mType=%s, mKey=%s, mValue=%s}", mType, (mKey == null ? "null" : "\"" + new String(mKey).replaceAll("[^\\w]*", "") + "\""), (mValue == null ? "null" : "\"" + new String(mValue).replace('\u0000', '.').replaceAll("[^\\w\\.]*", "") + "\""));
+		return Console.format("ArrayMapEntry{mType=%s, mKey=%s, mValue=%s}", mType, (mKey == null ? "null" : "\"" + new String(mKey.array()).replaceAll("[^\\w]*", "") + "\""), (mValue == null ? "null" : "\"" + new String(mValue).replace('\u0000', '.').replaceAll("[^\\w\\.]*", "") + "\""));
 	}
 }

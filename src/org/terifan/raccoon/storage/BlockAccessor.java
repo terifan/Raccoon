@@ -46,7 +46,7 @@ public class BlockAccessor implements IBlockAccessor
 
 
 	@Override
-	public void freeBlock(BlockPointer aBlockPointer)
+	public synchronized void freeBlock(BlockPointer aBlockPointer)
 	{
 		try
 		{
@@ -65,7 +65,7 @@ public class BlockAccessor implements IBlockAccessor
 
 
 	@Override
-	public byte[] readBlock(BlockPointer aBlockPointer)
+	public synchronized byte[] readBlock(BlockPointer aBlockPointer)
 	{
 		try
 		{
@@ -115,7 +115,7 @@ else
 
 
 	@Override
-	public BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType)
+	public synchronized BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType)
 	{
 		BlockPointer blockPointer = null;
 

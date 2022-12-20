@@ -2,8 +2,6 @@ package test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
@@ -11,7 +9,7 @@ import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 
 
-public class TestConcurrentInserts
+public class TestConcurrentPuts
 {
 	public static void main(String... args)
 	{
@@ -23,10 +21,12 @@ public class TestConcurrentInserts
 
 			RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.REPLACE, ac);
 
+			long time = System.currentTimeMillis();
+
 			int loops = 10;
 			ArrayList<String> sourceWords = _WordLists.list4342;
 
-			try ( _FixedThreadExecutor exe = new _FixedThreadExecutor(2))
+			try ( _FixedThreadExecutor exe = new _FixedThreadExecutor(1))
 			{
 				for (int worker = 0; worker < loops; worker++)
 				{
@@ -37,7 +37,8 @@ public class TestConcurrentInserts
 						{
 							try
 							{
-								db.getCollection("words").save(new Document().putString("word", word + _worker));
+								Document doc = new Document().putString("word", word + _worker);
+								db.getCollection("words").save(doc);
 							}
 							catch (Exception e)
 							{
@@ -47,6 +48,8 @@ public class TestConcurrentInserts
 					});
 				}
 			}
+
+			System.out.println(System.currentTimeMillis() - time);
 
 			HashSet<String> words = new HashSet<>();
 

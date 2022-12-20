@@ -34,7 +34,8 @@ public class Test1
 				{
 					for (int j = 0; j < 10; j++,z++)
 					{
-						collection.save(new Document().putNumber("_id", z).putString("name", "olle-"+i+"-"+j));
+//						collection.save(new Document().putNumber("_id", z).putString("name", "olle-"+i+"-"+j));
+						collection.save(new Document().putString("_id", "olle-"+i+"-"+j));
 					}
 				}
 
@@ -50,7 +51,7 @@ public class Test1
 
 				db.commit();
 
-//				showTree(db.getCollection("people").getImplementation());
+				showTree(db.getCollection("people").getImplementation());
 			}
 
 //			blockDevice.dump();
@@ -58,13 +59,13 @@ public class Test1
 			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
-				Document doc = db.getCollection("people").get(new Document().putNumber("_id", 0));
-				System.out.println(doc);
-
-				List<Document> docs = db.getCollection("people").list();
-				System.out.println(docs);
-
-				System.out.println(db.getCollection("people").size());
+//				Document doc = db.getCollection("people").get(new Document().putNumber("_id", 0));
+//				System.out.println(doc);
+//
+//				List<Document> docs = db.getCollection("people").list();
+//				System.out.println(docs);
+//
+//				System.out.println(db.getCollection("people").size());
 
 				db.getCollection("people").stream().forEach(e -> System.out.println(e));
 			}
