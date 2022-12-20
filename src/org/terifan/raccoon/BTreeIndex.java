@@ -249,7 +249,7 @@ public class BTreeIndex extends BTreeNode
 
 		ArrayMapEntry firstRight = right.mMap.getFirst();
 
-		ArrayMapKey keyLeft = new ArrayMapKey(new byte[0]);
+		ArrayMapKey keyLeft = ArrayMapKey.EMPTY;
 		ArrayMapKey keyRight = firstRight.getKey();
 
 		BTreeNode firstChild = right.getNode(aImplementation, firstRight);
@@ -295,7 +295,7 @@ public class BTreeIndex extends BTreeNode
 
 		ArrayMapEntry firstRight = right.mMap.getFirst();
 
-		ArrayMapKey keyLeft = new ArrayMapKey(new byte[0]);
+		ArrayMapKey keyLeft = ArrayMapKey.EMPTY;
 		ArrayMapKey keyRight = firstRight.getKey();
 
 		BTreeNode firstChild = right.getNode(aImplementation, firstRight);
@@ -430,8 +430,8 @@ public class BTreeIndex extends BTreeNode
 	{
 		if (aIndex == 0)
 		{
-			mMap.remove(new ArrayMapKey(new byte[0]), null);
-			mChildNodes.remove(new ArrayMapKey(new byte[0]));
+			mMap.remove(ArrayMapKey.EMPTY, null);
+			mChildNodes.remove(ArrayMapKey.EMPTY);
 
 			ArrayMapEntry firstEntry = mMap.get(0, new ArrayMapEntry());
 
@@ -440,7 +440,7 @@ public class BTreeIndex extends BTreeNode
 			mMap.remove(firstEntry.getKey(), null);
 			mChildNodes.remove(firstEntry.getKey());
 
-			firstEntry.setKey(new ArrayMapKey(new byte[0]));
+			firstEntry.setKey(ArrayMapKey.EMPTY);
 
 			mMap.insert(firstEntry);
 			mChildNodes.put(firstEntry.getKey(), firstNode);
@@ -467,8 +467,8 @@ public class BTreeIndex extends BTreeNode
 
 		firstEntry.setKey(findLowestLeafKey(aImplementation, aNode));
 
-		aNode.mMap.remove(new ArrayMapKey(new byte[0]), null);
-		aNode.mChildNodes.remove(new ArrayMapKey(new byte[0]));
+		aNode.mMap.remove(ArrayMapKey.EMPTY, null);
+		aNode.mChildNodes.remove(ArrayMapKey.EMPTY);
 
 		aNode.mMap.insert(firstEntry);
 		aNode.mChildNodes.put(firstEntry.getKey(), firstNode);
@@ -485,13 +485,13 @@ public class BTreeIndex extends BTreeNode
 
 			BTreeNode childNode = aNode.mChildNodes.remove(firstEntry.getKey());
 
-			firstEntry.setKey(new ArrayMapKey(new byte[0]));
+			firstEntry.setKey(ArrayMapKey.EMPTY);
 
 			aNode.mMap.insert(firstEntry);
 
 			if (childNode != null)
 			{
-				aNode.mChildNodes.put(new ArrayMapKey(new byte[0]), childNode);
+				aNode.mChildNodes.put(ArrayMapKey.EMPTY, childNode);
 			}
 		}
 	}
@@ -514,7 +514,7 @@ public class BTreeIndex extends BTreeNode
 		}
 
 //		assert !aNode.mMap.isEmpty();
-		if (aNode.mMap.isEmpty()) return new ArrayMapKey(new byte[0]);
+		if (aNode.mMap.isEmpty()) return ArrayMapKey.EMPTY;
 
 		return aNode.mMap.getKey(0);
 	}

@@ -76,7 +76,7 @@ public class BTreeLeaf extends BTreeNode
 		a.mModified = true;
 		b.mModified = true;
 
-		ArrayMapKey keyA = new ArrayMapKey(new byte[0]);
+		ArrayMapKey keyA = ArrayMapKey.EMPTY;
 		ArrayMapKey keyB = b.mMap.getKey(0);
 
 		BTreeIndex newIndex = new BTreeIndex(1);

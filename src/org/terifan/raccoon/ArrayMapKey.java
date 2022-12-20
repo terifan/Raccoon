@@ -2,22 +2,53 @@ package org.terifan.raccoon;
 
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.UUID;
+import org.terifan.raccoon.util.ByteArrayUtil;
 
 
 public class ArrayMapKey implements Comparable<ArrayMapKey>
 {
+	public final static ArrayMapKey EMPTY = new ArrayMapKey(new byte[0]);
+
 	private final byte[] mBuffer;
-
-
-	public ArrayMapKey(byte[] aBuffer)
-	{
-		mBuffer = aBuffer;
-	}
+	private final int mFormat;
 
 
 	public ArrayMapKey(String aValue)
 	{
+		mFormat = 0;
 		mBuffer = aValue.getBytes(Charset.forName("utf-8"));
+	}
+
+
+	public ArrayMapKey(long aLongValue)
+	{
+		mFormat = 1;
+		mBuffer = new byte[8];
+		ByteArrayUtil.putInt64(mBuffer, 0, aLongValue);
+	}
+
+
+	public ArrayMapKey(byte[] aBuffer)
+	{
+		mFormat = 2;
+		mBuffer = aBuffer.clone();
+	}
+
+
+	public ArrayMapKey(byte[] aBuffer, int aOffset, int aLength)
+	{
+		mFormat = 2;
+		mBuffer = Arrays.copyOfRange(aBuffer, aOffset, aOffset + aLength);
+	}
+
+
+	public ArrayMapKey(UUID aUUID)
+	{
+		mFormat = 3;
+		mBuffer = new byte[16];
+		ByteArrayUtil.putInt64(mBuffer, 0, aUUID.getMostSignificantBits());
+		ByteArrayUtil.putInt64(mBuffer, 8, aUUID.getLeastSignificantBits());
 	}
 
 
@@ -76,6 +107,22 @@ public class ArrayMapKey implements Comparable<ArrayMapKey>
 	@Override
 	public String toString()
 	{
-		return new String(mBuffer);
+		switch (mFormat)
+		{
+			case 0:
+				return new String(mBuffer);
+			case 1:
+				return "#" + ByteArrayUtil.getInt64(mBuffer, 0);
+			case 2:
+			default:
+				StringBuilder sb = new StringBuilder("0x");
+				for (byte b : mBuffer)
+				{
+					sb.append(String.format("%02x", 0xff & b));
+				}
+				return sb.toString();
+			case 3:
+				return UUID.nameUUIDFromBytes(mBuffer).toString();
+		}
 	}
 }

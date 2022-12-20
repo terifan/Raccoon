@@ -39,7 +39,7 @@ public class BTreeEntryIteratorNGTest
 				int _i = arr.get(i);
 				tree.put(new ArrayMapEntry(new ArrayMapKey("key"+_i), ("value"+_i).getBytes(), TYPE_DOCUMENT));
 //				tree.put(new ArrayMapEntry(("key"+_i).getBytes(), new Document().putNumber("_id", i).putString("name", "olle-"+i).marshal(), TYPE_DOCUMENT));
-				showTree(tree);
+//				showTree(tree);
 //				Thread.sleep(1);
 			}
 			tree.commit();
@@ -58,6 +58,6 @@ public class BTreeEntryIteratorNGTest
 //			}
 		}
 
-		Thread.sleep(100000);
+//		Thread.sleep(100000);
 	}
 }

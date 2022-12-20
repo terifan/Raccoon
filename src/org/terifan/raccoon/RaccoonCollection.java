@@ -233,9 +233,7 @@ public final class RaccoonCollection implements BTreeStorage
 
 		if (id instanceof Number)
 		{
-			byte[] buf = new byte[8];
-			ByteArrayUtil.putInt64(buf, 0, ((Number)id).longValue());
-			return new ArrayMapKey(buf);
+			return new ArrayMapKey(((Number)id).longValue());
 		}
 
 		return new ArrayMapKey(id.toString());

@@ -44,7 +44,7 @@ public final class ArrayMapEntry
 
 	public void unmarshallKey(byte[] aBuffer, int aOffset, int aLength)
 	{
-		setKey(new ArrayMapKey(Arrays.copyOfRange(aBuffer, aOffset, aOffset + aLength)));
+		setKey(new ArrayMapKey(aBuffer, aOffset, aLength));
 	}
 
 

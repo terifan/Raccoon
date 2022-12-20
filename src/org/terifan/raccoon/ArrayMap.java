@@ -504,7 +504,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 		int keyOffset = readKeyOffset(entryOffset);
 		int keyLength = readKeyLength(entryOffset);
 
-		return new ArrayMapKey(Arrays.copyOfRange(mBuffer, mStartOffset + keyOffset, mStartOffset + keyOffset + keyLength));
+		return new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength);
 	}
 
 
@@ -547,7 +547,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 			int keyOffset = readKeyOffset(entryOffset);
 			int keyLength = readKeyLength(entryOffset);
 
-			int cmp = compare(aKey.array(), 0, aKey.size(), mBuffer, mStartOffset + keyOffset, keyLength);
+			int cmp = aKey.compareTo(new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength));
 
 			if (cmp > 0)
 			{
@@ -564,43 +564,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 		}
 
 		return -(low + 1); // key not found
-	}
-
-
-	private int compare(byte[] aBufferA, int aOffsetA, int aLengthA, byte[] aBufferB, int aOffsetB, int aLengthB)
-	{
-//		byte[] bufferA = aBufferA;
-//		byte[] bufferB = aBufferB;
-//
-//		for (int i = 0, len = Math.min(aLengthA, aLengthB); i < len; i++)
-//		{
-//			int a = 0xff & bufferA[aOffsetA + i];
-//			int b = 0xff & bufferB[aOffsetB + i];
-//			if (a < b) return -1;
-//			if (a > b) return 1;
-////			int c = (0xff & bufferA[aOffsetA + i]) - (0xff & bufferB[aOffsetB + i]);
-////			if (c != 0)
-////			{
-////				return c;
-////			}
-//		}
-//
-//		if (aLengthA < aLengthB) return -1;
-//		if (aLengthA > aLengthB) return 1;
-//
-//		return 0;
-
-		for (int end = aOffsetA + Math.min(aLengthA, aLengthB); aOffsetA < end; aOffsetA++, aOffsetB++)
-		{
-			byte a = aBufferA[aOffsetA];
-			byte b = aBufferB[aOffsetB];
-			if (a != b)
-			{
-				return (255 & a) - (255 & b);
-			}
-		}
-
-		return aLengthA - aLengthB;
 	}
 
 
@@ -745,7 +708,8 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 			{
 				return "Entry offset after free space (" + ((mStartOffset + bufferOffset) + " + " + length) + ">" + (mStartOffset + mFreeSpaceOffset) + ")";
 			}
-			if (i > 0 && compare(mBuffer, mStartOffset + prevKeyOffset, prevKeyLength, mBuffer, mStartOffset + keyOffset, keyLength) >= 0)
+//			if (i > 0 && compare(mBuffer, mStartOffset + prevKeyOffset, prevKeyLength, mBuffer, mStartOffset + keyOffset, keyLength) >= 0)
+			if (i > 0 && new ArrayMapKey(mBuffer, mStartOffset + prevKeyOffset, prevKeyLength).compareTo(new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength)) >= 0)
 			{
 				return "Keys are out of order";
 			}
