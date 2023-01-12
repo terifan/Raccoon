@@ -11,6 +11,7 @@ import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonCollection;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.secure.AccessCredentials;
+import static test._Tools.showTree;
 
 
 public class TestConcurrentPuts
@@ -19,7 +20,7 @@ public class TestConcurrentPuts
 	{
 		try
 		{
-			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+			MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
 //			AccessCredentials ac = new AccessCredentials("password");
 			AccessCredentials ac = null;
 
@@ -51,6 +52,8 @@ public class TestConcurrentPuts
 					});
 				}
 			}
+
+//			showTree(collection.getImplementation());
 
 			System.out.println(System.currentTimeMillis() - time);
 
