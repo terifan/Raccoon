@@ -11,7 +11,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.storage.BlockAccessor;
-import org.terifan.raccoon.util.ByteArrayUtil;
 import org.terifan.raccoon.util.Log;
 
 
@@ -82,7 +81,7 @@ public final class RaccoonCollection implements BTreeStorage
 			{
 				value = blob.writeAllBytes(value).finish();
 			}
-			catch (IOException e)
+			catch (Exception | Error e)
 			{
 				throw new DatabaseException(e);
 			}

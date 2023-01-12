@@ -1,10 +1,14 @@
 package test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.RaccoonCollection;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 
@@ -22,28 +26,26 @@ public class TestConcurrentPuts
 			RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.REPLACE, ac);
 
 			long time = System.currentTimeMillis();
+			long seed = Math.abs(new Random().nextInt());
+
+			System.out.println(seed);
 
 			int loops = 10;
-			ArrayList<String> sourceWords = _WordLists.list4342;
+			List<String> sourceWords = _WordLists.list4342.subList(0, 5);
+			Collections.shuffle(sourceWords, new Random(seed));
 
-			try ( _FixedThreadExecutor exe = new _FixedThreadExecutor(1))
+			try ( _FixedThreadExecutor exe = new _FixedThreadExecutor(10))
 			{
 				for (int worker = 0; worker < loops; worker++)
 				{
 					int _worker = worker;
 					exe.submit(() ->
 					{
+						RaccoonCollection collection = db.getCollection("words");
 						for (String word : sourceWords)
 						{
-							try
-							{
-								Document doc = new Document().putString("word", word + _worker);
-								db.getCollection("words").save(doc);
-							}
-							catch (Exception e)
-							{
-								e.printStackTrace(System.out);
-							}
+							Document doc = new Document().putString("word", word + _worker);
+							collection.save(doc);
 						}
 					});
 				}
@@ -53,12 +55,14 @@ public class TestConcurrentPuts
 
 			HashSet<String> words = new HashSet<>();
 
+			RaccoonCollection collection = db.getCollection("words");
+
 			for (int worker = 0; worker < loops; worker++)
 			{
 				for (int word = 0; word < sourceWords.size(); word++)
 				{
 					Document doc = new Document().putNumber("_id", 1 + word * loops + worker);
-					if (db.getCollection("words").tryGet(doc))
+					if (collection.tryGet(doc))
 					{
 						words.add(doc.getString("word"));
 					}

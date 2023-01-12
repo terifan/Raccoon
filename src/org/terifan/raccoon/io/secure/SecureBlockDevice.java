@@ -10,7 +10,7 @@ import org.terifan.security.messagedigest.MurmurHash3;
 import org.terifan.security.cryptography.SecretKey;
 import org.terifan.raccoon.util.Log;
 import static java.util.Arrays.fill;
-import java.util.random.RandomGenerator;
+import java.util.Random;
 import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.security.cryptography.CipherMode;
 import static org.terifan.raccoon.util.ByteArrayUtil.*;
@@ -33,10 +33,10 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 	private final static int KEY_POOL_SIZE = KEY_SIZE_BYTES + 3 * KEY_SIZE_BYTES + 3 * IV_SIZE;
 	private final static int CHECKSUM_SEED = 0xfedcba98; // (a random number)
 
-	private final static RandomGenerator PRNG;
+	private final static Random PRNG;
 	static
 	{
-		RandomGenerator tmp;
+		Random tmp;
 		try
 		{
 			tmp = SecureRandom.getInstanceStrong();

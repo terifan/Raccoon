@@ -3,11 +3,12 @@ package org.terifan.raccoon;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.terifan.bundle.Document;
-import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.BTreeNode.RemoveResult;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.util.ReadWriteLock;
+import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 import org.terifan.raccoon.util.Result;
 
 
@@ -15,11 +16,12 @@ public class BTree implements AutoCloseable
 {
 	static byte[] BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
 
+	final ReadWriteLock mReadWriteLock = new ReadWriteLock();
+
 	private BTreeStorage mStorage;
 	private Document mConfiguration;
 	private BTreeNode mRoot;
 	private int mModCount;
-
 
 	public BTree(BTreeStorage aStorage, Document aConfiguration)
 	{
@@ -104,8 +106,7 @@ public class BTree implements AutoCloseable
 
 		Result<ArrayMapEntry> result = new Result<>();
 
-//		lock.writeLock().lock();
-		synchronized (this)
+		try (WriteLock lock = mReadWriteLock.writeLock())
 		{
 			if (mRoot.mLevel == 0 ? mRoot.mMap.getCapacity() > mConfiguration.getInt("leafSize") || mRoot.mMap.getFreeSpace() < aEntry.getMarshalledLength() : mRoot.mMap.getUsedSpace() > mConfiguration.getInt("indexSize"))
 			{
@@ -119,7 +120,6 @@ public class BTree implements AutoCloseable
 				}
 			}
 		}
-//		lock.writeLock().unlock();
 
 		mRoot.put(this, aEntry.getKey(), aEntry, result);
 
@@ -142,13 +142,16 @@ public class BTree implements AutoCloseable
 
 		if (result == RemoveResult.REMOVED)
 		{
-			if (mRoot.mLevel > 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
+			try (WriteLock lock = mReadWriteLock.writeLock())
 			{
-				mRoot = ((BTreeIndex)mRoot).shrink(this);
-			}
-			if (mRoot.mLevel == 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
-			{
-				mRoot = ((BTreeIndex)mRoot).downgrade(this);
+				if (mRoot.mLevel > 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
+				{
+					mRoot = ((BTreeIndex)mRoot).shrink(this);
+				}
+				if (mRoot.mLevel == 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
+				{
+					mRoot = ((BTreeIndex)mRoot).downgrade(this);
+				}
 			}
 		}
 

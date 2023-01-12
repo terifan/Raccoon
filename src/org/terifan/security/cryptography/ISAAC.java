@@ -1,7 +1,7 @@
 package org.terifan.security.cryptography;
 
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.random.RandomGenerator;
 
 
 /**
@@ -9,7 +9,7 @@ import java.util.random.RandomGenerator;
  *
  * See http://burtleburtle.net/bob/rand/isaacafa.html
  */
-public final class ISAAC implements RandomGenerator
+public final class ISAAC extends Random
 {
 	private transient int[] set;
 	private transient int[] mem;

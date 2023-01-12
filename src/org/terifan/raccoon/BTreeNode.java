@@ -7,11 +7,10 @@ import org.terifan.raccoon.util.Result;
 
 public abstract class BTreeNode
 {
-	final int mLevel;
-
-	BlockPointer mBlockPointer;
-	public ArrayMap mMap;
-	boolean mModified;
+	protected BlockPointer mBlockPointer;
+	protected ArrayMap mMap;
+	protected boolean mModified;
+	protected int mLevel;
 
 
 	static class SplitResult
@@ -20,6 +19,8 @@ public abstract class BTreeNode
 		private final BTreeNode right;
 		private final ArrayMapKey leftKey;
 		private final ArrayMapKey rightKey;
+
+
 		SplitResult(BTreeNode left, BTreeNode right, ArrayMapKey leftKey, ArrayMapKey rightKey)
 		{
 			this.left = left;

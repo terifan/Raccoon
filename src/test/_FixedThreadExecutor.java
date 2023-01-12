@@ -128,38 +128,30 @@ public class _FixedThreadExecutor<T> implements AutoCloseable
 
 				if (aRunnable instanceof RunnableTask)
 				{
-					aService.submit(new Runnable()
+					aService.submit(() ->
 					{
-						@Override
-						public void run()
+						try
 						{
-							try
-							{
-								((RunnableTask)aRunnable).run();
-							}
-							catch (Exception e)
-							{
-								e.printStackTrace(System.err);
-							}
+							((RunnableTask)aRunnable).run();
+						}
+						catch (Exception | Error e)
+						{
+							e.printStackTrace(System.err);
 						}
 					});
 				}
 				else if (aRunnable instanceof CallableTask)
 				{
-					aService.submit(new Callable()
+					aService.submit(() ->
 					{
-						@Override
-						public Object call()
+						try
 						{
-							try
-							{
-								return ((CallableTask)aRunnable).run();
-							}
-							catch (Exception e)
-							{
-								e.printStackTrace(System.err);
-								return e;
-							}
+							return ((CallableTask)aRunnable).run();
+						}
+						catch (Exception | Error e)
+						{
+							e.printStackTrace(System.err);
+							return e;
 						}
 					});
 				}
@@ -190,7 +182,7 @@ public class _FixedThreadExecutor<T> implements AutoCloseable
 
 				return false;
 			}
-			catch (InterruptedException e)
+			catch (Exception | Error e)
 			{
 				return true;
 			}

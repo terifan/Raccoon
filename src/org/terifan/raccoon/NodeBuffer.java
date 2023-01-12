@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
@@ -48,5 +49,11 @@ class NodeBuffer
 	Iterable<ArrayMapKey> keySet()
 	{
 		return mMap.keySet();
+	}
+
+
+	Collection<BTreeNode> values()
+	{
+		return mMap.values();
 	}
 }

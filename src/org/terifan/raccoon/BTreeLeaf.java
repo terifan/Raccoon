@@ -6,6 +6,7 @@ import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.util.Result;
 import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import org.terifan.raccoon.util.Console;
+import org.terifan.raccoon.util.ReadWriteLock;
 
 
 public class BTreeLeaf extends BTreeNode
@@ -27,7 +28,10 @@ public class BTreeLeaf extends BTreeNode
 	synchronized PutResult put(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
 		mModified = true;
-		return mMap.insert(aEntry, aResult);
+		try (ReadWriteLock.WriteLock lock = aImplementation.mReadWriteLock.writeLock())
+		{
+			return mMap.insert(aEntry, aResult);
+		}
 	}
 
 
@@ -48,6 +52,8 @@ public class BTreeLeaf extends BTreeNode
 	@Override
 	SplitResult split(BTree aImplementation)
 	{
+		assert aImplementation.mReadWriteLock.isWriteLocked();
+
 		aImplementation.freeBlock(mBlockPointer);
 
 		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("leafSize"));
@@ -65,6 +71,8 @@ public class BTreeLeaf extends BTreeNode
 
 	BTreeIndex upgrade(BTree aImplementation)
 	{
+		assert aImplementation.mReadWriteLock.isWriteLocked();
+
 		aImplementation.freeBlock(mBlockPointer);
 
 		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("leafSize"));
