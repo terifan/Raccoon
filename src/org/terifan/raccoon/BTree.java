@@ -8,6 +8,7 @@ import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.ReadWriteLock;
+import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 import org.terifan.raccoon.util.Result;
 
@@ -88,7 +89,10 @@ public class BTree implements AutoCloseable
 	{
 		assertNotClosed();
 
-		return mRoot.get(this, aEntry.getKey(), aEntry);
+		try (ReadLock lock = mReadWriteLock.readLock())
+		{
+			return mRoot.get(this, aEntry.getKey(), aEntry);
+		}
 	}
 
 

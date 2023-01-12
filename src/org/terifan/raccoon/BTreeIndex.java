@@ -88,8 +88,8 @@ public class BTreeIndex extends BTreeNode
 	{
 		mModified = true;
 
-		try (WriteLock lock = aImplementation.mReadWriteLock.writeLock())
-		{
+//		try (WriteLock lock = aImplementation.mReadWriteLock.writeLock())
+//		{
 			int index = mMap.nearestIndex(aKey);
 
 			BTreeNode curntChld = getNode(aImplementation, index);
@@ -145,14 +145,12 @@ public class BTreeIndex extends BTreeNode
 			assert mMap.get(0, new ArrayMapEntry()).getKey().size() == 0 : "First key expected to be empty: " + mMap.toString();
 
 			return result;
-		}
+//		}
 	}
 
 
 	private int mergeNodes(BTree aImplementation, int aIndex, BTreeNode aCurntChld, BTreeNode aLeftChild, BTreeNode aRghtChild, int aKeyLimit, int aSizeLimit)
 	{
-		assert aImplementation.mReadWriteLock.isWriteLocked();
-
 		int newIndex = aIndex;
 
 		boolean a = aLeftChild != null;
@@ -238,8 +236,6 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	SplitResult split(BTree aImplementation)
 	{
-		assert aImplementation.mReadWriteLock.isWriteLocked();
-
 		aImplementation.freeBlock(mBlockPointer);
 
 		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("indexSize"));
@@ -308,8 +304,6 @@ public class BTreeIndex extends BTreeNode
 	 */
 	BTreeIndex shrink(BTree aImplementation)
 	{
-		assert aImplementation.mReadWriteLock.isWriteLocked();
-
 		BTreeIndex index = new BTreeIndex(mLevel - 1);
 		index.mModified = true;
 		index.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("indexSize"));
@@ -352,8 +346,6 @@ public class BTreeIndex extends BTreeNode
 
 	private void mergeIndices(BTree aImplementation, int aFromIndex, BTreeIndex aFrom, BTreeIndex aTo)
 	{
-		assert aImplementation.mReadWriteLock.isWriteLocked();
-
 		ArrayMapEntry temp = new ArrayMapEntry();
 
 		fixFirstKey(aImplementation, aFrom);
@@ -390,8 +382,6 @@ public class BTreeIndex extends BTreeNode
 
 	private void mergeLeafs(BTree aImplementation, int aIndex, BTreeLeaf aFrom, BTreeLeaf aTo)
 	{
-		assert aImplementation.mReadWriteLock.isWriteLocked();
-
 		ArrayMapEntry temp = new ArrayMapEntry();
 
 		for (int i = 0, sz = aFrom.mMap.size(); i < sz; i++)
@@ -415,8 +405,6 @@ public class BTreeIndex extends BTreeNode
 
 	private void fixFirstKey(BTree aImplementation, BTreeIndex aNode)
 	{
-		assert aImplementation.mReadWriteLock.isWriteLocked();
-
 		ArrayMapEntry firstEntry = aNode.mMap.get(0, new ArrayMapEntry());
 
 		assert firstEntry.getKey().size() == 0;
@@ -457,8 +445,6 @@ public class BTreeIndex extends BTreeNode
 
 	private ArrayMapKey findLowestLeafKey(BTree aImplementation, BTreeNode aNode)
 	{
-		assert aImplementation.mReadWriteLock.isWriteLocked();
-
 		if (aNode instanceof BTreeIndex)
 		{
 			BTreeIndex node = (BTreeIndex)aNode;
@@ -485,8 +471,6 @@ public class BTreeIndex extends BTreeNode
 	 */
 	BTreeLeaf downgrade(BTree aImplementation)
 	{
-		assert aImplementation.mReadWriteLock.isWriteLocked();
-
 		assert mLevel == 1;
 
 		BTreeLeaf newLeaf = getNode(aImplementation, 0);
@@ -510,8 +494,6 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	boolean commit(BTree aImplementation)
 	{
-		assert aImplementation.mReadWriteLock.isWriteLocked();
-
 		assert assertValidCache() == null : assertValidCache();
 
 		for (Entry<ArrayMapKey, BTreeNode> entry : mChildNodes.entrySet())
