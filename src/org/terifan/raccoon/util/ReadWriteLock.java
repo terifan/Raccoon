@@ -5,7 +5,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class ReadWriteLock
 {
-	private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
+	private ReentrantReadWriteLock mReentrantLock = new ReentrantReadWriteLock();
 
 
 	public ReadLock readLock()
@@ -22,7 +22,7 @@ public final class ReadWriteLock
 
 	public boolean isWriteLocked()
 	{
-		return mReadWriteLock.isWriteLocked();
+		return mReentrantLock.isWriteLocked();
 	}
 
 
@@ -30,13 +30,13 @@ public final class ReadWriteLock
 	{
 		ReadLock()
 		{
-			mReadWriteLock.readLock().lock();
+			mReentrantLock.readLock().lock();
 		}
 
 		@Override
 		public void close()
 		{
-			mReadWriteLock.readLock().unlock();
+			mReentrantLock.readLock().unlock();
 		}
 	}
 
@@ -45,13 +45,13 @@ public final class ReadWriteLock
 	{
 		WriteLock()
 		{
-			mReadWriteLock.writeLock().lock();
+			mReentrantLock.writeLock().lock();
 		}
 
 		@Override
 		public void close()
 		{
-			mReadWriteLock.writeLock().unlock();
+			mReentrantLock.writeLock().unlock();
 		}
 	}
 }

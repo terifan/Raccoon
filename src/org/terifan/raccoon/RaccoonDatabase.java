@@ -310,10 +310,10 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			mCollections.put(aName, instance);
 
-			if (mDatabaseOpenOption == DatabaseOpenOption.REPLACE)
-			{
-				instance.clear();
-			}
+//			if (mDatabaseOpenOption == DatabaseOpenOption.REPLACE)
+//			{
+//				instance.clear();
+//			}
 		}
 		finally
 		{

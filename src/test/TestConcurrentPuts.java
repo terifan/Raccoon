@@ -30,21 +30,22 @@ public class TestConcurrentPuts
 
 			System.out.println(seed);
 
-			int loops = 10;
+			int loops = 20;
 			List<String> sourceWords = _WordLists.list4342.subList(0, 5);
 			Collections.shuffle(sourceWords, new Random(seed));
 
+			RaccoonCollection collection = db.getCollection("words");
+
 			try ( _FixedThreadExecutor exe = new _FixedThreadExecutor(10))
 			{
-				for (int worker = 0; worker < loops; worker++)
+				for (int i = 0; i < loops; i++)
 				{
-					int _worker = worker;
+					int _index = i;
 					exe.submit(() ->
 					{
-						RaccoonCollection collection = db.getCollection("words");
 						for (String word : sourceWords)
 						{
-							Document doc = new Document().putString("word", word + _worker);
+							Document doc = new Document().putString("word", word + _index);
 							collection.save(doc);
 						}
 					});
@@ -55,13 +56,11 @@ public class TestConcurrentPuts
 
 			HashSet<String> words = new HashSet<>();
 
-			RaccoonCollection collection = db.getCollection("words");
-
-			for (int worker = 0; worker < loops; worker++)
+			for (int i = 0; i < loops; i++)
 			{
 				for (int word = 0; word < sourceWords.size(); word++)
 				{
-					Document doc = new Document().putNumber("_id", 1 + word * loops + worker);
+					Document doc = new Document().putNumber("_id", 1 + word * loops + i);
 					if (collection.tryGet(doc))
 					{
 						words.add(doc.getString("word"));
