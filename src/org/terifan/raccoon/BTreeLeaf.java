@@ -1,12 +1,11 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.BlockType;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
 import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.util.Result;
 import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import org.terifan.raccoon.util.Console;
-import org.terifan.raccoon.util.ReadWriteLock;
+import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 
 
 public class BTreeLeaf extends BTreeNode
@@ -25,13 +24,13 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	synchronized PutResult put(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	PutResult put(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
 		mModified = true;
-		try (ReadWriteLock.WriteLock lock = aImplementation.mReadWriteLock.writeLock())
-		{
+//		try (WriteLock lock = aImplementation.mReadWriteLock.writeLock())
+//		{
 			return mMap.insert(aEntry, aResult);
-		}
+//		}
 	}
 
 

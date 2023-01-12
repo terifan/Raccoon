@@ -30,8 +30,8 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	boolean get(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry aEntry)
 	{
-		try (ReadLock lock = aImplementation.mReadWriteLock.readLock())
-		{
+//		try (ReadLock lock = aImplementation.mReadWriteLock.readLock())
+//		{
 			ArrayMapEntry entry = new ArrayMapEntry(aKey);
 
 			mMap.loadNearestIndexEntry(entry);
@@ -39,7 +39,7 @@ public class BTreeIndex extends BTreeNode
 			BTreeNode node = getNode(aImplementation, entry);
 
 			return node.get(aImplementation, aKey, aEntry);
-		}
+//		}
 	}
 
 
@@ -50,8 +50,8 @@ public class BTreeIndex extends BTreeNode
 
 		BTreeNode nearestNode;
 
-		try (WriteLock lock = aImplementation.mReadWriteLock.writeLock())
-		{
+//		try (WriteLock lock = aImplementation.mReadWriteLock.writeLock())
+//		{
 			ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey);
 			mMap.loadNearestIndexEntry(nearestEntry);
 			nearestNode = getNode(aImplementation, nearestEntry);
@@ -77,7 +77,7 @@ public class BTreeIndex extends BTreeNode
 				mMap.loadNearestIndexEntry(nearestEntry);
 				nearestNode = getNode(aImplementation, nearestEntry);
 			}
-		}
+//		}
 
 		return nearestNode.put(aImplementation, aKey, aEntry, aResult);
 	}

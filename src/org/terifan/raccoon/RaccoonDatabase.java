@@ -1042,8 +1042,8 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		return new Document()
 			.putString("name", aName)
-			.putNumber("indexSize", mBlockDevice.getBlockSize())
-			.putNumber("leafSize", mBlockDevice.getBlockSize())
+			.putNumber("indexSize", 4*mBlockDevice.getBlockSize())
+			.putNumber("leafSize", 4*mBlockDevice.getBlockSize())
 			.putNumber("entrySizeLimit", mBlockDevice.getBlockSize() / 4)
 			.putBundle("compression", CompressionParam.NO_COMPRESSION.marshal());
 	}

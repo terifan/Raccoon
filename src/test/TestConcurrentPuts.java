@@ -30,8 +30,8 @@ public class TestConcurrentPuts
 
 			System.out.println(seed);
 
-			int loops = 20;
-			List<String> sourceWords = _WordLists.list4342.subList(0, 5);
+			int loops = 231;
+			List<String> sourceWords = _WordLists.list4342; //;.subList(0, 5);
 			Collections.shuffle(sourceWords, new Random(seed));
 
 			RaccoonCollection collection = db.getCollection("words");

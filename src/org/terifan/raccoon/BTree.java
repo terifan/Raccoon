@@ -101,13 +101,13 @@ public class BTree implements AutoCloseable
 			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().size() + ", value: " + aEntry.getValue().length + ", maximum: " + mConfiguration.getInt("entrySizeLimit"));
 		}
 
-		Log.i("put");
-		Log.inc();
-
-		Result<ArrayMapEntry> result = new Result<>();
-
 		try (WriteLock lock = mReadWriteLock.writeLock())
 		{
+			Log.i("put");
+			Log.inc();
+
+			Result<ArrayMapEntry> result = new Result<>();
+
 			if (mRoot.mLevel == 0 ? mRoot.mMap.getCapacity() > mConfiguration.getInt("leafSize") || mRoot.mMap.getFreeSpace() < aEntry.getMarshalledLength() : mRoot.mMap.getUsedSpace() > mConfiguration.getInt("indexSize"))
 			{
 				if (mRoot instanceof BTreeLeaf)
@@ -119,13 +119,13 @@ public class BTree implements AutoCloseable
 					mRoot = ((BTreeIndex)mRoot).grow(this);
 				}
 			}
+
+			mRoot.put(this, aEntry.getKey(), aEntry, result);
+
+			Log.dec();
+
+			return result.get();
 		}
-
-		mRoot.put(this, aEntry.getKey(), aEntry, result);
-
-		Log.dec();
-
-		return result.get();
 	}
 
 
