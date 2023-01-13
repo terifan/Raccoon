@@ -1,5 +1,7 @@
 package org.terifan.raccoon;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Map.Entry;
 import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
@@ -8,6 +10,7 @@ import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.util.Console;
+import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 
@@ -16,7 +19,7 @@ public class BTreeIndex extends BTreeNode
 {
 	NodeBuffer mChildNodes;
 
-//	private final ReadWriteLock mReadWriteLock = new ReadWriteLock();
+	private final ReadWriteLock mReadWriteLock = new ReadWriteLock();
 
 
 	BTreeIndex(int aLevel)
@@ -30,8 +33,8 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	boolean get(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry aEntry)
 	{
-//		try (ReadLock lock = aImplementation.mReadWriteLock.readLock())
-//		{
+		try (ReadLock lock = mReadWriteLock.readLock())
+		{
 			ArrayMapEntry entry = new ArrayMapEntry(aKey);
 
 			mMap.loadNearestIndexEntry(entry);
@@ -39,7 +42,7 @@ public class BTreeIndex extends BTreeNode
 			BTreeNode node = getNode(aImplementation, entry);
 
 			return node.get(aImplementation, aKey, aEntry);
-//		}
+		}
 	}
 
 
@@ -49,37 +52,50 @@ public class BTreeIndex extends BTreeNode
 		mModified = true;
 
 		BTreeNode nearestNode;
+		ReadLock readLock = null;
 
-//		try (WriteLock lock = aImplementation.mReadWriteLock.writeLock())
-//		{
-			ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey);
-			mMap.loadNearestIndexEntry(nearestEntry);
-			nearestNode = getNode(aImplementation, nearestEntry);
-
-			if (mLevel == 1 ? nearestNode.mMap.getCapacity() > aImplementation.getConfiguration().getInt("leafSize") || nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > aImplementation.getConfiguration().getInt("indexSize"))
+		try
+		{
+			try (WriteLock lock = mReadWriteLock.writeLock())
 			{
-				ArrayMapKey leftKey = nearestEntry.getKey();
-
-				mChildNodes.remove(leftKey);
-				mMap.remove(leftKey, null);
-
-				SplitResult split = nearestNode.split(aImplementation);
-
-				ArrayMapKey rightKey = split.rightKey();
-
-				mChildNodes.put(leftKey, split.left());
-				mChildNodes.put(rightKey, split.right());
-
-				mMap.insert(new ArrayMapEntry(leftKey, BTree.BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
-				mMap.insert(new ArrayMapEntry(rightKey, BTree.BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
-
-				nearestEntry = new ArrayMapEntry(aKey);
+				ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey);
 				mMap.loadNearestIndexEntry(nearestEntry);
 				nearestNode = getNode(aImplementation, nearestEntry);
-			}
-//		}
 
-		return nearestNode.put(aImplementation, aKey, aEntry, aResult);
+				if (mLevel == 1 ? nearestNode.mMap.getCapacity() > aImplementation.getConfiguration().getInt("leafSize") || nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > aImplementation.getConfiguration().getInt("indexSize"))
+				{
+					ArrayMapKey leftKey = nearestEntry.getKey();
+
+					mChildNodes.remove(leftKey);
+					mMap.remove(leftKey, null);
+
+					SplitResult split = nearestNode.split(aImplementation);
+
+					ArrayMapKey rightKey = split.rightKey();
+
+					mChildNodes.put(leftKey, split.left());
+					mChildNodes.put(rightKey, split.right());
+
+					mMap.insert(new ArrayMapEntry(leftKey, BTree.BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
+					mMap.insert(new ArrayMapEntry(rightKey, BTree.BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
+
+					nearestEntry = new ArrayMapEntry(aKey);
+					mMap.loadNearestIndexEntry(nearestEntry);
+					nearestNode = getNode(aImplementation, nearestEntry);
+				}
+
+				readLock = mReadWriteLock.readLock();
+			}
+
+			return nearestNode.put(aImplementation, aKey, aEntry, aResult);
+		}
+		finally
+		{
+			if (readLock != null)
+			{
+				readLock.close();
+			}
+		}
 	}
 
 
@@ -190,7 +206,7 @@ public class BTreeIndex extends BTreeNode
 			}
 			if (newIndex <= 0)
 			{
-				clearFirstKey(this);
+				clearFirstKey();
 			}
 		}
 		else
@@ -365,7 +381,7 @@ public class BTreeIndex extends BTreeNode
 		aFrom.mChildNodes.clear();
 		aImplementation.freeBlock(aFrom.mBlockPointer);
 
-		clearFirstKey(aTo);
+		aTo.clearFirstKey();
 
 		mMap.get(aFromIndex, temp);
 		mMap.remove(aFromIndex, null);
@@ -373,7 +389,7 @@ public class BTreeIndex extends BTreeNode
 
 		if (aFromIndex == 0)
 		{
-			clearFirstKey(this);
+			clearFirstKey();
 		}
 
 		aTo.mModified = true;
@@ -421,34 +437,34 @@ public class BTreeIndex extends BTreeNode
 	}
 
 
-	private void clearFirstKey(BTreeIndex aNode)
+	private void clearFirstKey()
 	{
-		ArrayMapEntry firstEntry = aNode.mMap.get(0, new ArrayMapEntry());
+		ArrayMapEntry firstEntry = mMap.get(0, new ArrayMapEntry());
 
 		if (firstEntry.getKey().size() > 0)
 		{
-			aNode.mMap.removeFirst();
+			mMap.removeFirst();
 
-			BTreeNode childNode = aNode.mChildNodes.remove(firstEntry.getKey());
+			BTreeNode childNode = mChildNodes.remove(firstEntry.getKey());
 
 			firstEntry.setKey(ArrayMapKey.EMPTY);
 
-			aNode.mMap.insert(firstEntry);
+			mMap.insert(firstEntry);
 
 			if (childNode != null)
 			{
-				aNode.mChildNodes.put(ArrayMapKey.EMPTY, childNode);
+				mChildNodes.put(ArrayMapKey.EMPTY, childNode);
 			}
 		}
 	}
 
 
-	private ArrayMapKey findLowestLeafKey(BTree aImplementation, BTreeNode aNode)
+	private static ArrayMapKey findLowestLeafKey(BTree aImplementation, BTreeNode aNode)
 	{
 		if (aNode instanceof BTreeIndex)
 		{
 			BTreeIndex node = (BTreeIndex)aNode;
-			for (int i = 0; i < mMap.size() ; i++)
+			for (int i = 0; i < node.mMap.size() ; i++)
 			{
 				ArrayMapKey b = findLowestLeafKey(aImplementation, node.getNode(aImplementation, i));
 				if (b.size() > 0)

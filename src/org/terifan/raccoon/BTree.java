@@ -17,7 +17,7 @@ public class BTree implements AutoCloseable
 {
 	static byte[] BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
 
-	final ReadWriteLock mReadWriteLock = new ReadWriteLock();
+//	final ReadWriteLock mReadWriteLock = new ReadWriteLock();
 
 	private BTreeStorage mStorage;
 	private Document mConfiguration;
@@ -89,12 +89,13 @@ public class BTree implements AutoCloseable
 	{
 		assertNotClosed();
 
-		try (ReadLock lock = mReadWriteLock.readLock())
+//		try (ReadLock lock = mReadWriteLock.readLock())
 		{
 			return mRoot.get(this, aEntry.getKey(), aEntry);
 		}
 	}
 
+	private final ReadWriteLock mReadWriteLock = new ReadWriteLock();
 
 	public ArrayMapEntry put(ArrayMapEntry aEntry)
 	{
@@ -105,13 +106,16 @@ public class BTree implements AutoCloseable
 			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().size() + ", value: " + aEntry.getValue().length + ", maximum: " + mConfiguration.getInt("entrySizeLimit"));
 		}
 
+		Log.i("put");
+		Log.inc();
+
+		Result<ArrayMapEntry> result = new Result<>();
+
+		ReadLock readLock = null;
+		try
+		{
 		try (WriteLock lock = mReadWriteLock.writeLock())
 		{
-			Log.i("put");
-			Log.inc();
-
-			Result<ArrayMapEntry> result = new Result<>();
-
 			if (mRoot.mLevel == 0 ? mRoot.mMap.getCapacity() > mConfiguration.getInt("leafSize") || mRoot.mMap.getFreeSpace() < aEntry.getMarshalledLength() : mRoot.mMap.getUsedSpace() > mConfiguration.getInt("indexSize"))
 			{
 				if (mRoot instanceof BTreeLeaf)
@@ -124,12 +128,47 @@ public class BTree implements AutoCloseable
 				}
 			}
 
-			mRoot.put(this, aEntry.getKey(), aEntry, result);
-
-			Log.dec();
-
-			return result.get();
+			readLock = mReadWriteLock.readLock();
 		}
+
+		mRoot.put(this, aEntry.getKey(), aEntry, result);
+
+		}
+		finally
+		{
+		if(readLock!=null)readLock.close();
+		}
+
+		Log.dec();
+
+		return result.get();
+
+////		synchronized (this)
+////		try (WriteLock lock = mReadWriteLock.writeLock())
+//		{
+//			Log.i("put");
+//			Log.inc();
+//
+//			Result<ArrayMapEntry> result = new Result<>();
+//
+//			if (mRoot.mLevel == 0 ? mRoot.mMap.getCapacity() > mConfiguration.getInt("leafSize") || mRoot.mMap.getFreeSpace() < aEntry.getMarshalledLength() : mRoot.mMap.getUsedSpace() > mConfiguration.getInt("indexSize"))
+//			{
+//				if (mRoot instanceof BTreeLeaf)
+//				{
+//					mRoot = ((BTreeLeaf)mRoot).upgrade(this);
+//				}
+//				else
+//				{
+//					mRoot = ((BTreeIndex)mRoot).grow(this);
+//				}
+//			}
+//
+//			mRoot.put(this, aEntry.getKey(), aEntry, result);
+//
+//			Log.dec();
+//
+//			return result.get();
+//		}
 	}
 
 
@@ -146,7 +185,7 @@ public class BTree implements AutoCloseable
 
 		if (result == RemoveResult.REMOVED)
 		{
-			try (WriteLock lock = mReadWriteLock.writeLock())
+//			try (WriteLock lock = mReadWriteLock.writeLock())
 			{
 				if (mRoot.mLevel > 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
 				{
