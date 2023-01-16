@@ -30,7 +30,6 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	private IManagedBlockDevice mBlockDevice;
 	private DatabaseRoot mDatabaseRoot;
-	private CompressionParam mCompressionParam;
 	private DatabaseOpenOption mDatabaseOpenOption;
 	private final ConcurrentHashMap<String, RaccoonCollection> mCollections;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
@@ -162,7 +161,6 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption, AccessCredentials aAccessCredentials)
 	{
-		mCompressionParam = CompressionParam.BEST_SPEED;
 		mDatabaseOpenOption = aOpenOption;
 
 		IManagedBlockDevice blockDevice;
@@ -546,7 +544,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public IManagedBlockDevice getBlockDevice()
+	IManagedBlockDevice getBlockDevice()
 	{
 		return mBlockDevice;
 	}
@@ -592,26 +590,25 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public void addStatusListener(DatabaseStatusListener aErrorReportListener)
+	public void addStatusListener(DatabaseStatusListener aListener)
 	{
-		mDatabaseStatusListener.add(aErrorReportListener);
+		mDatabaseStatusListener.add(aListener);
 	}
-
 
 
 	CompressionParam getCompressionParameter()
 	{
-		return mCompressionParam;
+		return CompressionParam.BEST_SPEED;
 	}
 
 
-	public BlockAccessor getBlockAccessor()
+	BlockAccessor getBlockAccessor()
 	{
-		return new BlockAccessor(getBlockDevice(), mCompressionParam);
+		return new BlockAccessor(getBlockDevice(), CompressionParam.BEST_SPEED);
 	}
 
 
-	public long getTransaction()
+	long getTransaction()
 	{
 		return mDatabaseRoot.getTransactionId();
 	}
@@ -624,7 +621,6 @@ public final class RaccoonDatabase implements AutoCloseable
 			.putNumber("indexSize", mBlockDevice.getBlockSize())
 			.putNumber("leafSize", mBlockDevice.getBlockSize())
 			.putNumber("entrySizeLimit", mBlockDevice.getBlockSize() / 4)
-//			.putBundle("compression", CompressionParam.NO_COMPRESSION.marshal());
 			.putBundle("compression", CompressionParam.BEST_SPEED.marshal());
 	}
 }

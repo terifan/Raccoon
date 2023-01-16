@@ -1,6 +1,8 @@
 package test;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
@@ -41,6 +43,9 @@ public class TestSimple
 					new Document().putString("_id", "walter").putNumber("id", 10)
 				);
 
+				byte[] bytes = Files.readAllBytes(Paths.get("d:\\pictures\\babe.jpg"));
+				db.getCollection("files").save(new Document().putBinary("content", bytes));
+
 				db.commit();
 			}
 
@@ -49,6 +54,9 @@ public class TestSimple
 			{
 				db.getCollection("people").list().forEach(e -> System.out.println(e));
 				db.getCollection("lookup").list().forEach(e -> System.out.println(e));
+
+				System.out.println(db.getCollection("files").get(new Document().putNumber("_id", 1)).getBinary("content").length);
+
 				db.commit();
 			}
 
