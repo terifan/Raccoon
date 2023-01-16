@@ -6,7 +6,6 @@ import java.util.function.Supplier;
 import javax.swing.JFrame;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.ScanResult;
-import org.terifan.raccoon.io.IBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;

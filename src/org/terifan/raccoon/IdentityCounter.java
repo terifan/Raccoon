@@ -20,6 +20,12 @@ public class IdentityCounter
 	}
 
 
+	public void set(long aValue)
+	{
+		mConfiguration.put("identityCounter", aValue);
+	}
+
+
 	synchronized long next()
 	{
 		long value = mConfiguration.getLong("identityCounter", 0L) + 1L;

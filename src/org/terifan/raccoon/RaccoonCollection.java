@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators.AbstractSpliterator;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -17,7 +18,7 @@ import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 
 
-public final class RaccoonCollection implements BTreeStorage
+public final class RaccoonCollection extends BTreeStorage
 {
 	public final static byte TYPE_TREENODE = 0;
 	public final static byte TYPE_DOCUMENT = 1;
@@ -67,6 +68,15 @@ public final class RaccoonCollection implements BTreeStorage
 	public boolean tryGet(Document aDocument)
 	{
 		return get(aDocument) != null;
+	}
+
+
+	public void saveAll(Document... aDocuments)
+	{
+		for (Document document : aDocuments)
+		{
+			save(document);
+		}
 	}
 
 
@@ -132,9 +142,31 @@ public final class RaccoonCollection implements BTreeStorage
 
 	public List<Document> list()
 	{
+		return stream().collect(Collectors.toList());
+	}
+
+
+	private Stream<Document> stream()
+	{
 		try (ReadLock lock = mLock.readLock())
 		{
-			return stream().collect(Collectors.toList());
+			Stream<Document> tmp = StreamSupport.stream(new AbstractSpliterator<Document>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+			{
+				private DocumentIterator iterator = new DocumentIterator(RaccoonCollection.this);
+
+				@Override
+				public boolean tryAdvance(Consumer<? super Document> aConsumer)
+				{
+					if (!iterator.hasNext())
+					{
+						return false;
+					}
+					aConsumer.accept(iterator.next());
+					return true;
+				}
+			}, false);
+
+			return tmp;
 		}
 	}
 
@@ -177,7 +209,7 @@ public final class RaccoonCollection implements BTreeStorage
 
 	boolean commit()
 	{
-		synchronized (this)
+		try (WriteLock lock = mLock.writeLock())
 		{
 			if (!mCommitLocks.isEmpty())
 			{
@@ -189,39 +221,17 @@ public final class RaccoonCollection implements BTreeStorage
 
 				throw new CommitBlockedException("A table cannot be committed while a stream is open." + sb.toString());
 			}
+
+			mImplementation.getConfiguration().put("identityCounter", mIdentityCounter.get());
+
+			return mImplementation.commit();
 		}
-
-		mImplementation.getConfiguration().put("identityCounter", mIdentityCounter.get());
-
-		return mImplementation.commit();
 	}
 
 
 	void rollback()
 	{
 		mImplementation.rollback();
-	}
-
-
-	public Stream<Document> stream()
-	{
-		Stream<Document> tmp = StreamSupport.stream(new AbstractSpliterator<Document>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
-		{
-			private DocumentIterator iterator = new DocumentIterator(RaccoonCollection.this);
-
-			@Override
-			public boolean tryAdvance(Consumer<? super Document> aConsumer)
-			{
-				if (!iterator.hasNext())
-				{
-					return false;
-				}
-				aConsumer.accept(iterator.next());
-				return true;
-			}
-		}, false);
-
-		return tmp;
 	}
 
 
@@ -233,7 +243,7 @@ public final class RaccoonCollection implements BTreeStorage
 
 
 	@Override
-	public long getTransaction()
+	protected long getTransaction()
 	{
 		return mDatabase.getTransaction();
 	}
@@ -243,11 +253,18 @@ public final class RaccoonCollection implements BTreeStorage
 	{
 		Object id = aDocument.get("_id");
 
-		if (id == null)
+		if (id instanceof UUID)
+		{
+		}
+		else if (id instanceof Number)
+		{
+			mIdentityCounter.set(((Number)id).longValue());
+		}
+		else if (id == null)
 		{
 			if (!aCreateKey)
 			{
-				throw new IllegalStateException();
+				throw new IllegalStateException("_id field not provided in Document");
 			}
 			id = mIdentityCounter.next();
 			aDocument.put("_id", id);

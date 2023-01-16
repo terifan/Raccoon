@@ -35,7 +35,6 @@ public final class RaccoonDatabase implements AutoCloseable
 	private final ConcurrentHashMap<String, RaccoonCollection> mCollections;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 
-	private int mReadLocked;
 	private boolean mModified;
 	private boolean mCloseDeviceOnCloseDatabase;
 	private boolean mReadOnly;
@@ -163,7 +162,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption, AccessCredentials aAccessCredentials)
 	{
-		mCompressionParam = CompressionParam.NO_COMPRESSION; //getParameter(CompressionParam.class, aOpenParams, CompressionParam.BEST_SPEED);
+		mCompressionParam = CompressionParam.BEST_SPEED;
 		mDatabaseOpenOption = aOpenOption;
 
 		IManagedBlockDevice blockDevice;
@@ -608,7 +607,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	public BlockAccessor getBlockAccessor()
 	{
-		return new BlockAccessor(getBlockDevice(), getCompressionParameter());
+		return new BlockAccessor(getBlockDevice(), mCompressionParam);
 	}
 
 
