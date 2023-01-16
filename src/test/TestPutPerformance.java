@@ -1,6 +1,8 @@
 package test;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Random;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.RaccoonDatabase;
@@ -18,12 +20,12 @@ public class TestPutPerformance
 		try
 		{
 			int N = 1000_000;
-			int M = 100;
+			int M = 1;
 
 //			AccessCredentials ac = new AccessCredentials("password");
 			AccessCredentials ac = null;
 
-			System.out.printf("%-20s ", "INSERT " + N*M);
+			System.out.printf("%-20s ", "INSERT FULL");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				for (int j = 0; j < M; j++)
@@ -40,7 +42,7 @@ public class TestPutPerformance
 			}
 			System.out.println();
 
-			System.out.printf("%-20s ", "GET " + N*M);
+			System.out.printf("%-20s ", "GET FULL");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 0; j < M; j++)
@@ -57,7 +59,7 @@ public class TestPutPerformance
 			}
 			System.out.println();
 
-			System.out.printf("%-20s ", "REMOVE " + N*M);
+			System.out.printf("%-20s ", "REMOVE FULL");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 0; j < M; j++)
@@ -73,7 +75,7 @@ public class TestPutPerformance
 			}
 			System.out.println();
 
-			System.out.printf("%-20s ", "INSERT " + N+"x"+M);
+			System.out.printf("%-20s ", "INSERT REPLACE");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				for (int j = 0; j < M; j++)
@@ -89,7 +91,7 @@ public class TestPutPerformance
 			}
 			System.out.println();
 
-			System.out.printf("%-20s ", "GET " + N+"x"+M);
+			System.out.printf("%-20s ", "GET REPLACE");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0; j < M; j++)
@@ -106,16 +108,64 @@ public class TestPutPerformance
 			}
 			System.out.println();
 
-			System.out.printf("%-20s ", "REMOVE " + N);
+
+			ArrayList<Integer> order = new ArrayList<>();
+			for (int i = 0; i < N*M;i++)
+			{
+				order.add(i);
+			}
+			Collections.shuffle(order, rnd);
+
+
+			System.out.printf("%-20s ", "INSERT RANDOM");
+			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			{
+				for (int j = 0, k = 0; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++, k++)
+					{
+						String s = value();
+						db.getCollection("table").save(new Document().putNumber("_id", order.get(k)).putString("key", s).putNumber("hash", s.hashCode()));
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+			Collections.shuffle(order, rnd);
+
+			System.out.printf("%-20s ", "GET RANDOM");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
-				long t = System.currentTimeMillis();
-				for (int i = 0; i < N; i++)
+				for (int j = 0, k = 0; j < M; j++)
 				{
-					db.getCollection("table").remove(new Document().putNumber("_id", i));
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++, k++)
+					{
+						Document doc = db.getCollection("table").get(new Document().putNumber("_id", order.get(k)));
+						assert doc.getString("key").hashCode() == doc.getInt("hash");
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
 				}
-				System.out.printf("%8d", System.currentTimeMillis() - t);
-				db.commit();
+			}
+			System.out.println();
+
+			System.out.printf("%-20s ", "REMOVE RANDOM");
+			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			{
+				for (int j = 0, k = 0; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++, k++)
+					{
+						db.getCollection("table").remove(new Document().putNumber("_id", order.get(k)));
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
 			}
 			System.out.println();
 		}
