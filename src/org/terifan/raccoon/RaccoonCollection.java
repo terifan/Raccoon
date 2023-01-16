@@ -12,6 +12,9 @@ import java.util.stream.StreamSupport;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.util.ReadWriteLock;
+import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
+import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 
 
 public final class RaccoonCollection implements BTreeStorage
@@ -19,6 +22,8 @@ public final class RaccoonCollection implements BTreeStorage
 	public final static byte TYPE_TREENODE = 0;
 	public final static byte TYPE_DOCUMENT = 1;
 	public final static byte TYPE_EXTERNAL = 2;
+
+	private final ReadWriteLock mLock;
 
 	private RaccoonDatabase mDatabase;
 	private HashSet<CommitLock> mCommitLocks;
@@ -32,6 +37,7 @@ public final class RaccoonCollection implements BTreeStorage
 		mCommitLocks = new HashSet<>();
 		mImplementation = new BTree(this, aConfiguration);
 		mIdentityCounter = new IdentityCounter(aConfiguration);
+		mLock = new ReadWriteLock();
 	}
 
 
@@ -40,7 +46,7 @@ public final class RaccoonCollection implements BTreeStorage
 		Log.i("get entity %s", aDocument);
 		Log.inc();
 
-		try
+		try (ReadLock lock = mLock.readLock())
 		{
 			ArrayMapEntry entry = new ArrayMapEntry(marshalKey(aDocument, false));
 
@@ -48,13 +54,13 @@ public final class RaccoonCollection implements BTreeStorage
 			{
 				return unmarshalDocument(entry, aDocument);
 			}
+
+			return null;
 		}
 		finally
 		{
 			Log.dec();
 		}
-
-		return null;
 	}
 
 
@@ -69,67 +75,84 @@ public final class RaccoonCollection implements BTreeStorage
 		Log.i("save %s", aDocument);
 		Log.inc();
 
-		ArrayMapKey key = marshalKey(aDocument, true);
-		byte[] value = aDocument.marshal();
-		byte type = TYPE_DOCUMENT;
-
-		if (key.size() + value.length + 1 > mImplementation.getConfiguration().getInt("entrySizeLimit"))
+		try (WriteLock lock = mLock.writeLock())
 		{
-			type = TYPE_EXTERNAL;
+			ArrayMapKey key = marshalKey(aDocument, true);
+			byte[] value = aDocument.marshal();
+			byte type = TYPE_DOCUMENT;
 
-			try (LobByteChannel blob = new LobByteChannel(mDatabase, null, LobOpenOption.WRITE))
+			if (key.size() + value.length + 1 > mImplementation.getConfiguration().getInt("entrySizeLimit"))
 			{
-				value = blob.writeAllBytes(value).finish();
+				type = TYPE_EXTERNAL;
+
+				try (LobByteChannel blob = new LobByteChannel(mDatabase, null, LobOpenOption.WRITE))
+				{
+					value = blob.writeAllBytes(value).finish();
+				}
+				catch (Exception | Error e)
+				{
+					throw new DatabaseException(e);
+				}
 			}
-			catch (Exception | Error e)
-			{
-				throw new DatabaseException(e);
-			}
+
+			ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
+			ArrayMapEntry prev = mImplementation.put(entry);
+			deleteIfBlob(prev);
+
+			return prev == null;
 		}
-
-		ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
-		ArrayMapEntry prev = mImplementation.put(entry);
-		deleteIfBlob(prev);
-
-		Log.dec();
-
-		return prev == null;
+		finally
+		{
+			Log.dec();
+		}
 	}
 
 
 	public boolean remove(Document aDocument)
 	{
-		ArrayMapEntry entry = new ArrayMapEntry(marshalKey(aDocument, false));
-		ArrayMapEntry prev = mImplementation.remove(entry);
-		deleteIfBlob(prev);
+		try (WriteLock lock = mLock.writeLock())
+		{
+			ArrayMapEntry entry = new ArrayMapEntry(marshalKey(aDocument, false));
+			ArrayMapEntry prev = mImplementation.remove(entry);
+			deleteIfBlob(prev);
 
-		return prev != null;
+			return prev != null;
+		}
 	}
 
 
 	public long size()
 	{
-		return mImplementation.size();
+		try (ReadLock lock = mLock.readLock())
+		{
+			return mImplementation.size();
+		}
 	}
 
 
 	public List<Document> list()
 	{
-		return stream().collect(Collectors.toList());
+		try (ReadLock lock = mLock.readLock())
+		{
+			return stream().collect(Collectors.toList());
+		}
 	}
 
 
 	public void clear()
 	{
-		BTree prev = mImplementation;
-
-		mImplementation = new BTree(this, mImplementation.getConfiguration().clone().remove("treeRoot"));
-
-		new BTreeNodeVisitor().visitAll(prev, node ->
+		try (WriteLock lock = mLock.writeLock())
 		{
-			node.mMap.forEach(this::deleteIfBlob);
-			prev.freeBlock(node.mBlockPointer);
-		});
+			BTree prev = mImplementation;
+
+			mImplementation = new BTree(this, mImplementation.getConfiguration().clone().remove("treeRoot"));
+
+			new BTreeNodeVisitor().visitAll(prev, node ->
+			{
+				node.mMap.forEach(this::deleteIfBlob);
+				prev.freeBlock(node.mBlockPointer);
+			});
+		}
 	}
 
 
@@ -254,7 +277,7 @@ public final class RaccoonCollection implements BTreeStorage
 	}
 
 
-	public BTree getImplementation()
+	BTree getImplementation()
 	{
 		return mImplementation;
 	}

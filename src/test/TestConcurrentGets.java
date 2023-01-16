@@ -5,6 +5,7 @@ import java.util.HashSet;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.RaccoonCollection;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 
@@ -22,7 +23,9 @@ public class TestConcurrentGets
 			RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.REPLACE, ac);
 
 			int loops = 1000;
+
 			ArrayList<String> sourceWords = _WordLists.list4342;
+			RaccoonCollection collection = db.getCollection("words");
 
 			for (int workerIndex = 0; workerIndex < loops; workerIndex++)
 			{
@@ -30,7 +33,7 @@ public class TestConcurrentGets
 				{
 					try
 					{
-						db.getCollection("words").save(new Document().putString("word", word + workerIndex));
+						collection.save(new Document().putString("word", word + workerIndex));
 					}
 					catch (Exception e)
 					{
@@ -51,7 +54,7 @@ public class TestConcurrentGets
 						for (int wordIndex = 0; wordIndex < sourceWords.size(); wordIndex++)
 						{
 							Document doc = new Document().putNumber("_id", 1 + wordIndex * loops + workerIndex);
-							if (db.getCollection("words").tryGet(doc))
+							if (collection.tryGet(doc))
 							{
 								synchronized (words)
 								{

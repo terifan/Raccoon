@@ -7,17 +7,12 @@ import org.terifan.raccoon.BTreeNode.RemoveResult;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
-import org.terifan.raccoon.util.ReadWriteLock;
-import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
-import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 import org.terifan.raccoon.util.Result;
 
 
 public class BTree implements AutoCloseable
 {
 	static byte[] BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
-
-//	final ReadWriteLock mReadWriteLock = new ReadWriteLock();
 
 	private BTreeStorage mStorage;
 	private Document mConfiguration;
@@ -89,13 +84,9 @@ public class BTree implements AutoCloseable
 	{
 		assertNotClosed();
 
-//		try (ReadLock lock = mReadWriteLock.readLock())
-		{
-			return mRoot.get(this, aEntry.getKey(), aEntry);
-		}
+		return mRoot.get(this, aEntry.getKey(), aEntry);
 	}
 
-	private final ReadWriteLock mReadWriteLock = new ReadWriteLock();
 
 	public ArrayMapEntry put(ArrayMapEntry aEntry)
 	{
@@ -111,64 +102,23 @@ public class BTree implements AutoCloseable
 
 		Result<ArrayMapEntry> result = new Result<>();
 
-		ReadLock readLock = null;
-		try
+		if (mRoot.mLevel == 0 ? mRoot.mMap.getCapacity() > mConfiguration.getInt("leafSize") || mRoot.mMap.getFreeSpace() < aEntry.getMarshalledLength() : mRoot.mMap.getUsedSpace() > mConfiguration.getInt("indexSize"))
 		{
-		try (WriteLock lock = mReadWriteLock.writeLock())
-		{
-			if (mRoot.mLevel == 0 ? mRoot.mMap.getCapacity() > mConfiguration.getInt("leafSize") || mRoot.mMap.getFreeSpace() < aEntry.getMarshalledLength() : mRoot.mMap.getUsedSpace() > mConfiguration.getInt("indexSize"))
+			if (mRoot instanceof BTreeLeaf)
 			{
-				if (mRoot instanceof BTreeLeaf)
-				{
-					mRoot = ((BTreeLeaf)mRoot).upgrade(this);
-				}
-				else
-				{
-					mRoot = ((BTreeIndex)mRoot).grow(this);
-				}
+				mRoot = ((BTreeLeaf)mRoot).upgrade(this);
 			}
-
-			readLock = mReadWriteLock.readLock();
+			else
+			{
+				mRoot = ((BTreeIndex)mRoot).grow(this);
+			}
 		}
 
 		mRoot.put(this, aEntry.getKey(), aEntry, result);
 
-		}
-		finally
-		{
-		if(readLock!=null)readLock.close();
-		}
-
 		Log.dec();
 
 		return result.get();
-
-////		synchronized (this)
-////		try (WriteLock lock = mReadWriteLock.writeLock())
-//		{
-//			Log.i("put");
-//			Log.inc();
-//
-//			Result<ArrayMapEntry> result = new Result<>();
-//
-//			if (mRoot.mLevel == 0 ? mRoot.mMap.getCapacity() > mConfiguration.getInt("leafSize") || mRoot.mMap.getFreeSpace() < aEntry.getMarshalledLength() : mRoot.mMap.getUsedSpace() > mConfiguration.getInt("indexSize"))
-//			{
-//				if (mRoot instanceof BTreeLeaf)
-//				{
-//					mRoot = ((BTreeLeaf)mRoot).upgrade(this);
-//				}
-//				else
-//				{
-//					mRoot = ((BTreeIndex)mRoot).grow(this);
-//				}
-//			}
-//
-//			mRoot.put(this, aEntry.getKey(), aEntry, result);
-//
-//			Log.dec();
-//
-//			return result.get();
-//		}
 	}
 
 

@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.terifan.bundle.Document;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
@@ -18,6 +17,8 @@ import org.terifan.raccoon.io.physical.FileBlockDevice;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.util.ReadWriteLock;
+import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 
 
 public final class RaccoonDatabase implements AutoCloseable
@@ -25,9 +26,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	public final static String TENANT_NAME = "RaccoonDB";
 	public final static int TENANT_VERSION = 1;
 
-//	private final ReentrantReadWriteLock mReadWriteLock = new ReentrantReadWriteLock();
-//	private final Lock mReadLock = mReadWriteLock.readLock();
-//	private final Lock mWriteLock = mReadWriteLock.writeLock();
+	private final ReadWriteLock mLock;
 
 	private IManagedBlockDevice mBlockDevice;
 	private DatabaseRoot mDatabaseRoot;
@@ -45,6 +44,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	private RaccoonDatabase()
 	{
+		mLock = new ReadWriteLock();
 		mCollections = new ConcurrentHashMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
 	}
@@ -285,6 +285,14 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
+	public List<RaccoonCollection> getCollections()
+	{
+		checkOpen();
+
+		return new ArrayList<>(mCollections.values());
+	}
+
+
 	public synchronized RaccoonCollection getCollection(String aName)
 	{
 		checkOpen();
@@ -337,21 +345,13 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		checkOpen();
 
-//		mReadLock.lock();
-//		try
-//		{
-			for (RaccoonCollection instance : mCollections.values())
+		for (RaccoonCollection instance : mCollections.values())
+		{
+			if (instance.isModified())
 			{
-				if (instance.isModified())
-				{
-					return true;
-				}
+				return true;
 			}
-//		}
-//		finally
-//		{
-//			mReadLock.unlock();
-//		}
+		}
 
 		return false;
 	}
@@ -369,9 +369,8 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		long nodesWritten = 0;
 
-//		aquireWriteLock();
-//		try
-//		{
+		try (WriteLock lock = mLock.writeLock())
+		{
 			Log.i("flush changes");
 			Log.inc();
 
@@ -381,11 +380,7 @@ public final class RaccoonDatabase implements AutoCloseable
 			}
 
 			Log.dec();
-//		}
-//		finally
-//		{
-//			mWriteLock.unlock();
-//		}
+		}
 
 		return nodesWritten;
 	}
@@ -398,13 +393,11 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		checkOpen();
 
-//		aquireWriteLock();
-//
-//		try
-//		{
-			Log.i("commit database");
-			Log.inc();
+		Log.i("commit database");
+		Log.inc();
 
+		try (WriteLock lock = mLock.writeLock())
+		{
 			for (Entry<String, RaccoonCollection> entry : mCollections.entrySet())
 			{
 				if (entry.getValue().commit())
@@ -433,14 +426,12 @@ public final class RaccoonDatabase implements AutoCloseable
 				Log.dec();
 			}
 
-			Log.dec();
-
 			return returnModified;
-//		}
-//		finally
-//		{
-//			mWriteLock.unlock();
-//		}
+		}
+		finally
+		{
+			Log.dec();
+		}
 	}
 
 
@@ -451,12 +442,11 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		checkOpen();
 
-//		aquireWriteLock();
-//		try
-//		{
-			Log.i("rollback");
-			Log.inc();
+		Log.i("rollback");
+		Log.inc();
 
+		try (WriteLock lock = mLock.writeLock())
+		{
 			for (RaccoonCollection instance : mCollections.values())
 			{
 				instance.rollback();
@@ -464,50 +454,46 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			mDatabaseRoot.readFromDevice(mBlockDevice);
 			mBlockDevice.rollback();
-
+		}
+		finally
+		{
 			Log.dec();
-//		}
-//		finally
-//		{
-//			mWriteLock.unlock();
-//		}
+		}
 	}
 
 
 	@Override
 	public void close()
 	{
-		if (mShutdownHook != null)
+		try (WriteLock lock = mLock.writeLock())
 		{
-			try
+			if (mShutdownHook != null)
 			{
-				Runtime.getRuntime().removeShutdownHook(mShutdownHook);
+				try
+				{
+					Runtime.getRuntime().removeShutdownHook(mShutdownHook);
+				}
+				catch (Exception e)
+				{
+					// ignore this
+				}
 			}
-			catch (Exception e)
+
+			if (mBlockDevice == null)
 			{
-				// ignore this
+				Log.w("database already closed");
+				return;
 			}
-		}
 
-		if (mBlockDevice == null)
-		{
-			Log.w("database already closed");
-			return;
-		}
-
-		if (mReadOnly)
-		{
-			if (mModified)
+			if (mReadOnly)
 			{
-				reportStatus(LogLevel.WARN, "readonly database modified, changes are not committed", null);
+				if (mModified)
+				{
+					reportStatus(LogLevel.WARN, "readonly database modified, changes are not committed", null);
+				}
+				return;
 			}
-			return;
-		}
 
-//		aquireWriteLock();
-//
-//		try
-//		{
 			Log.d("begin closing database");
 			Log.inc();
 
@@ -557,231 +543,8 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			Log.i("database finished closing");
 			Log.dec();
-//		}
-//		finally
-//		{
-//			mWriteLock.unlock();
-//		}
+		}
 	}
-
-
-	/**
-	 * Saves an entity.
-	 *
-	 * @return true if this table did not already contain the specified entity
-	 */
-//	public boolean save(Document aDocument)
-//	{
-//		aquireWriteLock();
-//		try
-//		{
-//			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.CREATE);
-//			return instance.save(this, aDocument);
-//		}
-//		catch (DatabaseException e)
-//		{
-//			forceClose(e);
-//			throw e;
-//		}
-//		finally
-//		{
-//			mWriteLock.unlock();
-//		}
-//	}
-//
-//
-//	void aquireWriteLock()
-//	{
-//		if (mReadOnly)
-//		{
-//			throw new ReadOnlyDatabaseException();
-//		}
-//
-//		mWriteLock.lock();
-//	}
-//
-//
-//	void releaseWriteLock()
-//	{
-//		mWriteLock.unlock();
-//	}
-//
-//
-//	/**
-//	 * Attempts to retrieves an entity returning true if entity found and updating the provided instance.
-//	 *
-//	 * @param aDocument an entity with discriminator/key fields set
-//	 * @return true if the entity was found.
-//	 */
-//	public boolean tryGet(Document aDocument)
-//	{
-//		mReadLock.lock();
-//		try
-//		{
-//			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
-//			if (instance == null)
-//			{
-//				return false;
-//			}
-//			return instance.get(this, aDocument);
-//		}
-//		catch (DatabaseException e)
-//		{
-//			forceClose(e);
-//			throw e;
-//		}
-//		finally
-//		{
-//			mReadLock.unlock();
-//		}
-//	}
-//
-//
-//	/**
-//	 * Retrieves an entity throwing and exception if the entity wasn't found.
-//	 *
-//	 * @param aDocument an entity with discriminator/key fields set
-//	 * @throws NoSuchEntityException if the entity cannot be found
-//	 */
-//	public Document get(Document aDocument) throws DatabaseException
-//	{
-//		Assert.notNull(aDocument, "Argument is null");
-//
-//		mReadLock.lock();
-//		try
-//		{
-//			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
-//
-//			if (instance == null)
-//			{
-//				throw new NoSuchEntityException("No table exists matching type " + aDocument.getClass());
-//			}
-//			if (!instance.get(this, aDocument))
-//			{
-//				throw new NoSuchEntityException("No entity exists matching key");
-//			}
-//
-//			return aDocument;
-//		}
-//		catch (DatabaseException e)
-//		{
-//			forceClose(e);
-//			throw e;
-//		}
-//		finally
-//		{
-//			mReadLock.unlock();
-//		}
-//	}
-//
-//
-//	/**
-//	 * Removes the entity.
-//	 *
-//	 * @return true if the entity was removed.
-//	 */
-//	public boolean remove(Document aDocument)
-//	{
-//		aquireWriteLock();
-//		try
-//		{
-//			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
-//			if (instance == null)
-//			{
-//				return false;
-//			}
-//			return instance.remove(this, aDocument);
-//		}
-//		catch (DatabaseException e)
-//		{
-//			forceClose(e);
-//			throw e;
-//		}
-//		finally
-//		{
-//			mWriteLock.unlock();
-//		}
-//	}
-//
-//
-//	public void clear(String aCollection)
-//	{
-//		aquireWriteLock();
-//		try
-//		{
-//			TableInstance instance = openTable(aCollection, DatabaseOpenOption.OPEN);
-//			if (instance != null)
-//			{
-//				instance.clear(this);
-//			}
-//		}
-//		catch (DatabaseException e)
-//		{
-//			forceClose(e);
-//			throw e;
-//		}
-//		finally
-//		{
-//			mWriteLock.unlock();
-//		}
-//	}
-//
-//
-//	/**
-//	 * The contents of the stream is associated with the key found in the entity provided. The stream will persist the entity when it's
-//	 * closed.
-//	 */
-//	public LobByteChannel openLob(Document aDocument, LobOpenOption aOpenOption)
-//	{
-//		TableInstance instance = openTable(aDocument.getString("_collection"), aOpenOption == LobOpenOption.READ ? DatabaseOpenOption.OPEN : DatabaseOpenOption.CREATE);
-//
-//		if (instance == null)
-//		{
-//			if (aOpenOption == LobOpenOption.READ)
-//			{
-//				return null;
-//			}
-//
-//			throw new DatabaseException("Failed to create table");
-//		}
-//
-//		return instance.openBlob(this, aDocument, aOpenOption);
-//	}
-//
-//
-//	public List<Document> list(Document aDocument)
-//	{
-//		List<Document> list = null;
-//
-//		Log.i("list items %s", aDocument.getString("_collection"));
-//		Log.inc();
-//
-//		mReadLock.lock();
-//		try
-//		{
-//			TableInstance instance = openTable(aDocument.getString("_collection"), DatabaseOpenOption.OPEN);
-//
-//			if (instance != null)
-//			{
-//				list = instance.list(this);
-//			}
-//		}
-//		catch (DatabaseException e)
-//		{
-//			forceClose(e);
-//			throw e;
-//		}
-//		finally
-//		{
-//			mReadLock.unlock();
-//
-//			System.setErr(System.out);
-//
-//			Log.dec();
-//		}
-//
-//		return list != null ? list : new ArrayList<>();
-//	}
 
 
 	public IManagedBlockDevice getBlockDevice()
@@ -790,110 +553,19 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-//	public int size(String aCollection)
-//	{
-//		mReadLock.lock();
-//		try
-//		{
-//			TableInstance instance = openTable(aCollection, DatabaseOpenOption.OPEN);
-//			if (instance == null)
-//			{
-//				return 0;
-//			}
-//			return instance.size();
-//		}
-//		finally
-//		{
-//			mReadLock.unlock();
-//		}
-//	}
-
-
 	public String integrityCheck()
 	{
-//		aquireWriteLock();
-//		try
-//		{
-			for (RaccoonCollection instance : mCollections.values())
+		for (RaccoonCollection instance : mCollections.values())
+		{
+			String s = instance.getImplementation().integrityCheck();
+			if (s != null)
 			{
-				String s = instance.getImplementation().integrityCheck();
-				if (s != null)
-				{
-					return s;
-				}
+				return s;
 			}
+		}
 
-			return null;
-//		}
-//		finally
-//		{
-//			mWriteLock.unlock();
-//		}
+		return null;
 	}
-
-
-	public List<RaccoonCollection> getCollections()
-	{
-		checkOpen();
-
-//		mReadLock.lock();
-//
-//		try
-//		{
-			ArrayList<RaccoonCollection> list = new ArrayList<>();
-			list.addAll(mCollections.values());
-			return list;
-//		}
-//		finally
-//		{
-//			mReadLock.unlock();
-//		}
-	}
-
-
-//	public ScanResult scan(ScanResult aScanResult)
-//	{
-//		mReadLock.lock();
-//
-//		try
-//		{
-//			if (aScanResult == null)
-//			{
-//				aScanResult = new ScanResult();
-//			}
-//
-//			aScanResult.enterTable(mSystemTable);
-//
-//			mSystemTable.scan(aScanResult);
-//
-//			aScanResult.exitTable();
-//
-//			for (RaccoonCollection collection : getCollections())
-//			{
-//				boolean wasOpen = mOpenCollections.containsKey(collection.getName());
-//
-//				TableInstance instance = openTable(collection, DatabaseOpenOption.OPEN);
-//
-//				aScanResult.enterTable(instance);
-//
-//				instance.scan(aScanResult);
-//
-//				aScanResult.exitTable();
-//
-//				if (!wasOpen)
-//				{
-//					instance.close();
-//					mOpenCollections.remove(collection.getName());
-//				}
-//			}
-//
-//			return aScanResult;
-//		}
-//		finally
-//		{
-//			mReadLock.unlock();
-//		}
-//	}
 
 
 	protected synchronized void forceClose(Throwable aException)
@@ -908,24 +580,6 @@ public final class RaccoonDatabase implements AutoCloseable
 		mBlockDevice.forceClose();
 		mDatabaseRoot = null;
 	}
-
-
-	/**
-	 * Return true if the database is being read by a thread at this time.
-	 */
-//	public boolean isReadLocked()
-//	{
-//		return mReadWriteLock.getReadHoldCount() > 0;
-//	}
-
-
-	/**
-	 * Return true if the database is being written to a thread at this time.
-	 */
-//	public boolean isWriteLocked()
-//	{
-//		return mReadWriteLock.isWriteLocked();
-//	}
 
 
 	private void reportStatus(LogLevel aLevel, String aMessage, Throwable aThrowable)
@@ -945,85 +599,11 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-//	Lock getReadLock()
-//	{
-//		return mReadLock;
-//	}
-
 
 	CompressionParam getCompressionParameter()
 	{
 		return mCompressionParam;
 	}
-
-
-//	public void execute(Consumer<Database> aConsumer)
-//	{
-//		mWriteLock.lock(); // note: allow this lock even on read-only databases
-//
-//		try
-//		{
-//			aConsumer.accept(this);
-//		}
-//		finally
-//		{
-//			mWriteLock.unlock();
-//		}
-//	}
-//
-//
-//	public <T> void forEach(Class<T> aType, Consumer<T> aConsumer)
-//	{
-//		aquireReadLock();
-//
-//		TableInstance<T> table = openTable(getTable(aType), DatabaseOpenOption.OPEN);
-//
-//		try
-//		{
-//			for (Iterator<T> it = new DocumentIterator<>(this, table, table.getEntryIterator()); it.hasNext();)
-//			{
-//				aConsumer.accept(it.next());
-//			}
-//		}
-//		finally
-//		{
-//			releaseReadLock();
-//		}
-//	}
-//
-//
-//	public void forEachResultSet(Class aType, ResultSetConsumer aConsumer)
-//	{
-//		aquireReadLock();
-//
-//		TableInstance instance = openTable(getTable(aType), DatabaseOpenOption.OPEN);
-//
-//		try
-//		{
-//			ResultSet resultSet = new ResultSet(instance, instance.getEntryIterator());
-//
-//			while (resultSet.next())
-//			{
-//				aConsumer.handle(resultSet);
-//			}
-//		}
-//		finally
-//		{
-//			releaseReadLock();
-//		}
-//	}
-//	private synchronized void releaseReadLock()
-//	{
-//		mReadLock.unlock();
-//		mReadLocked--;
-//	}
-//
-//
-//	private synchronized void aquireReadLock()
-//	{
-//		mReadLock.lock();
-//		mReadLocked++;
-//	}
 
 
 	public BlockAccessor getBlockAccessor()

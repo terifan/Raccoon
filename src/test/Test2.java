@@ -35,7 +35,7 @@ public class Test2
 
 				db.commit();
 
-				showTree(db.getCollection("words").getImplementation());
+//				showTree(db.getCollection("words"));
 			}
 
 			blockDevice.dump();

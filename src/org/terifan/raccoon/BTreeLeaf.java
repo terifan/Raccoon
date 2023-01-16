@@ -1,22 +1,14 @@
 package org.terifan.raccoon;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
+import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.util.Result;
-import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import org.terifan.raccoon.util.Console;
-import org.terifan.raccoon.util.ReadWriteLock;
-import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
-import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 
 
 public class BTreeLeaf extends BTreeNode
 {
-	private final ReadWriteLock mReadWriteLock = new ReadWriteLock();
-
-
 	BTreeLeaf()
 	{
 		super(0);
@@ -26,10 +18,7 @@ public class BTreeLeaf extends BTreeNode
 	@Override
 	boolean get(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry aEntry)
 	{
-		try (ReadLock lock = mReadWriteLock.readLock())
-		{
-			return mMap.get(aEntry);
-		}
+		return mMap.get(aEntry);
 	}
 
 
@@ -37,10 +26,7 @@ public class BTreeLeaf extends BTreeNode
 	PutResult put(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
 		mModified = true;
-		try (WriteLock lock = mReadWriteLock.writeLock())
-		{
-			return mMap.insert(aEntry, aResult);
-		}
+		return mMap.insert(aEntry, aResult);
 	}
 
 

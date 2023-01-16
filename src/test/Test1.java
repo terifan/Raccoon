@@ -51,7 +51,7 @@ public class Test1
 
 				db.commit();
 
-				showTree(db.getCollection("people").getImplementation());
+//				showTree(db.getCollection("people"));
 			}
 
 //			blockDevice.dump();
