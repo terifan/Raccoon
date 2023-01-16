@@ -10,7 +10,7 @@ import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 
 
-public class TestPutPerformance
+public class TestPerformance
 {
 	private final static Random rnd = new Random(1);
 
@@ -20,12 +20,12 @@ public class TestPutPerformance
 		try
 		{
 			int N = 1000_000;
-			int M = 1;
+			int M = 10;
 
 //			AccessCredentials ac = new AccessCredentials("password");
 			AccessCredentials ac = null;
 
-			System.out.printf("%-20s ", "INSERT FULL");
+			System.out.printf("%-15s ", "INSERT FULL");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				for (int j = 0; j < M; j++)
@@ -42,7 +42,7 @@ public class TestPutPerformance
 			}
 			System.out.println();
 
-			System.out.printf("%-20s ", "GET FULL");
+			System.out.printf("%-15s ", "GET FULL");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 0; j < M; j++)
@@ -59,7 +59,7 @@ public class TestPutPerformance
 			}
 			System.out.println();
 
-			System.out.printf("%-20s ", "REMOVE FULL");
+			System.out.printf("%-15s ", "REMOVE FULL");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 0; j < M; j++)
@@ -75,7 +75,7 @@ public class TestPutPerformance
 			}
 			System.out.println();
 
-			System.out.printf("%-20s ", "INSERT REPLACE");
+			System.out.printf("%-15s ", "INSERT REPLACE");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				for (int j = 0; j < M; j++)
@@ -91,7 +91,7 @@ public class TestPutPerformance
 			}
 			System.out.println();
 
-			System.out.printf("%-20s ", "GET REPLACE");
+			System.out.printf("%-15s ", "GET REPLACE");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0; j < M; j++)
@@ -117,8 +117,25 @@ public class TestPutPerformance
 			Collections.shuffle(order, rnd);
 
 
-			System.out.printf("%-20s ", "INSERT RANDOM");
+			System.out.printf("%-15s ", "INSERT RANDOM");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			{
+				for (int j = 0, k = 0; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++, k++)
+					{
+						String s = value();
+						db.getCollection("table").save(new Document().putNumber("_id", order.get(k)).putString("key", s).putNumber("hash", s.hashCode()));
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+			System.out.printf("%-15s ", "REPLACE RANDOM");
+			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 0; j < M; j++)
 				{
@@ -136,7 +153,7 @@ public class TestPutPerformance
 
 			Collections.shuffle(order, rnd);
 
-			System.out.printf("%-20s ", "GET RANDOM");
+			System.out.printf("%-15s ", "GET RANDOM");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 0; j < M; j++)
@@ -153,7 +170,7 @@ public class TestPutPerformance
 			}
 			System.out.println();
 
-			System.out.printf("%-20s ", "REMOVE RANDOM");
+			System.out.printf("%-15s ", "REMOVE RANDOM");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 0; j < M; j++)
