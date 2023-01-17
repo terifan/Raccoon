@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.terifan.bundle.Document;
+import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.ReadWriteLock;

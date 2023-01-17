@@ -4,7 +4,7 @@ import org.terifan.raccoon.ArrayMapEntry;
 import org.terifan.raccoon.BTree;
 import org.terifan.raccoon.BTreeNodeIterator;
 import org.terifan.raccoon.BTreeStorage;
-import org.terifan.bundle.Document;
+import org.terifan.raccoon.document.Document;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
 import static org.terifan.raccoon._Tools.createStorage;
 import static org.terifan.raccoon._Tools.showTree;

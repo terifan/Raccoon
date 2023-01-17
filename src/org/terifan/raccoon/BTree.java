@@ -2,7 +2,7 @@ package org.terifan.raccoon;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import org.terifan.bundle.Document;
+import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.BTreeNode.RemoveResult;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;

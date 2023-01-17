@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
-import org.terifan.bundle.Document;
+import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonCollection;

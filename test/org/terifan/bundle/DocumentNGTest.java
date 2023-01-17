@@ -1,5 +1,7 @@
 package org.terifan.bundle;
 
+import org.terifan.raccoon.document.Array;
+import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.Log;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;

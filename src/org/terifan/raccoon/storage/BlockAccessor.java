@@ -4,9 +4,10 @@ import org.terifan.raccoon.BlockType;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.zip.Deflater;
-import org.terifan.bundle.Document;
 import org.terifan.raccoon.CompressionParam;
 import org.terifan.raccoon.DatabaseException;
+import static org.terifan.raccoon.RuntimeDiagnostics.Operation.*;
+import static org.terifan.raccoon.RuntimeDiagnostics.collectStatistics;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.secure.BlockKeyGenerator;
 import org.terifan.raccoon.util.ByteBlockOutputStream;
@@ -17,7 +18,7 @@ import org.terifan.security.messagedigest.MurmurHash3;
 public class BlockAccessor implements IBlockAccessor
 {
 	private final IManagedBlockDevice mBlockDevice;
-	private CompressionParam mCompressionParam;
+	private final CompressionParam mCompressionParam;
 
 
 	public BlockAccessor(IManagedBlockDevice aBlockDevice, CompressionParam aCompressionParam)
@@ -33,18 +34,6 @@ public class BlockAccessor implements IBlockAccessor
 	}
 
 
-	public void setCompressionParam(CompressionParam aCompressionParam)
-	{
-		mCompressionParam = aCompressionParam;
-	}
-
-
-	public Document getCompressionParam()
-	{
-		return mCompressionParam.marshal();
-	}
-
-
 	@Override
 	public synchronized void freeBlock(BlockPointer aBlockPointer)
 	{
@@ -53,7 +42,9 @@ public class BlockAccessor implements IBlockAccessor
 			Log.d("free block %s", aBlockPointer);
 			Log.inc();
 
-			mBlockDevice.freeBlock(aBlockPointer.getBlockIndex0(), roundUp(aBlockPointer.getPhysicalSize()) / mBlockDevice.getBlockSize());
+			mBlockDevice.freeBlock(aBlockPointer.getBlockIndex0(), aBlockPointer.getAllocatedSize() / mBlockDevice.getBlockSize());
+
+			assert collectStatistics(FREE_BLOCK, aBlockPointer.getAllocatedSize());
 
 			Log.dec();
 		}
@@ -72,16 +63,7 @@ public class BlockAccessor implements IBlockAccessor
 			Log.d("read block %s", aBlockPointer);
 			Log.inc();
 
-// TODO: remove
-byte[] buffer;
-if (aBlockPointer.getAllocatedSize() == 0)
-{
-	buffer = new byte[roundUp(aBlockPointer.getLogicalSize())];
-}
-else
-{
-	buffer = new byte[aBlockPointer.getAllocatedSize()];
-}
+			byte[] buffer = new byte[aBlockPointer.getAllocatedSize()];
 
 			mBlockDevice.readBlock(aBlockPointer.getBlockIndex0(), buffer, 0, buffer.length, aBlockPointer.getBlockKey(new long[4]));
 
@@ -102,6 +84,8 @@ else
 			{
 				buffer = Arrays.copyOfRange(buffer, 0, aBlockPointer.getLogicalSize());
 			}
+
+			assert collectStatistics(READ_BLOCK, buffer.length);
 
 			Log.dec();
 
@@ -167,6 +151,8 @@ else
 
 			mBlockDevice.writeBlock(blockIndex, aBuffer, 0, aBuffer.length, blockKey);
 
+			assert collectStatistics(WRITE_BLOCK, aBuffer.length);
+
 			Log.dec();
 
 			return blockPointer;
@@ -199,6 +185,11 @@ else
 	private int roundUp(int aSize)
 	{
 		int s = mBlockDevice.getBlockSize();
-		return aSize + ((s - (aSize % s)) % s);
+		int d = aSize % s;
+		if (d == 0)
+		{
+			return aSize;
+		}
+		return aSize + (s - d);
 	}
 }

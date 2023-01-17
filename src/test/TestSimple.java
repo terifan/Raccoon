@@ -3,10 +3,10 @@ package test;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import org.terifan.bundle.Document;
+import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
+import org.terifan.raccoon.RuntimeDiagnostics;
 import org.terifan.raccoon.DatabaseOpenOption;
-import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 
 
@@ -59,6 +59,8 @@ public class TestSimple
 
 				db.commit();
 			}
+
+			RuntimeDiagnostics.print();
 
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))

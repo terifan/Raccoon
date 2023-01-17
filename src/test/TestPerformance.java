@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
-import org.terifan.bundle.Document;
+import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.io.secure.AccessCredentials;
@@ -20,7 +20,7 @@ public class TestPerformance
 		try
 		{
 			int N = 1000_000;
-			int M = 20;
+			int M = 1;
 
 			ArrayList<Integer> order = new ArrayList<>();
 			for (int i = 0; i < N*M;i++)

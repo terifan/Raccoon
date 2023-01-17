@@ -1,9 +1,9 @@
-package org.terifan.bundle;
+package org.terifan.raccoon.document;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
-import static org.terifan.bundle.VarType.identify;
+import static org.terifan.raccoon.document.VarType.identify;
 
 
 public class VarOutputStream implements AutoCloseable

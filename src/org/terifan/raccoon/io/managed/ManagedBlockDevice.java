@@ -1,6 +1,6 @@
 package org.terifan.raccoon.io.managed;
 
-import org.terifan.bundle.Document;
+import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.DatabaseException;
 import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;

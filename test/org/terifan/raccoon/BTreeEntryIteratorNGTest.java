@@ -11,7 +11,7 @@ import java.util.Random;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.terifan.bundle.Document;
+import org.terifan.raccoon.document.Document;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
 import org.testng.annotations.Test;
 import static org.terifan.raccoon._Tools.createStorage;

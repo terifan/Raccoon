@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.bundle.Document;
+import org.terifan.raccoon.document.Document;
 
 
 public class IdentityCounter

@@ -1,9 +1,9 @@
-package org.terifan.bundle;
+package org.terifan.raccoon.document;
 
 import java.io.IOException;
 import java.util.Date;
 import java.util.UUID;
-import static org.terifan.bundle.VarType.values;
+import static org.terifan.raccoon.document.VarType.values;
 
 
 enum VarType

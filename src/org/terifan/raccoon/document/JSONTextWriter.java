@@ -1,4 +1,4 @@
-package org.terifan.bundle;
+package org.terifan.raccoon.document;
 
 import java.io.IOException;
 

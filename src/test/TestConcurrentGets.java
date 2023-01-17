@@ -2,7 +2,7 @@ package test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import org.terifan.bundle.Document;
+import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonCollection;

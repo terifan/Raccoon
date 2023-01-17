@@ -1,4 +1,4 @@
-package org.terifan.bundle;
+package org.terifan.raccoon.document;
 
 
 public class StreamChecksumException extends RuntimeException

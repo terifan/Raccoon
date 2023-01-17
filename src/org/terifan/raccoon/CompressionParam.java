@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.bundle.Document;
+import org.terifan.raccoon.document.Document;
 import static org.terifan.raccoon.CompressionParam.Level.DEFLATE_BEST;
 import static org.terifan.raccoon.CompressionParam.Level.DEFLATE_DEFAULT;
 import static org.terifan.raccoon.CompressionParam.Level.DEFLATE_FAST;

@@ -2,7 +2,7 @@ package test;
 
 import java.io.File;
 import java.util.List;
-import org.terifan.bundle.Document;
+import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.LogLevel;

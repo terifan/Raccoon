@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
 import java.util.ArrayList;
-import org.terifan.bundle.Document;
+import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
