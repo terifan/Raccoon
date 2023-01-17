@@ -50,7 +50,7 @@ public final class RaccoonCollection extends BTreeStorage
 
 		try (ReadLock lock = mLock.readLock())
 		{
-			ArrayMapEntry entry = new ArrayMapEntry(marshalKey(aDocument, false));
+			ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(aDocument, false));
 
 			if (mImplementation.get(entry))
 			{
@@ -72,52 +72,92 @@ public final class RaccoonCollection extends BTreeStorage
 	}
 
 
-	public void saveAll(Document... aDocuments)
+	public boolean save(Document aDocument)
 	{
-		for (Document document : aDocuments)
+		try (WriteLock lock = mLock.writeLock())
 		{
-			save(document);
+			mModCount++;
+			return insertOrUpdate(aDocument, false);
 		}
 	}
 
 
-	public boolean save(Document aDocument)
+	public void saveAll(Document... aDocuments)
 	{
-		Log.i("save %s", aDocument);
-		Log.inc();
-
 		try (WriteLock lock = mLock.writeLock())
 		{
 			mModCount++;
-
-			ArrayMapKey key = marshalKey(aDocument, true);
-			byte[] value = aDocument.marshal();
-			byte type = TYPE_DOCUMENT;
-
-			if (key.size() + value.length + 1 > mImplementation.getConfiguration().getInt("entrySizeLimit"))
+			for (Document document : aDocuments)
 			{
-				type = TYPE_EXTERNAL;
-
-				try (LobByteChannel blob = new LobByteChannel(mDatabase, null, LobOpenOption.WRITE))
-				{
-					value = blob.writeAllBytes(value).finish();
-				}
-				catch (Exception | Error e)
-				{
-					throw new DatabaseException(e);
-				}
+				insertOrUpdate(document, false);
 			}
-
-			ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
-			ArrayMapEntry prev = mImplementation.put(entry);
-			deleteIfBlob(prev);
-
-			return prev == null;
 		}
-		finally
+	}
+
+
+	public boolean insert(Document aDocument)
+	{
+		try (WriteLock lock = mLock.writeLock())
 		{
-			Log.dec();
+			mModCount++;
+			return insertOrUpdate(aDocument, true);
 		}
+	}
+
+
+	public void insertAll(Document... aDocuments)
+	{
+		try (WriteLock lock = mLock.writeLock())
+		{
+			mModCount++;
+			for (Document document : aDocuments)
+			{
+				insertOrUpdate(document, true);
+			}
+		}
+	}
+
+
+	private boolean insertOrUpdate(Document aDocument, boolean aInsert)
+	{
+		Log.i("%s %s", aInsert ? "insert" : "save", aDocument);
+		Log.inc();
+
+		ArrayMapKey key = getDocumentKey(aDocument, true);
+
+		if (aInsert)
+		{
+			ArrayMapEntry entry = new ArrayMapEntry(key);
+			if (mImplementation.get(entry))
+			{
+				throw new DuplicateKeyException();
+			}
+		}
+
+		byte[] value = aDocument.marshal();
+		byte type = TYPE_DOCUMENT;
+
+		if (key.size() + value.length + 1 > mImplementation.getConfiguration().getInt("entrySizeLimit"))
+		{
+			type = TYPE_EXTERNAL;
+
+			try (LobByteChannel blob = new LobByteChannel(mDatabase, null, LobOpenOption.WRITE))
+			{
+				value = blob.writeAllBytes(value).finish();
+			}
+			catch (Exception | Error e)
+			{
+				throw new DatabaseException(e);
+			}
+		}
+
+		ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
+		ArrayMapEntry prev = mImplementation.put(entry);
+		deleteIfBlob(prev);
+
+		Log.dec();
+
+		return prev == null;
 	}
 
 
@@ -136,7 +176,7 @@ public final class RaccoonCollection extends BTreeStorage
 		{
 			mModCount++;
 
-			ArrayMapEntry entry = new ArrayMapEntry(marshalKey(aDocument, false));
+			ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(aDocument, false));
 			ArrayMapEntry prev = mImplementation.remove(entry);
 			deleteIfBlob(prev);
 
@@ -275,7 +315,7 @@ public final class RaccoonCollection extends BTreeStorage
 	}
 
 
-	private ArrayMapKey marshalKey(Document aDocument, boolean aCreateKey)
+	private ArrayMapKey getDocumentKey(Document aDocument, boolean aCreateMissingKey)
 	{
 		Object id = aDocument.get("_id");
 
@@ -288,7 +328,7 @@ public final class RaccoonCollection extends BTreeStorage
 		}
 		else if (id == null)
 		{
-			if (!aCreateKey)
+			if (!aCreateMissingKey)
 			{
 				throw new IllegalStateException("_id field not provided in Document");
 			}
