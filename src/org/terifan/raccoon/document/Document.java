@@ -150,7 +150,7 @@ public class Document extends Container<String, Document> implements Externaliza
 		{
 			return false;
 		}
-		if (aOther.size() != size())
+		if (aOther.size() != mValues.size())
 		{
 //			System.out.println("Different number of entries: found: " + aOther.size() + ", expected: " + size());
 			return false;
@@ -206,7 +206,7 @@ public class Document extends Container<String, Document> implements Externaliza
 	public long[] getLongArray(String aKey)
 	{
 		Array arr = getArray(aKey);
-		long[] values = new long[arr.size()];
+		long[] values = new long[arr.mValues.size()];
 		for (int i = 0; i < values.length; i++)
 		{
 			values[i] = arr.getLong(i);

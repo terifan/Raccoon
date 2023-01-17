@@ -99,7 +99,7 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 	@Override
 	Array set(Integer aIndex, Object aValue)
 	{
-		if (aIndex == size())
+		if (aIndex == mValues.size())
 		{
 			mValues.add(aValue);
 		}
@@ -192,13 +192,13 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 		{
 			return false;
 		}
-		if (aOther.size() != size())
+		if (aOther.size() != mValues.size())
 		{
 //			System.out.println("Different number of entries in provided Array: found: " + aOther.size() + ", expected: " + size());
 			return false;
 		}
 
-		for (int i = 0; i < size(); i++)
+		for (int i = 0; i < mValues.size(); i++)
 		{
 			Object value = get(i);
 			Object otherValue = aOther.get(i);

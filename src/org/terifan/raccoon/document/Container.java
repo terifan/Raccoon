@@ -625,35 +625,35 @@ public abstract class Container<K, R> implements Externalizable, Cloneable
 	{
 		if (aValue instanceof Number)
 		{
-			putNumber(aKey, (Number)aValue);
+			set(aKey, (Number)aValue);
 		}
 		else if (aValue instanceof String)
 		{
-			putString(aKey, (String)aValue);
+			set(aKey, (String)aValue);
 		}
 		else if (aValue instanceof Document)
 		{
-			putDocument(aKey, (Document)aValue);
+			set(aKey, (Document)aValue);
 		}
 		else if (aValue instanceof Array)
 		{
-			putArray(aKey, (Array)aValue);
+			set(aKey, (Array)aValue);
 		}
 		else if (aValue instanceof Boolean)
 		{
-			putBoolean(aKey, (Boolean)aValue);
+			set(aKey, (Boolean)aValue);
 		}
 		else if (aValue instanceof byte[])
 		{
-			putBinary(aKey, (byte[])aValue);
+			set(aKey, (byte[])aValue);
 		}
 		else if (aValue instanceof UUID)
 		{
-			putUUID(aKey, (UUID)aValue);
+			set(aKey, (UUID)aValue);
 		}
 		else if (aValue instanceof Date)
 		{
-			putDate(aKey, (Date)aValue);
+			set(aKey, (Date)aValue);
 		}
 		else if (aValue != null)
 		{
