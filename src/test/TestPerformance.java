@@ -98,7 +98,7 @@ public class TestPerformance
 			}
 			System.out.println();
 
-			System.out.printf("%-15s ", "REMOVE SEQ");
+			System.out.printf("%-15s ", "DELETE SEQ");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 0; j < M; j++)
@@ -106,7 +106,7 @@ public class TestPerformance
 					long t = System.currentTimeMillis();
 					for (int i = 0; i < N; i++, k++)
 					{
-						db.getCollection("table").remove(new Document().putNumber("_id", k));
+						db.getCollection("table").delete(new Document().putNumber("_id", k));
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
@@ -203,7 +203,7 @@ public class TestPerformance
 					long t = System.currentTimeMillis();
 					for (int i = 0; i < N; i++, k++)
 					{
-						db.getCollection("table").remove(new Document().putNumber("_id", order.get(k)));
+						db.getCollection("table").delete(new Document().putNumber("_id", order.get(k)));
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();

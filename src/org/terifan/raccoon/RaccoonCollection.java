@@ -30,6 +30,7 @@ public final class RaccoonCollection extends BTreeStorage
 	private HashSet<CommitLock> mCommitLocks;
 	private IdentityCounter mIdentityCounter;
 	private BTree mImplementation;
+	private long mModCount;
 
 
 	RaccoonCollection(RaccoonDatabase aDatabase, Document aConfiguration)
@@ -87,6 +88,8 @@ public final class RaccoonCollection extends BTreeStorage
 
 		try (WriteLock lock = mLock.writeLock())
 		{
+			mModCount++;
+
 			ArrayMapKey key = marshalKey(aDocument, true);
 			byte[] value = aDocument.marshal();
 			byte type = TYPE_DOCUMENT;
@@ -118,10 +121,21 @@ public final class RaccoonCollection extends BTreeStorage
 	}
 
 
-	public boolean remove(Document aDocument)
+	public void deleteAll(Document... aDocuments)
+	{
+		for (Document document : aDocuments)
+		{
+			delete(document);
+		}
+	}
+
+
+	public boolean delete(Document aDocument)
 	{
 		try (WriteLock lock = mLock.writeLock())
 		{
+			mModCount++;
+
 			ArrayMapEntry entry = new ArrayMapEntry(marshalKey(aDocument, false));
 			ArrayMapEntry prev = mImplementation.remove(entry);
 			deleteIfBlob(prev);
@@ -146,28 +160,36 @@ public final class RaccoonCollection extends BTreeStorage
 	}
 
 
-	private Stream<Document> stream()
+	public Stream<Document> stream()
 	{
-		try (ReadLock lock = mLock.readLock())
+		long modCount = mModCount;
+
+		ReadLock lock = mLock.readLock();
+
+		Stream<Document> tmp = StreamSupport.stream(new AbstractSpliterator<Document>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
 		{
-			Stream<Document> tmp = StreamSupport.stream(new AbstractSpliterator<Document>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+			private DocumentIterator iterator = new DocumentIterator(RaccoonCollection.this);
+
+			@Override
+			public boolean tryAdvance(Consumer<? super Document> aConsumer)
 			{
-				private DocumentIterator iterator = new DocumentIterator(RaccoonCollection.this);
-
-				@Override
-				public boolean tryAdvance(Consumer<? super Document> aConsumer)
+				if (mModCount != modCount)
 				{
-					if (!iterator.hasNext())
-					{
-						return false;
-					}
-					aConsumer.accept(iterator.next());
-					return true;
+					lock.close();
+					throw new IllegalStateException("concurrent modification");
 				}
-			}, false);
 
-			return tmp;
-		}
+				if (!iterator.hasNext())
+				{
+					lock.close();
+					return false;
+				}
+				aConsumer.accept(iterator.next());
+				return true;
+			}
+		}, false);
+
+		return tmp;
 	}
 
 
@@ -175,6 +197,8 @@ public final class RaccoonCollection extends BTreeStorage
 	{
 		try (WriteLock lock = mLock.writeLock())
 		{
+			mModCount++;
+
 			BTree prev = mImplementation;
 
 			mImplementation = new BTree(this, mImplementation.getConfiguration().clone().remove("treeRoot"));
@@ -211,6 +235,8 @@ public final class RaccoonCollection extends BTreeStorage
 	{
 		try (WriteLock lock = mLock.writeLock())
 		{
+			mModCount++;
+
 			if (!mCommitLocks.isEmpty())
 			{
 				StringBuilder sb = new StringBuilder();

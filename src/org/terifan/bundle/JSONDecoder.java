@@ -18,7 +18,7 @@ class JSONDecoder
 		switch (mReader.read())
 		{
 			case '{':
-				return readBundle();
+				return readDocument();
 			case '[':
 				return readArray();
 			default:
@@ -27,9 +27,9 @@ class JSONDecoder
 	}
 
 
-	private Document readBundle() throws IOException
+	private Document readDocument() throws IOException
 	{
-		Document bundle = new Document();
+		Document doc = new Document();
 
 		for (;;)
 		{
@@ -39,7 +39,7 @@ class JSONDecoder
 			{
 				break;
 			}
-			if (bundle.size() > 0)
+			if (doc.size() > 0)
 			{
 				if (c != ',')
 				{
@@ -65,10 +65,10 @@ class JSONDecoder
 				throw new IOException("Expected colon sign after key: " + key);
 			}
 
-			bundle.set(key, readValue(readChar()));
+			doc.set(key, readValue(readChar()));
 		}
 
-		return bundle;
+		return doc;
 	}
 
 
@@ -113,7 +113,7 @@ class JSONDecoder
 			case '[':
 				return readArray();
 			case '{':
-				return readBundle();
+				return readDocument();
 			case '\"':
 			case '\'':
 				return readString(aChar);

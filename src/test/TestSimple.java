@@ -16,7 +16,7 @@ public class TestSimple
 	{
 		try
 		{
-			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+//			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 //			AccessCredentials ac = new AccessCredentials("password");
 			AccessCredentials ac = null;
 
@@ -25,8 +25,7 @@ public class TestSimple
 			{
 //				db.createIndex("lookup", "people", "name");
 
-				db.getCollection("people").saveAll(
-					new Document().putString("name", "adam"),
+				db.getCollection("people").saveAll(new Document().putString("name", "adam"),
 					new Document().putString("name", "eve"),
 					new Document().putString("name", "steve").putNumber("_id", 7),
 					new Document().putString("name", "barbara"),
@@ -34,8 +33,7 @@ public class TestSimple
 					new Document().putString("name", "walter")
 				);
 
-				db.getCollection("lookup").saveAll(
-					new Document().putString("_id", "adam").putNumber("id", 1),
+				db.getCollection("lookup").saveAll(new Document().putString("_id", "adam").putNumber("id", 1),
 					new Document().putString("_id", "eve").putNumber("id", 2),
 					new Document().putString("_id", "steve").putNumber("id", 7),
 					new Document().putString("_id", "barbara").putNumber("id", 8),
@@ -52,13 +50,33 @@ public class TestSimple
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 			{
-				db.getCollection("people").list().forEach(e -> System.out.println(e));
-				db.getCollection("lookup").list().forEach(e -> System.out.println(e));
+				db.getCollection("people").stream().forEach(System.out::println);
+				db.getCollection("lookup").stream().forEach(System.out::println);
 
 				System.out.println(db.getCollection("files").get(new Document().putNumber("_id", 1)).getBinary("content").length);
 
+				db.getCollection("people").stream().forEach(System.out::println);
+
 				db.commit();
 			}
+
+//			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+//			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
+//			{
+//				db.getCollection("people").list().forEach(e -> System.out.println(e));
+//			}
+
+//			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+//			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
+//			{
+//				db.getCollection("people").list().forEach(e -> System.out.println(e));
+//			}
+
+//			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+//			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
+//			{
+//				db.getCollection("people").list().forEach(e -> System.out.println(e));
+//			}
 
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))

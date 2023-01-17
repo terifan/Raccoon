@@ -19,7 +19,7 @@ class JSONEncoder
 
 		if (aContainer instanceof Document)
 		{
-			marshalBundle((Document)aContainer, true);
+			marshalDocument((Document)aContainer, true);
 		}
 		else
 		{
@@ -28,45 +28,45 @@ class JSONEncoder
 	}
 
 
-	private void marshalBundle(Document aBundle) throws IOException
+	private void marshalDocument(Document aDocument) throws IOException
 	{
-		marshalBundle(aBundle, true);
+		marshalDocument(aDocument, true);
 	}
 
 
-	private void marshalBundle(Document aBundle, boolean aNewLineOnClose) throws IOException
+	private void marshalDocument(Document aDocument, boolean aNewLineOnClose) throws IOException
 	{
-		int size = aBundle.size();
+		int size = aDocument.size();
 
-		boolean hasBundle = aBundle.size() > 5;
+		boolean hasDocument = aDocument.size() > 5;
 
-		for (Object entry : aBundle.values())
+		for (Object entry : aDocument.values())
 		{
 			if (entry instanceof Document)
 			{
-				hasBundle = true;
+				hasDocument = true;
 				break;
 			}
 		}
 
-		if (!hasBundle && !mWriter.isFirst())
+		if (!hasDocument && !mWriter.isFirst())
 		{
 			mWriter.println();
 		}
 
 		mWriter.println("{").indent(1);
 
-		for (Entry<String, Object> entry : aBundle.entrySet())
+		for (Entry<String, Object> entry : aDocument.entrySet())
 		{
 			mWriter.print("\"" + escapeString(entry.getKey()) + "\": ");
 
 			marshal(entry.getValue());
 
-			if (hasBundle && --size > 0)
+			if (hasDocument && --size > 0)
 			{
 				mWriter.println(aNewLineOnClose ? "," : ", ", false);
 			}
-			else if (!hasBundle && --size > 0)
+			else if (!hasDocument && --size > 0)
 			{
 				mWriter.print(", ", false);
 			}
@@ -119,7 +119,7 @@ class JSONEncoder
 		{
 			if (first)
 			{
-				marshalBundle((Document)value, false);
+				marshalDocument((Document)value, false);
 
 				if (--size > 0)
 				{
@@ -158,7 +158,7 @@ class JSONEncoder
 	{
 		if (aValue instanceof Document)
 		{
-			marshalBundle((Document)aValue);
+			marshalDocument((Document)aValue);
 		}
 		else if (aValue instanceof Array)
 		{

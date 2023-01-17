@@ -54,9 +54,9 @@ public class VarOutputStream implements AutoCloseable
 	}
 
 
-	private void writeBundle(Document aBundle) throws IOException
+	private void writeDocument(Document aDocument) throws IOException
 	{
-		for (Map.Entry<String, Object> entry : aBundle.entrySet())
+		for (Map.Entry<String, Object> entry : aDocument.entrySet())
 		{
 			Object value = entry.getValue();
 			VarType type = identify(value);
@@ -105,8 +105,8 @@ public class VarOutputStream implements AutoCloseable
 	{
 		switch (aType)
 		{
-			case BUNDLE:
-				writeBundle((Document)aValue);
+			case DOCUMENT:
+				writeDocument((Document)aValue);
 				break;
 			case ARRAY:
 				writeArray((Array)aValue);

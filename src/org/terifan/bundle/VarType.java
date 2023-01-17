@@ -9,7 +9,7 @@ import static org.terifan.bundle.VarType.values;
 enum VarType
 {
 	TERMINATOR(0),
-	BUNDLE(1),
+	DOCUMENT(1),
 	ARRAY(2),
 	INT(3,
 		(aOutput, aValue) -> aOutput.writeVarint((Integer)aValue),
@@ -96,7 +96,7 @@ enum VarType
 
 		Class<? extends Object> cls = aValue.getClass();
 
-		if (Document.class == cls) return BUNDLE;
+		if (Document.class == cls) return DOCUMENT;
 		if (Array.class == cls) return ARRAY;
 		if (String.class == cls) return STRING;
 		if (Integer.class == cls) return INT;

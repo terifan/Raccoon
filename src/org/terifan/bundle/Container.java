@@ -548,13 +548,13 @@ public abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public Document getBundle(K aKey)
+	public Document getDocument(K aKey)
 	{
 		return (Document)get(aKey);
 	}
 
 
-	public Document getBundle(K aKey, Function<K, Document> aProvider)
+	public Document getDocument(K aKey, Function<K, Document> aProvider)
 	{
 		Object value = get(aKey);
 		if (value instanceof Document)
@@ -565,7 +565,7 @@ public abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public R putBundle(K aKey, Document aValue)
+	public R putDocument(K aKey, Document aValue)
 	{
 		set(aKey, aValue);
 		return (R)this;
@@ -633,7 +633,7 @@ public abstract class Container<K, R> implements Externalizable, Cloneable
 		}
 		else if (aValue instanceof Document)
 		{
-			putBundle(aKey, (Document)aValue);
+			putDocument(aKey, (Document)aValue);
 		}
 		else if (aValue instanceof Array)
 		{

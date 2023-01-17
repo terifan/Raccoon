@@ -133,9 +133,9 @@ public class VarInputStream implements AutoCloseable, Iterable<Object>
 	}
 
 
-	private Document readBundle() throws IOException
+	private Document readDocument() throws IOException
 	{
-		Document bundle = new Document();
+		Document doc = new Document();
 
 		for (;;)
 		{
@@ -150,10 +150,10 @@ public class VarInputStream implements AutoCloseable, Iterable<Object>
 				break;
 			}
 
-			bundle.set(readUTF(header.value), readValue(header.type));
+			doc.set(readUTF(header.value), readValue(header.type));
 		}
 
-		return bundle;
+		return doc;
 	}
 
 
@@ -188,8 +188,8 @@ public class VarInputStream implements AutoCloseable, Iterable<Object>
 	{
 		switch (aType)
 		{
-			case BUNDLE:
-				return readBundle();
+			case DOCUMENT:
+				return readDocument();
 			case ARRAY:
 				return readArray();
 			default:

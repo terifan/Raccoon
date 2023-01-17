@@ -43,10 +43,10 @@ public class BTreeEntryIteratorNGTest
 //				Thread.sleep(1);
 			}
 			tree.commit();
-			storage.getApplicationMetadata().putBundle("conf", tree.getConfiguration());
+			storage.getApplicationMetadata().putDocument("conf", tree.getConfiguration());
 		}
 
-		try (BTreeStorage storage = createStorage(device); BTree tree = new BTree(storage, storage.getApplicationMetadata().getBundle("conf")))
+		try (BTreeStorage storage = createStorage(device); BTree tree = new BTree(storage, storage.getApplicationMetadata().getDocument("conf")))
 		{
 //			new BTreeNodeIterator(tree).forEachRemaining(e -> System.out.println(e));
 

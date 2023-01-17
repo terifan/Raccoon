@@ -12,12 +12,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 
-/**
- * A Bundle is typed Map that can be serialized to JSON and binary format.
- * <p>
- * Note: the hashCode and equals methods are order independent even though the Bundle maintains elements in the inserted order.
- * </p>
- */
 public class Document extends Container<String, Document> implements Externalizable, Cloneable
 {
 	private final static long serialVersionUID = 1L;
@@ -113,11 +107,6 @@ public class Document extends Container<String, Document> implements Externaliza
 	}
 
 
-	/**
-	 * Return this Bundle as a compacted JSON.
-	 *
-	 * @return return this Bundle as a compacted JSON
-	 */
 	@Override
 	public String toString()
 	{
@@ -163,7 +152,7 @@ public class Document extends Container<String, Document> implements Externaliza
 		}
 		if (aOther.size() != size())
 		{
-//			System.out.println("Different number of entries in provided Bundle: found: " + aOther.size() + ", expected: " + size());
+//			System.out.println("Different number of entries: found: " + aOther.size() + ", expected: " + size());
 			return false;
 		}
 
@@ -194,12 +183,6 @@ public class Document extends Container<String, Document> implements Externaliza
 	}
 
 
-	/**
-	 * Puts all entries from the provided Bundle to this Bundle.
-	 *
-	 * @param aSource another bundle
-	 * @return this bundle
-	 */
 	public Document putAll(Document aSource)
 	{
 		aSource.entrySet().forEach(entry -> mValues.put(entry.getKey(), entry.getValue()));

@@ -17,7 +17,7 @@ public class DatabaseRoot
 	public DatabaseRoot()
 	{
 		mMetadata = new Document()
-			.putBundle("collections", new Document());
+			.putDocument("collections", new Document());
 	}
 
 
@@ -51,19 +51,19 @@ public class DatabaseRoot
 
 	ArrayList<String> listCollections()
 	{
-		return new ArrayList<>(mMetadata.getBundle("collections").keySet());
+		return new ArrayList<>(mMetadata.getDocument("collections").keySet());
 	}
 
 
 	Document getCollection(String aName)
 	{
-		return mMetadata.getBundle("collections").getBundle(aName);
+		return mMetadata.getDocument("collections").getDocument(aName);
 	}
 
 
 	void putCollection(String aName, Document aConfiguration)
 	{
-		mMetadata.getBundle("collections").putBundle(aName, aConfiguration);
+		mMetadata.getDocument("collections").putDocument(aName, aConfiguration);
 	}
 
 

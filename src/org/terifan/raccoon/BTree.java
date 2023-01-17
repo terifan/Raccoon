@@ -17,7 +17,7 @@ public class BTree implements AutoCloseable
 	private BTreeStorage mStorage;
 	private Document mConfiguration;
 	private BTreeNode mRoot;
-	private int mModCount;
+	private long mModCount;
 
 	public BTree(BTreeStorage aStorage, Document aConfiguration)
 	{
@@ -53,13 +53,13 @@ public class BTree implements AutoCloseable
 	{
 		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeIndex ? BlockType.TREE_INDEX : BlockType.TREE_LEAF);
 
-		mConfiguration.putBundle("treeRoot", mRoot.mBlockPointer.marshalDoc());
+		mConfiguration.putDocument("treeRoot", mRoot.mBlockPointer.marshalDoc());
 	}
 
 
 	private void unmarshalHeader()
 	{
-		BlockPointer bp = new BlockPointer().unmarshalDoc(mConfiguration.getBundle("treeRoot"));
+		BlockPointer bp = new BlockPointer().unmarshalDoc(mConfiguration.getDocument("treeRoot"));
 
 		mRoot = bp.getBlockType() == BlockType.TREE_INDEX ? new BTreeIndex(bp.getBlockLevel()) : new BTreeLeaf();
 		mRoot.mBlockPointer = bp;
@@ -176,7 +176,8 @@ public class BTree implements AutoCloseable
 			return false;
 		}
 
-		int modCount = mModCount; // no increment
+		long modCount = mModCount;
+
 		Log.i("commit table");
 		Log.inc();
 
@@ -188,7 +189,11 @@ public class BTree implements AutoCloseable
 		Log.i("table commit finished; root block is %s", mRoot.mBlockPointer);
 
 		Log.dec();
-		assert mModCount == modCount : "concurrent modification";
+
+		if (mModCount != modCount)
+		{
+			throw new IllegalStateException("concurrent modification");
+		}
 
 		marshalHeader();
 

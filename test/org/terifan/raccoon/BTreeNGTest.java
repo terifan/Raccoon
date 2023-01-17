@@ -27,10 +27,10 @@ public class BTreeNGTest
 		{
 			tree.put(new ArrayMapEntry(key, value, TYPE_DOCUMENT));
 			tree.commit();
-			storage.getApplicationMetadata().putBundle("conf", tree.getConfiguration());
+			storage.getApplicationMetadata().putDocument("conf", tree.getConfiguration());
 		}
 
-		try (BTreeStorage storage = createSecureStorage(device); BTree tree = new BTree(storage, storage.getApplicationMetadata().getBundle("conf")))
+		try (BTreeStorage storage = createSecureStorage(device); BTree tree = new BTree(storage, storage.getApplicationMetadata().getDocument("conf")))
 		{
 			ArrayMapEntry entry = new ArrayMapEntry(key);
 			assertTrue(tree.get(entry));
