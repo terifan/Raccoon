@@ -386,4 +386,15 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 	{
 		mValues.forEach(e -> aConsumer.accept((T)e));
 	}
+
+
+	public long[] toLongs()
+	{
+		long[] values = new long[size()];
+		for (int i = 0; i < values.length; i++)
+		{
+			values[i] = (long)mValues.get(i);
+		}
+		return values;
+	}
 }

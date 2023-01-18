@@ -37,7 +37,6 @@ public class BlockAccessor implements IBlockAccessor, AutoCloseable
 	@Override
 	public void close()
 	{
-		mBlockDevice.commit();
 		mBlockDevice.close();
 	}
 

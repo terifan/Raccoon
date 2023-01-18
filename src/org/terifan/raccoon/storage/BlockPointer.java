@@ -11,56 +11,6 @@ import org.terifan.raccoon.util.Console;
 import org.terifan.raccoon.util.Log;
 
 
-/*
- *   +------+------+------+------+------+------+------+------+
- * 0 | type | lvl  | chk  | comp |     allocated blocks      |
- *   +------+------+------+------+------+------+------+------+
- * 1 |        logical size       |       physical size       |
- *   +------+------+------+------+------+------+------+------+
- * 2 |                      block index                      |
- *   +------+------+------+------+------+------+------+------+
- * 3 |                      block index                      |
- *   +------+------+------+------+------+------+------+------+
- * 4 |                      block index                      |
- *   +------+------+------+------+------+------+------+------+
- * 5 |                         unused                        |
- *   +------+------+------+------+------+------+------+------+
- * 6 |                         unused                        |
- *   +------+------+------+------+------+------+------+------+
- * 7 |                      transaction                      |
- *   +------+------+------+------+------+------+------+------+
- * 8 |                       block key                       |
- *   +------+------+------+------+------+------+------+------+
- * 9 |                       block key                       |
- *   +------+------+------+------+------+------+------+------+
- * A |                       block key                       |
- *   +------+------+------+------+------+------+------+------+
- * B |                       block key                       |
- *   +------+------+------+------+------+------+------+------+
- * C |                       checksum                        |
- *   +------+------+------+------+------+------+------+------+
- * D |                       checksum                        |
- *   +------+------+------+------+------+------+------+------+
- * E |                       checksum                        |
- *   +------+------+------+------+------+------+------+------+
- * F |                       checksum                        |
- *   +------+------+------+------+------+------+------+------+
- *
- *   8 block type
- *   8 checksum algorithm
- *   8 compression algorithm
- *   8 block level
- *  32 allocated size
- *  32 logical size
- *  32 physical size
- *  64 block index 1
- *  64 block index 2
- *  64 block index 3
- * 128 unused
- *  64 transaction
- * 256 block key (initialization vector)
- * 256 checksum
- */
 public class BlockPointer implements Serializable
 {
 	private final static long serialVersionUID = 1;
@@ -343,16 +293,17 @@ public class BlockPointer implements Serializable
 
 	public BlockPointer unmarshalDoc(Document aDocument)
 	{
-		setBlockType(BlockType.values()[aDocument.getInt("type")]);
-		setBlockLevel(aDocument.getInt("lvl"));
-		setCompressionAlgorithm(aDocument.getInt("comp"));
-		setAllocatedSize(aDocument.getInt("alloc"));
-		setLogicalSize(aDocument.getInt("logic"));
-		setPhysicalSize(aDocument.getInt("phys"));
-		setBlockIndex0(aDocument.getLongArray("blocks")[0]);
-		setTransactionId(aDocument.getInt("tx"));
-		setBlockKey(aDocument.getLongArray("key"));
-		setChecksum(aDocument.getLongArray("chk"));
+		Array array = aDocument.getArray("");
+		setBlockType(BlockType.values()[array.getInt(0)]);
+		setBlockLevel(array.getInt(1));
+		setCompressionAlgorithm(array.getInt(2));
+		setAllocatedSize(array.getInt(3));
+		setLogicalSize(array.getInt(4));
+		setPhysicalSize(array.getInt(5));
+		setTransactionId(array.getInt(6));
+		setBlockIndex0(array.getArray(7).getLong(0));
+		setBlockKey(array.getArray(8).toLongs());
+		setChecksum(array.getArray(9).toLongs());
 		return this;
 	}
 
@@ -360,17 +311,18 @@ public class BlockPointer implements Serializable
 	public Document marshalDoc()
 	{
 		Document doc = new Document()
-			.putNumber("type", getBlockType().ordinal())
-			.putNumber("lvl", getBlockLevel())
-			.putNumber("comp", getCompressionAlgorithm())
-			.putNumber("alloc", getAllocatedSize())
-			.putNumber("logic", getLogicalSize())
-			.putNumber("phys", getPhysicalSize())
-			.putArray("blocks", Array.of(getBlockIndex0()))
-			.putNumber("tx", getTransactionId())
-			.putArray("key", Array.of(getBlockKey(new long[4])))
-			.putArray("chk", Array.of(getChecksum(new long[4])))
-			;
+			.putArray("", Array.of(
+				getBlockType().ordinal(),
+				getBlockLevel(),
+				getCompressionAlgorithm(),
+				getAllocatedSize(),
+				getLogicalSize(),
+				getPhysicalSize(),
+				getTransactionId(),
+				Array.of(getBlockIndex0()),
+				Array.of(getBlockKey(new long[4])),
+				Array.of(getChecksum(new long[4]))
+			));
 
 		return doc;
 	}
@@ -392,31 +344,6 @@ public class BlockPointer implements Serializable
 		}
 		return false;
 	}
-
-
-//	public long getUserData()
-//	{
-//		return ByteArrayUtil.getInt64(mBuffer, OFS_USER_DATA);
-//	}
-//
-//
-//	public BlockPointer setUserData(long aUserData)
-//	{
-//		ByteArrayUtil.putInt64(mBuffer, OFS_USER_DATA, aUserData);
-//		return this;
-//	}
-//
-//
-//	public static long readUserData(byte[] aBuffer, int aBlockPointerOffset)
-//	{
-//		return ByteArrayUtil.getInt64(aBuffer, aBlockPointerOffset + OFS_USER_DATA);
-//	}
-//
-//
-//	public static void writeUserData(byte[] aBuffer, int aBlockPointerOffset, long aValue)
-//	{
-//		ByteArrayUtil.putInt64(aBuffer, aBlockPointerOffset + OFS_USER_DATA, aValue);
-//	}
 
 
 	@Override
