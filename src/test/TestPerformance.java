@@ -7,6 +7,7 @@ import java.util.Random;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.RuntimeDiagnostics;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 
 
@@ -20,10 +21,10 @@ public class TestPerformance
 		try
 		{
 			int N = 1000_000;
-			int M = 1;
+			int M = 10;
 
 			ArrayList<Integer> order = new ArrayList<>();
-			for (int i = 0; i < N*M;i++)
+			for (int i = 1; i <= N*M;i++)
 			{
 				order.add(i);
 			}
@@ -31,7 +32,7 @@ public class TestPerformance
 //			AccessCredentials ac = new AccessCredentials("password");
 			AccessCredentials ac = null;
 
-			System.out.printf("%-15s ", "INSERT SEQ");
+			System.out.printf("%-15s ", "SAVE SEQ");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				for (int j = 0; j < M; j++)
@@ -40,8 +41,27 @@ public class TestPerformance
 					for (int i = 0; i < N; i++)
 					{
 						String s = value();
-						db.getCollection("table").save(new Document().putString("key", s).putNumber("hash", s.hashCode()));
+						db.getCollection("table").save(new Document().putString("value", s).putNumber("hash", s.hashCode()));
 					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+			System.out.printf("%-15s ", "SAVE ALL SEQ");
+			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			{
+				for (int j = 0; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					ArrayList<Document> documents = new ArrayList<>();
+					for (int i = 0; i < N; i++)
+					{
+						String s = value();
+						documents.add(new Document().putString("value", s).putNumber("hash", s.hashCode()));
+					}
+					db.getCollection("table").saveAll(documents.toArray(new Document[0]));
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
 				}
@@ -51,13 +71,13 @@ public class TestPerformance
 			System.out.printf("%-15s ", "SELECT SEQ");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
-				for (int j = 0, k = 0; j < M; j++)
+				for (int j = 0, k = 1; j < M; j++)
 				{
 					long t = System.currentTimeMillis();
 					for (int i = 0; i < N; i++, k++)
 					{
 						Document doc = db.getCollection("table").get(new Document().putNumber("_id", k));
-						assert doc.getString("key").hashCode() == doc.getInt("hash");
+						assert doc.getString("value").hashCode() == doc.getInt("hash");
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
@@ -68,12 +88,13 @@ public class TestPerformance
 			System.out.printf("%-15s ", "UPDATE SEQ");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
-				for (int j = 0, k = 0; j < M; j++)
+				for (int j = 0, k = 1; j < M; j++)
 				{
 					long t = System.currentTimeMillis();
 					for (int i = 0; i < N; i++, k++)
 					{
-						db.getCollection("table").save(new Document().putNumber("_id", k).putString("key", value()));
+						String s = value();
+						db.getCollection("table").save(new Document().putNumber("_id", k).putString("value", s).putNumber("hash", s.hashCode()));
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
@@ -84,13 +105,14 @@ public class TestPerformance
 			System.out.printf("%-15s ", "SELECT SEQ");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
-				for (int j = 0, k = 0; j < M; j++)
+//				db.getCollection("table").stream().forEach(System.out::println);
+				for (int j = 0, k = 1; j < M; j++)
 				{
 					long t = System.currentTimeMillis();
 					for (int i = 0; i < N; i++, k++)
 					{
 						Document doc = db.getCollection("table").get(new Document().putNumber("_id", k));
-						assert doc.getString("key").hashCode() == doc.getInt("hash");
+						assert doc.getString("value").hashCode() == doc.getInt("hash");
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
@@ -101,7 +123,7 @@ public class TestPerformance
 			System.out.printf("%-15s ", "DELETE SEQ");
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
-				for (int j = 0, k = 0; j < M; j++)
+				for (int j = 0, k = 1; j < M; j++)
 				{
 					long t = System.currentTimeMillis();
 					for (int i = 0; i < N; i++, k++)
@@ -128,7 +150,7 @@ public class TestPerformance
 					for (int i = 0; i < N; i++, k++)
 					{
 						String s = value();
-						db.getCollection("table").save(new Document().putNumber("_id", order.get(k)).putString("key", s).putNumber("hash", s.hashCode()));
+						db.getCollection("table").save(new Document().putNumber("_id", order.get(k)).putString("value", s).putNumber("hash", s.hashCode()));
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
@@ -147,7 +169,7 @@ public class TestPerformance
 					for (int i = 0; i < N; i++, k++)
 					{
 						Document doc = db.getCollection("table").get(new Document().putNumber("_id", order.get(k)));
-						assert doc.getString("key").hashCode() == doc.getInt("hash");
+						assert doc.getString("value").hashCode() == doc.getInt("hash");
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
@@ -166,7 +188,7 @@ public class TestPerformance
 					for (int i = 0; i < N; i++, k++)
 					{
 						String s = value();
-						db.getCollection("table").save(new Document().putNumber("_id", order.get(k)).putString("key", s).putNumber("hash", s.hashCode()));
+						db.getCollection("table").save(new Document().putNumber("_id", order.get(k)).putString("value", s).putNumber("hash", s.hashCode()));
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
@@ -185,7 +207,7 @@ public class TestPerformance
 					for (int i = 0; i < N; i++, k++)
 					{
 						Document doc = db.getCollection("table").get(new Document().putNumber("_id", order.get(k)));
-						assert doc.getString("key").hashCode() == doc.getInt("hash");
+						assert doc.getString("value").hashCode() == doc.getInt("hash");
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
@@ -210,6 +232,8 @@ public class TestPerformance
 				}
 			}
 			System.out.println();
+
+			RuntimeDiagnostics.print();
 		}
 		catch (Exception e)
 		{
@@ -223,7 +247,7 @@ public class TestPerformance
 		byte[] buf = new byte[rnd.nextInt(100)];
 		for (int i = 0; i < buf.length; i++)
 		{
-			buf[i] = (byte)(32 + rnd.nextInt(128));
+			buf[i] = (byte)(32 + rnd.nextInt(95));
 		}
 		return new String(buf);
 	}

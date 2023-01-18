@@ -36,10 +36,43 @@ public final class RaccoonCollection extends BTreeStorage
 	RaccoonCollection(RaccoonDatabase aDatabase, Document aConfiguration)
 	{
 		mDatabase = aDatabase;
+
+		mLock = new ReadWriteLock();
 		mCommitLocks = new HashSet<>();
 		mImplementation = new BTree(this, aConfiguration);
 		mIdentityCounter = new IdentityCounter(aConfiguration);
-		mLock = new ReadWriteLock();
+	}
+
+
+	public boolean getAll(Document... aDocuments)
+	{
+		Log.i("get all entities %d", aDocuments.length);
+		Log.inc();
+
+		try (ReadLock lock = mLock.readLock())
+		{
+			boolean all = true;
+
+			for (Document document : aDocuments)
+			{
+				ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(document, false));
+
+				if (mImplementation.get(entry))
+				{
+					unmarshalDocument(entry, document);
+				}
+				else
+				{
+					all = false;
+				}
+			}
+
+			return all;
+		}
+		finally
+		{
+			Log.dec();
+		}
 	}
 
 
@@ -74,16 +107,26 @@ public final class RaccoonCollection extends BTreeStorage
 
 	public boolean save(Document aDocument)
 	{
+		Log.i("save %s", aDocument);
+		Log.inc();
+
 		try (WriteLock lock = mLock.writeLock())
 		{
 			mModCount++;
 			return insertOrUpdate(aDocument, false);
+		}
+		finally
+		{
+			Log.dec();
 		}
 	}
 
 
 	public void saveAll(Document... aDocuments)
 	{
+		Log.i("save all %d", aDocuments.length);
+		Log.inc();
+
 		try (WriteLock lock = mLock.writeLock())
 		{
 			mModCount++;
@@ -92,21 +135,35 @@ public final class RaccoonCollection extends BTreeStorage
 				insertOrUpdate(document, false);
 			}
 		}
+		finally
+		{
+			Log.dec();
+		}
 	}
 
 
 	public boolean insert(Document aDocument)
 	{
+		Log.i("insert %s", aDocument);
+		Log.inc();
+
 		try (WriteLock lock = mLock.writeLock())
 		{
 			mModCount++;
 			return insertOrUpdate(aDocument, true);
+		}
+		finally
+		{
+			Log.dec();
 		}
 	}
 
 
 	public void insertAll(Document... aDocuments)
 	{
+		Log.i("insert all %d", aDocuments.length);
+		Log.inc();
+
 		try (WriteLock lock = mLock.writeLock())
 		{
 			mModCount++;
@@ -115,14 +172,15 @@ public final class RaccoonCollection extends BTreeStorage
 				insertOrUpdate(document, true);
 			}
 		}
+		finally
+		{
+			Log.dec();
+		}
 	}
 
 
 	private boolean insertOrUpdate(Document aDocument, boolean aInsert)
 	{
-		Log.i("%s %s", aInsert ? "insert" : "save", aDocument);
-		Log.inc();
-
 		ArrayMapKey key = getDocumentKey(aDocument, true);
 
 		if (aInsert)
@@ -154,8 +212,6 @@ public final class RaccoonCollection extends BTreeStorage
 		ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
 		ArrayMapEntry prev = mImplementation.put(entry);
 		deleteIfBlob(prev);
-
-		Log.dec();
 
 		return prev == null;
 	}
@@ -319,12 +375,12 @@ public final class RaccoonCollection extends BTreeStorage
 	{
 		Object id = aDocument.get("_id");
 
-		if (id instanceof UUID)
-		{
-		}
-		else if (id instanceof Number)
+		if (id instanceof Number)
 		{
 			mIdentityCounter.set(((Number)id).longValue());
+		}
+		else if (id instanceof String || id instanceof UUID)
+		{
 		}
 		else if (id == null)
 		{
@@ -334,6 +390,10 @@ public final class RaccoonCollection extends BTreeStorage
 			}
 			id = mIdentityCounter.next();
 			aDocument.put("_id", id);
+		}
+		else
+		{
+			throw new IllegalStateException("_id type unsupported");
 		}
 
 		if (id instanceof Number)

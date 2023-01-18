@@ -29,7 +29,7 @@ import static resources.__TestUtils.t;
 import resources.entities._BlobKey1K;
 
 
-public class DatabaseNGTest
+public class RaccoonDatabaseNGTest
 {
 //	@Test
 //	public void testSingleTableInsertTiny() throws Exception

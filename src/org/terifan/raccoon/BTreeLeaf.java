@@ -3,6 +3,7 @@ package org.terifan.raccoon;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
 import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import org.terifan.raccoon.ArrayMap.PutResult;
+import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.util.Console;
 
@@ -95,6 +96,9 @@ public class BTreeLeaf extends BTreeNode
 	{
 		if (mModified)
 		{
+			assert RuntimeDiagnostics.collectStatistics(Operation.FREE_LEAF, mBlockPointer);
+			assert RuntimeDiagnostics.collectStatistics(Operation.WRITE_LEAF, 1);
+
 			aImplementation.freeBlock(mBlockPointer);
 
 			mBlockPointer = aImplementation.writeBlock(mMap.array(), 0, BlockType.TREE_LEAF);

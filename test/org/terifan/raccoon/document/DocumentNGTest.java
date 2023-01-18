@@ -1,4 +1,4 @@
-package org.terifan.bundle;
+package org.terifan.raccoon.document;
 
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;

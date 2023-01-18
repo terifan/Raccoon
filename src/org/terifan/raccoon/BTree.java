@@ -135,16 +135,13 @@ public class BTree implements AutoCloseable
 
 		if (result == RemoveResult.REMOVED)
 		{
-//			try (WriteLock lock = mReadWriteLock.writeLock())
+			if (mRoot.mLevel > 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
 			{
-				if (mRoot.mLevel > 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
-				{
-					mRoot = ((BTreeIndex)mRoot).shrink(this);
-				}
-				if (mRoot.mLevel == 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
-				{
-					mRoot = ((BTreeIndex)mRoot).downgrade(this);
-				}
+				mRoot = ((BTreeIndex)mRoot).shrink(this);
+			}
+			if (mRoot.mLevel == 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
+			{
+				mRoot = ((BTreeIndex)mRoot).downgrade(this);
 			}
 		}
 

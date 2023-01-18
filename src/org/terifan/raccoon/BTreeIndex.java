@@ -4,11 +4,11 @@ import java.util.Map.Entry;
 import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
 import org.terifan.raccoon.ArrayMap.PutResult;
+import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.util.Console;
-import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
 
 
 public class BTreeIndex extends BTreeNode
@@ -42,12 +42,9 @@ public class BTreeIndex extends BTreeNode
 	{
 		mModified = true;
 
-		BTreeNode nearestNode;
-		ReadLock readLock = null;
-
 		ArrayMapEntry nearestEntry = new ArrayMapEntry(aKey);
 		mMap.loadNearestIndexEntry(nearestEntry);
-		nearestNode = getNode(aImplementation, nearestEntry);
+		BTreeNode nearestNode = getNode(aImplementation, nearestEntry);
 
 		if (mLevel == 1 ? nearestNode.mMap.getCapacity() > aImplementation.getConfiguration().getInt("leafSize") || nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > aImplementation.getConfiguration().getInt("indexSize"))
 		{
@@ -499,6 +496,9 @@ public class BTreeIndex extends BTreeNode
 
 		if (mModified)
 		{
+			assert RuntimeDiagnostics.collectStatistics(Operation.FREE_NODE, mBlockPointer);
+			assert RuntimeDiagnostics.collectStatistics(Operation.WRITE_NODE, 1);
+
 			aImplementation.freeBlock(mBlockPointer);
 
 			mBlockPointer = aImplementation.writeBlock(mMap.array(), mLevel, BlockType.TREE_INDEX);
@@ -548,6 +548,8 @@ public class BTreeIndex extends BTreeNode
 
 		if (childNode == null)
 		{
+			assert RuntimeDiagnostics.collectStatistics(Operation.READ_NODE, 1);
+
 			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(aEntry.getValue()));
 
 			childNode = bp.getBlockType() == BlockType.TREE_INDEX ? new BTreeIndex(mLevel - 1) : new BTreeLeaf();
