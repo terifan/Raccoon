@@ -23,6 +23,8 @@ public class TestPerformance
 			int N = 1000_000;
 			int M = 10;
 
+			System.out.println(N + " x " + M);
+
 			ArrayList<Integer> order = new ArrayList<>();
 			for (int i = 1; i <= N*M;i++)
 			{
