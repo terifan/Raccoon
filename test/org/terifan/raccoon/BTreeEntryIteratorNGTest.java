@@ -1,23 +1,17 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.ArrayMapEntry;
-import org.terifan.raccoon.BTree;
-import org.terifan.raccoon.BTreeNodeIterator;
-import org.terifan.raccoon.BTreeStorage;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.terifan.raccoon.document.Document;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
 import org.testng.annotations.Test;
-import static org.terifan.raccoon._Tools.createStorage;
-import static org.terifan.raccoon._Tools.showTree;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.storage.BlockAccessor;
+import static org.terifan.raccoon._Tools.createStorage;
 
 
 public class BTreeEntryIteratorNGTest
@@ -28,7 +22,7 @@ public class BTreeEntryIteratorNGTest
 		IPhysicalBlockDevice device = new MemoryBlockDevice(512);
 //		Supplier<IPhysicalBlockDevice> device = () -> new FileBlockDevice(new File("d:/test.rdb"));
 
-		try (BTreeStorage storage = createStorage(device); BTree tree = new BTree(storage, new Document()))
+		try (BlockAccessor storage = createStorage(()->device); BTree tree = new BTree(storage, new Document()))
 		{
 			List<Integer> arr = IntStream.range(0, 1000).boxed().collect(Collectors.toList());
 			int seed = new Random().nextInt();
@@ -43,10 +37,10 @@ public class BTreeEntryIteratorNGTest
 //				Thread.sleep(1);
 			}
 			tree.commit();
-			storage.getApplicationMetadata().putDocument("conf", tree.getConfiguration());
+			storage.getBlockDevice().getApplicationMetadata().putDocument("conf", tree.getConfiguration());
 		}
 
-		try (BTreeStorage storage = createStorage(device); BTree tree = new BTree(storage, storage.getApplicationMetadata().getDocument("conf")))
+		try (BlockAccessor storage = createStorage(()->device); BTree tree = new BTree(storage, storage.getBlockDevice().getApplicationMetadata().getDocument("conf")))
 		{
 //			new BTreeNodeIterator(tree).forEachRemaining(e -> System.out.println(e));
 

@@ -1,7 +1,6 @@
 package org.terifan.raccoon.util;
 
 
-
 public class Assert
 {
 	/**

@@ -18,9 +18,6 @@ public final class ISAAC extends Random
 	private final static AtomicLong seedUniquifier = new AtomicLong(8682522807148012L);
 
 
-	/**
-	 * Constructs a new ISAAC object with a random seed.
-	 */
 	public ISAAC()
 	{
 		this(seedUniquifier() ^ System.nanoTime());
@@ -42,9 +39,6 @@ public final class ISAAC extends Random
 	}
 
 
-	/**
-	 * Constructs a new ISAAC object with a predefined seed.
-	 */
 	public ISAAC(long aSeed)
 	{
 		int[] seed = new int[256];
@@ -228,9 +222,6 @@ public final class ISAAC extends Random
 	}
 
 
-	/**
-	 * Returns a random integer.
-	 */
 	@Override
 	public int nextInt()
 	{
@@ -249,9 +240,6 @@ public final class ISAAC extends Random
 	}
 
 
-	/**
-	 * Fills the buffer supplied with random bytes.
-	 */
 	public byte[] nextBytes(byte[] aBuffer, int aOffset, int aLength)
 	{
 		while (aLength >= 4)

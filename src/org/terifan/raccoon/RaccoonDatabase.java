@@ -48,13 +48,6 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	/**
-	 * Create a new or open an existing database
-	 *
-	 * @param aFile the database file
-	 * @param aOpenOptions OpenOption enum constant describing the options for creating the database instance
-	 * @param aParameters parameters for the database
-	 */
 	public RaccoonDatabase(File aFile, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
@@ -121,13 +114,6 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	/**
-	 * Create a new or open an existing database
-	 *
-	 * @param aBlockDevice a block device containing a database
-	 * @param aOpenOptions OpenOptions enum constant describing the options for creating the database instance
-	 * @param aParameters parameters for the database
-	 */
 	public RaccoonDatabase(IPhysicalBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
@@ -140,13 +126,6 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	/**
-	 * Create a new or open an existing database
-	 *
-	 * @param aBlockDevice a block device containing a database
-	 * @param aOpenOptions OpenOptions enum constant describing the options for creating the database instance
-	 * @param aParameters parameters for the database
-	 */
 	public RaccoonDatabase(IManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
@@ -386,7 +365,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	/**
 	 * Persists all pending changes. It's necessary to commit changes on a regular basis to avoid data loss.
 	 */
-	public boolean commit()
+	public void commit()
 	{
 		checkOpen();
 
@@ -406,8 +385,6 @@ public final class RaccoonDatabase implements AutoCloseable
 				}
 			}
 
-			boolean returnModified = mModified;
-
 			if (mModified)
 			{
 				Log.i("updating super block");
@@ -422,8 +399,6 @@ public final class RaccoonDatabase implements AutoCloseable
 
 				Log.dec();
 			}
-
-			return returnModified;
 		}
 		finally
 		{

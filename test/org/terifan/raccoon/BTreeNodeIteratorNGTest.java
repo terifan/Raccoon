@@ -10,6 +10,7 @@ import static org.terifan.raccoon._Tools.createStorage;
 import static org.terifan.raccoon._Tools.showTree;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
+import org.terifan.raccoon.storage.BlockAccessor;
 import org.testng.annotations.Test;
 
 
@@ -20,7 +21,7 @@ public class BTreeNodeIteratorNGTest
 	{
 		IPhysicalBlockDevice device = new MemoryBlockDevice(512);
 
-		try (BTreeStorage storage = createStorage(device); BTree tree = new BTree(storage, new Document()))
+		try (BlockAccessor storage = createStorage(()->device); BTree tree = new BTree(storage, new Document()))
 		{
 			for (int i = 0; i < 100_000; i++)
 			{

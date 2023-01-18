@@ -39,76 +39,26 @@ public class _Tools
 	}
 
 
-	public static BTreeStorage createMemoryStorage()
+	public static BlockAccessor createMemoryStorage()
 	{
-		return createStorage(new MemoryBlockDevice(512));
+		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockDevice(512)), CompressionParam.NO_COMPRESSION);
 	}
 
 
-	public static BTreeStorage createSecureMemoryStorage()
+	public static BlockAccessor createSecureMemoryStorage()
 	{
-		return createSecureStorage(new MemoryBlockDevice(512));
+		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), new MemoryBlockDevice(512))), CompressionParam.NO_COMPRESSION);
 	}
 
 
-	public static BTreeStorage createStorage(Supplier<IPhysicalBlockDevice> aSupplier)
+	public static BlockAccessor createStorage(Supplier<IPhysicalBlockDevice> aSupplier)
 	{
-		return createStorage(aSupplier.get());
+		return new BlockAccessor(new ManagedBlockDevice(aSupplier.get()), CompressionParam.NO_COMPRESSION);
 	}
 
 
-	public static BTreeStorage createSecureStorage(Supplier<IPhysicalBlockDevice> aSupplier)
+	public static BlockAccessor createSecureStorage(Supplier<IPhysicalBlockDevice> aSupplier)
 	{
-		return createSecureStorage(aSupplier.get());
-	}
-
-
-	public static BTreeStorage createStorage(IPhysicalBlockDevice aPhysicalBlockDevice)
-	{
-		BTreeStorage storage = new BTreeStorage()
-		{
-			BlockAccessor blockAccessor = new BlockAccessor(new ManagedBlockDevice(aPhysicalBlockDevice), CompressionParam.NO_COMPRESSION);
-
-
-			@Override
-			public BlockAccessor getBlockAccessor()
-			{
-				return blockAccessor;
-			}
-
-
-			@Override
-			public long getTransaction()
-			{
-				return 0;
-			}
-		};
-		return storage;
-	}
-
-
-	public static BTreeStorage createSecureStorage(IPhysicalBlockDevice aPhysicalBlockDevice)
-	{
-		BTreeStorage storage = new BTreeStorage()
-		{
-			AccessCredentials ac = new AccessCredentials("password");
-			SecureBlockDevice sec = aPhysicalBlockDevice.length() > 0 ? SecureBlockDevice.open(ac, aPhysicalBlockDevice) : SecureBlockDevice.create(ac, aPhysicalBlockDevice);
-			BlockAccessor blockAccessor = new BlockAccessor(new ManagedBlockDevice(sec), CompressionParam.NO_COMPRESSION);
-
-
-			@Override
-			public BlockAccessor getBlockAccessor()
-			{
-				return blockAccessor;
-			}
-
-
-			@Override
-			public long getTransaction()
-			{
-				return 0;
-			}
-		};
-		return storage;
+		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), aSupplier.get())), CompressionParam.NO_COMPRESSION);
 	}
 }

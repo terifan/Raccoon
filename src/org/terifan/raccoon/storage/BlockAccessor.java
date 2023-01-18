@@ -15,7 +15,7 @@ import org.terifan.raccoon.util.Log;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
-public class BlockAccessor implements IBlockAccessor
+public class BlockAccessor implements IBlockAccessor, AutoCloseable
 {
 	private final IManagedBlockDevice mBlockDevice;
 	private final CompressionParam mCompressionParam;
@@ -31,6 +31,14 @@ public class BlockAccessor implements IBlockAccessor
 	public IManagedBlockDevice getBlockDevice()
 	{
 		return mBlockDevice;
+	}
+
+
+	@Override
+	public void close()
+	{
+		mBlockDevice.commit();
+		mBlockDevice.close();
 	}
 
 

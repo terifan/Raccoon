@@ -98,9 +98,6 @@ public final class AccessCredentials
 	 * also longer time to open a database.
 	 *
 	 * WARNING: this value is not recorded in the database file and must be provided when opening a database if other than the default value!
-	 *
-	 * @param aIterationCount
-	 * the iteration count used.
 	 */
 	public AccessCredentials setIterationCount(int aIterationCount)
 	{

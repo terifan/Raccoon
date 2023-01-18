@@ -32,6 +32,8 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 
 	/**
 	 * Add the item to this Array. If the value provided is an array, list or stream an Array is created.
+	 *
+	 * @return this Array
 	 */
 	public Array add(Object aValue)
 	{
@@ -71,6 +73,8 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 
 	/**
 	 * Add each item provided, same as calling the <code>add</code> method for each item.
+	 *
+	 * @return this Array
 	 */
 	public Array addAll(Object... aValue)
 	{
@@ -348,7 +352,7 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 
 
 	/**
-	 * Returns an Iterable over the items in the Array with each item cast to the provided type.
+	 * @return an Iterable over the items in the Array with each item cast to the provided type.
 	 */
 	public <T> Iterable<T> iterable(Class<T> aType)
 	{

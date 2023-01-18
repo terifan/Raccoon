@@ -1,11 +1,7 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.BTree;
-import org.terifan.raccoon.BTreeStorage;
 import java.util.function.Supplier;
 import javax.swing.JFrame;
-import org.terifan.raccoon.CompressionParam;
-import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
@@ -39,76 +35,36 @@ public class _Tools
 	}
 
 
-	public static BTreeStorage createMemoryStorage()
+	public static BlockAccessor createMemoryStorage()
 	{
-		return createStorage(new MemoryBlockDevice(512));
+		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockDevice(512)), CompressionParam.NO_COMPRESSION);
 	}
 
 
-	public static BTreeStorage createSecureMemoryStorage()
+	public static BlockAccessor createSecureMemoryStorage()
 	{
-		return createSecureStorage(new MemoryBlockDevice(512));
+		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), new MemoryBlockDevice(512))), CompressionParam.NO_COMPRESSION);
 	}
 
 
-	public static BTreeStorage createStorage(Supplier<IPhysicalBlockDevice> aSupplier)
+	public static BlockAccessor createStorage(Supplier<IPhysicalBlockDevice> aSupplier)
 	{
-		return createStorage(aSupplier.get());
-	}
-
-
-	public static BTreeStorage createSecureStorage(Supplier<IPhysicalBlockDevice> aSupplier)
-	{
-		return createSecureStorage(aSupplier.get());
-	}
-
-
-	public static BTreeStorage createStorage(IPhysicalBlockDevice aPhysicalBlockDevice)
-	{
-		BTreeStorage storage = new BTreeStorage()
+		IPhysicalBlockDevice device = aSupplier.get();
+		if (device.length() > 0)
 		{
-			BlockAccessor blockAccessor = new BlockAccessor(new ManagedBlockDevice(aPhysicalBlockDevice), CompressionParam.NO_COMPRESSION);
-
-
-			@Override
-			public BlockAccessor getBlockAccessor()
-			{
-				return blockAccessor;
-			}
-
-
-			@Override
-			public long getTransaction()
-			{
-				return 0;
-			}
-		};
-		return storage;
+			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION);
+		}
+		return new BlockAccessor(new ManagedBlockDevice(device), CompressionParam.NO_COMPRESSION);
 	}
 
 
-	public static BTreeStorage createSecureStorage(IPhysicalBlockDevice aPhysicalBlockDevice)
+	public static BlockAccessor createSecureStorage(Supplier<IPhysicalBlockDevice> aSupplier)
 	{
-		BTreeStorage storage = new BTreeStorage()
+		IPhysicalBlockDevice device = aSupplier.get();
+		if (device.length() > 0)
 		{
-			AccessCredentials ac = new AccessCredentials("password");
-			SecureBlockDevice sec = aPhysicalBlockDevice.length() > 0 ? SecureBlockDevice.open(ac, aPhysicalBlockDevice) : SecureBlockDevice.create(ac, aPhysicalBlockDevice);
-			BlockAccessor blockAccessor = new BlockAccessor(new ManagedBlockDevice(sec), CompressionParam.NO_COMPRESSION);
-
-
-			@Override
-			public BlockAccessor getBlockAccessor()
-			{
-				return blockAccessor;
-			}
-
-
-			@Override
-			public long getTransaction()
-			{
-				return 0;
-			}
-		};
-		return storage;
+			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION);
+		}
+		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION);
 	}
 }

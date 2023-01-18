@@ -380,12 +380,14 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	/**
-	 * Return the space map layout as a String (ranges of free blocks). If the space map is fragmented this may be a long String.
+	 * @return the space map layout as a String (ranges of free blocks). If the space map is fragmented this may be a long String.
 	 */
 	public String getSpaceMap()
 	{
 		return mSpaceMap.getRangeMap().toString();
 	}
+
+
 	public RangeMap getRangeMap()
 	{
 		return mSpaceMap.getRangeMap();
@@ -393,7 +395,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	/**
-	 * Return the maximum available space this block device can theoretically allocate. This value may be greater than what the underlying block device can support.
+	 * @return the maximum available space this block device can theoretically allocate. This value may be greater than what the underlying
+	 * block device can support.
 	 */
 	@Override
 	public long getMaximumSpace()
@@ -403,7 +406,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	/**
-	 * Return the size of the underlying block device, ie. size of a file acting as a block storage.
+	 * @return the size of the underlying block device, ie. size of a file acting as a block storage.
 	 */
 	@Override
 	public long getAllocatedSpace()
@@ -413,7 +416,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	/**
-	 * Return the number of free blocks within the allocated space.
+	 * @return the number of free blocks within the allocated space.
 	 */
 	@Override
 	public long getFreeSpace()
@@ -423,7 +426,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 
 	/**
-	 * Return the number of blocks actually used.
+	 * @return the number of blocks actually used.
 	 */
 	@Override
 	public long getUsedSpace()

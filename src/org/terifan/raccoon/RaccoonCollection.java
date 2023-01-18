@@ -39,7 +39,7 @@ public final class RaccoonCollection extends BTreeStorage
 
 		mLock = new ReadWriteLock();
 		mCommitLocks = new HashSet<>();
-		mImplementation = new BTree(this, aConfiguration);
+		mImplementation = new BTree(getBlockAccessor(), aConfiguration);
 		mIdentityCounter = new IdentityCounter(aConfiguration);
 	}
 
@@ -297,7 +297,7 @@ public final class RaccoonCollection extends BTreeStorage
 
 			BTree prev = mImplementation;
 
-			mImplementation = new BTree(this, mImplementation.getConfiguration().clone().remove("treeRoot"));
+			mImplementation = new BTree(getBlockAccessor(), mImplementation.getConfiguration().clone().remove("treeRoot"));
 
 			new BTreeNodeVisitor().visitAll(prev, node ->
 			{
@@ -358,16 +358,9 @@ public final class RaccoonCollection extends BTreeStorage
 
 
 	@Override
-	public BlockAccessor getBlockAccessor()
+	BlockAccessor getBlockAccessor()
 	{
 		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter());
-	}
-
-
-	@Override
-	protected long getTransaction()
-	{
-		return mDatabase.getTransaction();
 	}
 
 

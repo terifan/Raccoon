@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.BTreeNode.RemoveResult;
+import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
@@ -14,23 +15,24 @@ public class BTree implements AutoCloseable
 {
 	static byte[] BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
 
-	private BTreeStorage mStorage;
+	private BlockAccessor mBlockAccessor;
 	private Document mConfiguration;
 	private BTreeNode mRoot;
 	private long mModCount;
 
-	public BTree(BTreeStorage aStorage, Document aConfiguration)
+
+	public BTree(BlockAccessor aBlockAccessor, Document aConfiguration)
 	{
-		mStorage = aStorage;
+		mBlockAccessor = aBlockAccessor;
 		mConfiguration = aConfiguration;
 
-		mConfiguration.putNumber("leafSize", mConfiguration.getInt("leafSize", k -> mStorage.getBlockDevice().getBlockSize()));
-		mConfiguration.putNumber("indexSize", mConfiguration.getInt("indexSize", k -> mStorage.getBlockDevice().getBlockSize()));
-		mConfiguration.putNumber("entrySizeLimit", mConfiguration.getInt("entrySizeLimit", k -> mStorage.getBlockDevice().getBlockSize() / 4));
+		mConfiguration.putNumber("leafSize", mConfiguration.getInt("leafSize", k -> mBlockAccessor.getBlockDevice().getBlockSize()));
+		mConfiguration.putNumber("indexSize", mConfiguration.getInt("indexSize", k -> mBlockAccessor.getBlockDevice().getBlockSize()));
+		mConfiguration.putNumber("entrySizeLimit", mConfiguration.getInt("entrySizeLimit", k -> mBlockAccessor.getBlockDevice().getBlockSize() / 4));
 
 		if (mConfiguration.containsKey("treeRoot"))
 		{
-			Log.i("open table %s", aConfiguration.getString("name","?"));
+			Log.i("open table %s", aConfiguration.getString("name", "?"));
 			Log.inc();
 
 			unmarshalHeader();
@@ -39,7 +41,7 @@ public class BTree implements AutoCloseable
 		}
 		else
 		{
-			Log.i("create table %s", aConfiguration.getString("name","?"));
+			Log.i("create table %s", aConfiguration.getString("name", "?"));
 			Log.inc();
 
 			setupEmptyTable();
@@ -228,7 +230,7 @@ public class BTree implements AutoCloseable
 		if (mConfiguration != null)
 		{
 			mRoot = null;
-			mStorage = null;
+			mBlockAccessor = null;
 			mConfiguration = null;
 		}
 	}
@@ -253,13 +255,13 @@ public class BTree implements AutoCloseable
 			throw new IllegalArgumentException("Attempt to read bad block: " + aBlockPointer);
 		}
 
-		return mStorage.getBlockAccessor().readBlock(aBlockPointer);
+		return mBlockAccessor.readBlock(aBlockPointer);
 	}
 
 
 	protected BlockPointer writeBlock(byte[] aContent, int aLevel, BlockType aBlockType)
 	{
-		return mStorage.getBlockAccessor().writeBlock(aContent, 0, aContent.length, mStorage.getTransaction(), aBlockType).setBlockLevel(aLevel);
+		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mBlockAccessor.getBlockDevice().getTransactionId(), aBlockType).setBlockLevel(aLevel);
 	}
 
 
@@ -267,7 +269,7 @@ public class BTree implements AutoCloseable
 	{
 		if (aBlockPointer != null)
 		{
-			mStorage.getBlockAccessor().freeBlock(aBlockPointer);
+			mBlockAccessor.freeBlock(aBlockPointer);
 		}
 	}
 

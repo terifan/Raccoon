@@ -70,12 +70,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	/**
-	 * Create a new ArrayMap with specified capacity.
-	 *
-	 * @param aCapacity the capacity (length) of the buffer. Maximum 65536 bytes.
-	 * @return the buffer
-	 */
 	public ArrayMap(int aCapacity)
 	{
 		if (aCapacity <= HEADER_SIZE)
@@ -91,26 +85,12 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	/**
-	 * Create a new ArrayMap wrapping the provided array.
-	 *
-	 * @param aBuffer the byte array to wrap
-	 * @return the buffer
-	 */
 	public ArrayMap(byte[] aBuffer)
 	{
 		this(aBuffer, 0, aBuffer.length);
 	}
 
 
-	/**
-	 * Create a new ArrayMap wrapping the provided array reading the actual map at the specified offset.
-	 *
-	 * @param aBuffer the byte array to wrap
-	 * @param aOffset an offset to the the actual map in the byte array.
-	 * @param aCapacity the capacity of the buffer, ie. the map use this number of bytes in the byte array provided at the offset specified.
-	 * @return the buffer
-	 */
 	public ArrayMap(byte[] aBuffer, int aOffset, int aCapacity)
 	{
 		if (aOffset < 0 || aOffset + aCapacity > aBuffer.length)
@@ -161,13 +141,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	/**
-	 * Add the entry to the map resizing the internal buffer if necessary.
-	 *
-	 * @param aEntry entry to add
-	 * @param oExistingEntry optional; output for an existing entry with the entry key
-	 * @return true if the entry was inserted without resizing the buffer and false if the buffer was resized
-	 */
 	public PutResult insert(ArrayMapEntry aEntry)
 	{
 		PutResult result = put(aEntry, null);
@@ -190,13 +163,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	/**
-	 * Add the entry to the map resizing the internal buffer if necessary.
-	 *
-	 * @param aEntry entry to add
-	 * @param oExistingEntry optional; output for an existing entry with the entry key
-	 * @return true if the entry was inserted without resizing the buffer and false if the buffer was resized
-	 */
 	public PutResult insert(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
 		PutResult result = put(aEntry, oExistingEntry);
@@ -219,13 +185,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	/**
-	 * Add the entry to the map
-	 *
-	 * @param aEntry entry to add
-	 * @param oExistingEntry optional; output for an existing entry with the entry key
-	 * @return true if the operation was successful and entry inserted into the map
-	 */
 	public PutResult put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
 	{
 		ArrayMapKey key = aEntry.getKey();
@@ -328,9 +287,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	/**
-	 * Find an entry equal or before the sought key.
-	 */
 	public NearResult nearest(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());
@@ -352,9 +308,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	/**
-	 * Find an entry equal or before the sought key.
-	 */
 	public int nearestIndex(ArrayMapKey aKey)
 	{
 		int index = indexOf(aKey);
@@ -372,9 +325,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	/**
-	 * Find an entry equal or before the sought key.
-	 */
 	public int loadNearestIndexEntry(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());

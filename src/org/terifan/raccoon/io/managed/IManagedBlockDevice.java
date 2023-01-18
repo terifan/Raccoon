@@ -42,7 +42,7 @@ public interface IManagedBlockDevice extends IBlockDevice
 
 
 	/**
-	 * Returns a Document containing information about the application using the block device.
+	 * @return a Document containing information about the application using the block device.
 	 */
 	Document getApplicationMetadata();
 
@@ -51,25 +51,25 @@ public interface IManagedBlockDevice extends IBlockDevice
 
 
 	/**
-	 * Return the maximum available space this block device can theoretically allocate. This value may be greater than what the underlying block device can support.
+	 * @return the maximum available space this block device can theoretically allocate. This value may be greater than what the underlying block device can support.
 	 */
 	long getMaximumSpace();
 
 
 	/**
-	 * Return the size of the underlying block device, ie. size of a file acting as a block storage.
+	 * @return the size of the underlying block device, ie. size of a file acting as a block storage.
 	 */
 	long getAllocatedSpace();
 
 
 	/**
-	 * Return the number of free blocks within the allocated space.
+	 * @return the number of free blocks within the allocated space.
 	 */
 	long getFreeSpace();
 
 
 	/**
-	 * Return the number of blocks actually used.
+	 * @return the number of blocks actually used.
 	 */
 	long getUsedSpace();
 }

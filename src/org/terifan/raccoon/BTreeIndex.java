@@ -548,8 +548,6 @@ public class BTreeIndex extends BTreeNode
 
 		if (childNode == null)
 		{
-			assert RuntimeDiagnostics.collectStatistics(Operation.READ_NODE, 1);
-
 			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(aEntry.getValue()));
 
 			childNode = bp.getBlockType() == BlockType.TREE_INDEX ? new BTreeIndex(mLevel - 1) : new BTreeLeaf();
@@ -557,6 +555,8 @@ public class BTreeIndex extends BTreeNode
 			childNode.mMap = new ArrayMap(aImplementation.readBlock(bp));
 
 			mChildNodes.put(key, childNode);
+
+			assert RuntimeDiagnostics.collectStatistics(bp.getBlockType() == BlockType.TREE_INDEX ? Operation.READ_NODE : Operation.READ_LEAF, 1);
 		}
 
 		return childNode;

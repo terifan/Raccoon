@@ -188,11 +188,11 @@ public final class SecureBlockDevice implements IPhysicalBlockDevice, AutoClosea
 			throw new IllegalArgumentException("Block size is less than 512 bytes");
 		}
 
-		SecureBlockDevice device = new SecureBlockDevice();
-		device.mBlockDevice = aBlockDevice;
-
 		Log.i("open boot block #%s", aBlockIndex);
 		Log.inc();
+
+		SecureBlockDevice device = new SecureBlockDevice();
+		device.mBlockDevice = aBlockDevice;
 
 		byte[] blockData = new byte[device.mBlockDevice.getBlockSize()];
 

@@ -9,9 +9,9 @@ package org.terifan.security.cryptography;
  *
  * References:<ol>
  * <li>Serpent: A New Block Cipher Proposal. This paper was published in the proceedings of the "Fast Software Encryption Workshop No. 5"
- * held in Paris in March 1998. LNCS, Springer Verlag.<p>
+ * held in Paris in March 1998. LNCS, Springer Verlag.
  * <li>Reference implementation of the standard Serpent cipher written in C by <a href="http://www.cl.cam.ac.uk/~fms/"> Frank
- * Stajano</a>.</ol><p>
+ * Stajano</a>.</ol>
  *
  * <b>Copyright</b> &copy; 1997, 1998
  * <a href="http://www.systemics.com/">Systemics Ltd</a> on behalf of the
@@ -93,7 +93,7 @@ public class Serpent implements BlockCipher
 			int t = w[i - 8] ^ w[i - 5] ^ w[i - 3] ^ w[i - 1] ^ PHI ^ i;
 			w[i] = t << 11 | t >>> 21;
 		}
-		
+
 		State state = new State();
 
 		// After these s-boxes the pre-key (w, above) will become the

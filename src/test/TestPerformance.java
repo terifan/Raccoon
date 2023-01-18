@@ -20,7 +20,7 @@ public class TestPerformance
 	{
 		try
 		{
-			int N = 1000_000;
+			int N = 10000;
 			int M = 10;
 
 			System.out.println(N + " x " + M);
