@@ -22,7 +22,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 
-public abstract class Container<K, R> implements Externalizable, Cloneable
+abstract class Container<K, R> implements Externalizable, Cloneable
 {
 	private final static long serialVersionUID = 1L;
 

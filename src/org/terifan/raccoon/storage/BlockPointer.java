@@ -1,7 +1,6 @@
 package org.terifan.raccoon.storage;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.BlockType;
@@ -284,26 +283,18 @@ public class BlockPointer implements Serializable
 	}
 
 
-//	public BlockPointer unmarshal(byte[] aBuffer, int aOffset)
-//	{
-//		System.arraycopy(aBuffer, aOffset, mBuffer, 0, SIZE);
-//		return this;
-//	}
-
-
 	public BlockPointer unmarshalDoc(Document aDocument)
 	{
-		Array array = aDocument.getArray("");
-		setBlockType(BlockType.values()[array.getInt(0)]);
-		setBlockLevel(array.getInt(1));
-		setCompressionAlgorithm(array.getInt(2));
-		setAllocatedSize(array.getInt(3));
-		setLogicalSize(array.getInt(4));
-		setPhysicalSize(array.getInt(5));
-		setTransactionId(array.getInt(6));
-		setBlockIndex0(array.getArray(7).getLong(0));
-		setBlockKey(array.getArray(8).toLongs());
-		setChecksum(array.getArray(9).toLongs());
+		setBlockType(BlockType.values()[aDocument.getInt("0")]);
+		setBlockLevel(aDocument.getInt("1"));
+		setCompressionAlgorithm(aDocument.getInt("2"));
+		setAllocatedSize(aDocument.getInt("3"));
+		setLogicalSize(aDocument.getInt("4"));
+		setPhysicalSize(aDocument.getInt("5"));
+		setTransactionId(aDocument.getInt("6"));
+		setBlockIndex0(aDocument.getArray("7").getLong(0));
+		setBlockKey(aDocument.getArray("8").toLongs());
+		setChecksum(aDocument.getArray("9").toLongs());
 		return this;
 	}
 
@@ -311,21 +302,98 @@ public class BlockPointer implements Serializable
 	public Document marshalDoc()
 	{
 		Document doc = new Document()
-			.putArray("", Array.of(
-				getBlockType().ordinal(),
-				getBlockLevel(),
-				getCompressionAlgorithm(),
-				getAllocatedSize(),
-				getLogicalSize(),
-				getPhysicalSize(),
-				getTransactionId(),
-				Array.of(getBlockIndex0()),
-				Array.of(getBlockKey(new long[4])),
-				Array.of(getChecksum(new long[4]))
-			));
+			.putNumber("0", getBlockType().ordinal())
+			.putNumber("1", getBlockLevel())
+			.putNumber("2", getCompressionAlgorithm())
+			.putNumber("3", getAllocatedSize())
+			.putNumber("4", getLogicalSize())
+			.putNumber("5", getPhysicalSize())
+			.putNumber("6", getTransactionId())
+			.putArray("7", Array.of(getBlockIndex0()))
+			.putArray("8", Array.of(getBlockKey(new long[4])))
+			.putArray("9", Array.of(getChecksum(new long[4])))
+			;
+
+		Log.hexDump(doc.marshal());
 
 		return doc;
 	}
+
+
+//	public BlockPointer unmarshalDoc(Document aDocument)
+//	{
+//		setBlockType(BlockType.values()[aDocument.getInt("type")]);
+//		setBlockLevel(aDocument.getInt("lvl"));
+//		setCompressionAlgorithm(aDocument.getInt("comp"));
+//		setAllocatedSize(aDocument.getInt("alloc"));
+//		setLogicalSize(aDocument.getInt("logic"));
+//		setPhysicalSize(aDocument.getInt("phys"));
+//		setTransactionId(aDocument.getInt("tx"));
+//		setBlockIndex0(aDocument.getLongArray("blocks")[0]);
+//		setBlockKey(aDocument.getLongArray("key"));
+//		setChecksum(aDocument.getLongArray("chk"));
+//		return this;
+//	}
+//
+//
+//	public Document marshalDoc()
+//	{
+//		Document doc = new Document()
+//			.putNumber("type", getBlockType().ordinal())
+//			.putNumber("lvl", getBlockLevel())
+//			.putNumber("comp", getCompressionAlgorithm())
+//			.putNumber("alloc", getAllocatedSize())
+//			.putNumber("logic", getLogicalSize())
+//			.putNumber("phys", getPhysicalSize())
+//			.putNumber("tx", getTransactionId())
+//			.putArray("blocks", Array.of(getBlockIndex0()))
+//			.putArray("key", Array.of(getBlockKey(new long[4])))
+//			.putArray("chk", Array.of(getChecksum(new long[4])))
+//			;
+//
+//		Log.hexDump(doc.marshal());
+//
+//		return doc;
+//	}
+
+
+//	public BlockPointer unmarshalDoc(Document aDocument)
+//	{
+//		Array array = aDocument.getArray("");
+//		setBlockType(BlockType.values()[array.getInt(0)]);
+//		setBlockLevel(array.getInt(1));
+//		setCompressionAlgorithm(array.getInt(2));
+//		setAllocatedSize(array.getInt(3));
+//		setLogicalSize(array.getInt(4));
+//		setPhysicalSize(array.getInt(5));
+//		setTransactionId(array.getInt(6));
+//		setBlockIndex0(array.getArray(7).getLong(0));
+//		setBlockKey(array.getArray(8).toLongs());
+//		setChecksum(array.getArray(9).toLongs());
+//		return this;
+//	}
+//
+//
+//	public Document marshalDoc()
+//	{
+//		Document doc = new Document()
+//			.putArray("", Array.of(
+//				getBlockType().ordinal(),
+//				getBlockLevel(),
+//				getCompressionAlgorithm(),
+//				getAllocatedSize(),
+//				getLogicalSize(),
+//				getPhysicalSize(),
+//				getTransactionId(),
+//				Array.of(getBlockIndex0()),
+//				Array.of(getBlockKey(new long[4])),
+//				Array.of(getChecksum(new long[4]))
+//			));
+//
+//		Log.hexDump(doc.marshal());
+//
+//		return doc;
+//	}
 
 
 	@Override

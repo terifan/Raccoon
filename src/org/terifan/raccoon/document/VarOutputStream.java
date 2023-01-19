@@ -61,8 +61,17 @@ public class VarOutputStream implements AutoCloseable
 			Object value = entry.getValue();
 			VarType type = identify(value);
 
-			writeHeader(entry.getKey().length(), type);
-			writeUTF(entry.getKey());
+			boolean numeric = entry.getKey().matches("[0-9]{1,}");
+			if (numeric)
+			{
+				writeHeader((Integer.parseInt(entry.getKey()) << 1) + 1, type);
+			}
+			else
+			{
+				writeHeader((entry.getKey().length() << 1), type);
+				writeUTF(entry.getKey());
+			}
+
 			writeValue(type, value);
 		}
 
@@ -134,7 +143,7 @@ public class VarOutputStream implements AutoCloseable
 	VarOutputStream writeBuffer(byte[] aBuffer) throws IOException
 	{
 		writeUnsignedVarint(aBuffer.length);
-		VarOutputStream.this.write(aBuffer);
+		write(aBuffer);
 		return this;
 	}
 
@@ -150,11 +159,11 @@ public class VarOutputStream implements AutoCloseable
 
 			if (aValue == 0)
 			{
-				VarOutputStream.this.write(b);
+				write(b);
 				return this;
 			}
 
-			VarOutputStream.this.write(128 + b);
+			write(128 + b);
 		}
 	}
 
@@ -168,11 +177,11 @@ public class VarOutputStream implements AutoCloseable
 
 			if (aValue == 0)
 			{
-				VarOutputStream.this.write(b);
+				write(b);
 				return this;
 			}
 
-			VarOutputStream.this.write(128 + b);
+			write(128 + b);
 		}
 	}
 
@@ -184,18 +193,18 @@ public class VarOutputStream implements AutoCloseable
 			char c = aInput.charAt(i);
 		    if (c <= 0x007F)
 		    {
-				VarOutputStream.this.write(c & 0x7F);
+				write(c & 0x7F);
 		    }
 		    else if (c <= 0x07FF)
 		    {
-				VarOutputStream.this.write(0xC0 | ((c >>  6) & 0x1F));
-				VarOutputStream.this.write(0x80 | ((c      ) & 0x3F));
+				write(0xC0 | ((c >>  6) & 0x1F));
+				write(0x80 | ((c      ) & 0x3F));
 		    }
 		    else
 		    {
-				VarOutputStream.this.write(0xE0 | ((c >> 12) & 0x0F));
-				VarOutputStream.this.write(0x80 | ((c >>  6) & 0x3F));
-				VarOutputStream.this.write(0x80 | ((c      ) & 0x3F));
+				write(0xE0 | ((c >> 12) & 0x0F));
+				write(0x80 | ((c >>  6) & 0x3F));
+				write(0x80 | ((c      ) & 0x3F));
 		    }
 		}
 	}

@@ -150,7 +150,17 @@ public class VarInputStream implements AutoCloseable, Iterable<Object>
 				break;
 			}
 
-			doc.set(readUTF(header.value), readValue(header.type));
+			String key;
+			if ((header.value & 1) == 1)
+			{
+				key = Integer.toString(header.value >>> 1);
+			}
+			else
+			{
+				key = readUTF(header.value >>> 1);
+			}
+
+			doc.set(key, readValue(header.type));
 		}
 
 		return doc;

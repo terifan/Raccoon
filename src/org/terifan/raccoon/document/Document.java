@@ -201,16 +201,4 @@ public class Document extends Container<String, Document> implements Externaliza
 	{
 		mValues.forEach(action);
 	}
-
-
-	public long[] getLongArray(String aKey)
-	{
-		Array arr = getArray(aKey);
-		long[] values = new long[arr.mValues.size()];
-		for (int i = 0; i < values.length; i++)
-		{
-			values[i] = arr.getLong(i);
-		}
-		return values;
-	}
 }
