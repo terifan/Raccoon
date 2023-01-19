@@ -65,7 +65,7 @@ class JSONDecoder
 				throw new IOException("Expected colon sign after key: " + key);
 			}
 
-			doc.set(key, readValue(readChar()));
+			doc.putImpl(key, readValue(readChar()));
 		}
 
 		return doc;

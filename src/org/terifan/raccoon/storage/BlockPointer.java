@@ -293,8 +293,8 @@ public class BlockPointer implements Serializable
 		setPhysicalSize(aDocument.getInt("5"));
 		setTransactionId(aDocument.getInt("6"));
 		setBlockIndex0(aDocument.getArray("7").getLong(0));
-		setBlockKey(aDocument.getArray("8").toLongs());
-		setChecksum(aDocument.getArray("9").toLongs());
+		setBlockKey(aDocument.getArray("8").asLongArray());
+		setChecksum(aDocument.getArray("9").asLongArray());
 		return this;
 	}
 
@@ -302,16 +302,16 @@ public class BlockPointer implements Serializable
 	public Document marshalDoc()
 	{
 		Document doc = new Document()
-			.putNumber("0", getBlockType().ordinal())
-			.putNumber("1", getBlockLevel())
-			.putNumber("2", getCompressionAlgorithm())
-			.putNumber("3", getAllocatedSize())
-			.putNumber("4", getLogicalSize())
-			.putNumber("5", getPhysicalSize())
-			.putNumber("6", getTransactionId())
-			.putArray("7", Array.of(getBlockIndex0()))
-			.putArray("8", Array.of(getBlockKey(new long[4])))
-			.putArray("9", Array.of(getChecksum(new long[4])))
+			.put("0", getBlockType().ordinal())
+			.put("1", getBlockLevel())
+			.put("2", getCompressionAlgorithm())
+			.put("3", getAllocatedSize())
+			.put("4", getLogicalSize())
+			.put("5", getPhysicalSize())
+			.put("6", getTransactionId())
+			.put("7", Array.of(getBlockIndex0()))
+			.put("8", Array.of(getBlockKey(new long[4])))
+			.put("9", Array.of(getChecksum(new long[4])))
 			;
 
 		Log.hexDump(doc.marshal());

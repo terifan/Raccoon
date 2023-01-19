@@ -43,7 +43,7 @@ public class TestPerformance
 					for (int i = 0; i < N; i++)
 					{
 						String s = value();
-						db.getCollection("table").save(new Document().putString("value", s).putNumber("hash", s.hashCode()));
+						db.getCollection("table").save(new Document().put("value", s).put("hash", s.hashCode()));
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
@@ -61,7 +61,7 @@ public class TestPerformance
 					for (int i = 0; i < N; i++)
 					{
 						String s = value();
-						documents.add(new Document().putString("value", s).putNumber("hash", s.hashCode()));
+						documents.add(new Document().put("value", s).put("hash", s.hashCode()));
 					}
 					db.getCollection("table").saveAll(documents.toArray(new Document[0]));
 					System.out.printf("%8d", System.currentTimeMillis() - t);
@@ -78,7 +78,7 @@ public class TestPerformance
 					long t = System.currentTimeMillis();
 					for (int i = 0; i < N; i++, k++)
 					{
-						Document doc = db.getCollection("table").get(new Document().putNumber("_id", k));
+						Document doc = db.getCollection("table").get(new Document().put("_id", k));
 						assert doc.getString("value").hashCode() == doc.getInt("hash");
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
@@ -96,7 +96,7 @@ public class TestPerformance
 					for (int i = 0; i < N; i++, k++)
 					{
 						String s = value();
-						db.getCollection("table").save(new Document().putNumber("_id", k).putString("value", s).putNumber("hash", s.hashCode()));
+						db.getCollection("table").save(new Document().put("_id", k).put("value", s).put("hash", s.hashCode()));
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
@@ -113,7 +113,7 @@ public class TestPerformance
 					long t = System.currentTimeMillis();
 					for (int i = 0; i < N; i++, k++)
 					{
-						Document doc = db.getCollection("table").get(new Document().putNumber("_id", k));
+						Document doc = db.getCollection("table").get(new Document().put("_id", k));
 						assert doc.getString("value").hashCode() == doc.getInt("hash");
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
@@ -130,7 +130,7 @@ public class TestPerformance
 					long t = System.currentTimeMillis();
 					for (int i = 0; i < N; i++, k++)
 					{
-						db.getCollection("table").delete(new Document().putNumber("_id", k));
+						db.getCollection("table").delete(new Document().put("_id", k));
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
@@ -152,7 +152,7 @@ public class TestPerformance
 					for (int i = 0; i < N; i++, k++)
 					{
 						String s = value();
-						db.getCollection("table").save(new Document().putNumber("_id", order.get(k)).putString("value", s).putNumber("hash", s.hashCode()));
+						db.getCollection("table").save(new Document().put("_id", order.get(k)).put("value", s).put("hash", s.hashCode()));
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
@@ -170,7 +170,7 @@ public class TestPerformance
 					long t = System.currentTimeMillis();
 					for (int i = 0; i < N; i++, k++)
 					{
-						Document doc = db.getCollection("table").get(new Document().putNumber("_id", order.get(k)));
+						Document doc = db.getCollection("table").get(new Document().put("_id", order.get(k)));
 						assert doc.getString("value").hashCode() == doc.getInt("hash");
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
@@ -190,7 +190,7 @@ public class TestPerformance
 					for (int i = 0; i < N; i++, k++)
 					{
 						String s = value();
-						db.getCollection("table").save(new Document().putNumber("_id", order.get(k)).putString("value", s).putNumber("hash", s.hashCode()));
+						db.getCollection("table").save(new Document().put("_id", order.get(k)).put("value", s).put("hash", s.hashCode()));
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();
@@ -208,7 +208,7 @@ public class TestPerformance
 					long t = System.currentTimeMillis();
 					for (int i = 0; i < N; i++, k++)
 					{
-						Document doc = db.getCollection("table").get(new Document().putNumber("_id", order.get(k)));
+						Document doc = db.getCollection("table").get(new Document().put("_id", order.get(k)));
 						assert doc.getString("value").hashCode() == doc.getInt("hash");
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
@@ -227,7 +227,7 @@ public class TestPerformance
 					long t = System.currentTimeMillis();
 					for (int i = 0; i < N; i++, k++)
 					{
-						db.getCollection("table").delete(new Document().putNumber("_id", order.get(k)));
+						db.getCollection("table").delete(new Document().put("_id", order.get(k)));
 					}
 					System.out.printf("%8d", System.currentTimeMillis() - t);
 					db.commit();

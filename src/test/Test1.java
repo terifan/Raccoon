@@ -34,8 +34,8 @@ public class Test1
 				{
 					for (int j = 0; j < 10; j++,z++)
 					{
-//						collection.save(new Document().putNumber("_id", z).putString("name", "olle-"+i+"-"+j));
-						collection.save(new Document().putString("_id", "olle-"+i+"-"+j));
+//						collection.save(new Document().put("_id", z).putString("name", "olle-"+i+"-"+j));
+						collection.save(new Document().put("_id", "olle-"+i+"-"+j));
 					}
 				}
 

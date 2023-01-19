@@ -190,7 +190,7 @@ public final class RaccoonDatabase implements AutoCloseable
 			Log.i("create database");
 			Log.inc();
 
-			blockDevice.getApplicationMetadata().putString("tenantName", TENANT_NAME).putNumber("tenantVersion", TENANT_VERSION);
+			blockDevice.getApplicationMetadata().put("tenantName", TENANT_NAME).put("tenantVersion", TENANT_VERSION);
 
 			if (blockDevice.length() > 0)
 			{
@@ -214,7 +214,7 @@ public final class RaccoonDatabase implements AutoCloseable
 			{
 				throw new DatabaseException("Not a Raccoon database file");
 			}
-			if (blockDevice.getApplicationMetadata().getInt("tenantVersion", -1) != TENANT_VERSION)
+			if (blockDevice.getApplicationMetadata().get("tenantVersion", -1) != TENANT_VERSION)
 			{
 				throw new DatabaseException("Unsupported Raccoon database version");
 			}
@@ -592,10 +592,10 @@ public final class RaccoonDatabase implements AutoCloseable
 	private Document createDefaultConfig(String aName)
 	{
 		return new Document()
-			.putString("name", aName)
-			.putNumber("indexSize", mBlockDevice.getBlockSize())
-			.putNumber("leafSize", mBlockDevice.getBlockSize())
-			.putNumber("entrySizeLimit", mBlockDevice.getBlockSize() / 4)
-			.putDocument("compression", CompressionParam.BEST_SPEED.marshal());
+			.put("name", aName)
+			.put("indexSize", mBlockDevice.getBlockSize())
+			.put("leafSize", mBlockDevice.getBlockSize())
+			.put("entrySizeLimit", mBlockDevice.getBlockSize() / 4)
+			.put("compression", CompressionParam.BEST_SPEED.marshal());
 	}
 }

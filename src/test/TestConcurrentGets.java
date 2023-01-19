@@ -33,7 +33,7 @@ public class TestConcurrentGets
 				{
 					try
 					{
-						collection.save(new Document().putString("word", word + workerIndex));
+						collection.save(new Document().put("word", word + workerIndex));
 					}
 					catch (Exception e)
 					{
@@ -53,7 +53,7 @@ public class TestConcurrentGets
 					{
 						for (int wordIndex = 0; wordIndex < sourceWords.size(); wordIndex++)
 						{
-							Document doc = new Document().putNumber("_id", 1 + wordIndex * loops + workerIndex);
+							Document doc = new Document().put("_id", 1 + wordIndex * loops + workerIndex);
 							if (collection.tryGet(doc))
 							{
 								synchronized (words)

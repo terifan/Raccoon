@@ -46,7 +46,7 @@ public class TestConcurrentPuts
 					{
 						for (String word : sourceWords)
 						{
-							Document doc = new Document().putString("word", word + _index);
+							Document doc = new Document().put("word", word + _index);
 							collection.save(doc);
 						}
 					});
@@ -63,7 +63,7 @@ public class TestConcurrentPuts
 			{
 				for (int word = 0; word < sourceWords.size(); word++)
 				{
-					Document doc = new Document().putNumber("_id", 1 + word * loops + i);
+					Document doc = new Document().put("_id", 1 + word * loops + i);
 					if (collection.tryGet(doc))
 					{
 						words.add(doc.getString("word"));

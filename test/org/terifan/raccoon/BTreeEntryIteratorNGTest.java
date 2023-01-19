@@ -37,7 +37,7 @@ public class BTreeEntryIteratorNGTest
 //				Thread.sleep(1);
 			}
 			tree.commit();
-			storage.getBlockDevice().getApplicationMetadata().putDocument("conf", tree.getConfiguration());
+			storage.getBlockDevice().getApplicationMetadata().put("conf", tree.getConfiguration());
 		}
 
 		try (BlockAccessor storage = createStorage(()->device); BTree tree = new BTree(storage, storage.getBlockDevice().getApplicationMetadata().getDocument("conf")))

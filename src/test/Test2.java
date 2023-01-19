@@ -30,7 +30,7 @@ public class Test2
 				RaccoonCollection collection = db.getCollection("words");
 				for (String word : _WordLists.list130)
 				{
-					collection.save(new Document().putString("_id", word));
+					collection.save(new Document().put("_id", word));
 				}
 
 				db.commit();

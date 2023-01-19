@@ -17,7 +17,7 @@ public class DatabaseRoot
 	public DatabaseRoot()
 	{
 		mMetadata = new Document()
-			.putDocument("collections", new Document());
+			.put("collections", new Document());
 	}
 
 
@@ -45,7 +45,7 @@ public class DatabaseRoot
 
 		mBlockPointer = blockAccessor.writeBlock(buffer, 0, buffer.length, mTransactionId, BlockType.APPLICATION_HEADER);
 
-		aBlockDevice.getApplicationMetadata().putBinary("root", mBlockPointer.marshal());
+		aBlockDevice.getApplicationMetadata().put("root", mBlockPointer.marshal());
 	}
 
 
@@ -63,7 +63,7 @@ public class DatabaseRoot
 
 	void putCollection(String aName, Document aConfiguration)
 	{
-		mMetadata.getDocument("collections").putDocument(aName, aConfiguration);
+		mMetadata.getDocument("collections").put(aName, aConfiguration);
 	}
 
 

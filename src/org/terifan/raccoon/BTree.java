@@ -26,13 +26,13 @@ public class BTree implements AutoCloseable
 		mBlockAccessor = aBlockAccessor;
 		mConfiguration = aConfiguration;
 
-		mConfiguration.putNumber("leafSize", mConfiguration.getInt("leafSize", k -> mBlockAccessor.getBlockDevice().getBlockSize()));
-		mConfiguration.putNumber("indexSize", mConfiguration.getInt("indexSize", k -> mBlockAccessor.getBlockDevice().getBlockSize()));
-		mConfiguration.putNumber("entrySizeLimit", mConfiguration.getInt("entrySizeLimit", k -> mBlockAccessor.getBlockDevice().getBlockSize() / 4));
+		mConfiguration.put("leafSize", mConfiguration.get("leafSize", k -> mBlockAccessor.getBlockDevice().getBlockSize()));
+		mConfiguration.put("indexSize", mConfiguration.get("indexSize", k -> mBlockAccessor.getBlockDevice().getBlockSize()));
+		mConfiguration.put("entrySizeLimit", mConfiguration.get("entrySizeLimit", k -> mBlockAccessor.getBlockDevice().getBlockSize() / 4));
 
 		if (mConfiguration.containsKey("treeRoot"))
 		{
-			Log.i("open table %s", aConfiguration.getString("name", "?"));
+			Log.i("open table %s", aConfiguration.get("name", "?"));
 			Log.inc();
 
 			unmarshalHeader();
@@ -41,7 +41,7 @@ public class BTree implements AutoCloseable
 		}
 		else
 		{
-			Log.i("create table %s", aConfiguration.getString("name", "?"));
+			Log.i("create table %s", aConfiguration.get("name", "?"));
 			Log.inc();
 
 			setupEmptyTable();
@@ -55,7 +55,7 @@ public class BTree implements AutoCloseable
 	{
 		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeIndex ? BlockType.TREE_INDEX : BlockType.TREE_LEAF);
 
-		mConfiguration.putDocument("treeRoot", mRoot.mBlockPointer.marshalDoc());
+		mConfiguration.put("treeRoot", mRoot.mBlockPointer.marshalDoc());
 	}
 
 

@@ -26,7 +26,7 @@ public class BTreeNGTest
 		{
 			tree.put(new ArrayMapEntry(key, value, TYPE_DOCUMENT));
 			tree.commit();
-			storage.getBlockDevice().getApplicationMetadata().putDocument("conf", tree.getConfiguration());
+			storage.getBlockDevice().getApplicationMetadata().put("conf", tree.getConfiguration());
 			storage.getBlockDevice().commit();
 		}
 

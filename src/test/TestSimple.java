@@ -25,24 +25,24 @@ public class TestSimple
 			{
 //				db.createIndex("lookup", "people", "name");
 
-				db.getCollection("people").saveAll(new Document().putString("name", "adam"),
-					new Document().putString("name", "eve"),
-					new Document().putString("name", "steve").putNumber("_id", 7),
-					new Document().putString("name", "barbara"),
-					new Document().putString("name", "bob"),
-					new Document().putString("name", "walter")
+				db.getCollection("people").saveAll(new Document().put("name", "adam"),
+					new Document().put("name", "eve"),
+					new Document().put("name", "steve").put("_id", 7),
+					new Document().put("name", "barbara"),
+					new Document().put("name", "bob"),
+					new Document().put("name", "walter")
 				);
 
-				db.getCollection("lookup").saveAll(new Document().putString("_id", "adam").putNumber("id", 1),
-					new Document().putString("_id", "eve").putNumber("id", 2),
-					new Document().putString("_id", "steve").putNumber("id", 7),
-					new Document().putString("_id", "barbara").putNumber("id", 8),
-					new Document().putString("_id", "bob").putNumber("id", 9),
-					new Document().putString("_id", "walter").putNumber("id", 10)
+				db.getCollection("lookup").saveAll(new Document().put("_id", "adam").put("id", 1),
+					new Document().put("_id", "eve").put("id", 2),
+					new Document().put("_id", "steve").put("id", 7),
+					new Document().put("_id", "barbara").put("id", 8),
+					new Document().put("_id", "bob").put("id", 9),
+					new Document().put("_id", "walter").put("id", 10)
 				);
 
 				byte[] bytes = Files.readAllBytes(Paths.get("d:\\pictures\\babe.jpg"));
-				db.getCollection("files").save(new Document().putBinary("content", bytes));
+				db.getCollection("files").save(new Document().put("content", bytes));
 
 				db.commit();
 			}
@@ -53,7 +53,7 @@ public class TestSimple
 				db.getCollection("people").stream().forEach(System.out::println);
 				db.getCollection("lookup").stream().forEach(System.out::println);
 
-				System.out.println(db.getCollection("files").get(new Document().putNumber("_id", 1)).getBinary("content").length);
+				System.out.println(db.getCollection("files").get(new Document().put("_id", 1)).getBinary("content").length);
 
 				db.getCollection("people").stream().forEach(System.out::println);
 

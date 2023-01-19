@@ -15,7 +15,7 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 {
 	private final static long serialVersionUID = 1L;
 
-	final ArrayList<Object> mValues;
+	private final ArrayList<Object> mValues;
 
 
 	public Array()
@@ -32,9 +32,9 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 
 
 	@Override
-	public <T> T get(Integer aIndex)
+	Object getImpl(Integer aIndex)
 	{
-		return (T)mValues.get(aIndex);
+		return mValues.get(aIndex);
 	}
 
 
@@ -102,7 +102,7 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 
 
 	@Override
-	Array set(Integer aIndex, Object aValue)
+	Array putImpl(Integer aIndex, Object aValue)
 	{
 		if (aIndex == mValues.size())
 		{
@@ -205,8 +205,8 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 
 		for (int i = 0; i < mValues.size(); i++)
 		{
-			Object value = get(i);
-			Object otherValue = aOther.get(i);
+			Object value = getImpl(i);
+			Object otherValue = aOther.getImpl(i);
 
 			if ((value instanceof Container) && (otherValue instanceof Container))
 			{
@@ -389,7 +389,13 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 	}
 
 
-	public long[] toLongs()
+	public Object[] values()
+	{
+		return mValues.toArray();
+	}
+
+
+	public long[] asLongArray()
 	{
 		long[] values = new long[size()];
 		for (int i = 0; i < values.length; i++)

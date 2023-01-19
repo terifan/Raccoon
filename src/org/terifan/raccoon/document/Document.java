@@ -7,14 +7,13 @@ import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 
 public class Document extends Container<String, Document> implements Externalizable, Cloneable
 {
 	private final static long serialVersionUID = 1L;
 
-	final LinkedHashMap<String, Object> mValues;
+	private final LinkedHashMap<String, Object> mValues;
 
 
 	public Document()
@@ -24,14 +23,14 @@ public class Document extends Container<String, Document> implements Externaliza
 
 
 	@Override
-	public Object get(String aKey)
+	Object getImpl(String aKey)
 	{
 		return mValues.get(aKey);
 	}
 
 
 	@Override
-	Document set(String aKey, Object aValue)
+	Document putImpl(String aKey, Object aValue)
 	{
 		if (aKey == null)
 		{
@@ -46,12 +45,6 @@ public class Document extends Container<String, Document> implements Externaliza
 	{
 		aSource.entrySet().forEach(entry -> mValues.put(entry.getKey(), entry.getValue()));
 		return this;
-	}
-
-
-	public <T> T newInstance(Class<T> aType, Function<Document, T> aImporter)
-	{
-		return aImporter.apply(this);
 	}
 
 

@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 
 abstract class Container<K, R> implements Externalizable, Cloneable
@@ -33,29 +34,51 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
+	public <T> T get(K aKey)
+	{
+		return (T)getImpl(aKey);
+	}
+
+
 	public <T> T get(K aKey, T aDefaultValue)
 	{
-		Object value = get(aKey);
-		if (value == null)
+		Object v = getImpl(aKey);
+		if (v == null)
 		{
 			return aDefaultValue;
 		}
-		return (T)value;
+		return (T)v;
+	}
+
+
+	public <T> T get(K aKey, Function<K, T> aDefaultValue)
+	{
+		Object v = getImpl(aKey);
+		if (v == null)
+		{
+			return aDefaultValue.apply(aKey);
+		}
+		return (T)v;
+	}
+
+
+	public <T> T get(K aKey, Supplier<T> aDefaultValue)
+	{
+		Object v = getImpl(aKey);
+		if (v == null)
+		{
+			return aDefaultValue.get();
+		}
+		return (T)v;
 	}
 
 
 	public Boolean getBoolean(K aKey)
 	{
-		return getBoolean(aKey, (Boolean)null);
-	}
-
-
-	public Boolean getBoolean(K aKey, Boolean aDefaultValue)
-	{
-		Object v = get(aKey);
+		Object v = getImpl(aKey);
 		if (v == null)
 		{
-			return aDefaultValue;
+			return null;
 		}
 		if (v instanceof Boolean)
 		{
@@ -73,52 +96,12 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public Boolean getBoolean(K aKey, Function<K, Boolean> aProvider)
-	{
-		Object v = get(aKey);
-		if (v instanceof Boolean)
-		{
-			return (Boolean)v;
-		}
-		if (v instanceof String)
-		{
-			return Boolean.valueOf((String)v);
-		}
-		if (v instanceof Number)
-		{
-			return ((Number)v).longValue() != 0;
-		}
-		return compute(aProvider, aKey);
-	}
-
-
-	private <RT> RT compute(Function<K, RT> aProvider, K aKey)
-	{
-		RT v = aProvider.apply(aKey);
-		put(aKey, v);
-		return v;
-	}
-
-
-	public R putBoolean(K aKey, Boolean aValue)
-	{
-		set(aKey, aValue);
-		return (R)this;
-	}
-
-
 	public Byte getByte(K aKey)
 	{
-		return getByte(aKey, (Byte)null);
-	}
-
-
-	public Byte getByte(K aKey, Byte aDefaultValue)
-	{
-		Object v = get(aKey);
+		Object v = getImpl(aKey);
 		if (v == null)
 		{
-			return aDefaultValue;
+			return null;
 		}
 		if (v instanceof Number)
 		{
@@ -128,33 +111,12 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public Byte getByte(K aKey, Function<K, Byte> aProvider)
-	{
-		Object v = get(aKey);
-		if (v instanceof Byte)
-		{
-			return (Byte)v;
-		}
-		if (v instanceof Number)
-		{
-			return ((Number)v).byteValue();
-		}
-		return compute(aProvider, aKey);
-	}
-
-
 	public Short getShort(K aKey)
 	{
-		return getShort(aKey, (Short)null);
-	}
-
-
-	public Short getShort(K aKey, Short aDefaultValue)
-	{
-		Object v = get(aKey);
+		Object v = getImpl(aKey);
 		if (v == null)
 		{
-			return aDefaultValue;
+			return null;
 		}
 		if (v instanceof Number)
 		{
@@ -164,33 +126,12 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public Short getShort(K aKey, Function<K, Short> aProvider)
-	{
-		Object v = get(aKey);
-		if (v instanceof Short)
-		{
-			return (Short)v;
-		}
-		if (v instanceof Number)
-		{
-			return ((Number)v).shortValue();
-		}
-		return compute(aProvider, aKey);
-	}
-
-
 	public Integer getInt(K aKey)
 	{
-		return getInt(aKey, (Integer)null);
-	}
-
-
-	public Integer getInt(K aKey, Integer aDefaultValue)
-	{
-		Object v = get(aKey);
+		Object v = getImpl(aKey);
 		if (v == null)
 		{
-			return aDefaultValue;
+			return null;
 		}
 		if (v instanceof Number)
 		{
@@ -200,33 +141,12 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public Integer getInt(K aKey, Function<K, Integer> aProvider)
-	{
-		Object v = get(aKey);
-		if (v instanceof Integer)
-		{
-			return (Integer)v;
-		}
-		if (v instanceof Number)
-		{
-			return ((Number)v).intValue();
-		}
-		return compute(aProvider, aKey);
-	}
-
-
 	public Long getLong(K aKey)
 	{
-		return getLong(aKey, (Long)null);
-	}
-
-
-	public Long getLong(K aKey, Long aDefaultValue)
-	{
-		Object v = get(aKey);
+		Object v = getImpl(aKey);
 		if (v == null)
 		{
-			return aDefaultValue;
+			return null;
 		}
 		if (v instanceof Number)
 		{
@@ -236,69 +156,27 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public Long getLong(K aKey, Function<K, Long> aProvider)
-	{
-		Object v = get(aKey);
-		if (v instanceof Long)
-		{
-			return (Long)v;
-		}
-		if (v instanceof Number)
-		{
-			return ((Number)v).longValue();
-		}
-		return compute(aProvider, aKey);
-	}
-
-
 	public Float getFloat(K aKey)
 	{
-		return getFloat(aKey, (Float)null);
-	}
-
-
-	public Float getFloat(K aKey, Float aDefaultValue)
-	{
-		Object v = get(aKey);
+		Object v = getImpl(aKey);
 		if (v == null)
 		{
-			return aDefaultValue;
+			return null;
 		}
 		if (v instanceof Number)
 		{
 			return ((Number)v).floatValue();
 		}
 		throw new IllegalArgumentException("Value of key " + aKey + " (" + v.getClass().getSimpleName() + ") cannot be cast on a Double");
-	}
-
-
-	public Float getFloat(K aKey, Function<K, Float> aProvider)
-	{
-		Object v = get(aKey);
-		if (v instanceof Float)
-		{
-			return (Float)v;
-		}
-		if (v instanceof Number)
-		{
-			return ((Number)v).floatValue();
-		}
-		return compute(aProvider, aKey);
 	}
 
 
 	public Double getDouble(K aKey)
 	{
-		return getDouble(aKey, (Double)null);
-	}
-
-
-	public Double getDouble(K aKey, Double aDefaultValue)
-	{
-		Object v = get(aKey);
+		Object v = getImpl(aKey);
 		if (v == null)
 		{
-			return aDefaultValue;
+			return null;
 		}
 		if (v instanceof Number)
 		{
@@ -308,279 +186,127 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public Double getDouble(K aKey, Function<K, Double> aProvider)
-	{
-		Object v = get(aKey);
-		if (v instanceof Double)
-		{
-			return (Double)v;
-		}
-		if (v instanceof Number)
-		{
-			return ((Number)v).doubleValue();
-		}
-		return compute(aProvider, aKey);
-	}
-
-
 	public String getString(K aKey)
 	{
-		return (String)get(aKey);
-	}
-
-
-	public String getString(K aKey, String aDefaultValue)
-	{
-		String value = (String)get(aKey);
-		if (value == null)
+		Object v = getImpl(aKey);
+		if (v == null)
 		{
-			return aDefaultValue;
+			return null;
 		}
-		return value;
-	}
-
-
-	public String getString(K aKey, Function<K, String> aProvider)
-	{
-		Object value = get(aKey);
-		if (value instanceof String)
-		{
-			return (String)value;
-		}
-		return compute(aProvider, aKey);
-	}
-
-
-	public R putString(K aKey, String aValue)
-	{
-		set(aKey, aValue);
-		return (R)this;
+		return v.toString();
 	}
 
 
 	public Date getDate(K aKey)
 	{
-		return getDate(aKey, (Date)null);
-	}
-
-
-	public Date getDate(K aKey, Date aDefaultValue)
-	{
-		Object value = get(aKey);
-		if (value == null)
+		Object v = getImpl(aKey);
+		if (v == null)
 		{
-			return aDefaultValue;
+			return null;
 		}
-		if (value instanceof String)
+		if (v instanceof Date)
 		{
-			return parseDate((String)value, aDefaultValue);
+			return (Date)v;
 		}
-		return (Date)value;
-	}
-
-
-	public Date getDate(K aKey, Function<K, Date> aProvider)
-	{
-		Object value = get(aKey);
-		if (value instanceof Date)
+		if (v instanceof String)
 		{
-			return (Date)value;
-		}
-		if (value instanceof String)
-		{
-			return parseDate((String)value, null);
-		}
-		return compute(aProvider, aKey);
-	}
-
-
-	public R putDate(K aKey, Date aValue)
-	{
-		set(aKey, aValue);
-		return (R)this;
-	}
-
-
-	protected Date parseDate(String aDateString, Date aDefaultValue)
-	{
-		try
-		{
-			if (aDateString.matches("[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}"))
+			try
 			{
-				return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(aDateString);
+				String s = (String)v;
+				if (s.matches("[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}"))
+				{
+					return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(s);
+				}
+				if (s.matches("[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{1,3}"))
+				{
+					return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").parse(s);
+				}
 			}
-			if (aDateString.matches("[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{1,3}"))
+			catch (ParseException e)
 			{
-				return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").parse(aDateString);
+				// ignore
 			}
 		}
-		catch (ParseException e)
+		if (v instanceof Long)
 		{
-			// ignore
+			return new Date((Long)v);
 		}
-
-		return aDefaultValue;
+		throw new IllegalArgumentException("Value of key " + aKey + " (" + v.getClass().getSimpleName() + ") cannot be cast on a Date");
 	}
 
 
 	public UUID getUUID(K aKey)
 	{
-		return getUUID(aKey, (UUID)null);
-	}
-
-
-	public UUID getUUID(K aKey, UUID aDefaultValue)
-	{
-		Object value = get(aKey);
-		if (value == null)
+		Object v = getImpl(aKey);
+		if (v == null)
 		{
-			return aDefaultValue;
+			return null;
 		}
-		if (value instanceof String)
+		if (v instanceof UUID)
 		{
-			value = parseUUID((String)value, aDefaultValue);
+			return (UUID)v;
 		}
-		return (UUID)value;
-	}
-
-
-	public UUID getUUID(K aKey, Function<K, UUID> aProvider)
-	{
-		Object value = get(aKey);
-		if (value instanceof UUID)
+		if (v instanceof String)
 		{
-			return (UUID)value;
-		}
-		if (value instanceof String)
-		{
-			value = parseUUID((String)value, null);
-			if (value instanceof UUID)
+			String s = (String)v;
+			if (s.length() == 36 && s.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
 			{
-				return (UUID)value;
+				return UUID.fromString(s);
 			}
 		}
-		return compute(aProvider, aKey);
-	}
-
-
-	public R putUUID(K aKey, UUID aValue)
-	{
-		set(aKey, aValue);
-		return (R)this;
-	}
-
-
-	protected Object parseUUID(String aString, Object aDefaultValue)
-	{
-		if (aString.length() == 36 && aString.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
+		if (v instanceof Array)
 		{
-			return UUID.fromString(aString);
+			Array a = (Array)v;
+			if (a.size() == 2 && (a.getImpl(0) instanceof Long) && (a.getImpl(1) instanceof Long))
+			{
+				return new UUID(a.getLong(0), a.getLong(1));
+			}
 		}
-		return aDefaultValue;
+		throw new IllegalArgumentException("Value of key " + aKey + " (" + v.getClass().getSimpleName() + ") cannot be cast on a UUID");
 	}
 
 
 	public Number getNumber(K aKey)
 	{
-		return (Number)get(aKey);
-	}
-
-
-	public Number getNumber(K aKey, Number aDefautValue)
-	{
-		Object value = get(aKey);
-		if (value == null)
+		Object v = getImpl(aKey);
+		if (v == null)
 		{
-			return aDefautValue;
+			return null;
 		}
-		if (value instanceof Number)
+		if (v instanceof Number)
 		{
-			return (Number)value;
+			return (Number)v;
 		}
-		throw new IllegalArgumentException("Value of key " + aKey + " cannot be cast on a Number");
-	}
-
-
-	public Number getNumber(K aKey, Function<K, Number> aProvider)
-	{
-		Object value = get(aKey);
-		if (value instanceof Number)
-		{
-			return (Number)value;
-		}
-		return compute(aProvider, aKey);
-	}
-
-
-	public R putNumber(K aKey, Number aValue)
-	{
-		set(aKey, aValue);
-		return (R)this;
+		throw new IllegalArgumentException("Value of key " + aKey + " (" + v.getClass().getSimpleName() + ") cannot be cast on a Number");
 	}
 
 
 	public Array getArray(K aKey)
 	{
-		return (Array)get(aKey);
-	}
-
-
-	public Array getArray(K aKey, Function<K, Array> aProvider)
-	{
-		Object value = get(aKey);
-		if (value instanceof Array)
-		{
-			return (Array)value;
-		}
-		return compute(aProvider, aKey);
-	}
-
-
-	public R putArray(K aKey, Array aValue)
-	{
-		set(aKey, aValue);
-		return (R)this;
+		return (Array)getImpl(aKey);
 	}
 
 
 	public Document getDocument(K aKey)
 	{
-		return (Document)get(aKey);
-	}
-
-
-	public Document getDocument(K aKey, Function<K, Document> aProvider)
-	{
-		Object value = get(aKey);
-		if (value instanceof Document)
-		{
-			return (Document)value;
-		}
-		return compute(aProvider, aKey);
-	}
-
-
-	public R putDocument(K aKey, Document aValue)
-	{
-		set(aKey, aValue);
-		return (R)this;
+		return (Document)getImpl(aKey);
 	}
 
 
 	public byte[] getBinary(K aKey)
 	{
-		Object value = get(aKey);
-		if (value == null)
+		Object v = getImpl(aKey);
+		if (v == null)
 		{
 			return null;
 		}
-		if (value instanceof byte[])
+		if (v instanceof byte[])
 		{
-			return (byte[])value;
+			return (byte[])v;
 		}
-		if (value instanceof String)
+		if (v instanceof String)
 		{
-			String s = (String)value;
+			String s = (String)v;
 
 			if (s.matches("[a-zA-Z0-9\\-\\=\\\\].*"))
 			{
@@ -590,65 +316,22 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 			return s.getBytes();
 		}
 
-		throw new IllegalArgumentException("Unsupported format: " + value.getClass());
-	}
-
-
-	public byte[] getBinary(K aKey, Function<K, byte[]> aProvider)
-	{
-		Object value = get(aKey);
-		if (value instanceof byte[])
-		{
-			return (byte[])value;
-		}
-		if (value instanceof String)
-		{
-			return Base64.getDecoder().decode((String)value);
-		}
-		return compute(aProvider, aKey);
-	}
-
-
-	public R putBinary(K aKey, byte[] aBytes)
-	{
-		set(aKey, aBytes);
-		return (R)this;
+		throw new IllegalArgumentException("Unsupported format: " + v.getClass());
 	}
 
 
 	public R put(K aKey, Object aValue)
 	{
-		if (aValue instanceof Number)
+		if (aValue instanceof String
+			|| aValue instanceof Number
+			|| aValue instanceof Document
+			|| aValue instanceof Array
+			|| aValue instanceof Boolean
+			|| aValue instanceof Date
+			|| aValue instanceof UUID
+			|| aValue instanceof byte[])
 		{
-			set(aKey, (Number)aValue);
-		}
-		else if (aValue instanceof String)
-		{
-			set(aKey, (String)aValue);
-		}
-		else if (aValue instanceof Document)
-		{
-			set(aKey, (Document)aValue);
-		}
-		else if (aValue instanceof Array)
-		{
-			set(aKey, (Array)aValue);
-		}
-		else if (aValue instanceof Boolean)
-		{
-			set(aKey, (Boolean)aValue);
-		}
-		else if (aValue instanceof byte[])
-		{
-			set(aKey, (byte[])aValue);
-		}
-		else if (aValue instanceof UUID)
-		{
-			set(aKey, (UUID)aValue);
-		}
-		else if (aValue instanceof Date)
-		{
-			set(aKey, (Date)aValue);
+			putImpl(aKey, aValue);
 		}
 		else if (aValue != null)
 		{
@@ -661,7 +344,7 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 
 	public boolean isNull(K aKey)
 	{
-		return get(aKey) == null;
+		return getImpl(aKey) == null;
 	}
 
 
@@ -713,11 +396,10 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public R marshal(OutputStream aOutputStream) throws IOException
+	public void marshal(OutputStream aOutputStream) throws IOException
 	{
 		VarOutputStream out = new VarOutputStream(aOutputStream);
 		out.writeObject(this);
-		return (R)this;
 	}
 
 
@@ -779,7 +461,7 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 		}
 		else
 		{
-			((Array)this).addAll((((Array)tmp).mValues).toArray());
+			((Array)this).addAll((Array)tmp);
 		}
 	}
 
@@ -868,7 +550,7 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 		LinkedHashMap<K, Object> map = new LinkedHashMap<>();
 		for (K key : keySet())
 		{
-			map.put(key, get(key));
+			map.put(key, getImpl(key));
 		}
 		return map;
 	}
@@ -884,10 +566,10 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public abstract <T> T get(K aKey);
+	abstract Object getImpl(K aKey);
 
 
-	abstract R set(K aKey, Object aValue);
+	abstract R putImpl(K aKey, Object aValue);
 
 
 	public abstract boolean containsKey(K aKey);

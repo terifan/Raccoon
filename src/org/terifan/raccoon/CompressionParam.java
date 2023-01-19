@@ -35,10 +35,10 @@ public final class CompressionParam
 	public CompressionParam(Level aTreeIndex, Level aTreeLeaf, Level aBlobIndex, Level aBlobLeaf)
 	{
 		mConfiguration = new Document()
-			.putNumber("treeLeaf", aTreeLeaf.ordinal())
-			.putNumber("treeIndex", aTreeIndex.ordinal())
-			.putNumber("blobLeaf", aBlobLeaf.ordinal())
-			.putNumber("blobIndex", aBlobIndex.ordinal());
+			.put("treeLeaf", aTreeLeaf.ordinal())
+			.put("treeIndex", aTreeIndex.ordinal())
+			.put("blobLeaf", aBlobLeaf.ordinal())
+			.put("blobIndex", aBlobIndex.ordinal());
 	}
 
 
@@ -47,13 +47,13 @@ public final class CompressionParam
 		switch (aType)
 		{
 			case TREE_INDEX:
-				return Level.values()[mConfiguration.getInt("treeIndex", NONE.ordinal())];
+				return Level.values()[mConfiguration.get("treeIndex", NONE.ordinal())];
 			case TREE_LEAF:
-				return Level.values()[mConfiguration.getInt("treeLeaf", NONE.ordinal())];
+				return Level.values()[mConfiguration.get("treeLeaf", NONE.ordinal())];
 			case BLOB_INDEX:
-				return Level.values()[mConfiguration.getInt("blobIndex", NONE.ordinal())];
+				return Level.values()[mConfiguration.get("blobIndex", NONE.ordinal())];
 			case BLOB_LEAF:
-				return Level.values()[mConfiguration.getInt("blobNode", NONE.ordinal())];
+				return Level.values()[mConfiguration.get("blobNode", NONE.ordinal())];
 			default:
 				return NONE;
 		}

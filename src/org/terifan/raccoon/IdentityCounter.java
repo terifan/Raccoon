@@ -16,7 +16,7 @@ public class IdentityCounter
 
 	public long get()
 	{
-		return mConfiguration.getLong("identityCounter", 1L);
+		return mConfiguration.get("identityCounter", 1L);
 	}
 
 
@@ -28,8 +28,8 @@ public class IdentityCounter
 
 	synchronized long next()
 	{
-		long value = mConfiguration.getLong("identityCounter", 0L) + 1L;
-		mConfiguration.putNumber("identityCounter", value);
+		long value = mConfiguration.get("identityCounter", 0L) + 1L;
+		mConfiguration.put("identityCounter", value);
 		return value;
 	}
 
