@@ -208,6 +208,10 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 		{
 			return (Date)v;
 		}
+		if (v instanceof Long)
+		{
+			return new Date((Long)v);
+		}
 		if (v instanceof String)
 		{
 			try
@@ -221,15 +225,23 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 				{
 					return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").parse(s);
 				}
+				if (s.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"))
+				{
+					return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(s);
+				}
+				if (s.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{1,3}"))
+				{
+					return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(s);
+				}
+				if (s.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}"))
+				{
+					return new SimpleDateFormat("yyyy-MM-dd").parse(s);
+				}
 			}
 			catch (ParseException e)
 			{
 				// ignore
 			}
-		}
-		if (v instanceof Long)
-		{
-			return new Date((Long)v);
 		}
 		throw new IllegalArgumentException("Value of key " + aKey + " (" + v.getClass().getSimpleName() + ") cannot be cast on a Date");
 	}
