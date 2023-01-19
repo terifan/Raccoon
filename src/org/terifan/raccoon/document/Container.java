@@ -15,6 +15,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -32,9 +33,6 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public abstract <T> T get(K aKey);
-
-
 	public <T> T get(K aKey, T aDefaultValue)
 	{
 		Object value = get(aKey);
@@ -44,9 +42,6 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 		}
 		return (T)value;
 	}
-
-
-	abstract R set(K aKey, Object aValue);
 
 
 	public Boolean getBoolean(K aKey)
@@ -670,9 +665,6 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public abstract boolean containsKey(K aKey);
-
-
 	@Override
 	public int hashCode()
 	{
@@ -704,21 +696,6 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 			aChecksum.update(0xFF & hashCode);
 		}
 	}
-
-
-	abstract Checksum hashCode(Checksum aChecksum);
-
-
-	public abstract R remove(K aKey);
-
-
-	public abstract int size();
-
-
-	public abstract R clear();
-
-
-	public abstract boolean same(Container aOther);
 
 
 	public byte[] marshal()
@@ -886,10 +863,15 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public abstract Map<K, Object> toMap();
-
-
-	public abstract Set<K> keySet();
+	public Map<K, Object> toMap()
+	{
+		LinkedHashMap<K, Object> map = new LinkedHashMap<>();
+		for (K key : keySet())
+		{
+			map.put(key, get(key));
+		}
+		return map;
+	}
 
 
 	/**
@@ -900,4 +882,31 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	{
 		return unmarshal(marshal());
 	}
+
+
+	public abstract <T> T get(K aKey);
+
+
+	abstract R set(K aKey, Object aValue);
+
+
+	public abstract boolean containsKey(K aKey);
+
+
+	abstract Checksum hashCode(Checksum aChecksum);
+
+
+	public abstract R remove(K aKey);
+
+
+	public abstract int size();
+
+
+	public abstract R clear();
+
+
+	public abstract boolean same(Container aOther);
+
+
+	public abstract Set<K> keySet();
 }

@@ -1,11 +1,9 @@
 package org.terifan.raccoon.document;
 
 import java.io.Externalizable;
-import java.io.StringReader;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -16,20 +14,12 @@ public class Document extends Container<String, Document> implements Externaliza
 {
 	private final static long serialVersionUID = 1L;
 
-	LinkedHashMap<String, Object> mValues;
+	final LinkedHashMap<String, Object> mValues;
 
 
 	public Document()
 	{
 		mValues = new LinkedHashMap<>();
-	}
-
-
-	public Document(String aJSON)
-	{
-		this();
-
-		unmarshalJSON(new StringReader(aJSON));
 	}
 
 
@@ -48,6 +38,13 @@ public class Document extends Container<String, Document> implements Externaliza
 			throw new IllegalArgumentException("Keys cannot be null.");
 		}
 		mValues.put(aKey, aValue);
+		return this;
+	}
+
+
+	public Document putAll(Document aSource)
+	{
+		aSource.entrySet().forEach(entry -> mValues.put(entry.getKey(), entry.getValue()));
 		return this;
 	}
 
@@ -180,20 +177,6 @@ public class Document extends Container<String, Document> implements Externaliza
 		}
 
 		return true;
-	}
-
-
-	public Document putAll(Document aSource)
-	{
-		aSource.entrySet().forEach(entry -> mValues.put(entry.getKey(), entry.getValue()));
-		return this;
-	}
-
-
-	@Override
-	public Map<String, Object> toMap()
-	{
-		return new LinkedHashMap<>(mValues);
 	}
 
 

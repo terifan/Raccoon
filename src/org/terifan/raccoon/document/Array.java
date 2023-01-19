@@ -24,9 +24,17 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 	}
 
 
-	public Array(int aInitialCapacity)
+	public Array addAll(Array aSource)
 	{
-		mValues = new ArrayList<>(aInitialCapacity);
+		mValues.addAll(aSource.mValues);
+		return this;
+	}
+
+
+	@Override
+	public <T> T get(Integer aIndex)
+	{
+		return (T)mValues.get(aIndex);
 	}
 
 
@@ -90,13 +98,6 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 	protected void addImpl(Object aValue)
 	{
 		mValues.add(aValue);
-	}
-
-
-	@Override
-	public <T> T get(Integer aIndex)
-	{
-		return (T)mValues.get(aIndex);
 	}
 
 
