@@ -1,6 +1,14 @@
 package org.terifan.raccoon.document;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.OutputStream;
+import java.io.StringReader;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -11,7 +19,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 
-public class Array extends Container<Integer, Array> implements Externalizable, Iterable, Cloneable
+public class Array extends Container<Integer, Array> implements Iterable, Externalizable, Cloneable
 {
 	private final static long serialVersionUID = 1L;
 
@@ -140,13 +148,6 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 
 
 	@Override
-	public boolean containsKey(Integer aKey)
-	{
-		return aKey != null && mValues.size() > aKey;
-	}
-
-
-	@Override
 	public Iterator iterator()
 	{
 		return mValues.iterator();
@@ -162,7 +163,7 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 	@Override
 	public String toString()
 	{
-		return marshalJSON(true);
+		return "Array{size=" + mValues.size() + "}";
 	}
 
 
@@ -298,94 +299,50 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 	}
 
 
-	@Override
-	public Map<Integer, Object> toMap()
-	{
-		LinkedHashMap<Integer, Object> map = new LinkedHashMap<>();
-		int i = 0;
-		for (Object v : mValues)
-		{
-			map.put(i++, v);
-		}
-		return map;
-	}
-
-
-	@Override
-	public Set<Integer> keySet()
-	{
-		return new AbstractSet<Integer>()
-		{
-			@Override
-			public Iterator<Integer> iterator()
-			{
-				return new Iterator<Integer>()
-				{
-					int index;
-
-					@Override
-					public boolean hasNext()
-					{
-						return index < mValues.size();
-					}
-
-
-					@Override
-					public Integer next()
-					{
-						if (index >= mValues.size())
-						{
-							throw new IllegalStateException();
-						}
-						return index++;
-					}
-				};
-			}
-
-
-			@Override
-			public int size()
-			{
-				return mValues.size();
-			}
-		};
-	}
-
-
-	/**
-	 * @return an Iterable over the items in the Array with each item cast to the provided type.
-	 */
-	public <T> Iterable<T> iterable(Class<T> aType)
-	{
-		return () -> new Iterator<T>()
-		{
-			int mIndex;
-
-			@Override
-			public boolean hasNext()
-			{
-				return mIndex < mValues.size();
-			}
-
-
-			@Override
-			public T next()
-			{
-				return (T)mValues.get(mIndex++);
-			}
-		};
-	}
+//	@Override
+//	public Set<Integer> keySet()
+//	{
+//		return new AbstractSet<Integer>()
+//		{
+//			@Override
+//			public Iterator<Integer> iterator()
+//			{
+//				return new Iterator<Integer>()
+//				{
+//					int index;
+//
+//					@Override
+//					public boolean hasNext()
+//					{
+//						return index < mValues.size();
+//					}
+//
+//
+//					@Override
+//					public Integer next()
+//					{
+//						if (index >= mValues.size())
+//						{
+//							throw new IllegalStateException();
+//						}
+//						return index++;
+//					}
+//				};
+//			}
+//
+//
+//			@Override
+//			public int size()
+//			{
+//				return mValues.size();
+//			}
+//		};
+//	}
 
 
 	public <T> Stream<T> stream(Class<T> aType)
 	{
 		return (Stream<T>)mValues.stream();
-	}
-
-
-	public <T> void visit(Consumer<T> aConsumer)
-	{
-		mValues.forEach(e -> aConsumer.accept((T)e));
 	}
 
 
@@ -395,13 +352,100 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 	}
 
 
-	public long[] asLongArray()
+	/**
+	 * Performs a deep clone of this Container.
+	 */
+	@Override
+	public Array clone()
 	{
-		long[] values = new long[size()];
-		for (int i = 0; i < values.length; i++)
+		return new Array().fromByteArray(toByteArray());
+	}
+
+
+	public String toJson()
+	{
+		try
 		{
-			values[i] = (long)mValues.get(i);
+			StringBuilder builder = new StringBuilder();
+			new JSONEncoder().marshal(new JSONTextWriter(builder, true), this);
+			return builder.toString();
 		}
-		return values;
+		catch (IOException e)
+		{
+			throw new IllegalArgumentException(e);
+		}
+	}
+
+
+	public Array fromJson(String aJson)
+	{
+		try
+		{
+			return new JSONDecoder().unmarshal(new StringReader(aJson), this);
+		}
+		catch (IOException e)
+		{
+			throw new IllegalArgumentException(e);
+		}
+	}
+
+
+	public byte[] toByteArray()
+	{
+		try
+		{
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			new VarOutputStream().write(baos, this);
+			return baos.toByteArray();
+		}
+		catch (IOException e)
+		{
+			throw new IllegalStateException(e);
+		}
+	}
+
+
+	public Array fromByteArray(byte[] aBinaryData)
+	{
+		try
+		{
+			new VarInputStream().read(new ByteArrayInputStream(aBinaryData), this);
+		}
+		catch (IOException e)
+		{
+			throw new IllegalStateException(e);
+		}
+		return this;
+	}
+
+
+	@Override
+	public void writeExternal(ObjectOutput aOutputStream) throws IOException
+	{
+		OutputStream tmp = new OutputStream()
+		{
+			@Override
+			public void write(int aByte) throws IOException
+			{
+				aOutputStream.write(aByte);
+			}
+		};
+		new VarOutputStream().write(tmp, this);
+	}
+
+
+	@Override
+	public void readExternal(ObjectInput aInputStream) throws IOException, ClassNotFoundException
+	{
+		InputStream in = new InputStream()
+		{
+			@Override
+			public int read() throws IOException
+			{
+				return aInputStream.read();
+			}
+		};
+
+		new VarInputStream().read(in, this);
 	}
 }

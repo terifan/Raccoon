@@ -17,11 +17,11 @@ public class DocumentNGTest
 	{
 		Document source = new Document().put("_id", 1).put("text", "hello").put("array", Array.of(1, 2, 3));
 
-		byte[] data = source.marshal();
+		byte[] data = source.toByteArray();
 
 //		Log.hexDump(data);
 
-		Document unmarshaled = Document.unmarshal(data);
+		Document unmarshaled = new Document().fromByteArray(data);
 
 		assertEquals(unmarshaled, source);
 	}
@@ -37,9 +37,9 @@ public class DocumentNGTest
 			.put("date", odt.toLocalDate())
 			.put("time", odt.toLocalTime())
 			.put("datetime", odt.toLocalDateTime())
-			.marshal();
+			.toByteArray();
 
-		Document doc = Document.unmarshal(data);
+		Document doc = new Document().fromByteArray(data);
 
 //		Log.hexDump(data);
 
@@ -96,14 +96,14 @@ public class DocumentNGTest
 			.put("doc", _allTypesDoc)
 			.put("arr", _allTypesArr);
 
-		byte[] data = srcDoc.marshal();
-		String json = srcDoc.marshalJSON(true);
+		byte[] data = srcDoc.toByteArray();
+		String json = srcDoc.toJson();
 
-		Document unmarshalledBin = Document.unmarshal(data);
+		Document unmarshalledBin = new Document().fromByteArray(data);
 		Document dstDoc = unmarshalledBin.get("doc");
 		Array dstArr = unmarshalledBin.get("arr");
 
-		Document unmarshalledJson = Document.unmarshalJSON(json);
+		Document unmarshalledJson = new Document().fromJson(json);
 		Document dstDocJson = unmarshalledJson.get("doc");
 		Array dstArrJson = unmarshalledJson.get("arr");
 

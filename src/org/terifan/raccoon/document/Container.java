@@ -1,23 +1,11 @@
 package org.terifan.raccoon.document;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -25,7 +13,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 
-abstract class Container<K, R> implements Externalizable, Cloneable
+abstract class Container<K, R> implements Serializable
 {
 	private final static long serialVersionUID = 1L;
 
@@ -424,149 +412,6 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public byte[] marshal()
-	{
-		try
-		{
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			marshal(baos);
-			return baos.toByteArray();
-		}
-		catch (IOException e)
-		{
-			throw new IllegalArgumentException(e);
-		}
-	}
-
-
-	public void marshal(OutputStream aOutputStream) throws IOException
-	{
-		VarOutputStream out = new VarOutputStream(aOutputStream);
-		out.writeObject(this);
-	}
-
-
-	public static <T> T unmarshal(byte[] aBinaryData)
-	{
-		return unmarshal(new ByteArrayInputStream(aBinaryData));
-	}
-
-
-	public static <T> T unmarshal(InputStream aBinaryData)
-	{
-		try
-		{
-			return (T)new VarInputStream(aBinaryData).readObject();
-		}
-		catch (IOException e)
-		{
-			throw new IllegalStateException(e);
-		}
-	}
-
-
-	@Override
-	public void writeExternal(ObjectOutput aOutputStream) throws IOException
-	{
-		OutputStream tmp = new OutputStream()
-		{
-			@Override
-			public void write(int aByte) throws IOException
-			{
-				aOutputStream.write(aByte);
-			}
-		};
-		try ( VarOutputStream out = new VarOutputStream(tmp))
-		{
-			out.writeObject(this);
-		}
-	}
-
-
-	@Override
-	public void readExternal(ObjectInput aInputStream) throws IOException, ClassNotFoundException
-	{
-		InputStream in = new InputStream()
-		{
-			@Override
-			public int read() throws IOException
-			{
-				return aInputStream.read();
-			}
-		};
-
-		Container tmp = (Container)new VarInputStream(in).readObject();
-		clear();
-
-		if (tmp instanceof Document)
-		{
-			((Document)this).putAll((Document)tmp);
-		}
-		else
-		{
-			((Array)this).addAll((Array)tmp);
-		}
-	}
-
-
-	public String marshalJSON(boolean aCompact)
-	{
-		StringBuilder builder = new StringBuilder();
-		marshalJSON(builder, aCompact);
-		return builder.toString();
-	}
-
-
-	public <T extends Appendable> T marshalJSON(T aOutput, boolean aCompact)
-	{
-		try
-		{
-			new JSONEncoder().marshal(new JSONTextWriter(aOutput, aCompact), this);
-		}
-		catch (IOException e)
-		{
-			throw new IllegalArgumentException(e);
-		}
-		return aOutput;
-	}
-
-
-	public OutputStream marshalJSON(OutputStream aOutput, boolean aCompact)
-	{
-		try
-		{
-			OutputStreamWriter out = new OutputStreamWriter(aOutput);
-			new JSONEncoder().marshal(new JSONTextWriter(out, aCompact), this);
-			out.flush();
-		}
-		catch (IOException e)
-		{
-			throw new IllegalArgumentException(e);
-		}
-
-		return aOutput;
-	}
-
-
-	public static <R> R unmarshalJSON(String aJSONData)
-	{
-		return unmarshalJSON(new StringReader(aJSONData));
-	}
-
-
-	public static <R> R unmarshalJSON(Reader aJSONData)
-	{
-		try
-		{
-			return (R)new JSONDecoder().unmarshal(aJSONData);
-		}
-		catch (IOException e)
-		{
-			throw new IllegalArgumentException(e);
-		}
-	}
-
-
 	public static boolean isSupportedType(Object aValue)
 	{
 		Class type = aValue == null ? null : aValue.getClass();
@@ -592,34 +437,10 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public Map<K, Object> toMap()
-	{
-		LinkedHashMap<K, Object> map = new LinkedHashMap<>();
-		for (K key : keySet())
-		{
-			map.put(key, getImpl(key));
-		}
-		return map;
-	}
-
-
-	/**
-	 * Performs a deep clone of this Container.
-	 */
-	@Override
-	public R clone()
-	{
-		return unmarshal(marshal());
-	}
-
-
 	abstract Object getImpl(K aKey);
 
 
 	abstract R putImpl(K aKey, Object aValue);
-
-
-	public abstract boolean containsKey(K aKey);
 
 
 	abstract Checksum hashCode(Checksum aChecksum);
@@ -635,7 +456,4 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 
 
 	public abstract boolean same(R aOther);
-
-
-	public abstract Set<K> keySet();
 }

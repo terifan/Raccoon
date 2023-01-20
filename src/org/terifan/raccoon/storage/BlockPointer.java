@@ -159,7 +159,7 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public BlockPointer setBlockKey(long[] aBlockKey)
+	public BlockPointer setBlockKey(long... aBlockKey)
 	{
 		assert aBlockKey.length == 4;
 
@@ -235,7 +235,7 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public BlockPointer setChecksum(long[] aChecksum)
+	public BlockPointer setChecksum(long... aChecksum)
 	{
 		assert aChecksum.length == 4;
 
@@ -293,8 +293,8 @@ public class BlockPointer implements Serializable
 		setPhysicalSize(aDocument.getInt("5"));
 		setTransactionId(aDocument.getInt("6"));
 		setBlockIndex0(aDocument.getArray("7").getLong(0));
-		setBlockKey(aDocument.getArray("8").asLongArray());
-		setChecksum(aDocument.getArray("9").asLongArray());
+		setBlockKey(aDocument.getArray("8").getLong(0), aDocument.getArray("8").getLong(1), aDocument.getArray("8").getLong(2), aDocument.getArray("8").getLong(3));
+		setChecksum(aDocument.getArray("9").getLong(0), aDocument.getArray("9").getLong(1), aDocument.getArray("9").getLong(2), aDocument.getArray("9").getLong(3));
 		return this;
 	}
 
@@ -313,8 +313,6 @@ public class BlockPointer implements Serializable
 			.put("8", Array.of(getBlockKey(new long[4])))
 			.put("9", Array.of(getChecksum(new long[4])))
 			;
-
-		Log.hexDump(doc.marshal());
 
 		return doc;
 	}

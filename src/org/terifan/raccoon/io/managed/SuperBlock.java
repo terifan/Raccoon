@@ -1,5 +1,11 @@
 package org.terifan.raccoon.io.managed;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
@@ -137,7 +143,18 @@ class SuperBlock
 		mModifiedTime = System.currentTimeMillis();
 
 		int blockSize = aBlockDevice.getBlockSize();
-		byte[] metadata = mApplicationMetadata.marshal();
+//		byte[] metadata = mApplicationMetadata.marshal();
+
+ByteArrayOutputStream baos = new ByteArrayOutputStream();
+try (ObjectOutputStream oos = new ObjectOutputStream(baos))
+{
+	oos.writeObject(mApplicationMetadata);
+}
+catch (IOException e)
+{
+	throw new IllegalStateException(e);
+}
+byte[] metadata = baos.toByteArray();
 
 		if (TOTAL_OVERHEAD + metadata.length > blockSize)
 		{
@@ -198,6 +215,15 @@ class SuperBlock
 		mModifiedTime = aBuffer.readInt64();
 		mTransactionId = aBuffer.readInt64();
 		mSpaceMapPointer.unmarshal(aBuffer);
-		mApplicationMetadata = Document.unmarshal(aBuffer.read(new byte[aBuffer.readInt16()]));
+//		mApplicationMetadata = Document.unmarshal(aBuffer.read(new byte[aBuffer.readInt16()]));
+
+try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(aBuffer.read(new byte[aBuffer.readInt16()]))))
+{
+	mApplicationMetadata = (Document)ois.readObject();
+}
+catch (Exception e)
+{
+	throw new IllegalStateException(e);
+}
 	}
 }

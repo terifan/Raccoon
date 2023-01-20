@@ -11,26 +11,50 @@ class JSONDecoder
 	private PushbackReader mReader;
 
 
-	public Container unmarshal(Reader aReader) throws IOException
+//	public Container unmarshal(Reader aReader) throws IOException
+//	{
+//		mReader = new PushbackReader(aReader, 1);
+//
+//		switch (mReader.read())
+//		{
+//			case '{':
+//				return readDocument();
+//			case '[':
+//				return readArray();
+//			default:
+//				throw new IllegalArgumentException("First character must be either \"[\" or \"{\".");
+//		}
+//	}
+
+
+	public Document unmarshal(Reader aReader, Document aDocument) throws IOException
 	{
 		mReader = new PushbackReader(aReader, 1);
 
-		switch (mReader.read())
+		if (mReader.read() != '{')
 		{
-			case '{':
-				return readDocument();
-			case '[':
-				return readArray();
-			default:
-				throw new IllegalArgumentException("First character must be either \"[\" or \"{\".");
+			throw new IllegalArgumentException();
 		}
+
+		return readDocument(aDocument);
 	}
 
 
-	private Document readDocument() throws IOException
+	public Array unmarshal(Reader aReader, Array aArray) throws IOException
 	{
-		Document doc = new Document();
+		mReader = new PushbackReader(aReader, 1);
 
+		if (mReader.read() != '[')
+		{
+			throw new IllegalArgumentException();
+		}
+
+		return readArray(aArray);
+	}
+
+
+	private Document readDocument(Document aDocument) throws IOException
+	{
 		for (;;)
 		{
 			char c = readChar();
@@ -39,7 +63,7 @@ class JSONDecoder
 			{
 				break;
 			}
-			if (doc.size() > 0)
+			if (aDocument.size() > 0)
 			{
 				if (c != ',')
 				{
@@ -65,17 +89,15 @@ class JSONDecoder
 				throw new IOException("Expected colon sign after key: " + key);
 			}
 
-			doc.putImpl(key, readValue(readChar()));
+			aDocument.putImpl(key, readValue(readChar()));
 		}
 
-		return doc;
+		return aDocument;
 	}
 
 
-	private Container readArray() throws IOException
+	private Array readArray(Array aArray) throws IOException
 	{
-		Array array = new Array();
-
 		for (;;)
 		{
 			char c = readChar();
@@ -89,7 +111,7 @@ class JSONDecoder
 				throw new IOException("Found colon after element in array");
 			}
 
-			if (array.size() > 0)
+			if (aArray.size() > 0)
 			{
 				if (c != ',')
 				{
@@ -99,10 +121,10 @@ class JSONDecoder
 				c = readChar();
 			}
 
-			array.add(readValue(c));
+			aArray.add(readValue(c));
 		}
 
-		return array;
+		return aArray;
 	}
 
 
@@ -111,9 +133,9 @@ class JSONDecoder
 		switch (aChar)
 		{
 			case '[':
-				return readArray();
+				return readArray(new Array());
 			case '{':
-				return readDocument();
+				return readDocument(new Document());
 			case '\"':
 			case '\'':
 				return readString(aChar);

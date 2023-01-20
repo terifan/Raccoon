@@ -9,14 +9,26 @@ import java.util.function.Supplier;
 
 class VarInputStream implements AutoCloseable, Iterable<Object>
 {
-	private final Checksum mChecksum;
+	private Checksum mChecksum;
 	private InputStream mInputStream;
 
 
-	public VarInputStream(InputStream aInputStream)
+//	public VarInputStream(InputStream aInputStream)
+//	{
+//		mInputStream = aInputStream;
+//		mChecksum = new Checksum();
+//	}
+	public void read(InputStream aInputStream, Document aDocument) throws IOException
 	{
 		mInputStream = aInputStream;
 		mChecksum = new Checksum();
+		readDocument(aDocument);
+	}
+	public void read(InputStream aInputStream, Array aArray) throws IOException
+	{
+		mInputStream = aInputStream;
+		mChecksum = new Checksum();
+		readArray(aArray);
 	}
 
 
@@ -134,10 +146,8 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 	}
 
 
-	private Document readDocument() throws IOException
+	private Document readDocument(Document aDocument) throws IOException
 	{
-		Document doc = new Document();
-
 		for (;;)
 		{
 			Token token = readToken();
@@ -161,17 +171,15 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 				key = readUTF(token.value >>> 1);
 			}
 
-			doc.putImpl(key, readValue(token.type));
+			aDocument.putImpl(key, readValue(token.type));
 		}
 
-		return doc;
+		return aDocument;
 	}
 
 
-	private Array readArray() throws IOException
+	private Array readArray(Array aArray) throws IOException
 	{
-		Array array = new Array();
-
 		for (;;)
 		{
 			Token token = readToken();
@@ -187,11 +195,11 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 
 			for (int i = 0; i < token.value; i++)
 			{
-				array.add(readValue(token.type));
+				aArray.add(readValue(token.type));
 			}
 		}
 
-		return array;
+		return aArray;
 	}
 
 
@@ -200,9 +208,9 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 		switch (aType)
 		{
 			case DOCUMENT:
-				return readDocument();
+				return readDocument(new Document());
 			case ARRAY:
-				return readArray();
+				return readArray(new Array());
 			default:
 				return aType.decoder.decode(this);
 		}

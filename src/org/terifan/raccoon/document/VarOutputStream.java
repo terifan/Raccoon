@@ -8,14 +8,26 @@ import static org.terifan.raccoon.document.VarType.identify;
 
 class VarOutputStream implements AutoCloseable
 {
-	private final Checksum mChecksum;
+	private Checksum mChecksum;
 	private OutputStream mOutputStream;
 
 
-	public VarOutputStream(OutputStream aOutputStream)
+//	public VarOutputStream(OutputStream aOutputStream)
+//	{
+//		mOutputStream = aOutputStream;
+//		mChecksum = new Checksum();
+//	}
+	public void write(OutputStream aOutputStream, Document aDocument) throws IOException
 	{
 		mOutputStream = aOutputStream;
 		mChecksum = new Checksum();
+		writeDocument(aDocument);
+	}
+	public void write(OutputStream aOutputStream, Array aArray) throws IOException
+	{
+		mOutputStream = aOutputStream;
+		mChecksum = new Checksum();
+		writeArray(aArray);
 	}
 
 

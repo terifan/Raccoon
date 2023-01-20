@@ -27,7 +27,7 @@ public class DatabaseRoot
 
 		byte[] buffer = new BlockAccessor(aBlockDevice, CompressionParam.BEST_COMPRESSION).readBlock(mBlockPointer);
 
-		mMetadata = Document.unmarshal(buffer);
+		mMetadata = new Document().fromByteArray(buffer);
 		mTransactionId = mBlockPointer.getTransactionId(); // TODO: use trans id from super block?
 	}
 
@@ -41,7 +41,7 @@ public class DatabaseRoot
 			blockAccessor.freeBlock(mBlockPointer);
 		}
 
-		byte[] buffer = mMetadata.marshal();
+		byte[] buffer = mMetadata.toByteArray();
 
 		mBlockPointer = blockAccessor.writeBlock(buffer, 0, buffer.length, mTransactionId, BlockType.APPLICATION_HEADER);
 

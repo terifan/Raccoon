@@ -1,9 +1,14 @@
 package org.terifan.raccoon.document;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.OutputStream;
+import java.io.StringReader;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -74,7 +79,6 @@ public class Document extends Container<String, Document> implements Externaliza
 	}
 
 
-	@Override
 	public Set<String> keySet()
 	{
 		return mValues.keySet();
@@ -93,7 +97,6 @@ public class Document extends Container<String, Document> implements Externaliza
 	}
 
 
-	@Override
 	public boolean containsKey(String aKey)
 	{
 		return mValues.containsKey(aKey);
@@ -103,7 +106,7 @@ public class Document extends Container<String, Document> implements Externaliza
 	@Override
 	public String toString()
 	{
-		return marshalJSON(new StringBuilder(), true).toString();
+		return "Document{size=" + mValues.size() + "}";
 	}
 
 
@@ -126,7 +129,7 @@ public class Document extends Container<String, Document> implements Externaliza
 	{
 		if (aOther instanceof Document)
 		{
-			return marshalJSON(true).equals(((Container)aOther).marshalJSON(true));
+			return toJson().equals(((Document)aOther).toJson());
 		}
 
 		return false;
@@ -182,21 +185,100 @@ public class Document extends Container<String, Document> implements Externaliza
 	}
 
 
-	public static Document unmarshal(byte[] aBinaryData)
+	/**
+	 * Performs a deep clone of this Document.
+	 */
+	@Override
+	public Document clone()
 	{
-		return unmarshal(new ByteArrayInputStream(aBinaryData));
+		return new Document().fromByteArray(toByteArray());
 	}
 
 
-	public static Document unmarshal(InputStream aBinaryData)
+	public String toJson()
 	{
 		try
 		{
-			return (Document)new VarInputStream(aBinaryData).readObject();
+			StringBuilder builder = new StringBuilder();
+			new JSONEncoder().marshal(new JSONTextWriter(builder, true), this);
+			return builder.toString();
+		}
+		catch (IOException e)
+		{
+			throw new IllegalArgumentException(e);
+		}
+	}
+
+
+	public Document fromJson(String aJson)
+	{
+		try
+		{
+			return new JSONDecoder().unmarshal(new StringReader(aJson), this);
+		}
+		catch (IOException e)
+		{
+			throw new IllegalArgumentException(e);
+		}
+	}
+
+
+	public byte[] toByteArray()
+	{
+		try
+		{
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			new VarOutputStream().write(baos, this);
+			return baos.toByteArray();
 		}
 		catch (IOException e)
 		{
 			throw new IllegalStateException(e);
 		}
+	}
+
+
+	public Document fromByteArray(byte[] aBinaryData)
+	{
+		try
+		{
+			new VarInputStream().read(new ByteArrayInputStream(aBinaryData), this);
+		}
+		catch (IOException e)
+		{
+			throw new IllegalStateException(e);
+		}
+		return this;
+	}
+
+
+	@Override
+	public void writeExternal(ObjectOutput aOutputStream) throws IOException
+	{
+		OutputStream tmp = new OutputStream()
+		{
+			@Override
+			public void write(int aByte) throws IOException
+			{
+				aOutputStream.write(aByte);
+			}
+		};
+		new VarOutputStream().write(tmp, this);
+	}
+
+
+	@Override
+	public void readExternal(ObjectInput aInputStream) throws IOException, ClassNotFoundException
+	{
+		InputStream in = new InputStream()
+		{
+			@Override
+			public int read() throws IOException
+			{
+				return aInputStream.read();
+			}
+		};
+
+		new VarInputStream().read(in, this);
 	}
 }

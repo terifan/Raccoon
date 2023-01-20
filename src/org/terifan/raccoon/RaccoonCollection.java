@@ -192,7 +192,7 @@ public final class RaccoonCollection extends BTreeStorage
 			}
 		}
 
-		byte[] value = aDocument.marshal();
+		byte[] value = aDocument.toByteArray();
 		byte type = TYPE_DOCUMENT;
 
 		if (key.size() + value.length + 1 > mImplementation.getConfiguration().getInt("entrySizeLimit"))
@@ -445,7 +445,7 @@ public final class RaccoonCollection extends BTreeStorage
 			buffer = aEntry.getValue();
 		}
 
-		return aDestination.putAll(Document.unmarshal(buffer));
+		return aDestination.putAll(new Document().fromByteArray(buffer));
 	}
 
 
