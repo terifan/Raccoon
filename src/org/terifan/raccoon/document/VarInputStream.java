@@ -53,23 +53,24 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 
 	public Object readObject() throws IOException
 	{
-		Header header = readHeader();
-		if (header.value != header.checksum)
+		Token token = readToken();
+		if (token.value != token.checksum)
 		{
-			throw new StreamChecksumException("Checksum error in input stream");
+			throw new StreamChecksumException("Checksum error in data stream");
 		}
-		if (header.type == VarType.TERMINATOR)
+		if (token.type == VarType.TERMINATOR)
 		{
 			return null;
 		}
-		return readValue(header.type);
+		return readValue(token.type);
 	}
 
 
 	@Override
 	public Iterator<Object> iterator()
 	{
-		return new IteratorImpl<>(() -> {
+		return new IteratorImpl<>(() ->
+		{
 			try
 			{
 				return readObject();
@@ -139,28 +140,28 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 
 		for (;;)
 		{
-			Header header = readHeader();
+			Token token = readToken();
 
-			if (header.type == VarType.TERMINATOR)
+			if (token.type == VarType.TERMINATOR)
 			{
-				if (header.value != header.checksum)
+				if (token.value != token.checksum)
 				{
-					throw new StreamChecksumException("Checksum error in input stream");
+					throw new StreamChecksumException("Checksum error in data stream");
 				}
 				break;
 			}
 
 			String key;
-			if ((header.value & 1) == 1)
+			if ((token.value & 1) == 1)
 			{
-				key = Integer.toString(header.value >>> 1);
+				key = Integer.toString(token.value >>> 1);
 			}
 			else
 			{
-				key = readUTF(header.value >>> 1);
+				key = readUTF(token.value >>> 1);
 			}
 
-			doc.putImpl(key, readValue(header.type));
+			doc.putImpl(key, readValue(token.type));
 		}
 
 		return doc;
@@ -173,20 +174,20 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 
 		for (;;)
 		{
-			Header header = readHeader();
+			Token token = readToken();
 
-			if (header.type == VarType.TERMINATOR)
+			if (token.type == VarType.TERMINATOR)
 			{
-				if (header.value != header.checksum)
+				if (token.value != token.checksum)
 				{
-					throw new StreamChecksumException("Checksum error in input stream");
+					throw new StreamChecksumException("Checksum error in data stream");
 				}
 				break;
 			}
 
-			for (int i = 0; i < header.value; i++)
+			for (int i = 0; i < token.value; i++)
 			{
-				array.add(readValue(header.type));
+				array.add(readValue(token.type));
 			}
 		}
 
@@ -208,18 +209,18 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 	}
 
 
-	private Header readHeader() throws IOException
+	private Token readToken() throws IOException
 	{
-		Header header = new Header();
-		header.checksum = checksum();
-		int[] params = readInterleaved();
-		header.value = params[0];
-		header.type = VarType.get(params[1]);
-		return header;
+		Token token = new Token();
+		token.checksum = checksum();
+		long params = readInterleaved();
+		token.value = (int)(params >>> 32);
+		token.type = VarType.get((int)params);
+		return token;
 	}
 
 
-	private static class Header
+	private static class Token
 	{
 		int value;
 		int checksum;
@@ -303,14 +304,10 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 	}
 
 
-	private int[] readInterleaved() throws IOException
+	private long readInterleaved() throws IOException
 	{
 		long p = readUnsignedVarint();
-		return new int[]
-		{
-			reverseShift(p),
-			reverseShift(p >>> 1)
-		};
+		return ((long)reverseShift(p) << 32) | reverseShift(p >>> 1);
 	}
 
 
@@ -318,10 +315,10 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 	{
 		aWord &= 0x5555555555555555L;
 
-		aWord = (aWord | (aWord >>  1)) & 0x3333333333333333L;
-		aWord = (aWord | (aWord >>  2)) & 0x0f0f0f0f0f0f0f0fL;
-		aWord = (aWord | (aWord >>  4)) & 0x00ff00ff00ff00ffL;
-		aWord = (aWord | (aWord >>  8)) & 0x0000ffff0000ffffL;
+		aWord = (aWord | (aWord >> 1)) & 0x3333333333333333L;
+		aWord = (aWord | (aWord >> 2)) & 0x0f0f0f0f0f0f0f0fL;
+		aWord = (aWord | (aWord >> 4)) & 0x00ff00ff00ff00ffL;
+		aWord = (aWord | (aWord >> 8)) & 0x0000ffff0000ffffL;
 		aWord = (aWord | (aWord >> 16)) & 0x00000000ffffffffL;
 
 		return (int)aWord;

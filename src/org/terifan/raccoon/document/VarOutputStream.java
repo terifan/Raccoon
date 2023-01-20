@@ -2,7 +2,7 @@ package org.terifan.raccoon.document;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Map;
+import java.util.Map.Entry;
 import static org.terifan.raccoon.document.VarType.identify;
 
 
@@ -38,7 +38,7 @@ class VarOutputStream implements AutoCloseable
 	{
 		if (mOutputStream != null)
 		{
-			writeHeader(checksum(), VarType.TERMINATOR);
+			writeToken(checksum(), VarType.TERMINATOR);
 
 			mOutputStream.close();
 			mOutputStream = null;
@@ -49,14 +49,14 @@ class VarOutputStream implements AutoCloseable
 	public void writeObject(Object aValue) throws IOException
 	{
 		VarType type = identify(aValue);
-		writeHeader(checksum(), type);
+		writeToken(checksum(), type);
 		writeValue(type, aValue);
 	}
 
 
 	private void writeDocument(Document aDocument) throws IOException
 	{
-		for (Map.Entry<String, Object> entry : aDocument.entrySet())
+		for (Entry<String, Object> entry : aDocument.entrySet())
 		{
 			Object value = entry.getValue();
 			VarType type = identify(value);
@@ -64,18 +64,18 @@ class VarOutputStream implements AutoCloseable
 			boolean numeric = entry.getKey().matches("[0-9]{1,}");
 			if (numeric)
 			{
-				writeHeader((Integer.parseInt(entry.getKey()) << 1) + 1, type);
+				writeToken((Integer.parseInt(entry.getKey()) << 1) | 1, type);
 			}
 			else
 			{
-				writeHeader((entry.getKey().length() << 1), type);
+				writeToken((entry.getKey().length() << 1), type);
 				writeUTF(entry.getKey());
 			}
 
 			writeValue(type, value);
 		}
 
-		writeHeader(checksum(), VarType.TERMINATOR);
+		writeToken(checksum(), VarType.TERMINATOR);
 	}
 
 
@@ -98,7 +98,7 @@ class VarOutputStream implements AutoCloseable
 				type = nextType;
 			}
 
-			writeHeader(runLen, type);
+			writeToken(runLen, type);
 
 			while (--runLen >= 0)
 			{
@@ -106,7 +106,7 @@ class VarOutputStream implements AutoCloseable
 			}
 		}
 
-		writeHeader(checksum(), VarType.TERMINATOR);
+		writeToken(checksum(), VarType.TERMINATOR);
 	}
 
 
@@ -126,7 +126,7 @@ class VarOutputStream implements AutoCloseable
 	}
 
 
-	private void writeHeader(int aValue, VarType aBinaryType) throws IOException
+	private void writeToken(int aValue, VarType aBinaryType) throws IOException
 	{
 		writeInterleaved(aValue, aBinaryType.code);
 	}
@@ -232,6 +232,6 @@ class VarOutputStream implements AutoCloseable
 
 	int checksum()
 	{
-		return ((int)mChecksum.getValue()) & 0b1111;
+		return mChecksum.getValue() & 0b1111;
 	}
 }
