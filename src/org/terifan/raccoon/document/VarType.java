@@ -1,7 +1,11 @@
 package org.terifan.raccoon.document;
 
 import java.io.IOException;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import static org.terifan.raccoon.document.VarType.values;
 
@@ -47,17 +51,29 @@ enum VarType
 		(aOutput, aValue) -> aOutput.writeVarint(Float.floatToIntBits((Float)aValue)),
 		aInput -> Float.intBitsToFloat((int)aInput.readVarint())
 	),
-	DATE(12,
-		(aOutput, aValue) -> aOutput.writeVarint(((Date)aValue).getTime()),
-		aInput -> new Date(aInput.readVarint())
-	),
-	BINARY(13,
+	BINARY(12,
 		(aOutput, aValue) -> aOutput.writeBuffer((byte[])aValue),
 		aInput -> aInput.readBuffer()
 	),
-	UUID(14,
+	UUID(13,
 		(aOutput, aValue) -> aOutput.writeVarint(((UUID)aValue).getMostSignificantBits()).writeVarint(((UUID)aValue).getLeastSignificantBits()),
 		aInput -> new java.util.UUID(aInput.readVarint(), aInput.readVarint())
+	),
+	DATETIME(14,
+		(aOutput, aValue) -> aOutput.writeUnsignedVarint(localDateToNumber(((LocalDateTime)aValue).toLocalDate())).writeUnsignedVarint(localTimeToNumber(((LocalDateTime)aValue).toLocalTime())),
+		aInput -> LocalDateTime.of(numberToLocalDate((int)aInput.readUnsignedVarint()), numberToLocalTime(aInput.readUnsignedVarint()))
+	),
+	DATE(15,
+		(aOutput, aValue) -> aOutput.writeUnsignedVarint(localDateToNumber((LocalDate)aValue)),
+		aInput -> numberToLocalDate((int)aInput.readUnsignedVarint())
+	),
+	TIME(16,
+		(aOutput, aValue) -> aOutput.writeUnsignedVarint(localTimeToNumber((LocalTime)aValue)),
+		aInput -> numberToLocalTime(aInput.readUnsignedVarint())
+	),
+	OFFSETDATETIME(17,
+		(aOutput, aValue) -> aOutput.writeUnsignedVarint(localDateToNumber(((OffsetDateTime)aValue).toLocalDate())).writeUnsignedVarint(localTimeToNumber(((OffsetDateTime)aValue).toLocalTime())).writeVarint(((OffsetDateTime)aValue).getOffset().getTotalSeconds()),
+		aInput -> OffsetDateTime.of(numberToLocalDate((int)aInput.readUnsignedVarint()), numberToLocalTime(aInput.readUnsignedVarint()), ZoneOffset.ofTotalSeconds((int)aInput.readVarint()))
 	);
 
 	public final int code;
@@ -106,7 +122,10 @@ enum VarType
 		if (Float.class == cls) return FLOAT;
 		if (Byte.class == cls) return BYTE;
 		if (Short.class == cls) return SHORT;
-		if (Date.class == cls) return DATE;
+		if (LocalDate.class == cls) return DATE;
+		if (LocalTime.class == cls) return TIME;
+		if (LocalDateTime.class == cls) return DATETIME;
+		if (OffsetDateTime.class == cls) return OFFSETDATETIME;
 		if (UUID.class == cls) return UUID;
 		if (byte[].class == cls) return BINARY;
 
@@ -128,25 +147,26 @@ enum VarType
 	}
 
 
-	private static Object readEnum(String aEnumFullName) throws IOException
+	private static int localDateToNumber(LocalDate aLocalDate)
 	{
-		try
-		{
-			int i = aEnumFullName.lastIndexOf('.');
-			String name = aEnumFullName.substring(i + 1);
-			Class cls = Class.forName(aEnumFullName.substring(0, i));
-			for (Object o : cls.getEnumConstants())
-			{
-				if (((Enum)o).name().equals(name))
-				{
-					return o;
-				}
-			}
-			throw new IOException("No enum constant for name: " + name);
-		}
-		catch (ClassNotFoundException e)
-		{
-			throw new IOException(e);
-		}
+		return (aLocalDate.getYear() << 16) + (aLocalDate.getMonthValue() << 8) + aLocalDate.getDayOfMonth();
+	}
+
+
+	private static long localTimeToNumber(LocalTime aLocalTime)
+	{
+		return ((long)aLocalTime.getHour() << 48) + ((long)aLocalTime.getMinute() << 40) + ((long)aLocalTime.getSecond() << 32) + aLocalTime.getNano();
+	}
+
+
+	private static LocalDate numberToLocalDate(int aLocalDate)
+	{
+		return LocalDate.of(aLocalDate >>> 16, 0xff & (aLocalDate >>> 8), 0xff & aLocalDate);
+	}
+
+
+	private static LocalTime numberToLocalTime(long aLocalTime)
+	{
+		return LocalTime.of((int)(aLocalTime >>> 48), (int)(0xff & (aLocalTime >>> 40)), (int)(0xff & (aLocalTime >> 32)), (int)(0xffffffffL & aLocalTime));
 	}
 }

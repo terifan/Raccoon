@@ -11,10 +11,11 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.Base64;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -197,53 +198,79 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	}
 
 
-	public Date getDate(K aKey)
+	public LocalDate getDate(K aKey)
 	{
 		Object v = getImpl(aKey);
 		if (v == null)
 		{
 			return null;
 		}
-		if (v instanceof Date)
+		if (v instanceof LocalDate)
 		{
-			return (Date)v;
-		}
-		if (v instanceof Long)
-		{
-			return new Date((Long)v);
+			return (LocalDate)v;
 		}
 		if (v instanceof String)
 		{
-			try
-			{
-				String s = (String)v;
-				if (s.matches("[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}"))
-				{
-					return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(s);
-				}
-				if (s.matches("[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{1,3}"))
-				{
-					return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").parse(s);
-				}
-				if (s.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"))
-				{
-					return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(s);
-				}
-				if (s.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{1,3}"))
-				{
-					return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(s);
-				}
-				if (s.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}"))
-				{
-					return new SimpleDateFormat("yyyy-MM-dd").parse(s);
-				}
-			}
-			catch (ParseException e)
-			{
-				// ignore
-			}
+			return LocalDate.parse((String)v);
 		}
-		throw new IllegalArgumentException("Value of key " + aKey + " (" + v.getClass().getSimpleName() + ") cannot be cast on a Date");
+		throw new IllegalArgumentException("Value of key " + aKey + " (" + v.getClass().getSimpleName() + ") cannot be cast on a LocalDate");
+	}
+
+
+	public LocalTime getTime(K aKey)
+	{
+		Object v = getImpl(aKey);
+		if (v == null)
+		{
+			return null;
+		}
+		if (v instanceof LocalTime)
+		{
+			return (LocalTime)v;
+		}
+		if (v instanceof String)
+		{
+			return LocalTime.parse((String)v);
+		}
+		throw new IllegalArgumentException("Value of key " + aKey + " (" + v.getClass().getSimpleName() + ") cannot be cast on a LocalTime");
+	}
+
+
+	public LocalDateTime getDateTime(K aKey)
+	{
+		Object v = getImpl(aKey);
+		if (v == null)
+		{
+			return null;
+		}
+		if (v instanceof LocalDateTime)
+		{
+			return (LocalDateTime)v;
+		}
+		if (v instanceof String)
+		{
+			return LocalDateTime.parse((String)v);
+		}
+		throw new IllegalArgumentException("Value of key " + aKey + " (" + v.getClass().getSimpleName() + ") cannot be cast on a LocalDateTime");
+	}
+
+
+	public OffsetDateTime getOffsetDateTime(K aKey)
+	{
+		Object v = getImpl(aKey);
+		if (v == null)
+		{
+			return null;
+		}
+		if (v instanceof OffsetDateTime)
+		{
+			return (OffsetDateTime)v;
+		}
+		if (v instanceof String)
+		{
+			return OffsetDateTime.parse((String)v);
+		}
+		throw new IllegalArgumentException("Value of key " + aKey + " (" + v.getClass().getSimpleName() + ") cannot be cast on a OffsetDateTime");
 	}
 
 
@@ -334,18 +361,22 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 
 	public R put(K aKey, Object aValue)
 	{
-		if (aValue instanceof String
+		if (aValue == null
+			|| aValue instanceof String
 			|| aValue instanceof Number
 			|| aValue instanceof Document
 			|| aValue instanceof Array
 			|| aValue instanceof Boolean
-			|| aValue instanceof Date
+			|| aValue instanceof LocalDateTime
+			|| aValue instanceof LocalDate
+			|| aValue instanceof LocalTime
+			|| aValue instanceof OffsetDateTime
 			|| aValue instanceof UUID
 			|| aValue instanceof byte[])
 		{
 			putImpl(aKey, aValue);
 		}
-		else if (aValue != null)
+		else
 		{
 			throw new IllegalArgumentException("Unsupported type: " + aValue.getClass());
 		}
@@ -551,8 +582,12 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 			|| type == Byte.class
 			|| type == Short.class
 			|| type == Float.class
-			|| type == Date.class
+			|| type == LocalDate.class
+			|| type == LocalTime.class
+			|| type == LocalDateTime.class
+			|| type == OffsetDateTime.class
 			|| type == UUID.class
+			|| type == byte[].class
 			|| type == null;
 	}
 
@@ -599,7 +634,7 @@ abstract class Container<K, R> implements Externalizable, Cloneable
 	public abstract R clear();
 
 
-	public abstract boolean same(Container aOther);
+	public abstract boolean same(R aOther);
 
 
 	public abstract Set<K> keySet();

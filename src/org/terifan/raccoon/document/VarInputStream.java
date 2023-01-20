@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.function.Supplier;
 
 
-public class VarInputStream implements AutoCloseable, Iterable<Object>
+class VarInputStream implements AutoCloseable, Iterable<Object>
 {
 	private final Checksum mChecksum;
 	private InputStream mInputStream;

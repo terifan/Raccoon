@@ -6,7 +6,7 @@ import java.util.Map;
 import static org.terifan.raccoon.document.VarType.identify;
 
 
-public class VarOutputStream implements AutoCloseable
+class VarOutputStream implements AutoCloseable
 {
 	private final Checksum mChecksum;
 	private OutputStream mOutputStream;

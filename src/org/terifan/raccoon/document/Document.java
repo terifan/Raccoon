@@ -1,6 +1,9 @@
 package org.terifan.raccoon.document;
 
+import java.io.ByteArrayInputStream;
 import java.io.Externalizable;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -134,7 +137,7 @@ public class Document extends Container<String, Document> implements Externaliza
 	 * Order independent equals comparison.
 	 */
 	@Override
-	public boolean same(Container aOther)
+	public boolean same(Document aOther)
 	{
 		if (!(aOther instanceof Document))
 		{
@@ -176,5 +179,24 @@ public class Document extends Container<String, Document> implements Externaliza
 	public void forEach(BiConsumer<? super String, ? super Object> action)
 	{
 		mValues.forEach(action);
+	}
+
+
+	public static Document unmarshal(byte[] aBinaryData)
+	{
+		return unmarshal(new ByteArrayInputStream(aBinaryData));
+	}
+
+
+	public static Document unmarshal(InputStream aBinaryData)
+	{
+		try
+		{
+			return (Document)new VarInputStream(aBinaryData).readObject();
+		}
+		catch (IOException e)
+		{
+			throw new IllegalStateException(e);
+		}
 	}
 }

@@ -45,34 +45,34 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 	 */
 	public Array add(Object aValue)
 	{
-		if (aValue != null && aValue.getClass().isArray())
+		if (aValue == null || isSupportedType(aValue))
+		{
+			addImpl(aValue);
+		}
+		else if (aValue.getClass().isArray())
 		{
 			Array arr = new Array();
-			addImpl(arr);
-
 			for (int i = 0, len = java.lang.reflect.Array.getLength(aValue); i < len; i++)
 			{
-				Object v = java.lang.reflect.Array.get(aValue, i);
-				arr.add(v);
+				arr.add(java.lang.reflect.Array.get(aValue, i));
 			}
+			addImpl(arr);
 		}
 		else if (aValue instanceof Iterable)
 		{
 			Array arr = new Array();
-			addImpl(arr);
-
 			((Iterable)aValue).forEach(arr::addImpl);
+			addImpl(arr);
 		}
 		else if (aValue instanceof Stream)
 		{
 			Array arr = new Array();
-			addImpl(arr);
-
 			((Stream)aValue).forEach(arr::addImpl);
+			addImpl(arr);
 		}
 		else
 		{
-			addImpl(aValue);
+			throw new IllegalArgumentException("Unsupported type: " + aValue.getClass());
 		}
 
 		return this;
@@ -191,7 +191,7 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 	 * Order independent equals comparison.
 	 */
 	@Override
-	public boolean same(Container aOther)
+	public boolean same(Array aOther)
 	{
 		if (!(aOther instanceof Array))
 		{
@@ -249,19 +249,23 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 	{
 		Array array = new Array();
 
-		if (aValue != null && aValue.getClass().isArray())
+		if (aValue == null || isSupportedType(aValue))
+		{
+			array.add(aValue);
+		}
+		else if (aValue.getClass().isArray())
 		{
 			for (int i = 0, len = java.lang.reflect.Array.getLength(aValue); i < len; i++)
 			{
 				Object v = java.lang.reflect.Array.get(aValue, i);
 
-				if (v != null && v.getClass().isArray())
+				if (v == null || !v.getClass().isArray())
 				{
-					array.addImpl(ofImpl(v));
+					array.addImpl(v);
 				}
 				else
 				{
-					array.addImpl(v);
+					array.addImpl(ofImpl(v));
 				}
 			}
 		}
@@ -272,10 +276,6 @@ public class Array extends Container<Integer, Array> implements Externalizable, 
 		else if (aValue instanceof Stream)
 		{
 			((Stream)aValue).forEach(array::add);
-		}
-		else if (aValue == null || isSupportedType(aValue))
-		{
-			array.add(aValue);
 		}
 		else
 		{

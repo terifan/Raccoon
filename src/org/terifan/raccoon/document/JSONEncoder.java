@@ -2,8 +2,11 @@ package org.terifan.raccoon.document;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.Base64;
-import java.util.Date;
 import java.util.Map.Entry;
 import java.util.UUID;
 
@@ -185,9 +188,9 @@ class JSONEncoder
 		{
 			mWriter.print(aValue);
 		}
-		else if (aValue instanceof Date)
+		else if (aValue instanceof LocalDate || aValue instanceof LocalTime || aValue instanceof LocalDateTime || aValue instanceof OffsetDateTime)
 		{
-			mWriter.print("\"" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(aValue) + "\"");
+			mWriter.print("\"" + aValue + "\"");
 		}
 		else if (aValue instanceof UUID)
 		{

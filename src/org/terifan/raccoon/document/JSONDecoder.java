@@ -194,7 +194,7 @@ class JSONDecoder
 		}
 		if (in.startsWith("0x"))
 		{
-			return Long.parseLong(in.substring(2), 16);
+			return Long.valueOf(in.substring(2), 16);
 		}
 
 		long v = Long.parseLong(in);
