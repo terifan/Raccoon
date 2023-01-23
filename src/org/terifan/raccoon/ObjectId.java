@@ -2,10 +2,6 @@ package org.terifan.raccoon;
 
 import java.io.Serializable;
 import java.security.SecureRandom;
-import java.text.SimpleDateFormat;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -47,13 +43,7 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 
 	public ObjectId()
 	{
-//		Instant instant = Clock.systemDefaultZone().instant();
-//		long sec = instant.getEpochSecond();
-//		long time = (sec << 12) | (0xFFF & (instant.getNano() >> 12));
-
-		long time = System.currentTimeMillis();
-
-		mMostSigBits = (time << 16) | 0x7000 | (0xFFF & SEQUENCE.getAndIncrement());
+		mMostSigBits = (System.currentTimeMillis() << 16) | 0x7000 | (0xFFF & SEQUENCE.getAndIncrement());
 		mLeastSigBits = 0xA000000000000000L | (Holder.numberGenerator.nextLong() & 0x3FFFFFFFFFFFFFFFL);
 	}
 
@@ -148,6 +138,21 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	}
 
 
+	public byte[] toByteArray()
+	{
+		byte[] buffer = new byte[16];
+		for (int i = 0; i < 8; i++)
+		{
+			buffer[i] = (byte)(mMostSigBits >>> (8 * (7 - i)));
+		}
+		for (int i = 8; i < 16; i++)
+		{
+			buffer[i] = (byte)(mLeastSigBits >>> (8 * (15 - i)));
+		}
+		return buffer;
+	}
+
+
 	@Override
 	public String toString()
 	{
@@ -187,12 +192,14 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	{
 		try
 		{
-			for (int i = 0; i < 10000; i++)
+			long t = System.currentTimeMillis();
+			for (int i = 0; i < 100; i++)
 			{
 				ObjectId objectId = new ObjectId();
 
-				System.out.printf("%s %4d %19d %s %d %d%n", objectId, objectId.sequence(), objectId.random(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()), objectId.version(), objectId.variant());
+				System.out.printf("%s %4d %19d %s %d %d%n", objectId, objectId.sequence(), objectId.random(), new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()), objectId.version(), objectId.variant());
 			}
+			System.out.println(System.currentTimeMillis() - t);
 
 //			ObjectId objectId = new ObjectId(0x0fffffffffff7000L, 0xA000000000000000L);
 //			ObjectId objectId = new ObjectId();
