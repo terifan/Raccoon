@@ -2,6 +2,10 @@ package org.terifan.raccoon;
 
 import java.io.Serializable;
 import java.security.SecureRandom;
+import java.text.SimpleDateFormat;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -11,18 +15,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                           unix_ts_ms                          |
+ *  |                              time                             |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |          unix_ts_ms           |  ver  |       sequence        |
+ *  |              time             |  ver  |       sequence        |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |var|                        random                             |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |                            random                             |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
- * time     - 48 bits - time in millis
- * sequence - 12 bits - counter incremented each time an instance is created
+ * time     - 48 bits - time in milliseconds
  * ver      -  4 bits - constant 7
+ * sequence - 12 bits - counter incremented each time an instance is created
  * var      -  2 bits - constant 2
  * random   - 62 bits - random
  */
@@ -43,7 +47,13 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 
 	public ObjectId()
 	{
-		mMostSigBits = (System.currentTimeMillis() << 16) | 0x7000 | (0xFFF & SEQUENCE.getAndIncrement());
+//		Instant instant = Clock.systemDefaultZone().instant();
+//		long sec = instant.getEpochSecond();
+//		long time = (sec << 12) | (0xFFF & (instant.getNano() >> 12));
+
+		long time = System.currentTimeMillis();
+
+		mMostSigBits = (time << 16) | 0x7000 | (0xFFF & SEQUENCE.getAndIncrement());
 		mLeastSigBits = 0xA000000000000000L | (Holder.numberGenerator.nextLong() & 0x3FFFFFFFFFFFFFFFL);
 	}
 
@@ -173,28 +183,31 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	}
 
 
-//	public static void main(String... args)
-//	{
-//		try
-//		{
-//			for (int i = 0; i < 10; i++)
-//			{
-//				ObjectId objectId = new ObjectId();
+	public static void main(String... args)
+	{
+		try
+		{
+			for (int i = 0; i < 10000; i++)
+			{
+				ObjectId objectId = new ObjectId();
+
+				System.out.printf("%s %4d %19d %s %d %d%n", objectId, objectId.sequence(), objectId.random(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()), objectId.version(), objectId.variant());
+			}
+
+//			ObjectId objectId = new ObjectId(0x0fffffffffff7000L, 0xA000000000000000L);
+//			ObjectId objectId = new ObjectId();
 //
-//				System.out.println(objectId);
-//				System.out.println(objectId.sequence());
-//				System.out.println(objectId.random());
-//				System.out.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()));
-//				System.out.println(objectId.version());
-//				System.out.println(objectId.variant());
-//				System.out.println();
-//
-//				new ObjectId(objectId.getMostSignificantBits(), objectId.getLeastSignificantBits());
-//			}
-//		}
-//		catch (Throwable e)
-//		{
-//			e.printStackTrace(System.out);
-//		}
-//	}
+//			System.out.println(objectId);
+//			System.out.println(objectId.sequence());
+//			System.out.println(objectId.random());
+//			System.out.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()));
+//			System.out.println(objectId.version());
+//			System.out.println(objectId.variant());
+//			System.out.println();
+		}
+		catch (Throwable e)
+		{
+			e.printStackTrace(System.out);
+		}
+	}
 }
