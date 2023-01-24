@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *  |                            random                             |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
- * time     - 48 bits - time in milliseconds
+ * time     - 48 bits - time in milliseconds since midnight, January 1, 1970 UTC.
  * ver      -  4 bits - constant 7
  * sequence - 12 bits - counter incremented each time an instance is created
  * var      -  2 bits - constant 2
@@ -30,20 +30,20 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 {
 	private final static long serialVersionUID = 1;
 
-	private final static AtomicInteger SEQUENCE = new AtomicInteger();
 	private final long mMostSigBits;
 	private final long mLeastSigBits;
 
 
 	private static class Holder
 	{
-		static final SecureRandom numberGenerator = new SecureRandom();
+		final static SecureRandom numberGenerator = new SecureRandom();
+		final static AtomicInteger sequence = new AtomicInteger(numberGenerator.nextInt());
 	}
 
 
 	public ObjectId()
 	{
-		mMostSigBits = (System.currentTimeMillis() << 16) | 0x7000 | (0xFFF & SEQUENCE.getAndIncrement());
+		mMostSigBits = (System.currentTimeMillis() << 16) | 0x7000 | (0xFFF & Holder.sequence.getAndIncrement());
 		mLeastSigBits = 0xA000000000000000L | (Holder.numberGenerator.nextLong() & 0x3FFFFFFFFFFFFFFFL);
 	}
 
