@@ -8,6 +8,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import org.terifan.raccoon.ObjectId;
 import static org.terifan.raccoon.document.VarType.values;
 
 
@@ -79,6 +80,10 @@ enum VarType
 	DECIMAL(18,
 		(aOutput, aValue) -> aOutput.writeString(((BigDecimal)aValue).toString()),
 		aInput -> new BigDecimal(aInput.readString())
+	),
+	OBJECTID(19,
+		(aOutput, aValue) -> aOutput.writeBytes(((ObjectId)aValue).toByteArray()),
+		aInput -> ObjectId.fromBytes(aInput.readBytes(new byte[16]))
 	);
 
 	public final int code;
@@ -132,6 +137,7 @@ enum VarType
 		if (LocalDateTime.class == cls) return DATETIME;
 		if (OffsetDateTime.class == cls) return OFFSETDATETIME;
 		if (UUID.class == cls) return UUID;
+		if (ObjectId.class == cls) return OBJECTID;
 		if (BigDecimal.class == cls) return DECIMAL;
 		if (byte[].class == cls) return BINARY;
 

@@ -13,17 +13,14 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 	private InputStream mInputStream;
 
 
-//	public VarInputStream(InputStream aInputStream)
-//	{
-//		mInputStream = aInputStream;
-//		mChecksum = new Checksum();
-//	}
 	public void read(InputStream aInputStream, Document aDocument) throws IOException
 	{
 		mInputStream = aInputStream;
 		mChecksum = new Checksum();
 		readDocument(aDocument);
 	}
+
+
 	public void read(InputStream aInputStream, Array aArray) throws IOException
 	{
 		mInputStream = aInputStream;
@@ -44,11 +41,10 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 	}
 
 
-	private int readBytes(byte[] aBuffer) throws IOException
+	public byte[] readBytes(byte[] aBuffer) throws IOException
 	{
-		int len = mInputStream.read(aBuffer);
-		mChecksum.update(aBuffer, 0, len);
-		return len;
+		mChecksum.update(aBuffer, 0, mInputStream.read(aBuffer));
+		return aBuffer;
 	}
 
 
@@ -244,9 +240,7 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 
 	byte[] readBuffer() throws IOException
 	{
-		byte[] buffer = new byte[(int)readUnsignedVarint()];
-		readBytes(buffer);
-		return buffer;
+		return readBytes(new byte[(int)readUnsignedVarint()]);
 	}
 
 

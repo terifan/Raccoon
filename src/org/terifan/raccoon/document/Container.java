@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.terifan.raccoon.ObjectId;
 
 
 abstract class Container<K, R> implements Serializable
@@ -293,6 +294,41 @@ abstract class Container<K, R> implements Serializable
 	}
 
 
+	public ObjectId getObjectId(K aKey)
+	{
+		Object v = getImpl(aKey);
+		if (v == null)
+		{
+			return null;
+		}
+		if (v instanceof ObjectId)
+		{
+			return (ObjectId)v;
+		}
+		if (v instanceof String)
+		{
+			String s = (String)v;
+			if (s.length() == 36 && s.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
+			{
+				return ObjectId.fromString(s);
+			}
+		}
+		if (v instanceof Array)
+		{
+			Array a = (Array)v;
+			if (a.size() == 2 && (a.getImpl(0) instanceof Long) && (a.getImpl(1) instanceof Long))
+			{
+				return new ObjectId(a.getLong(0), a.getLong(1));
+			}
+			if (a.size() == 16)
+			{
+				return ObjectId.fromBytes(getBinary(aKey));
+			}
+		}
+		throw new IllegalArgumentException("Value of key " + aKey + " (" + v.getClass().getSimpleName() + ") cannot be cast on a ObjectId");
+	}
+
+
 	public Number getNumber(K aKey)
 	{
 		Object v = getImpl(aKey);
@@ -436,6 +472,7 @@ abstract class Container<K, R> implements Serializable
 			|| type == LocalDateTime.class
 			|| type == OffsetDateTime.class
 			|| type == UUID.class
+			|| type == ObjectId.class
 			|| type == BigDecimal.class
 			|| type == byte[].class
 			|| type == null;

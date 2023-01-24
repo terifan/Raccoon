@@ -27,6 +27,8 @@ import java.util.regex.Pattern;
  * sequence - 12 bits - incrementing counter, initialized to a random value
  * var      -  2 bits - constant 2
  * random   - 62 bits - random value
+ *
+ * format: tttttttt-tttt-7sss-2rrr-rrrrrrrrrrrr
  */
 public final class ObjectId implements Serializable, Comparable<ObjectId>
 {
@@ -40,7 +42,7 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	{
 		final static SecureRandom numberGenerator = new SecureRandom();
 		final static AtomicInteger sequence = new AtomicInteger(numberGenerator.nextInt());
-		final static Pattern pattern = Pattern.compile("[0-9a-zA-Z]{6}\\-[0-9a-zA-Z]{4}\\-[0-9a-zA-Z]{4}\\-[0-9a-zA-Z]{4}\\-[0-9a-zA-Z]{14}");
+		final static Pattern pattern = Pattern.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 	}
 
 
@@ -95,7 +97,7 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 			throw new IllegalArgumentException("invalid format");
 		}
 
-		return new ObjectId(Long.parseUnsignedLong(aName.substring(0, 6) + aName.substring(7, 11) + aName.substring(12, 16) + aName.substring(17, 19), 16), Long.parseUnsignedLong(aName.substring(19, 21) + aName.substring(22), 16));
+		return new ObjectId(Long.parseUnsignedLong(aName.substring(0, 8) + aName.substring(9, 13) + aName.substring(14, 18), 16), Long.parseUnsignedLong(aName.substring(19, 23) + aName.substring(24), 16));
 	}
 
 
@@ -160,7 +162,7 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	public String toString()
 	{
 		String s = String.format("%016x%016x", mMostSigBits, mLeastSigBits);
-		return String.format("%s-%s-%s-%s-%s", s.substring(0, 6), s.substring(6, 10), s.substring(10, 14), s.substring(14, 18), s.substring(18));
+		return String.format("%s-%s-%s-%s-%s", s.substring(0, 8), s.substring(8, 12), s.substring(12, 16), s.substring(16, 20), s.substring(20, 32));
 	}
 
 
@@ -191,33 +193,35 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	}
 
 
-//	public static void main(String... args)
-//	{
-//		try
-//		{
-//			long t = System.currentTimeMillis();
-//			for (int i = 0; i < 100; i++)
-//			{
-//				ObjectId objectId = ObjectId.randomId();
+	public static void main(String... args)
+	{
+		try
+		{
+			long t = System.currentTimeMillis();
+			for (int i = 0; i < 100; i++)
+			{
+				ObjectId objectId = ObjectId.randomId();
+
+				System.out.printf("%s %4d %19d %s %d %d%n", objectId, objectId.sequence(), objectId.random(), new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()), objectId.version(), objectId.variant());
+
+				ObjectId.fromString(objectId.toString());
+			}
+			System.out.println(System.currentTimeMillis() - t);
+
+//			ObjectId objectId = new ObjectId(0x0fffffffffff7000L, 0xA000000000000000L);
+//			ObjectId objectId = new ObjectId();
 //
-//				System.out.printf("%s %4d %19d %s %d %d%n", objectId, objectId.sequence(), objectId.random(), new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()), objectId.version(), objectId.variant());
-//			}
-//			System.out.println(System.currentTimeMillis() - t);
-//
-////			ObjectId objectId = new ObjectId(0x0fffffffffff7000L, 0xA000000000000000L);
-////			ObjectId objectId = new ObjectId();
-////
-////			System.out.println(objectId);
-////			System.out.println(objectId.sequence());
-////			System.out.println(objectId.random());
-////			System.out.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()));
-////			System.out.println(objectId.version());
-////			System.out.println(objectId.variant());
-////			System.out.println();
-//		}
-//		catch (Throwable e)
-//		{
-//			e.printStackTrace(System.out);
-//		}
-//	}
+//			System.out.println(objectId);
+//			System.out.println(objectId.sequence());
+//			System.out.println(objectId.random());
+//			System.out.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()));
+//			System.out.println(objectId.version());
+//			System.out.println(objectId.variant());
+//			System.out.println();
+		}
+		catch (Throwable e)
+		{
+			e.printStackTrace(System.out);
+		}
+	}
 }

@@ -12,17 +12,14 @@ class VarOutputStream implements AutoCloseable
 	private OutputStream mOutputStream;
 
 
-//	public VarOutputStream(OutputStream aOutputStream)
-//	{
-//		mOutputStream = aOutputStream;
-//		mChecksum = new Checksum();
-//	}
 	public void write(OutputStream aOutputStream, Document aDocument) throws IOException
 	{
 		mOutputStream = aOutputStream;
 		mChecksum = new Checksum();
 		writeDocument(aDocument);
 	}
+
+
 	public void write(OutputStream aOutputStream, Array aArray) throws IOException
 	{
 		mOutputStream = aOutputStream;
@@ -38,7 +35,7 @@ class VarOutputStream implements AutoCloseable
 	}
 
 
-	private void write(byte[] aBuffer) throws IOException
+	public void writeBytes(byte[] aBuffer) throws IOException
 	{
 		mOutputStream.write(aBuffer);
 		mChecksum.update(aBuffer, 0, aBuffer.length);
@@ -155,7 +152,7 @@ class VarOutputStream implements AutoCloseable
 	VarOutputStream writeBuffer(byte[] aBuffer) throws IOException
 	{
 		writeUnsignedVarint(aBuffer.length);
-		write(aBuffer);
+		writeBytes(aBuffer);
 		return this;
 	}
 
@@ -203,21 +200,21 @@ class VarOutputStream implements AutoCloseable
 		for (int i = 0, len = aInput.length(); i < len; i++)
 		{
 			char c = aInput.charAt(i);
-		    if (c <= 0x007F)
-		    {
+			if (c <= 0x007F)
+			{
 				write(c & 0x7F);
-		    }
-		    else if (c <= 0x07FF)
-		    {
-				write(0xC0 | ((c >>  6) & 0x1F));
-				write(0x80 | ((c      ) & 0x3F));
-		    }
-		    else
-		    {
+			}
+			else if (c <= 0x07FF)
+			{
+				write(0xC0 | ((c >> 6) & 0x1F));
+				write(0x80 | ((c) & 0x3F));
+			}
+			else
+			{
 				write(0xE0 | ((c >> 12) & 0x0F));
-				write(0x80 | ((c >>  6) & 0x3F));
-				write(0x80 | ((c      ) & 0x3F));
-		    }
+				write(0x80 | ((c >> 6) & 0x3F));
+				write(0x80 | ((c) & 0x3F));
+			}
 		}
 	}
 
@@ -233,10 +230,10 @@ class VarOutputStream implements AutoCloseable
 		aWord &= 0xffffffffL;
 
 		aWord = (aWord | (aWord << 16)) & 0x0000ffff0000ffffL;
-		aWord = (aWord | (aWord <<  8)) & 0x00ff00ff00ff00ffL;
-		aWord = (aWord | (aWord <<  4)) & 0x0f0f0f0f0f0f0f0fL;
-		aWord = (aWord | (aWord <<  2)) & 0x3333333333333333L;
-		aWord = (aWord | (aWord <<  1)) & 0x5555555555555555L;
+		aWord = (aWord | (aWord << 8)) & 0x00ff00ff00ff00ffL;
+		aWord = (aWord | (aWord << 4)) & 0x0f0f0f0f0f0f0f0fL;
+		aWord = (aWord | (aWord << 2)) & 0x3333333333333333L;
+		aWord = (aWord | (aWord << 1)) & 0x5555555555555555L;
 
 		return aWord;
 	}

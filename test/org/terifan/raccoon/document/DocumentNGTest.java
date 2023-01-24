@@ -5,7 +5,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import org.terifan.raccoon.ObjectId;
 import java.util.UUID;
+import org.terifan.raccoon.util.Log;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
@@ -47,6 +49,23 @@ public class DocumentNGTest
 		assertEquals(doc.getDate("date"), odt.toLocalDate());
 		assertEquals(doc.getTime("time"), odt.toLocalTime());
 		assertEquals(doc.getDateTime("datetime"), odt.toLocalDateTime());
+	}
+
+
+	@Test
+	public void testObjectId()
+	{
+		ObjectId id = ObjectId.randomId();
+
+		byte[] data = new Document()
+			.put("_id", id)
+			.toByteArray();
+
+		Document doc = new Document().fromByteArray(data);
+
+		Log.hexDump(data);
+
+		assertEquals(doc.getObjectId("_id"), id);
 	}
 
 
