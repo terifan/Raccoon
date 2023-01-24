@@ -11,22 +11,6 @@ class JSONDecoder
 	private PushbackReader mReader;
 
 
-//	public Container unmarshal(Reader aReader) throws IOException
-//	{
-//		mReader = new PushbackReader(aReader, 1);
-//
-//		switch (mReader.read())
-//		{
-//			case '{':
-//				return readDocument();
-//			case '[':
-//				return readArray();
-//			default:
-//				throw new IllegalArgumentException("First character must be either \"[\" or \"{\".");
-//		}
-//	}
-
-
 	public Document unmarshal(Reader aReader, Document aDocument) throws IOException
 	{
 		mReader = new PushbackReader(aReader, 1);

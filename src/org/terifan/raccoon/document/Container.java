@@ -1,13 +1,13 @@
 package org.terifan.raccoon.document;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -308,6 +308,25 @@ abstract class Container<K, R> implements Serializable
 	}
 
 
+	public BigDecimal getDecimal(K aKey)
+	{
+		Object v = getImpl(aKey);
+		if (v == null)
+		{
+			return null;
+		}
+		if (v instanceof BigDecimal)
+		{
+			return (BigDecimal)v;
+		}
+		if (v instanceof String)
+		{
+			return new BigDecimal((String)v);
+		}
+		throw new IllegalArgumentException("Value of key " + aKey + " (" + v.getClass().getSimpleName() + ") cannot be cast on a BigDecimal");
+	}
+
+
 	public Array getArray(K aKey)
 	{
 		return (Array)getImpl(aKey);
@@ -349,27 +368,12 @@ abstract class Container<K, R> implements Serializable
 
 	public R put(K aKey, Object aValue)
 	{
-		if (aValue == null
-			|| aValue instanceof String
-			|| aValue instanceof Number
-			|| aValue instanceof Document
-			|| aValue instanceof Array
-			|| aValue instanceof Boolean
-			|| aValue instanceof LocalDateTime
-			|| aValue instanceof LocalDate
-			|| aValue instanceof LocalTime
-			|| aValue instanceof OffsetDateTime
-			|| aValue instanceof UUID
-			|| aValue instanceof byte[])
+		if (isSupportedType(aValue))
 		{
-			putImpl(aKey, aValue);
-		}
-		else
-		{
-			throw new IllegalArgumentException("Unsupported type: " + aValue.getClass());
+			return (R)putImpl(aKey, aValue);
 		}
 
-		return (R)this;
+		throw new IllegalArgumentException("Unsupported type: " + aValue.getClass());
 	}
 
 
@@ -432,6 +436,7 @@ abstract class Container<K, R> implements Serializable
 			|| type == LocalDateTime.class
 			|| type == OffsetDateTime.class
 			|| type == UUID.class
+			|| type == BigDecimal.class
 			|| type == byte[].class
 			|| type == null;
 	}

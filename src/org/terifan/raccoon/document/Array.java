@@ -9,13 +9,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.OutputStream;
 import java.io.StringReader;
-import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 
@@ -297,47 +292,6 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 	{
 		return ofImpl(aValues);
 	}
-
-
-//	@Override
-//	public Set<Integer> keySet()
-//	{
-//		return new AbstractSet<Integer>()
-//		{
-//			@Override
-//			public Iterator<Integer> iterator()
-//			{
-//				return new Iterator<Integer>()
-//				{
-//					int index;
-//
-//					@Override
-//					public boolean hasNext()
-//					{
-//						return index < mValues.size();
-//					}
-//
-//
-//					@Override
-//					public Integer next()
-//					{
-//						if (index >= mValues.size())
-//						{
-//							throw new IllegalStateException();
-//						}
-//						return index++;
-//					}
-//				};
-//			}
-//
-//
-//			@Override
-//			public int size()
-//			{
-//				return mValues.size();
-//			}
-//		};
-//	}
 
 
 	public <T> Stream<T> stream(Class<T> aType)

@@ -1,10 +1,10 @@
 package org.terifan.raccoon.document;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.UUID;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
@@ -70,6 +70,7 @@ public class DocumentNGTest
 		LocalDateTime _ldt = LocalDateTime.now();
 		Array _arr = Array.of((byte)1,(byte)2,(byte)3); // JSON decoder decodes values to smallest possible representation
 		Document _doc = new Document().put("docu","ment");
+		BigDecimal _bd = new BigDecimal("31.31646131940661321981");
 
 		Document _allTypesDoc = new Document()
 			.put("byte", _byte)
@@ -88,7 +89,8 @@ public class DocumentNGTest
 			.put("lt", _lt)
 			.put("ldt", _ldt)
 			.put("arr", _arr)
-			.put("doc", _doc);
+			.put("doc", _doc)
+			.put("bd", _bd);
 
 		Array _allTypesArr = Array.of(_allTypesDoc.values());
 
@@ -112,14 +114,14 @@ public class DocumentNGTest
 		assertEquals(unmarshalledBin, srcDoc);
 		assertEquals(unmarshalledJson, srcDoc);
 
-		checkTypes(dstDoc, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc);
-		checkTypes(dstArr, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc);
-		checkTypes(dstDocJson, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc);
-		checkTypes(dstArrJson, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc);
+		checkTypes(dstDoc, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc, _bd);
+		checkTypes(dstArr, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc, _bd);
+		checkTypes(dstDocJson, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc, _bd);
+		checkTypes(dstArrJson, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc, _bd);
 	}
 
 
-	private void checkTypes(Array aDstArr, Byte a_byte, Short a_short, Integer a_int, Long a_long, Float a_float, Double a_double, Boolean a_bool, Object a_null, String a_string, byte[] a_bytes, UUID a_uuid, OffsetDateTime a_odt, LocalDate a_ld, LocalTime a_lt, LocalDateTime a_ldt, Array a_arr, Document a_doc)
+	private void checkTypes(Array aDstArr, Byte a_byte, Short a_short, Integer a_int, Long a_long, Float a_float, Double a_double, Boolean a_bool, Object a_null, String a_string, byte[] a_bytes, UUID a_uuid, OffsetDateTime a_odt, LocalDate a_ld, LocalTime a_lt, LocalDateTime a_ldt, Array a_arr, Document a_doc, BigDecimal a_bd)
 	{
 		assertEquals(aDstArr.getByte(0), a_byte);
 		assertEquals(aDstArr.getShort(1), a_short);
@@ -139,10 +141,11 @@ public class DocumentNGTest
 		assertEquals(aDstArr.getDateTime(14), a_ldt);
 		assertEquals(aDstArr.getArray(15), a_arr);
 		assertEquals(aDstArr.getDocument(16), a_doc);
+		assertEquals(aDstArr.getDecimal(17), a_bd);
 	}
 
 
-	private void checkTypes(Document aDstDoc, Byte a_byte, Short a_short, Integer a_int, Long a_long, Float a_float, Double a_double, Boolean a_bool, Object a_null, String a_string, byte[] a_bytes, UUID a_uuid, OffsetDateTime a_odt, LocalDate a_ld, LocalTime a_lt, LocalDateTime a_ldt, Array a_arr, Document a_doc)
+	private void checkTypes(Document aDstDoc, Byte a_byte, Short a_short, Integer a_int, Long a_long, Float a_float, Double a_double, Boolean a_bool, Object a_null, String a_string, byte[] a_bytes, UUID a_uuid, OffsetDateTime a_odt, LocalDate a_ld, LocalTime a_lt, LocalDateTime a_ldt, Array a_arr, Document a_doc, BigDecimal a_bd)
 	{
 		assertEquals(aDstDoc.getByte("byte"), a_byte);
 		assertEquals(aDstDoc.getShort("short"), a_short);
@@ -162,5 +165,6 @@ public class DocumentNGTest
 		assertEquals(aDstDoc.getDateTime("ldt"), a_ldt);
 		assertEquals(aDstDoc.getArray("arr"), a_arr);
 		assertEquals(aDstDoc.getDocument("doc"), a_doc);
+		assertEquals(aDstDoc.getDecimal("bd"), a_bd);
 	}
 }

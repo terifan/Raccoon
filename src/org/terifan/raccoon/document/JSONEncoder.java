@@ -1,7 +1,7 @@
 package org.terifan.raccoon.document;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -176,25 +176,17 @@ class JSONEncoder
 
 	private void marshalValue(Object aValue) throws IOException
 	{
-		if (aValue instanceof String)
+		if (aValue instanceof String || aValue instanceof BigDecimal || aValue instanceof UUID || aValue instanceof LocalDate || aValue instanceof LocalTime || aValue instanceof LocalDateTime || aValue instanceof OffsetDateTime)
 		{
 			mWriter.print("\"" + escapeString(aValue.toString()) + "\"");
-		}
-		else if (aValue instanceof Long && Math.abs(((Long)aValue)) > 1000_000_000)
-		{
-			mWriter.print("0x" + String.format("%016x", (Long)aValue));
 		}
 		else if (aValue instanceof Number || aValue instanceof Boolean)
 		{
 			mWriter.print(aValue);
 		}
-		else if (aValue instanceof LocalDate || aValue instanceof LocalTime || aValue instanceof LocalDateTime || aValue instanceof OffsetDateTime)
+		else if (aValue == null)
 		{
-			mWriter.print("\"" + aValue + "\"");
-		}
-		else if (aValue instanceof UUID)
-		{
-			mWriter.print("\"" + aValue.toString() + "\"");
+			mWriter.print("null");
 		}
 		else if (aValue instanceof byte[])
 		{
@@ -202,7 +194,7 @@ class JSONEncoder
 		}
 		else
 		{
-			mWriter.print(aValue);
+			throw new IllegalArgumentException("Unsupported type: " + aValue.getClass());
 		}
 	}
 

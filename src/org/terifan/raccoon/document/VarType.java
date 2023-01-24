@@ -1,6 +1,7 @@
 package org.terifan.raccoon.document;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -74,6 +75,10 @@ enum VarType
 	OFFSETDATETIME(17,
 		(aOutput, aValue) -> aOutput.writeUnsignedVarint(localDateToNumber(((OffsetDateTime)aValue).toLocalDate())).writeUnsignedVarint(localTimeToNumber(((OffsetDateTime)aValue).toLocalTime())).writeVarint(((OffsetDateTime)aValue).getOffset().getTotalSeconds()),
 		aInput -> OffsetDateTime.of(numberToLocalDate((int)aInput.readUnsignedVarint()), numberToLocalTime(aInput.readUnsignedVarint()), ZoneOffset.ofTotalSeconds((int)aInput.readVarint()))
+	),
+	DECIMAL(18,
+		(aOutput, aValue) -> aOutput.writeString(((BigDecimal)aValue).toString()),
+		aInput -> new BigDecimal(aInput.readString())
 	);
 
 	public final int code;
@@ -127,6 +132,7 @@ enum VarType
 		if (LocalDateTime.class == cls) return DATETIME;
 		if (OffsetDateTime.class == cls) return OFFSETDATETIME;
 		if (UUID.class == cls) return UUID;
+		if (BigDecimal.class == cls) return DECIMAL;
 		if (byte[].class == cls) return BINARY;
 
 		throw new IllegalArgumentException("Failed to marshal an unsupported value of type " + cls.getCanonicalName());
