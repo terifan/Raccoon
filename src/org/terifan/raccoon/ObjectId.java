@@ -2,7 +2,9 @@ package org.terifan.raccoon;
 
 import java.io.Serializable;
 import java.security.SecureRandom;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 
 /*
@@ -20,11 +22,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  *  |                            random                             |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
- * time     - 48 bits - time in milliseconds since midnight, January 1, 1970 UTC.
+ * time     - 48 bits - time in milliseconds since midnight January 1, 1970 UTC
  * ver      -  4 bits - constant 7
- * sequence - 12 bits - counter incremented each time an instance is created
+ * sequence - 12 bits - incrementing counter, initialized to a random value
  * var      -  2 bits - constant 2
- * random   - 62 bits - random
+ * random   - 62 bits - random value
  */
 public final class ObjectId implements Serializable, Comparable<ObjectId>
 {
@@ -38,19 +40,35 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	{
 		final static SecureRandom numberGenerator = new SecureRandom();
 		final static AtomicInteger sequence = new AtomicInteger(numberGenerator.nextInt());
+		final static Pattern pattern = Pattern.compile("[0-9a-zA-Z]{6}\\-[0-9a-zA-Z]{4}\\-[0-9a-zA-Z]{4}\\-[0-9a-zA-Z]{4}\\-[0-9a-zA-Z]{14}");
 	}
 
 
-	public ObjectId()
+	public ObjectId(long aMostSigBits, long aLeastSigBits)
 	{
-		mMostSigBits = (System.currentTimeMillis() << 16) | 0x7000 | (0xFFF & Holder.sequence.getAndIncrement());
-		mLeastSigBits = 0xA000000000000000L | (Holder.numberGenerator.nextLong() & 0x3FFFFFFFFFFFFFFFL);
+		if (((int)(aMostSigBits >> 12) & 0xF) != 7)
+		{
+			throw new IllegalArgumentException("not a type 7 UUID");
+		}
+		if (((int)(aLeastSigBits >>> 62)) != 2)
+		{
+			throw new IllegalArgumentException("not valid variant");
+		}
+
+		mMostSigBits = aMostSigBits;
+		mLeastSigBits = aLeastSigBits;
 	}
 
 
-	public ObjectId(byte[] aData)
+	public static ObjectId randomId()
 	{
-		if (aData.length != 16)
+		return new ObjectId((System.currentTimeMillis() << 16) | 0x7000 | (0xFFF & Holder.sequence.getAndIncrement()), 0xA000000000000000L | (Holder.numberGenerator.nextLong() & 0x3FFFFFFFFFFFFFFFL));
+	}
+
+
+	public static ObjectId fromBytes(byte[] aData)
+	{
+		if (aData == null || aData.length != 16)
 		{
 			throw new IllegalArgumentException("data must be 16 bytes in length");
 		}
@@ -66,33 +84,18 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 			lsb = (lsb << 8) | (0xFF & aData[i]);
 		}
 
-		if (((int)(msb >> 12) & 0x0F) != 7)
-		{
-			throw new IllegalArgumentException();
-		}
-		if (((int)(lsb >>> 62)) != 2)
-		{
-			throw new IllegalArgumentException();
-		}
-
-		mMostSigBits = msb;
-		mLeastSigBits = lsb;
+		return new ObjectId(msb, lsb);
 	}
 
 
-	public ObjectId(long aMostSigBits, long aLeastSigBits)
+	public static ObjectId fromString(String aName)
 	{
-		if (((int)(aMostSigBits >> 12) & 0x0F) != 7)
+		if (!Holder.pattern.matcher(aName).find())
 		{
-			throw new IllegalArgumentException();
-		}
-		if (((int)(aLeastSigBits >>> 62)) != 2)
-		{
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("invalid format");
 		}
 
-		mMostSigBits = aMostSigBits;
-		mLeastSigBits = aLeastSigBits;
+		return new ObjectId(Long.parseUnsignedLong(aName.substring(0, 6) + aName.substring(7, 11) + aName.substring(12, 16) + aName.substring(17, 19), 16), Long.parseUnsignedLong(aName.substring(19, 21) + aName.substring(22), 16));
 	}
 
 
@@ -195,7 +198,7 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 			long t = System.currentTimeMillis();
 			for (int i = 0; i < 100; i++)
 			{
-				ObjectId objectId = new ObjectId();
+				ObjectId objectId = ObjectId.randomId();
 
 				System.out.printf("%s %4d %19d %s %d %d%n", objectId, objectId.sequence(), objectId.random(), new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()), objectId.version(), objectId.variant());
 			}
