@@ -158,7 +158,7 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 	@Override
 	public String toString()
 	{
-		return "Array{size=" + mValues.size() + "}";
+		return toJson();
 	}
 
 

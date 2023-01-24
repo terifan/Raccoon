@@ -3,156 +3,125 @@ package org.terifan.raccoon;
 import java.io.Serializable;
 import java.security.SecureRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 
 
 /*
- * UUID Version 7
- * https://datatracker.ietf.org/doc/html/draft-peabody-dispatch-new-uuid-format#section-5.2
- *
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                              time                             |
- *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |              time             |  ver  |       sequence        |
- *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |var|                        random                             |
+ *  |                             time                              |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |                            random                             |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                           sequence                            |
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
- * time     - 48 bits - time in milliseconds since midnight January 1, 1970 UTC
- * ver      -  4 bits - constant 7
- * sequence - 12 bits - incrementing counter, initialized to a random value
- * var      -  2 bits - constant 2
- * random   - 62 bits - random value
- *
- * format: tttttttt-tttt-7sss-2rrr-rrrrrrrrrrrr
+ * time      - 32 bits - time in seconds since midnight January 1, 1970 UTC
+ * constant  - 32 bits - random value used in all intances per JVM instance
+ * sequence  - 32 bits - incrementing counter, initialized to a random value
  */
 public final class ObjectId implements Serializable, Comparable<ObjectId>
 {
 	private final static long serialVersionUID = 1;
 
-	private final long mMostSigBits;
-	private final long mLeastSigBits;
+	private final int mTime;
+	private final int mConstant;
+	private final int mSequence;
 
 
 	private static class Holder
 	{
 		final static SecureRandom numberGenerator = new SecureRandom();
+		final static int constant = numberGenerator.nextInt();
 		final static AtomicInteger sequence = new AtomicInteger(numberGenerator.nextInt());
-		final static Pattern pattern = Pattern.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 	}
 
 
-	public ObjectId(long aMostSigBits, long aLeastSigBits)
+	private ObjectId(int aTime, int aConstant, int aSequence)
 	{
-		if (((int)(aMostSigBits >> 12) & 0xF) != 7)
-		{
-			throw new IllegalArgumentException("not a type 7 UUID");
-		}
-		if (((int)(aLeastSigBits >>> 62)) != 2)
-		{
-			throw new IllegalArgumentException("not valid variant");
-		}
+		mTime = aTime;
+		mConstant = aConstant;
+		mSequence = aSequence;
+	}
 
-		mMostSigBits = aMostSigBits;
-		mLeastSigBits = aLeastSigBits;
+
+	public static ObjectId fromParts(int aTime, int aConstant, int aSequence)
+	{
+		return new ObjectId(aTime, aConstant, aSequence);
 	}
 
 
 	public static ObjectId randomId()
 	{
-		return new ObjectId((System.currentTimeMillis() << 16) | 0x7000 | (0xFFF & Holder.sequence.getAndIncrement()), 0xA000000000000000L | (Holder.numberGenerator.nextLong() & 0x3FFFFFFFFFFFFFFFL));
+		return new ObjectId((int)(System.currentTimeMillis() / 1000), Holder.constant, Holder.sequence.getAndIncrement());
 	}
 
 
 	public static ObjectId fromBytes(byte[] aData)
 	{
-		if (aData == null || aData.length != 16)
+		if (aData == null || aData.length != 12)
 		{
-			throw new IllegalArgumentException("data must be 16 bytes in length");
+			throw new IllegalArgumentException("data must be 12 bytes in length");
 		}
 
-		long msb = 0;
-		long lsb = 0;
-		for (int i = 0; i < 8; i++)
+		int ts = 0;
+		int cst = 0;
+		int seq = 0;
+		for (int i = 0; i < 4; i++)
 		{
-			msb = (msb << 8) | (0xFF & aData[i]);
+			ts = (ts << 8) | (0xFF & aData[i]);
 		}
-		for (int i = 8; i < 16; i++)
+		for (int i = 4; i < 8; i++)
 		{
-			lsb = (lsb << 8) | (0xFF & aData[i]);
+			cst = (cst << 8) | (0xFF & aData[i]);
+		}
+		for (int i = 8; i < 12; i++)
+		{
+			seq = (seq << 8) | (0xFF & aData[i]);
 		}
 
-		return new ObjectId(msb, lsb);
+		return new ObjectId(ts, cst, seq);
 	}
 
 
 	public static ObjectId fromString(String aName)
 	{
-		if (!Holder.pattern.matcher(aName).find())
-		{
-			throw new IllegalArgumentException("invalid format");
-		}
-
-		return new ObjectId(Long.parseUnsignedLong(aName.substring(0, 8) + aName.substring(9, 13) + aName.substring(14, 18), 16), Long.parseUnsignedLong(aName.substring(19, 23) + aName.substring(24), 16));
+		return new ObjectId(Integer.parseUnsignedInt(aName.substring(0, 8), 16), Integer.parseUnsignedInt(aName.substring(8, 16), 16), Integer.parseUnsignedInt(aName.substring(16, 24), 16));
 	}
 
 
-	public long getLeastSignificantBits()
+	public long time()
 	{
-		return mLeastSigBits;
-	}
-
-
-	public long getMostSignificantBits()
-	{
-		return mMostSigBits;
-	}
-
-
-	public int version()
-	{
-		return (int)(mMostSigBits >> 12) & 0xF;
-	}
-
-
-	public int variant()
-	{
-		return (int)(mLeastSigBits >>> 62);
-	}
-
-
-	public long timestamp()
-	{
-		return mMostSigBits >>> 16;
+		return mTime * 1000L;
 	}
 
 
 	public int sequence()
 	{
-		return (int)mMostSigBits & 0xFFF;
+		return mSequence;
 	}
 
 
-	public long random()
+	public int constant()
 	{
-		return mLeastSigBits & 0x3FFFFFFFFFFFFFFFL;
+		return mConstant;
 	}
 
 
 	public byte[] toByteArray()
 	{
-		byte[] buffer = new byte[16];
-		for (int i = 0; i < 8; i++)
+		byte[] buffer = new byte[12];
+		for (int i = 0; i < 4; i++)
 		{
-			buffer[i] = (byte)(mMostSigBits >>> (8 * (7 - i)));
+			buffer[i] = (byte)(mTime >>> (8 * (3 - i)));
 		}
-		for (int i = 8; i < 16; i++)
+		for (int i = 4; i < 8; i++)
 		{
-			buffer[i] = (byte)(mLeastSigBits >>> (8 * (15 - i)));
+			buffer[i] = (byte)(mConstant >>> (8 * (7 - i)));
+		}
+		for (int i = 8; i < 12; i++)
+		{
+			buffer[i] = (byte)(mSequence >>> (8 * (11 - i)));
 		}
 		return buffer;
 	}
@@ -161,35 +130,39 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	@Override
 	public String toString()
 	{
-		String s = String.format("%016x%016x", mMostSigBits, mLeastSigBits);
-		return String.format("%s-%s-%s-%s-%s", s.substring(0, 8), s.substring(8, 12), s.substring(12, 16), s.substring(16, 20), s.substring(20, 32));
+		return String.format("%08x%08x%08x", mTime, mConstant, mSequence);
 	}
 
 
 	@Override
 	public int hashCode()
 	{
-		long hilo = mMostSigBits ^ mLeastSigBits;
-		return ((int)(hilo >> 32)) ^ (int)hilo;
+		return mTime ^ mConstant ^ mSequence;
 	}
 
 
 	@Override
 	public boolean equals(Object aOther)
 	{
-		if ((null == aOther) || (aOther.getClass() != ObjectId.class))
+		if (aOther instanceof ObjectId)
 		{
-			return false;
+			ObjectId other = (ObjectId)aOther;
+			return (mTime == other.mTime && mConstant == other.mConstant && mSequence == other.mSequence);
 		}
-		ObjectId id = (ObjectId)aOther;
-		return (mMostSigBits == id.mMostSigBits && mLeastSigBits == id.mLeastSigBits);
+		return false;
 	}
 
 
 	@Override
 	public int compareTo(ObjectId aOther)
 	{
-		return (mMostSigBits < aOther.mMostSigBits ? -1 : (mMostSigBits > aOther.mMostSigBits ? 1 : (mLeastSigBits < aOther.mLeastSigBits ? -1 : (mLeastSigBits > aOther.mLeastSigBits ? 1 : 0))));
+		return
+			mTime < aOther.mTime ? -1 :
+				mTime > aOther.mTime ? 1 :
+					mConstant < aOther.mConstant ? -1 :
+						mConstant > aOther.mConstant ? 1 :
+							mSequence < aOther.mSequence ? -1 :
+								mSequence > aOther.mSequence ? 1 : 0;
 	}
 
 
@@ -198,26 +171,16 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 		try
 		{
 			long t = System.currentTimeMillis();
-			for (int i = 0; i < 100; i++)
+			for (int i = 0; i < 1000; i++)
 			{
 				ObjectId objectId = ObjectId.randomId();
 
-				System.out.printf("%s %4d %19d %s %d %d%n", objectId, objectId.sequence(), objectId.random(), new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()), objectId.version(), objectId.variant());
+				System.out.printf("%s %10d %10d %s%n", objectId, 0xffffffffL&objectId.constant(), 0xffffffffL&objectId.sequence(), new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(objectId.time()));
 
-				ObjectId.fromString(objectId.toString());
+				if (!ObjectId.fromString(objectId.toString()).equals(objectId)) System.out.println("#");
+				if (!ObjectId.fromBytes(objectId.toByteArray()).equals(objectId)) System.out.println("#");
 			}
 			System.out.println(System.currentTimeMillis() - t);
-
-//			ObjectId objectId = new ObjectId(0x0fffffffffff7000L, 0xA000000000000000L);
-//			ObjectId objectId = new ObjectId();
-//
-//			System.out.println(objectId);
-//			System.out.println(objectId.sequence());
-//			System.out.println(objectId.random());
-//			System.out.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()));
-//			System.out.println(objectId.version());
-//			System.out.println(objectId.variant());
-//			System.out.println();
 		}
 		catch (Throwable e)
 		{

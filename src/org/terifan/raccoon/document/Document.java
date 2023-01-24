@@ -106,7 +106,7 @@ public class Document extends Container<String, Document> implements Externaliza
 	@Override
 	public String toString()
 	{
-		return "Document{size=" + mValues.size() + "}";
+		return toJson();
 	}
 
 

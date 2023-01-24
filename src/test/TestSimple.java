@@ -7,6 +7,7 @@ import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.RuntimeDiagnostics;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.ObjectId;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 
 
@@ -33,12 +34,12 @@ public class TestSimple
 					new Document().put("name", "walter")
 				);
 
-				db.getCollection("lookup").saveAll(new Document().put("_id", "adam").put("id", 1),
-					new Document().put("_id", "eve").put("id", 2),
-					new Document().put("_id", "steve").put("id", 7),
-					new Document().put("_id", "barbara").put("id", 8),
-					new Document().put("_id", "bob").put("id", 9),
-					new Document().put("_id", "walter").put("id", 10)
+				db.getCollection("lookup").saveAll(new Document().put("_id", "adam").put("id", ObjectId.randomId()),
+					new Document().put("_id", "eve").put("id", ObjectId.randomId()),
+					new Document().put("_id", "steve").put("id", ObjectId.randomId()),
+					new Document().put("_id", "barbara").put("id", ObjectId.randomId()),
+					new Document().put("_id", "bob").put("id", ObjectId.randomId()),
+					new Document().put("_id", "walter").put("id", ObjectId.randomId())
 				);
 
 				byte[] bytes = Files.readAllBytes(Paths.get("d:\\pictures\\babe.jpg"));

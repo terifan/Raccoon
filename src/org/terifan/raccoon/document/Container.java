@@ -308,7 +308,7 @@ abstract class Container<K, R> implements Serializable
 		if (v instanceof String)
 		{
 			String s = (String)v;
-			if (s.length() == 36 && s.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
+			if (s.length() == 24 && s.matches("[0-9a-fA-F]{24}"))
 			{
 				return ObjectId.fromString(s);
 			}
@@ -316,9 +316,9 @@ abstract class Container<K, R> implements Serializable
 		if (v instanceof Array)
 		{
 			Array a = (Array)v;
-			if (a.size() == 2 && (a.getImpl(0) instanceof Long) && (a.getImpl(1) instanceof Long))
+			if (a.size() == 3)
 			{
-				return new ObjectId(a.getLong(0), a.getLong(1));
+				return ObjectId.fromParts(a.getInt(0), a.getInt(1), a.getInt(2));
 			}
 			if (a.size() == 16)
 			{
