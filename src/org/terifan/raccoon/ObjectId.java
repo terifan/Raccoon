@@ -2,7 +2,6 @@ package org.terifan.raccoon;
 
 import java.io.Serializable;
 import java.security.SecureRandom;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
@@ -191,33 +190,33 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	}
 
 
-	public static void main(String... args)
-	{
-		try
-		{
-			long t = System.currentTimeMillis();
-			for (int i = 0; i < 100; i++)
-			{
-				ObjectId objectId = ObjectId.randomId();
-
-				System.out.printf("%s %4d %19d %s %d %d%n", objectId, objectId.sequence(), objectId.random(), new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()), objectId.version(), objectId.variant());
-			}
-			System.out.println(System.currentTimeMillis() - t);
-
-//			ObjectId objectId = new ObjectId(0x0fffffffffff7000L, 0xA000000000000000L);
-//			ObjectId objectId = new ObjectId();
+//	public static void main(String... args)
+//	{
+//		try
+//		{
+//			long t = System.currentTimeMillis();
+//			for (int i = 0; i < 100; i++)
+//			{
+//				ObjectId objectId = ObjectId.randomId();
 //
-//			System.out.println(objectId);
-//			System.out.println(objectId.sequence());
-//			System.out.println(objectId.random());
-//			System.out.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()));
-//			System.out.println(objectId.version());
-//			System.out.println(objectId.variant());
-//			System.out.println();
-		}
-		catch (Throwable e)
-		{
-			e.printStackTrace(System.out);
-		}
-	}
+//				System.out.printf("%s %4d %19d %s %d %d%n", objectId, objectId.sequence(), objectId.random(), new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()), objectId.version(), objectId.variant());
+//			}
+//			System.out.println(System.currentTimeMillis() - t);
+//
+////			ObjectId objectId = new ObjectId(0x0fffffffffff7000L, 0xA000000000000000L);
+////			ObjectId objectId = new ObjectId();
+////
+////			System.out.println(objectId);
+////			System.out.println(objectId.sequence());
+////			System.out.println(objectId.random());
+////			System.out.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(objectId.timestamp()));
+////			System.out.println(objectId.version());
+////			System.out.println(objectId.variant());
+////			System.out.println();
+//		}
+//		catch (Throwable e)
+//		{
+//			e.printStackTrace(System.out);
+//		}
+//	}
 }
