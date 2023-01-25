@@ -125,57 +125,11 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	}
 
 
-	private final static String chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	private final static BigInteger shift = new BigInteger("4294967296");
-	private final static BigInteger scale = new BigInteger("62");
-	private final static int checkScale = 37;
-	private final static BigInteger checkShift = BigInteger.valueOf(checkScale);
-	private final static HashMap<Character,BigInteger> lookup = new HashMap<>();
-	static
-	{
-		for (char i = '0'; i <= '9'; i++)
-		{
-			lookup.put(i, BigInteger.valueOf(i-'0'));
-		}
-		for (char i = 'A'; i <= 'Z'; i++)
-		{
-			lookup.put(i, BigInteger.valueOf(10+i-'A'));
-		}
-		for (char i = 'a'; i <= 'z'; i++)
-		{
-			lookup.put(i, BigInteger.valueOf(10+26+i-'a'));
-		}
-	}
-
-
 	public static ObjectId fromString(String aName)
 	{
-		BigInteger bi = BigInteger.ZERO;
+		int[] values = StrongBase62.decode(aName);
 
-		for (int i = 0; i < 17; i++)
-		{
-			bi = bi.multiply(scale).add(lookup.get(aName.charAt(i)));
-		}
-
-		int chk = bi.mod(checkShift).intValue();
-		bi = bi.divide(checkShift);
-
-		int z = 0;
-		for (char c : bi.toString().toCharArray())
-		{
-			z += c - '0';
-		}
-		if ((z % checkScale) != chk)
-		{
-			throw new IllegalArgumentException();
-		}
-
-		BigInteger aa = bi.divide(shift);
-		int c = bi.mod(shift).intValue();
-		int b = aa.mod(shift).intValue();
-		int a = aa.divide(shift).mod(shift).intValue();
-
-		return new ObjectId(a, b, c);
+		return new ObjectId(values[0], values[1], values[2]);
 
 //		return new ObjectId(Integer.parseUnsignedInt(aName.substring(0, 8), 16), Integer.parseUnsignedInt(aName.substring(8, 16), 16), Integer.parseUnsignedInt(aName.substring(16, 24), 16));
 	}
@@ -184,29 +138,7 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	@Override
 	public String toString()
 	{
-		StringBuilder out = new StringBuilder();
-
-		BigInteger bi = BigInteger.valueOf(0xffffffffL & mTime)
-			.multiply(shift)
-			.add(BigInteger.valueOf(0xffffffffL & mConstant))
-			.multiply(shift)
-			.add(BigInteger.valueOf(0xffffffffL & mSequence));
-
-		int z = 0;
-		for (char c : bi.toString().toCharArray())
-		{
-			z += c - '0';
-		}
-
-		bi = bi.multiply(checkShift).add(BigInteger.valueOf(z % checkScale));
-
-		for (int i = 0; i < 17; i++)
-		{
-			out.insert(0, chars.charAt(bi.mod(scale).intValue()));
-			bi = bi.divide(scale);
-		}
-
-		return out.toString();
+		return StrongBase62.encode(mTime, mConstant, mSequence);
 
 //		return String.format("%08x%08x%08x", mTime, mConstant, mSequence);
 	}
@@ -266,13 +198,7 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 
 				System.out.printf("%s %10d %10d %s%n", objectId, 0xffffffffL&objectId.constant(), 0xffffffffL&objectId.sequence(), new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(objectId.time()));
 
-				String s = objectId.toString();
-				int j = new Random().nextInt(s.length());
-				s = s.substring(0, j)+chars.charAt(new Random().nextInt(62))+s.substring(j+1);
-				System.out.println(s);
-				if (!ObjectId.fromString(s).equals(objectId)) System.out.println("#");
-
-//				if (!ObjectId.fromString(objectId.toString()).equals(objectId)) System.out.println("#");
+				if (!ObjectId.fromString(objectId.toString()).equals(objectId)) System.out.println("#");
 //				if (!ObjectId.fromBytes(objectId.toByteArray()).equals(objectId)) System.out.println("#");
 			}
 			System.out.println(System.currentTimeMillis() - t);
