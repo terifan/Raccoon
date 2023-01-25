@@ -320,7 +320,7 @@ abstract class Container<K, R> implements Serializable
 			{
 				return ObjectId.fromParts(a.getInt(0), a.getInt(1), a.getInt(2));
 			}
-			if (a.size() == 16)
+			if (a.size() == ObjectId.LENGTH)
 			{
 				return ObjectId.fromBytes(getBinary(aKey));
 			}

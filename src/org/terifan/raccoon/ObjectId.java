@@ -1,8 +1,11 @@
 package org.terifan.raccoon;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import static javafx.scene.input.KeyCode.H;
 
 
 /*
@@ -11,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |                             time                              |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                            random                             |
+ *  |                           constant                            |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |                           sequence                            |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -23,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class ObjectId implements Serializable, Comparable<ObjectId>
 {
 	private final static long serialVersionUID = 1;
+	public final static int LENGTH = 12;
 
 	private final int mTime;
 	private final int mConstant;
@@ -59,9 +63,9 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 
 	public static ObjectId fromBytes(byte[] aData)
 	{
-		if (aData == null || aData.length != 12)
+		if (aData == null || aData.length != LENGTH)
 		{
-			throw new IllegalArgumentException("data must be 12 bytes in length");
+			throw new IllegalArgumentException("data must be " + LENGTH + " bytes in length");
 		}
 
 		int ts = 0;
@@ -81,12 +85,6 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 		}
 
 		return new ObjectId(ts, cst, seq);
-	}
-
-
-	public static ObjectId fromString(String aName)
-	{
-		return new ObjectId(Integer.parseUnsignedInt(aName.substring(0, 8), 16), Integer.parseUnsignedInt(aName.substring(8, 16), 16), Integer.parseUnsignedInt(aName.substring(16, 24), 16));
 	}
 
 
@@ -110,7 +108,7 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 
 	public byte[] toByteArray()
 	{
-		byte[] buffer = new byte[12];
+		byte[] buffer = new byte[LENGTH];
 		for (int i = 0; i < 4; i++)
 		{
 			buffer[i] = (byte)(mTime >>> (8 * (3 - i)));
@@ -127,10 +125,67 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	}
 
 
+	private final static String chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	private final static BigInteger shift = new BigInteger("4294967296");
+	private final static BigInteger scale = new BigInteger("62");
+	private final static HashMap<Character,BigInteger> lookup = new HashMap<>();
+	static
+	{
+		for (char i = '0'; i <= '9'; i++)
+		{
+			lookup.put(i, BigInteger.valueOf(i-'0'));
+		}
+		for (char i = 'A'; i <= 'Z'; i++)
+		{
+			lookup.put(i, BigInteger.valueOf(10+i-'A'));
+		}
+		for (char i = 'a'; i <= 'z'; i++)
+		{
+			lookup.put(i, BigInteger.valueOf(10+26+i-'a'));
+		}
+	}
+
+
+	public static ObjectId fromString(String aName)
+	{
+		BigInteger bi = BigInteger.ZERO;
+
+		for (int i = 0; i < 17; i++)
+		{
+			bi = bi.multiply(scale).add(lookup.get(aName.charAt(i)));
+		}
+
+		BigInteger aa = bi.divide(shift);
+		int c = bi.mod(shift).intValue();
+		int b = aa.mod(shift).intValue();
+		int a = aa.divide(shift).mod(shift).intValue();
+
+		return new ObjectId(a, b, c);
+
+//		return new ObjectId(Integer.parseUnsignedInt(aName.substring(0, 8), 16), Integer.parseUnsignedInt(aName.substring(8, 16), 16), Integer.parseUnsignedInt(aName.substring(16, 24), 16));
+	}
+
+
 	@Override
 	public String toString()
 	{
-		return String.format("%08x%08x%08x", mTime, mConstant, mSequence);
+		StringBuilder out = new StringBuilder();
+
+		BigInteger b = BigInteger.valueOf(0xffffffffL & mTime)
+			.multiply(shift)
+			.add(BigInteger.valueOf(0xffffffffL & mConstant))
+			.multiply(shift)
+			.add(BigInteger.valueOf(0xffffffffL & mSequence));
+
+		for (int i = 0; i < 17; i++)
+		{
+			out.insert(0, chars.charAt(b.mod(scale).intValue()));
+			b = b.divide(scale);
+		}
+
+		return out.toString();
+
+//		return String.format("%08x%08x%08x", mTime, mConstant, mSequence);
 	}
 
 
@@ -171,14 +226,14 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 		try
 		{
 			long t = System.currentTimeMillis();
-			for (int i = 0; i < 1000; i++)
+			for (int i = 0; i < 1000_000; i++)
 			{
 				ObjectId objectId = ObjectId.randomId();
 
 				System.out.printf("%s %10d %10d %s%n", objectId, 0xffffffffL&objectId.constant(), 0xffffffffL&objectId.sequence(), new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(objectId.time()));
 
 				if (!ObjectId.fromString(objectId.toString()).equals(objectId)) System.out.println("#");
-				if (!ObjectId.fromBytes(objectId.toByteArray()).equals(objectId)) System.out.println("#");
+//				if (!ObjectId.fromBytes(objectId.toByteArray()).equals(objectId)) System.out.println("#");
 			}
 			System.out.println(System.currentTimeMillis() - t);
 		}

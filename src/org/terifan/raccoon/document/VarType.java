@@ -83,7 +83,7 @@ enum VarType
 	),
 	OBJECTID(19,
 		(aOutput, aValue) -> aOutput.writeBytes(((ObjectId)aValue).toByteArray()),
-		aInput -> ObjectId.fromBytes(aInput.readBytes(new byte[16]))
+		aInput -> ObjectId.fromBytes(aInput.readBytes(new byte[ObjectId.LENGTH]))
 	);
 
 	public final int code;
