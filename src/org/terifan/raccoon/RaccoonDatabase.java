@@ -2,6 +2,7 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.io.DatabaseIOException;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -16,6 +17,7 @@ import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.io.physical.FileBlockDevice;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Assert;
+import org.terifan.raccoon.util.Listener;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
@@ -293,11 +295,6 @@ public final class RaccoonDatabase implements AutoCloseable
 			instance = new RaccoonCollection(this, createDefaultConfig(aName));
 
 			mCollections.put(aName, instance);
-
-//			if (mDatabaseOpenOption == DatabaseOpenOption.REPLACE)
-//			{
-//				instance.clear();
-//			}
 		}
 		finally
 		{
@@ -305,6 +302,36 @@ public final class RaccoonDatabase implements AutoCloseable
 		}
 
 		return instance;
+	}
+
+
+	public LobByteChannel getLob(ObjectId aObjectId, LobOpenOption aLobOpenOption) throws IOException
+	{
+		Document entry = new Document().put("_id", aObjectId);
+
+		RaccoonCollection collection = getCollection("::lob");
+
+		if (!collection.tryGet(entry) && aLobOpenOption == LobOpenOption.READ)
+		{
+			throw new IOException("No LOB with id " + aObjectId);
+		}
+
+		return new LobByteChannel(this, entry.get("header"), aLobOpenOption).setOnCloseAction(aValue -> collection.save(entry.put("header", aValue.finish())));
+	}
+
+
+	public void deleteLob(ObjectId aObjectId) throws IOException
+	{
+		Document entry = new Document().put("_id", aObjectId);
+
+		RaccoonCollection collection = getCollection("::lob");
+
+		if (collection.tryGet(entry))
+		{
+			new LobByteChannel(this, entry.get("header"), LobOpenOption.APPEND).delete();
+
+			collection.delete(entry);
+		}
 	}
 
 

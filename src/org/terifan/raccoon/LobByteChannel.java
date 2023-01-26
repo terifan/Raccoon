@@ -399,7 +399,7 @@ public class LobByteChannel implements SeekableByteChannel
 	}
 
 
-	public void delete()
+	void delete()
 	{
 		freeBlocks(ByteArrayBuffer.wrap(mHeader).position(HEADER_SIZE));
 	}
@@ -602,14 +602,14 @@ public class LobByteChannel implements SeekableByteChannel
 	}
 
 
-	public LobByteChannel setCloseListener(Listener<LobByteChannel> aListener)
+	LobByteChannel setOnCloseAction(Listener<LobByteChannel> aListener)
 	{
 		mCloseListener = aListener;
 		return this;
 	}
 
 
-	public void scan(ScanResult aScanResult)
+	void scan(ScanResult aScanResult)
 	{
 		aScanResult.enterBlob();
 

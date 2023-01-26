@@ -308,10 +308,10 @@ public final class RaccoonCollection extends BTreeStorage
 	}
 
 
-	@Override
-	public void close()
+	void close()
 	{
 		mImplementation.close();
+		mImplementation = null;
 	}
 
 
@@ -372,7 +372,7 @@ public final class RaccoonCollection extends BTreeStorage
 		{
 			mIdentityCounter.set(((Number)id).longValue());
 		}
-		else if (id instanceof String || id instanceof UUID)
+		else if (id instanceof String || id instanceof UUID || id instanceof ObjectId)
 		{
 		}
 		else if (id == null)
