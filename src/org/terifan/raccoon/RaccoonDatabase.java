@@ -2,6 +2,7 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.io.DatabaseIOException;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -305,7 +306,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public LobByteChannel getLob(ObjectId aObjectId, LobOpenOption aLobOpenOption) throws IOException
+	public LobByteChannel openLob(ObjectId aObjectId, LobOpenOption aLobOpenOption) throws IOException
 	{
 		Document entry = new Document().put("_id", aObjectId);
 
@@ -313,7 +314,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		if (!collection.tryGet(entry) && aLobOpenOption == LobOpenOption.READ)
 		{
-			throw new IOException("No LOB with id " + aObjectId);
+			throw new FileNotFoundException("No LOB " + aObjectId);
 		}
 
 		return new LobByteChannel(this, entry.get("header"), aLobOpenOption)

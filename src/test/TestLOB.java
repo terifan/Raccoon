@@ -27,7 +27,7 @@ public class TestLOB
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				ObjectId id = ObjectId.randomId();
-				try (LobByteChannel lob = db.getLob(id, LobOpenOption.CREATE))
+				try (LobByteChannel lob = db.openLob(id, LobOpenOption.CREATE))
 				{
 					lob.writeAllBytes(Files.readAllBytes(Paths.get("d:\\pictures\\babe.jpg")));
 				}
@@ -40,7 +40,7 @@ public class TestLOB
 				Document doc = db.getCollection("files").get(new Document().put("_id", 1));
 
 				byte[] data;
-				try (LobByteChannel lob = db.getLob(doc.getObjectId("file"), LobOpenOption.READ))
+				try (LobByteChannel lob = db.openLob(doc.getObjectId("file"), LobOpenOption.READ))
 				{
 					data = lob.readAllBytes();
 				}
@@ -48,7 +48,7 @@ public class TestLOB
 				System.out.println(doc);
 				System.out.println(data.length);
 
-				try (LobByteChannel lob = db.getLob(doc.getObjectId("file"), LobOpenOption.READ))
+				try (LobByteChannel lob = db.openLob(doc.getObjectId("file"), LobOpenOption.READ))
 				{
 					BufferedImage image = ImageIO.read(lob.newInputStream());
 					System.out.println(image);
@@ -56,7 +56,7 @@ public class TestLOB
 
 				db.deleteLob(doc.getObjectId("file"));
 
-				byte[] data2 = db.getLob(doc.getObjectId("file"), LobOpenOption.READ).readAllBytes();
+				byte[] data2 = db.openLob(doc.getObjectId("file"), LobOpenOption.READ).readAllBytes();
 
 				db.commit();
 			}
