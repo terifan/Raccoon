@@ -316,7 +316,13 @@ public final class RaccoonDatabase implements AutoCloseable
 			throw new IOException("No LOB with id " + aObjectId);
 		}
 
-		return new LobByteChannel(this, entry.get("header"), aLobOpenOption).setOnCloseAction(aValue -> collection.save(entry.put("header", aValue.finish())));
+		return new LobByteChannel(this, entry.get("header"), aLobOpenOption)
+			.setOnCloseAction(lob -> {
+				byte[] header = lob.finish();
+				Log.hexDump(header);
+				lob.scan(new ScanResult());
+				collection.save(entry.put("header", header));
+			});
 	}
 
 
