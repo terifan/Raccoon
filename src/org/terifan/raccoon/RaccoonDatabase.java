@@ -319,8 +319,8 @@ public final class RaccoonDatabase implements AutoCloseable
 		return new LobByteChannel(this, entry.get("header"), aLobOpenOption)
 			.setOnCloseAction(lob -> {
 				byte[] header = lob.finish();
-				Log.hexDump(header);
-				lob.scan(new ScanResult());
+//				Log.hexDump(header);
+//				lob.scan(new ScanResult());
 				collection.save(entry.put("header", header));
 			});
 	}
