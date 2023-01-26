@@ -381,9 +381,18 @@ public final class RaccoonCollection extends BTreeStorage
 			{
 				throw new IllegalStateException("_id field not provided in Document");
 			}
-			id = mIdentityCounter.next();
+			id = ObjectId.randomId();
 			aDocument.put("_id", id);
 		}
+//		else if (id == null)
+//		{
+//			if (!aCreateMissingKey)
+//			{
+//				throw new IllegalStateException("_id field not provided in Document");
+//			}
+//			id = mIdentityCounter.next();
+//			aDocument.put("_id", id);
+//		}
 		else
 		{
 			throw new IllegalStateException("_id type unsupported");

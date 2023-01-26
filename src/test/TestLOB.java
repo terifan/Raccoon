@@ -38,7 +38,8 @@ public class TestLOB
 						{
 							lob.writeAllBytes(in);
 						}
-						db.getCollection("files").save(new Document().put("lob", fileId).put("name", path.toString()).put("size", Files.size(path)).put("modified", LocalDateTime.ofInstant(Files.getLastModifiedTime(path).toInstant(), ZoneId.systemDefault())));
+
+						db.getCollection("files").save(new Document().put("lob", fileId).put("name", path.getFileName().toString()).put("size", Files.size(path)).put("modified", LocalDateTime.ofInstant(Files.getLastModifiedTime(path).toInstant(), ZoneId.systemDefault())));
 					}
 					catch (Exception e)
 					{
@@ -50,22 +51,27 @@ public class TestLOB
 
 			try ( RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
-				db.getCollection("files").stream().forEach(file ->
-				{
-					try ( LobByteChannel lob = db.openLob(file.getObjectId("lob"), LobOpenOption.READ))
-					{
-						BufferedImage image = ImageIO.read(lob.newInputStream());
-						System.out.println(image);
-						lob.delete();
-					}
-					catch (Exception e)
-					{
-						e.printStackTrace(System.out);
-					}
-				});
-
-				db.commit();
+				db.getCollection("files").stream().forEach(System.out::println);
 			}
+
+//			try ( RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+//			{
+//				db.getCollection("files").stream().forEach(file ->
+//				{
+//					try ( LobByteChannel lob = db.openLob(file.getObjectId("lob"), LobOpenOption.READ))
+//					{
+//						BufferedImage image = ImageIO.read(lob.newInputStream());
+//						System.out.println(image);
+//						lob.delete();
+//					}
+//					catch (Exception e)
+//					{
+//						e.printStackTrace(System.out);
+//					}
+//				});
+//
+//				db.commit();
+//			}
 		}
 		catch (Exception e)
 		{
