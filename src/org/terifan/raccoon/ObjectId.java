@@ -1,10 +1,7 @@
 package org.terifan.raccoon;
 
 import java.io.Serializable;
-import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.HashMap;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -35,9 +32,9 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 
 	private static class Holder
 	{
-		final static SecureRandom numberGenerator = new SecureRandom();
-		final static int constant = numberGenerator.nextInt();
-		final static AtomicInteger sequence = new AtomicInteger(numberGenerator.nextInt());
+		final static SecureRandom PRNG = new SecureRandom();
+		final static int CONSTANT = PRNG.nextInt();
+		final static AtomicInteger SEQUENCE = new AtomicInteger(PRNG.nextInt());
 	}
 
 
@@ -57,34 +54,18 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 
 	public static ObjectId randomId()
 	{
-		return new ObjectId((int)(System.currentTimeMillis() / 1000), Holder.constant, Holder.sequence.getAndIncrement());
+		return new ObjectId((int)(System.currentTimeMillis() / 1000), Holder.CONSTANT, Holder.SEQUENCE.getAndIncrement());
 	}
 
 
-	public static ObjectId fromBytes(byte[] aData)
+	public static ObjectId fromBytes(byte[] aBuffer)
 	{
-		if (aData == null || aData.length != LENGTH)
+		if (aBuffer == null || aBuffer.length != LENGTH)
 		{
 			throw new IllegalArgumentException("data must be " + LENGTH + " bytes in length");
 		}
 
-		int ts = 0;
-		int cst = 0;
-		int seq = 0;
-		for (int i = 0; i < 4; i++)
-		{
-			ts = (ts << 8) | (0xFF & aData[i]);
-		}
-		for (int i = 4; i < 8; i++)
-		{
-			cst = (cst << 8) | (0xFF & aData[i]);
-		}
-		for (int i = 8; i < 12; i++)
-		{
-			seq = (seq << 8) | (0xFF & aData[i]);
-		}
-
-		return new ObjectId(ts, cst, seq);
+		return new ObjectId(getInt(aBuffer, 0), getInt(aBuffer, 4), getInt(aBuffer, 8));
 	}
 
 
@@ -109,38 +90,23 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	public byte[] toByteArray()
 	{
 		byte[] buffer = new byte[LENGTH];
-		for (int i = 0; i < 4; i++)
-		{
-			buffer[i] = (byte)(mTime >>> (8 * (3 - i)));
-		}
-		for (int i = 4; i < 8; i++)
-		{
-			buffer[i] = (byte)(mConstant >>> (8 * (7 - i)));
-		}
-		for (int i = 8; i < 12; i++)
-		{
-			buffer[i] = (byte)(mSequence >>> (8 * (11 - i)));
-		}
+		toBytes(buffer, mTime, 0);
+		toBytes(buffer, mConstant, 4);
+		toBytes(buffer, mSequence, 8);
 		return buffer;
 	}
 
 
 	public static ObjectId fromString(String aName)
 	{
-		int[] values = StrongBase62.decode(aName);
-
-		return new ObjectId(values[0], values[1], values[2]);
-
-//		return new ObjectId(Integer.parseUnsignedInt(aName.substring(0, 8), 16), Integer.parseUnsignedInt(aName.substring(8, 16), 16), Integer.parseUnsignedInt(aName.substring(16, 24), 16));
+		return new ObjectId(Integer.parseUnsignedInt(aName.substring(0, 8), 16), Integer.parseUnsignedInt(aName.substring(8, 16), 16), Integer.parseUnsignedInt(aName.substring(16, 24), 16));
 	}
 
 
 	@Override
 	public String toString()
 	{
-		return StrongBase62.encode(mTime, mConstant, mSequence);
-
-//		return String.format("%08x%08x%08x", mTime, mConstant, mSequence);
+		return String.format("%08x%08x%08x", mTime, mConstant, mSequence);
 	}
 
 
@@ -176,36 +142,46 @@ public final class ObjectId implements Serializable, Comparable<ObjectId>
 	}
 
 
-	public static void main(String... args)
+	private static int getInt(byte[] aBuffer, int aOffset)
 	{
-		try
+		int value = 0;
+		for (int i = 0; i < 4; i++)
 		{
-//			BigInteger m = new BigInteger("4294967296").multiply(new BigInteger("4294967296")).multiply(new BigInteger("4294967296"));
-//			for (int z = 0; z < 37; z++)
-//			{
-//			BigInteger n = m.multiply(BigInteger.valueOf(37)).add(BigInteger.valueOf(z));
-////			System.out.println(m);
-////			System.out.println(n);
-////			System.out.println(new BigInteger("62").pow(17));
-////			System.out.println(n.divide(BigInteger.valueOf(37)));
-//			System.out.println(n.mod(BigInteger.valueOf(37)));
-//			}
-
-			long t = System.currentTimeMillis();
-			for (int i = 0; i < 100; i++)
-			{
-				ObjectId objectId = ObjectId.randomId();
-
-				System.out.printf("%s %10d %10d %s%n", objectId, 0xffffffffL&objectId.constant(), 0xffffffffL&objectId.sequence(), new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(objectId.time()));
-
-				if (!ObjectId.fromString(objectId.toString()).equals(objectId)) System.out.println("#");
-//				if (!ObjectId.fromBytes(objectId.toByteArray()).equals(objectId)) System.out.println("#");
-			}
-			System.out.println(System.currentTimeMillis() - t);
+			value = (value << 8) | (0xFF & aBuffer[aOffset++]);
 		}
-		catch (Throwable e)
+		return value;
+	}
+
+
+	private static void toBytes(byte[] aBuffer, int aValue, int aOffset)
+	{
+		aOffset += 4;
+		for (int i = 0; i < 4; i++, aValue >>>= 8)
 		{
-			e.printStackTrace(System.out);
+			aBuffer[--aOffset] = (byte)aValue;
 		}
 	}
+
+
+//	public static void main(String... args)
+//	{
+//		try
+//		{
+//			long t = System.currentTimeMillis();
+//			for (int i = 0; i < 1000; i++)
+//			{
+//				ObjectId objectId = ObjectId.randomId();
+//
+//				System.out.printf("%s %10d %10d %s%n", objectId, 0xffffffffL&objectId.constant(), 0xffffffffL&objectId.sequence(), new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(objectId.time()));
+//
+//				if (!ObjectId.fromString(objectId.toString()).equals(objectId)) System.out.println("#");
+//				if (!ObjectId.fromBytes(objectId.toByteArray()).equals(objectId)) System.out.println("#");
+//			}
+//			System.out.println(System.currentTimeMillis() - t);
+//		}
+//		catch (Throwable e)
+//		{
+//			e.printStackTrace(System.out);
+//		}
+//	}
 }
