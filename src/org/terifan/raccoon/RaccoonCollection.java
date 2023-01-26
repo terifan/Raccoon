@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Log;
@@ -373,6 +374,9 @@ public final class RaccoonCollection extends BTreeStorage
 			mIdentityCounter.set(((Number)id).longValue());
 		}
 		else if (id instanceof String || id instanceof UUID || id instanceof ObjectId)
+		{
+		}
+		else if (id instanceof Document)
 		{
 		}
 		else if (id == null)

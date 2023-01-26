@@ -179,7 +179,7 @@ class JSONEncoder
 	{
 		if (aValue instanceof String
 			|| aValue instanceof BigDecimal
-			|| aValue instanceof ObjectId
+//			|| aValue instanceof ObjectId
 			|| aValue instanceof UUID
 			|| aValue instanceof LocalDate
 			|| aValue instanceof LocalTime
@@ -187,6 +187,10 @@ class JSONEncoder
 			|| aValue instanceof OffsetDateTime)
 		{
 			mWriter.print("\"" + escapeString(aValue.toString()) + "\"");
+		}
+		else if (aValue instanceof ObjectId)
+		{
+			mWriter.print("ObjectId(" + escapeString(aValue.toString()) + ")");
 		}
 		else if (aValue instanceof Number
 			|| aValue instanceof Boolean)

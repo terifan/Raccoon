@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.imageio.ImageIO;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
@@ -28,18 +29,39 @@ public class TestLOB
 
 			try ( RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
+//				db.getCollection("folders").createIndex(new Document().put("ref", 1));
+
 				Files.walk(Paths.get("d:\\pictures")).filter(path -> Files.isRegularFile(path)).forEach(path ->
 				{
 					try
 					{
 						System.out.println(path);
-						ObjectId fileId = ObjectId.randomId();
-						try ( LobByteChannel lob = db.openLob(fileId, LobOpenOption.CREATE);  InputStream in = Files.newInputStream(path))
+
+						ObjectId lobId = ObjectId.randomId();
+						try ( LobByteChannel lob = db.openLob(lobId, LobOpenOption.CREATE);  InputStream in = Files.newInputStream(path))
 						{
 							lob.writeAllBytes(in);
 						}
 
-						db.getCollection("files").save(new Document().put("lob", fileId).put("name", path.getFileName().toString()).put("size", Files.size(path)).put("modified", LocalDateTime.ofInstant(Files.getLastModifiedTime(path).toInstant(), ZoneId.systemDefault())));
+						final AtomicReference<ObjectId> folderRef = new AtomicReference<>();
+						path.getParent().forEach(name ->
+						{
+							Document folder = new Document().put("_id", new Document().put("parent", folderRef.get()).put("name", name.toString()));
+							if (!db.getCollection("folders").tryGet(folder))
+							{
+								try
+								{
+									db.getCollection("folders").save(folder.put("ref", ObjectId.randomId()).put("modified", LocalDateTime.ofInstant(Files.getLastModifiedTime(path).toInstant(), ZoneId.systemDefault())));
+								}
+								catch (Exception e)
+								{
+									e.printStackTrace(System.out);
+								}
+							}
+							folderRef.set(folder.getObjectId("ref"));
+						});
+
+						db.getCollection("files").save(new Document().put("_id", new Document().put("folder", folderRef.get()).put("name", path.getFileName().toString())).put("lob", lobId).put("size", Files.size(path)).put("modified", LocalDateTime.ofInstant(Files.getLastModifiedTime(path).toInstant(), ZoneId.systemDefault())));
 					}
 					catch (Exception e)
 					{
@@ -51,7 +73,8 @@ public class TestLOB
 
 			try ( RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
-				db.getCollection("files").stream().forEach(System.out::println);
+				db.getCollection("folders").stream().forEach(System.out::println);
+//				db.getCollection("files").stream().forEach(System.out::println);
 			}
 
 //			try ( RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))

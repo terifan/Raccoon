@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import org.terifan.raccoon.ObjectId;
 
 
 class JSONDecoder
@@ -201,6 +202,10 @@ class JSONDecoder
 		if (in.startsWith("0x"))
 		{
 			return Long.valueOf(in.substring(2), 16);
+		}
+		if (in.startsWith("ObjectId("))
+		{
+			return ObjectId.fromString(in.substring(9, in.length() - 1));
 		}
 
 		long v = Long.parseLong(in);

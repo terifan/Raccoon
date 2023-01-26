@@ -63,8 +63,9 @@ public class DocumentNGTest
 
 		Document doc = new Document().fromByteArray(data);
 
-		Log.hexDump(data);
+//		Log.hexDump(data);
 
+		assertEquals(doc.get("_id"), id);
 		assertEquals(doc.getObjectId("_id"), id);
 	}
 
