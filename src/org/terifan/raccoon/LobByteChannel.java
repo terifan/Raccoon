@@ -399,7 +399,7 @@ public class LobByteChannel implements SeekableByteChannel
 	}
 
 
-	void delete()
+	public void delete()
 	{
 		freeBlocks(ByteArrayBuffer.wrap(mHeader).position(HEADER_SIZE));
 	}

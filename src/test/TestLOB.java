@@ -2,15 +2,17 @@ package test;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import javax.imageio.ImageIO;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.LobByteChannel;
 import org.terifan.raccoon.LobOpenOption;
 import org.terifan.raccoon.ObjectId;
-import org.terifan.raccoon.RaccoonCollection;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 
@@ -24,39 +26,43 @@ public class TestLOB
 //			AccessCredentials ac = new AccessCredentials("password");
 			AccessCredentials ac = null;
 
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			try ( RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
-				ObjectId id = ObjectId.randomId();
-				try (LobByteChannel lob = db.openLob(id, LobOpenOption.CREATE))
+				Files.walk(Paths.get("d:\\pictures")).filter(path -> Files.isRegularFile(path)).forEach(path ->
 				{
-					lob.writeAllBytes(Files.readAllBytes(Paths.get("d:\\pictures\\babe.jpg")));
-				}
-				db.getCollection("files").save(new Document().put("file", id).put("_id", 1));
+					try
+					{
+						System.out.println(path);
+						ObjectId fileId = ObjectId.randomId();
+						try ( LobByteChannel lob = db.openLob(fileId, LobOpenOption.CREATE);  InputStream in = Files.newInputStream(path))
+						{
+							lob.writeAllBytes(in);
+						}
+						db.getCollection("files").save(new Document().put("lob", fileId).put("name", path.toString()).put("size", Files.size(path)).put("modified", LocalDateTime.ofInstant(Files.getLastModifiedTime(path).toInstant(), ZoneId.systemDefault())));
+					}
+					catch (Exception e)
+					{
+						e.printStackTrace(System.out);
+					}
+				});
 				db.commit();
 			}
 
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			try ( RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
-				Document doc = db.getCollection("files").get(new Document().put("_id", 1));
-
-				byte[] data;
-				try (LobByteChannel lob = db.openLob(doc.getObjectId("file"), LobOpenOption.READ))
+				db.getCollection("files").stream().forEach(file ->
 				{
-					data = lob.readAllBytes();
-				}
-
-				System.out.println(doc);
-				System.out.println(data.length);
-
-				try (LobByteChannel lob = db.openLob(doc.getObjectId("file"), LobOpenOption.READ))
-				{
-					BufferedImage image = ImageIO.read(lob.newInputStream());
-					System.out.println(image);
-				}
-
-				db.deleteLob(doc.getObjectId("file"));
-
-				byte[] data2 = db.openLob(doc.getObjectId("file"), LobOpenOption.READ).readAllBytes();
+					try ( LobByteChannel lob = db.openLob(file.getObjectId("lob"), LobOpenOption.READ))
+					{
+						BufferedImage image = ImageIO.read(lob.newInputStream());
+						System.out.println(image);
+						lob.delete();
+					}
+					catch (Exception e)
+					{
+						e.printStackTrace(System.out);
+					}
+				});
 
 				db.commit();
 			}
