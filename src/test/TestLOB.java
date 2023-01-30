@@ -29,9 +29,9 @@ public class TestLOB
 
 			try ( RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
-//				db.getCollection("folders").createIndex(new Document().put("ref", 1));
+				db.getCollection("folders").createIndex(new Document().put("ref", 1));
 
-				Files.walk(Paths.get("d:\\pictures")).filter(path -> Files.isRegularFile(path)).forEach(path ->
+				Files.list(Paths.get("d:\\pictures")).filter(path -> Files.isRegularFile(path)).forEach(path ->
 				{
 					try
 					{

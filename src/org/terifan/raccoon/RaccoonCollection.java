@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.terifan.raccoon.document.Array;
+import static org.terifan.raccoon.RaccoonDatabase.INDEX_COLLECTION;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Log;
@@ -27,6 +27,7 @@ public final class RaccoonCollection extends BTreeStorage
 
 	private final ReadWriteLock mLock;
 
+	private Document mConfiguration;
 	private RaccoonDatabase mDatabase;
 	private HashSet<CommitLock> mCommitLocks;
 	private IdentityCounter mIdentityCounter;
@@ -37,10 +38,11 @@ public final class RaccoonCollection extends BTreeStorage
 	RaccoonCollection(RaccoonDatabase aDatabase, Document aConfiguration)
 	{
 		mDatabase = aDatabase;
-
+		mConfiguration = aConfiguration;
+		System.out.println(mConfiguration);
 		mLock = new ReadWriteLock();
 		mCommitLocks = new HashSet<>();
-		mImplementation = new BTree(getBlockAccessor(), aConfiguration);
+		mImplementation = new BTree(getBlockAccessor(), aConfiguration.getDocument("btree"));
 		mIdentityCounter = new IdentityCounter(aConfiguration);
 	}
 
@@ -180,6 +182,23 @@ public final class RaccoonCollection extends BTreeStorage
 	}
 
 
+	public void createIndex(Document aDocument)
+	{
+		Log.i("create index");
+		Log.inc();
+
+		try (WriteLock lock = mLock.writeLock())
+		{
+			RaccoonCollection collection = mDatabase.getCollection(INDEX_COLLECTION);
+			collection.save(aDocument);
+		}
+		finally
+		{
+			Log.dec();
+		}
+	}
+
+
 	private boolean insertOrUpdate(Document aDocument, boolean aInsert)
 	{
 		ArrayMapKey key = getDocumentKey(aDocument, true);
@@ -298,7 +317,7 @@ public final class RaccoonCollection extends BTreeStorage
 
 			BTree prev = mImplementation;
 
-			mImplementation = new BTree(getBlockAccessor(), mImplementation.getConfiguration().clone().remove("treeRoot"));
+			mImplementation = new BTree(getBlockAccessor(), mImplementation.getConfiguration().clone().remove("root"));
 
 			new BTreeNodeVisitor().visitAll(prev, node ->
 			{
@@ -434,7 +453,7 @@ public final class RaccoonCollection extends BTreeStorage
 
 	Document getConfiguration()
 	{
-		return mImplementation.getConfiguration();
+		return mConfiguration;
 	}
 
 

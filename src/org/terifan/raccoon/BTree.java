@@ -30,7 +30,7 @@ public class BTree implements AutoCloseable
 		mConfiguration.put("indexSize", mConfiguration.get("indexSize", k -> mBlockAccessor.getBlockDevice().getBlockSize()));
 		mConfiguration.put("entrySizeLimit", mConfiguration.get("entrySizeLimit", k -> mBlockAccessor.getBlockDevice().getBlockSize() / 4));
 
-		if (mConfiguration.containsKey("treeRoot"))
+		if (mConfiguration.containsKey("root"))
 		{
 			Log.i("open table %s", aConfiguration.get("name", "?"));
 			Log.inc();
@@ -55,13 +55,13 @@ public class BTree implements AutoCloseable
 	{
 		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeIndex ? BlockType.TREE_INDEX : BlockType.TREE_LEAF);
 
-		mConfiguration.put("treeRoot", mRoot.mBlockPointer.marshalDoc());
+		mConfiguration.put("root", mRoot.mBlockPointer.marshalDoc());
 	}
 
 
 	private void unmarshalHeader()
 	{
-		BlockPointer bp = new BlockPointer().unmarshalDoc(mConfiguration.getDocument("treeRoot"));
+		BlockPointer bp = new BlockPointer().unmarshalDoc(mConfiguration.getArray("root"));
 
 		mRoot = bp.getBlockType() == BlockType.TREE_INDEX ? new BTreeIndex(bp.getBlockLevel()) : new BTreeLeaf();
 		mRoot.mBlockPointer = bp;
@@ -206,7 +206,7 @@ public class BTree implements AutoCloseable
 
 		Log.i("rollback");
 
-		if (mConfiguration.containsKey("treeRoot"))
+		if (mConfiguration.containsKey("root"))
 		{
 			Log.d("rollback");
 

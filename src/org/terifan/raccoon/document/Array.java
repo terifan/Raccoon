@@ -235,51 +235,51 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 	 * @param aValue an array of objects
 	 * @return an array
 	 */
-	public static Array of(Object aValue)
-	{
-		return ofImpl(aValue);
-	}
-
-
-	public static Array ofImpl(Object aValue)
-	{
-		Array array = new Array();
-
-		if (aValue == null || isSupportedType(aValue))
-		{
-			array.add(aValue);
-		}
-		else if (aValue.getClass().isArray())
-		{
-			for (int i = 0, len = java.lang.reflect.Array.getLength(aValue); i < len; i++)
-			{
-				Object v = java.lang.reflect.Array.get(aValue, i);
-
-				if (v == null || !v.getClass().isArray())
-				{
-					array.addImpl(v);
-				}
-				else
-				{
-					array.addImpl(ofImpl(v));
-				}
-			}
-		}
-		else if (aValue instanceof Iterable)
-		{
-			((Iterable)aValue).forEach(array::add);
-		}
-		else if (aValue instanceof Stream)
-		{
-			((Stream)aValue).forEach(array::add);
-		}
-		else
-		{
-			throw new IllegalArgumentException("Unsupported type: " + aValue.getClass());
-		}
-
-		return array;
-	}
+//	public static Array of(Object aValue)
+//	{
+//		return ofImpl(aValue);
+//	}
+//
+//
+//	public static Array ofImpl(Object aValue)
+//	{
+//		Array array = new Array();
+//
+//		if (aValue == null || isSupportedType(aValue))
+//		{
+//			array.add(aValue);
+//		}
+//		else if (aValue.getClass().isArray())
+//		{
+//			for (int i = 0, len = java.lang.reflect.Array.getLength(aValue); i < len; i++)
+//			{
+//				Object v = java.lang.reflect.Array.get(aValue, i);
+//
+//				if (v == null || !v.getClass().isArray())
+//				{
+//					array.addImpl(v);
+//				}
+//				else
+//				{
+//					array.addImpl(ofImpl(v));
+//				}
+//			}
+//		}
+//		else if (aValue instanceof Iterable)
+//		{
+//			((Iterable)aValue).forEach(array::add);
+//		}
+//		else if (aValue instanceof Stream)
+//		{
+//			((Stream)aValue).forEach(array::add);
+//		}
+//		else
+//		{
+//			throw new IllegalArgumentException("Unsupported type: " + aValue.getClass());
+//		}
+//
+//		return array;
+//	}
 
 
 	/**
@@ -290,7 +290,45 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 	 */
 	public static Array of(Object... aValues)
 	{
-		return ofImpl(aValues);
+		Array array = new Array();
+
+		for (Object value : aValues)
+		{
+			if (value == null || isSupportedType(value))
+			{
+				array.add(value);
+			}
+			else if (value.getClass().isArray())
+			{
+				for (int i = 0, len = java.lang.reflect.Array.getLength(value); i < len; i++)
+				{
+					Object v = java.lang.reflect.Array.get(value, i);
+
+					if (v == null || !v.getClass().isArray())
+					{
+						array.addImpl(v);
+					}
+					else
+					{
+						array.addImpl(of(v));
+					}
+				}
+			}
+			else if (value instanceof Iterable)
+			{
+				((Iterable)value).forEach(array::add);
+			}
+			else if (value instanceof Stream)
+			{
+				((Stream)value).forEach(array::add);
+			}
+			else
+			{
+				throw new IllegalArgumentException("Unsupported type: " + value.getClass());
+			}
+		}
+
+		return array;
 	}
 
 

@@ -11,11 +11,11 @@ import static org.terifan.raccoon.util.ByteArrayBuffer.writeInt32;
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                             time                              |
+ *  |                              time                             |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                           session                             |
+ *  |                             session                           |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                           sequence                            |
+ *  |                            sequence                           |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
  * time      - 32 bits - time in seconds since midnight January 1, 1970 UTC
@@ -25,6 +25,7 @@ import static org.terifan.raccoon.util.ByteArrayBuffer.writeInt32;
 public final class ObjectId implements Serializable, Comparable<ObjectId>
 {
 	private final static long serialVersionUID = 1;
+
 	public final static int LENGTH = 12;
 
 	private final int mTime;

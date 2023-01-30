@@ -18,7 +18,6 @@ import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.io.physical.FileBlockDevice;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Assert;
-import org.terifan.raccoon.util.Listener;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
@@ -26,6 +25,9 @@ import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 
 public final class RaccoonDatabase implements AutoCloseable
 {
+	final static String LOB_COLLECTION = "::lob";
+	final static String INDEX_COLLECTION = "::index";
+
 	public final static String TENANT_NAME = "RaccoonDB";
 	public final static int TENANT_VERSION = 1;
 
@@ -310,7 +312,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		Document entry = new Document().put("_id", aObjectId);
 
-		RaccoonCollection collection = getCollection("::lob");
+		RaccoonCollection collection = getCollection(LOB_COLLECTION);
 
 		if (!collection.tryGet(entry) && aLobOpenOption == LobOpenOption.READ)
 		{
@@ -331,7 +333,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		Document entry = new Document().put("_id", aObjectId);
 
-		RaccoonCollection collection = getCollection("::lob");
+		RaccoonCollection collection = getCollection(LOB_COLLECTION);
 
 		if (collection.tryGet(entry))
 		{
@@ -627,9 +629,11 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		return new Document()
 			.put("name", aName)
-			.put("indexSize", mBlockDevice.getBlockSize())
-			.put("leafSize", mBlockDevice.getBlockSize())
-			.put("entrySizeLimit", mBlockDevice.getBlockSize() / 4)
-			.put("compression", CompressionParam.BEST_SPEED.marshal());
+			.put("btree", new Document()
+				.put("indexSize", mBlockDevice.getBlockSize())
+				.put("leafSize", mBlockDevice.getBlockSize())
+				.put("entrySizeLimit", mBlockDevice.getBlockSize() / 4)
+				.put("compression", CompressionParam.BEST_SPEED.marshal())
+			);
 	}
 }

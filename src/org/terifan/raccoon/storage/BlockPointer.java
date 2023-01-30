@@ -1,13 +1,12 @@
 package org.terifan.raccoon.storage;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import org.terifan.raccoon.document.Array;
-import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.ByteArrayUtil;
 import org.terifan.raccoon.util.Console;
-import org.terifan.raccoon.util.Log;
 
 
 public class BlockPointer implements Serializable
@@ -25,11 +24,9 @@ public class BlockPointer implements Serializable
 	private final static int OFS_OFFSET0 = 16;
 	private final static int OFS_OFFSET1 = 24;
 	private final static int OFS_OFFSET2 = 32;
-	private final static int OFS_unused = 40;
-	private final static int OFS_USER_DATA = 48;
-	private final static int OFS_TRANSACTION = 56;
-	private final static int OFS_BLOCK_KEY = 64;
-	private final static int OFS_CHECKSUM = 96;
+	private final static int OFS_TRANSACTION = 40;
+	private final static int OFS_BLOCK_KEY = 48;
+	private final static int OFS_CHECKSUM = 80;
 
 	private byte[] mBuffer;
 
@@ -283,38 +280,36 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public BlockPointer unmarshalDoc(Document aDocument)
+	public BlockPointer unmarshalDoc(Array aArray)
 	{
-		setBlockType(BlockType.values()[aDocument.getInt("0")]);
-		setBlockLevel(aDocument.getInt("1"));
-		setCompressionAlgorithm(aDocument.getInt("2"));
-		setAllocatedSize(aDocument.getInt("3"));
-		setLogicalSize(aDocument.getInt("4"));
-		setPhysicalSize(aDocument.getInt("5"));
-		setTransactionId(aDocument.getInt("6"));
-		setBlockIndex0(aDocument.getArray("7").getLong(0));
-		setBlockKey(aDocument.getArray("8").getLong(0), aDocument.getArray("8").getLong(1), aDocument.getArray("8").getLong(2), aDocument.getArray("8").getLong(3));
-		setChecksum(aDocument.getArray("9").getLong(0), aDocument.getArray("9").getLong(1), aDocument.getArray("9").getLong(2), aDocument.getArray("9").getLong(3));
+		setBlockType(BlockType.values()[aArray.getInt(0)]);
+		setBlockLevel(aArray.getInt(1));
+		setCompressionAlgorithm(aArray.getInt(2));
+		setAllocatedSize(aArray.getInt(3));
+		setLogicalSize(aArray.getInt(4));
+		setPhysicalSize(aArray.getInt(5));
+		setTransactionId(aArray.getInt(6));
+		setBlockIndex0(aArray.getArray(7).getLong(0));
+		System.arraycopy(aArray.getBinary(8), 0, mBuffer, OFS_BLOCK_KEY, 32);
+		System.arraycopy(aArray.getBinary(9), 0, mBuffer, OFS_CHECKSUM, 32);
 		return this;
 	}
 
 
-	public Document marshalDoc()
+	public Array marshalDoc()
 	{
-		Document doc = new Document()
-			.put("0", getBlockType().ordinal())
-			.put("1", getBlockLevel())
-			.put("2", getCompressionAlgorithm())
-			.put("3", getAllocatedSize())
-			.put("4", getLogicalSize())
-			.put("5", getPhysicalSize())
-			.put("6", getTransactionId())
-			.put("7", Array.of(getBlockIndex0()))
-			.put("8", Array.of(getBlockKey(new long[4])))
-			.put("9", Array.of(getChecksum(new long[4])))
-			;
-
-		return doc;
+		return Array.of(
+			getBlockType().ordinal(),
+			getBlockLevel(),
+			getCompressionAlgorithm(),
+			getAllocatedSize(),
+			getLogicalSize(),
+			getPhysicalSize(),
+			getTransactionId(),
+			Array.of(getBlockIndex0()),
+			Arrays.copyOfRange(mBuffer, OFS_BLOCK_KEY, OFS_BLOCK_KEY + 32),
+			Arrays.copyOfRange(mBuffer, OFS_CHECKSUM, OFS_CHECKSUM + 32)
+		);
 	}
 
 
@@ -348,8 +343,6 @@ public class BlockPointer implements Serializable
 //			.putArray("key", Array.of(getBlockKey(new long[4])))
 //			.putArray("chk", Array.of(getChecksum(new long[4])))
 //			;
-//
-//		Log.hexDump(doc.marshal());
 //
 //		return doc;
 //	}

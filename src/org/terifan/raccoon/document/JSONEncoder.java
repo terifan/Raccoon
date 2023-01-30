@@ -214,7 +214,7 @@ class JSONEncoder
 
 	private String marshalBinary(byte[] aBuffer)
 	{
-		return Base64.getEncoder().encodeToString(aBuffer);
+		return Base64.getEncoder().encodeToString(aBuffer).replace("=", "");
 	}
 
 

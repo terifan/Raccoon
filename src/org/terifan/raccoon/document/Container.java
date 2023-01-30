@@ -397,6 +397,16 @@ abstract class Container<K, R> implements Serializable
 
 			return s.getBytes();
 		}
+		if (v instanceof Array)
+		{
+			Array a = (Array)v;
+			byte[] tmp = new byte[a.size()];
+			for (int i = 0; i < tmp.length; i++)
+			{
+				tmp[i] = (Byte)a.get(i);
+			}
+			return tmp;
+		}
 
 		throw new IllegalArgumentException("Unsupported format: " + v.getClass());
 	}
