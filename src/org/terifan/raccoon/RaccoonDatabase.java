@@ -628,6 +628,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	private Document createDefaultConfig(String aName)
 	{
 		return new Document()
+			.put("_id", ObjectId.randomId())
 			.put("name", aName)
 			.put("btree", new Document()
 				.put("indexSize", mBlockDevice.getBlockSize())

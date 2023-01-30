@@ -1,16 +1,19 @@
 package org.terifan.raccoon;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators.AbstractSpliterator;
+import static java.util.Spliterators.iterator;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import static org.terifan.raccoon.RaccoonDatabase.INDEX_COLLECTION;
+import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Log;
@@ -39,7 +42,7 @@ public final class RaccoonCollection extends BTreeStorage
 	{
 		mDatabase = aDatabase;
 		mConfiguration = aConfiguration;
-		System.out.println(mConfiguration);
+
 		mLock = new ReadWriteLock();
 		mCommitLocks = new HashSet<>();
 		mImplementation = new BTree(getBlockAccessor(), aConfiguration.getDocument("btree"));
@@ -190,7 +193,13 @@ public final class RaccoonCollection extends BTreeStorage
 		try (WriteLock lock = mLock.writeLock())
 		{
 			RaccoonCollection collection = mDatabase.getCollection(INDEX_COLLECTION);
-			collection.save(aDocument);
+
+			collection.find(new Document().put("collection", mConfiguration.getObjectId("_id")));
+
+			Document conf = new Document().put("_id", new Document().put("collection", mConfiguration.getObjectId("object")).put("_id", ObjectId.randomId())).put("configuration", aDocument);
+			collection.save(conf);
+
+			System.out.println(conf);
 		}
 		finally
 		{
@@ -395,7 +404,7 @@ public final class RaccoonCollection extends BTreeStorage
 		else if (id instanceof String || id instanceof UUID || id instanceof ObjectId)
 		{
 		}
-		else if (id instanceof Document)
+		else if (id instanceof Document || id instanceof Array)
 		{
 		}
 		else if (id == null)
@@ -484,5 +493,28 @@ public final class RaccoonCollection extends BTreeStorage
 	public IdentityCounter getIdentityCounter()
 	{
 		return mIdentityCounter;
+	}
+
+
+	public List<Document> find(Document aQuery)
+	{
+		Log.i("find %s", aQuery);
+		Log.inc();
+
+//		System.out.println(aQuery);
+
+		try (ReadLock lock = mLock.readLock())
+		{
+			ArrayList<Document> list = new ArrayList<>();
+
+			DocumentIterator iterator = new DocumentIterator(this);
+			iterator.forEachRemaining(e -> list.add(e));
+
+			return list;
+		}
+		finally
+		{
+			Log.dec();
+		}
 	}
 }
