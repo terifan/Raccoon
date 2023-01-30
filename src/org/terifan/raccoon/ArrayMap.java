@@ -714,55 +714,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	public class MapEntryIterator implements Iterator<ArrayMapEntry>
-	{
-		private final int mExpectedModCount = mModCount;
-		private int mIndex;
-
-
-		@Override
-		public boolean hasNext()
-		{
-			return mIndex < mEntryCount;
-		}
-
-
-		@Override
-		public ArrayMapEntry next()
-		{
-			if (mExpectedModCount != mModCount)
-			{
-				throw new ConcurrentModificationException();
-			}
-			if (mIndex >= mEntryCount)
-			{
-				throw new NoSuchElementException();
-			}
-
-			int entryOffset = readEntryOffset(mIndex);
-			int keyLength = readKeyLength(entryOffset);
-			int keyOffset = readKeyOffset(entryOffset);
-
-			ArrayMapEntry entry = new ArrayMapEntry();
-			entry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
-			loadKeyAndValue(mIndex, entry);
-
-//			System.out.println(mIndex+" "+entry);
-
-			mIndex++;
-
-			return entry;
-		}
-
-
-		@Override
-		public void remove()
-		{
-			throw new UnsupportedOperationException();
-		}
-	}
-
-
 	public ArrayMapEntry getFirst()
 	{
 		ArrayMapEntry entry = new ArrayMapEntry();
@@ -841,5 +792,54 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	public boolean isHalfEmpty()
 	{
 		return getFreeSpace() > mCapacity / 2;
+	}
+
+
+	public class MapEntryIterator implements Iterator<ArrayMapEntry>
+	{
+		private final int mExpectedModCount = mModCount;
+		private int mIndex;
+
+
+		@Override
+		public boolean hasNext()
+		{
+			return mIndex < mEntryCount;
+		}
+
+
+		@Override
+		public ArrayMapEntry next()
+		{
+			if (mExpectedModCount != mModCount)
+			{
+				throw new ConcurrentModificationException();
+			}
+			if (mIndex >= mEntryCount)
+			{
+				throw new NoSuchElementException();
+			}
+
+			int entryOffset = readEntryOffset(mIndex);
+			int keyLength = readKeyLength(entryOffset);
+			int keyOffset = readKeyOffset(entryOffset);
+
+			ArrayMapEntry entry = new ArrayMapEntry();
+			entry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
+			loadKeyAndValue(mIndex, entry);
+
+//			System.out.println(mIndex+" "+entry);
+
+			mIndex++;
+
+			return entry;
+		}
+
+
+		@Override
+		public void remove()
+		{
+			throw new UnsupportedOperationException();
+		}
 	}
 }

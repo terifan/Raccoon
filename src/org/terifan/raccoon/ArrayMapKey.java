@@ -112,8 +112,11 @@ public class ArrayMapKey implements Comparable<ArrayMapKey>
 			case 0:
 				return new String(mBuffer);
 			case 1:
-				return "#" + ByteArrayUtil.getInt64(mBuffer, 0);
+				return String.format("#%016x", ByteArrayUtil.getInt64(mBuffer, 0));
 			case 2:
+				return new String(mBuffer);
+			case 3:
+				return UUID.nameUUIDFromBytes(mBuffer).toString();
 			default:
 				StringBuilder sb = new StringBuilder("0x");
 				for (byte b : mBuffer)
@@ -121,8 +124,6 @@ public class ArrayMapKey implements Comparable<ArrayMapKey>
 					sb.append(String.format("%02x", 0xff & b));
 				}
 				return sb.toString();
-			case 3:
-				return UUID.nameUUIDFromBytes(mBuffer).toString();
 		}
 	}
 }

@@ -14,7 +14,7 @@ public final class DocumentIterator implements Iterator<Document>
 	public DocumentIterator(RaccoonCollection aCollection)
 	{
 		mCollection = aCollection;
-		mEntryIterator = new BTreeEntryIterator(aCollection.getImplementation());
+		mEntryIterator = new BTreeEntryIterator(aCollection._getImplementation());
 	}
 
 

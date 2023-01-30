@@ -565,7 +565,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		for (RaccoonCollection instance : mCollections.values())
 		{
-			String s = instance.getImplementation().integrityCheck();
+			String s = instance._getImplementation().integrityCheck();
 			if (s != null)
 			{
 				return s;

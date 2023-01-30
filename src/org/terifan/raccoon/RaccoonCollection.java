@@ -454,7 +454,7 @@ public final class RaccoonCollection extends BTreeStorage
 	}
 
 
-	BTree getImplementation()
+	public BTree _getImplementation()
 	{
 		return mImplementation;
 	}
