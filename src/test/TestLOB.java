@@ -22,7 +22,7 @@ public class TestLOB
 					db.getCollection("data").save(new Document().put("_id",String.format("%02d",i)).put("text", "xxxxxxxxxxxxxxxxx"));
 				}
 
-//				_Tools.showTree(db.getCollection("data")._getImplementation());
+				_Tools.showTree(db.getCollection("data")._getImplementation());
 
 				List<Document> list = db.getCollection("data").find(new Document().put("_id", 50));
 				list.forEach(e->System.out.print(e.get("_id")+"\t"));
