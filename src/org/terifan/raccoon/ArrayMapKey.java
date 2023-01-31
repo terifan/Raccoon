@@ -1,54 +1,27 @@
 package org.terifan.raccoon;
 
-import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.UUID;
-import org.terifan.raccoon.util.ByteArrayUtil;
+import org.terifan.raccoon.document.Array;
 
 
 public class ArrayMapKey implements Comparable<ArrayMapKey>
 {
-	public final static ArrayMapKey EMPTY = new ArrayMapKey(new byte[0]);
+	public final static ArrayMapKey EMPTY = new ArrayMapKey("");
 
 	private final byte[] mBuffer;
-	private final int mFormat;
+	private Object mDeserialized;
 
 
-	public ArrayMapKey(String aValue)
+	public ArrayMapKey(Object aValue)
 	{
-		mFormat = 0;
-		mBuffer = aValue.getBytes(Charset.forName("utf-8"));
-	}
-
-
-	public ArrayMapKey(long aLongValue)
-	{
-		mFormat = 1;
-		mBuffer = new byte[8];
-		ByteArrayUtil.putInt64(mBuffer, 0, aLongValue);
-	}
-
-
-	public ArrayMapKey(byte[] aBuffer)
-	{
-		mFormat = 2;
-		mBuffer = aBuffer.clone();
+		mDeserialized = aValue;
+		mBuffer = Array.of(aValue).toByteArray();
 	}
 
 
 	public ArrayMapKey(byte[] aBuffer, int aOffset, int aLength)
 	{
-		mFormat = 2;
 		mBuffer = Arrays.copyOfRange(aBuffer, aOffset, aOffset + aLength);
-	}
-
-
-	public ArrayMapKey(UUID aUUID)
-	{
-		mFormat = 3;
-		mBuffer = new byte[16];
-		ByteArrayUtil.putInt64(mBuffer, 0, aUUID.getMostSignificantBits());
-		ByteArrayUtil.putInt64(mBuffer, 8, aUUID.getLeastSignificantBits());
 	}
 
 
@@ -67,21 +40,15 @@ public class ArrayMapKey implements Comparable<ArrayMapKey>
 	@Override
 	public int compareTo(ArrayMapKey aOther)
 	{
-		byte[] self = mBuffer;
-		byte[] other = aOther.mBuffer;
+		Comparable a = (Comparable)get();
+		Comparable b = (Comparable)aOther.get();
 
-		for (int i = 0, sz = Math.min(self.length, other.length); i < sz; i++)
+		if (a.getClass() != b.getClass())
 		{
-			int a = 0xff & self[i];
-			int b = 0xff & other[i];
-			if (a < b) return -1;
-			if (a > b) return 1;
+			return a.toString().compareTo(b.toString());
 		}
 
-		if (self.length < other.length) return -1;
-		if (self.length > other.length) return 1;
-
-		return 0;
+		return a.compareTo(b);
 	}
 
 
@@ -107,23 +74,12 @@ public class ArrayMapKey implements Comparable<ArrayMapKey>
 	@Override
 	public String toString()
 	{
-		switch (mFormat)
-		{
-			case 0:
-				return new String(mBuffer);
-			case 1:
-				return String.format("#%016x", ByteArrayUtil.getInt64(mBuffer, 0));
-			case 2:
-				return new String(mBuffer);
-			case 3:
-				return UUID.nameUUIDFromBytes(mBuffer).toString();
-			default:
-				StringBuilder sb = new StringBuilder("0x");
-				for (byte b : mBuffer)
-				{
-					sb.append(String.format("%02x", 0xff & b));
-				}
-				return sb.toString();
-		}
+		return get().toString();
+	}
+
+
+	private Object get()
+	{
+		return mDeserialized = (mDeserialized != null ? mDeserialized : new Array().fromByteArray(mBuffer).get(0));
 	}
 }

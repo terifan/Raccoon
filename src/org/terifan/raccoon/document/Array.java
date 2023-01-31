@@ -14,7 +14,7 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 
 
-public class Array extends Container<Integer, Array> implements Iterable, Externalizable, Cloneable
+public class Array extends Container<Integer, Array> implements Iterable, Externalizable, Cloneable, Comparable<Array>
 {
 	private final static long serialVersionUID = 1L;
 
@@ -439,5 +439,30 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 		};
 
 		new VarInputStream().read(in, this);
+	}
+
+
+	@Override
+	public int compareTo(Array aOther)
+	{
+		for (int i = 0, sz = Math.min(size(), aOther.size()); i < sz; i++)
+		{
+			int v = ((Comparable)get(i)).compareTo(aOther.get(i));
+			if (v != 0)
+			{
+				return v;
+			}
+		}
+
+		if (size() < aOther.size())
+		{
+			return -1;
+		}
+		if (size() > aOther.size())
+		{
+			return 1;
+		}
+
+		return 0;
 	}
 }

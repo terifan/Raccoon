@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators.AbstractSpliterator;
-import static java.util.Spliterators.iterator;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -33,7 +32,7 @@ public final class RaccoonCollection extends BTreeStorage
 	private Document mConfiguration;
 	private RaccoonDatabase mDatabase;
 	private HashSet<CommitLock> mCommitLocks;
-	private IdentityCounter mIdentityCounter;
+//	private IdentityCounter mIdentityCounter;
 	private BTree mImplementation;
 	private long mModCount;
 
@@ -46,7 +45,7 @@ public final class RaccoonCollection extends BTreeStorage
 		mLock = new ReadWriteLock();
 		mCommitLocks = new HashSet<>();
 		mImplementation = new BTree(getBlockAccessor(), aConfiguration.getDocument("btree"));
-		mIdentityCounter = new IdentityCounter(aConfiguration);
+//		mIdentityCounter = new IdentityCounter(aConfiguration);
 	}
 
 
@@ -373,7 +372,8 @@ public final class RaccoonCollection extends BTreeStorage
 				throw new CommitBlockedException("A table cannot be committed while a stream is open." + sb.toString());
 			}
 
-			mImplementation.getConfiguration().put("identityCounter", mIdentityCounter.get());
+//			mImplementation.getConfiguration().put("identityCounter", mIdentityCounter.get());
+			mImplementation.getConfiguration().put("identityCounter", 0);
 
 			return mImplementation.commit();
 		}
@@ -397,45 +397,25 @@ public final class RaccoonCollection extends BTreeStorage
 	{
 		Object id = aDocument.get("_id");
 
-		if (id instanceof Number)
-		{
-			mIdentityCounter.set(((Number)id).longValue());
-		}
-		else if (id instanceof String || id instanceof UUID || id instanceof ObjectId)
-		{
-		}
-		else if (id instanceof Document || id instanceof Array)
-		{
-		}
-		else if (id == null)
+		if (id == null)
 		{
 			if (!aCreateMissingKey)
 			{
 				throw new IllegalStateException("_id field not provided in Document");
 			}
+
 			id = ObjectId.randomId();
 			aDocument.put("_id", id);
+			return new ArrayMapKey(id);
 		}
-//		else if (id == null)
+
+//		if (id instanceof Long || id instanceof Integer)
 //		{
-//			if (!aCreateMissingKey)
-//			{
-//				throw new IllegalStateException("_id field not provided in Document");
-//			}
-//			id = mIdentityCounter.next();
-//			aDocument.put("_id", id);
+//			mIdentityCounter.set(((Number)id).longValue());
+//			return new ArrayMapKey(mIdentityCounter.get());
 //		}
-		else
-		{
-			throw new IllegalStateException("_id type unsupported");
-		}
 
-		if (id instanceof Number)
-		{
-			return new ArrayMapKey(((Number)id).longValue());
-		}
-
-		return new ArrayMapKey(id.toString());
+		return new ArrayMapKey(id);
 	}
 
 
@@ -490,10 +470,10 @@ public final class RaccoonCollection extends BTreeStorage
 	}
 
 
-	public IdentityCounter getIdentityCounter()
-	{
-		return mIdentityCounter;
-	}
+//	public IdentityCounter getIdentityCounter()
+//	{
+//		return mIdentityCounter;
+//	}
 
 
 	public List<Document> find(Document aQuery)
@@ -509,7 +489,7 @@ public final class RaccoonCollection extends BTreeStorage
 
 			DocumentIterator iterator = new DocumentIterator(this);
 
-			iterator.setRange(new ArrayMapKey("35"), new ArrayMapKey("55"));
+			iterator.setRange(new ArrayMapKey(35), new ArrayMapKey(55));
 //			iterator.setRange(new ArrayMapKey("35"), null);
 //			iterator.setRange(null, new ArrayMapKey("55"));
 //			iterator.setRange(null, null);

@@ -9,7 +9,9 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.OutputStream;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
@@ -17,7 +19,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 
-public class Document extends Container<String, Document> implements Externalizable, Cloneable
+public class Document extends Container<String, Document> implements Externalizable, Cloneable, Comparable<Document>
 {
 	private final static long serialVersionUID = 1L;
 
@@ -280,5 +282,30 @@ public class Document extends Container<String, Document> implements Externaliza
 		};
 
 		new VarInputStream().read(in, this);
+	}
+
+
+	@Override
+	public int compareTo(Document aOther)
+	{
+		ArrayList<String> thisKeys = new ArrayList<>(keySet());
+		ArrayList<String> otherKeys = new ArrayList<>(aOther.keySet());
+
+		for (String key : thisKeys.toArray(new String[0]))
+		{
+			Object a = get(key);
+			Object b = aOther.get(key);
+			thisKeys.remove(key);
+			otherKeys.remove(key);
+
+			int v = b == null ? 1 : ((Comparable)a).compareTo(b);
+
+			if (v != 0)
+			{
+				return v;
+			}
+		}
+
+		return otherKeys.isEmpty() ? 0 : -1;
 	}
 }

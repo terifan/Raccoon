@@ -2,8 +2,10 @@ package test;
 
 import java.io.File;
 import java.util.List;
+import java.util.Random;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.secure.AccessCredentials;
@@ -19,7 +21,8 @@ public class TestLOB
 			{
 				for (int i = 0; i < 100; i++)
 				{
-					db.getCollection("data").save(new Document().put("_id",String.format("%02d",i)).put("text", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"));
+//					db.getCollection("data").save(new Document().put("_id", String.format("%02d",i)).put("text", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"));
+					db.getCollection("data").save(new Document().put("_id", i).put("text", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"));
 				}
 
 				_Tools.showTree(db.getCollection("data")._getImplementation());
