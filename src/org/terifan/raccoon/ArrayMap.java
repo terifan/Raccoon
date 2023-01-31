@@ -708,9 +708,9 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 
 
 	@Override
-	public MapEntryIterator iterator()
+	public ArrayMapEntryIterator iterator()
 	{
-		return new MapEntryIterator();
+		return new ArrayMapEntryIterator();
 	}
 
 
@@ -795,16 +795,50 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	public class MapEntryIterator implements Iterator<ArrayMapEntry>
+	public class ArrayMapEntryIterator implements Iterator<ArrayMapEntry>
 	{
 		private final int mExpectedModCount = mModCount;
+		private ArrayMapKey mRangeLow;
+		private ArrayMapKey mRangeHigh;
+		private ArrayMapEntry mPending;
 		private int mIndex;
+
+
+		public void setRange(ArrayMapKey aLow, ArrayMapKey aHigh)
+		{
+			mRangeLow = aLow;
+			mRangeHigh = aHigh;
+		}
 
 
 		@Override
 		public boolean hasNext()
 		{
-			return mIndex < mEntryCount;
+			while (mPending == null)
+			{
+				if (mIndex >= mEntryCount)
+				{
+					return false;
+				}
+
+				int entryOffset = readEntryOffset(mIndex);
+				int keyLength = readKeyLength(entryOffset);
+				int keyOffset = readKeyOffset(entryOffset);
+
+				ArrayMapEntry pending = new ArrayMapEntry();
+				pending.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
+
+				if ((mRangeLow == null || pending.getKey().compareTo(mRangeLow) >= 0) && (mRangeHigh == null || pending.getKey().compareTo(mRangeHigh) <= 0))
+				{
+					loadKeyAndValue(mIndex, pending);
+
+					mPending = pending;
+				}
+
+				mIndex++;
+			}
+
+			return true;
 		}
 
 
@@ -815,23 +849,13 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 			{
 				throw new ConcurrentModificationException();
 			}
-			if (mIndex >= mEntryCount)
+			if (mPending == null)
 			{
 				throw new NoSuchElementException();
 			}
 
-			int entryOffset = readEntryOffset(mIndex);
-			int keyLength = readKeyLength(entryOffset);
-			int keyOffset = readKeyOffset(entryOffset);
-
-			ArrayMapEntry entry = new ArrayMapEntry();
-			entry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
-			loadKeyAndValue(mIndex, entry);
-
-//			System.out.println(mIndex+" "+entry);
-
-			mIndex++;
-
+			ArrayMapEntry entry = mPending;
+			mPending = null;
 			return entry;
 		}
 

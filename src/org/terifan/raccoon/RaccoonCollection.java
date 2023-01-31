@@ -508,6 +508,12 @@ public final class RaccoonCollection extends BTreeStorage
 			ArrayList<Document> list = new ArrayList<>();
 
 			DocumentIterator iterator = new DocumentIterator(this);
+
+			iterator.setRange(new ArrayMapKey("35"), new ArrayMapKey("55"));
+//			iterator.setRange(new ArrayMapKey("35"), null);
+//			iterator.setRange(null, new ArrayMapKey("55"));
+//			iterator.setRange(null, null);
+
 			iterator.forEachRemaining(e -> list.add(e));
 
 			return list;

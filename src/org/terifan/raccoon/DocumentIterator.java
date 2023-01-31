@@ -8,25 +8,31 @@ import org.terifan.raccoon.util.Log;
 public final class DocumentIterator implements Iterator<Document>
 {
 	private RaccoonCollection mCollection;
-	private BTreeEntryIterator mEntryIterator;
+	private BTreeEntryIterator mBTreeEntryIterator;
 
 
 	public DocumentIterator(RaccoonCollection aCollection)
 	{
 		mCollection = aCollection;
-		mEntryIterator = new BTreeEntryIterator(aCollection._getImplementation());
+		mBTreeEntryIterator = new BTreeEntryIterator(aCollection._getImplementation());
+	}
+
+
+	public void setRange(ArrayMapKey aLow, ArrayMapKey aHigh)
+	{
+		mBTreeEntryIterator.setRange(aLow, aHigh);
 	}
 
 
 	@Override
 	public boolean hasNext()
 	{
-		boolean hasMore = mEntryIterator.hasNext();
+		boolean hasMore = mBTreeEntryIterator.hasNext();
 
 		if (!hasMore)
 		{
 			mCollection = null;
-			mEntryIterator = null;
+			mBTreeEntryIterator = null;
 		}
 
 		return hasMore;
@@ -41,7 +47,7 @@ public final class DocumentIterator implements Iterator<Document>
 
 		try
 		{
-			return mCollection.unmarshalDocument(mEntryIterator.next(), new Document());
+			return mCollection.unmarshalDocument(mBTreeEntryIterator.next(), new Document());
 		}
 		finally
 		{
@@ -53,6 +59,6 @@ public final class DocumentIterator implements Iterator<Document>
 	@Override
 	public void remove()
 	{
-		mEntryIterator.remove();
+		mBTreeEntryIterator.remove();
 	}
 }

@@ -19,7 +19,7 @@ public class TestLOB
 			{
 				for (int i = 0; i < 100; i++)
 				{
-					db.getCollection("data").save(new Document().put("_id",String.format("%02d",i)).put("text", "xxxxxxxxxxxxxxxxx"));
+					db.getCollection("data").save(new Document().put("_id",String.format("%02d",i)).put("text", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"));
 				}
 
 				_Tools.showTree(db.getCollection("data")._getImplementation());
