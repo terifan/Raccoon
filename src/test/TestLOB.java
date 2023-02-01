@@ -2,7 +2,6 @@ package test;
 
 import java.io.File;
 import java.util.List;
-import java.util.Random;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.document.Array;
@@ -13,22 +12,27 @@ import org.terifan.raccoon.io.secure.AccessCredentials;
 
 public class TestLOB
 {
-	public static void main(String ... args)
+	public static void main(String... args)
 	{
 		try
 		{
-			try ( RaccoonDatabase db = new RaccoonDatabase(new MemoryBlockDevice(512), DatabaseOpenOption.CREATE, null))
+			try (RaccoonDatabase db = new RaccoonDatabase(new MemoryBlockDevice(512), DatabaseOpenOption.CREATE, null))
 			{
-				for (int i = 0; i < 100; i++)
+				for (int i = 0; i < 30; i++)
 				{
-//					db.getCollection("data").save(new Document().put("_id", String.format("%02d",i)).put("text", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"));
-					db.getCollection("data").save(new Document().put("_id", i).put("text", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"));
+					for (int j = 0; j < 5; j++)
+					{
+						db.getCollection("data").save(new Document().put("_id", Array.of(i, j)).put("text", i + "," + j + ":xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"));
+					}
 				}
 
 				_Tools.showTree(db.getCollection("data")._getImplementation());
 
-				List<Document> list = db.getCollection("data").find(new Document().put("_id", 50));
-				list.forEach(e->System.out.print(e.get("_id")+"\t"));
+				Document x = db.getCollection("data").get(new Document().put("_id", Array.of(20, 2)));
+				System.out.println(x);
+
+				List<Document> list = db.getCollection("data").find(new Document().put("_id", Array.of(20)));
+				list.forEach(e -> System.out.print(e.get("_id") + "\t"));
 			}
 		}
 		catch (Throwable e)
@@ -36,6 +40,7 @@ public class TestLOB
 			e.printStackTrace(System.out);
 		}
 	}
+
 
 	public static void xmain(String... args)
 	{
@@ -87,22 +92,18 @@ public class TestLOB
 //				});
 //				db.commit();
 //			}
-
-			try ( RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 //				db.getCollection("folders").stream().forEach(System.out::println);
 //				db.getCollection("files").stream().forEach(System.out::println);
 
 //				ObjectId ref = db.getCollection("folders").list().get(2).get("ref");
 //				System.out.println("***"+ref);
-
 //				System.out.println("--------");
 //				Document d = db.getCollection("files").get(new Document().put("_id", new Document().put("folder", ref).put("name","kitty.jpg")));
 //				System.out.println(d);
-
-
-				Document root = db.getCollection("folders").get(new Document().put("_id", new Document().put("parent", null).put("name","pictures")));
-				Document folder = db.getCollection("folders").get(new Document().put("_id", new Document().put("parent", root.getObjectId("ref")).put("name","Image Compression Suit")));
+				Document root = db.getCollection("folders").get(new Document().put("_id", new Document().put("parent", null).put("name", "pictures")));
+				Document folder = db.getCollection("folders").get(new Document().put("_id", new Document().put("parent", root.getObjectId("ref")).put("name", "Image Compression Suit")));
 
 				System.out.println("--------");
 

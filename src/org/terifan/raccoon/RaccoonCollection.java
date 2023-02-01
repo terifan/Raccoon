@@ -489,7 +489,7 @@ public final class RaccoonCollection extends BTreeStorage
 
 			DocumentIterator iterator = new DocumentIterator(this);
 
-			iterator.setRange(new ArrayMapKey(35), new ArrayMapKey(55));
+//			iterator.setRange(new ArrayMapKey(35), new ArrayMapKey(55));
 //			iterator.setRange(new ArrayMapKey("35"), null);
 //			iterator.setRange(null, new ArrayMapKey("55"));
 //			iterator.setRange(null, null);

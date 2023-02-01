@@ -78,7 +78,7 @@ public class ArrayMapKey implements Comparable<ArrayMapKey>
 	}
 
 
-	private Object get()
+	public Object get()
 	{
 		return mDeserialized = (mDeserialized != null ? mDeserialized : new Array().fromByteArray(mBuffer).get(0));
 	}

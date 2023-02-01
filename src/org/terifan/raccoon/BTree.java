@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.BTreeNode.RemoveResult;
+import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -337,7 +338,7 @@ public class BTree implements AutoCloseable
 					aScanResult.log.append(":");
 				}
 				first = false;
-				String s = entry.getKey().toString().replaceAll("[^\\w]*", "").replace("'", "").replace("_", "");
+				String s = stringifyKey(entry);
 				aScanResult.log.append(s.isEmpty() ? "*" : s);
 			}
 			aScanResult.log.append("'");
@@ -393,7 +394,7 @@ public class BTree implements AutoCloseable
 					aScanResult.log.append(",");
 				}
 				first = false;
-				aScanResult.log.append("'" + entry.getKey().toString().replaceAll("[^\\w]*", "").replace("_", "") + "'");
+				aScanResult.log.append("'" + stringifyKey(entry) + "'");
 			}
 
 			aScanResult.log.append("]");
@@ -407,5 +408,31 @@ public class BTree implements AutoCloseable
 				aScanResult.log.append(aNode.mModified ? "#f00#f00#fff" : "#888#fff#000");
 			}
 		}
+	}
+
+
+	private String stringifyKey(ArrayMapEntry aEntry)
+	{
+		Object keyValue = aEntry.getKey().get();
+
+		String value = "";
+
+		if (keyValue instanceof Array)
+		{
+			for (Object k : (Array)keyValue)
+			{
+				if (!value.isEmpty())
+				{
+					value += ",";
+				}
+				value += k.toString().replaceAll("[^\\w]*", "");
+			}
+		}
+		else
+		{
+			value += keyValue.toString().replaceAll("[^\\w]*", "");
+		}
+
+		return value;
 	}
 }
