@@ -1,21 +1,21 @@
 package org.terifan.raccoon;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 
 
-class BTreeNodeIterator implements Iterator<BTreeLeaf>
+class BTreeNodeIterator extends Sequence<BTreeLeaf>
 {
 	private BTree mImplementation;
 	private LinkedList<BTreeIndex> mIndexNodes;
 	private LinkedList<BTreeLeaf> mLeafNodes;
-	private ArrayMapKey mRangeLow;
-	private ArrayMapKey mRangeHigh;
+	private Query mQuery;
 
 
-	BTreeNodeIterator(BTree aTree)
+	BTreeNodeIterator(BTree aTree, Query aQuery)
 	{
 		mImplementation = aTree;
+		mQuery = aQuery;
+
 		mIndexNodes = new LinkedList<>();
 		mLeafNodes = new LinkedList<>();
 
@@ -31,68 +31,36 @@ class BTreeNodeIterator implements Iterator<BTreeLeaf>
 	}
 
 
-	public void setRange(ArrayMapKey aLow, ArrayMapKey aHigh)
-	{
-		mRangeLow = aLow;
-		mRangeHigh = aHigh;
-	}
-
-
 	@Override
-	public boolean hasNext()
+	public BTreeLeaf advance()
 	{
 		while (mLeafNodes.isEmpty() && !mIndexNodes.isEmpty())
 		{
 			BTreeIndex parent = mIndexNodes.remove(0);
-			for (int i = 0, sz = parent.size(); i < sz; i++)
+
+			for (int i = 0; i < parent.size(); i++)
 			{
 				BTreeNode node = parent.getNode(mImplementation, i);
+
 				if (node instanceof BTreeLeaf)
 				{
-					if ((mRangeLow == null || node.mMap.getLast().getKey().compareTo(mRangeLow) >= 0) && (mRangeHigh == null || node.mMap.getFirst().getKey().compareTo(mRangeHigh) <= 0))
+					if ((mQuery.mRangeLow == null || node.mMap.getLast().getKey().compareTo(mQuery.mRangeLow) >= 0) && (mQuery.mRangeHigh == null || node.mMap.getFirst().getKey().compareTo(mQuery.mRangeHigh) <= 0))
 					{
 						mLeafNodes.add((BTreeLeaf)node);
 					}
-//					else
-//						System.out.println("#" + parent.mMap+" "+node.mMap);
 				}
 				else
 				{
-//					if (i == 0)
-//					{
-//						if (parent.mMap.get(i, new ArrayMapEntry()).getKey().compareTo(high) <= 0)
-//						{
-//							mIndexNodes.add((BTreeIndex)node);
-//						}
-//					}
-//					else
-//					{
-//						ArrayMapKey first = i == 0 ? parent.mMap.get(i, new ArrayMapEntry()).getKey() : node.mMap.get(i, new ArrayMapEntry()).getKey();
-//						ArrayMapKey last = node.mMap.getLast().getKey();
-//
-//						System.out.println(node.mMap+" "+first.compareTo(high)+" "+last.compareTo(low));
-//
-//						if (first.compareTo(high) <= 0 && first.compareTo(low) >= 0)
-//						if (high.compareTo(node.mMap.getLast().getKey()) >= 0)
-//						{
-//							System.out.println("*" + parent.mMap.get(i, new ArrayMapEntry()).getKey()+" -- "+parent.mMap.get(i+1, new ArrayMapEntry()).getKey()+" -- "+node.mMap);
-//						}
-//						else
-//						{
-							mIndexNodes.add((BTreeIndex)node);
-//						}
-//					}
+					mIndexNodes.add((BTreeIndex)node);
 				}
 			}
 		}
 
-		return !mLeafNodes.isEmpty();
-	}
+		if (mLeafNodes.isEmpty())
+		{
+			return null;
+		}
 
-
-	@Override
-	public BTreeLeaf next()
-	{
 		return mLeafNodes.remove(0);
 	}
 }

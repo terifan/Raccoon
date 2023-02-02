@@ -2,9 +2,7 @@ package org.terifan.raccoon;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
-import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 import org.terifan.raccoon.util.ByteArrayUtil;
 import org.terifan.raccoon.util.FormattedOutput;
 import org.terifan.raccoon.util.FormattedToString;
@@ -23,7 +21,7 @@ import org.terifan.raccoon.util.Result;
  * [header] 2 bytes - entry count 4 bytes - free space offset (minus HEADER_SIZE) [list of entries] (entry 1..n) 2 bytes - key length 2
  * bytes - value length n bytes - key n bytes - value [free space] n bytes - zeros [list of pointers] (pointer 1..n) 4 bytes - offset
  */
-public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
+public class ArrayMap implements Iterable<ArrayMapEntry>, SequenceFilter<ArrayMapEntry>, FormattedToString
 {
 	final static int HEADER_SIZE = 2 + 4;
 	final static int ENTRY_POINTER_SIZE = 4;
@@ -35,12 +33,12 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	private final static int ENTRY_OVERHEAD = ENTRY_POINTER_SIZE + ENTRY_HEADER_SIZE;
 	public final static int OVERHEAD = HEADER_SIZE + ENTRY_OVERHEAD + ENTRY_POINTER_SIZE;
 
-	private byte[] mBuffer;
-	private int mStartOffset;
+	byte[] mBuffer;
+	int mStartOffset;
 	private int mCapacity;
 	private int mPointerListOffset;
 	private int mFreeSpaceOffset;
-	private int mEntryCount;
+	int mEntryCount;
 	private int mModCount;
 
 
@@ -343,7 +341,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	private void loadKeyAndValue(int aIndex, ArrayMapEntry aEntry)
+	void loadKeyAndValue(int aIndex, ArrayMapEntry aEntry)
 	{
 		int entryOffset = readEntryOffset(aIndex);
 		int valueOffset = readValueOffset(entryOffset);
@@ -352,6 +350,26 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 		int keyLength = readKeyLength(entryOffset);
 
 		aEntry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
+		aEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
+	}
+
+
+	void loadKey(int aIndex, ArrayMapEntry aEntry)
+	{
+		int entryOffset = readEntryOffset(aIndex);
+		int keyOffset = readKeyOffset(entryOffset);
+		int keyLength = readKeyLength(entryOffset);
+
+		aEntry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
+	}
+
+
+	void loadValue(int aIndex, ArrayMapEntry aEntry)
+	{
+		int entryOffset = readEntryOffset(aIndex);
+		int valueOffset = readValueOffset(entryOffset);
+		int valueLength = readValueLength(entryOffset);
+
 		aEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
 	}
 
@@ -538,7 +556,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	private int readEntryOffset(int aIndex)
+	int readEntryOffset(int aIndex)
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount : aIndex;
 
@@ -555,13 +573,13 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	}
 
 
-	private int readKeyOffset(int aEntryOffset)
+	int readKeyOffset(int aEntryOffset)
 	{
 		return aEntryOffset + ENTRY_HEADER_SIZE;
 	}
 
 
-	private int readKeyLength(int aEntryOffset)
+	int readKeyLength(int aEntryOffset)
 	{
 		return readInt16(aEntryOffset);
 	}
@@ -709,7 +727,14 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	@Override
 	public ArrayMapEntryIterator iterator()
 	{
-		return new ArrayMapEntryIterator();
+		return new ArrayMapEntryIterator(this, new Query());
+	}
+
+
+	@Override
+	public Sequence<ArrayMapEntry> query(Query aQuery)
+	{
+		return new ArrayMapEntryIterator(this, aQuery);
 	}
 
 
@@ -791,78 +816,5 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, FormattedToString
 	public boolean isHalfEmpty()
 	{
 		return getFreeSpace() > mCapacity / 2;
-	}
-
-
-	public class ArrayMapEntryIterator implements Iterator<ArrayMapEntry>
-	{
-		private final int mExpectedModCount = mModCount;
-		private ArrayMapKey mRangeLow;
-		private ArrayMapKey mRangeHigh;
-		private ArrayMapEntry mPending;
-		private int mIndex;
-
-
-		public void setRange(ArrayMapKey aLow, ArrayMapKey aHigh)
-		{
-			mRangeLow = aLow;
-			mRangeHigh = aHigh;
-		}
-
-
-		@Override
-		public boolean hasNext()
-		{
-			while (mPending == null)
-			{
-				if (mIndex >= mEntryCount)
-				{
-					return false;
-				}
-
-				int entryOffset = readEntryOffset(mIndex);
-				int keyLength = readKeyLength(entryOffset);
-				int keyOffset = readKeyOffset(entryOffset);
-
-				ArrayMapEntry pending = new ArrayMapEntry();
-				pending.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
-
-				if ((mRangeLow == null || pending.getKey().compareTo(mRangeLow) >= 0) && (mRangeHigh == null || pending.getKey().compareTo(mRangeHigh) <= 0))
-				{
-					loadKeyAndValue(mIndex, pending);
-
-					mPending = pending;
-				}
-
-				mIndex++;
-			}
-
-			return true;
-		}
-
-
-		@Override
-		public ArrayMapEntry next()
-		{
-			if (mExpectedModCount != mModCount)
-			{
-				throw new ConcurrentModificationException();
-			}
-			if (mPending == null)
-			{
-				throw new NoSuchElementException();
-			}
-
-			ArrayMapEntry entry = mPending;
-			mPending = null;
-			return entry;
-		}
-
-
-		@Override
-		public void remove()
-		{
-			throw new UnsupportedOperationException();
-		}
 	}
 }

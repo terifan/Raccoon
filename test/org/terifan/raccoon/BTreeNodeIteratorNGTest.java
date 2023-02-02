@@ -28,7 +28,7 @@ public class BTreeNodeIteratorNGTest
 				tree.put(new ArrayMapEntry(new ArrayMapKey("key" + i), ("value"+i).getBytes(), TYPE_DOCUMENT));
 			}
 
-			new BTreeNodeIterator(tree).forEachRemaining(node -> {});
+			new BTreeNodeIterator(tree, new Query()).forEachRemaining(node -> {});
 //System.out.println(node)
 //			showTree(tree);
 //			Thread.sleep(100000);

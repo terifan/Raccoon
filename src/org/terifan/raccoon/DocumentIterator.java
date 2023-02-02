@@ -1,64 +1,31 @@
 package org.terifan.raccoon;
 
-import java.util.Iterator;
 import org.terifan.raccoon.document.Document;
-import org.terifan.raccoon.util.Log;
 
 
-public final class DocumentIterator implements Iterator<Document>
+public final class DocumentIterator extends Sequence<Document>
 {
 	private RaccoonCollection mCollection;
 	private BTreeEntryIterator mBTreeEntryIterator;
 
 
-	public DocumentIterator(RaccoonCollection aCollection)
+	public DocumentIterator(RaccoonCollection aCollection, Query aQuery)
 	{
 		mCollection = aCollection;
-		mBTreeEntryIterator = new BTreeEntryIterator(aCollection._getImplementation());
-	}
-
-
-	public void setRange(ArrayMapKey aLow, ArrayMapKey aHigh)
-	{
-		mBTreeEntryIterator.setRange(aLow, aHigh);
+		mBTreeEntryIterator = new BTreeEntryIterator(aCollection._getImplementation(), aQuery);
 	}
 
 
 	@Override
-	public boolean hasNext()
+	protected Document advance()
 	{
-		boolean hasMore = mBTreeEntryIterator.hasNext();
-
-		if (!hasMore)
-		{
-			mCollection = null;
-			mBTreeEntryIterator = null;
-		}
-
-		return hasMore;
-	}
-
-
-	@Override
-	public Document next()
-	{
-		Log.d("next entity");
-		Log.inc();
-
-		try
+		if (mBTreeEntryIterator.hasNext())
 		{
 			return mCollection.unmarshalDocument(mBTreeEntryIterator.next(), new Document());
 		}
-		finally
-		{
-			Log.dec();
-		}
-	}
 
-
-	@Override
-	public void remove()
-	{
-		mBTreeEntryIterator.remove();
+		mCollection = null;
+		mBTreeEntryIterator = null;
+		return null;
 	}
 }

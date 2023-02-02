@@ -292,7 +292,7 @@ public final class RaccoonCollection extends BTreeStorage
 
 		Stream<Document> tmp = StreamSupport.stream(new AbstractSpliterator<Document>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
 		{
-			private DocumentIterator iterator = new DocumentIterator(RaccoonCollection.this);
+			private DocumentIterator iterator = new DocumentIterator(RaccoonCollection.this, new Query());
 
 			@Override
 			public boolean tryAdvance(Consumer<? super Document> aConsumer)
@@ -487,7 +487,7 @@ public final class RaccoonCollection extends BTreeStorage
 		{
 			ArrayList<Document> list = new ArrayList<>();
 
-			DocumentIterator iterator = new DocumentIterator(this);
+			DocumentIterator iterator = new DocumentIterator(this, new Query());
 
 //			iterator.setRange(new ArrayMapKey(35), new ArrayMapKey(55));
 //			iterator.setRange(new ArrayMapKey("35"), null);

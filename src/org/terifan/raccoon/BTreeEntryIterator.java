@@ -1,69 +1,42 @@
 package org.terifan.raccoon;
 
-import java.util.Iterator;
-import org.terifan.raccoon.ArrayMap.ArrayMapEntryIterator;
 
-
-public class BTreeEntryIterator implements Iterator<ArrayMapEntry>
+public class BTreeEntryIterator extends Sequence<ArrayMapEntry>
 {
-	private BTreeNodeIterator mBTreeNodeIterator;
-	private ArrayMapEntryIterator mArrayMapEntryIterator;
-	private ArrayMapKey mRangeLow;
-	private ArrayMapKey mRangeHigh;
+	private BTreeNodeIterator mOuterSequence;
+	private ArrayMapEntryIterator mInnerSequence;
 
 
-	public BTreeEntryIterator(BTree aTree)
+	public BTreeEntryIterator(BTree aTree, Query aQuery)
 	{
-		mBTreeNodeIterator = new BTreeNodeIterator(aTree);
-	}
-
-
-	public void setRange(ArrayMapKey aLow, ArrayMapKey aHigh)
-	{
-		mRangeLow = aLow;
-		mRangeHigh = aHigh;
-		mBTreeNodeIterator.setRange(aLow, aHigh);
+		mOuterSequence = new BTreeNodeIterator(aTree, aQuery);
 	}
 
 
 	@Override
-	public boolean hasNext()
+	public ArrayMapEntry advance()
 	{
-		if (mArrayMapEntryIterator == null)
+		for (;;)
 		{
-			if (!mBTreeNodeIterator.hasNext())
+			if (mInnerSequence == null)
 			{
-				mArrayMapEntryIterator = null;
-				mBTreeNodeIterator = null;
-				return false;
+				if (!mOuterSequence.hasNext())
+				{
+					mOuterSequence = null;
+					return null;
+				}
+
+				mInnerSequence = mOuterSequence.next().mMap.iterator();
 			}
 
-			mArrayMapEntryIterator = mBTreeNodeIterator.next().mMap.iterator();
-			mArrayMapEntryIterator.setRange(mRangeLow, mRangeHigh);
-		}
-
-		if (!mArrayMapEntryIterator.hasNext())
-		{
-			mArrayMapEntryIterator = null;
-
-			boolean hasNext = hasNext();
-
-			if (!hasNext)
+			if (!mInnerSequence.hasNext())
 			{
-				mArrayMapEntryIterator = null;
-				mBTreeNodeIterator = null;
+				mInnerSequence = null;
 			}
-
-			return hasNext;
+			else
+			{
+				return mInnerSequence.next();
+			}
 		}
-
-		return true;
-	}
-
-
-	@Override
-	public ArrayMapEntry next()
-	{
-		return mArrayMapEntryIterator.next();
 	}
 }
