@@ -373,7 +373,7 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 	{
 		try
 		{
-			return new JSONDecoder().unmarshal(new StringReader(aJson), this);
+			return new JSONDecoder().unmarshal(aJson, this);
 		}
 		catch (IOException e)
 		{

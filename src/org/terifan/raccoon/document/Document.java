@@ -216,7 +216,7 @@ public class Document extends Container<String, Document> implements Externaliza
 	{
 		try
 		{
-			return new JSONDecoder().unmarshal(new StringReader(aJson), this);
+			return new JSONDecoder().unmarshal(aJson, this);
 		}
 		catch (IOException e)
 		{
@@ -307,5 +307,14 @@ public class Document extends Container<String, Document> implements Externaliza
 		}
 
 		return otherKeys.isEmpty() ? 0 : -1;
+	}
+
+
+	/**
+	 * Decodes the JSON and return a Document. Same as:<pre><code>new Document().fromJson(aJSON)</code></pre>
+	 */
+	public static Document of(String aJSON)
+	{
+		return new Document().fromJson(aJSON);
 	}
 }

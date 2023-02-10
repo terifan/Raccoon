@@ -187,4 +187,13 @@ public class DocumentNGTest
 		assertEquals(aDstDoc.getDocument("doc"), a_doc);
 		assertEquals(aDstDoc.getDecimal("bd"), a_bd);
 	}
+
+
+	@Test
+	public void testUnquotedJSON()
+	{
+		Document doc = Document.of("_id:[{$ge:20,$lt:30},test,{$exists:true},]");
+
+		assertEquals(doc.toJson(), "{\"_id\":[{\"$ge\":20,\"$lt\":30},\"test\",{\"$exists\":true}]}");
+	}
 }

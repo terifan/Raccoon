@@ -3,6 +3,7 @@ package org.terifan.raccoon.document;
 import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.Reader;
+import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import org.terifan.raccoon.ObjectId;
 
@@ -12,9 +13,14 @@ class JSONDecoder
 	private PushbackReader mReader;
 
 
-	public Document unmarshal(Reader aReader, Document aDocument) throws IOException
+	public Document unmarshal(String aJSON, Document aDocument) throws IOException
 	{
-		mReader = new PushbackReader(aReader, 1);
+		if (!aJSON.startsWith("{"))
+		{
+			aJSON = "{" + aJSON + "}";
+		}
+
+		mReader = new PushbackReader(new StringReader(aJSON), 1);
 
 		if (mReader.read() != '{')
 		{
@@ -25,9 +31,14 @@ class JSONDecoder
 	}
 
 
-	public Array unmarshal(Reader aReader, Array aArray) throws IOException
+	public Array unmarshal(String aJSON, Array aArray) throws IOException
 	{
-		mReader = new PushbackReader(aReader, 1);
+		if (!aJSON.startsWith("["))
+		{
+			aJSON = "[" + aJSON + "]";
+		}
+
+		mReader = new PushbackReader(new StringReader(aJSON), 1);
 
 		if (mReader.read() != '[')
 		{
@@ -64,7 +75,8 @@ class JSONDecoder
 			}
 			if (c != '\"' && c != '\'')
 			{
-				throw new IOException("Expected starting quote character of key: " + c);
+//				throw new IOException("Expected starting quote character of key: " + c);
+				mReader.unread(c);
 			}
 
 			String key = readString(c);
@@ -106,7 +118,14 @@ class JSONDecoder
 				c = readChar();
 			}
 
-			aArray.add(readValue(c));
+			try
+			{
+				aArray.add(readValue(c));
+			}
+			catch (UnsupportedEncodingException e)
+			{
+				// ignore, an array ending with a delimiter will cause this intentionally
+			}
 		}
 
 		return aArray;
@@ -133,14 +152,25 @@ class JSONDecoder
 
 	private String readString(int aTerminator) throws IOException
 	{
+		boolean unquoted = false;
+		if (aTerminator != '\"' && aTerminator != '\'')
+		{
+			unquoted = true;
+			aTerminator = 0;
+		}
+
 		StringBuilder sb = new StringBuilder();
 
 		for (;;)
 		{
-			char c = readByte();
+			char c = readByte(unquoted);
 
-			if (c == aTerminator)
+			if (c == aTerminator || unquoted && (Character.isWhitespace(c) || c == ':' || c == ',' || c == '}' || c == ']'))
 			{
+				if (unquoted && c != 0)
+				{
+					mReader.unread(c);
+				}
 				return sb.toString();
 			}
 			if (c == '\\')
@@ -208,21 +238,29 @@ class JSONDecoder
 			return ObjectId.fromString(in.substring(9, in.length() - 1));
 		}
 
-		long v = Long.parseLong(in);
-		if (v >= Byte.MIN_VALUE && v <= Byte.MAX_VALUE)
+		try
 		{
-			return (byte)v;
+			long v = Long.parseLong(in);
+			if (v >= Byte.MIN_VALUE && v <= Byte.MAX_VALUE)
+			{
+				return (byte)v;
+			}
+			if (v >= Short.MIN_VALUE && v <= Short.MAX_VALUE)
+			{
+				return (short)v;
+			}
+			if (v >= Integer.MIN_VALUE && v <= Integer.MAX_VALUE)
+			{
+				return (int)v;
+			}
+			return v;
 		}
-		if (v >= Short.MIN_VALUE && v <= Short.MAX_VALUE)
+		catch (NumberFormatException e)
 		{
-			return (short)v;
-		}
-		if (v >= Integer.MIN_VALUE && v <= Integer.MAX_VALUE)
-		{
-			return (int)v;
+			// ignore, faster to allow an exception than to regex the value before parsing
 		}
 
-		return v;
+		return in;
 	}
 
 
@@ -271,6 +309,21 @@ class JSONDecoder
 		int c = mReader.read();
 		if (c == -1)
 		{
+			throw new IOException("Unexpected end of stream.");
+		}
+		return (char)c;
+	}
+
+
+	private char readByte(boolean aUnquoted) throws IOException
+	{
+		int c = mReader.read();
+		if (c == -1)
+		{
+			if (aUnquoted)
+			{
+				return 0;
+			}
 			throw new IOException("Unexpected end of stream.");
 		}
 		return (char)c;

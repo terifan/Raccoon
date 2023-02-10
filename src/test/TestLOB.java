@@ -31,7 +31,9 @@ public class TestLOB
 				Document x = db.getCollection("data").get(new Document().put("_id", Array.of(20, 2)));
 				System.out.println(x);
 
-				List<Document> list = db.getCollection("data").find(new Document().put("_id", Array.of(20)));
+				List<Document> lisx = db.getCollection("data").find(Document.of("_id:[{$ge:20,$lt:30},{$exists:true}]"));
+				List<Document> list = db.getCollection("data").find(new Document().put("_id", Array.of(new Document().put("$ge",20).put("$lt",30), new Document().put("$exists", "true"))));
+
 				list.forEach(e -> System.out.print(e.get("_id") + "\t"));
 			}
 		}
