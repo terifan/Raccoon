@@ -1,17 +1,8 @@
 package org.terifan.raccoon.document;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.OutputStream;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
@@ -106,13 +97,6 @@ public class Document extends Container<String, Document> implements Externaliza
 
 
 	@Override
-	public String toString()
-	{
-		return toJson();
-	}
-
-
-	@Override
 	Checksum hashCode(Checksum aChecksum)
 	{
 		mValues.entrySet().forEach(entry ->
@@ -197,94 +181,6 @@ public class Document extends Container<String, Document> implements Externaliza
 	}
 
 
-	public String toJson()
-	{
-		try
-		{
-			StringBuilder builder = new StringBuilder();
-			new JSONEncoder().marshal(new JSONTextWriter(builder, true), this);
-			return builder.toString();
-		}
-		catch (IOException e)
-		{
-			throw new IllegalArgumentException(e);
-		}
-	}
-
-
-	public Document fromJson(String aJson)
-	{
-		try
-		{
-			return new JSONDecoder().unmarshal(aJson, this);
-		}
-		catch (IOException e)
-		{
-			throw new IllegalArgumentException(e);
-		}
-	}
-
-
-	public byte[] toByteArray()
-	{
-		try
-		{
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			new VarOutputStream().write(baos, this);
-			return baos.toByteArray();
-		}
-		catch (IOException e)
-		{
-			throw new IllegalStateException(e);
-		}
-	}
-
-
-	public Document fromByteArray(byte[] aBinaryData)
-	{
-		try
-		{
-			new VarInputStream().read(new ByteArrayInputStream(aBinaryData), this);
-		}
-		catch (IOException e)
-		{
-			throw new IllegalStateException(e);
-		}
-		return this;
-	}
-
-
-	@Override
-	public void writeExternal(ObjectOutput aOutputStream) throws IOException
-	{
-		OutputStream tmp = new OutputStream()
-		{
-			@Override
-			public void write(int aByte) throws IOException
-			{
-				aOutputStream.write(aByte);
-			}
-		};
-		new VarOutputStream().write(tmp, this);
-	}
-
-
-	@Override
-	public void readExternal(ObjectInput aInputStream) throws IOException, ClassNotFoundException
-	{
-		InputStream in = new InputStream()
-		{
-			@Override
-			public int read() throws IOException
-			{
-				return aInputStream.read();
-			}
-		};
-
-		new VarInputStream().read(in, this);
-	}
-
-
 	@Override
 	public int compareTo(Document aOther)
 	{
@@ -311,7 +207,7 @@ public class Document extends Container<String, Document> implements Externaliza
 
 
 	/**
-	 * Decodes the JSON and return a Document. Same as:<pre><code>new Document().fromJson(aJSON)</code></pre>
+	 * Decodes the JSON and return a Document, same as using the fromJson instance method.
 	 */
 	public static Document of(String aJSON)
 	{

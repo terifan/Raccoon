@@ -1,5 +1,13 @@
 package org.terifan.raccoon.document;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,7 +22,7 @@ import java.util.function.Supplier;
 import org.terifan.raccoon.ObjectId;
 
 
-abstract class Container<K, R> implements Serializable
+abstract class Container<K, R> implements Externalizable, Serializable
 {
 	private final static long serialVersionUID = 1L;
 
@@ -486,6 +494,103 @@ abstract class Container<K, R> implements Serializable
 			|| type == BigDecimal.class
 			|| type == byte[].class
 			|| type == null;
+	}
+
+
+	/**
+	 * Return a typed JSON, with indentations and line-breaks, of this instance.
+	 */
+	@Override
+	public String toString()
+	{
+		return new JSONEncoder().marshal(this, false, true);
+	}
+
+
+	/**
+	 * Encodes this instance into a JSON while retaining type information.
+	 */
+	public String toTypedJson()
+	{
+		return new JSONEncoder().marshal(this, true, true);
+	}
+
+
+	public R fromJson(String aJson)
+	{
+		return (R)new JSONDecoder().unmarshal(aJson, this);
+	}
+
+
+	public String toJson()
+	{
+		return new JSONEncoder().marshal(this, true, false);
+	}
+
+
+	/**
+	 * Decodes a binary encoded Document / Array.
+	 */
+	public R fromByteArray(byte[] aBinaryData)
+	{
+		try
+		{
+			new VarInputStream().read(new ByteArrayInputStream(aBinaryData), this);
+		}
+		catch (IOException e)
+		{
+			throw new IllegalStateException(e);
+		}
+		return (R)this;
+	}
+
+
+	/**
+	 * Return a binary representation of this object.
+	 */
+	public byte[] toByteArray()
+	{
+		try
+		{
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			new VarOutputStream().write(baos, this);
+			return baos.toByteArray();
+		}
+		catch (IOException e)
+		{
+			throw new IllegalStateException(e);
+		}
+	}
+
+
+	@Override
+	public void writeExternal(ObjectOutput aOutputStream) throws IOException
+	{
+		OutputStream tmp = new OutputStream()
+		{
+			@Override
+			public void write(int aByte) throws IOException
+			{
+				aOutputStream.write(aByte);
+			}
+		};
+		new VarOutputStream().write(tmp, this);
+	}
+
+
+	@Override
+	public void readExternal(ObjectInput aInputStream) throws IOException, ClassNotFoundException
+	{
+		InputStream in = new InputStream()
+		{
+			@Override
+			public int read() throws IOException
+			{
+				return aInputStream.read();
+			}
+		};
+
+		new VarInputStream().read(in, this);
 	}
 
 

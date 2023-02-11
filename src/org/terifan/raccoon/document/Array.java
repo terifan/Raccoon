@@ -1,14 +1,6 @@
 package org.terifan.raccoon.document;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.OutputStream;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.stream.Stream;
@@ -156,13 +148,6 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 
 
 	@Override
-	public String toString()
-	{
-		return toJson();
-	}
-
-
-	@Override
 	Checksum hashCode(Checksum aChecksum)
 	{
 		mValues.forEach(value -> super.hashCode(aChecksum, value));
@@ -219,67 +204,6 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 
 		return true;
 	}
-
-
-	/**
-	 * Create an array of item provided including primitives and arrays.
-	 *
-	 * Note: if the object provided is an array it will be consumed, e.g. these two samples will result in the same structure (json: "[1,2,3,4]"):
-	 * <code>
-	 *    Array.of(1,2,3,4);
-	 *
-	 *    int[] values = {1,2,3,4};
-	 *    Array.of(values);
-	 * </code>
-	 *
-	 * @param aValue an array of objects
-	 * @return an array
-	 */
-//	public static Array of(Object aValue)
-//	{
-//		return ofImpl(aValue);
-//	}
-//
-//
-//	public static Array ofImpl(Object aValue)
-//	{
-//		Array array = new Array();
-//
-//		if (aValue == null || isSupportedType(aValue))
-//		{
-//			array.add(aValue);
-//		}
-//		else if (aValue.getClass().isArray())
-//		{
-//			for (int i = 0, len = java.lang.reflect.Array.getLength(aValue); i < len; i++)
-//			{
-//				Object v = java.lang.reflect.Array.get(aValue, i);
-//
-//				if (v == null || !v.getClass().isArray())
-//				{
-//					array.addImpl(v);
-//				}
-//				else
-//				{
-//					array.addImpl(ofImpl(v));
-//				}
-//			}
-//		}
-//		else if (aValue instanceof Iterable)
-//		{
-//			((Iterable)aValue).forEach(array::add);
-//		}
-//		else if (aValue instanceof Stream)
-//		{
-//			((Stream)aValue).forEach(array::add);
-//		}
-//		else
-//		{
-//			throw new IllegalArgumentException("Unsupported type: " + aValue.getClass());
-//		}
-//
-//		return array;
-//	}
 
 
 	/**
@@ -351,94 +275,6 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 	public Array clone()
 	{
 		return new Array().fromByteArray(toByteArray());
-	}
-
-
-	public String toJson()
-	{
-		try
-		{
-			StringBuilder builder = new StringBuilder();
-			new JSONEncoder().marshal(new JSONTextWriter(builder, true), this);
-			return builder.toString();
-		}
-		catch (IOException e)
-		{
-			throw new IllegalArgumentException(e);
-		}
-	}
-
-
-	public Array fromJson(String aJson)
-	{
-		try
-		{
-			return new JSONDecoder().unmarshal(aJson, this);
-		}
-		catch (IOException e)
-		{
-			throw new IllegalArgumentException(e);
-		}
-	}
-
-
-	public byte[] toByteArray()
-	{
-		try
-		{
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			new VarOutputStream().write(baos, this);
-			return baos.toByteArray();
-		}
-		catch (IOException e)
-		{
-			throw new IllegalStateException(e);
-		}
-	}
-
-
-	public Array fromByteArray(byte[] aBinaryData)
-	{
-		try
-		{
-			new VarInputStream().read(new ByteArrayInputStream(aBinaryData), this);
-		}
-		catch (IOException e)
-		{
-			throw new IllegalStateException(e);
-		}
-		return this;
-	}
-
-
-	@Override
-	public void writeExternal(ObjectOutput aOutputStream) throws IOException
-	{
-		OutputStream tmp = new OutputStream()
-		{
-			@Override
-			public void write(int aByte) throws IOException
-			{
-				aOutputStream.write(aByte);
-			}
-		};
-		new VarOutputStream().write(tmp, this);
-	}
-
-
-	@Override
-	public void readExternal(ObjectInput aInputStream) throws IOException, ClassNotFoundException
-	{
-		InputStream in = new InputStream()
-		{
-			@Override
-			public int read() throws IOException
-			{
-				return aInputStream.read();
-			}
-		};
-
-		new VarInputStream().read(in, this);
 	}
 
 

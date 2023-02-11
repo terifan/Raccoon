@@ -12,19 +12,18 @@ class VarOutputStream implements AutoCloseable
 	private OutputStream mOutputStream;
 
 
-	public void write(OutputStream aOutputStream, Document aDocument) throws IOException
+	public void write(OutputStream aOutputStream, Container aContainer) throws IOException
 	{
 		mOutputStream = aOutputStream;
 		mChecksum = new Checksum();
-		writeDocument(aDocument);
-	}
-
-
-	public void write(OutputStream aOutputStream, Array aArray) throws IOException
-	{
-		mOutputStream = aOutputStream;
-		mChecksum = new Checksum();
-		writeArray(aArray);
+		if (aContainer instanceof Document)
+		{
+			writeDocument((Document)aContainer);
+		}
+		else
+		{
+			writeArray((Array)aContainer);
+		}
 	}
 
 

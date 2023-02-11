@@ -13,19 +13,18 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 	private InputStream mInputStream;
 
 
-	public void read(InputStream aInputStream, Document aDocument) throws IOException
+	public void read(InputStream aInputStream, Container aContainer) throws IOException
 	{
 		mInputStream = aInputStream;
 		mChecksum = new Checksum();
-		readDocument(aDocument);
-	}
-
-
-	public void read(InputStream aInputStream, Array aArray) throws IOException
-	{
-		mInputStream = aInputStream;
-		mChecksum = new Checksum();
-		readArray(aArray);
+		if (aContainer instanceof Document)
+		{
+			readDocument((Document)aContainer);
+		}
+		else
+		{
+			readArray((Array)aContainer);
+		}
 	}
 
 

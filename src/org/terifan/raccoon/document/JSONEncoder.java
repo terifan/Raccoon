@@ -14,12 +14,21 @@ import org.terifan.raccoon.ObjectId;
 
 class JSONEncoder
 {
-	private JSONTextWriter mWriter;
+	private StringBuilder mBuffer;
+	private boolean mTyped;
+	private boolean mCompact;
+	private boolean mNewLine;
+	private boolean mFirst;
+	private int mIndent;
 
 
-	public void marshal(JSONTextWriter aPrinter, Container aContainer) throws IOException
+	public String marshal(Container aContainer, boolean aCompact, boolean aTyped)
 	{
-		mWriter = aPrinter;
+		mBuffer = new StringBuilder();
+		mNewLine = false;
+		mCompact = aCompact;
+		mTyped = aTyped;
+		mFirst = true;
 
 		if (aContainer instanceof Document)
 		{
@@ -29,16 +38,18 @@ class JSONEncoder
 		{
 			marshalArray((Array)aContainer);
 		}
+
+		return mBuffer.toString();
 	}
 
 
-	private void marshalDocument(Document aDocument) throws IOException
+	private void marshalDocument(Document aDocument)
 	{
 		marshalDocument(aDocument, true);
 	}
 
 
-	private void marshalDocument(Document aDocument, boolean aNewLineOnClose) throws IOException
+	private void marshalDocument(Document aDocument, boolean aNewLineOnClose)
 	{
 		int size = aDocument.size();
 
@@ -53,47 +64,52 @@ class JSONEncoder
 			}
 		}
 
-		if (!hasDocument && !mWriter.isFirst())
+		if (!hasDocument && !isFirst())
 		{
-			mWriter.println();
+			println();
 		}
 
-		mWriter.println("{").indent(1);
+		println("{");
+		indent(1);
 
 		for (Entry<String, Object> entry : aDocument.entrySet())
 		{
-			mWriter.print("\"" + escapeString(entry.getKey()) + "\": ");
+			print("\"" + escapeString(entry.getKey()) + "\": ");
 
 			marshal(entry.getValue());
 
 			if (hasDocument && --size > 0)
 			{
-				mWriter.println(aNewLineOnClose ? "," : ", ", false);
+				println(aNewLineOnClose ? "," : ", ", false);
 			}
 			else if (!hasDocument && --size > 0)
 			{
-				mWriter.print(", ", false);
+				print(", ", false);
 			}
 		}
 
 		if (aNewLineOnClose)
 		{
-			mWriter.println().indent(-1).println("}");
+			println();
+			indent(-1);
+			println("}");
 		}
 		else
 		{
-			mWriter.println().indent(-1).print("}");
+			println();
+			indent(-1);
+			print("}");
 		}
 	}
 
 
-	private void marshalArray(Array aArray) throws IOException
+	private void marshalArray(Array aArray)
 	{
 		int size = aArray.size();
 
 		if (size == 0)
 		{
-			mWriter.println("[]");
+			println("[]");
 			return;
 		}
 
@@ -108,15 +124,17 @@ class JSONEncoder
 
 		if (special)
 		{
-			mWriter.print("[").indent(aArray.size() > 1 ? 1 : 0);
+			print("[");
+			indent(aArray.size() > 1 ? 1 : 0);
 		}
 		else if (shortArray)
 		{
-			mWriter.print("[");
+			print("[");
 		}
 		else
 		{
-			mWriter.println("[").indent(1);
+			println("[");
+			indent(1);
 		}
 
 		for (Object value : aArray)
@@ -127,7 +145,7 @@ class JSONEncoder
 
 				if (--size > 0)
 				{
-					mWriter.println(", ");
+					println(", ");
 				}
 			}
 			else
@@ -136,7 +154,7 @@ class JSONEncoder
 
 				if (--size > 0)
 				{
-					mWriter.print(", ", false);
+					print(", ", false);
 				}
 			}
 
@@ -145,20 +163,23 @@ class JSONEncoder
 
 		if (special)
 		{
-			mWriter.indent(aArray.size() > 1 ? -1 : 0).println("]");
+			indent(aArray.size() > 1 ? -1 : 0);
+			println("]");
 		}
 		else if (shortArray)
 		{
-			mWriter.println("]");
+			println("]");
 		}
 		else
 		{
-			mWriter.println().indent(-1).println("]");
+			println();
+			indent(-1);
+			println("]");
 		}
 	}
 
 
-	private void marshal(Object aValue) throws IOException
+	private void marshal(Object aValue)
 	{
 		if (aValue instanceof Document)
 		{
@@ -175,35 +196,76 @@ class JSONEncoder
 	}
 
 
-	private void marshalValue(Object aValue) throws IOException
+	private void marshalValue(Object aValue)
 	{
-		if (aValue instanceof String
-			|| aValue instanceof BigDecimal
-//			|| aValue instanceof ObjectId
-			|| aValue instanceof UUID
-			|| aValue instanceof LocalDate
-			|| aValue instanceof LocalTime
-			|| aValue instanceof LocalDateTime
-			|| aValue instanceof OffsetDateTime)
+		if (aValue instanceof String)
 		{
-			mWriter.print("\"" + escapeString(aValue.toString()) + "\"");
-		}
-		else if (aValue instanceof ObjectId)
-		{
-			mWriter.print("ObjectId(" + escapeString(aValue.toString()) + ")");
-		}
-		else if (aValue instanceof Number
-			|| aValue instanceof Boolean)
-		{
-			mWriter.print(aValue);
+			print("\"" + escapeString(aValue.toString()) + "\"");
 		}
 		else if (aValue == null)
 		{
-			mWriter.print("null");
+			print("null");
+		}
+		else if (
+				aValue instanceof BigDecimal
+			 || aValue instanceof ObjectId
+			 || aValue instanceof UUID
+			 || aValue instanceof LocalDate
+			 || aValue instanceof LocalTime
+			 || aValue instanceof LocalDateTime
+			 || aValue instanceof OffsetDateTime)
+		{
+			if (!mTyped)
+			{
+				print("\"" + escapeString(aValue.toString()) + "\"");
+			}
+			else
+			{
+				if (aValue instanceof ObjectId)
+				{
+					print("ObjectId(" + escapeString(aValue.toString()) + ")");
+				}
+				else if (aValue instanceof byte[])
+				{
+					print("Base64(" + marshalBinary((byte[])aValue) + ")");
+				}
+				else if (aValue instanceof UUID)
+				{
+					print("UUID(" + aValue + ")");
+				}
+				else if (aValue instanceof BigDecimal)
+				{
+					print("Decimal(" + aValue + ")");
+				}
+				else if (aValue instanceof LocalDateTime)
+				{
+					print("DateTime(" + aValue + ")");
+				}
+				else if (aValue instanceof OffsetDateTime)
+				{
+					print("DateTime(" + aValue + ")");
+				}
+				else if (aValue instanceof LocalDate)
+				{
+					print("Date(" + aValue + ")");
+				}
+				else if (aValue instanceof LocalTime)
+				{
+					print("Time(" + aValue + ")");
+				}
+				else
+				{
+					throw new Error();
+				}
+			}
+		}
+		else if (aValue instanceof Number || aValue instanceof Boolean) // note: bigdecimal is number
+		{
+			print(aValue);
 		}
 		else if (aValue instanceof byte[])
 		{
-			mWriter.print("\"" + marshalBinary((byte[])aValue) + "\"");
+			print("\"" + marshalBinary((byte[])aValue) + "\"");
 		}
 		else
 		{
@@ -260,5 +322,151 @@ class JSONEncoder
 			}
 		}
 		return sb.toString();
+	}
+
+
+
+
+	public void indent(int aDelta)
+	{
+		mIndent += aDelta;
+	}
+
+
+	public void print(Object aText)
+	{
+		print(aText, true);
+	}
+
+
+	public void print(Object aText, boolean aIndent)
+	{
+		String text = formatString(aText);
+
+		if (mCompact && text.endsWith(" "))
+		{
+			text = stripTrailing(text);
+			if (text.isEmpty())
+			{
+				return;
+			}
+		}
+
+		if (aIndent)
+		{
+			printIndent();
+		}
+
+		mBuffer.append(text);
+		mFirst = false;
+	}
+
+
+	public void println(Object aText)
+	{
+		println(aText, true);
+	}
+
+
+	public void println(Object aText, boolean aIndent)
+	{
+		String text = formatString(aText);
+
+		if (mCompact && text.endsWith(" "))
+		{
+			text = stripTrailing(text);
+			if (text.isEmpty())
+			{
+				return;
+			}
+		}
+
+		if (aIndent)
+		{
+			printIndent();
+		}
+
+		mBuffer.append(text);
+		mNewLine = true;
+	}
+
+
+	public void println()
+	{
+		mNewLine = true;
+	}
+
+
+	public boolean isFirst()
+	{
+		return mFirst;
+	}
+
+
+	private String formatString(Object aText)
+	{
+		if (aText == null)
+		{
+			return "null";
+		}
+
+		if (aText instanceof Double || aText instanceof Float)
+		{
+			String text = aText.toString().replace(" ", "");
+
+			int i0 = text.indexOf(',');
+			if (i0 != -1)
+			{
+				int i1 = text.indexOf('.');
+				if (i1 != -1)
+				{
+					if (i0 < i1)
+					{
+						text = text.replace(",", ""); // handles: 10,000.7
+					}
+					else
+					{
+						text = text.replace(".", "").replace(',', '.'); // handles: 10.000,7
+					}
+				}
+				else
+				{
+					text = text.replace(',', '.'); // handles: 10000.7
+				}
+			}
+
+			if (text.endsWith(".0"))
+			{
+				text = text.substring(0, text.length() - 2);
+			}
+
+			return text;
+		}
+
+		return aText.toString();
+	}
+
+
+	private void printIndent()
+	{
+		if (mNewLine && !mCompact)
+		{
+			mBuffer.append("\n");
+			for (int i = 0; i < mIndent; i++)
+			{
+				mBuffer.append("\t");
+			}
+			mNewLine = false;
+		}
+	}
+
+
+	private String stripTrailing(String aText)
+	{
+		while (Character.isWhitespace(aText.charAt(aText.length() - 1)))
+		{
+			aText = aText.substring(0, aText.length() - 1);
+		}
+		return aText;
 	}
 }

@@ -1,5 +1,10 @@
 package org.terifan.raccoon.document;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -120,6 +125,7 @@ public class DocumentNGTest
 
 		byte[] data = srcDoc.toByteArray();
 		String json = srcDoc.toJson();
+		String text = srcDoc.toString();
 
 		Document unmarshalledBin = new Document().fromByteArray(data);
 		Document dstDoc = unmarshalledBin.get("doc");
@@ -129,15 +135,22 @@ public class DocumentNGTest
 		Document dstDocJson = unmarshalledJson.get("doc");
 		Array dstArrJson = unmarshalledJson.get("arr");
 
+		Document unmarshalledText = new Document().fromJson(text);
+		Document dstDocText = unmarshalledText.get("doc");
+		Array dstArrText = unmarshalledText.get("arr");
+
 //		Log.hexDump(data);
 
 		assertEquals(unmarshalledBin, srcDoc);
 		assertEquals(unmarshalledJson, srcDoc);
+		assertEquals(unmarshalledText, srcDoc);
 
-		checkTypes(dstDoc, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc, _bd);
-		checkTypes(dstArr, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc, _bd);
+		checkTypes(dstDoc,     _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc, _bd);
+		checkTypes(dstArr,     _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc, _bd);
 		checkTypes(dstDocJson, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc, _bd);
 		checkTypes(dstArrJson, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc, _bd);
+		checkTypes(dstDocText, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc, _bd);
+		checkTypes(dstArrText, _byte, _short, _int, _long, _float, _double, _bool, _null, _string, _bytes, _uuid, _odt, _ld, _lt, _ldt, _arr, _doc, _bd);
 	}
 
 
@@ -189,11 +202,78 @@ public class DocumentNGTest
 	}
 
 
+	private Document createTestDocument()
+	{
+		Byte _byte = Byte.MAX_VALUE;
+		Short _short = Short.MAX_VALUE;
+		Integer _int = Integer.MAX_VALUE;
+		Float _float = 3.14f;
+		Long _long = Long.MAX_VALUE;
+		Double _double = Math.PI;
+		Boolean _bool = true;
+		Object _null = null;
+		String _string = "hello";
+		byte[] _bytes = "world".getBytes();
+		UUID _uuid = UUID.randomUUID();
+		OffsetDateTime _odt = OffsetDateTime.now();
+		LocalDate _ld = LocalDate.now();
+		LocalTime _lt = LocalTime.now();
+		LocalDateTime _ldt = LocalDateTime.now();
+		Array _arr = Array.of((byte)1,(byte)2,(byte)3); // JSON decoder decodes values to smallest possible representation
+		Document _doc = new Document().put("docu","ment");
+		BigDecimal _bd = new BigDecimal("31.31646131940661321981");
+
+		Document _allTypesDoc = new Document()
+			.put("byte", _byte)
+			.put("short", _short)
+			.put("int", _int)
+			.put("long", _long)
+			.put("float", _float)
+			.put("double", _double)
+			.put("bool", _bool)
+			.put("null", _null)
+			.put("string", _string)
+			.put("bytes", _bytes)
+			.put("uuid", _uuid)
+			.put("odt", _odt)
+			.put("ld", _ld)
+			.put("lt", _lt)
+			.put("ldt", _ldt)
+			.put("arr", _arr)
+			.put("doc", _doc)
+			.put("bd", _bd);
+
+		Array _allTypesArr = Array.of(_allTypesDoc.values());
+
+		return new Document()
+			.put("doc", _allTypesDoc)
+			.put("arr", _allTypesArr);
+	}
+
+
 	@Test
 	public void testUnquotedJSON()
 	{
 		Document doc = Document.of("_id:[{$ge:20,$lt:30},test,{$exists:true},]");
 
 		assertEquals(doc.toJson(), "{\"_id\":[{\"$ge\":20,\"$lt\":30},\"test\",{\"$exists\":true}]}");
+	}
+
+
+	@Test
+	public void testObjectOutputStream() throws IOException, ClassNotFoundException
+	{
+		Document docOut = createTestDocument();
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (ObjectOutputStream oos = new ObjectOutputStream(baos))
+		{
+			oos.writeObject(docOut);
+		}
+
+		ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+		Object docIn = ois.readObject();
+
+		assertEquals(docIn, docOut);
 	}
 }

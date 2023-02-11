@@ -2,9 +2,15 @@ package org.terifan.raccoon.document;
 
 import java.io.IOException;
 import java.io.PushbackReader;
-import java.io.Reader;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.util.Base64;
+import java.util.UUID;
 import org.terifan.raccoon.ObjectId;
 
 
@@ -13,39 +19,39 @@ class JSONDecoder
 	private PushbackReader mReader;
 
 
-	public Document unmarshal(String aJSON, Document aDocument) throws IOException
+	public <T extends Container> T unmarshal(String aJSON, T aContainer)
 	{
-		if (!aJSON.startsWith("{"))
+		try
 		{
-			aJSON = "{" + aJSON + "}";
+			if (aContainer instanceof Document)
+			{
+				if (!aJSON.startsWith("{"))
+				{
+					aJSON = "{" + aJSON + "}";
+				}
+
+				mReader = new PushbackReader(new StringReader(aJSON), 1);
+				mReader.read();
+
+				return (T)readDocument((Document)aContainer);
+			}
+			else
+			{
+				if (!aJSON.startsWith("["))
+				{
+					aJSON = "[" + aJSON + "]";
+				}
+
+				mReader = new PushbackReader(new StringReader(aJSON), 1);
+				mReader.read();
+
+				return (T)readArray((Array)aContainer);
+			}
 		}
-
-		mReader = new PushbackReader(new StringReader(aJSON), 1);
-
-		if (mReader.read() != '{')
+		catch (Exception e)
 		{
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException(e);
 		}
-
-		return readDocument(aDocument);
-	}
-
-
-	public Array unmarshal(String aJSON, Array aArray) throws IOException
-	{
-		if (!aJSON.startsWith("["))
-		{
-			aJSON = "[" + aJSON + "]";
-		}
-
-		mReader = new PushbackReader(new StringReader(aJSON), 1);
-
-		if (mReader.read() != '[')
-		{
-			throw new IllegalArgumentException();
-		}
-
-		return readArray(aArray);
 	}
 
 
@@ -225,10 +231,6 @@ class JSONDecoder
 		{
 			return false;
 		}
-		if (in.contains("."))
-		{
-			return Double.valueOf(in);
-		}
 		if (in.startsWith("0x"))
 		{
 			return Long.valueOf(in.substring(2), 16);
@@ -236,6 +238,38 @@ class JSONDecoder
 		if (in.startsWith("ObjectId("))
 		{
 			return ObjectId.fromString(in.substring(9, in.length() - 1));
+		}
+		if (in.startsWith("Base64("))
+		{
+			return Base64.getDecoder().decode(in.substring(7, in.length() - 1));
+		}
+		if (in.startsWith("UUID("))
+		{
+			return UUID.fromString(in.substring(5, in.length() - 1));
+		}
+		if (in.startsWith("Decimal("))
+		{
+			return new BigDecimal(in.substring(8, in.length() - 1));
+		}
+		if (in.startsWith("Date("))
+		{
+			return LocalDate.parse(in.substring(5, in.length() - 1));
+		}
+		if (in.startsWith("Time("))
+		{
+			return LocalTime.parse(in.substring(5, in.length() - 1));
+		}
+		if (in.startsWith("DateTime("))
+		{
+			if (in.contains("+"))
+			{
+				return OffsetDateTime.parse(in.substring(9, in.length() - 1));
+			}
+			return LocalDateTime.parse(in.substring(9, in.length() - 1));
+		}
+		if (in.contains("."))
+		{
+			return Double.valueOf(in);
 		}
 
 		try
