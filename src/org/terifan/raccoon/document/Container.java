@@ -452,7 +452,7 @@ abstract class Container<K, R> implements Externalizable, Serializable
 		}
 		else if (aValue instanceof CharSequence)
 		{
-			aChecksum.update((CharSequence)aValue);
+			aChecksum.updateChars((CharSequence)aValue);
 		}
 		else if (aValue instanceof byte[])
 		{
@@ -461,11 +461,7 @@ abstract class Container<K, R> implements Externalizable, Serializable
 		}
 		else
 		{
-			int hashCode = Objects.hashCode(aValue);
-			aChecksum.update(0xFF & (hashCode >>> 24));
-			aChecksum.update(0xFF & (hashCode >> 16));
-			aChecksum.update(0xFF & (hashCode >> 8));
-			aChecksum.update(0xFF & hashCode);
+			aChecksum.updateInt(Objects.hashCode(aValue));
 		}
 	}
 
@@ -529,13 +525,13 @@ abstract class Container<K, R> implements Externalizable, Serializable
 
 
 	/**
-	 * Decodes a binary encoded Document / Array.
+	 * Decodes a binary encoded Document/Array.
 	 */
 	public R fromByteArray(byte[] aBinaryData)
 	{
-		try
+		try (BinaryDecoder decoder = new BinaryDecoder())
 		{
-			new VarInputStream().read(new ByteArrayInputStream(aBinaryData), this);
+			decoder.unmarshal(new ByteArrayInputStream(aBinaryData), this);
 		}
 		catch (IOException e)
 		{
@@ -550,15 +546,66 @@ abstract class Container<K, R> implements Externalizable, Serializable
 	 */
 	public byte[] toByteArray()
 	{
-		try
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (BinaryEncoder encoder = new BinaryEncoder())
 		{
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			new VarOutputStream().write(baos, this);
-			return baos.toByteArray();
+			encoder.marshal(baos, this);
 		}
 		catch (IOException e)
 		{
 			throw new IllegalStateException(e);
+		}
+		return baos.toByteArray();
+	}
+
+
+	/**
+	 * Read a binary encoded representation of an object from the stream provided.
+	 */
+	public R readFrom(InputStream aInputStream) throws IOException
+	{
+		try (BinaryDecoder decoder = new BinaryDecoder())
+		{
+			decoder.unmarshal(aInputStream, this);
+		}
+		return (R)this;
+	}
+
+
+	/**
+	 * Write a binary encoded representation of this object to the stream provided.
+	 */
+	public void writeTo(OutputStream aOutputStream) throws IOException
+	{
+		try (BinaryEncoder encoder = new BinaryEncoder())
+		{
+			encoder.marshal(aOutputStream, this);
+		}
+	}
+
+
+	@Override
+	public void readExternal(ObjectInput aInputStream) throws IOException, ClassNotFoundException
+	{
+		InputStream in = new InputStream()
+		{
+			@Override
+			public int read() throws IOException
+			{
+				return aInputStream.read();
+			}
+
+
+			@Override
+			public int read(byte[] aBuffer, int aOffset, int aLength) throws IOException
+			{
+				return aInputStream.read(aBuffer, aOffset, aLength);
+			}
+		};
+
+		try (BinaryDecoder decoder = new BinaryDecoder())
+		{
+			decoder.unmarshal(in, this);
 		}
 	}
 
@@ -573,25 +620,19 @@ abstract class Container<K, R> implements Externalizable, Serializable
 			{
 				aOutputStream.write(aByte);
 			}
-		};
-
-		new VarOutputStream().write(tmp, this);
-	}
 
 
-	@Override
-	public void readExternal(ObjectInput aInputStream) throws IOException, ClassNotFoundException
-	{
-		InputStream in = new InputStream()
-		{
 			@Override
-			public int read() throws IOException
+			public void write(byte[] aBuffer, int aOffset, int aLength) throws IOException
 			{
-				return aInputStream.read();
+				aOutputStream.write(aBuffer, aOffset, aLength);
 			}
 		};
 
-		new VarInputStream().read(in, this);
+		try (BinaryEncoder encoder = new BinaryEncoder())
+		{
+			encoder.marshal(tmp, this);
+		}
 	}
 
 

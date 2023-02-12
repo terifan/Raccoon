@@ -3,16 +3,16 @@ package org.terifan.raccoon.document;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map.Entry;
-import static org.terifan.raccoon.document.VarType.identify;
+import static org.terifan.raccoon.document.BinaryType.identify;
 
 
-class VarOutputStream implements AutoCloseable
+class BinaryEncoder implements AutoCloseable
 {
 	private Checksum mChecksum;
 	private OutputStream mOutputStream;
 
 
-	public void write(OutputStream aOutputStream, Container aContainer) throws IOException
+	public void marshal(OutputStream aOutputStream, Container aContainer) throws IOException
 	{
 		mOutputStream = aOutputStream;
 		mChecksum = new Checksum();
@@ -29,8 +29,8 @@ class VarOutputStream implements AutoCloseable
 
 	private void write(int aByte) throws IOException
 	{
-		mOutputStream.write(aByte & 0xFF);
-		mChecksum.update(aByte);
+		mOutputStream.write(aByte);
+		mChecksum.updateByte(aByte);
 	}
 
 
@@ -41,23 +41,20 @@ class VarOutputStream implements AutoCloseable
 	}
 
 
+	/**
+	 * note: Will not close the underlying stream!
+	 */
 	@Override
 	public void close() throws IOException
 	{
-		if (mOutputStream != null)
-		{
-			writeToken(checksum(), VarType.TERMINATOR);
-
-			mOutputStream.close();
-			mOutputStream = null;
-		}
+		mOutputStream = null;
 	}
 
 
 	public void writeObject(Object aValue) throws IOException
 	{
-		VarType type = identify(aValue);
-		writeToken(checksum(), type);
+		BinaryType type = identify(aValue);
+		writeToken(getChecksumNibble(), type);
 		writeValue(type, aValue);
 	}
 
@@ -67,7 +64,7 @@ class VarOutputStream implements AutoCloseable
 		for (Entry<String, Object> entry : aDocument.entrySet())
 		{
 			Object value = entry.getValue();
-			VarType type = identify(value);
+			BinaryType type = identify(value);
 
 			boolean numeric = entry.getKey().matches("[0-9]{1,}");
 			if (numeric)
@@ -83,7 +80,7 @@ class VarOutputStream implements AutoCloseable
 			writeValue(type, value);
 		}
 
-		writeToken(checksum(), VarType.TERMINATOR);
+		writeToken(getChecksumNibble(), BinaryType.TERMINATOR);
 	}
 
 
@@ -93,12 +90,12 @@ class VarOutputStream implements AutoCloseable
 
 		for (int offset = 0; offset < elementCount;)
 		{
-			VarType type = null;
+			BinaryType type = null;
 			int runLen = 0;
 
 			for (int i = offset; i < elementCount; i++, runLen++)
 			{
-				VarType nextType = identify(aArray.get(i));
+				BinaryType nextType = identify(aArray.get(i));
 				if (type != null && type != nextType)
 				{
 					break;
@@ -114,11 +111,11 @@ class VarOutputStream implements AutoCloseable
 			}
 		}
 
-		writeToken(checksum(), VarType.TERMINATOR);
+		writeToken(getChecksumNibble(), BinaryType.TERMINATOR);
 	}
 
 
-	private void writeValue(VarType aType, Object aValue) throws IOException
+	private void writeValue(BinaryType aType, Object aValue) throws IOException
 	{
 		switch (aType)
 		{
@@ -134,13 +131,13 @@ class VarOutputStream implements AutoCloseable
 	}
 
 
-	private void writeToken(int aValue, VarType aBinaryType) throws IOException
+	private void writeToken(int aValue, BinaryType aBinaryType) throws IOException
 	{
 		writeInterleaved(aValue, aBinaryType.code);
 	}
 
 
-	VarOutputStream writeString(String aValue) throws IOException
+	BinaryEncoder writeString(String aValue) throws IOException
 	{
 		writeUnsignedVarint(aValue.length());
 		writeUTF(aValue);
@@ -148,7 +145,7 @@ class VarOutputStream implements AutoCloseable
 	}
 
 
-	VarOutputStream writeBuffer(byte[] aBuffer) throws IOException
+	BinaryEncoder writeBuffer(byte[] aBuffer) throws IOException
 	{
 		writeUnsignedVarint(aBuffer.length);
 		writeBytes(aBuffer);
@@ -156,7 +153,7 @@ class VarOutputStream implements AutoCloseable
 	}
 
 
-	VarOutputStream writeVarint(long aValue) throws IOException
+	BinaryEncoder writeVarint(long aValue) throws IOException
 	{
 		aValue = (aValue << 1) ^ (aValue >> 63);
 
@@ -176,7 +173,7 @@ class VarOutputStream implements AutoCloseable
 	}
 
 
-	VarOutputStream writeUnsignedVarint(long aValue) throws IOException
+	BinaryEncoder writeUnsignedVarint(long aValue) throws IOException
 	{
 		for (;;)
 		{
@@ -238,7 +235,7 @@ class VarOutputStream implements AutoCloseable
 	}
 
 
-	int checksum()
+	private int getChecksumNibble()
 	{
 		return mChecksum.getValue() & 0b1111;
 	}

@@ -142,6 +142,63 @@ public class TestLOB
 //
 //				db.commit();
 //			}
+
+//			try ( RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+//			{
+//				db.getCollection("files").stream().forEach(file ->
+//				{
+//					try ( LobByteChannel lob = db.openLob(file.getObjectId("lob"), LobOpenOption.READ))
+//					{
+//						BufferedImage image = ImageIO.read(lob.newInputStream());
+//						System.out.println(image);
+//						lob.delete();
+//					}
+//					catch (Exception e)
+//					{
+//						e.printStackTrace(System.out);
+//					}
+//				});
+//
+//				db.commit();
+//			}
+
+//			try ( RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+//			{
+//				db.getCollection("files").stream().forEach(file ->
+//				{
+//					try ( LobByteChannel lob = db.openLob(file.getObjectId("lob"), LobOpenOption.READ))
+//					{
+//						BufferedImage image = ImageIO.read(lob.newInputStream());
+//						System.out.println(image);
+//						lob.delete();
+//					}
+//					catch (Exception e)
+//					{
+//						e.printStackTrace(System.out);
+//					}
+//				});
+//
+//				db.commit();
+//			}
+
+//			try ( RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+//			{
+//				db.getCollection("files").stream().forEach(file ->
+//				{
+//					try ( LobByteChannel lob = db.openLob(file.getObjectId("lob"), LobOpenOption.READ))
+//					{
+//						BufferedImage image = ImageIO.read(lob.newInputStream());
+//						System.out.println(image);
+//						lob.delete();
+//					}
+//					catch (Exception e)
+//					{
+//						e.printStackTrace(System.out);
+//					}
+//				});
+//
+//				db.commit();
+//			}
 		}
 		catch (Exception e)
 		{

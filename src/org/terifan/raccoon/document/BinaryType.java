@@ -9,81 +9,81 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
 import org.terifan.raccoon.ObjectId;
-import static org.terifan.raccoon.document.VarType.values;
+import static org.terifan.raccoon.document.BinaryType.values;
 
 
-enum VarType
+enum BinaryType
 {
 	TERMINATOR(0),
 	DOCUMENT(1),
 	ARRAY(2),
-	INT(3,
+	OBJECTID(3,
+		(aOutput, aValue) -> aOutput.writeBytes(((ObjectId)aValue).toByteArray()),
+		aInput -> ObjectId.fromBytes(aInput.readBytes(new byte[ObjectId.LENGTH]))
+	),
+	INT(4,
 		(aOutput, aValue) -> aOutput.writeVarint((Integer)aValue),
 		aInput -> (int)aInput.readVarint()
 	),
-	DOUBLE(4,
+	DOUBLE(5,
 		(aOutput, aValue) -> aOutput.writeVarint(Long.reverseBytes(Double.doubleToLongBits((Double)aValue))),
 		aInput -> Double.longBitsToDouble(Long.reverseBytes(aInput.readVarint()))
 	),
-	BOOLEAN(5,
+	BOOLEAN(6,
 		(aOutput, aValue) -> aOutput.writeVarint((Boolean)aValue ? 1 : 0),
 		aInput -> aInput.readVarint() == 1
 	),
-	STRING(6,
+	STRING(7,
 		(aOutput, aValue) -> aOutput.writeString(aValue.toString()),
 		aInput -> aInput.readString()
 	),
-	NULL(7,
+	NULL(8,
 		(aOutput, aValue) -> {},
 		aInput -> null
 	),
-	BYTE(8,
+	BYTE(9,
 		(aOutput, aValue) -> aOutput.writeVarint(0xff & (Byte)aValue),
 		aInput -> (byte)aInput.readVarint()
 	),
-	SHORT(9,
+	SHORT(10,
 		(aOutput, aValue) -> aOutput.writeVarint((Short)aValue),
 		aInput -> (short)aInput.readVarint()
 	),
-	LONG(10,
+	LONG(11,
 		(aOutput, aValue) -> aOutput.writeVarint((Long)aValue),
 		aInput -> aInput.readVarint()
 	),
-	FLOAT(11,
+	FLOAT(12,
 		(aOutput, aValue) -> aOutput.writeVarint(Float.floatToIntBits((Float)aValue)),
 		aInput -> Float.intBitsToFloat((int)aInput.readVarint())
 	),
-	BINARY(12,
+	BINARY(13,
 		(aOutput, aValue) -> aOutput.writeBuffer((byte[])aValue),
 		aInput -> aInput.readBuffer()
 	),
-	UUID(13,
+	UUID(14,
 		(aOutput, aValue) -> aOutput.writeVarint(((UUID)aValue).getMostSignificantBits()).writeVarint(((UUID)aValue).getLeastSignificantBits()),
 		aInput -> new java.util.UUID(aInput.readVarint(), aInput.readVarint())
 	),
-	DATETIME(14,
+	DATETIME(15,
 		(aOutput, aValue) -> aOutput.writeUnsignedVarint(localDateToNumber(((LocalDateTime)aValue).toLocalDate())).writeUnsignedVarint(localTimeToNumber(((LocalDateTime)aValue).toLocalTime())),
 		aInput -> LocalDateTime.of(numberToLocalDate((int)aInput.readUnsignedVarint()), numberToLocalTime(aInput.readUnsignedVarint()))
 	),
-	DATE(15,
+	DATE(16,
 		(aOutput, aValue) -> aOutput.writeUnsignedVarint(localDateToNumber((LocalDate)aValue)),
 		aInput -> numberToLocalDate((int)aInput.readUnsignedVarint())
 	),
-	TIME(16,
+	TIME(17,
 		(aOutput, aValue) -> aOutput.writeUnsignedVarint(localTimeToNumber((LocalTime)aValue)),
 		aInput -> numberToLocalTime(aInput.readUnsignedVarint())
 	),
-	OFFSETDATETIME(17,
+	OFFSETDATETIME(18,
 		(aOutput, aValue) -> aOutput.writeUnsignedVarint(localDateToNumber(((OffsetDateTime)aValue).toLocalDate())).writeUnsignedVarint(localTimeToNumber(((OffsetDateTime)aValue).toLocalTime())).writeVarint(((OffsetDateTime)aValue).getOffset().getTotalSeconds()),
 		aInput -> OffsetDateTime.of(numberToLocalDate((int)aInput.readUnsignedVarint()), numberToLocalTime(aInput.readUnsignedVarint()), ZoneOffset.ofTotalSeconds((int)aInput.readVarint()))
 	),
-	DECIMAL(18,
+	DECIMAL(19,
 		(aOutput, aValue) -> aOutput.writeString(((BigDecimal)aValue).toString()),
 		aInput -> new BigDecimal(aInput.readString())
-	),
-	OBJECTID(19,
-		(aOutput, aValue) -> aOutput.writeBytes(((ObjectId)aValue).toByteArray()),
-		aInput -> ObjectId.fromBytes(aInput.readBytes(new byte[ObjectId.LENGTH]))
 	);
 
 	public final int code;
@@ -91,13 +91,13 @@ enum VarType
 	public Decoder decoder;
 
 
-	private VarType(int aCode)
+	private BinaryType(int aCode)
 	{
 		code = aCode;
 	}
 
 
-	private VarType(int aCode, Encoder aEncoder, Decoder aDecoder)
+	private BinaryType(int aCode, Encoder aEncoder, Decoder aDecoder)
 	{
 		code = aCode;
 		encoder = aEncoder;
@@ -105,15 +105,15 @@ enum VarType
 	}
 
 
-	public static VarType get(int aCode)
+	public static BinaryType get(int aCode)
 	{
-		VarType type = values()[aCode];
+		BinaryType type = values()[aCode];
 		assert type.ordinal() == aCode;
 		return type;
 	}
 
 
-	static VarType identify(Object aValue)
+	static BinaryType identify(Object aValue)
 	{
 		if (aValue == null)
 		{
@@ -124,6 +124,7 @@ enum VarType
 
 		if (Document.class == cls) return DOCUMENT;
 		if (Array.class == cls) return ARRAY;
+		if (ObjectId.class == cls) return OBJECTID;
 		if (String.class == cls) return STRING;
 		if (Integer.class == cls) return INT;
 		if (Boolean.class == cls) return BOOLEAN;
@@ -137,7 +138,6 @@ enum VarType
 		if (LocalDateTime.class == cls) return DATETIME;
 		if (OffsetDateTime.class == cls) return OFFSETDATETIME;
 		if (UUID.class == cls) return UUID;
-		if (ObjectId.class == cls) return OBJECTID;
 		if (BigDecimal.class == cls) return DECIMAL;
 		if (byte[].class == cls) return BINARY;
 
@@ -148,14 +148,14 @@ enum VarType
 	@FunctionalInterface
 	static interface Encoder
 	{
-		void encode(VarOutputStream aOutput, Object aValue) throws IOException;
+		void encode(BinaryEncoder aOutput, Object aValue) throws IOException;
 	}
 
 
 	@FunctionalInterface
 	static interface Decoder
 	{
-		Object decode(VarInputStream aInput) throws IOException;
+		Object decode(BinaryDecoder aInput) throws IOException;
 	}
 
 

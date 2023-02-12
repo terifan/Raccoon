@@ -234,4 +234,90 @@ public class DocumentNGTest
 		assertEquals(docIn2, docOut2);
 		assertEquals(s, "hello");
 	}
+
+
+	@Test
+	public void testBinaryOutput() throws IOException, ClassNotFoundException
+	{
+		Document out1 = Document.of("_id:[1],name:'bob'");
+		Document out2 = Document.of("_id:[2],name:'eve'");
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		out1.writeTo(baos);
+		out2.writeTo(baos);
+
+//		Log.hexDump(baos.toByteArray());
+
+		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+		Document in1 = new Document().readFrom(bais);
+		Document in2 = new Document().readFrom(bais);
+
+		assertEquals(in1, out1);
+		assertEquals(in2, out2);
+	}
+
+
+	@Test(expectedExceptions = StreamChecksumException.class)
+	public void testChecksumError() throws IOException, ClassNotFoundException
+	{
+		Document out = Document.of("_id:[1],name:'bob'");
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		out.writeTo(baos);
+
+		byte[] data = baos.toByteArray();
+		data[10] ^= 2; // "name" => "ncme"
+
+//		Log.hexDump(data);
+
+		new Document().readFrom(new ByteArrayInputStream(data));
+	}
+
+
+	@Test
+	public void testCrossMarshalling() throws IOException, ClassNotFoundException
+	{
+		Document out1 = Document.of("_id:[1],name:'bob'");
+		Document out2 = Document.of("_id:[2],name:'eve'");
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		baos.write(out1.toByteArray());
+		baos.write('x');
+		out2.writeTo(baos);
+
+		ByteArrayInputStream input = new ByteArrayInputStream(baos.toByteArray());
+		assertEquals(new Document().readFrom(input), out1);
+		assertEquals(input.read(), 'x');
+		assertEquals(new Document().fromByteArray(input.readAllBytes()), out2);
+	}
+
+
+//	@Test
+//	public void testX() throws IOException, ClassNotFoundException
+//	{
+//		Log.hexDump(Document.of("_id:[1],name:'bob'").toByteArray());
+//		Log.hexDump(Document.of("_id:[2],name:'bob'").toByteArray());
+//	}
+
+
+	@Test
+	public void testHashcode() throws IOException, ClassNotFoundException
+	{
+		assertEquals(Document.of("_id:1").hashCode(), -1731609100);
+		assertEquals(Document.of("_id:'1'").hashCode(), -382655104);
+		assertEquals(Document.of("_id:[1]").hashCode(), 43187162);
+		assertEquals(Document.of("_id:['1']").hashCode(), 1794624735);
+	}
+
+
+	@Test
+	public void testNumericKeys() throws IOException, ClassNotFoundException
+	{
+		Document out = Document.of("1:1,2:1,3:1");
+		byte[] data = out.toByteArray();
+
+		Document in = new Document().fromByteArray(data);
+
+		assertEquals(out, in);
+	}
 }

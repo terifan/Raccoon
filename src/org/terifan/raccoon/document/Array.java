@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 
 
-public class Array extends Container<Integer, Array> implements Iterable, Externalizable, Cloneable, Comparable<Array>
+public final class Array extends Container<Integer, Array> implements Iterable, Externalizable, Cloneable, Comparable<Array>
 {
 	private final static long serialVersionUID = 1L;
 
@@ -42,7 +42,7 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 	{
 		if (aValue == null || isSupportedType(aValue))
 		{
-			addImpl(aValue);
+			mValues.add(aValue);
 		}
 		else if (aValue.getClass().isArray())
 		{
@@ -51,19 +51,19 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 			{
 				arr.add(java.lang.reflect.Array.get(aValue, i));
 			}
-			addImpl(arr);
+			mValues.add(arr);
 		}
 		else if (aValue instanceof Iterable)
 		{
 			Array arr = new Array();
-			((Iterable)aValue).forEach(arr::addImpl);
-			addImpl(arr);
+			((Iterable)aValue).forEach(mValues::add);
+			mValues.add(arr);
 		}
 		else if (aValue instanceof Stream)
 		{
 			Array arr = new Array();
-			((Stream)aValue).forEach(arr::addImpl);
-			addImpl(arr);
+			((Stream)aValue).forEach(mValues::add);
+			mValues.add(arr);
 		}
 		else
 		{
@@ -87,12 +87,6 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 		}
 
 		return this;
-	}
-
-
-	protected void addImpl(Object aValue)
-	{
-		mValues.add(aValue);
 	}
 
 
@@ -150,6 +144,8 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 	@Override
 	Checksum hashCode(Checksum aChecksum)
 	{
+		aChecksum.updateInt(93090393 ^ size()); // == "array".hashCode()
+
 		mValues.forEach(value -> super.hashCode(aChecksum, value));
 
 		return aChecksum;
@@ -230,11 +226,11 @@ public class Array extends Container<Integer, Array> implements Iterable, Extern
 
 					if (v == null || !v.getClass().isArray())
 					{
-						array.addImpl(v);
+						array.mValues.add(v);
 					}
 					else
 					{
-						array.addImpl(of(v));
+						array.mValues.add(of(v));
 					}
 				}
 			}

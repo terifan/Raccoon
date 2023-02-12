@@ -7,13 +7,13 @@ import java.util.Iterator;
 import java.util.function.Supplier;
 
 
-class VarInputStream implements AutoCloseable, Iterable<Object>
+class BinaryDecoder implements AutoCloseable, Iterable<Object>
 {
 	private Checksum mChecksum;
 	private InputStream mInputStream;
 
 
-	public void read(InputStream aInputStream, Container aContainer) throws IOException
+	public void unmarshal(InputStream aInputStream, Container aContainer) throws IOException
 	{
 		mInputStream = aInputStream;
 		mChecksum = new Checksum();
@@ -35,7 +35,7 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 		{
 			throw new EOFException();
 		}
-		mChecksum.update(c);
+		mChecksum.updateByte(c);
 		return c;
 	}
 
@@ -65,7 +65,7 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 		{
 			throw new StreamChecksumException("Checksum error in data stream");
 		}
-		if (token.type == VarType.TERMINATOR)
+		if (token.type == BinaryType.TERMINATOR)
 		{
 			return null;
 		}
@@ -110,7 +110,7 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 				try
 				{
 					next = supplier.get();
-					if (next == VarType.TERMINATOR)
+					if (next == BinaryType.TERMINATOR)
 					{
 						next = null;
 						close();
@@ -147,7 +147,7 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 		{
 			Token token = readToken();
 
-			if (token.type == VarType.TERMINATOR)
+			if (token.type == BinaryType.TERMINATOR)
 			{
 				if (token.value != token.checksum)
 				{
@@ -179,7 +179,7 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 		{
 			Token token = readToken();
 
-			if (token.type == VarType.TERMINATOR)
+			if (token.type == BinaryType.TERMINATOR)
 			{
 				if (token.value != token.checksum)
 				{
@@ -198,7 +198,7 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 	}
 
 
-	private Object readValue(VarType aType) throws IOException
+	private Object readValue(BinaryType aType) throws IOException
 	{
 		switch (aType)
 		{
@@ -218,7 +218,7 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 		token.checksum = checksum();
 		long params = readInterleaved();
 		token.value = (int)(params >>> 32);
-		token.type = VarType.get((int)params);
+		token.type = BinaryType.get((int)params);
 		return token;
 	}
 
@@ -227,7 +227,7 @@ class VarInputStream implements AutoCloseable, Iterable<Object>
 	{
 		int value;
 		int checksum;
-		VarType type;
+		BinaryType type;
 	}
 
 

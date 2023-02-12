@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 
-public class Document extends Container<String, Document> implements Externalizable, Cloneable, Comparable<Document>
+public final class Document extends Container<String, Document> implements Externalizable, Cloneable, Comparable<Document>
 {
 	private final static long serialVersionUID = 1L;
 
@@ -99,11 +99,12 @@ public class Document extends Container<String, Document> implements Externaliza
 	@Override
 	Checksum hashCode(Checksum aChecksum)
 	{
+		aChecksum.updateInt(861720859 ^ size()); // == "document".hashCode()
+
 		mValues.entrySet().forEach(entry ->
 		{
-			aChecksum.update(entry.getKey());
-			Object value = entry.getValue();
-			super.hashCode(aChecksum, value);
+			aChecksum.updateChars(entry.getKey());
+			super.hashCode(aChecksum, entry.getValue());
 		});
 
 		return aChecksum;
