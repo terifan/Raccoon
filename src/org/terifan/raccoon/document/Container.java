@@ -424,7 +424,7 @@ abstract class Container<K, R> implements Externalizable, Serializable
 	{
 		if (isSupportedType(aValue))
 		{
-			return (R)putImpl(aKey, aValue);
+			return putImpl(aKey, aValue);
 		}
 
 		throw new IllegalArgumentException("Unsupported type: " + aValue.getClass());

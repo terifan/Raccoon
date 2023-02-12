@@ -131,9 +131,9 @@ class BinaryEncoder implements AutoCloseable
 	}
 
 
-	private void writeToken(int aValue, BinaryType aBinaryType) throws IOException
+	private void writeToken(int aValue, BinaryType aType) throws IOException
 	{
-		writeInterleaved(aValue, aBinaryType.code);
+		writeInterleaved(aValue, aType.ordinal());
 	}
 
 

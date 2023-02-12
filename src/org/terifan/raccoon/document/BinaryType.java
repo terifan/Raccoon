@@ -9,7 +9,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
 import org.terifan.raccoon.ObjectId;
-import static org.terifan.raccoon.document.BinaryType.values;
 
 
 enum BinaryType
@@ -82,34 +81,26 @@ enum BinaryType
 		aInput -> OffsetDateTime.of(numberToLocalDate((int)aInput.readUnsignedVarint()), numberToLocalTime(aInput.readUnsignedVarint()), ZoneOffset.ofTotalSeconds((int)aInput.readVarint()))
 	),
 	DECIMAL(19,
-		(aOutput, aValue) -> aOutput.writeString(((BigDecimal)aValue).toString()),
+		(aOutput, aValue) -> aOutput.writeString(aValue.toString()),
 		aInput -> new BigDecimal(aInput.readString())
 	);
 
-	public final int code;
 	public Encoder encoder;
 	public Decoder decoder;
 
 
 	private BinaryType(int aCode)
 	{
-		code = aCode;
+		this(aCode, null, null);
 	}
 
 
 	private BinaryType(int aCode, Encoder aEncoder, Decoder aDecoder)
 	{
-		code = aCode;
+		assert aCode == ordinal();
+
 		encoder = aEncoder;
 		decoder = aDecoder;
-	}
-
-
-	public static BinaryType get(int aCode)
-	{
-		BinaryType type = values()[aCode];
-		assert type.ordinal() == aCode;
-		return type;
 	}
 
 
@@ -131,17 +122,17 @@ enum BinaryType
 		if (Double.class == cls) return DOUBLE;
 		if (Long.class == cls) return LONG;
 		if (Float.class == cls) return FLOAT;
-		if (Byte.class == cls) return BYTE;
-		if (Short.class == cls) return SHORT;
+		if (byte[].class == cls) return BINARY;
+		if (BigDecimal.class == cls) return DECIMAL;
+		if (UUID.class == cls) return UUID;
+		if (OffsetDateTime.class == cls) return OFFSETDATETIME;
+		if (LocalDateTime.class == cls) return DATETIME;
 		if (LocalDate.class == cls) return DATE;
 		if (LocalTime.class == cls) return TIME;
-		if (LocalDateTime.class == cls) return DATETIME;
-		if (OffsetDateTime.class == cls) return OFFSETDATETIME;
-		if (UUID.class == cls) return UUID;
-		if (BigDecimal.class == cls) return DECIMAL;
-		if (byte[].class == cls) return BINARY;
+		if (Byte.class == cls) return BYTE;
+		if (Short.class == cls) return SHORT;
 
-		throw new IllegalArgumentException("Failed to marshal an unsupported value of type " + cls.getCanonicalName());
+		throw new IllegalArgumentException("Failed to marshal; unsupported value of type " + cls.getCanonicalName());
 	}
 
 

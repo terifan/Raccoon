@@ -218,7 +218,7 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 		token.checksum = checksum();
 		long params = readInterleaved();
 		token.value = (int)(params >>> 32);
-		token.type = BinaryType.get((int)params);
+		token.type = BinaryType.values()[(int)params];
 		return token;
 	}
 

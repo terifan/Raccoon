@@ -265,7 +265,7 @@ public final class Array extends Container<Integer, Array> implements Iterable, 
 
 
 	/**
-	 * Performs a deep clone of this Container.
+	 * Performs a deep clone of this Array and all it's values.
 	 */
 	@Override
 	public Array clone()

@@ -148,7 +148,7 @@ public final class Document extends Container<String, Document> implements Exter
 
 			if ((value instanceof Container) && (otherValue instanceof Container))
 			{
-				if (!((Container)value).same((Container)otherValue))
+				if (!((Container)value).same(otherValue))
 				{
 //					System.out.println("Value of key '" + key + "' missmatch: found: " + otherValue + ", expected: " + value);
 					return false;
@@ -173,7 +173,7 @@ public final class Document extends Container<String, Document> implements Exter
 
 
 	/**
-	 * Performs a deep clone of this Document.
+	 * Performs a deep clone of this Document and all it's values.
 	 */
 	@Override
 	public Document clone()

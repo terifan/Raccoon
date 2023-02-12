@@ -48,7 +48,7 @@ class JSONDecoder
 				return (T)readArray((Array)aContainer);
 			}
 		}
-		catch (Exception e)
+		catch (IOException e)
 		{
 			throw new IllegalArgumentException(e);
 		}
