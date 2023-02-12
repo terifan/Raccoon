@@ -202,55 +202,6 @@ public class DocumentNGTest
 	}
 
 
-	private Document createTestDocument()
-	{
-		Byte _byte = Byte.MAX_VALUE;
-		Short _short = Short.MAX_VALUE;
-		Integer _int = Integer.MAX_VALUE;
-		Float _float = 3.14f;
-		Long _long = Long.MAX_VALUE;
-		Double _double = Math.PI;
-		Boolean _bool = true;
-		Object _null = null;
-		String _string = "hello";
-		byte[] _bytes = "world".getBytes();
-		UUID _uuid = UUID.randomUUID();
-		OffsetDateTime _odt = OffsetDateTime.now();
-		LocalDate _ld = LocalDate.now();
-		LocalTime _lt = LocalTime.now();
-		LocalDateTime _ldt = LocalDateTime.now();
-		Array _arr = Array.of((byte)1,(byte)2,(byte)3); // JSON decoder decodes values to smallest possible representation
-		Document _doc = new Document().put("docu","ment");
-		BigDecimal _bd = new BigDecimal("31.31646131940661321981");
-
-		Document _allTypesDoc = new Document()
-			.put("byte", _byte)
-			.put("short", _short)
-			.put("int", _int)
-			.put("long", _long)
-			.put("float", _float)
-			.put("double", _double)
-			.put("bool", _bool)
-			.put("null", _null)
-			.put("string", _string)
-			.put("bytes", _bytes)
-			.put("uuid", _uuid)
-			.put("odt", _odt)
-			.put("ld", _ld)
-			.put("lt", _lt)
-			.put("ldt", _ldt)
-			.put("arr", _arr)
-			.put("doc", _doc)
-			.put("bd", _bd);
-
-		Array _allTypesArr = Array.of(_allTypesDoc.values());
-
-		return new Document()
-			.put("doc", _allTypesDoc)
-			.put("arr", _allTypesArr);
-	}
-
-
 	@Test
 	public void testUnquotedJSON()
 	{
@@ -263,17 +214,24 @@ public class DocumentNGTest
 	@Test
 	public void testObjectOutputStream() throws IOException, ClassNotFoundException
 	{
-		Document docOut = createTestDocument();
+		Document docOut1 = Document.of("_id:[{low:1,high:2}],name:'bob'");
+		Document docOut2 = Document.of("_id:[{low:3,high:5}],name:'dan'");
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try (ObjectOutputStream oos = new ObjectOutputStream(baos))
 		{
-			oos.writeObject(docOut);
+			oos.writeObject(docOut1);
+			oos.writeUTF("hello");
+			oos.writeObject(docOut2);
 		}
 
 		ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
-		Object docIn = ois.readObject();
+		Object docIn1 = ois.readObject();
+		String s = ois.readUTF();
+		Object docIn2 = ois.readObject();
 
-		assertEquals(docIn, docOut);
+		assertEquals(docIn1, docOut1);
+		assertEquals(docIn2, docOut2);
+		assertEquals(s, "hello");
 	}
 }

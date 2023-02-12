@@ -507,15 +507,6 @@ abstract class Container<K, R> implements Externalizable, Serializable
 	}
 
 
-	/**
-	 * Encodes this instance into a JSON while retaining type information.
-	 */
-	public String toTypedJson()
-	{
-		return new JSONEncoder().marshal(this, true, true);
-	}
-
-
 	public R fromJson(String aJson)
 	{
 		return (R)new JSONDecoder().unmarshal(aJson, this);
@@ -525,6 +516,15 @@ abstract class Container<K, R> implements Externalizable, Serializable
 	public String toJson()
 	{
 		return new JSONEncoder().marshal(this, true, false);
+	}
+
+
+	/**
+	 * Encodes this instance into a JSON while retaining some type information.
+	 */
+	public String toTypedJson()
+	{
+		return new JSONEncoder().marshal(this, true, true);
 	}
 
 
@@ -574,6 +574,7 @@ abstract class Container<K, R> implements Externalizable, Serializable
 				aOutputStream.write(aByte);
 			}
 		};
+
 		new VarOutputStream().write(tmp, this);
 	}
 
