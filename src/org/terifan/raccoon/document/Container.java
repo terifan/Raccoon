@@ -535,7 +535,7 @@ abstract class Container<K, R> implements Externalizable, Serializable
 		}
 		catch (IOException e)
 		{
-			throw new IllegalStateException(e);
+			throw new StreamException(e.toString());
 		}
 		return (R)this;
 	}
@@ -553,7 +553,7 @@ abstract class Container<K, R> implements Externalizable, Serializable
 		}
 		catch (IOException e)
 		{
-			throw new IllegalStateException(e);
+			throw new StreamException(e.toString());
 		}
 		return baos.toByteArray();
 	}

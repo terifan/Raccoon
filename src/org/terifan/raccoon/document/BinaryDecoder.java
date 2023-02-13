@@ -1,6 +1,5 @@
 package org.terifan.raccoon.document;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
@@ -33,7 +32,7 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 		int c = mInputStream.read();
 		if (c == -1)
 		{
-			throw new EOFException();
+			throw new StreamException("Premature end of stream");
 		}
 		mChecksum.updateByte(c);
 		return c;
@@ -50,11 +49,7 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 	@Override
 	public void close() throws IOException
 	{
-		if (mInputStream != null)
-		{
-			mInputStream.close();
-			mInputStream = null;
-		}
+		mInputStream = null;
 	}
 
 
@@ -63,7 +58,7 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 		Token token = readToken();
 		if (token.value != token.checksum)
 		{
-			throw new StreamChecksumException("Checksum error in data stream");
+			throw new StreamException("Checksum error in data stream");
 		}
 		if (token.type == BinaryType.TERMINATOR)
 		{
@@ -151,7 +146,7 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 			{
 				if (token.value != token.checksum)
 				{
-					throw new StreamChecksumException("Checksum error in data stream");
+					throw new StreamException("Checksum error in data stream");
 				}
 				break;
 			}
@@ -183,7 +178,7 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 			{
 				if (token.value != token.checksum)
 				{
-					throw new StreamChecksumException("Checksum error in data stream");
+					throw new StreamException("Checksum error in data stream");
 				}
 				break;
 			}
@@ -214,12 +209,19 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 
 	private Token readToken() throws IOException
 	{
-		Token token = new Token();
-		token.checksum = checksum();
-		long params = readInterleaved();
-		token.value = (int)(params >>> 32);
-		token.type = BinaryType.values()[(int)params];
-		return token;
+		try
+		{
+			Token token = new Token();
+			token.checksum = getChecksumValue();
+			long params = readInterleaved();
+			token.value = (int)(params >>> 32);
+			token.type = BinaryType.values()[(int)params];
+			return token;
+		}
+		catch (ArrayIndexOutOfBoundsException e)
+		{
+			throw new StreamException("Type parameter out of range");
+		}
 	}
 
 
@@ -255,7 +257,7 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 			}
 		}
 
-		throw new IllegalStateException("Variable int64 exceeds maximum length");
+		throw new StreamException("Variable int64 exceeds maximum length");
 	}
 
 
@@ -271,12 +273,17 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 			}
 		}
 
-		throw new IllegalStateException("Variable int64 exceeds maximum length");
+		throw new StreamException("Variable int64 exceeds maximum length");
 	}
 
 
 	private String readUTF(int aLength) throws IOException
 	{
+		if (aLength < 0)
+		{
+			throw new StreamException("Negative string length");
+		}
+
 		char[] output = new char[aLength];
 
 		for (int i = 0; i < output.length; i++)
@@ -297,7 +304,7 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 			}
 			else
 			{
-				throw new IllegalStateException("This decoder only handles 16-bit characters: c = " + c);
+				throw new StreamException("This decoder only handles 16-bit characters: c = " + c);
 			}
 		}
 
@@ -308,11 +315,11 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 	private long readInterleaved() throws IOException
 	{
 		long p = readUnsignedVarint();
-		return ((long)reverseShift(p) << 32) | reverseShift(p >>> 1);
+		return (reverseShift(p) << 32) | reverseShift(p >>> 1);
 	}
 
 
-	private static int reverseShift(long aWord)
+	private static long reverseShift(long aWord)
 	{
 		aWord &= 0x5555555555555555L;
 
@@ -322,12 +329,12 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 		aWord = (aWord | (aWord >> 8)) & 0x0000ffff0000ffffL;
 		aWord = (aWord | (aWord >> 16)) & 0x00000000ffffffffL;
 
-		return (int)aWord;
+		return aWord;
 	}
 
 
-	int checksum()
+	private int getChecksumValue()
 	{
-		return ((int)mChecksum.getValue()) & 0b1111;
+		return mChecksum.getValue() & 0b1111;
 	}
 }

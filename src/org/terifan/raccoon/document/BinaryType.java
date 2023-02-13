@@ -2,6 +2,7 @@ package org.terifan.raccoon.document;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -164,12 +165,26 @@ enum BinaryType
 
 	private static LocalDate numberToLocalDate(int aLocalDate)
 	{
-		return LocalDate.of(aLocalDate >>> 16, 0xff & (aLocalDate >>> 8), 0xff & aLocalDate);
+		try
+		{
+			return LocalDate.of(aLocalDate >>> 16, 0xff & (aLocalDate >>> 8), 0xff & aLocalDate);
+		}
+		catch (DateTimeException e)
+		{
+			throw new StreamException(e.getMessage());
+		}
 	}
 
 
 	private static LocalTime numberToLocalTime(long aLocalTime)
 	{
-		return LocalTime.of((int)(aLocalTime >>> 48), (int)(0xff & (aLocalTime >>> 40)), (int)(0xff & (aLocalTime >> 32)), (int)(0xffffffffL & aLocalTime));
+		try
+		{
+			return LocalTime.of((int)(aLocalTime >>> 48), (int)(0xff & (aLocalTime >>> 40)), (int)(0xff & (aLocalTime >> 32)), (int)(0xffffffffL & aLocalTime));
+		}
+		catch (DateTimeException e)
+		{
+			throw new StreamException(e.getMessage());
+		}
 	}
 }

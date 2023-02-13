@@ -54,7 +54,7 @@ class BinaryEncoder implements AutoCloseable
 	public void writeObject(Object aValue) throws IOException
 	{
 		BinaryType type = identify(aValue);
-		writeToken(getChecksumNibble(), type);
+		writeToken(getChecksumValue(), type);
 		writeValue(type, aValue);
 	}
 
@@ -80,7 +80,7 @@ class BinaryEncoder implements AutoCloseable
 			writeValue(type, value);
 		}
 
-		writeToken(getChecksumNibble(), BinaryType.TERMINATOR);
+		writeToken(getChecksumValue(), BinaryType.TERMINATOR);
 	}
 
 
@@ -111,7 +111,7 @@ class BinaryEncoder implements AutoCloseable
 			}
 		}
 
-		writeToken(getChecksumNibble(), BinaryType.TERMINATOR);
+		writeToken(getChecksumValue(), BinaryType.TERMINATOR);
 	}
 
 
@@ -235,7 +235,7 @@ class BinaryEncoder implements AutoCloseable
 	}
 
 
-	private int getChecksumNibble()
+	private int getChecksumValue()
 	{
 		return mChecksum.getValue() & 0b1111;
 	}

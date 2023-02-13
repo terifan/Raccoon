@@ -47,7 +47,14 @@ class Checksum
 
 	Checksum update(byte[] aBuffer, int aOffset, int aLength)
 	{
-		mCRC.update(aBuffer, aOffset, aLength);
+		try
+		{
+			mCRC.update(aBuffer, aOffset, aLength);
+		}
+		catch (ArrayIndexOutOfBoundsException e)
+		{
+			throw new StreamException("Buffer out of range");
+		}
 		return this;
 	}
 

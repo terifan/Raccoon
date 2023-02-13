@@ -1,12 +1,12 @@
 package org.terifan.raccoon.document;
 
 
-public class StreamChecksumException extends RuntimeException
+public class StreamException extends RuntimeException
 {
 	private final static long serialVersionUID = 1L;
 
 
-	public StreamChecksumException(String aMessage)
+	public StreamException(String aMessage)
 	{
 		super(aMessage);
 	}

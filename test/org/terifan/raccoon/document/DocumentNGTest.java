@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.util.Random;
 import org.terifan.raccoon.ObjectId;
 import java.util.UUID;
 import org.terifan.raccoon.util.Log;
@@ -257,7 +258,7 @@ public class DocumentNGTest
 	}
 
 
-	@Test(expectedExceptions = StreamChecksumException.class)
+	@Test(expectedExceptions = StreamException.class)
 	public void testChecksumError() throws IOException, ClassNotFoundException
 	{
 		Document out = Document.of("_id:[1],name:'bob'");
@@ -292,12 +293,32 @@ public class DocumentNGTest
 	}
 
 
-//	@Test
-//	public void testX() throws IOException, ClassNotFoundException
-//	{
-//		Log.hexDump(Document.of("_id:[1],name:'bob'").toByteArray());
-//		Log.hexDump(Document.of("_id:[2],name:'bob'").toByteArray());
-//	}
+	@Test(enabled = false)
+	public void testChecksumQualityTest() throws IOException, ClassNotFoundException
+	{
+		Document person = _Person.createPerson(new Random());
+		new Document().fromByteArray(person.toByteArray());
+
+		Random rnd = new Random();
+		byte[] data = person.toByteArray();
+
+		int err = 0;
+		for (int i = 0; i < 1000_000; i++)
+		{
+			byte[] tmp = data.clone();
+			tmp[rnd.nextInt(data.length)] ^= 1 << rnd.nextInt(8);
+			try
+			{
+				Document doc = new Document().fromByteArray(tmp);
+			}
+			catch (StreamException e)
+			{
+				err++;
+			}
+		}
+
+		System.out.println(err); // expected 99.95% errors detected
+	}
 
 
 	@Test
