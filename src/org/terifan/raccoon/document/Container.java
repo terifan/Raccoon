@@ -529,9 +529,9 @@ abstract class Container<K, R> implements Externalizable, Serializable
 	 */
 	public R fromByteArray(byte[] aBinaryData)
 	{
-		try (BinaryDecoder decoder = new BinaryDecoder())
+		try (BinaryDecoder decoder = new BinaryDecoder(new ByteArrayInputStream(aBinaryData)))
 		{
-			decoder.unmarshal(new ByteArrayInputStream(aBinaryData), this);
+			decoder.unmarshal(this);
 		}
 		catch (IOException e)
 		{
@@ -547,9 +547,9 @@ abstract class Container<K, R> implements Externalizable, Serializable
 	public byte[] toByteArray()
 	{
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try (BinaryEncoder encoder = new BinaryEncoder())
+		try (BinaryEncoder encoder = new BinaryEncoder(baos))
 		{
-			encoder.marshal(baos, this);
+			encoder.marshal(this);
 		}
 		catch (IOException e)
 		{
@@ -564,9 +564,9 @@ abstract class Container<K, R> implements Externalizable, Serializable
 	 */
 	public R readFrom(InputStream aInputStream) throws IOException
 	{
-		try (BinaryDecoder decoder = new BinaryDecoder())
+		try (BinaryDecoder decoder = new BinaryDecoder(aInputStream))
 		{
-			decoder.unmarshal(aInputStream, this);
+			decoder.unmarshal(this);
 		}
 		return (R)this;
 	}
@@ -577,9 +577,9 @@ abstract class Container<K, R> implements Externalizable, Serializable
 	 */
 	public void writeTo(OutputStream aOutputStream) throws IOException
 	{
-		try (BinaryEncoder encoder = new BinaryEncoder())
+		try (BinaryEncoder encoder = new BinaryEncoder(aOutputStream))
 		{
-			encoder.marshal(aOutputStream, this);
+			encoder.marshal(this);
 		}
 	}
 
@@ -603,9 +603,9 @@ abstract class Container<K, R> implements Externalizable, Serializable
 			}
 		};
 
-		try (BinaryDecoder decoder = new BinaryDecoder())
+		try (BinaryDecoder decoder = new BinaryDecoder(in))
 		{
-			decoder.unmarshal(in, this);
+			decoder.unmarshal(this);
 		}
 	}
 
@@ -629,9 +629,9 @@ abstract class Container<K, R> implements Externalizable, Serializable
 			}
 		};
 
-		try (BinaryEncoder encoder = new BinaryEncoder())
+		try (BinaryEncoder encoder = new BinaryEncoder(tmp))
 		{
-			encoder.marshal(tmp, this);
+			encoder.marshal(this);
 		}
 	}
 

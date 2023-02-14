@@ -14,11 +14,15 @@ class BinaryEncoder implements AutoCloseable
 	private OutputStream mOutputStream;
 
 
-	void marshal(OutputStream aOutputStream, Container aContainer) throws IOException
+	BinaryEncoder(OutputStream aOutputStream)
 	{
 		mOutputStream = aOutputStream;
 		mChecksum = new Checksum();
+	}
 
+
+	void marshal(Container aContainer) throws IOException
+	{
 		if (aContainer instanceof Document)
 		{
 			writeToken(BinaryType.DOCUMENT, VERSION);
@@ -183,7 +187,7 @@ class BinaryEncoder implements AutoCloseable
 	}
 
 
-	private void writeInterleaved(int aX, int aY) throws IOException
+	void writeInterleaved(int aX, int aY) throws IOException
 	{
 		writeUnsignedVarint((shift(aX) << 1) | shift(aY));
 	}

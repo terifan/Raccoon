@@ -11,32 +11,46 @@ class BinaryDecoder implements AutoCloseable
 	private InputStream mInputStream;
 
 
-	void unmarshal(InputStream aInputStream, Container aContainer) throws IOException
+	BinaryDecoder(InputStream aInputStream)
 	{
 		mInputStream = aInputStream;
 		mChecksum = new Checksum();
+	}
 
+
+	void unmarshal(Container aContainer) throws IOException
+	{
 		Token token = readToken();
 
 		if (token.value != VERSION)
 		{
-			throw new IllegalArgumentException("Unsupported version");
+			throw new StreamException("Unsupported version");
 		}
 
 		if (aContainer instanceof Document)
 		{
-			if (token.type != BinaryType.DOCUMENT)
+			if (token.type == BinaryType.ARRAY)
 			{
-				throw new IllegalArgumentException("Not a Document");
+				throw new StreamException("Attempt to unmarshal a Document failed; found an Array in the binary stream.");
 			}
+			else if (token.type != BinaryType.DOCUMENT)
+			{
+				throw new StreamException("Stream corrupted.");
+			}
+
 			readDocument((Document)aContainer);
 		}
 		else
 		{
-			if (token.type != BinaryType.ARRAY)
+			if (token.type == BinaryType.DOCUMENT)
 			{
-				throw new IllegalArgumentException("Not an Array");
+				throw new StreamException("Attempt to unmarshal an Array failed; found a Document in the binary stream.");
 			}
+			else if (token.type != BinaryType.ARRAY)
+			{
+				throw new StreamException("Stream corrupted.");
+			}
+
 			readArray((Array)aContainer);
 		}
 	}
@@ -118,19 +132,21 @@ class BinaryDecoder implements AutoCloseable
 
 	private Token readToken() throws IOException
 	{
-		Token token = new Token();
-		token.checksum = getChecksumValue();
+		int checksum = getChecksumValue();
 		long params = readInterleaved();
-		token.value = (int)(params >>> 32);
+
 		try
 		{
+			Token token = new Token();
+			token.checksum = checksum;
+			token.value = (int)(params >>> 32);
 			token.type = BinaryType.values()[(int)params];
+			return token;
 		}
 		catch (ArrayIndexOutOfBoundsException e)
 		{
 			throw new StreamException("Type parameter out of range");
 		}
-		return token;
 	}
 
 
@@ -221,7 +237,7 @@ class BinaryDecoder implements AutoCloseable
 	}
 
 
-	private long readInterleaved() throws IOException
+	long readInterleaved() throws IOException
 	{
 		long p = readUnsignedVarint();
 		return (reverseShift(p) << 32) | reverseShift(p >>> 1);

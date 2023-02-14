@@ -14,6 +14,7 @@ import java.util.Random;
 import java.util.UUID;
 import static org.testng.Assert.*;
 import org.terifan.raccoon.ObjectId;
+import org.terifan.raccoon.util.Log;
 import org.testng.annotations.Test;
 
 
@@ -288,11 +289,11 @@ public class DocumentNGTest
 		ByteArrayInputStream input = new ByteArrayInputStream(baos.toByteArray());
 		assertEquals(new Document().readFrom(input), out1);
 		assertEquals(input.read(), 'x');
-		assertEquals(new Document().fromByteArray(input.readAllBytes()), out2);
+		assertEquals(new Document().readFrom(input), out2);
 	}
 
 
-	@Test(enabled = false)
+	@Test//(enabled = false)
 	public void testChecksumQualityTest() throws IOException, ClassNotFoundException
 	{
 		Document person = _Person.createPerson(new Random());
@@ -302,7 +303,7 @@ public class DocumentNGTest
 		byte[] data = person.toByteArray();
 
 		int err = 0;
-		for (int i = 0; i < 1000_000; i++)
+		for (int i = 0; i < 100_000; i++)
 		{
 			byte[] tmp = data.clone();
 			tmp[rnd.nextInt(data.length)] ^= 1 << rnd.nextInt(8);
@@ -327,5 +328,23 @@ public class DocumentNGTest
 		assertEquals(Document.of("_id:'1'").hashCode(), -382655104);
 		assertEquals(Document.of("_id:[1]").hashCode(), 43187162);
 		assertEquals(Document.of("_id:['1']").hashCode(), 1794624735);
+	}
+
+
+	@Test
+	public void testInterleaved() throws IOException, ClassNotFoundException
+	{
+		int a = 1234;
+		int b = 789;
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		new BinaryEncoder(baos).writeInterleaved(a, b);
+
+//		Log.hexDump(baos.toByteArray());
+
+		long v = new BinaryDecoder(new ByteArrayInputStream(baos.toByteArray())).readInterleaved();
+
+		assertEquals((int)v, a);
+		assertEquals((int)(v>>>32), b);
 	}
 }
