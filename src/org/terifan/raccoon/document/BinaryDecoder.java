@@ -2,26 +2,41 @@ package org.terifan.raccoon.document;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Iterator;
-import java.util.function.Supplier;
+import static org.terifan.raccoon.document.BinaryEncoder.VERSION;
 
 
-class BinaryDecoder implements AutoCloseable, Iterable<Object>
+class BinaryDecoder implements AutoCloseable
 {
 	private Checksum mChecksum;
 	private InputStream mInputStream;
 
 
-	public void unmarshal(InputStream aInputStream, Container aContainer) throws IOException
+	void unmarshal(InputStream aInputStream, Container aContainer) throws IOException
 	{
 		mInputStream = aInputStream;
 		mChecksum = new Checksum();
+
+		Token token = readToken();
+
+		if (token.value != VERSION)
+		{
+			throw new IllegalArgumentException("Unsupported version");
+		}
+
 		if (aContainer instanceof Document)
 		{
+			if (token.type != BinaryType.DOCUMENT)
+			{
+				throw new IllegalArgumentException("Not a Document");
+			}
 			readDocument((Document)aContainer);
 		}
 		else
 		{
+			if (token.type != BinaryType.ARRAY)
+			{
+				throw new IllegalArgumentException("Not an Array");
+			}
 			readArray((Array)aContainer);
 		}
 	}
@@ -39,104 +54,14 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 	}
 
 
-	public byte[] readBytes(byte[] aBuffer) throws IOException
+	byte[] readBytes(byte[] aBuffer) throws IOException
 	{
 		mChecksum.update(aBuffer, 0, mInputStream.read(aBuffer));
 		return aBuffer;
 	}
 
 
-	@Override
-	public void close() throws IOException
-	{
-		mInputStream = null;
-	}
-
-
-	public Object readObject() throws IOException
-	{
-		Token token = readToken();
-		if (token.value != token.checksum)
-		{
-			throw new StreamException("Checksum error in data stream");
-		}
-		if (token.type == BinaryType.TERMINATOR)
-		{
-			return null;
-		}
-		return readValue(token.type);
-	}
-
-
-	@Override
-	public Iterator<Object> iterator()
-	{
-		return new IteratorImpl<>(() ->
-		{
-			try
-			{
-				return readObject();
-			}
-			catch (IOException e)
-			{
-				return null;
-			}
-		});
-	}
-
-
-	private class IteratorImpl<T> implements Iterator<T>
-	{
-		T next;
-		Supplier<T> supplier;
-
-
-		IteratorImpl(Supplier<T> aSupplier)
-		{
-			supplier = aSupplier;
-		}
-
-
-		@Override
-		public boolean hasNext()
-		{
-			if (mInputStream != null && next == null)
-			{
-				try
-				{
-					next = supplier.get();
-					if (next == BinaryType.TERMINATOR)
-					{
-						next = null;
-						close();
-					}
-				}
-				catch (Exception | Error e)
-				{
-					try
-					{
-						close();
-					}
-					catch (Exception | Error ee)
-					{
-					}
-				}
-			}
-			return next != null;
-		}
-
-
-		@Override
-		public T next()
-		{
-			T tmp = next;
-			next = null;
-			return tmp;
-		}
-	}
-
-
-	private Document readDocument(Document aDocument) throws IOException
+	Document readDocument(Document aDocument) throws IOException
 	{
 		for (;;)
 		{
@@ -151,15 +76,7 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 				break;
 			}
 
-			String key;
-			if ((token.value & 1) == 1)
-			{
-				key = Integer.toString(token.value >>> 1);
-			}
-			else
-			{
-				key = readUTF(token.value >>> 1);
-			}
+			String key = readUTF(token.value);
 
 			aDocument.putImpl(key, readValue(token.type));
 		}
@@ -168,7 +85,7 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 	}
 
 
-	private Array readArray(Array aArray) throws IOException
+	Array readArray(Array aArray) throws IOException
 	{
 		for (;;)
 		{
@@ -195,33 +112,25 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 
 	private Object readValue(BinaryType aType) throws IOException
 	{
-		switch (aType)
-		{
-			case DOCUMENT:
-				return readDocument(new Document());
-			case ARRAY:
-				return readArray(new Array());
-			default:
-				return aType.decoder.decode(this);
-		}
+		return aType.decoder.decode(this);
 	}
 
 
 	private Token readToken() throws IOException
 	{
+		Token token = new Token();
+		token.checksum = getChecksumValue();
+		long params = readInterleaved();
+		token.value = (int)(params >>> 32);
 		try
 		{
-			Token token = new Token();
-			token.checksum = getChecksumValue();
-			long params = readInterleaved();
-			token.value = (int)(params >>> 32);
 			token.type = BinaryType.values()[(int)params];
-			return token;
 		}
 		catch (ArrayIndexOutOfBoundsException e)
 		{
 			throw new StreamException("Type parameter out of range");
 		}
+		return token;
 	}
 
 
@@ -330,6 +239,13 @@ class BinaryDecoder implements AutoCloseable, Iterable<Object>
 		aWord = (aWord | (aWord >> 16)) & 0x00000000ffffffffL;
 
 		return aWord;
+	}
+
+
+	@Override
+	public void close() throws IOException
+	{
+		mInputStream = null;
 	}
 
 

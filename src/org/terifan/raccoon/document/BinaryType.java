@@ -15,75 +15,81 @@ import org.terifan.raccoon.ObjectId;
 enum BinaryType
 {
 	TERMINATOR(0),
-	DOCUMENT(1),
-	ARRAY(2),
+	DOCUMENT(1,
+		(aEncoder, aValue) -> aEncoder.writeDocument((Document)aValue),
+		aDecoder -> aDecoder.readDocument(new Document())
+	),
+	ARRAY(2,
+		(aEncoder, aValue) -> aEncoder.writeArray((Array)aValue),
+		aDecoder -> aDecoder.readArray(new Array())
+	),
 	OBJECTID(3,
-		(aOutput, aValue) -> aOutput.writeBytes(((ObjectId)aValue).toByteArray()),
-		aInput -> ObjectId.fromBytes(aInput.readBytes(new byte[ObjectId.LENGTH]))
+		(aEncoder, aValue) -> aEncoder.writeBytes(((ObjectId)aValue).toByteArray()),
+		aDecoder -> ObjectId.fromBytes(aDecoder.readBytes(new byte[ObjectId.LENGTH]))
 	),
 	INT(4,
-		(aOutput, aValue) -> aOutput.writeVarint((Integer)aValue),
-		aInput -> (int)aInput.readVarint()
+		(aEncoder, aValue) -> aEncoder.writeVarint((Integer)aValue),
+		aDecoder -> (int)aDecoder.readVarint()
 	),
 	DOUBLE(5,
-		(aOutput, aValue) -> aOutput.writeVarint(Long.reverseBytes(Double.doubleToLongBits((Double)aValue))),
-		aInput -> Double.longBitsToDouble(Long.reverseBytes(aInput.readVarint()))
+		(aEncoder, aValue) -> aEncoder.writeVarint(Long.reverseBytes(Double.doubleToLongBits((Double)aValue))),
+		aDecoder -> Double.longBitsToDouble(Long.reverseBytes(aDecoder.readVarint()))
 	),
 	BOOLEAN(6,
-		(aOutput, aValue) -> aOutput.writeVarint((Boolean)aValue ? 1 : 0),
-		aInput -> aInput.readVarint() == 1
+		(aEncoder, aValue) -> aEncoder.writeVarint((Boolean)aValue ? 1 : 0),
+		aDecoder -> aDecoder.readVarint() == 1
 	),
 	STRING(7,
-		(aOutput, aValue) -> aOutput.writeString(aValue.toString()),
-		aInput -> aInput.readString()
+		(aEncoder, aValue) -> aEncoder.writeString(aValue.toString()),
+		aDecoder -> aDecoder.readString()
 	),
 	NULL(8,
-		(aOutput, aValue) -> {},
-		aInput -> null
+		(aEncoder, aValue) -> {},
+		aDecoder -> null
 	),
 	BYTE(9,
-		(aOutput, aValue) -> aOutput.writeVarint(0xff & (Byte)aValue),
-		aInput -> (byte)aInput.readVarint()
+		(aEncoder, aValue) -> aEncoder.writeVarint(0xff & (Byte)aValue),
+		aDecoder -> (byte)aDecoder.readVarint()
 	),
 	SHORT(10,
-		(aOutput, aValue) -> aOutput.writeVarint((Short)aValue),
-		aInput -> (short)aInput.readVarint()
+		(aEncoder, aValue) -> aEncoder.writeVarint((Short)aValue),
+		aDecoder -> (short)aDecoder.readVarint()
 	),
 	LONG(11,
-		(aOutput, aValue) -> aOutput.writeVarint((Long)aValue),
-		aInput -> aInput.readVarint()
+		(aEncoder, aValue) -> aEncoder.writeVarint((Long)aValue),
+		aDecoder -> aDecoder.readVarint()
 	),
 	FLOAT(12,
-		(aOutput, aValue) -> aOutput.writeVarint(Float.floatToIntBits((Float)aValue)),
-		aInput -> Float.intBitsToFloat((int)aInput.readVarint())
+		(aEncoder, aValue) -> aEncoder.writeVarint(Float.floatToIntBits((Float)aValue)),
+		aDecoder -> Float.intBitsToFloat((int)aDecoder.readVarint())
 	),
 	BINARY(13,
-		(aOutput, aValue) -> aOutput.writeBuffer((byte[])aValue),
-		aInput -> aInput.readBuffer()
+		(aEncoder, aValue) -> aEncoder.writeBuffer((byte[])aValue),
+		aDecoder -> aDecoder.readBuffer()
 	),
 	UUID(14,
-		(aOutput, aValue) -> aOutput.writeVarint(((UUID)aValue).getMostSignificantBits()).writeVarint(((UUID)aValue).getLeastSignificantBits()),
-		aInput -> new java.util.UUID(aInput.readVarint(), aInput.readVarint())
+		(aEncoder, aValue) -> aEncoder.writeVarint(((UUID)aValue).getMostSignificantBits()).writeVarint(((UUID)aValue).getLeastSignificantBits()),
+		aDecoder -> new java.util.UUID(aDecoder.readVarint(), aDecoder.readVarint())
 	),
 	DATETIME(15,
-		(aOutput, aValue) -> aOutput.writeUnsignedVarint(localDateToNumber(((LocalDateTime)aValue).toLocalDate())).writeUnsignedVarint(localTimeToNumber(((LocalDateTime)aValue).toLocalTime())),
-		aInput -> LocalDateTime.of(numberToLocalDate((int)aInput.readUnsignedVarint()), numberToLocalTime(aInput.readUnsignedVarint()))
+		(aEncoder, aValue) -> aEncoder.writeUnsignedVarint(localDateToNumber(((LocalDateTime)aValue).toLocalDate())).writeUnsignedVarint(localTimeToNumber(((LocalDateTime)aValue).toLocalTime())),
+		aDecoder -> LocalDateTime.of(numberToLocalDate((int)aDecoder.readUnsignedVarint()), numberToLocalTime(aDecoder.readUnsignedVarint()))
 	),
 	DATE(16,
-		(aOutput, aValue) -> aOutput.writeUnsignedVarint(localDateToNumber((LocalDate)aValue)),
-		aInput -> numberToLocalDate((int)aInput.readUnsignedVarint())
+		(aEncoder, aValue) -> aEncoder.writeUnsignedVarint(localDateToNumber((LocalDate)aValue)),
+		aDecoder -> numberToLocalDate((int)aDecoder.readUnsignedVarint())
 	),
 	TIME(17,
-		(aOutput, aValue) -> aOutput.writeUnsignedVarint(localTimeToNumber((LocalTime)aValue)),
-		aInput -> numberToLocalTime(aInput.readUnsignedVarint())
+		(aEncoder, aValue) -> aEncoder.writeUnsignedVarint(localTimeToNumber((LocalTime)aValue)),
+		aDecoder -> numberToLocalTime(aDecoder.readUnsignedVarint())
 	),
 	OFFSETDATETIME(18,
-		(aOutput, aValue) -> aOutput.writeUnsignedVarint(localDateToNumber(((OffsetDateTime)aValue).toLocalDate())).writeUnsignedVarint(localTimeToNumber(((OffsetDateTime)aValue).toLocalTime())).writeVarint(((OffsetDateTime)aValue).getOffset().getTotalSeconds()),
-		aInput -> OffsetDateTime.of(numberToLocalDate((int)aInput.readUnsignedVarint()), numberToLocalTime(aInput.readUnsignedVarint()), ZoneOffset.ofTotalSeconds((int)aInput.readVarint()))
+		(aEncoder, aValue) -> aEncoder.writeUnsignedVarint(localDateToNumber(((OffsetDateTime)aValue).toLocalDate())).writeUnsignedVarint(localTimeToNumber(((OffsetDateTime)aValue).toLocalTime())).writeVarint(((OffsetDateTime)aValue).getOffset().getTotalSeconds()),
+		aDecoder -> OffsetDateTime.of(numberToLocalDate((int)aDecoder.readUnsignedVarint()), numberToLocalTime(aDecoder.readUnsignedVarint()), ZoneOffset.ofTotalSeconds((int)aDecoder.readVarint()))
 	),
 	DECIMAL(19,
-		(aOutput, aValue) -> aOutput.writeString(aValue.toString()),
-		aInput -> new BigDecimal(aInput.readString())
+		(aEncoder, aValue) -> aEncoder.writeString(aValue.toString()),
+		aDecoder -> new BigDecimal(aDecoder.readString())
 	);
 
 	public Encoder encoder;
@@ -140,14 +146,14 @@ enum BinaryType
 	@FunctionalInterface
 	static interface Encoder
 	{
-		void encode(BinaryEncoder aOutput, Object aValue) throws IOException;
+		void encode(BinaryEncoder aEncoder, Object aValue) throws IOException;
 	}
 
 
 	@FunctionalInterface
 	static interface Decoder
 	{
-		Object decode(BinaryDecoder aInput) throws IOException;
+		Object decode(BinaryDecoder aDecoder) throws IOException;
 	}
 
 

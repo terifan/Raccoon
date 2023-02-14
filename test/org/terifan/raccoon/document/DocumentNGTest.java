@@ -11,10 +11,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.Random;
-import org.terifan.raccoon.ObjectId;
 import java.util.UUID;
-import org.terifan.raccoon.util.Log;
 import static org.testng.Assert.*;
+import org.terifan.raccoon.ObjectId;
 import org.testng.annotations.Test;
 
 
@@ -328,17 +327,5 @@ public class DocumentNGTest
 		assertEquals(Document.of("_id:'1'").hashCode(), -382655104);
 		assertEquals(Document.of("_id:[1]").hashCode(), 43187162);
 		assertEquals(Document.of("_id:['1']").hashCode(), 1794624735);
-	}
-
-
-	@Test
-	public void testNumericKeys() throws IOException, ClassNotFoundException
-	{
-		Document out = Document.of("1:1,2:1,3:1");
-		byte[] data = out.toByteArray();
-
-		Document in = new Document().fromByteArray(data);
-
-		assertEquals(out, in);
 	}
 }

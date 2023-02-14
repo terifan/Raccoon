@@ -8,20 +8,25 @@ import static org.terifan.raccoon.document.BinaryType.identify;
 
 class BinaryEncoder implements AutoCloseable
 {
+	final static int VERSION = 0;
+
 	private Checksum mChecksum;
 	private OutputStream mOutputStream;
 
 
-	public void marshal(OutputStream aOutputStream, Container aContainer) throws IOException
+	void marshal(OutputStream aOutputStream, Container aContainer) throws IOException
 	{
 		mOutputStream = aOutputStream;
 		mChecksum = new Checksum();
+
 		if (aContainer instanceof Document)
 		{
+			writeToken(BinaryType.DOCUMENT, VERSION);
 			writeDocument((Document)aContainer);
 		}
 		else
 		{
+			writeToken(BinaryType.ARRAY, VERSION);
 			writeArray((Array)aContainer);
 		}
 	}
@@ -34,57 +39,30 @@ class BinaryEncoder implements AutoCloseable
 	}
 
 
-	public void writeBytes(byte[] aBuffer) throws IOException
+	void writeBytes(byte[] aBuffer) throws IOException
 	{
 		mOutputStream.write(aBuffer);
 		mChecksum.update(aBuffer, 0, aBuffer.length);
 	}
 
 
-	/**
-	 * note: Will not close the underlying stream!
-	 */
-	@Override
-	public void close() throws IOException
-	{
-		mOutputStream = null;
-	}
-
-
-	public void writeObject(Object aValue) throws IOException
-	{
-		BinaryType type = identify(aValue);
-		writeToken(getChecksumValue(), type);
-		writeValue(type, aValue);
-	}
-
-
-	private void writeDocument(Document aDocument) throws IOException
+	void writeDocument(Document aDocument) throws IOException
 	{
 		for (Entry<String, Object> entry : aDocument.entrySet())
 		{
 			Object value = entry.getValue();
 			BinaryType type = identify(value);
 
-			boolean numeric = entry.getKey().matches("[0-9]{1,}");
-			if (numeric)
-			{
-				writeToken((Integer.parseInt(entry.getKey()) << 1) | 1, type);
-			}
-			else
-			{
-				writeToken((entry.getKey().length() << 1), type);
-				writeUTF(entry.getKey());
-			}
-
+			writeToken(type, entry.getKey().length());
+			writeUTF(entry.getKey());
 			writeValue(type, value);
 		}
 
-		writeToken(getChecksumValue(), BinaryType.TERMINATOR);
+		writeToken(BinaryType.TERMINATOR, getChecksumValue());
 	}
 
 
-	private void writeArray(Array aArray) throws IOException
+	void writeArray(Array aArray) throws IOException
 	{
 		int elementCount = aArray.size();
 
@@ -103,7 +81,7 @@ class BinaryEncoder implements AutoCloseable
 				type = nextType;
 			}
 
-			writeToken(runLen, type);
+			writeToken(type, runLen);
 
 			while (--runLen >= 0)
 			{
@@ -111,29 +89,19 @@ class BinaryEncoder implements AutoCloseable
 			}
 		}
 
-		writeToken(getChecksumValue(), BinaryType.TERMINATOR);
+		writeToken(BinaryType.TERMINATOR, getChecksumValue());
 	}
 
 
 	private void writeValue(BinaryType aType, Object aValue) throws IOException
 	{
-		switch (aType)
-		{
-			case DOCUMENT:
-				writeDocument((Document)aValue);
-				break;
-			case ARRAY:
-				writeArray((Array)aValue);
-				break;
-			default:
-				aType.encoder.encode(this, aValue);
-		}
+		aType.encoder.encode(this, aValue);
 	}
 
 
-	private void writeToken(int aValue, BinaryType aType) throws IOException
+	private void writeToken(BinaryType aType, int aValue) throws IOException
 	{
-		writeInterleaved(aValue, aType.ordinal());
+		writeInterleaved(aType.ordinal(), aValue);
 	}
 
 
@@ -217,7 +185,17 @@ class BinaryEncoder implements AutoCloseable
 
 	private void writeInterleaved(int aX, int aY) throws IOException
 	{
-		writeUnsignedVarint(shift(aX) | (shift(aY) << 1));
+		writeUnsignedVarint((shift(aX) << 1) | shift(aY));
+	}
+
+
+	/**
+	 * note: Will not close the underlying stream!
+	 */
+	@Override
+	public void close() throws IOException
+	{
+		mOutputStream = null;
 	}
 
 
