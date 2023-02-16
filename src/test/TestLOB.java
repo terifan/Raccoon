@@ -37,13 +37,12 @@ public class TestLOB
 				// or +array
 				// regex
 
-				_Tools.showTree(db.getCollection("data")._getImplementation());
+//				_Tools.showTree(db.getCollection("data")._getImplementation());
 
 				Document x = db.getCollection("data").get(new Document().put("_id", Array.of(20, 2)));
 				System.out.println(x);
 
-				List<Document> lisx = db.getCollection("data").find(Document.of("_id:[{$gte:20,$lt:30},{$exists:true}]"));
-				List<Document> list = db.getCollection("data").find(new Document().put("_id", Array.of(new Document().put("$gte",20).put("$lt",30), new Document().put("$exists", "true"))));
+				List<Document> list = db.getCollection("data").find(Document.of("_id:[{$gte:20,$lt:30},{$exists:true}]"));
 
 				list.forEach(e -> System.out.print(e.get("_id") + "\t"));
 			}

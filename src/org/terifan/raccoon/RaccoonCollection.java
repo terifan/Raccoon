@@ -4,15 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Spliterator;
-import java.util.Spliterators.AbstractSpliterator;
-import java.util.UUID;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import static org.terifan.raccoon.RaccoonDatabase.INDEX_COLLECTION;
-import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Log;
@@ -21,7 +13,7 @@ import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 
 
-public final class RaccoonCollection extends BTreeStorage
+public final class RaccoonCollection
 {
 	public final static byte TYPE_TREENODE = 0;
 	public final static byte TYPE_DOCUMENT = 1;
@@ -32,7 +24,6 @@ public final class RaccoonCollection extends BTreeStorage
 	private Document mConfiguration;
 	private RaccoonDatabase mDatabase;
 	private HashSet<CommitLock> mCommitLocks;
-//	private IdentityCounter mIdentityCounter;
 	private BTree mImplementation;
 	private long mModCount;
 
@@ -45,7 +36,6 @@ public final class RaccoonCollection extends BTreeStorage
 		mLock = new ReadWriteLock();
 		mCommitLocks = new HashSet<>();
 		mImplementation = new BTree(getBlockAccessor(), aConfiguration.getDocument("btree"));
-//		mIdentityCounter = new IdentityCounter(aConfiguration);
 	}
 
 
@@ -280,41 +270,57 @@ public final class RaccoonCollection extends BTreeStorage
 
 	public List<Document> list()
 	{
-		return stream().collect(Collectors.toList());
-	}
+		ArrayList<Document> list = new ArrayList<>();
 
-
-	public Stream<Document> stream()
-	{
-		long modCount = mModCount;
-
-		ReadLock lock = mLock.readLock();
-
-		Stream<Document> tmp = StreamSupport.stream(new AbstractSpliterator<Document>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+		try (ReadLock lock = mLock.readLock())
 		{
-			private DocumentIterator iterator = new DocumentIterator(RaccoonCollection.this, new Query());
+			mModCount++;
 
-			@Override
-			public boolean tryAdvance(Consumer<? super Document> aConsumer)
+			mImplementation.visit(new BTreeVisitor()
 			{
-				if (mModCount != modCount)
+				@Override
+				void leaf(BTree aImplementation, BTreeLeaf aNode)
 				{
-					lock.close();
-					throw new IllegalStateException("concurrent modification");
+					aNode.mMap.forEach(e -> list.add(unmarshalDocument(e, new Document())));
 				}
+			});
+		}
 
-				if (!iterator.hasNext())
-				{
-					lock.close();
-					return false;
-				}
-				aConsumer.accept(iterator.next());
-				return true;
-			}
-		}, false);
-
-		return tmp;
+		return list;
 	}
+
+
+//	public Stream<Document> stream()
+//	{
+//		long modCount = mModCount;
+//
+//		ReadLock lock = mLock.readLock();
+//
+//		Stream<Document> tmp = StreamSupport.stream(new AbstractSpliterator<Document>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
+//		{
+//			private DocumentIterator iterator = new DocumentIterator(RaccoonCollection.this, new Query(new Document()));
+//
+//			@Override
+//			public boolean tryAdvance(Consumer<? super Document> aConsumer)
+//			{
+//				if (mModCount != modCount)
+//				{
+//					lock.close();
+//					throw new IllegalStateException("concurrent modification");
+//				}
+//
+//				if (!iterator.hasNext())
+//				{
+//					lock.close();
+//					return false;
+//				}
+//				aConsumer.accept(iterator.next());
+//				return true;
+//			}
+//		}, false);
+//
+//		return tmp;
+//	}
 
 
 	public void clear()
@@ -327,10 +333,21 @@ public final class RaccoonCollection extends BTreeStorage
 
 			mImplementation = new BTree(getBlockAccessor(), mImplementation.getConfiguration().clone().remove("root"));
 
-			new BTreeNodeVisitor().visitAll(prev, node ->
+			mImplementation.visit(new BTreeVisitor()
 			{
-				node.mMap.forEach(this::deleteIfBlob);
-				prev.freeBlock(node.mBlockPointer);
+				@Override
+				void leaf(BTree aImplementation, BTreeLeaf aNode)
+				{
+					aNode.mMap.forEach(RaccoonCollection.this::deleteIfBlob);
+					prev.freeBlock(aNode.mBlockPointer);
+				}
+
+
+				@Override
+				void afterIndex(BTree aImplementation, BTreeIndex aNode)
+				{
+					prev.freeBlock(aNode.mBlockPointer);
+				}
 			});
 		}
 	}
@@ -372,9 +389,6 @@ public final class RaccoonCollection extends BTreeStorage
 				throw new CommitBlockedException("A table cannot be committed while a stream is open." + sb.toString());
 			}
 
-//			mImplementation.getConfiguration().put("identityCounter", mIdentityCounter.get());
-			mImplementation.getConfiguration().put("identityCounter", 0);
-
 			return mImplementation.commit();
 		}
 	}
@@ -386,10 +400,9 @@ public final class RaccoonCollection extends BTreeStorage
 	}
 
 
-	@Override
 	BlockAccessor getBlockAccessor()
 	{
-		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter());
+		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter(), true);
 	}
 
 
@@ -408,12 +421,6 @@ public final class RaccoonCollection extends BTreeStorage
 			aDocument.put("_id", id);
 			return new ArrayMapKey(id);
 		}
-
-//		if (id instanceof Long || id instanceof Integer)
-//		{
-//			mIdentityCounter.set(((Number)id).longValue());
-//			return new ArrayMapKey(mIdentityCounter.get());
-//		}
 
 		return new ArrayMapKey(id);
 	}
@@ -470,12 +477,6 @@ public final class RaccoonCollection extends BTreeStorage
 	}
 
 
-//	public IdentityCounter getIdentityCounter()
-//	{
-//		return mIdentityCounter;
-//	}
-
-
 	public List<Document> find(Document aQuery)
 	{
 		Log.i("find %s", aQuery);
@@ -487,14 +488,17 @@ public final class RaccoonCollection extends BTreeStorage
 		{
 			ArrayList<Document> list = new ArrayList<>();
 
-			DocumentIterator iterator = new DocumentIterator(this, new Query());
-
-//			iterator.setRange(new ArrayMapKey(35), new ArrayMapKey(55));
-//			iterator.setRange(new ArrayMapKey("35"), null);
-//			iterator.setRange(null, new ArrayMapKey("55"));
-//			iterator.setRange(null, null);
-
-			iterator.forEachRemaining(e -> list.add(e));
+			mImplementation.visit(new BTreeVisitor()
+			{
+				@Override
+				void leaf(BTree aImplementation, BTreeLeaf aNode)
+				{
+					for (int i = 0; i < aNode.mMap.size(); i++)
+					{
+						list.add(unmarshalDocument(aNode.mMap.get(i, new ArrayMapEntry()), new Document()));
+					}
+				}
+			});
 
 			return list;
 		}

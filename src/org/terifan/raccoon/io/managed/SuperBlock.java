@@ -1,11 +1,5 @@
 package org.terifan.raccoon.io.managed;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
@@ -30,7 +24,7 @@ class SuperBlock
 	private long mModifiedTime;
 	private long mTransactionId;
 	private BlockPointer mSpaceMapPointer;
-	private Document mApplicationMetadata;
+	private Document mMetadata;
 
 
 	public SuperBlock(long aTransactionId)
@@ -38,7 +32,6 @@ class SuperBlock
 		mFormatVersion = FORMAT_VERSION;
 		mCreateTime = System.currentTimeMillis();
 		mSpaceMapPointer = new BlockPointer();
-		mApplicationMetadata = new Document();
 		mTransactionId = aTransactionId;
 	}
 
@@ -99,9 +92,9 @@ class SuperBlock
 	}
 
 
-	public Document getApplicationMetadata()
+	Document getMetadata()
 	{
-		return mApplicationMetadata;
+		return mMetadata;
 	}
 
 
@@ -133,7 +126,7 @@ class SuperBlock
 	}
 
 
-	public void write(IPhysicalBlockDevice aBlockDevice, long aBlockIndex)
+	public void write(IPhysicalBlockDevice aBlockDevice, long aBlockIndex, Document aMetadata)
 	{
 		if (aBlockIndex < 0)
 		{
@@ -141,30 +134,14 @@ class SuperBlock
 		}
 
 		mModifiedTime = System.currentTimeMillis();
+		mMetadata = aMetadata;
 
 		int blockSize = aBlockDevice.getBlockSize();
-//		byte[] metadata = mApplicationMetadata.marshal();
-
-ByteArrayOutputStream baos = new ByteArrayOutputStream();
-try (ObjectOutputStream oos = new ObjectOutputStream(baos))
-{
-	oos.writeObject(mApplicationMetadata);
-}
-catch (IOException e)
-{
-	throw new IllegalStateException(e);
-}
-byte[] metadata = baos.toByteArray();
-
-		if (TOTAL_OVERHEAD + metadata.length > blockSize)
-		{
-			throw new DatabaseIOException("Application metadata exeeds maximum size: limit: " + (blockSize - TOTAL_OVERHEAD) + ", metadata: " + metadata.length);
-		}
 
 		ByteArrayBuffer buffer = ByteArrayBuffer.alloc(blockSize, true);
 		buffer.position(CHECKSUM_SIZE); // reserve space for checksum
 
-		marshal(buffer, metadata);
+		marshal(buffer);
 
 		if (aBlockDevice instanceof SecureBlockDevice)
 		{
@@ -190,15 +167,22 @@ byte[] metadata = baos.toByteArray();
 	}
 
 
-	private void marshal(ByteArrayBuffer aBuffer, byte[] aApplicationHeader)
+	private void marshal(ByteArrayBuffer aBuffer)
 	{
+		byte[] metadata = mMetadata.toByteArray();
+
+		if (TOTAL_OVERHEAD + metadata.length > aBuffer.capacity())
+		{
+			throw new DatabaseIOException("Application metadata exeeds maximum size: limit: " + (aBuffer.capacity() - TOTAL_OVERHEAD) + ", metadata: " + metadata.length);
+		}
+
 		aBuffer.writeInt8(mFormatVersion);
 		aBuffer.writeInt64(mCreateTime);
 		aBuffer.writeInt64(mModifiedTime);
 		aBuffer.writeInt64(mTransactionId);
 		mSpaceMapPointer.marshal(aBuffer);
-		aBuffer.writeInt16(aApplicationHeader.length);
-		aBuffer.write(aApplicationHeader);
+		aBuffer.writeInt16(metadata.length);
+		aBuffer.write(metadata);
 	}
 
 
@@ -215,15 +199,6 @@ byte[] metadata = baos.toByteArray();
 		mModifiedTime = aBuffer.readInt64();
 		mTransactionId = aBuffer.readInt64();
 		mSpaceMapPointer.unmarshal(aBuffer);
-//		mApplicationMetadata = Document.unmarshal(aBuffer.read(new byte[aBuffer.readInt16()]));
-
-try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(aBuffer.read(new byte[aBuffer.readInt16()]))))
-{
-	mApplicationMetadata = (Document)ois.readObject();
-}
-catch (Exception e)
-{
-	throw new IllegalStateException(e);
-}
+		mMetadata = new Document().fromByteArray(aBuffer.read(new byte[aBuffer.readInt16()]));
 	}
 }

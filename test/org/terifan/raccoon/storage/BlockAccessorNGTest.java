@@ -24,7 +24,7 @@ public class BlockAccessorNGTest
 		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
 
 		ManagedBlockDevice managedBlockDevice = new ManagedBlockDevice(blockDevice);
-		BlockAccessor blockAccessor = new BlockAccessor(managedBlockDevice, CompressionParam.NO_COMPRESSION);
+		BlockAccessor blockAccessor = new BlockAccessor(managedBlockDevice, CompressionParam.NO_COMPRESSION, true);
 		BlockPointer blockPointer = blockAccessor.writeBlock(in, 100, length, 0L, BlockType.FREE);
 		managedBlockDevice.commit();
 

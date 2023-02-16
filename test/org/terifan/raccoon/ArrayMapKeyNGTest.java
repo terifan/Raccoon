@@ -12,10 +12,10 @@ public class ArrayMapKeyNGTest
 	{
 		ArrayMapKey k1 = new ArrayMapKey(1L);
 		ArrayMapKey k2 = new ArrayMapKey("key");
-		ArrayMapKey k3 = new ArrayMapKey("bytebuffer".getBytes());
-		assertEquals(k1.toString(), "#1");
+		ArrayMapKey k3 = new ArrayMapKey(UUID.fromString("31e18b3e-0f90-4f24-80a0-fff857fbdbf8"));
+		assertEquals(k1.toString(), "1");
 		assertEquals(k2.toString(), "key");
-		assertEquals(k3.toString(), "0x62797465627566666572");
+		assertEquals(k3.toString(), "31e18b3e-0f90-4f24-80a0-fff857fbdbf8");
 	}
 
 
@@ -37,18 +37,6 @@ public class ArrayMapKeyNGTest
 		ArrayMapKey a1 = new ArrayMapKey("alexander");
 		ArrayMapKey a2 = new ArrayMapKey("bob");
 		ArrayMapKey a3 = new ArrayMapKey("steve");
-		assertTrue(a1.compareTo(a2) < 0);
-		assertTrue(a2.compareTo(a2) == 0);
-		assertTrue(a3.compareTo(a2) > 0);
-	}
-
-
-	@Test
-	public void testCompareBuffer()
-	{
-		ArrayMapKey a1 = new ArrayMapKey("alexander".getBytes());
-		ArrayMapKey a2 = new ArrayMapKey("bob".getBytes());
-		ArrayMapKey a3 = new ArrayMapKey("steve".getBytes());
 		assertTrue(a1.compareTo(a2) < 0);
 		assertTrue(a2.compareTo(a2) == 0);
 		assertTrue(a3.compareTo(a2) > 0);

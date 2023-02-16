@@ -5,6 +5,7 @@ import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
 import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
+import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Result;
@@ -132,6 +133,21 @@ public class BTreeIndex extends BTreeNode
 		assert mMap.get(0, new ArrayMapEntry()).getKey().size() == 0 : "First key expected to be empty: " + mMap.toString();
 
 		return result;
+	}
+
+
+	@Override
+	void visit(BTree aImplementation, BTreeVisitor aVisitor)
+	{
+		aVisitor.anyNode(aImplementation, this);
+		aVisitor.beforeIndex(aImplementation, this);
+
+		for (int i = 0; i < mMap.size(); i++)
+		{
+			getNode(aImplementation, i).visit(aImplementation, aVisitor);
+		}
+
+		aVisitor.afterIndex(aImplementation, this);
 	}
 
 

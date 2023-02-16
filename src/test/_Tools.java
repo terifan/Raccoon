@@ -1,7 +1,6 @@
 package test;
 
 import java.util.Random;
-import org.terifan.raccoon.BTreeStorage;
 import org.terifan.raccoon.BTree;
 import java.util.function.Supplier;
 import javax.swing.JFrame;
@@ -42,25 +41,25 @@ public class _Tools
 
 	public static BlockAccessor createMemoryStorage()
 	{
-		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockDevice(512)), CompressionParam.NO_COMPRESSION);
+		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockDevice(512)), CompressionParam.NO_COMPRESSION, true);
 	}
 
 
 	public static BlockAccessor createSecureMemoryStorage()
 	{
-		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), new MemoryBlockDevice(512))), CompressionParam.NO_COMPRESSION);
+		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), new MemoryBlockDevice(512))), CompressionParam.NO_COMPRESSION, true);
 	}
 
 
 	public static BlockAccessor createStorage(Supplier<IPhysicalBlockDevice> aSupplier)
 	{
-		return new BlockAccessor(new ManagedBlockDevice(aSupplier.get()), CompressionParam.NO_COMPRESSION);
+		return new BlockAccessor(new ManagedBlockDevice(aSupplier.get()), CompressionParam.NO_COMPRESSION, true);
 	}
 
 
 	public static BlockAccessor createSecureStorage(Supplier<IPhysicalBlockDevice> aSupplier)
 	{
-		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), aSupplier.get())), CompressionParam.NO_COMPRESSION);
+		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), aSupplier.get())), CompressionParam.NO_COMPRESSION, true);
 	}
 
 

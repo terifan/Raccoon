@@ -615,7 +615,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	BlockAccessor getBlockAccessor()
 	{
-		return new BlockAccessor(getBlockDevice(), CompressionParam.BEST_SPEED);
+		return new BlockAccessor(getBlockDevice(), CompressionParam.BEST_SPEED, true);
 	}
 
 

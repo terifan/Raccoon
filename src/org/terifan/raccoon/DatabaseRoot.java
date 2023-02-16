@@ -25,7 +25,7 @@ public class DatabaseRoot
 	{
 		mBlockPointer = new BlockPointer().unmarshal(aBlockDevice.getApplicationMetadata().getBinary("root"));
 
-		byte[] buffer = new BlockAccessor(aBlockDevice, CompressionParam.BEST_COMPRESSION).readBlock(mBlockPointer);
+		byte[] buffer = new BlockAccessor(aBlockDevice, CompressionParam.BEST_COMPRESSION, true).readBlock(mBlockPointer);
 
 		mMetadata = new Document().fromByteArray(buffer);
 		mTransactionId = mBlockPointer.getTransactionId(); // TODO: use trans id from super block?
@@ -34,7 +34,7 @@ public class DatabaseRoot
 
 	public void writeToDevice(IManagedBlockDevice aBlockDevice)
 	{
-		BlockAccessor blockAccessor = new BlockAccessor(aBlockDevice, CompressionParam.BEST_COMPRESSION);
+		BlockAccessor blockAccessor = new BlockAccessor(aBlockDevice, CompressionParam.BEST_COMPRESSION, true);
 
 		if (mBlockPointer != null)
 		{

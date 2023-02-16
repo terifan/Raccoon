@@ -37,13 +37,13 @@ public class _Tools
 
 	public static BlockAccessor createMemoryStorage()
 	{
-		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockDevice(512)), CompressionParam.NO_COMPRESSION);
+		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockDevice(512)), CompressionParam.NO_COMPRESSION, false);
 	}
 
 
 	public static BlockAccessor createSecureMemoryStorage()
 	{
-		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), new MemoryBlockDevice(512))), CompressionParam.NO_COMPRESSION);
+		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), new MemoryBlockDevice(512))), CompressionParam.NO_COMPRESSION, false);
 	}
 
 
@@ -52,9 +52,9 @@ public class _Tools
 		IPhysicalBlockDevice device = aSupplier.get();
 		if (device.length() > 0)
 		{
-			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION);
+			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION, false);
 		}
-		return new BlockAccessor(new ManagedBlockDevice(device), CompressionParam.NO_COMPRESSION);
+		return new BlockAccessor(new ManagedBlockDevice(device), CompressionParam.NO_COMPRESSION, false);
 	}
 
 
@@ -63,8 +63,18 @@ public class _Tools
 		IPhysicalBlockDevice device = aSupplier.get();
 		if (device.length() > 0)
 		{
-			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION);
+			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION, false);
 		}
-		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION);
+		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION, false);
+	}
+
+
+	public static BlockAccessor createSecureStorage(IPhysicalBlockDevice aDevice)
+	{
+		if (aDevice.length() > 0)
+		{
+			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), aDevice)), CompressionParam.NO_COMPRESSION, false);
+		}
+		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), aDevice)), CompressionParam.NO_COMPRESSION, false);
 	}
 }

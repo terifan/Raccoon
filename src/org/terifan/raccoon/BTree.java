@@ -7,6 +7,7 @@ import org.terifan.raccoon.BTreeNode.RemoveResult;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.util.AbortIteratorException;
 import org.terifan.raccoon.util.ByteArrayBuffer;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.Result;
@@ -24,6 +25,9 @@ public class BTree implements AutoCloseable
 
 	public BTree(BlockAccessor aBlockAccessor, Document aConfiguration)
 	{
+		assert aBlockAccessor != null;
+		assert aConfiguration != null;
+
 		mBlockAccessor = aBlockAccessor;
 		mConfiguration = aConfiguration;
 
@@ -154,6 +158,26 @@ public class BTree implements AutoCloseable
 	}
 
 
+	void visit(BTreeVisitor aVisitor)
+	{
+		assertNotClosed();
+
+		Log.i("visit");
+		Log.inc();
+
+		try
+		{
+			mRoot.visit(this, aVisitor);
+		}
+		catch (AbortIteratorException e)
+		{
+			// ignore
+		}
+
+		Log.dec();
+	}
+
+
 	public boolean isChanged()
 	{
 		return mRoot.mModified;
@@ -243,7 +267,14 @@ public class BTree implements AutoCloseable
 
 		AtomicLong result = new AtomicLong();
 
-		new BTreeNodeVisitor().visitLeafs(this, aNode -> result.addAndGet(aNode.mMap.size()));
+		visit(new BTreeVisitor()
+		{
+			@Override
+			void leaf(BTree aImplementation, BTreeLeaf aNode)
+			{
+				result.addAndGet(aNode.mMap.size());
+			}
+		});
 
 		return result.get();
 	}
@@ -296,13 +327,17 @@ public class BTree implements AutoCloseable
 
 		AtomicReference<String> result = new AtomicReference<>();
 
-		new BTreeNodeVisitor().visitAll(this, aNode ->
+		mRoot.visit(this, new BTreeVisitor()
 		{
-			String tmp = aNode.mMap.integrityCheck();
-			if (tmp != null)
+			@Override
+			void anyNode(BTree aImplementation, BTreeNode aNode)
 			{
-				result.set(tmp);
-				throw new BTreeNodeVisitor.CancelVisitor(null);
+				String tmp = aNode.mMap.integrityCheck();
+				if (tmp != null)
+				{
+					result.set(tmp);
+					throw new AbortIteratorException();
+				}
 			}
 		});
 

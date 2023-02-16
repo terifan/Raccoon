@@ -1,8 +1,8 @@
 package org.terifan.raccoon;
 
 import java.io.UnsupportedEncodingException;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import java.util.Arrays;
-import java.util.Iterator;
 import org.terifan.raccoon.util.ByteArrayUtil;
 import org.terifan.raccoon.util.FormattedOutput;
 import org.terifan.raccoon.util.FormattedToString;
@@ -21,7 +21,7 @@ import org.terifan.raccoon.util.Result;
  * [header] 2 bytes - entry count 4 bytes - free space offset (minus HEADER_SIZE) [list of entries] (entry 1..n) 2 bytes - key length 2
  * bytes - value length n bytes - key n bytes - value [free space] n bytes - zeros [list of pointers] (pointer 1..n) 4 bytes - offset
  */
-public class ArrayMap implements Iterable<ArrayMapEntry>, SequenceFilter<ArrayMapEntry>, FormattedToString
+public class ArrayMap implements Iterable<ArrayMapEntry>,/* SequenceFilter<ArrayMapEntry>,*/ FormattedToString
 {
 	final static int HEADER_SIZE = 2 + 4;
 	final static int ENTRY_POINTER_SIZE = 4;
@@ -341,7 +341,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, SequenceFilter<ArrayMa
 	}
 
 
-	void loadKeyAndValue(int aIndex, ArrayMapEntry aEntry)
+	ArrayMapEntry loadKeyAndValue(int aIndex, ArrayMapEntry aEntry)
 	{
 		int entryOffset = readEntryOffset(aIndex);
 		int valueOffset = readValueOffset(entryOffset);
@@ -351,6 +351,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, SequenceFilter<ArrayMa
 
 		aEntry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
 		aEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
+		return aEntry;
 	}
 
 
@@ -697,7 +698,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, SequenceFilter<ArrayMa
 	@Override
 	public String toString()
 	{
-		try
+//		try
 		{
 			StringBuilder sb = new StringBuilder();
 			for (ArrayMapEntry entry : this)
@@ -706,36 +707,43 @@ public class ArrayMap implements Iterable<ArrayMapEntry>, SequenceFilter<ArrayMa
 				{
 					sb.append(",");
 				}
-				sb.append("\"" + new String(entry.getKey().array(), "utf-8").replaceAll("[^\\w]*", "") + "\"");
+//				sb.append("\"" + new String(entry.getKey().array(), "utf-8").replaceAll("[^\\w]*", "") + "\"");
+				sb.append("\"" + entry.getKey().toString().replaceAll("[^\\w]*", "") + "\"");
 			}
 			return sb.insert(0, "[").append("]").toString();
 		}
-		catch (UnsupportedEncodingException e)
-		{
-			throw new IllegalStateException(e);
-		}
+//		catch (UnsupportedEncodingException e)
+//		{
+//			throw new IllegalStateException(e);
+//		}
 	}
 
 
 	@Override
 	public void toFormattedString(FormattedOutput aOutput)
 	{
-		aOutput.array(e -> aOutput.append("\"%s\"", new String(e.getKey().array(), "utf-8").replaceAll("[^\\w]*", "")), this);
+		for (int i = 0; i < size(); i++)
+		{
+			ArrayMapEntry entry = get(i, new ArrayMapEntry());
+			aOutput.append("\"%s\"", new String(entry.getKey().array(), UTF_8).replaceAll("[^\\w]*", ""));
+		}
+
+//		aOutput.array(e -> aOutput.append("\"%s\"", new String(e.getKey().array(), "utf-8").replaceAll("[^\\w]*", "")), this);
 	}
 
 
 	@Override
 	public ArrayMapEntryIterator iterator()
 	{
-		return new ArrayMapEntryIterator(this, new Query());
+		return new ArrayMapEntryIterator(this);
 	}
 
 
-	@Override
-	public Sequence<ArrayMapEntry> query(Query aQuery)
-	{
-		return new ArrayMapEntryIterator(this, aQuery);
-	}
+//	@Override
+//	public Sequence<ArrayMapEntry> query(Query aQuery)
+//	{
+//		return new ArrayMapEntryIterator(this, aQuery);
+//	}
 
 
 	public ArrayMapEntry getFirst()

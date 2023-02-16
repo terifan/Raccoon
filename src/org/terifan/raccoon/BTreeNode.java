@@ -77,6 +77,9 @@ public abstract class BTreeNode
 	abstract RemoveResult remove(BTree aImplementation, ArrayMapKey aKey, Result<ArrayMapEntry> oOldEntry);
 
 
+	abstract void visit(BTree aImplementation, BTreeVisitor aVisitor);
+
+
 	abstract SplitResult split(BTree aImplementation);
 
 

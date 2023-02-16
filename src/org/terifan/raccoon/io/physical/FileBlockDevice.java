@@ -14,7 +14,8 @@ import org.terifan.raccoon.util.Log;
 
 public class FileBlockDevice implements IPhysicalBlockDevice
 {
-	protected FileChannel mFile;
+	protected File mFile;
+	protected FileChannel mFileChannel;
 	protected FileLock mFileLock;
 	protected int mBlockSize;
 
@@ -29,15 +30,17 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	{
 		try
 		{
+			mFile = aFile;
+
 			if (aReadOnly)
 			{
-				mFile = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ);
+				mFileChannel = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ);
 			}
 			else
 			{
 				try
 				{
-					mFile = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+					mFileChannel = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
 				}
 				catch (AccessDeniedException e)
 				{
@@ -46,7 +49,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 				try
 				{
-					mFileLock = mFile.tryLock();
+					mFileLock = mFileChannel.tryLock();
 				}
 				catch (IOException | OverlappingFileLockException e)
 				{
@@ -69,7 +72,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 		try
 		{
-			mFile.read(aBuffer, aBlockIndex * mBlockSize);
+			mFileChannel.read(aBuffer, aBlockIndex * mBlockSize);
 		}
 		catch (IOException e)
 		{
@@ -84,7 +87,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 		try
 		{
-			mFile.write(aBuffer, aBlockIndex * mBlockSize);
+			mFileChannel.write(aBuffer, aBlockIndex * mBlockSize);
 		}
 		catch (IOException e)
 		{
@@ -101,7 +104,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 		try
 		{
 			ByteBuffer buf = ByteBuffer.wrap(aBuffer, aBufferOffset, aBufferLength);
-			mFile.read(buf, aBlockIndex * mBlockSize);
+			mFileChannel.read(buf, aBlockIndex * mBlockSize);
 		}
 		catch (IOException e)
 		{
@@ -118,7 +121,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 		try
 		{
 			ByteBuffer buf = ByteBuffer.wrap(aBuffer, aBufferOffset, aBufferLength);
-			mFile.write(buf, aBlockIndex * mBlockSize);
+			mFileChannel.write(buf, aBlockIndex * mBlockSize);
 		}
 		catch (IOException e)
 		{
@@ -148,17 +151,17 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 				}
 			}
 
-			if (mFile != null)
+			if (mFileChannel != null)
 			{
 				try
 				{
-					mFile.close();
+					mFileChannel.close();
 				}
 				catch (IOException e)
 				{
 					throw new DatabaseIOException(e);
 				}
-				mFile = null;
+				mFileChannel = null;
 			}
 		}
 	}
@@ -167,9 +170,13 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	@Override
 	public long length()
 	{
+		if (mFileChannel == null)
+		{
+			return mFile.length() / mBlockSize;
+		}
 		try
 		{
-			return mFile.size() / mBlockSize;
+			return mFileChannel.size() / mBlockSize;
 		}
 		catch (IOException e)
 		{
@@ -185,7 +192,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 		try
 		{
-			mFile.force(aMetadata);
+			mFileChannel.force(aMetadata);
 		}
 		catch (IOException e)
 		{
@@ -206,7 +213,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	{
 		try
 		{
-			mFile.truncate(aNewLength * mBlockSize);
+			mFileChannel.truncate(aNewLength * mBlockSize);
 		}
 		catch (IOException e)
 		{

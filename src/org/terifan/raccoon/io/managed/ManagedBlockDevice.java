@@ -18,10 +18,15 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	private boolean mWasCreated;
 	private boolean mDoubleCommit;
 	private SpaceMap mSpaceMap;
+	private Document mApplicationMetadata;
 
 
 	public ManagedBlockDevice(IPhysicalBlockDevice aBlockDevice)
 	{
+		if (aBlockDevice == null)
+		{
+			throw new IllegalArgumentException("aBlockDevice is null");
+		}
 		if (aBlockDevice.getBlockSize() < 512)
 		{
 			throw new IllegalArgumentException("The block device must have 512 byte block size or larger.");
@@ -29,6 +34,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 
 		mPhysBlockDevice = aBlockDevice;
 		mBlockSize = aBlockDevice.getBlockSize();
+		mApplicationMetadata = new Document();
 		mWasCreated = mPhysBlockDevice.length() < RESERVED_BLOCKS;
 		mDoubleCommit = true;
 
@@ -107,7 +113,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 	@Override
 	public Document getApplicationMetadata()
 	{
-		return mSuperBlock.getApplicationMetadata();
+		return mApplicationMetadata;
 	}
 
 
@@ -353,6 +359,8 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 			throw new DatabaseException("Database appears to be corrupt. SuperBlock versions are illegal: " + superBlockOne.getTransactionId() + " / " + superBlockTwo.getTransactionId());
 		}
 
+		mApplicationMetadata = mSuperBlock.getMetadata();
+
 		Log.dec();
 	}
 
@@ -366,7 +374,7 @@ public class ManagedBlockDevice implements IManagedBlockDevice, AutoCloseable
 		Log.i("write super block %d", pageIndex);
 		Log.inc();
 
-		mSuperBlock.write(mPhysBlockDevice, pageIndex);
+		mSuperBlock.write(mPhysBlockDevice, pageIndex, mApplicationMetadata);
 
 		Log.dec();
 	}

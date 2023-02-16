@@ -1,18 +1,21 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.document.Document;
+
 
 public class Query
 {
-	ArrayMapKey mRangeLow;
-	ArrayMapKey mRangeHigh;
+	private final Document mParams;
 
 
-	public Query()
+	public Query(Document aParams)
 	{
+		mParams = aParams;
 	}
 
 
-	public Query(ArrayMapKey aLow, ArrayMapKey aHigh)
+	public Document getParams()
 	{
+		return mParams;
 	}
 }

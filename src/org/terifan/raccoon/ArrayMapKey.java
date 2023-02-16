@@ -1,7 +1,9 @@
 package org.terifan.raccoon;
 
 import java.util.Arrays;
+import java.util.UUID;
 import org.terifan.raccoon.document.Array;
+import org.terifan.raccoon.util.ByteArrayUtil;
 
 
 public class ArrayMapKey implements Comparable<ArrayMapKey>
@@ -40,15 +42,15 @@ public class ArrayMapKey implements Comparable<ArrayMapKey>
 	@Override
 	public int compareTo(ArrayMapKey aOther)
 	{
-		Comparable a = (Comparable)get();
-		Comparable b = (Comparable)aOther.get();
+		Object a = get();
+		Object b = aOther.get();
 
-		if (a.getClass() != b.getClass())
+		if (a.getClass() != b.getClass() || a instanceof UUID)
 		{
 			return a.toString().compareTo(b.toString());
 		}
 
-		return a.compareTo(b);
+		return ((Comparable)a).compareTo(b);
 	}
 
 

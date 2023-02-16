@@ -293,7 +293,7 @@ public class DocumentNGTest
 	}
 
 
-	@Test//(enabled = false)
+	@Test(enabled = false)
 	public void testChecksumQualityTest() throws IOException, ClassNotFoundException
 	{
 		Document person = _Person.createPerson(new Random());
@@ -305,11 +305,11 @@ public class DocumentNGTest
 		int err = 0;
 		for (int i = 0; i < 100_000; i++)
 		{
-			byte[] tmp = data.clone();
-			tmp[rnd.nextInt(data.length)] ^= 1 << rnd.nextInt(8);
 			try
 			{
-				Document doc = new Document().fromByteArray(tmp);
+				byte[] tmp = data.clone();
+				tmp[rnd.nextInt(data.length)] ^= 1 << rnd.nextInt(8);
+				new Document().fromByteArray(tmp);
 			}
 			catch (StreamException e)
 			{
@@ -317,7 +317,7 @@ public class DocumentNGTest
 			}
 		}
 
-		System.out.println(err); // expected 99.95% errors detected
+		System.out.println(err); // expected 99.99% errors detected
 	}
 
 
@@ -345,6 +345,6 @@ public class DocumentNGTest
 		long v = new BinaryDecoder(new ByteArrayInputStream(baos.toByteArray())).readInterleaved();
 
 		assertEquals((int)v, a);
-		assertEquals((int)(v>>>32), b);
+		assertEquals((int)(v >>> 32), b);
 	}
 }

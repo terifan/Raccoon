@@ -19,12 +19,14 @@ public class BlockAccessor implements IBlockAccessor, AutoCloseable
 {
 	private final IManagedBlockDevice mBlockDevice;
 	private final CompressionParam mCompressionParam;
+	private boolean mCloseUnderlyingDevice;
 
 
-	public BlockAccessor(IManagedBlockDevice aBlockDevice, CompressionParam aCompressionParam)
+	public BlockAccessor(IManagedBlockDevice aBlockDevice, CompressionParam aCompressionParam, boolean aCloseUnderlyingDevice)
 	{
 		mBlockDevice = aBlockDevice;
 		mCompressionParam = aCompressionParam;
+		mCloseUnderlyingDevice = aCloseUnderlyingDevice;
 	}
 
 
@@ -37,7 +39,10 @@ public class BlockAccessor implements IBlockAccessor, AutoCloseable
 	@Override
 	public void close()
 	{
-		mBlockDevice.close();
+		if (mCloseUnderlyingDevice)
+		{
+			mBlockDevice.close();
+		}
 	}
 
 
