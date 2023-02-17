@@ -18,7 +18,7 @@ class BinaryDecoder implements AutoCloseable
 	}
 
 
-	void unmarshal(Container aContainer) throws IOException
+	void unmarshal(KeyValueCollection aContainer) throws IOException
 	{
 		Token token = readToken();
 

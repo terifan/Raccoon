@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 
 
-public final class Array extends Container<Integer, Array> implements Iterable, Externalizable, Cloneable, Comparable<Array>
+public final class Array extends KeyValueCollection<Integer, Array> implements Iterable, Externalizable, Cloneable, Comparable<Array>
 {
 	private final static long serialVersionUID = 1L;
 
@@ -142,6 +142,36 @@ public final class Array extends Container<Integer, Array> implements Iterable, 
 
 
 	@Override
+	public Iterable<Integer> keySet()
+	{
+		return new Iterable<Integer>()
+		{
+			int i;
+
+			@Override
+			public Iterator<Integer> iterator()
+			{
+				return new Iterator<Integer>()
+				{
+					@Override
+					public boolean hasNext()
+					{
+						return i < size();
+					}
+
+
+					@Override
+					public Integer next()
+					{
+						return i++;
+					}
+				};
+			}
+		};
+	}
+
+
+	@Override
 	Checksum hashCode(Checksum aChecksum)
 	{
 		aChecksum.updateInt(93090393 ^ size()); // == "array".hashCode()
@@ -185,9 +215,9 @@ public final class Array extends Container<Integer, Array> implements Iterable, 
 			Object value = getImpl(i);
 			Object otherValue = aOther.getImpl(i);
 
-			if ((value instanceof Container) && (otherValue instanceof Container))
+			if ((value instanceof KeyValueCollection) && (otherValue instanceof KeyValueCollection))
 			{
-				if (!((Container)value).same((Container)otherValue))
+				if (!((KeyValueCollection)value).same((KeyValueCollection)otherValue))
 				{
 					return false;
 				}

@@ -21,7 +21,7 @@ class BinaryEncoder implements AutoCloseable
 	}
 
 
-	void marshal(Container aContainer) throws IOException
+	void marshal(KeyValueCollection aContainer) throws IOException
 	{
 		if (aContainer instanceof Document)
 		{

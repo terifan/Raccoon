@@ -21,7 +21,7 @@ class JSONEncoder
 	private int mIndent;
 
 
-	public String marshal(Container aContainer, boolean aCompact, boolean aTyped)
+	public String marshal(KeyValueCollection aContainer, boolean aCompact, boolean aTyped)
 	{
 		mBuffer = new StringBuilder();
 		mNewLine = false;

@@ -19,7 +19,7 @@ class JSONDecoder
 	private PushbackReader mReader;
 
 
-	public <T extends Container> T unmarshal(String aJSON, T aContainer)
+	public <T extends KeyValueCollection> T unmarshal(String aJSON, T aContainer)
 	{
 		try
 		{

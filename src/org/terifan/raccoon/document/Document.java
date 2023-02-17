@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 
-public final class Document extends Container<String, Document> implements Externalizable, Cloneable, Comparable<Document>
+public final class Document extends KeyValueCollection<String, Document> implements Externalizable, Cloneable, Comparable<Document>
 {
 	private final static long serialVersionUID = 1L;
 
@@ -72,6 +72,7 @@ public final class Document extends Container<String, Document> implements Exter
 	}
 
 
+	@Override
 	public Set<String> keySet()
 	{
 		return mValues.keySet();
@@ -146,9 +147,9 @@ public final class Document extends Container<String, Document> implements Exter
 			Object value = get(key);
 			Object otherValue = aOther.get(key);
 
-			if ((value instanceof Container) && (otherValue instanceof Container))
+			if ((value instanceof KeyValueCollection) && (otherValue instanceof KeyValueCollection))
 			{
-				if (!((Container)value).same(otherValue))
+				if (!((KeyValueCollection)value).same(otherValue))
 				{
 //					System.out.println("Value of key '" + key + "' missmatch: found: " + otherValue + ", expected: " + value);
 					return false;

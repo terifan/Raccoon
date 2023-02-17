@@ -22,12 +22,12 @@ import java.util.function.Supplier;
 import org.terifan.raccoon.ObjectId;
 
 
-abstract class Container<K, R> implements Externalizable, Serializable
+public abstract class KeyValueCollection<K, R> implements Externalizable, Serializable
 {
 	private final static long serialVersionUID = 1L;
 
 
-	Container()
+	KeyValueCollection()
 	{
 	}
 
@@ -446,9 +446,9 @@ abstract class Container<K, R> implements Externalizable, Serializable
 
 	void hashCode(Checksum aChecksum, Object aValue)
 	{
-		if (aValue instanceof Container)
+		if (aValue instanceof KeyValueCollection)
 		{
-			((Container)aValue).hashCode(aChecksum);
+			((KeyValueCollection)aValue).hashCode(aChecksum);
 		}
 		else if (aValue instanceof CharSequence)
 		{
@@ -655,4 +655,7 @@ abstract class Container<K, R> implements Externalizable, Serializable
 
 
 	public abstract boolean same(R aOther);
+
+
+	public abstract Iterable<K> keySet();
 }
