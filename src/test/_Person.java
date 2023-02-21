@@ -216,15 +216,21 @@ public class _Person
 
 	private static String createPhoneNumber(Random rnd)
 	{
-		String tmp = "";
-		for (int i = 0; i < 10; i++) tmp+=Character.toString((char)('0'+rnd.nextInt(10)));
+		String tmp = "0";
+		tmp += (char)('1' + rnd.nextInt(9));
+		tmp += (char)('0' + rnd.nextInt(10));
+		tmp += "-";
+		for (int i = 0; i < 10; i++)
+		{
+			tmp += (char)('0' + rnd.nextInt(10));
+		}
 		return tmp;
 	}
 
 
 	private static Document createGPS(Random rnd)
 	{
-		return new Document().put("lat", 90*rnd.nextDouble()).put("lng", 90*rnd.nextDouble());
+		return new Document().put("lat", 90*rnd.nextFloat()).put("lng", 90*rnd.nextFloat());
 	}
 
 
