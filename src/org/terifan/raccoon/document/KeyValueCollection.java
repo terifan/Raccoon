@@ -438,6 +438,37 @@ public abstract class KeyValueCollection<K, R> implements Externalizable, Serial
 	}
 
 
+	public R find(String aPath)
+	{
+		int i = aPath.indexOf('/');
+
+		if (i == -1)
+		{
+			if (this instanceof Document)
+			{
+				return ((Document)this).get(aPath);
+			}
+
+			return ((Array)this).get(Integer.parseInt(aPath));
+		}
+
+		String path = aPath.substring(0, i);
+		String remain = aPath.substring(i + 1);
+
+		KeyValueCollection collection;
+		if (this instanceof Document)
+		{
+			collection = ((Document)this).get(path);
+		}
+		else
+		{
+			collection = ((Array)this).get(Integer.parseInt(path));
+		}
+
+		return (R)collection.find(remain);
+	}
+
+
 	@Override
 	public int hashCode()
 	{
