@@ -1,5 +1,6 @@
 package org.terifan.raccoon.document;
 
+import test._Person;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -20,6 +21,15 @@ import org.testng.annotations.Test;
 
 public class DocumentNGTest
 {
+//	@Test
+	public void testPerson()
+	{
+		Document person = _Person.createPerson(new Random());
+
+		System.out.println(person);
+	}
+
+
 	@Test
 	public void testSomeMethod()
 	{
