@@ -71,7 +71,7 @@ public final class RaccoonCollection
 	}
 
 
-	public Document get(Document aDocument)
+	public <T extends Document> T get(T aDocument)
 	{
 		Log.i("get entity %s", aDocument);
 		Log.inc();
@@ -82,7 +82,7 @@ public final class RaccoonCollection
 
 			if (mImplementation.get(entry))
 			{
-				return unmarshalDocument(entry, aDocument);
+				return (T)unmarshalDocument(entry, aDocument);
 			}
 
 			return null;

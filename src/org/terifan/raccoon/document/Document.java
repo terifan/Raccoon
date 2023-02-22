@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 
-public final class Document extends KeyValueCollection<String, Document> implements Externalizable, Cloneable, Comparable<Document>
+public class Document extends KeyValueCollection<String, Document> implements Externalizable, Cloneable, Comparable<Document>
 {
 	private final static long serialVersionUID = 1L;
 
@@ -23,10 +23,14 @@ public final class Document extends KeyValueCollection<String, Document> impleme
 	}
 
 
-	@Override
-	Object getImpl(String aKey)
+	public <T extends Document> T put(String aKey, Object aValue)
 	{
-		return mValues.get(aKey);
+		if (isSupportedType(aValue))
+		{
+			return (T)putImpl(aKey, aValue);
+		}
+
+		throw new IllegalArgumentException("Unsupported type: " + aValue.getClass());
 	}
 
 
@@ -39,6 +43,13 @@ public final class Document extends KeyValueCollection<String, Document> impleme
 		}
 		mValues.put(aKey, aValue);
 		return this;
+	}
+
+
+	@Override
+	Object getImpl(String aKey)
+	{
+		return mValues.get(aKey);
 	}
 
 

@@ -16,7 +16,6 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -421,15 +420,15 @@ public abstract class KeyValueCollection<K, R> implements Externalizable, Serial
 	}
 
 
-	public R put(K aKey, Object aValue)
-	{
-		if (isSupportedType(aValue))
-		{
-			return putImpl(aKey, aValue);
-		}
-
-		throw new IllegalArgumentException("Unsupported type: " + aValue.getClass());
-	}
+//	public R put(K aKey, Object aValue)
+//	{
+//		if (isSupportedType(aValue))
+//		{
+//			return putImpl(aKey, aValue);
+//		}
+//
+//		throw new IllegalArgumentException("Unsupported type: " + aValue.getClass());
+//	}
 
 
 	public boolean isNull(K aKey)

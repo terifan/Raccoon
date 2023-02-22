@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 
 
-public final class Array extends KeyValueCollection<Integer, Array> implements Iterable, Externalizable, Cloneable, Comparable<Array>
+public class Array extends KeyValueCollection<Integer, Array> implements Iterable, Externalizable, Cloneable, Comparable<Array>
 {
 	private final static long serialVersionUID = 1L;
 
@@ -23,6 +23,17 @@ public final class Array extends KeyValueCollection<Integer, Array> implements I
 	{
 		mValues.addAll(aSource.mValues);
 		return this;
+	}
+
+
+	public <T extends Array> T put(Integer aKey, Object aValue)
+	{
+		if (isSupportedType(aValue))
+		{
+			return (T)putImpl(aKey, aValue);
+		}
+
+		throw new IllegalArgumentException("Unsupported type: " + aValue.getClass());
 	}
 
 
@@ -326,5 +337,34 @@ public final class Array extends KeyValueCollection<Integer, Array> implements I
 		}
 
 		return 0;
+	}
+
+
+	public <T> Iterable<T> iterator(Class<T> aClass)
+	{
+		return new Iterable<T>()
+		{
+			int i;
+
+			@Override
+			public Iterator<T> iterator()
+			{
+				return new Iterator<T>()
+				{
+					@Override
+					public boolean hasNext()
+					{
+						return i < size();
+					}
+
+
+					@Override
+					public T next()
+					{
+						return get(i++);
+					}
+				};
+			}
+		};
 	}
 }
