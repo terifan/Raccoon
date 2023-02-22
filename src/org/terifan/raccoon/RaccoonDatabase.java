@@ -4,10 +4,13 @@ import org.terifan.raccoon.io.DatabaseIOException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
@@ -636,5 +639,52 @@ public final class RaccoonDatabase implements AutoCloseable
 				.put("entrySizeLimit", mBlockDevice.getBlockSize() / 4)
 				.put("compression", CompressionParam.BEST_SPEED.marshal())
 			);
+	}
+
+
+	public boolean save(Document aDocument)
+	{
+		RaccoonEntity entity = aDocument.getClass().getAnnotation(RaccoonEntity.class);
+		String collection;
+		if (entity == null)
+		{
+			collection = "default-collection";
+		}
+		else
+		{
+			collection = entity.collection();
+		}
+		return getCollection(collection).save(aDocument);
+	}
+
+
+	public void saveAll(Document... aDocuments)
+	{
+		for (Document doc : aDocuments)
+		{
+			RaccoonEntity entity = doc.getClass().getAnnotation(RaccoonEntity.class);
+			getCollection(entity.collection()).save(doc);
+		}
+	}
+
+
+	public <T extends Document> List<T> listAll(Class<T> aType)
+	{
+		RaccoonEntity entity = aType.getAnnotation(RaccoonEntity.class);
+
+		Supplier<T> supplier = () -> {
+			try
+			{
+				Constructor<T> c = aType.getConstructor();
+				c.setAccessible(true);
+				return (T)c.newInstance();
+			}
+			catch (IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException | SecurityException | InvocationTargetException e)
+			{
+				throw new IllegalArgumentException("Failed to create instance. Ensure class has a public zero argument constructor: " + aType, e);
+			}
+		};
+
+		return (List<T>)getCollection(entity.collection()).listAll(supplier);
 	}
 }

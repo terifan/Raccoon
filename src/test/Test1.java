@@ -67,7 +67,7 @@ public class Test1
 //
 //				System.out.println(db.getCollection("people").size());
 
-				db.getCollection("people").list().forEach(e -> System.out.println(e));
+				db.getCollection("people").listAll().forEach(e -> System.out.println(e));
 			}
 		}
 		catch (Exception e)

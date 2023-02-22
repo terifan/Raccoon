@@ -42,7 +42,7 @@ public class Test3
 			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
-				db.getCollection("words").list().forEach(e -> System.out.println(e));
+				db.getCollection("words").listAll().forEach(e -> System.out.println(e));
 
 //				showTree(db.getCollection("words").getImplementation());
 				db.commit();

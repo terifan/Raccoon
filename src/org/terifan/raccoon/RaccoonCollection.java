@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Supplier;
 import static org.terifan.raccoon.RaccoonDatabase.INDEX_COLLECTION;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.storage.BlockAccessor;
@@ -268,7 +269,7 @@ public final class RaccoonCollection
 	}
 
 
-	public List<Document> list()
+	public List<Document> listAll()
 	{
 		ArrayList<Document> list = new ArrayList<>();
 
@@ -282,6 +283,28 @@ public final class RaccoonCollection
 				void leaf(BTree aImplementation, BTreeLeaf aNode)
 				{
 					aNode.mMap.forEach(e -> list.add(unmarshalDocument(e, new Document())));
+				}
+			});
+		}
+
+		return list;
+	}
+
+
+	public <T extends Document> List<T> listAll(Supplier<T> aSupplier)
+	{
+		ArrayList<T> list = new ArrayList<>();
+
+		try (ReadLock lock = mLock.readLock())
+		{
+			mModCount++;
+
+			mImplementation.visit(new BTreeVisitor()
+			{
+				@Override
+				void leaf(BTree aImplementation, BTreeLeaf aNode)
+				{
+					aNode.mMap.forEach(e -> list.add((T)unmarshalDocument(e, aSupplier.get())));
 				}
 			});
 		}

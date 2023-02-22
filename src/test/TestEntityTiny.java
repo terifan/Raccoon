@@ -4,9 +4,10 @@ import java.io.File;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.RaccoonEntity;
 
 
-public class TestTiny
+public class TestEntityTiny
 {
 	public static void main(String... args)
 	{
@@ -14,18 +15,32 @@ public class TestTiny
 		{
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
 			{
-				db.getCollection("people").save(Document.of("name:adam"));
+				db.saveAll(new User("adam"), new User("eve"), new User("steve"));
 				db.commit();
 			}
 
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, null))
 			{
-				db.getCollection("people").listAll().forEach(System.out::println);
+				db.listAll(User.class).forEach(System.out::println);
 			}
 		}
 		catch (Exception e)
 		{
 			e.printStackTrace(System.out);
+		}
+	}
+
+
+	@RaccoonEntity(collection = "users")
+	static class User extends Document
+	{
+		public User()
+		{
+		}
+
+		public User(String name)
+		{
+			put("name", name);
 		}
 	}
 }

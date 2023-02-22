@@ -51,12 +51,12 @@ public class TestSimple
 			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 			{
-				db.getCollection("people").list().forEach(System.out::println);
-				db.getCollection("lookup").list().forEach(System.out::println);
+				db.getCollection("people").listAll().forEach(System.out::println);
+				db.getCollection("lookup").listAll().forEach(System.out::println);
 
 				System.out.println(db.getCollection("files").get(new Document().put("_id", 1)).getBinary("content").length);
 
-				db.getCollection("people").list().forEach(System.out::println);
+				db.getCollection("people").listAll().forEach(System.out::println);
 
 				db.commit();
 			}
