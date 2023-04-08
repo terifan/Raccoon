@@ -1,7 +1,7 @@
 package org.terifan.security.cryptography;
 
 import java.util.Arrays;
-import org.terifan.raccoon.util.ByteArrayBuffer;
+import org.terifan.raccoon.util.ByteArrayUtil;
 
 
 /**
@@ -147,7 +147,7 @@ public final class Kuznechik implements BlockCipher
 				}
 				tmp[index] = (byte)i;
 				kuz_l(tmp);
-				ByteArrayBuffer.readInt32(tmp, 0, gf256res, (index + (16 * i)) * 4, 4);
+				ByteArrayUtil.copyInt32(tmp, 0, gf256res, (index + (16 * i)) * 4, 4);
 
 				for (int l = 0; l < 16; l++)
 				{
@@ -155,7 +155,7 @@ public final class Kuznechik implements BlockCipher
 				}
 				tmp[index] = (byte)i;
 				kuz_l_inv(tmp);
-				ByteArrayBuffer.readInt32(tmp, 0, gf256resInv, (index + (16 * i)) * 4, 4);
+				ByteArrayUtil.copyInt32(tmp, 0, gf256resInv, (index + (16 * i)) * 4, 4);
 			}
 		}
 	}
@@ -283,10 +283,10 @@ public final class Kuznechik implements BlockCipher
 	{
 		int A0, A1, A2, A3, T0, T1, T2, T3;
 
-		int C0 = ByteArrayBuffer.readInt32(data, offset);
-		int C1 = ByteArrayBuffer.readInt32(data, offset + 4);
-		int C2 = ByteArrayBuffer.readInt32(data, offset + 8);
-		int C3 = ByteArrayBuffer.readInt32(data, offset + 12);
+		int C0 = ByteArrayUtil.getInt32(data, offset);
+		int C1 = ByteArrayUtil.getInt32(data, offset + 4);
+		int C2 = ByteArrayUtil.getInt32(data, offset + 8);
+		int C3 = ByteArrayUtil.getInt32(data, offset + 12);
 
 		for (int i = 0; i < 9; i++)
 		{
@@ -358,10 +358,10 @@ public final class Kuznechik implements BlockCipher
 		C2 ^= key[9][2];
 		C3 ^= key[9][3];
 
-		ByteArrayBuffer.writeInt32(dest, destOffset, C0);
-		ByteArrayBuffer.writeInt32(dest, destOffset + 4, C1);
-		ByteArrayBuffer.writeInt32(dest, destOffset + 8, C2);
-		ByteArrayBuffer.writeInt32(dest, destOffset + 12, C3);
+		ByteArrayUtil.putInt32(dest, destOffset, C0);
+		ByteArrayUtil.putInt32(dest, destOffset + 4, C1);
+		ByteArrayUtil.putInt32(dest, destOffset + 8, C2);
+		ByteArrayUtil.putInt32(dest, destOffset + 12, C3);
 	}
 
 
@@ -370,10 +370,10 @@ public final class Kuznechik implements BlockCipher
 	{
 		int A0, A1, A2, A3, T0, T1, T2, T3;
 
-		int C0 = ByteArrayBuffer.readInt32(data, offset);
-		int C1 = ByteArrayBuffer.readInt32(data, offset + 4);
-		int C2 = ByteArrayBuffer.readInt32(data, offset + 8);
-		int C3 = ByteArrayBuffer.readInt32(data, offset + 12);
+		int C0 = ByteArrayUtil.getInt32(data, offset);
+		int C1 = ByteArrayUtil.getInt32(data, offset + 4);
+		int C2 = ByteArrayUtil.getInt32(data, offset + 8);
+		int C3 = ByteArrayUtil.getInt32(data, offset + 12);
 
 		C0 ^= key[9][0];
 		C1 ^= key[9][1];
@@ -446,10 +446,10 @@ public final class Kuznechik implements BlockCipher
 			C3 ^= key[i][3];
 		}
 
-		ByteArrayBuffer.writeInt32(dest, destOffset, C0);
-		ByteArrayBuffer.writeInt32(dest, destOffset + 4, C1);
-		ByteArrayBuffer.writeInt32(dest, destOffset + 8, C2);
-		ByteArrayBuffer.writeInt32(dest, destOffset + 12, C3);
+		ByteArrayUtil.putInt32(dest, destOffset, C0);
+		ByteArrayUtil.putInt32(dest, destOffset + 4, C1);
+		ByteArrayUtil.putInt32(dest, destOffset + 8, C2);
+		ByteArrayUtil.putInt32(dest, destOffset + 12, C3);
 	}
 
 
@@ -492,15 +492,15 @@ public final class Kuznechik implements BlockCipher
 		int[] y = new int[4];
 		int[] z = new int[4];
 
-		kuz[0][0] = x[0] = ByteArrayBuffer.readInt32(key, 0);
-		kuz[0][1] = x[1] = ByteArrayBuffer.readInt32(key, 4);
-		kuz[0][2] = x[2] = ByteArrayBuffer.readInt32(key, 8);
-		kuz[0][3] = x[3] = ByteArrayBuffer.readInt32(key, 12);
+		kuz[0][0] = x[0] = ByteArrayUtil.getInt32(key, 0);
+		kuz[0][1] = x[1] = ByteArrayUtil.getInt32(key, 4);
+		kuz[0][2] = x[2] = ByteArrayUtil.getInt32(key, 8);
+		kuz[0][3] = x[3] = ByteArrayUtil.getInt32(key, 12);
 
-		kuz[1][0] = y[0] = ByteArrayBuffer.readInt32(key, 16);
-		kuz[1][1] = y[1] = ByteArrayBuffer.readInt32(key, 20);
-		kuz[1][2] = y[2] = ByteArrayBuffer.readInt32(key, 24);
-		kuz[1][3] = y[3] = ByteArrayBuffer.readInt32(key, 28);
+		kuz[1][0] = y[0] = ByteArrayUtil.getInt32(key, 16);
+		kuz[1][1] = y[1] = ByteArrayUtil.getInt32(key, 20);
+		kuz[1][2] = y[2] = ByteArrayUtil.getInt32(key, 24);
+		kuz[1][3] = y[3] = ByteArrayUtil.getInt32(key, 28);
 
 		for (int i = 1; i <= 32; i++)
 		{

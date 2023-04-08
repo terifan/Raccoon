@@ -3,7 +3,9 @@ package org.terifan.raccoon;
 import java.io.Serializable;
 import java.security.SecureRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import static org.terifan.raccoon.util.ByteArrayBuffer.copyInt32;
 import static org.terifan.raccoon.util.ByteArrayBuffer.readInt32;
+import static org.terifan.raccoon.util.ByteArrayBuffer.copyInt32;
 import static org.terifan.raccoon.util.ByteArrayBuffer.writeInt32;
 
 

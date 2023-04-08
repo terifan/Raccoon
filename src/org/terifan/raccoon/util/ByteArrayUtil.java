@@ -154,4 +154,22 @@ public final class ByteArrayUtil
 			aDest[i] = getInt64(aSource, 8 * i);
 		}
 	}
+
+
+	public static void copyInt32(byte[] aIn, int aInOffset, int[] aOut, int aOutOffset, int aNumInts)
+	{
+		for (int i = 0; i < aNumInts; i++, aInOffset+=4)
+		{
+			aOut[aOutOffset++] = getInt32(aIn, aInOffset);
+		}
+	}
+
+
+	public static void copyInt32(int[] aIn, int aInOffset, byte[] aOut, int aOutOffset, int aNumInts)
+	{
+		for (int i = 0; i < aNumInts; i++, aOutOffset+=4, aInOffset++)
+		{
+			putInt32(aOut, aOutOffset, aIn[aInOffset]);
+		}
+	}
 }
