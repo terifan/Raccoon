@@ -7,7 +7,7 @@ import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.RuntimeDiagnostics;
 import org.terifan.raccoon.DatabaseOpenOption;
-import org.terifan.raccoon.ObjectId;
+import org.terifan.raccoon.document.ObjectId;
 import org.terifan.raccoon.io.secure.AccessCredentials;
 
 

@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.document.ObjectId;
 import org.terifan.raccoon.io.DatabaseIOException;
 import java.io.File;
 import java.io.FileNotFoundException;

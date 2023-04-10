@@ -7,7 +7,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Random;
 import java.util.UUID;
-import org.terifan.raccoon.ObjectId;
+import org.terifan.raccoon.document.ObjectId;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 
