@@ -293,7 +293,7 @@ public class BTree implements AutoCloseable
 
 	protected BlockPointer writeBlock(byte[] aContent, int aLevel, BlockType aBlockType)
 	{
-		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, mBlockAccessor.getBlockDevice().getTransactionId(), aBlockType).setBlockLevel(aLevel);
+		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, aBlockType).setBlockLevel(aLevel);
 	}
 
 

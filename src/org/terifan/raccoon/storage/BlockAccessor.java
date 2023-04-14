@@ -111,8 +111,10 @@ public class BlockAccessor implements IBlockAccessor, AutoCloseable
 
 
 	@Override
-	public synchronized BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType)
+	public synchronized BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, BlockType aType)
 	{
+		long transactionId = getBlockDevice().getTransactionId();
+
 		BlockPointer blockPointer = null;
 
 		try
@@ -151,10 +153,10 @@ public class BlockAccessor implements IBlockAccessor, AutoCloseable
 			blockPointer.setAllocatedSize(aBuffer.length);
 			blockPointer.setPhysicalSize(physicalSize);
 			blockPointer.setLogicalSize(aLength);
-			blockPointer.setTransactionId(aTransactionId);
+			blockPointer.setTransactionId(transactionId);
 			blockPointer.setBlockType(aType);
 			blockPointer.setChecksumAlgorithm((byte)0); // not used
-			blockPointer.setChecksum(MurmurHash3.hash256(aBuffer, 0, physicalSize, aTransactionId));
+			blockPointer.setChecksum(MurmurHash3.hash256(aBuffer, 0, physicalSize, transactionId));
 			blockPointer.setBlockKey(blockKey);
 			blockPointer.setBlockIndex0(blockIndex);
 

@@ -1,4 +1,4 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.io;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,6 +9,9 @@ import java.nio.channels.SeekableByteChannel;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import org.terifan.raccoon.BlockType;
+import org.terifan.raccoon.RaccoonDatabase;
+import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
@@ -25,7 +28,6 @@ public class LobByteChannel implements SeekableByteChannel
 	private final static int INDIRECT_POINTER_THRESHOLD = 4;
 
 	private BlockAccessor mBlockAccessor;
-	private RaccoonDatabase mDatabase;
 	private ByteArrayBuffer mPersistedPointerBuffer;
 	private ByteArrayBuffer mPersistedIndirectPointerBuffer;
 	private HashMap<Integer,BlockPointer> mPendingBlockPointsers;
@@ -43,12 +45,11 @@ public class LobByteChannel implements SeekableByteChannel
 	private byte[] mHeader;
 
 
-	LobByteChannel(RaccoonDatabase aDatabase, byte[] aHeader, LobOpenOption aOpenOption) throws IOException
+	public LobByteChannel(BlockAccessor aBlockAccessor, byte[] aHeader, LobOpenOption aOpenOption, Listener<LobByteChannel> aListener) throws IOException
 	{
-		mDatabase = aDatabase;
 		mHeader = aHeader;
-
-		mBlockAccessor = mDatabase.getBlockAccessor();
+		mCloseListener = aListener;
+		mBlockAccessor = aBlockAccessor;
 
 		if (aOpenOption == LobOpenOption.REPLACE && aHeader != null)
 		{
@@ -237,7 +238,7 @@ public class LobByteChannel implements SeekableByteChannel
 	}
 
 
-	synchronized byte[] finish() throws IOException
+	public synchronized byte[] finish() throws IOException
 	{
 		if (mClosed || !mModified)
 		{
@@ -286,7 +287,7 @@ public class LobByteChannel implements SeekableByteChannel
 			Log.inc();
 
 			buf.position(HEADER_SIZE);
-			BlockPointer bp = mBlockAccessor.writeBlock(buf.array(), 0, buf.capacity(), mDatabase.getTransaction(), BlockType.BLOB_INDEX);
+			BlockPointer bp = mBlockAccessor.writeBlock(buf.array(), 0, buf.capacity(), BlockType.BLOB_INDEX);
 			bp.marshal(buf);
 			buf.trim();
 
@@ -349,7 +350,7 @@ public class LobByteChannel implements SeekableByteChannel
 				}
 				else
 				{
-					BlockPointer bp = mBlockAccessor.writeBlock(mBuffer, 0, len, mDatabase.getTransaction(), BlockType.BLOB_LEAF);
+					BlockPointer bp = mBlockAccessor.writeBlock(mBuffer, 0, len, BlockType.BLOB_LEAF);
 					mPendingBlockPointsers.put(mChunkIndex, bp);
 				}
 			}
@@ -599,13 +600,6 @@ public class LobByteChannel implements SeekableByteChannel
 	public boolean isModified()
 	{
 		return mModified;
-	}
-
-
-	LobByteChannel setOnCloseAction(Listener<LobByteChannel> aListener)
-	{
-		mCloseListener = aListener;
-		return this;
 	}
 
 

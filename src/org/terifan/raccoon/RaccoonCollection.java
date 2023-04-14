@@ -1,5 +1,7 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.LobByteChannel;
+import org.terifan.raccoon.io.LobOpenOption;
 import org.terifan.raccoon.document.ObjectId;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -219,7 +221,7 @@ public final class RaccoonCollection
 		{
 			type = TYPE_EXTERNAL;
 
-			try (LobByteChannel blob = new LobByteChannel(mDatabase, null, LobOpenOption.WRITE))
+			try (LobByteChannel blob = new LobByteChannel(mDatabase.getBlockAccessor(), null, LobOpenOption.WRITE, null))
 			{
 				value = blob.writeAllBytes(value).finish();
 			}
@@ -454,7 +456,7 @@ public final class RaccoonCollection
 	{
 		if (aEntry != null && aEntry.getType() == TYPE_EXTERNAL)
 		{
-			try (LobByteChannel blob = new LobByteChannel(mDatabase, aEntry.getValue(), LobOpenOption.REPLACE))
+			try (LobByteChannel blob = new LobByteChannel(mDatabase.getBlockAccessor(), aEntry.getValue(), LobOpenOption.REPLACE, null))
 			{
 			}
 			catch (IOException e)
@@ -483,7 +485,7 @@ public final class RaccoonCollection
 
 		if (aEntry.getType() == TYPE_EXTERNAL)
 		{
-			try (LobByteChannel blob = new LobByteChannel(mDatabase, aEntry.getValue(), LobOpenOption.READ))
+			try (LobByteChannel blob = new LobByteChannel(mDatabase.getBlockAccessor(), aEntry.getValue(), LobOpenOption.READ, null))
 			{
 				buffer = blob.readAllBytes();
 			}

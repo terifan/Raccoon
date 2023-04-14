@@ -43,7 +43,7 @@ public class DatabaseRoot
 
 		byte[] buffer = mMetadata.toByteArray();
 
-		mBlockPointer = blockAccessor.writeBlock(buffer, 0, buffer.length, mTransactionId, BlockType.APPLICATION_HEADER);
+		mBlockPointer = blockAccessor.writeBlock(buffer, 0, buffer.length, BlockType.APPLICATION_HEADER);
 
 		aBlockDevice.getApplicationMetadata().put("root", mBlockPointer.marshal());
 	}

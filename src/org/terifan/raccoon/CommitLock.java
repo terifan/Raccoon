@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.LobByteChannel;
 import java.util.Objects;
 
 

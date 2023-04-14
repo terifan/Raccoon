@@ -11,5 +11,5 @@ public interface IBlockAccessor
 	byte[] readBlock(BlockPointer aBlockPointer);
 
 
-	BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, long aTransactionId, BlockType aType);
+	BlockPointer writeBlock(byte[] aBuffer, int aOffset, int aLength, BlockType aType);
 }

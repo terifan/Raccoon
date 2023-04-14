@@ -1,5 +1,7 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.LobByteChannel;
+import org.terifan.raccoon.io.LobOpenOption;
 import org.terifan.raccoon.document.ObjectId;
 import org.terifan.raccoon.io.DatabaseIOException;
 import java.io.FileNotFoundException;
@@ -23,6 +25,7 @@ import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.io.physical.FileBlockDevice;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Assert;
+import org.terifan.raccoon.util.Listener;
 import org.terifan.raccoon.util.Log;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
@@ -324,13 +327,15 @@ public final class RaccoonDatabase implements AutoCloseable
 			throw new FileNotFoundException("No LOB " + aObjectId);
 		}
 
-		return new LobByteChannel(this, entry.get("header"), aLobOpenOption)
-			.setOnCloseAction(lob -> {
-				byte[] header = lob.finish();
+		Listener<LobByteChannel> onFinish = lob ->
+		{
+			byte[] header = lob.finish();
 //				Log.hexDump(header);
 //				lob.scan(new ScanResult());
-				collection.save(entry.put("header", header));
-			});
+			collection.save(entry.put("header", header));
+		};
+
+		return new LobByteChannel(getBlockAccessor(), entry.get("header"), aLobOpenOption, onFinish);
 	}
 
 
@@ -342,7 +347,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		if (collection.tryGet(entry))
 		{
-			new LobByteChannel(this, entry.get("header"), LobOpenOption.APPEND).delete();
+			new LobByteChannel(getBlockAccessor(), entry.get("header"), LobOpenOption.APPEND, null).delete();
 
 			collection.delete(entry);
 		}
@@ -618,13 +623,13 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	BlockAccessor getBlockAccessor()
+	public BlockAccessor getBlockAccessor()
 	{
 		return new BlockAccessor(getBlockDevice(), CompressionParam.BEST_SPEED, true);
 	}
 
 
-	long getTransaction()
+	public long getTransaction()
 	{
 		return mDatabaseRoot.getTransactionId();
 	}
