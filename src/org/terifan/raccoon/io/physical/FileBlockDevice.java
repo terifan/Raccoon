@@ -1,50 +1,53 @@
 package org.terifan.raccoon.io.physical;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.terifan.raccoon.io.DatabaseIOException;
 import org.terifan.raccoon.util.Log;
 
 
 public class FileBlockDevice implements IPhysicalBlockDevice
 {
-	protected File mFile;
+	protected Path mPath;
 	protected FileChannel mFileChannel;
 	protected FileLock mFileLock;
 	protected int mBlockSize;
 
 
-	public FileBlockDevice(File aFile)
+	public FileBlockDevice(Path aPath)
 	{
-		this(aFile, 4096, false);
+		this(aPath, 4096, false);
 	}
 
 
-	public FileBlockDevice(File aFile, int aBlockSize, boolean aReadOnly)
+	public FileBlockDevice(Path aPath, int aBlockSize, boolean aReadOnly)
 	{
 		try
 		{
-			mFile = aFile;
+			mPath = aPath;
 
 			if (aReadOnly)
 			{
-				mFileChannel = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ);
+				mFileChannel = FileChannel.open(aPath, StandardOpenOption.CREATE, StandardOpenOption.READ);
 			}
 			else
 			{
 				try
 				{
-					mFileChannel = FileChannel.open(aFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+					mFileChannel = FileChannel.open(aPath, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
 				}
 				catch (AccessDeniedException e)
 				{
-					throw new FileAlreadyOpenException("Failed to open file: " + aFile, e);
+					throw new FileAlreadyOpenException("Failed to open file: " + aPath, e);
 				}
 
 				try
@@ -53,7 +56,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 				}
 				catch (IOException | OverlappingFileLockException e)
 				{
-					throw new FileAlreadyOpenException("Failed to lock file: " + aFile, e);
+					throw new FileAlreadyOpenException("Failed to lock file: " + aPath, e);
 				}
 			}
 
@@ -172,7 +175,14 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 	{
 		if (mFileChannel == null)
 		{
-			return mFile.length() / mBlockSize;
+			try
+			{
+				return Files.size(mPath) / mBlockSize;
+			}
+			catch (IOException e)
+			{
+				throw new IllegalStateException(e);
+			}
 		}
 		try
 		{

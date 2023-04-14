@@ -1,6 +1,6 @@
 package test;
 
-import java.io.File;
+import java.nio.file.Paths;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
@@ -13,13 +13,13 @@ public class TestEntityTiny
 	{
 		try
 		{
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
 			{
 				db.saveAll(new User("adam"), new User("eve"), new User("steve"));
 				db.commit();
 			}
 
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, null))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, null))
 			{
 				db.listAll(User.class).forEach(System.out::println);
 			}

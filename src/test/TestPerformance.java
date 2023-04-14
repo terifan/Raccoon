@@ -1,6 +1,6 @@
 package test;
 
-import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
@@ -35,7 +35,7 @@ public class TestPerformance
 			AccessCredentials ac = null;
 
 			System.out.printf("%-15s ", "SAVE SEQ");
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				for (int j = 0; j < M; j++)
 				{
@@ -52,7 +52,7 @@ public class TestPerformance
 			System.out.println();
 
 			System.out.printf("%-15s ", "SAVE ALL SEQ");
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				for (int j = 0; j < M; j++)
 				{
@@ -71,7 +71,7 @@ public class TestPerformance
 			System.out.println();
 
 			System.out.printf("%-15s ", "SELECT SEQ");
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 1; j < M; j++)
 				{
@@ -88,7 +88,7 @@ public class TestPerformance
 			System.out.println();
 
 			System.out.printf("%-15s ", "UPDATE SEQ");
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				for (int j = 0, k = 1; j < M; j++)
 				{
@@ -105,7 +105,7 @@ public class TestPerformance
 			System.out.println();
 
 			System.out.printf("%-15s ", "SELECT SEQ");
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 //				db.getCollection("table").stream().forEach(System.out::println);
 				for (int j = 0, k = 1; j < M; j++)
@@ -123,7 +123,7 @@ public class TestPerformance
 			System.out.println();
 
 			System.out.printf("%-15s ", "DELETE SEQ");
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 1; j < M; j++)
 				{
@@ -144,7 +144,7 @@ public class TestPerformance
 			Collections.shuffle(order, rnd);
 
 			System.out.printf("%-15s ", "INSERT RANDOM");
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				for (int j = 0, k = 0; j < M; j++)
 				{
@@ -163,7 +163,7 @@ public class TestPerformance
 			Collections.shuffle(order, rnd);
 
 			System.out.printf("%-15s ", "SELECT RANDOM");
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 0; j < M; j++)
 				{
@@ -182,7 +182,7 @@ public class TestPerformance
 			Collections.shuffle(order, rnd);
 
 			System.out.printf("%-15s ", "UPDATE RANDOM");
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 0; j < M; j++)
 				{
@@ -201,7 +201,7 @@ public class TestPerformance
 			Collections.shuffle(order, rnd);
 
 			System.out.printf("%-15s ", "SELECT RANDOM");
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 0; j < M; j++)
 				{
@@ -220,7 +220,7 @@ public class TestPerformance
 			Collections.shuffle(order, rnd);
 
 			System.out.printf("%-15s ", "REMOVE RANDOM");
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				for (int j = 0, k = 0; j < M; j++)
 				{

@@ -2,11 +2,12 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.document.ObjectId;
 import org.terifan.raccoon.io.DatabaseIOException;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -57,7 +58,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public RaccoonDatabase(File aFile, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
+	public RaccoonDatabase(Path aPath, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
 
@@ -65,28 +66,28 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		try
 		{
-			if (aFile.exists())
+			if (Files.exists(aPath))
 			{
 				if (aOpenOptions == DatabaseOpenOption.REPLACE)
 				{
-					if (!aFile.delete())
+					if (!Files.deleteIfExists(aPath))
 					{
-						throw new DatabaseIOException("Failed to delete existing file: " + aFile);
+						throw new DatabaseIOException("Failed to delete existing file: " + aPath);
 					}
 				}
-				else if ((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aFile.length() == 0)
+				else if ((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && Files.size(aPath) == 0)
 				{
 					throw new DatabaseIOException("File is empty.");
 				}
 			}
 			else if (aOpenOptions == DatabaseOpenOption.OPEN || aOpenOptions == DatabaseOpenOption.READ_ONLY)
 			{
-				throw new DatabaseIOException("File not found: " + aFile);
+				throw new DatabaseIOException("File not found: " + aPath);
 			}
 
-			boolean newFile = !aFile.exists();
+			boolean newFile = !Files.exists(aPath);
 
-			fileBlockDevice = new FileBlockDevice(aFile, 4096, aOpenOptions == DatabaseOpenOption.READ_ONLY);
+			fileBlockDevice = new FileBlockDevice(aPath, 4096, aOpenOptions == DatabaseOpenOption.READ_ONLY);
 
 			init(fileBlockDevice, newFile, true, aOpenOptions, aAccessCredentials);
 		}

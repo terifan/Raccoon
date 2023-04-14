@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
-import java.io.File;
-import java.util.function.Supplier;
+import java.nio.file.Paths;
 import org.terifan.raccoon.document.Document;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
 import static org.terifan.raccoon._Tools.createSecureStorage;
@@ -20,7 +19,7 @@ public class BTreeNGTest
 //		Log.setLevel(LogLevel.DEBUG);
 
 //		IPhysicalBlockDevice device = new MemoryBlockDevice(512);
-		IPhysicalBlockDevice device = new FileBlockDevice(new File("d:/test-" + System.currentTimeMillis() + ".rdb"));
+		IPhysicalBlockDevice device = new FileBlockDevice(Paths.get("d:/test-" + System.currentTimeMillis() + ".rdb"));
 
 		ArrayMapKey key = new ArrayMapKey("key");
 		byte[] value = "value".getBytes();

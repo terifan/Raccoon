@@ -1,8 +1,9 @@
 package org.terifan.raccoon.io.physical;
 
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
@@ -15,7 +16,7 @@ public class FileBlockDeviceNGTest
 	@Test
 	public void testSomeMethod() throws IOException
 	{
-		File file = File.createTempFile("blkdev","tmp");
+		Path file = Files.createTempFile("blkdev","tmp");
 
 		Random rnd = new Random(1);
 		int s = 512;
@@ -52,6 +53,6 @@ public class FileBlockDeviceNGTest
 			}
 		}
 
-		file.delete();
+		Files.delete(file);
 	}
 }

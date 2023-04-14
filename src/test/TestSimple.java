@@ -1,6 +1,5 @@
 package test;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.terifan.raccoon.document.Document;
@@ -21,7 +20,7 @@ public class TestSimple
 //			AccessCredentials ac = new AccessCredentials("password");
 			AccessCredentials ac = null;
 
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.REPLACE, ac))
 			{
 //				db.createIndex("lookup", "people", "name");
@@ -48,7 +47,7 @@ public class TestSimple
 				db.commit();
 			}
 
-			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 			{
 				db.getCollection("people").listAll().forEach(System.out::println);
@@ -63,25 +62,25 @@ public class TestSimple
 
 			RuntimeDiagnostics.print();
 
-//			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 //			{
 //				db.getCollection("people").list().forEach(e -> System.out.println(e));
 //			}
 
-//			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 //			{
 //				db.getCollection("people").list().forEach(e -> System.out.println(e));
 //			}
 
-//			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 //			{
 //				db.getCollection("people").list().forEach(e -> System.out.println(e));
 //			}
 
-//			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 //			{
 //				db.getCollection("people").list().forEach(e -> System.out.println(e));
