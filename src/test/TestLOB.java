@@ -21,20 +21,22 @@ public class TestLOB
 	{
 		try
 		{
-//			AccessCredentials ac = new AccessCredentials("password");
-			AccessCredentials ac = null;
+			AccessCredentials ac = new AccessCredentials("password");
+//			AccessCredentials ac = null;
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				RaccoonCollection lobs = db.getCollection("files");
 
-				Files.walk(Paths.get("d:\\pictures\\wallpapers\\4k")).filter(p -> p.getFileName().toString().matches(".*jpg|.*png")).limit(5).forEach(path ->
+				Files.walk(Paths.get("d:\\pictures")).filter(p -> p.getFileName().toString().toLowerCase().matches(".*jpg|.*png")).limit(1000000000).forEach(path ->
 				{
+					System.out.println(path);
+
 					try
 					{
 						Document doc = new Document();
 						doc.put("_id", ObjectId.randomId());
-						doc.put("name", path.getFileName().toString());
+						doc.put("name", path.toString());
 						doc.put("length", Files.size(path));
 						lobs.save(doc);
 
