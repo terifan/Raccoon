@@ -1,6 +1,6 @@
 package org.terifan.raccoon.io.secure;
 
-import org.terifan.security.cryptography.ISAAC;
+import org.terifan.security.random.ISAAC;
 
 
 public class BlockKeyGenerator
@@ -8,8 +8,17 @@ public class BlockKeyGenerator
 	private final static ISAAC PRNG = new ISAAC();
 
 
-	public static long[] generate()
+	public static int[] generate()
 	{
-		return new long[]{PRNG.nextLong(), PRNG.nextLong(), PRNG.nextLong(), PRNG.nextLong()};
+		return new int[]{
+			PRNG.nextInt(),
+			PRNG.nextInt(),
+			PRNG.nextInt(),
+			PRNG.nextInt(),
+			PRNG.nextInt(),
+			PRNG.nextInt(),
+			PRNG.nextInt(),
+			PRNG.nextInt()
+		};
 	}
 }

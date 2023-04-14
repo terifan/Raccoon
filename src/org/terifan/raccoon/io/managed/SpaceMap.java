@@ -124,7 +124,7 @@ class SpaceMap
 		int allocSize = aBlockDevice.roundUp(buffer.position());
 
 		long blockIndex = aBlockDevice.allocBlockInternal(allocSize / blockSize);
-		long[] blockKey = BlockKeyGenerator.generate();
+		int[] blockKey = BlockKeyGenerator.generate();
 
 		aSpaceMapBlockPointer.setCompressionAlgorithm(CompressionParam.Level.NONE.ordinal());
 		aSpaceMapBlockPointer.setBlockType(BlockType.SPACEMAP);
@@ -172,7 +172,7 @@ class SpaceMap
 
 			ByteArrayBuffer buffer = ByteArrayBuffer.alloc(blockPointer.getAllocatedSize());
 
-			aBlockDeviceDirect.readBlock(blockPointer.getBlockIndex0(), buffer.array(), 0, blockPointer.getAllocatedSize(), blockPointer.getBlockKey(new long[4]));
+			aBlockDeviceDirect.readBlock(blockPointer.getBlockIndex0(), buffer.array(), 0, blockPointer.getAllocatedSize(), blockPointer.getBlockKey(new int[8]));
 
 			long[] hash = MurmurHash3.hash256(buffer.array(), 0, blockPointer.getLogicalSize(), blockPointer.getTransactionId());
 

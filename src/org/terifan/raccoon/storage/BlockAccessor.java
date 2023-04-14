@@ -77,7 +77,7 @@ public class BlockAccessor implements IBlockAccessor, AutoCloseable
 
 			byte[] buffer = new byte[aBlockPointer.getAllocatedSize()];
 
-			mBlockDevice.readBlock(aBlockPointer.getBlockIndex0(), buffer, 0, buffer.length, aBlockPointer.getBlockKey(new long[4]));
+			mBlockDevice.readBlock(aBlockPointer.getBlockIndex0(), buffer, 0, buffer.length, aBlockPointer.getBlockKey(new int[8]));
 
 			long[] hash = MurmurHash3.hash256(buffer, 0, aBlockPointer.getPhysicalSize(), aBlockPointer.getTransactionId());
 
@@ -144,7 +144,7 @@ public class BlockAccessor implements IBlockAccessor, AutoCloseable
 			assert aBuffer.length % mBlockDevice.getBlockSize() == 0;
 
 			long blockIndex = mBlockDevice.allocBlock(aBuffer.length / mBlockDevice.getBlockSize());
-			long[] blockKey = BlockKeyGenerator.generate();
+			int[] blockKey = BlockKeyGenerator.generate();
 
 			blockPointer = new BlockPointer();
 			blockPointer.setCompressionAlgorithm(compressor.ordinal());

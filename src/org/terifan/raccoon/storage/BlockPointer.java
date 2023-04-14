@@ -144,26 +144,34 @@ public class BlockPointer implements Serializable
 	}
 
 
-	public long[] getBlockKey(long[] aBlockKey)
+	public int[] getBlockKey(int[] aBlockKey)
 	{
-		assert aBlockKey.length == 4;
+		assert aBlockKey.length == 8;
 
-		aBlockKey[0] = ByteArrayUtil.getInt64(mBuffer, OFS_BLOCK_KEY + 0);
-		aBlockKey[1] = ByteArrayUtil.getInt64(mBuffer, OFS_BLOCK_KEY + 8);
-		aBlockKey[2] = ByteArrayUtil.getInt64(mBuffer, OFS_BLOCK_KEY + 16);
-		aBlockKey[3] = ByteArrayUtil.getInt64(mBuffer, OFS_BLOCK_KEY + 24);
+		aBlockKey[0] = ByteArrayUtil.getInt32(mBuffer, OFS_BLOCK_KEY + 0);
+		aBlockKey[1] = ByteArrayUtil.getInt32(mBuffer, OFS_BLOCK_KEY + 4);
+		aBlockKey[2] = ByteArrayUtil.getInt32(mBuffer, OFS_BLOCK_KEY + 8);
+		aBlockKey[3] = ByteArrayUtil.getInt32(mBuffer, OFS_BLOCK_KEY + 12);
+		aBlockKey[4] = ByteArrayUtil.getInt32(mBuffer, OFS_BLOCK_KEY + 16);
+		aBlockKey[5] = ByteArrayUtil.getInt32(mBuffer, OFS_BLOCK_KEY + 20);
+		aBlockKey[6] = ByteArrayUtil.getInt32(mBuffer, OFS_BLOCK_KEY + 24);
+		aBlockKey[7] = ByteArrayUtil.getInt32(mBuffer, OFS_BLOCK_KEY + 28);
 		return aBlockKey;
 	}
 
 
-	public BlockPointer setBlockKey(long... aBlockKey)
+	public BlockPointer setBlockKey(int... aBlockKey)
 	{
-		assert aBlockKey.length == 4;
+		assert aBlockKey.length == 8;
 
-		ByteArrayUtil.putInt64(mBuffer, OFS_BLOCK_KEY + 0, aBlockKey[0]);
-		ByteArrayUtil.putInt64(mBuffer, OFS_BLOCK_KEY + 8, aBlockKey[1]);
-		ByteArrayUtil.putInt64(mBuffer, OFS_BLOCK_KEY + 16, aBlockKey[2]);
-		ByteArrayUtil.putInt64(mBuffer, OFS_BLOCK_KEY + 24, aBlockKey[3]);
+		ByteArrayUtil.putInt32(mBuffer, OFS_BLOCK_KEY + 0, aBlockKey[0]);
+		ByteArrayUtil.putInt32(mBuffer, OFS_BLOCK_KEY + 4, aBlockKey[1]);
+		ByteArrayUtil.putInt32(mBuffer, OFS_BLOCK_KEY + 8, aBlockKey[2]);
+		ByteArrayUtil.putInt32(mBuffer, OFS_BLOCK_KEY + 12, aBlockKey[3]);
+		ByteArrayUtil.putInt32(mBuffer, OFS_BLOCK_KEY + 16, aBlockKey[4]);
+		ByteArrayUtil.putInt32(mBuffer, OFS_BLOCK_KEY + 20, aBlockKey[5]);
+		ByteArrayUtil.putInt32(mBuffer, OFS_BLOCK_KEY + 24, aBlockKey[6]);
+		ByteArrayUtil.putInt32(mBuffer, OFS_BLOCK_KEY + 28, aBlockKey[7]);
 		return this;
 	}
 

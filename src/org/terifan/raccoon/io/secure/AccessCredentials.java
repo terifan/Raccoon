@@ -1,6 +1,6 @@
 package org.terifan.raccoon.io.secure;
 
-import org.terifan.security.cryptography.SCrypt;
+import org.terifan.security.messagedigest.SCrypt;
 import org.terifan.security.messagedigest.HMAC;
 
 

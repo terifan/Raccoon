@@ -13,6 +13,9 @@ import org.terifan.raccoon.RaccoonCollection;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.document.ObjectId;
 import org.terifan.raccoon.io.secure.AccessCredentials;
+import org.terifan.raccoon.io.secure.CipherModeFunction;
+import org.terifan.raccoon.io.secure.EncryptionFunction;
+import org.terifan.raccoon.io.secure.KeyGenerationFunction;
 
 
 public class TestLOB
@@ -21,14 +24,14 @@ public class TestLOB
 	{
 		try
 		{
-			AccessCredentials ac = new AccessCredentials("password");
+			AccessCredentials ac = new AccessCredentials("password".toCharArray(), EncryptionFunction.AES_TWOFISH_SERPENT, KeyGenerationFunction.SHA512, CipherModeFunction.XTS);
 //			AccessCredentials ac = null;
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				RaccoonCollection lobs = db.getCollection("files");
 
-				Files.walk(Paths.get("d:\\pictures")).filter(p -> p.getFileName().toString().toLowerCase().matches(".*jpg|.*png")).limit(1000000000).forEach(path ->
+				Files.walk(Paths.get("d:\\pictures")).filter(p -> p.getFileName().toString().toLowerCase().matches(".*jpg|.*png")).limit(5).forEach(path ->
 				{
 					System.out.println(path);
 

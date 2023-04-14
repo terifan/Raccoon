@@ -10,9 +10,8 @@ import org.terifan.security.messagedigest.Whirlpool;
 public enum KeyGenerationFunction
 {
 	SHA512,
-	SKEIN512/*,
-	WHIRLPOOL,
-	SHA3*/;
+	SKEIN512,
+	SHA3;
 
 
 	MessageDigest newInstance()
@@ -23,10 +22,8 @@ public enum KeyGenerationFunction
 				return new SHA512();
 			case SKEIN512:
 				return new Skein512();
-//			case SHA3:
-//				return new SHA3();
-//			case WHIRLPOOL:
-//				return new Whirlpool();
+			case SHA3:
+				return new SHA3(512);
 		}
 
 		throw new IllegalStateException();

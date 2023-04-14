@@ -100,7 +100,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 
 	@Override
-	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aBlockKey)
+	public void readBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, int[] aBlockKey)
 	{
 		Log.d("read block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 
@@ -117,7 +117,7 @@ public class FileBlockDevice implements IPhysicalBlockDevice
 
 
 	@Override
-	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, long[] aBlockKey)
+	public void writeBlock(long aBlockIndex, byte[] aBuffer, int aBufferOffset, int aBufferLength, int[] aBlockKey)
 	{
 		Log.d("write block %d +%d", aBlockIndex, aBufferLength / mBlockSize);
 

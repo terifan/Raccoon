@@ -35,7 +35,7 @@ public class FileBlockDeviceNGTest
 						byte[] buf = new byte[s];
 						rnd.nextBytes(buf);
 						blocks.put(pos, buf);
-						dev.writeBlock(pos, buf, 0, s, new long[2]);
+						dev.writeBlock(pos, buf, 0, s, new int[4]);
 						offsets.add(pos);
 					}
 
@@ -43,7 +43,7 @@ public class FileBlockDeviceNGTest
 					{
 						long pos = offsets.remove(rnd.nextInt(offsets.size()));
 						byte[] buf = new byte[s];
-						dev.readBlock(pos, buf, 0, s, new long[2]);
+						dev.readBlock(pos, buf, 0, s, new int[4]);
 						assertEquals(blocks.remove(pos), buf);
 						dev.freeBlock(pos, 1);
 					}

@@ -6,7 +6,7 @@ import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.io.secure.SecureBlockDevice;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.security.cryptography.ISAAC;
+import org.terifan.security.random.ISAAC;
 import org.terifan.security.messagedigest.MurmurHash3;
 
 
@@ -110,7 +110,7 @@ class SuperBlock
 		}
 		else
 		{
-			aBlockDevice.readBlock(aBlockIndex, buffer.array(), 0, buffer.capacity(), new long[2]);
+			aBlockDevice.readBlock(aBlockIndex, buffer.array(), 0, buffer.capacity(), new int[4]);
 		}
 
 		long[] hash = MurmurHash3.hash256(buffer.array(), CHECKSUM_SIZE, blockSize - CHECKSUM_SIZE - IV_SIZE, aBlockIndex);
@@ -162,7 +162,7 @@ class SuperBlock
 		}
 		else
 		{
-			aBlockDevice.writeBlock(aBlockIndex, buffer.array(), 0, blockSize, new long[2]);
+			aBlockDevice.writeBlock(aBlockIndex, buffer.array(), 0, blockSize, new int[4]);
 		}
 	}
 

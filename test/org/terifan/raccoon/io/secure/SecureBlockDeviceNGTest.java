@@ -18,7 +18,7 @@ public class SecureBlockDeviceNGTest
 
 		try (SecureBlockDevice device = SecureBlockDevice.create(accessCredentials, blockDevice))
 		{
-			device.writeBlock(0, new byte[4096], 0, 4096, new long[2]);
+			device.writeBlock(0, new byte[4096], 0, 4096, new int[4]);
 		}
 
 		assertEquals(blockDevice.length(), 3);
@@ -47,11 +47,13 @@ public class SecureBlockDeviceNGTest
 
 					MemoryBlockDevice blockDevice = new MemoryBlockDevice(unitSize);
 
-					long[][] blockKeys = new long[numUnits][2];
+					int[][] blockKeys = new int[numUnits][4];
 					for (int i = 0; i < numUnits; i++)
 					{
-						blockKeys[i][0] = rnd.nextLong();
-						blockKeys[i][1] = rnd.nextLong();
+						blockKeys[i][0] = rnd.nextInt();
+						blockKeys[i][1] = rnd.nextInt();
+						blockKeys[i][2] = rnd.nextInt();
+						blockKeys[i][3] = rnd.nextInt();
 					}
 
 					byte[] original = new byte[numUnits * unitSize];

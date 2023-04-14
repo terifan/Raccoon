@@ -1,9 +1,9 @@
 package org.terifan.raccoon.io.secure;
 
-import org.terifan.security.cryptography.CBCCipherMode;
-import org.terifan.security.cryptography.CipherMode;
-import org.terifan.security.cryptography.PCBCCipherMode;
-import org.terifan.security.cryptography.XTSCipherMode;
+import org.terifan.security.cryptography.ciphermode.CBCCipherMode;
+import org.terifan.security.cryptography.ciphermode.CipherMode;
+import org.terifan.security.cryptography.ciphermode.PCBCCipherMode;
+import org.terifan.security.cryptography.ciphermode.XTSCipherMode;
 
 
 public enum CipherModeFunction

@@ -2,9 +2,8 @@ package org.terifan.raccoon.storage;
 
 import org.terifan.raccoon.BlockType;
 import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.util.ByteArrayUtil;
 import org.terifan.raccoon.util.Log;
-import static org.testng.Assert.*;
+import org.terifan.security.random.SecureRandom;
 import org.testng.annotations.Test;
 
 
@@ -25,7 +24,7 @@ public class BlockPointerNGTest
 			.setBlockIndex1(0x2526272829303132L)
 			.setBlockIndex2(0x3334353637383940L)
 			.setTransactionId(0x4950515253545556L)
-			.setBlockKey(new long[]{0x5758596061626364L,0x6566676869707172L,0x7374757677787980L,0x8182838485868788L})
+			.setBlockKey(new SecureRandom(1).ints(8).toArray())
 			.setChecksum(new long[]{0x8990919293949596L,0x9798990102030405L,0x0607080910111213L,0x1415161718192021L})
 			;
 
