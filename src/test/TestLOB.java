@@ -24,14 +24,14 @@ public class TestLOB
 	{
 		try
 		{
-			AccessCredentials ac = new AccessCredentials("password".toCharArray(), EncryptionFunction.AES_TWOFISH_SERPENT, KeyGenerationFunction.SHA512, CipherModeFunction.XTS);
+			AccessCredentials ac = new AccessCredentials("password".toCharArray(), EncryptionFunction.AES_TWOFISH_SERPENT, KeyGenerationFunction.SHA3, CipherModeFunction.XTS);
 //			AccessCredentials ac = null;
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				RaccoonCollection lobs = db.getCollection("files");
 
-				Files.walk(Paths.get("d:\\pictures")).filter(p -> p.getFileName().toString().toLowerCase().matches(".*jpg|.*png")).limit(5).forEach(path ->
+				Files.walk(Paths.get("d:\\pictures")).filter(p -> p.getFileName().toString().toLowerCase().matches(".*jpg|.*png")).limit(20).forEach(path ->
 				{
 					System.out.println(path);
 

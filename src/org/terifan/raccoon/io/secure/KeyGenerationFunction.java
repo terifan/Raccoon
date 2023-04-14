@@ -4,7 +4,6 @@ import java.security.MessageDigest;
 import org.terifan.security.messagedigest.SHA3;
 import org.terifan.security.messagedigest.SHA512;
 import org.terifan.security.messagedigest.Skein512;
-import org.terifan.security.messagedigest.Whirlpool;
 
 
 public enum KeyGenerationFunction
