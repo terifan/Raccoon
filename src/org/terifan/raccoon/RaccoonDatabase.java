@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import org.terifan.raccoon.document.Document;
@@ -279,6 +280,22 @@ public final class RaccoonDatabase implements AutoCloseable
 		checkOpen();
 
 		return new ArrayList<>(mCollections.values());
+	}
+
+
+	public Set<Entry<String, RaccoonCollection>> getCollectionEntries()
+	{
+		checkOpen();
+
+		return mCollections.entrySet();
+	}
+
+
+	public synchronized boolean existsCollection(String aName)
+	{
+		checkOpen();
+
+		return mCollections.contains(aName);
 	}
 
 
