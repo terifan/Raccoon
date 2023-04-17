@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.io.DatabaseIOException;
+import org.terifan.raccoon.io.DeviceException;
 import resources.__FixedThreadExecutor;
 import resources.entities._Fruit2K;
 import resources.entities._Animal1K;

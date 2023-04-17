@@ -5,7 +5,7 @@ import org.terifan.raccoon.io.CompressionParam;
 import org.terifan.raccoon.io.LobByteChannel;
 import org.terifan.raccoon.io.LobOpenOption;
 import org.terifan.raccoon.document.ObjectId;
-import org.terifan.raccoon.io.DatabaseIOException;
+import org.terifan.raccoon.io.DeviceException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -78,17 +78,17 @@ public final class RaccoonDatabase implements AutoCloseable
 				{
 					if (!Files.deleteIfExists(aPath))
 					{
-						throw new DatabaseIOException("Failed to delete existing file: " + aPath);
+						throw new DeviceException("Failed to delete existing file: " + aPath);
 					}
 				}
 				else if ((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && Files.size(aPath) == 0)
 				{
-					throw new DatabaseIOException("File is empty.");
+					throw new DeviceException("File is empty.");
 				}
 			}
 			else if (aOpenOptions == DatabaseOpenOption.OPEN || aOpenOptions == DatabaseOpenOption.READ_ONLY)
 			{
-				throw new DatabaseIOException("File not found: " + aPath);
+				throw new DeviceException("File not found: " + aPath);
 			}
 
 			boolean newFile = !Files.exists(aPath);
@@ -97,7 +97,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			init(fileBlockDevice, newFile, true, aOpenOptions, aAccessCredentials);
 		}
-		catch (DatabaseException | DatabaseIOException | DatabaseClosedException e)
+		catch (DatabaseException | DeviceException | DatabaseClosedException e)
 		{
 			if (fileBlockDevice != null)
 			{

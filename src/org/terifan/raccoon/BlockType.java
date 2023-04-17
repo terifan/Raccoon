@@ -3,13 +3,13 @@ package org.terifan.raccoon;
 
 public interface BlockType
 {
-	int FREE = 0,
-	HOLE = 1,
-	TREE_INDEX = 2,
-	TREE_LEAF = 3,
-	BLOB_INDEX = 4,
-	BLOB_LEAF = 5,
-	SPACEMAP = 6,
-	ILLEGAL = 7,
-	APPLICATION_HEADER = 8;
+	int FREE = 0;
+	int HOLE = 1;
+	int TREE_INDEX = 2;
+	int TREE_LEAF = 3;
+	int BLOB_INDEX = 4;
+	int BLOB_LEAF = 5;
+	int SPACEMAP = 6;
+	int ILLEGAL = 7;
+	int APPLICATION_HEADER = 8;
 }
