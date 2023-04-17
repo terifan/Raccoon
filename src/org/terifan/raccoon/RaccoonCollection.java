@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 import static org.terifan.raccoon.RaccoonDatabase.INDEX_COLLECTION;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.storage.BlockAccessor;
-import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.io.util.Log;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;

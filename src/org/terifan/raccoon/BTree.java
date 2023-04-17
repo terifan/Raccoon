@@ -8,8 +8,8 @@ import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.AbortIteratorException;
-import org.terifan.raccoon.util.ByteArrayBuffer;
-import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.io.util.ByteArrayBuffer;
+import org.terifan.raccoon.io.util.Log;
 import org.terifan.raccoon.util.Result;
 
 
@@ -291,7 +291,7 @@ public class BTree implements AutoCloseable
 	}
 
 
-	protected BlockPointer writeBlock(byte[] aContent, int aLevel, BlockType aBlockType)
+	protected BlockPointer writeBlock(byte[] aContent, int aLevel, int aBlockType)
 	{
 		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, aBlockType).setBlockLevel(aLevel);
 	}

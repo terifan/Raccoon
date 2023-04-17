@@ -5,11 +5,11 @@ import java.util.List;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
-import org.terifan.raccoon.LogLevel;
+import org.terifan.raccoon.io.util.LogLevel;
 import org.terifan.raccoon.RaccoonCollection;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.secure.AccessCredentials;
-import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.io.util.Log;
 import static test._Tools.showTree;
 
 

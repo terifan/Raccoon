@@ -23,13 +23,13 @@ public class TestLOB
 //			AccessCredentials ac = new AccessCredentials("password".toCharArray(), EncryptionFunction.AES, KeyGenerationFunction.SHA3, CipherModeFunction.XTS);
 			AccessCredentials ac = null;
 
-			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("j:\\previews.rdb"), DatabaseOpenOption.REPLACE, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
 				RaccoonCollection files = db.getCollection("files");
 
-				Files.walk(Paths.get("J:\\Previews\\High Quality")).filter(p -> p.getFileName().toString().toLowerCase().matches(".*jpg|.*png")).limit(100000000).forEach(path ->
+				Files.walk(Paths.get("d:\\pictures")).filter(p -> p.getFileName().toString().toLowerCase().matches(".*jpg|.*png")).limit(100000000).forEach(path ->
 				{
-//					System.out.println(path);
+					System.out.println(path);
 
 					try
 					{
@@ -55,7 +55,7 @@ public class TestLOB
 				db.commit();
 			}
 
-			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("j:\\previews.rdb"), DatabaseOpenOption.OPEN, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				long t = System.currentTimeMillis();
 				db.getCollection("files").listAll();

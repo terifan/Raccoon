@@ -1,5 +1,6 @@
 package org.terifan.raccoon.monitoring;
 
+import org.terifan.raccoon.io.util.SpaceMapViewer;
 import java.awt.BorderLayout;
 import javax.swing.JPanel;
 import org.terifan.raccoon.RaccoonDatabase;
@@ -16,7 +17,7 @@ public class DatabaseMonitorPanel extends JPanel
 		mDatabase = aDatabase;
 
 		super.setLayout(new BorderLayout());
-		super.add(new SpaceMapViewer(mDatabase), BorderLayout.CENTER);
+//		super.add(new SpaceMapViewer(mDatabase.getBlockAccessor()), BorderLayout.CENTER);
 	}
 
 

@@ -1,5 +1,7 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.util.LogLevel;
+import org.terifan.raccoon.io.CompressionParam;
 import org.terifan.raccoon.io.LobByteChannel;
 import org.terifan.raccoon.io.LobOpenOption;
 import org.terifan.raccoon.document.ObjectId;
@@ -26,8 +28,8 @@ import org.terifan.raccoon.io.secure.AccessCredentials;
 import org.terifan.raccoon.io.physical.FileBlockDevice;
 import org.terifan.raccoon.storage.BlockAccessor;
 import org.terifan.raccoon.util.Assert;
-import org.terifan.raccoon.util.Listener;
-import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.io.Listener;
+import org.terifan.raccoon.io.util.Log;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 

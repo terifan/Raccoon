@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.CompressionParam;
 import java.util.function.Supplier;
 import javax.swing.JFrame;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;

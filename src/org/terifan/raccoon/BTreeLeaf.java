@@ -4,9 +4,8 @@ import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
 import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
-import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.Result;
-import org.terifan.raccoon.util.Console;
+import org.terifan.raccoon.io.util.Console;
 
 
 public class BTreeLeaf extends BTreeNode

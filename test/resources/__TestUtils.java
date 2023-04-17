@@ -7,7 +7,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Random;
-import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.io.util.Log;
 
 
 public class __TestUtils

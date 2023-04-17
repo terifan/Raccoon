@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.io.CompressionParam;
 import java.util.ArrayList;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.io.managed.IManagedBlockDevice;

@@ -3,7 +3,7 @@ package org.terifan.raccoon;
 import java.util.Arrays;
 import java.util.UUID;
 import org.terifan.raccoon.document.Array;
-import org.terifan.raccoon.util.ByteArrayUtil;
+import org.terifan.raccoon.io.util.ByteArrayUtil;
 
 
 public class ArrayMapKey implements Comparable<ArrayMapKey>

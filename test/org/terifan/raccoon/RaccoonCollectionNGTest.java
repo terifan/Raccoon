@@ -20,7 +20,7 @@ import org.terifan.raccoon.io.managed.IManagedBlockDevice;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 import org.terifan.raccoon.io.managed.UnsupportedVersionException;
-import org.terifan.raccoon.util.Log;
+import org.terifan.raccoon.io.util.Log;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import resources.__TestUtils;

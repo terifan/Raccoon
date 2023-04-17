@@ -4,7 +4,7 @@ import java.util.Random;
 import org.terifan.raccoon.BTree;
 import java.util.function.Supplier;
 import javax.swing.JFrame;
-import org.terifan.raccoon.CompressionParam;
+import org.terifan.raccoon.io.CompressionParam;
 import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.io.managed.ManagedBlockDevice;
 import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
