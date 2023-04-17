@@ -4,10 +4,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Random;
-import org.terifan.raccoon.io.util.Log;
+import org.terifan.raccoon.blockdevice.util.Log;
 
 
 public class __TestUtils
