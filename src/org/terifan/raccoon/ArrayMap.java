@@ -1,8 +1,11 @@
 package org.terifan.raccoon;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import java.util.Arrays;
-import org.terifan.raccoon.blockdevice.util.ByteArrayUtil;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.getInt16;
+import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.getInt32;
+import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.putInt16;
+import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.putInt32;
 import org.terifan.raccoon.util.FormattedOutput;
 import org.terifan.raccoon.util.FormattedToString;
 import org.terifan.raccoon.util.Result;
@@ -611,25 +614,25 @@ public class ArrayMap implements Iterable<ArrayMapEntry>,/* SequenceFilter<Array
 
 	private int readInt16(int aOffset)
 	{
-		return ByteArrayUtil.getInt16(mBuffer, mStartOffset + aOffset);
+		return getInt16(mBuffer, mStartOffset + aOffset);
 	}
 
 
 	private void writeInt16(int aOffset, int aValue)
 	{
-		ByteArrayUtil.putInt16(mBuffer, mStartOffset + aOffset, aValue);
+		putInt16(mBuffer, mStartOffset + aOffset, aValue);
 	}
 
 
 	private int readInt32(int aOffset)
 	{
-		return ByteArrayUtil.getInt32(mBuffer, mStartOffset + aOffset);
+		return getInt32(mBuffer, mStartOffset + aOffset);
 	}
 
 
 	private void writeInt32(int aOffset, int aValue)
 	{
-		ByteArrayUtil.putInt32(mBuffer, mStartOffset + aOffset, aValue);
+		putInt32(mBuffer, mStartOffset + aOffset, aValue);
 	}
 
 

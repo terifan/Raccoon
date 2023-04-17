@@ -8,13 +8,13 @@ import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.CompressionParam;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
-import org.terifan.raccoon.blockdevice.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.SecureBlockDevice;
 import org.terifan.treegraph.HorizontalLayout;
 import org.terifan.treegraph.TreeGraph;
 import org.terifan.treegraph.util.VerticalImageFrame;
+import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
 
 
 public class _Tools
@@ -51,13 +51,13 @@ public class _Tools
 	}
 
 
-	public static BlockAccessor createStorage(Supplier<IPhysicalBlockDevice> aSupplier)
+	public static BlockAccessor createStorage(Supplier<PhysicalBlockDevice> aSupplier)
 	{
 		return new BlockAccessor(new ManagedBlockDevice(aSupplier.get()), CompressionParam.NO_COMPRESSION, true);
 	}
 
 
-	public static BlockAccessor createSecureStorage(Supplier<IPhysicalBlockDevice> aSupplier)
+	public static BlockAccessor createSecureStorage(Supplier<PhysicalBlockDevice> aSupplier)
 	{
 		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), aSupplier.get())), CompressionParam.NO_COMPRESSION, true);
 	}

@@ -5,13 +5,13 @@ import javax.swing.JFrame;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.CompressionParam;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
-import org.terifan.raccoon.blockdevice.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.SecureBlockDevice;
 import org.terifan.treegraph.HorizontalLayout;
 import org.terifan.treegraph.TreeGraph;
 import org.terifan.treegraph.util.VerticalImageFrame;
+import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
 
 
 public class _Tools
@@ -48,10 +48,10 @@ public class _Tools
 	}
 
 
-	public static BlockAccessor createStorage(Supplier<IPhysicalBlockDevice> aSupplier)
+	public static BlockAccessor createStorage(Supplier<PhysicalBlockDevice> aSupplier)
 	{
-		IPhysicalBlockDevice device = aSupplier.get();
-		if (device.length() > 0)
+		PhysicalBlockDevice device = aSupplier.get();
+		if (device.size() > 0)
 		{
 			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION, false);
 		}
@@ -59,10 +59,10 @@ public class _Tools
 	}
 
 
-	public static BlockAccessor createSecureStorage(Supplier<IPhysicalBlockDevice> aSupplier)
+	public static BlockAccessor createSecureStorage(Supplier<PhysicalBlockDevice> aSupplier)
 	{
-		IPhysicalBlockDevice device = aSupplier.get();
-		if (device.length() > 0)
+		PhysicalBlockDevice device = aSupplier.get();
+		if (device.size() > 0)
 		{
 			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION, false);
 		}
@@ -70,9 +70,9 @@ public class _Tools
 	}
 
 
-	public static BlockAccessor createSecureStorage(IPhysicalBlockDevice aDevice)
+	public static BlockAccessor createSecureStorage(PhysicalBlockDevice aDevice)
 	{
-		if (aDevice.length() > 0)
+		if (aDevice.size() > 0)
 		{
 			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), aDevice)), CompressionParam.NO_COMPRESSION, false);
 		}

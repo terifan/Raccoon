@@ -19,11 +19,9 @@ import org.terifan.raccoon.blockdevice.DeviceException;
 import org.terifan.raccoon.blockdevice.Listener;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
-import org.terifan.raccoon.blockdevice.managed.IManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.managed.UnsupportedVersionException;
 import org.terifan.raccoon.blockdevice.physical.FileBlockDevice;
-import org.terifan.raccoon.blockdevice.physical.IPhysicalBlockDevice;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.SecureBlockDevice;
 import org.terifan.raccoon.blockdevice.util.Log;
@@ -32,6 +30,7 @@ import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
+import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
 
 
 public final class RaccoonDatabase implements AutoCloseable
@@ -44,7 +43,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	private final ReadWriteLock mLock;
 
-	private IManagedBlockDevice mBlockDevice;
+	private ManagedBlockDevice mBlockDevice;
 	private DatabaseRoot mDatabaseRoot;
 	private DatabaseOpenOption mDatabaseOpenOption;
 	private final ConcurrentHashMap<String, RaccoonCollection> mCollections;
@@ -130,25 +129,25 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public RaccoonDatabase(IPhysicalBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
+	public RaccoonDatabase(PhysicalBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
 
-		Assert.fail((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.length() == 0, "Block device is empty.");
+		Assert.fail((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.size() == 0, "Block device is empty.");
 
-		boolean create = aBlockDevice.length() == 0 || aOpenOptions == DatabaseOpenOption.REPLACE;
+		boolean create = aBlockDevice.size() == 0 || aOpenOptions == DatabaseOpenOption.REPLACE;
 
 		init(aBlockDevice, create, false, aOpenOptions, aAccessCredentials);
 	}
 
 
-	public RaccoonDatabase(IManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
+	public RaccoonDatabase(ManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
 
-		Assert.fail((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.length() == 0, "Block device is empty.");
+		Assert.fail((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.size() == 0, "Block device is empty.");
 
-		boolean create = aBlockDevice.length() == 0 || aOpenOptions == DatabaseOpenOption.REPLACE;
+		boolean create = aBlockDevice.size() == 0 || aOpenOptions == DatabaseOpenOption.REPLACE;
 
 		init(aBlockDevice, create, false, aOpenOptions, aAccessCredentials);
 	}
@@ -158,28 +157,28 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		mDatabaseOpenOption = aOpenOption;
 
-		IManagedBlockDevice blockDevice;
+		ManagedBlockDevice blockDevice;
 
-		if (aBlockDevice instanceof IManagedBlockDevice)
+		if (aBlockDevice instanceof ManagedBlockDevice)
 		{
 			if (aAccessCredentials != null)
 			{
 				throw new IllegalArgumentException("The BlockDevice provided cannot be secured.");
 			}
 
-			blockDevice = (IManagedBlockDevice)aBlockDevice;
+			blockDevice = (ManagedBlockDevice)aBlockDevice;
 		}
 		else if (aAccessCredentials == null)
 		{
 			Log.d("creating a managed block device");
 
-			blockDevice = new ManagedBlockDevice((IPhysicalBlockDevice)aBlockDevice);
+			blockDevice = new ManagedBlockDevice((PhysicalBlockDevice)aBlockDevice);
 		}
 		else
 		{
 			Log.d("creating a secure block device");
 
-			IPhysicalBlockDevice physicalDevice = (IPhysicalBlockDevice)aBlockDevice;
+			PhysicalBlockDevice physicalDevice = (PhysicalBlockDevice)aBlockDevice;
 			SecureBlockDevice secureDevice;
 
 			if (aCreate)
@@ -206,9 +205,9 @@ public final class RaccoonDatabase implements AutoCloseable
 			Log.i("create database");
 			Log.inc();
 
-			blockDevice.getApplicationMetadata().put("tenantName", TENANT_NAME).put("tenantVersion", TENANT_VERSION);
+			blockDevice.getMetadata().put("tenantName", TENANT_NAME).put("tenantVersion", TENANT_VERSION);
 
-			if (blockDevice.length() > 0)
+			if (blockDevice.size() > 0)
 			{
 				blockDevice.clear();
 				blockDevice.commit();
@@ -226,11 +225,11 @@ public final class RaccoonDatabase implements AutoCloseable
 			Log.i("open database");
 			Log.inc();
 
-			if (!TENANT_NAME.equals(blockDevice.getApplicationMetadata().getString("tenantName")))
+			if (!TENANT_NAME.equals(blockDevice.getMetadata().getString("tenantName")))
 			{
 				throw new DatabaseException("Not a Raccoon database file");
 			}
-			if (blockDevice.getApplicationMetadata().get("tenantVersion", -1) != TENANT_VERSION)
+			if (blockDevice.getMetadata().get("tenantVersion", -1) != TENANT_VERSION)
 			{
 				throw new DatabaseException("Unsupported Raccoon database version");
 			}
@@ -584,7 +583,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	IManagedBlockDevice getBlockDevice()
+	ManagedBlockDevice getBlockDevice()
 	{
 		return mBlockDevice;
 	}
@@ -605,18 +604,18 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	protected synchronized void forceClose(Throwable aException)
-	{
-		if (mDatabaseRoot == null)
-		{
-			return;
-		}
-
-		reportStatus(LogLevel.FATAL, "an error was detected, forcefully closing block device to prevent damage, uncommitted changes were lost.", aException);
-
-		mBlockDevice.forceClose();
-		mDatabaseRoot = null;
-	}
+//	protected synchronized void forceClose(Throwable aException)
+//	{
+//		if (mDatabaseRoot == null)
+//		{
+//			return;
+//		}
+//
+//		reportStatus(LogLevel.FATAL, "an error was detected, forcefully closing block device to prevent damage, uncommitted changes were lost.", aException);
+//
+//		mBlockDevice.forceClose();
+//		mDatabaseRoot = null;
+//	}
 
 
 	private void reportStatus(LogLevel aLevel, String aMessage, Throwable aThrowable)

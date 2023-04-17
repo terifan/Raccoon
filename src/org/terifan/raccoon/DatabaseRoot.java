@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.blockdevice.CompressionParam;
-import org.terifan.raccoon.blockdevice.managed.IManagedBlockDevice;
+import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.document.Document;
 
 
@@ -22,9 +22,9 @@ public class DatabaseRoot
 	}
 
 
-	public void readFromDevice(IManagedBlockDevice aBlockDevice)
+	public void readFromDevice(ManagedBlockDevice aBlockDevice)
 	{
-		mBlockPointer = new BlockPointer().unmarshal(aBlockDevice.getApplicationMetadata().getBinary("root"));
+		mBlockPointer = new BlockPointer().unmarshal(aBlockDevice.getMetadata().getBinary("root"));
 
 		byte[] buffer = new BlockAccessor(aBlockDevice, CompressionParam.BEST_COMPRESSION, true).readBlock(mBlockPointer);
 
@@ -33,7 +33,7 @@ public class DatabaseRoot
 	}
 
 
-	public void writeToDevice(IManagedBlockDevice aBlockDevice)
+	public void writeToDevice(ManagedBlockDevice aBlockDevice)
 	{
 		BlockAccessor blockAccessor = new BlockAccessor(aBlockDevice, CompressionParam.BEST_COMPRESSION, true);
 
@@ -46,7 +46,7 @@ public class DatabaseRoot
 
 		mBlockPointer = blockAccessor.writeBlock(buffer, 0, buffer.length, BlockType.APPLICATION_HEADER);
 
-		aBlockDevice.getApplicationMetadata().put("root", mBlockPointer.marshal());
+		aBlockDevice.getMetadata().put("root", mBlockPointer.marshal());
 	}
 
 

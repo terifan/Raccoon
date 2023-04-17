@@ -6,9 +6,9 @@ import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
 import static org.terifan.raccoon._Tools.createSecureStorage;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.physical.FileBlockDevice;
-import org.terifan.raccoon.blockdevice.physical.IPhysicalBlockDevice;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
 
 
 public class BTreeNGTest
@@ -19,7 +19,7 @@ public class BTreeNGTest
 //		Log.setLevel(LogLevel.DEBUG);
 
 //		IPhysicalBlockDevice device = new MemoryBlockDevice(512);
-		IPhysicalBlockDevice device = new FileBlockDevice(Paths.get("d:/test-" + System.currentTimeMillis() + ".rdb"));
+		PhysicalBlockDevice device = new FileBlockDevice(Paths.get("d:/test-" + System.currentTimeMillis() + ".rdb"));
 
 		ArrayMapKey key = new ArrayMapKey("key");
 		byte[] value = "value".getBytes();
@@ -28,13 +28,13 @@ public class BTreeNGTest
 		{
 			tree.put(new ArrayMapEntry(key, value, TYPE_DOCUMENT));
 			tree.commit();
-			storage.getBlockDevice().getApplicationMetadata().put("conf", tree.getConfiguration());
+			storage.getBlockDevice().getMetadata().put("conf", tree.getConfiguration());
 			storage.getBlockDevice().commit();
 		}
 
 		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
-		try (BlockAccessor storage = createSecureStorage(device); BTree tree = new BTree(storage, storage.getBlockDevice().getApplicationMetadata().getDocument("conf")))
+		try (BlockAccessor storage = createSecureStorage(device); BTree tree = new BTree(storage, storage.getBlockDevice().getMetadata().getDocument("conf")))
 		{
 			ArrayMapEntry entry = new ArrayMapEntry(key);
 			assertTrue(tree.get(entry));
