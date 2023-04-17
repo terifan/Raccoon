@@ -1,7 +1,5 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.io.LobByteChannel;
-import org.terifan.raccoon.io.LobOpenOption;
 import org.terifan.raccoon.document.ObjectId;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -9,9 +7,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.function.Supplier;
 import static org.terifan.raccoon.RaccoonDatabase.INDEX_COLLECTION;
+import org.terifan.raccoon.blockdevice.BlockAccessor;
+import org.terifan.raccoon.blockdevice.LobByteChannel;
+import org.terifan.raccoon.blockdevice.LobOpenOption;
+import org.terifan.raccoon.blockdevice.util.Log;
 import org.terifan.raccoon.document.Document;
-import org.terifan.raccoon.storage.BlockAccessor;
-import org.terifan.raccoon.io.util.Log;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;

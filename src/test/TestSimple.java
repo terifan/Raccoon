@@ -6,8 +6,8 @@ import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.RuntimeDiagnostics;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.document.ObjectId;
-import org.terifan.raccoon.io.secure.AccessCredentials;
 
 
 public class TestSimple

@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
 import java.util.Arrays;
-import org.terifan.raccoon.io.util.Console;
+import org.terifan.raccoon.blockdevice.util.Console;
 
 
 public final class ArrayMapEntry

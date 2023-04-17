@@ -4,12 +4,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.BTreeNode.RemoveResult;
+import org.terifan.raccoon.blockdevice.BlockAccessor;
+import org.terifan.raccoon.blockdevice.BlockPointer;
+import org.terifan.raccoon.blockdevice.util.ByteArrayBuffer;
+import org.terifan.raccoon.blockdevice.util.Log;
 import org.terifan.raccoon.document.Array;
-import org.terifan.raccoon.storage.BlockAccessor;
-import org.terifan.raccoon.storage.BlockPointer;
 import org.terifan.raccoon.util.AbortIteratorException;
-import org.terifan.raccoon.io.util.ByteArrayBuffer;
-import org.terifan.raccoon.io.util.Log;
 import org.terifan.raccoon.util.Result;
 
 

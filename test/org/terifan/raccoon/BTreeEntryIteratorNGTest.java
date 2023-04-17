@@ -1,17 +1,6 @@
 package org.terifan.raccoon;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import org.terifan.raccoon.document.Document;
-import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
 import org.testng.annotations.Test;
-import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
-import org.terifan.raccoon.io.physical.MemoryBlockDevice;
-import org.terifan.raccoon.storage.BlockAccessor;
-import static org.terifan.raccoon._Tools.createStorage;
 
 
 public class BTreeEntryIteratorNGTest

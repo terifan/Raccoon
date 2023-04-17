@@ -1,6 +1,5 @@
 package test;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -9,9 +8,8 @@ import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonCollection;
-import org.terifan.raccoon.io.physical.MemoryBlockDevice;
-import org.terifan.raccoon.io.secure.AccessCredentials;
-import static test._Tools.showTree;
+import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 
 
 public class TestConcurrentPuts

@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.ArrayMap.PutResult;
-import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.util.Result;
 
 

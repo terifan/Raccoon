@@ -1,11 +1,11 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.io.CompressionParam;
 import java.util.ArrayList;
+import org.terifan.raccoon.blockdevice.BlockAccessor;
+import org.terifan.raccoon.blockdevice.BlockPointer;
+import org.terifan.raccoon.blockdevice.CompressionParam;
+import org.terifan.raccoon.blockdevice.managed.IManagedBlockDevice;
 import org.terifan.raccoon.document.Document;
-import org.terifan.raccoon.io.managed.IManagedBlockDevice;
-import org.terifan.raccoon.storage.BlockAccessor;
-import org.terifan.raccoon.storage.BlockPointer;
 
 
 public class DatabaseRoot

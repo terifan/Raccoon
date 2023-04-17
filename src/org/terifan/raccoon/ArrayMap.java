@@ -1,9 +1,8 @@
 package org.terifan.raccoon;
 
-import java.io.UnsupportedEncodingException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import java.util.Arrays;
-import org.terifan.raccoon.io.util.ByteArrayUtil;
+import org.terifan.raccoon.blockdevice.util.ByteArrayUtil;
 import org.terifan.raccoon.util.FormattedOutput;
 import org.terifan.raccoon.util.FormattedToString;
 import org.terifan.raccoon.util.Result;

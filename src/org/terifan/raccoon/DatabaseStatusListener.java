@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.io.util.LogLevel;
+import org.terifan.raccoon.blockdevice.util.LogLevel;
 
 
 

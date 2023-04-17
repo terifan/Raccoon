@@ -4,9 +4,9 @@ import java.nio.file.Paths;
 import org.terifan.raccoon.document.Document;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
 import static org.terifan.raccoon._Tools.createSecureStorage;
-import org.terifan.raccoon.io.physical.FileBlockDevice;
-import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
-import org.terifan.raccoon.storage.BlockAccessor;
+import org.terifan.raccoon.blockdevice.BlockAccessor;
+import org.terifan.raccoon.blockdevice.physical.FileBlockDevice;
+import org.terifan.raccoon.blockdevice.physical.IPhysicalBlockDevice;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 

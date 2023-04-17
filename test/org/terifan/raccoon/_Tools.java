@@ -1,14 +1,14 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.io.CompressionParam;
 import java.util.function.Supplier;
 import javax.swing.JFrame;
-import org.terifan.raccoon.io.managed.ManagedBlockDevice;
-import org.terifan.raccoon.io.physical.IPhysicalBlockDevice;
-import org.terifan.raccoon.io.physical.MemoryBlockDevice;
-import org.terifan.raccoon.io.secure.AccessCredentials;
-import org.terifan.raccoon.io.secure.SecureBlockDevice;
-import org.terifan.raccoon.storage.BlockAccessor;
+import org.terifan.raccoon.blockdevice.BlockAccessor;
+import org.terifan.raccoon.blockdevice.CompressionParam;
+import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
+import org.terifan.raccoon.blockdevice.physical.IPhysicalBlockDevice;
+import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
+import org.terifan.raccoon.blockdevice.secure.SecureBlockDevice;
 import org.terifan.treegraph.HorizontalLayout;
 import org.terifan.treegraph.TreeGraph;
 import org.terifan.treegraph.util.VerticalImageFrame;

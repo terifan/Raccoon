@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.blockdevice.BlockPointer;
 
 
 public class ScanResult

@@ -5,13 +5,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
-import org.terifan.raccoon.io.LobByteChannel;
-import org.terifan.raccoon.io.LobOpenOption;
 import org.terifan.raccoon.RaccoonCollection;
+import org.terifan.raccoon.blockdevice.LobByteChannel;
+import org.terifan.raccoon.blockdevice.LobOpenOption;
+import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.document.ObjectId;
-import org.terifan.raccoon.io.secure.AccessCredentials;
 
 
 public class TestLOB

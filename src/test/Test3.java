@@ -3,9 +3,8 @@ package test;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
-import org.terifan.raccoon.RaccoonCollection;
-import org.terifan.raccoon.io.physical.MemoryBlockDevice;
-import org.terifan.raccoon.io.secure.AccessCredentials;
+import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 
 
 public class Test3

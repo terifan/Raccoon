@@ -3,9 +3,9 @@ package test;
 import java.util.List;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonDatabase;
+import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
-import org.terifan.raccoon.io.physical.MemoryBlockDevice;
 
 
 

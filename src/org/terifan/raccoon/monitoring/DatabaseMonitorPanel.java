@@ -1,6 +1,5 @@
 package org.terifan.raccoon.monitoring;
 
-import org.terifan.raccoon.io.util.SpaceMapViewer;
 import java.awt.BorderLayout;
 import javax.swing.JPanel;
 import org.terifan.raccoon.RaccoonDatabase;

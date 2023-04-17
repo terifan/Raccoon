@@ -1,7 +1,7 @@
 package org.terifan.raccoon.util;
 
 import java.util.Arrays;
-import org.terifan.raccoon.io.util.Console.Color;
+import org.terifan.raccoon.blockdevice.util.Console.Color;
 
 
 public class FormattedOutput
