@@ -8,9 +8,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
@@ -284,11 +284,20 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public Set<Entry<String, RaccoonCollection>> getCollectionEntries()
+	public HashMap<String, RaccoonCollection> getCollectionEntries()
 	{
 		checkOpen();
 
-		return mCollections.entrySet();
+		HashMap<String, RaccoonCollection> colls = new HashMap<>();
+		for (Entry<String, RaccoonCollection> entry : mCollections.entrySet())
+		{
+			if (!entry.getKey().startsWith("::"))
+			{
+				colls.put(entry.getKey(), entry.getValue());
+			}
+		}
+
+		return colls;
 	}
 
 
@@ -296,7 +305,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		checkOpen();
 
-		return mCollections.contains(aName);
+		return mCollections.containsKey(aName);
 	}
 
 
