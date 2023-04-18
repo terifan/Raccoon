@@ -14,7 +14,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
-import org.terifan.raccoon.blockdevice.CompressionParam;
 import org.terifan.raccoon.blockdevice.DeviceException;
 import org.terifan.raccoon.blockdevice.Listener;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
@@ -35,7 +34,6 @@ import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
 
 public final class RaccoonDatabase implements AutoCloseable
 {
-	final static String LOB_COLLECTION = "::lob";
 	final static String INDEX_COLLECTION = "::index";
 
 	public final static String TENANT_NAME = "RaccoonDB";
@@ -343,11 +341,11 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public LobByteChannel openLob(ObjectId aObjectId, LobOpenOption aLobOpenOption) throws IOException
+	public LobByteChannel openLob(String aCollection, ObjectId aObjectId, LobOpenOption aLobOpenOption) throws IOException
 	{
 		Document entry = new Document().put("_id", aObjectId);
 
-		RaccoonCollection collection = getCollection(LOB_COLLECTION);
+		RaccoonCollection collection = getCollection(aCollection);
 
 		if (!collection.tryGet(entry) && aLobOpenOption == LobOpenOption.READ)
 		{
@@ -366,11 +364,11 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public void deleteLob(ObjectId aObjectId) throws IOException
+	public void deleteLob(String aCollection, ObjectId aObjectId) throws IOException
 	{
 		Document entry = new Document().put("_id", aObjectId);
 
-		RaccoonCollection collection = getCollection(LOB_COLLECTION);
+		RaccoonCollection collection = getCollection(aCollection);
 
 		if (collection.tryGet(entry))
 		{
@@ -644,15 +642,9 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	CompressionParam getCompressionParameter()
-	{
-		return CompressionParam.BEST_SPEED;
-	}
-
-
 	public BlockAccessor getBlockAccessor()
 	{
-		return new BlockAccessor(getBlockDevice(), CompressionParam.BEST_SPEED, true);
+		return new BlockAccessor(getBlockDevice(), true);
 	}
 
 
@@ -671,7 +663,6 @@ public final class RaccoonDatabase implements AutoCloseable
 				.put("indexSize", mBlockDevice.getBlockSize())
 				.put("leafSize", mBlockDevice.getBlockSize())
 				.put("entrySizeLimit", mBlockDevice.getBlockSize() / 4)
-				.put("compression", CompressionParam.BEST_SPEED.marshal())
 			);
 	}
 

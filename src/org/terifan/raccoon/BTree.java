@@ -6,6 +6,7 @@ import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.BTreeNode.RemoveResult;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.BlockPointer;
+import org.terifan.raccoon.blockdevice.compressor.CompressorLevel;
 import org.terifan.raccoon.blockdevice.util.ByteArrayBuffer;
 import org.terifan.raccoon.blockdevice.util.Log;
 import org.terifan.raccoon.document.Array;
@@ -18,6 +19,8 @@ public class BTree implements AutoCloseable
 	static byte[] BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
 
 	private BlockAccessor mBlockAccessor;
+	private CompressorLevel mCompressorIndex;
+	private CompressorLevel mCompressorLeaf;
 	private Document mConfiguration;
 	private BTreeNode mRoot;
 	private long mModCount;
@@ -31,9 +34,14 @@ public class BTree implements AutoCloseable
 		mBlockAccessor = aBlockAccessor;
 		mConfiguration = aConfiguration;
 
+		mConfiguration.put("compressIndex", mConfiguration.get("compressIndex", k -> CompressorLevel.DEFLATE_FAST.ordinal()));
+		mConfiguration.put("compressLeaf", mConfiguration.get("compressLeaf", k -> CompressorLevel.DEFLATE_FAST.ordinal()));
 		mConfiguration.put("leafSize", mConfiguration.get("leafSize", k -> mBlockAccessor.getBlockDevice().getBlockSize()));
 		mConfiguration.put("indexSize", mConfiguration.get("indexSize", k -> mBlockAccessor.getBlockDevice().getBlockSize()));
 		mConfiguration.put("entrySizeLimit", mConfiguration.get("entrySizeLimit", k -> mBlockAccessor.getBlockDevice().getBlockSize() / 4));
+
+		mCompressorIndex = CompressorLevel.values()[mConfiguration.getInt("compressIndex")];
+		mCompressorLeaf = CompressorLevel.values()[mConfiguration.getInt("compressLeaf")];
 
 		if (mConfiguration.containsKey("root"))
 		{
@@ -293,7 +301,7 @@ public class BTree implements AutoCloseable
 
 	protected BlockPointer writeBlock(byte[] aContent, int aLevel, int aBlockType)
 	{
-		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, aBlockType).setBlockLevel(aLevel);
+		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, aBlockType, aLevel == 0 ? mCompressorIndex : mCompressorLeaf).setBlockLevel(aLevel);
 	}
 
 

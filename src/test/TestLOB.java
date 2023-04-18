@@ -38,7 +38,7 @@ public class TestLOB
 						file.put("length", Files.size(path));
 						files.save(file);
 
-						try (LobByteChannel lob = db.openLob(file.getArray("_id").getObjectId(1), LobOpenOption.CREATE))
+						try (LobByteChannel lob = db.openLob("/", file.getArray("_id").getObjectId(1), LobOpenOption.CREATE))
 						{
 							try (InputStream in = Files.newInputStream(path))
 							{

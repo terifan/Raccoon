@@ -428,7 +428,7 @@ public final class RaccoonCollection
 
 	BlockAccessor getBlockAccessor()
 	{
-		return new BlockAccessor(mDatabase.getBlockDevice(), mDatabase.getCompressionParameter(), true);
+		return new BlockAccessor(mDatabase.getBlockDevice(), true);
 	}
 
 

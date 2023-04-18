@@ -3,7 +3,7 @@ package org.terifan.raccoon;
 import java.util.ArrayList;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.BlockPointer;
-import org.terifan.raccoon.blockdevice.CompressionParam;
+import org.terifan.raccoon.blockdevice.compressor.CompressorLevel;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.document.Document;
 
@@ -26,7 +26,7 @@ public class DatabaseRoot
 	{
 		mBlockPointer = new BlockPointer().unmarshal(aBlockDevice.getMetadata().getBinary("root"));
 
-		byte[] buffer = new BlockAccessor(aBlockDevice, CompressionParam.BEST_COMPRESSION, true).readBlock(mBlockPointer);
+		byte[] buffer = new BlockAccessor(aBlockDevice, true).readBlock(mBlockPointer);
 
 		mMetadata = new Document().fromByteArray(buffer);
 		mTransactionId = mBlockPointer.getTransactionId(); // TODO: use trans id from super block?
@@ -35,7 +35,7 @@ public class DatabaseRoot
 
 	public void writeToDevice(ManagedBlockDevice aBlockDevice)
 	{
-		BlockAccessor blockAccessor = new BlockAccessor(aBlockDevice, CompressionParam.BEST_COMPRESSION, true);
+		BlockAccessor blockAccessor = new BlockAccessor(aBlockDevice, true);
 
 		if (mBlockPointer != null)
 		{
@@ -44,7 +44,7 @@ public class DatabaseRoot
 
 		byte[] buffer = mMetadata.toByteArray();
 
-		mBlockPointer = blockAccessor.writeBlock(buffer, 0, buffer.length, BlockType.APPLICATION_HEADER);
+		mBlockPointer = blockAccessor.writeBlock(buffer, 0, buffer.length, BlockType.APPLICATION_HEADER, CompressorLevel.DEFLATE_FAST);
 
 		aBlockDevice.getMetadata().put("root", mBlockPointer.marshal());
 	}

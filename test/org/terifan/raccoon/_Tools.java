@@ -3,7 +3,6 @@ package org.terifan.raccoon;
 import java.util.function.Supplier;
 import javax.swing.JFrame;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
-import org.terifan.raccoon.blockdevice.CompressionParam;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
@@ -38,13 +37,13 @@ public class _Tools
 
 	public static BlockAccessor createMemoryStorage()
 	{
-		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockDevice(512)), CompressionParam.NO_COMPRESSION, false);
+		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockDevice(512)), false);
 	}
 
 
 	public static BlockAccessor createSecureMemoryStorage()
 	{
-		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), new MemoryBlockDevice(512))), CompressionParam.NO_COMPRESSION, false);
+		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), new MemoryBlockDevice(512))), false);
 	}
 
 
@@ -53,9 +52,9 @@ public class _Tools
 		PhysicalBlockDevice device = aSupplier.get();
 		if (device.size() > 0)
 		{
-			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION, false);
+			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), false);
 		}
-		return new BlockAccessor(new ManagedBlockDevice(device), CompressionParam.NO_COMPRESSION, false);
+		return new BlockAccessor(new ManagedBlockDevice(device), false);
 	}
 
 
@@ -64,9 +63,9 @@ public class _Tools
 		PhysicalBlockDevice device = aSupplier.get();
 		if (device.size() > 0)
 		{
-			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION, false);
+			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), false);
 		}
-		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), device)), CompressionParam.NO_COMPRESSION, false);
+		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), device)), false);
 	}
 
 
@@ -74,8 +73,8 @@ public class _Tools
 	{
 		if (aDevice.size() > 0)
 		{
-			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), aDevice)), CompressionParam.NO_COMPRESSION, false);
+			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), aDevice)), false);
 		}
-		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), aDevice)), CompressionParam.NO_COMPRESSION, false);
+		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), aDevice)), false);
 	}
 }
