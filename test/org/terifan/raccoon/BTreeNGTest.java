@@ -1,14 +1,13 @@
 package org.terifan.raccoon;
 
-import java.nio.file.Paths;
 import org.terifan.raccoon.document.Document;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
 import static org.terifan.raccoon._Tools.createSecureStorage;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
-import org.terifan.raccoon.blockdevice.physical.FileBlockDevice;
+import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
 
 
 public class BTreeNGTest
@@ -18,8 +17,7 @@ public class BTreeNGTest
 	{
 //		Log.setLevel(LogLevel.DEBUG);
 
-//		IPhysicalBlockDevice device = new MemoryBlockDevice(512);
-		PhysicalBlockDevice device = new FileBlockDevice(Paths.get("d:/test-" + System.currentTimeMillis() + ".rdb"));
+		PhysicalBlockDevice device = new MemoryBlockDevice(4096);
 
 		ArrayMapKey key = new ArrayMapKey("key");
 		byte[] value = "value".getBytes();

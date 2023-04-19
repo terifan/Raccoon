@@ -9,6 +9,9 @@ import org.terifan.raccoon.RaccoonCollection;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
+import org.terifan.raccoon.blockdevice.secure.CipherModeFunction;
+import org.terifan.raccoon.blockdevice.secure.EncryptionFunction;
+import org.terifan.raccoon.blockdevice.secure.KeyGenerationFunction;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.document.ObjectId;
@@ -20,8 +23,8 @@ public class TestLOB
 	{
 		try
 		{
-//			AccessCredentials ac = new AccessCredentials("password".toCharArray(), EncryptionFunction.AES, KeyGenerationFunction.SHA3, CipherModeFunction.XTS);
-			AccessCredentials ac = null;
+			AccessCredentials ac = new AccessCredentials("password".toCharArray(), EncryptionFunction.AES, KeyGenerationFunction.SHA3, CipherModeFunction.XTS);
+//			AccessCredentials ac = null;
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
