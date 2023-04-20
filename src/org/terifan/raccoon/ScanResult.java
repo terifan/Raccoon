@@ -1,23 +1,23 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.blockdevice.BlockPointer;
 
 
 public class ScanResult
 {
-	protected int tables;
-	protected int records;
-	protected int blobs;
-	protected int innerNodes;
-	protected int leafNodes;
-	protected int blobIndirectBlocks;
-	protected int blobDataBlocks;
-	protected long blobAllocatedSize;
-	protected long blobPhysicalSize;
-	protected long blobLogicalSize;
-	protected int holes;
+	public int tables;
+	public int records;
+	public int blobs;
+	public int innerNodes;
+	public int leafNodes;
+	public int blobIndirectBlocks;
+	public int blobDataBlocks;
+	public long blobAllocatedSize;
+	public long blobPhysicalSize;
+	public long blobLogicalSize;
+	public int holes;
 
-	protected StringBuilder log = new StringBuilder();
+	public StringBuilder log = new StringBuilder();
 
 
 	public ScanResult()
@@ -91,67 +91,67 @@ public class ScanResult
 	}
 
 
-	protected void enterTable(TableInstance aTable)
+	public void enterTable(RaccoonCollection aTable)
 	{
 //		sb.append("<table border=1><tr><td>" + aTable.toString() + "</td></tr><tr><td>");
 	}
 
 
-	protected void exitTable()
+	public void exitTable()
 	{
 //		sb.append("</td></tr></table>");
 	}
 
 
-	protected void enterInnerNode(BlockPointer aBlockPointer)
+	public void enterInnerNode(BlockPointer aBlockPointer)
 	{
 //		sb.append("<table border=1><tr><td>" + aBlockPointer + "</td></tr><tr><td style='padding-left:40px;'>");
 	}
 
 
-	protected void exitInnerNode()
+	public void exitInnerNode()
 	{
 //		sb.append("</td></tr></table>");
 	}
 
 
-	protected void enterLeafNode(BlockPointer aBlockPointer, byte[] aBuffer)
+	public void enterLeafNode(BlockPointer aBlockPointer, byte[] aBuffer)
 	{
 //		sb.append("<table border=1><tr><td>" + aBlockPointer + "</td><td>");
 	}
 
 
-	protected void exitLeafNode()
+	public void exitLeafNode()
 	{
 //		sb.append("</td></tr></table>");
 	}
 
 
-	protected void enterBlob()
+	public void enterBlob()
 	{
 //		sb.append("<table border=1><tr><td>" + aBlockPointer + "</td></tr><tr><td style='padding-left:40px;'>");
 	}
 
 
-	protected void exitBlob()
+	public void exitBlob()
 	{
 //		sb.append("</td></tr></table>");
 	}
 
 
-	protected void record()
+	public void record()
 	{
 //		sb.append("entry ");
 	}
 
 
-	protected void blobIndirect(BlockPointer aBlockPointer)
+	public void blobIndirect(BlockPointer aBlockPointer)
 	{
 //		sb.append("<table border=1><tr><td>" + aBlockPointer + "</td></tr><tr><td style='padding-left:40px;'>");
 	}
 
 
-	protected void blobData(BlockPointer aBlockPointer)
+	public void blobData(BlockPointer aBlockPointer)
 	{
 //		sb.append("<table border=1><tr><td>" + aBlockPointer + "</td></tr><tr><td style='padding-left:40px;'>");
 	}

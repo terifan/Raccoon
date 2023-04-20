@@ -1,10 +1,11 @@
 package org.terifan.raccoon;
 
+import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
+import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import org.terifan.raccoon.ArrayMap.PutResult;
+import org.terifan.raccoon.RuntimeDiagnostics.Operation;
+import org.terifan.raccoon.blockdevice.util.Console;
 import org.terifan.raccoon.util.Result;
-import static org.terifan.raccoon.BTreeTableImplementation.INDEX_SIZE;
-import static org.terifan.raccoon.BTreeTableImplementation.BLOCKPOINTER_PLACEHOLDER;
-import org.terifan.raccoon.util.Console;
 
 
 public class BTreeLeaf extends BTreeNode
@@ -16,14 +17,14 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	boolean get(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry)
+	boolean get(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry aEntry)
 	{
 		return mMap.get(aEntry);
 	}
 
 
 	@Override
-	PutResult put(BTreeTableImplementation aImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	PutResult put(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
 	{
 		mModified = true;
 		return mMap.insert(aEntry, aResult);
@@ -31,9 +32,9 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	RemoveResult remove(BTreeTableImplementation aImplementation, MarshalledKey aKey, Result<ArrayMapEntry> aOldEntry)
+	RemoveResult remove(BTree aImplementation, ArrayMapKey aKey, Result<ArrayMapEntry> aOldEntry)
 	{
-		boolean removed = mMap.remove(aKey.array(), aOldEntry);
+		boolean removed = mMap.remove(aKey, aOldEntry);
 
 		if (removed)
 		{
@@ -45,28 +46,19 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	SplitResult split(BTreeTableImplementation aImplementation)
+	void visit(BTree aImplementation, BTreeVisitor aVisitor)
 	{
-		aImplementation.freeBlock(mBlockPointer);
-
-		ArrayMap[] maps = mMap.split(BTreeTableImplementation.LEAF_SIZE);
-
-		BTreeLeaf a = new BTreeLeaf();
-		BTreeLeaf b = new BTreeLeaf();
-		a.mMap = maps[0];
-		b.mMap = maps[1];
-		a.mModified = true;
-		b.mModified = true;
-
-		return new SplitResult(a, b, new MarshalledKey(a.mMap.getFirst().getKey()), new MarshalledKey(b.mMap.getFirst().getKey()));
+		aVisitor.anyNode(aImplementation, this);
+		aVisitor.leaf(aImplementation, this);
 	}
 
 
-	BTreeIndex upgrade(BTreeTableImplementation aImplementation)
+	@Override
+	SplitResult split(BTree aImplementation)
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(BTreeTableImplementation.LEAF_SIZE);
+		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("leafSize"));
 
 		BTreeLeaf a = new BTreeLeaf();
 		BTreeLeaf b = new BTreeLeaf();
@@ -75,14 +67,31 @@ public class BTreeLeaf extends BTreeNode
 		a.mModified = true;
 		b.mModified = true;
 
-		MarshalledKey keyA = new MarshalledKey(new byte[0]);
-		MarshalledKey keyB = new MarshalledKey(b.mMap.getKey(0));
+		return new SplitResult(a, b, a.mMap.getFirst().getKey(), b.mMap.getFirst().getKey());
+	}
+
+
+	BTreeIndex upgrade(BTree aImplementation)
+	{
+		aImplementation.freeBlock(mBlockPointer);
+
+		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("leafSize"));
+
+		BTreeLeaf a = new BTreeLeaf();
+		BTreeLeaf b = new BTreeLeaf();
+		a.mMap = maps[0];
+		b.mMap = maps[1];
+		a.mModified = true;
+		b.mModified = true;
+
+		ArrayMapKey keyA = ArrayMapKey.EMPTY;
+		ArrayMapKey keyB = b.mMap.getKey(0);
 
 		BTreeIndex newIndex = new BTreeIndex(1);
 		newIndex.mModified = true;
-		newIndex.mMap = new ArrayMap(INDEX_SIZE);
-		newIndex.mMap.put(new ArrayMapEntry(keyA.array(), BLOCKPOINTER_PLACEHOLDER), null);
-		newIndex.mMap.put(new ArrayMapEntry(keyB.array(), BLOCKPOINTER_PLACEHOLDER), null);
+		newIndex.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("indexSize"));
+		newIndex.mMap.put(new ArrayMapEntry(keyA, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
+		newIndex.mMap.put(new ArrayMapEntry(keyB, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
 		newIndex.mChildNodes.put(keyA, a);
 		newIndex.mChildNodes.put(keyB, b);
 
@@ -91,15 +100,16 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	boolean commit(BTreeTableImplementation aImplementation, TransactionGroup aTransactionGroup)
+	boolean commit(BTree aImplementation)
 	{
 		if (mModified)
 		{
+			assert RuntimeDiagnostics.collectStatistics(Operation.FREE_LEAF, mBlockPointer);
+			assert RuntimeDiagnostics.collectStatistics(Operation.WRITE_LEAF, 1);
+
 			aImplementation.freeBlock(mBlockPointer);
 
-			mBlockPointer = aImplementation.writeBlock(aTransactionGroup, mMap.array(), 0, BlockType.LEAF);
-
-			aImplementation.hasCommitted(this);
+			mBlockPointer = aImplementation.writeBlock(mMap.array(), 0, BlockType.TREE_LEAF);
 		}
 
 		return mModified;

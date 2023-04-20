@@ -1,92 +1,73 @@
 package test;
 
-import java.awt.Dimension;
-import org.terifan.raccoon.CompressionParam;
-import org.terifan.raccoon.Database;
+import org.terifan.raccoon.document.Document;
+import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
-import org.terifan.raccoon.TableParam;
-import org.terifan.raccoon.annotations.Column;
-import org.terifan.raccoon.annotations.Entity;
-import org.terifan.raccoon.io.physical.MemoryBlockDevice;
-import org.terifan.raccoon.annotations.Id;
+import org.terifan.raccoon.RaccoonCollection;
+import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 
 
+// https://www.tutorialspoint.com/mongodb/mongodb_java.htm
 public class Test1
 {
 	public static void main(String... args)
 	{
 		try
 		{
-			long t = System.currentTimeMillis();
-//			for (int test = 0; test < 10; test++)
+//			Log.setLevel(LogLevel.DEBUG);
+
+			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+			AccessCredentials ac = new AccessCredentials("password");
+//			AccessCredentials ac = null;
+
+			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.REPLACE, ac))
+//			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
-				MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-
-				try (Database db = new Database(blockDevice, DatabaseOpenOption.CREATE_NEW, CompressionParam.NO_COMPRESSION, new TableParam(1, 1), null))
+				RaccoonCollection collection = db.getCollection("people");
+				for (int i = 0, z=0; i < 10; i++)
 				{
-					for (int i = 0; i < 1000000; i++)
+					for (int j = 0; j < 10; j++,z++)
 					{
-						db.save(new MyEntity(i, Integer.toString(-i), "01234567890123456789"));
+//						collection.save(new Document().put("_id", z).putString("name", "olle-"+i+"-"+j));
+						collection.save(new Document().put("_id", "olle-"+i+"-"+j));
 					}
-
-					db.commit();
 				}
 
-				System.out.println(blockDevice.length() * blockDevice.getBlockSize() / 1024.0 / 1024);
+//				RaccoonCollection collection = db.createCollection("people");
+//				Document document = new Document("title", "MongoDB")
+//					.putString("description", "database")
+//					.putNumber("likes", 100)
+//					.putString("url", "http://www.tutorialspoint.com/mongodb/")
+//					.putString("by", "tutorials point");
+//				collection.insert(document);
+//
+//				collection.find().forEach(doc -> System.out.println(doc));
 
-				try (Database db = new Database(blockDevice, DatabaseOpenOption.OPEN))
-				{
-					System.out.println(db.remove(new MyEntity(4, "-4")));
+				db.commit();
 
-//					db.list(MyEntity.class).forEach(System.out::println);
-					System.out.println("--------");
-					System.out.println(db.get(new MyEntity(4, "-4")));
-				}
+//				showTree(db.getCollection("people"));
 			}
 
-			System.out.println(System.currentTimeMillis() - t);
+//			blockDevice.dump();
+
+			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
+//			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			{
+//				Document doc = db.getCollection("people").get(new Document().putNumber("_id", 0));
+//				System.out.println(doc);
+//
+//				List<Document> docs = db.getCollection("people").list();
+//				System.out.println(docs);
+//
+//				System.out.println(db.getCollection("people").size());
+
+				db.getCollection("people").listAll().forEach(e -> System.out.println(e));
+			}
 		}
-		catch (Throwable e)
+		catch (Exception e)
 		{
 			e.printStackTrace(System.out);
-		}
-	}
-
-
-	@Entity
-	static class MyEntity
-	{
-		@Id Integer id1;
-		@Id String id2;
-		@Column String name;
-		@Column Dimension dim;
-
-
-		public MyEntity()
-		{
-		}
-
-
-		public MyEntity(Integer aId1, String aId2)
-		{
-			this.id1 = aId1;
-			this.id2 = aId2;
-		}
-
-
-		public MyEntity(Integer aId1, String aId2, String aName)
-		{
-			this.id1 = aId1;
-			this.id2 = aId2;
-			this.name = aName;
-			dim = new Dimension(aId1, aId1);
-		}
-
-
-		@Override
-		public String toString()
-		{
-			return "MyEntity{" + "id1=" + id1 + ", id2=" + id2 + ", name=" + name + ", dim=" + dim + '}';
 		}
 	}
 }

@@ -1,12 +1,11 @@
 package resources.entities;
 
 import java.io.Serializable;
-import org.terifan.raccoon.annotations.Id;
 
 
 public class _BooleansK1 implements Serializable
 {
-	@Id public byte[] _id;
+	public byte[] _id;
 	public boolean[] value1;
 	public boolean[][] value2;
 	public boolean[][][] value3;

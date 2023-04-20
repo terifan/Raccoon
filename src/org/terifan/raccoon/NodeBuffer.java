@@ -1,54 +1,59 @@
 package org.terifan.raccoon;
 
+import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
 
 class NodeBuffer
 {
-	private TreeMap<MarshalledKey, BTreeNode> mBuffer;
+	private TreeMap<ArrayMapKey, BTreeNode> mMap;
 
 
 	public NodeBuffer()
 	{
-		mBuffer = new TreeMap<>((o1, o2) -> o1.compareTo(o2));
+		mMap = new TreeMap<>((o1, o2) -> o1.compareTo(o2));
 	}
 
 
-	Iterable<Entry<MarshalledKey, BTreeNode>> entrySet()
+	BTreeNode get(ArrayMapKey aKey)
 	{
-		return mBuffer.entrySet();
+		return mMap.get(aKey);
+	}
+
+
+	void put(ArrayMapKey aKey, BTreeNode aNode)
+	{
+		mMap.put(aKey, aNode);
+	}
+
+
+	BTreeNode remove(ArrayMapKey aKey)
+	{
+		return mMap.remove(aKey);
 	}
 
 
 	void clear()
 	{
-		mBuffer.clear();
+		mMap.clear();
 	}
 
 
-	BTreeNode get(MarshalledKey aKey)
+	Iterable<Entry<ArrayMapKey, BTreeNode>> entrySet()
 	{
-		return mBuffer.get(aKey);
+		return mMap.entrySet();
 	}
 
 
-	BTreeNode remove(MarshalledKey aKey)
+	Iterable<ArrayMapKey> keySet()
 	{
-		return mBuffer.remove(aKey);
+		return mMap.keySet();
 	}
 
 
-	void put(MarshalledKey aKey, BTreeNode aNode)
+	Collection<BTreeNode> values()
 	{
-		assert aNode != null;
-
-		mBuffer.put(aKey, aNode);
-	}
-
-
-	Iterable<MarshalledKey> keySet()
-	{
-		return mBuffer.keySet();
+		return mMap.values();
 	}
 }

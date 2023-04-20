@@ -1,192 +1,256 @@
 package test;
 
-import java.io.File;
-import org.terifan.raccoon.CompressionParam;
-import org.terifan.raccoon.Database;
-import org.terifan.raccoon.DatabaseBuilder;
-import org.terifan.raccoon.io.physical.FileBlockDevice;
-import org.terifan.raccoon.annotations.Id;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Random;
+import org.terifan.raccoon.document.Document;
+import org.terifan.raccoon.RaccoonDatabase;
+import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.RuntimeDiagnostics;
+import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 
 
 public class TestPerformance
 {
+	private final static Random rnd = new Random(1);
+
+
 	public static void main(String... args)
 	{
 		try
 		{
-			for (int perLeaf = 1; perLeaf <= 8; perLeaf *= 2)
+			int N = 1000_000;
+			int M = 10;
+
+			System.out.println(N + " x " + M);
+
+			ArrayList<Integer> order = new ArrayList<>();
+			for (int i = 1; i <= N*M;i++)
 			{
-				for (int perNode = 1; perNode <= 8; perNode *= 2)
-				{
-					for (int blockSize = 4096; blockSize <= 8192; blockSize *= 2)
-					{
-						long t = System.currentTimeMillis();
-
-						try (Database db = new DatabaseBuilder(new FileBlockDevice(new File("d:\\test_" + blockSize + "_" + perNode + "_" + perLeaf + ".db"), blockSize, false)).setPagesPerNode(perNode).setPagesPerLeaf(perLeaf).setCompression(CompressionParam.NO_COMPRESSION).create())
-						{
-							for (int i = 0; i < 1000_000; i++)
-							{
-								db.save(new MyEntity(i, "item-" + i));
-							}
-							db.commit();
-						}
-
-						System.out.print(blockSize + " " + perNode + " " + perLeaf + " " + (System.currentTimeMillis() - t) + "\t");
-					}
-
-					System.out.println();
-				}
+				order.add(i);
 			}
 
-//			try (Database db = new Database(new File("d:\\test.db"), OpenOption.OPEN, new AccessCredentials("password")))
-//			{
-//				db.list(MyEntity.class).forEach(System.out::println);
-//			}
+//			AccessCredentials ac = new AccessCredentials("password");
+			AccessCredentials ac = null;
+
+			System.out.printf("%-15s ", "SAVE SEQ");
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			{
+				for (int j = 0; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++)
+					{
+						String s = value();
+						db.getCollection("table").save(new Document().put("value", s).put("hash", s.hashCode()));
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+			System.out.printf("%-15s ", "SAVE ALL SEQ");
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			{
+				for (int j = 0; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					ArrayList<Document> documents = new ArrayList<>();
+					for (int i = 0; i < N; i++)
+					{
+						String s = value();
+						documents.add(new Document().put("value", s).put("hash", s.hashCode()));
+					}
+					db.getCollection("table").saveAll(documents.toArray(new Document[0]));
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+			System.out.printf("%-15s ", "SELECT SEQ");
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			{
+				for (int j = 0, k = 1; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++, k++)
+					{
+						Document doc = db.getCollection("table").get(new Document().put("_id", k));
+						assert doc.getString("value").hashCode() == doc.getInt("hash");
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+			System.out.printf("%-15s ", "UPDATE SEQ");
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			{
+				for (int j = 0, k = 1; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++, k++)
+					{
+						String s = value();
+						db.getCollection("table").save(new Document().put("_id", k).put("value", s).put("hash", s.hashCode()));
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+			System.out.printf("%-15s ", "SELECT SEQ");
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			{
+//				db.getCollection("table").stream().forEach(System.out::println);
+				for (int j = 0, k = 1; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++, k++)
+					{
+						Document doc = db.getCollection("table").get(new Document().put("_id", k));
+						assert doc.getString("value").hashCode() == doc.getInt("hash");
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+			System.out.printf("%-15s ", "DELETE SEQ");
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			{
+				for (int j = 0, k = 1; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++, k++)
+					{
+						db.getCollection("table").delete(new Document().put("_id", k));
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+
+
+
+			Collections.shuffle(order, rnd);
+
+			System.out.printf("%-15s ", "INSERT RANDOM");
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			{
+				for (int j = 0, k = 0; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++, k++)
+					{
+						String s = value();
+						db.getCollection("table").save(new Document().put("_id", order.get(k)).put("value", s).put("hash", s.hashCode()));
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+			Collections.shuffle(order, rnd);
+
+			System.out.printf("%-15s ", "SELECT RANDOM");
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			{
+				for (int j = 0, k = 0; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++, k++)
+					{
+						Document doc = db.getCollection("table").get(new Document().put("_id", order.get(k)));
+						assert doc.getString("value").hashCode() == doc.getInt("hash");
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+			Collections.shuffle(order, rnd);
+
+			System.out.printf("%-15s ", "UPDATE RANDOM");
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			{
+				for (int j = 0, k = 0; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++, k++)
+					{
+						String s = value();
+						db.getCollection("table").save(new Document().put("_id", order.get(k)).put("value", s).put("hash", s.hashCode()));
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+			Collections.shuffle(order, rnd);
+
+			System.out.printf("%-15s ", "SELECT RANDOM");
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			{
+				for (int j = 0, k = 0; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++, k++)
+					{
+						Document doc = db.getCollection("table").get(new Document().put("_id", order.get(k)));
+						assert doc.getString("value").hashCode() == doc.getInt("hash");
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+			Collections.shuffle(order, rnd);
+
+			System.out.printf("%-15s ", "REMOVE RANDOM");
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.OPEN, ac))
+			{
+				for (int j = 0, k = 0; j < M; j++)
+				{
+					long t = System.currentTimeMillis();
+					for (int i = 0; i < N; i++, k++)
+					{
+						db.getCollection("table").delete(new Document().put("_id", order.get(k)));
+					}
+					System.out.printf("%8d", System.currentTimeMillis() - t);
+					db.commit();
+				}
+			}
+			System.out.println();
+
+			RuntimeDiagnostics.print();
 		}
-		catch (Throwable e)
+		catch (Exception e)
 		{
 			e.printStackTrace(System.out);
 		}
 	}
 
 
-	static class MyEntity
+	private static String value()
 	{
-		@Id int intkey1;
-		long long1;
-		double double1;
-		String string1;
-		String string2;
-		boolean boolean1;
-		int int1;
-		int int2;
-		int int3;
-
-
-		public MyEntity()
+		byte[] buf = new byte[rnd.nextInt(100)];
+		for (int i = 0; i < buf.length; i++)
 		{
+			buf[i] = (byte)(32 + rnd.nextInt(95));
 		}
-
-
-		public MyEntity(int aId, String aName)
-		{
-			intkey1 = aId;
-			long1 = System.nanoTime();
-			double1 = Math.random();
-			boolean1 = true;
-			int1 = (int)long1;
-			int2 = (int)(long1 >>> 32);
-			int3 = 0;
-			string1 = aName;
-			string2 = double1 + string1 + long1;
-		}
-
-
-		public int getIntkey1()
-		{
-			return intkey1;
-		}
-
-
-		public void setIntkey1(int aIntkey1)
-		{
-			this.intkey1 = aIntkey1;
-		}
-
-
-		public long getLong1()
-		{
-			return long1;
-		}
-
-
-		public void setLong1(long aLong1)
-		{
-			this.long1 = aLong1;
-		}
-
-
-		public double getDouble1()
-		{
-			return double1;
-		}
-
-
-		public void setDouble1(double aDouble1)
-		{
-			this.double1 = aDouble1;
-		}
-
-
-		public String getString1()
-		{
-			return string1;
-		}
-
-
-		public void setString1(String aString1)
-		{
-			this.string1 = aString1;
-		}
-
-
-		public String getString2()
-		{
-			return string2;
-		}
-
-
-		public void setString2(String aString2)
-		{
-			this.string2 = aString2;
-		}
-
-
-		public boolean isBoolean1()
-		{
-			return boolean1;
-		}
-
-
-		public void setBoolean1(boolean aBoolean1)
-		{
-			this.boolean1 = aBoolean1;
-		}
-
-
-		public int getInt1()
-		{
-			return int1;
-		}
-
-
-		public void setInt1(int aInt1)
-		{
-			this.int1 = aInt1;
-		}
-
-
-		public int getInt2()
-		{
-			return int2;
-		}
-
-
-		public void setInt2(int aInt2)
-		{
-			this.int2 = aInt2;
-		}
-
-
-		public int getInt3()
-		{
-			return int3;
-		}
-
-
-		public void setInt3(int aInt3)
-		{
-			this.int3 = aInt3;
-		}
+		return new String(buf);
 	}
 }

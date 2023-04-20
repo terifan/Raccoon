@@ -1,26 +1,27 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.ArrayMap.PutResult;
-import org.terifan.raccoon.storage.BlockPointer;
+import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.util.Result;
 
 
-abstract class BTreeNode
+public abstract class BTreeNode
 {
-	final int mLevel;
-
-	BlockPointer mBlockPointer;
-	ArrayMap mMap;
-	boolean mModified;
+	protected BlockPointer mBlockPointer;
+	protected ArrayMap mMap;
+	protected boolean mModified;
+	protected int mLevel;
 
 
 	static class SplitResult
 	{
 		private final BTreeNode left;
 		private final BTreeNode right;
-		private final MarshalledKey leftKey;
-		private final MarshalledKey rightKey;
-		SplitResult(BTreeNode left, BTreeNode right, MarshalledKey leftKey, MarshalledKey rightKey)
+		private final ArrayMapKey leftKey;
+		private final ArrayMapKey rightKey;
+
+
+		SplitResult(BTreeNode left, BTreeNode right, ArrayMapKey leftKey, ArrayMapKey rightKey)
 		{
 			this.left = left;
 			this.right = right;
@@ -35,7 +36,7 @@ abstract class BTreeNode
 		}
 
 
-		public MarshalledKey leftKey()
+		public ArrayMapKey leftKey()
 		{
 			return leftKey;
 		}
@@ -47,7 +48,7 @@ abstract class BTreeNode
 		}
 
 
-		public MarshalledKey rightKey()
+		public ArrayMapKey rightKey()
 		{
 			return rightKey;
 		}
@@ -67,19 +68,22 @@ abstract class BTreeNode
 	}
 
 
-	abstract boolean get(BTreeTableImplementation mImplementation, MarshalledKey aKey, ArrayMapEntry oEntry);
+	abstract boolean get(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry oEntry);
 
 
-	abstract PutResult put(BTreeTableImplementation mImplementation, MarshalledKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
+	abstract PutResult put(BTree aImplementation, ArrayMapKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
 
 
-	abstract RemoveResult remove(BTreeTableImplementation mImplementation, MarshalledKey aKey, Result<ArrayMapEntry> oOldEntry);
+	abstract RemoveResult remove(BTree aImplementation, ArrayMapKey aKey, Result<ArrayMapEntry> oOldEntry);
 
 
-	abstract SplitResult split(BTreeTableImplementation mImplementation);
+	abstract void visit(BTree aImplementation, BTreeVisitor aVisitor);
 
 
-	abstract boolean commit(BTreeTableImplementation mImplementation, TransactionGroup mTransactionGroup);
+	abstract SplitResult split(BTree aImplementation);
+
+
+	abstract boolean commit(BTree aImplementation);
 
 
 	protected abstract void postCommit();

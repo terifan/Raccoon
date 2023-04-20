@@ -1,8 +1,5 @@
 package org.terifan.raccoon.util;
 
-import org.terifan.raccoon.Table;
-
-
 
 public class Assert
 {

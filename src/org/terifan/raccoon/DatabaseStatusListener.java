@@ -1,5 +1,8 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.blockdevice.util.LogLevel;
+
+
 
 @FunctionalInterface
 public interface DatabaseStatusListener

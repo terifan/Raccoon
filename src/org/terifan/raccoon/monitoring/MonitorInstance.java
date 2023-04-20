@@ -1,15 +1,15 @@
 package org.terifan.raccoon.monitoring;
 
-import org.terifan.raccoon.Database;
+import org.terifan.raccoon.RaccoonDatabase;
 
 
 public class MonitorInstance implements AutoCloseable
 {
 	private DatabaseMonitorWindow mDatabaseMonitorWindow;
-	private Database mDatabase;
+	private RaccoonDatabase mDatabase;
 
 
-	MonitorInstance(DatabaseMonitorWindow aDatabaseMonitorWindow, Database aDatabase)
+	MonitorInstance(DatabaseMonitorWindow aDatabaseMonitorWindow, RaccoonDatabase aDatabase)
 	{
 		mDatabaseMonitorWindow = aDatabaseMonitorWindow;
 		mDatabase = aDatabase;

@@ -1,14 +1,15 @@
 package org.terifan.raccoon;
 
 
-public enum BlockType
+public interface BlockType
 {
-	FREE,
-	HOLE,
-	LEAF,
-	INDEX,
-	BLOB_DATA,
-	BLOB_INDEX,
-	SPACEMAP,
-	ILLEGAL
+	int FREE = 0;
+	int HOLE = 1;
+	int TREE_INDEX = 2;
+	int TREE_LEAF = 3;
+	int BLOB_INDEX = 4;
+	int BLOB_LEAF = 5;
+	int SPACEMAP = 6;
+	int ILLEGAL = 7;
+	int APPLICATION_HEADER = 8;
 }
