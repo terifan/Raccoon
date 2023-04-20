@@ -30,7 +30,7 @@ public class TestLOB
 			{
 				RaccoonCollection files = db.getCollection("files");
 
-				Files.walk(Paths.get("d:\\pictures")).filter(p -> p.getFileName().toString().toLowerCase().matches(".*jpg|.*png")).limit(100000000).forEach(path ->
+				Files.walk(Paths.get("d:\\pictures")).filter(p -> p.getFileName().toString().toLowerCase().matches(".*jpg|.*png")).limit(10).forEach(path ->
 				{
 					System.out.println(path);
 

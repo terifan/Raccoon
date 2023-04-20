@@ -461,7 +461,6 @@ public final class RaccoonDatabase implements AutoCloseable
 				Log.i("updating super block");
 				Log.inc();
 
-				mDatabaseRoot.nextTransaction();
 				mDatabaseRoot.writeToDevice(mBlockDevice);
 				mBlockDevice.commit();
 				mModified = false;
@@ -642,15 +641,9 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public BlockAccessor getBlockAccessor()
+	BlockAccessor getBlockAccessor()
 	{
 		return new BlockAccessor(getBlockDevice(), true);
-	}
-
-
-	public long getTransaction()
-	{
-		return mDatabaseRoot.getTransactionId();
 	}
 
 

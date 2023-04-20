@@ -10,32 +10,33 @@ import org.terifan.raccoon.document.Document;
 
 public class DatabaseRoot
 {
+	private final static String ROOT = "root";
+	private final static String COLLECTIONS = "collections";
+
 	private Document mMetadata;
 	private BlockPointer mBlockPointer;
-	private long mTransactionId;
 
 
 	public DatabaseRoot()
 	{
 		mMetadata = new Document()
-			.put("collections", new Document());
+			.put(COLLECTIONS, new Document());
 	}
 
 
 	public void readFromDevice(ManagedBlockDevice aBlockDevice)
 	{
-		mBlockPointer = new BlockPointer().unmarshal(aBlockDevice.getMetadata().getBinary("root"));
+		mBlockPointer = new BlockPointer().unmarshal(aBlockDevice.getMetadata().getBinary(ROOT));
 
-		byte[] buffer = new BlockAccessor(aBlockDevice, true).readBlock(mBlockPointer);
+		byte[] buffer = new BlockAccessor(aBlockDevice).readBlock(mBlockPointer);
 
 		mMetadata = new Document().fromByteArray(buffer);
-		mTransactionId = mBlockPointer.getTransactionId(); // TODO: use trans id from super block?
 	}
 
 
 	public void writeToDevice(ManagedBlockDevice aBlockDevice)
 	{
-		BlockAccessor blockAccessor = new BlockAccessor(aBlockDevice, true);
+		BlockAccessor blockAccessor = new BlockAccessor(aBlockDevice);
 
 		if (mBlockPointer != null)
 		{
@@ -44,38 +45,26 @@ public class DatabaseRoot
 
 		byte[] buffer = mMetadata.toByteArray();
 
-		mBlockPointer = blockAccessor.writeBlock(buffer, 0, buffer.length, BlockType.APPLICATION_HEADER, CompressorLevel.DEFLATE_FAST);
+		mBlockPointer = blockAccessor.writeBlock(buffer, 0, buffer.length, BlockType.APPLICATION_HEADER, 0, CompressorLevel.DEFLATE_FAST);
 
-		aBlockDevice.getMetadata().put("root", mBlockPointer.marshal());
+		aBlockDevice.getMetadata().put(ROOT, mBlockPointer.marshal());
 	}
 
 
 	ArrayList<String> listCollections()
 	{
-		return new ArrayList<>(mMetadata.getDocument("collections").keySet());
+		return new ArrayList<>(mMetadata.getDocument(COLLECTIONS).keySet());
 	}
 
 
 	Document getCollection(String aName)
 	{
-		return mMetadata.getDocument("collections").getDocument(aName);
+		return mMetadata.getDocument(COLLECTIONS).getDocument(aName);
 	}
 
 
 	void putCollection(String aName, Document aConfiguration)
 	{
-		mMetadata.getDocument("collections").put(aName, aConfiguration);
-	}
-
-
-	public synchronized void nextTransaction()
-	{
-		mTransactionId++;
-	}
-
-
-	public synchronized long getTransactionId()
-	{
-		return mTransactionId;
+		mMetadata.getDocument(COLLECTIONS).put(aName, aConfiguration);
 	}
 }
