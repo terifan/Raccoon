@@ -282,25 +282,25 @@ public class _Person
 	};
 	private final static String[] NICK_NAMES =
 	{
-		"adaben", "adelard", "aglaran", "alcarinion", "amarthior", "amathiphant", "amdirthorn", "amlugeden", "amluginnog", "arahaeldaer",
+		"ada","ben", "adelard", "aglaran", "alcarinion", "amarthior", "amathiphant", "amdirthorn", "amlugeden", "amluginnog", "arahaeldaer",
 		"ardir", "arlin", "avar", "awahairo", "bairrfhionn", "balen", "bathron", "bellamdir", "bercilak", "bregol", "brogamon", "calaeron",
 		"cemmion", "cevion", "cidinnamarth", "cody", "costaro", "dagion", "delane", "deldhinion", "díllothanar", "dolchanar", "eccesindion",
 		"edenor", "elanordil", "elgine", "elvedui", "engwo", "estolaben", "faeldir", "falch", "gaeardaer", "galadphen", "gathrodion",
 		"gorvenal", "gurunam", "harnion", "heledthor", "hending", "hithuven", "hwandil", "ianion", "iphanthon", "kelleher", "lalaro",
 		"lanwatan", "lassion", "laurealasso", "lavamben", "lennion", "leodegan", "lindaro", "loendir", "lueius", "lun", "maeluion",
 		"maicion", "melrion", "minasdir", "moriarty", "morthor", "mundil", "nadhorchanar", "nestoron", "níco", "níthor", "norother",
-		"nurtaro", "ogolben", "oleryd", "pamben", "pelleas", "rácandur", "raicion", "sawyl", "sulben", "telioron", "thalachon", "pamo",
+		"nurtaro", "ogolben", "oleryd", "pamben", "pelleas", "racandur", "raicion", "sawyl", "sulben", "telioron", "thalachon", "pamo",
 		"tharbachon", "tinwendur", "traherne", "ulund", "ulunion", "vane", "vanisauro", "vanya", "wilindion", "wiryaro", "yaro"
 	};
 	private final static String[] MAIL_HOSTS =
 	{
 		"google.com", "hotmail.com", "outlook.com", "titan.com", "protonmail.com", "yahoo.com", "zoho.com"
 	};
-	private final static String[] roles = new String[]
+	private final static String[] ROLES = new String[]
 	{
-		"Administrator", "Auditor", "Author", "Visitor"
+		"Administrator", "Employee", "Manager"
 	};
-	private final static String[] teams = new String[]
+	private final static String[] TEAMS = new String[]
 	{
 		"Frontend", "Backend", "Supervisor", "QA"
 	};
@@ -326,6 +326,7 @@ public class _Person
 				.put("language", createLanguage(rnd))
 				.put("birthday", createBirthdate(rnd))
 				.put("displayName", createNickName(rnd))
+				.put("healthInfo", createHealthInfo(rnd))
 				.put("contacts", new Array()
 					.add(new Document().put("type", "email").put("text", createEmail(rnd)))
 					.add(new Document().put("type", "phone").put("text", createPhoneNumber(rnd)))
@@ -338,7 +339,6 @@ public class _Person
 					.put("city", createCity(rnd))
 					.put("state", createState(rnd))
 					.put("country", createCountry(rnd))
-					.put("locations", Array.of(createGPSTime(rnd), createGPSTime(rnd), createGPSTime(rnd)))
 				)
 				.put("favorite", new Document()
 					.put("color", createColorName(rnd))
@@ -350,8 +350,8 @@ public class _Person
 			)
 			.put("work", new Document()
 				.put("company", company)
-				.put("role", roles[rnd.nextInt(roles.length)])
-				.put("team", teams[rnd.nextInt(teams.length)])
+				.put("role", ROLES[rnd.nextInt(ROLES.length)])
+				.put("team", TEAMS[rnd.nextInt(TEAMS.length)])
 				.put("usageLocation", createLocation(rnd))
 				.put("jobTitle", createJob(rnd))
 				.put("contacts", new Array()
@@ -360,7 +360,8 @@ public class _Person
 					.add(new Document().put("type", "mobilePhone").put("text", createPhoneNumber(rnd)))
 				)
 				.put("token", UUID.randomUUID())
-			);
+			)
+			.put("locationHistory", createGPSHistory(rnd));
 	}
 
 
@@ -476,12 +477,12 @@ public class _Person
 
 	private static String createNickName(Random rnd)
 	{
-		String a = NICK_NAMES[rnd.nextInt(NICK_NAMES.length)];
-		String b = NICK_NAMES[rnd.nextInt(NICK_NAMES.length)];
-
-		a = a.substring(0, a.length()/2) + b.substring(b.length()/2);
-
-		return a + rnd.nextInt(100);
+		String tmp = "";
+		tmp += NICK_NAMES[rnd.nextInt(NICK_NAMES.length)];
+		tmp += "_";
+		tmp += NICK_NAMES[rnd.nextInt(NICK_NAMES.length)];
+		tmp += rnd.nextInt(100);
+		return tmp;
 	}
 
 
@@ -508,5 +509,40 @@ public class _Person
 	private static Document createGPSTime(Random rnd)
 	{
 		return createGPS(rnd).put("time", OffsetDateTime.of(createNewDate(rnd), ZoneOffset.ofHours(rnd.nextInt(20) - 10)));
+	}
+
+
+	private static Object createGPSHistory(Random rnd)
+	{
+		Array tmp = new Array();
+		for (int i = 2 + rnd.nextInt(9); --i >= 0;)
+		{
+			tmp.add(createGPSTime(rnd));
+		}
+		return tmp;
+	}
+
+
+	public static void main(String ... args)
+	{
+		try
+		{
+			System.out.println(_Person.createPerson(new Random()));
+		}
+		catch (Throwable e)
+		{
+			e.printStackTrace(System.out);
+		}
+	}
+
+
+	private static Document createHealthInfo(Random rnd)
+	{
+		Document tmp = new Document();
+		tmp.put("weight", 50 + rnd.nextInt(70));
+		tmp.put("height", 140 + rnd.nextInt(70));
+		tmp.put("bloodType", new String[]{"A+","A-","B+","B-","AB+","AB-","O+","O-"}[rnd.nextInt(8)]);
+
+		return tmp;
 	}
 }
