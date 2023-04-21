@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import static org.terifan.raccoon.RaccoonDatabase.INDEX_COLLECTION;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
@@ -291,6 +292,24 @@ public final class RaccoonCollection
 		}
 
 		return list;
+	}
+
+
+	public void forEach(Consumer<Document> aAction)
+	{
+		try (ReadLock lock = mLock.readLock())
+		{
+			mModCount++;
+
+			mImplementation.visit(new BTreeVisitor()
+			{
+				@Override
+				void leaf(BTree aImplementation, BTreeLeaf aNode)
+				{
+					aNode.mMap.forEach(e -> aAction.accept(unmarshalDocument(e, new Document())));
+				}
+			});
+		}
 	}
 
 
