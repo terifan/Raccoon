@@ -523,19 +523,6 @@ public class _Person
 	}
 
 
-	public static void main(String ... args)
-	{
-		try
-		{
-			System.out.println(_Person.createPerson(new Random()));
-		}
-		catch (Throwable e)
-		{
-			e.printStackTrace(System.out);
-		}
-	}
-
-
 	private static Document createHealthInfo(Random rnd)
 	{
 		Document tmp = new Document();
@@ -544,5 +531,25 @@ public class _Person
 		tmp.put("bloodType", new String[]{"A+","A-","B+","B-","AB+","AB-","O+","O-"}[rnd.nextInt(8)]);
 
 		return tmp;
+	}
+
+
+	public static void main(String ... args)
+	{
+		try
+		{
+			Document person = _Person.createPerson(new Random());
+
+			System.out.println(person);
+
+			System.out.println("-".repeat(100));
+			System.out.println("JSON: " + person.toJson().length());
+			System.out.println("TSON: " + person.toTypedJson().length());
+			System.out.println("BIN:  " + person.toByteArray().length);
+		}
+		catch (Throwable e)
+		{
+			e.printStackTrace(System.out);
+		}
 	}
 }
