@@ -7,6 +7,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Random;
 import java.util.UUID;
+import org.terifan.raccoon.blockdevice.util.Log;
 import org.terifan.raccoon.document.ObjectId;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
@@ -546,6 +547,8 @@ public class _Person
 			System.out.println("JSON: " + person.toJson().length());
 			System.out.println("TSON: " + person.toTypedJson().length());
 			System.out.println("BIN:  " + person.toByteArray().length);
+
+			Log.hexDump(person.toByteArray());
 		}
 		catch (Throwable e)
 		{
