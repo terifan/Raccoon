@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Supplier;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.DeviceException;
@@ -44,7 +45,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	private ManagedBlockDevice mBlockDevice;
 	private DatabaseRoot mDatabaseRoot;
 	private DatabaseOpenOption mDatabaseOpenOption;
-	private final ConcurrentHashMap<String, RaccoonCollection> mCollections;
+	private final ConcurrentSkipListMap<String, RaccoonCollection> mCollections;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 
 	private boolean mModified;
@@ -56,7 +57,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	private RaccoonDatabase()
 	{
 		mLock = new ReadWriteLock();
-		mCollections = new ConcurrentHashMap<>();
+		mCollections = new ConcurrentSkipListMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
 	}
 

@@ -44,6 +44,12 @@ public final class RaccoonCollection
 	}
 
 
+	public String getName()
+	{
+		return mConfiguration.getString("name");
+	}
+
+
 	public boolean getAll(Document... aDocuments)
 	{
 		Log.i("get all entities %d", aDocuments.length);
