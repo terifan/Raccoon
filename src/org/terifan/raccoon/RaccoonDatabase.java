@@ -319,7 +319,7 @@ public final class RaccoonDatabase implements AutoCloseable
 			return instance;
 		}
 
-		if (mDatabaseOpenOption == DatabaseOpenOption.OPEN || mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY)
+		if (mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY)
 		{
 			throw new DatabaseException("No such collection: " + aName);
 		}
@@ -339,6 +339,14 @@ public final class RaccoonDatabase implements AutoCloseable
 		}
 
 		return instance;
+	}
+
+
+	public synchronized boolean removeCollection(RaccoonCollection aCollection)
+	{
+		checkOpen();
+
+		return mCollections.remove(aCollection.getName(), aCollection);
 	}
 
 
