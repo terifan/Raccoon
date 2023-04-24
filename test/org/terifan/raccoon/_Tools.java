@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import java.io.IOException;
 import java.util.function.Supplier;
 import javax.swing.JFrame;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
@@ -35,19 +36,19 @@ public class _Tools
 	}
 
 
-	public static BlockAccessor createMemoryStorage()
+	public static BlockAccessor createMemoryStorage() throws IOException
 	{
 		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockDevice(512)), false);
 	}
 
 
-	public static BlockAccessor createSecureMemoryStorage()
+	public static BlockAccessor createSecureMemoryStorage() throws IOException
 	{
 		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), new MemoryBlockDevice(512))), false);
 	}
 
 
-	public static BlockAccessor createStorage(Supplier<PhysicalBlockDevice> aSupplier)
+	public static BlockAccessor createStorage(Supplier<PhysicalBlockDevice> aSupplier) throws IOException
 	{
 		PhysicalBlockDevice device = aSupplier.get();
 		if (device.size() > 0)
@@ -58,7 +59,7 @@ public class _Tools
 	}
 
 
-	public static BlockAccessor createSecureStorage(Supplier<PhysicalBlockDevice> aSupplier)
+	public static BlockAccessor createSecureStorage(Supplier<PhysicalBlockDevice> aSupplier) throws IOException
 	{
 		PhysicalBlockDevice device = aSupplier.get();
 		if (device.size() > 0)
@@ -69,7 +70,7 @@ public class _Tools
 	}
 
 
-	public static BlockAccessor createSecureStorage(PhysicalBlockDevice aDevice)
+	public static BlockAccessor createSecureStorage(PhysicalBlockDevice aDevice) throws IOException
 	{
 		if (aDevice.size() > 0)
 		{

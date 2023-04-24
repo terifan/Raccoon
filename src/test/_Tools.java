@@ -1,5 +1,6 @@
 package test;
 
+import java.io.IOException;
 import java.util.Random;
 import org.terifan.raccoon.BTree;
 import java.util.function.Supplier;
@@ -38,25 +39,25 @@ public class _Tools
 	}
 
 
-	public static BlockAccessor createMemoryStorage()
+	public static BlockAccessor createMemoryStorage() throws IOException
 	{
 		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockDevice(512)), true);
 	}
 
 
-	public static BlockAccessor createSecureMemoryStorage()
+	public static BlockAccessor createSecureMemoryStorage() throws IOException
 	{
 		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), new MemoryBlockDevice(512))), true);
 	}
 
 
-	public static BlockAccessor createStorage(Supplier<PhysicalBlockDevice> aSupplier)
+	public static BlockAccessor createStorage(Supplier<PhysicalBlockDevice> aSupplier) throws IOException
 	{
 		return new BlockAccessor(new ManagedBlockDevice(aSupplier.get()), true);
 	}
 
 
-	public static BlockAccessor createSecureStorage(Supplier<PhysicalBlockDevice> aSupplier)
+	public static BlockAccessor createSecureStorage(Supplier<PhysicalBlockDevice> aSupplier) throws IOException
 	{
 		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), aSupplier.get())), true);
 	}

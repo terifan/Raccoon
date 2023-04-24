@@ -153,124 +153,131 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption, AccessCredentials aAccessCredentials)
 	{
-		mDatabaseOpenOption = aOpenOption;
-
-		ManagedBlockDevice blockDevice;
-
-		if (aBlockDevice instanceof ManagedBlockDevice)
+		try
 		{
-			if (aAccessCredentials != null)
+			mDatabaseOpenOption = aOpenOption;
+
+			ManagedBlockDevice blockDevice;
+
+			if (aBlockDevice instanceof ManagedBlockDevice)
 			{
-				throw new IllegalArgumentException("The BlockDevice provided cannot be secured.");
+				if (aAccessCredentials != null)
+				{
+					throw new IllegalArgumentException("The BlockDevice provided cannot be secured.");
+				}
+
+				blockDevice = (ManagedBlockDevice)aBlockDevice;
 			}
-
-			blockDevice = (ManagedBlockDevice)aBlockDevice;
-		}
-		else if (aAccessCredentials == null)
-		{
-			Log.d("creating a managed block device");
-
-			blockDevice = new ManagedBlockDevice((PhysicalBlockDevice)aBlockDevice);
-		}
-		else
-		{
-			Log.d("creating a secure block device");
-
-			PhysicalBlockDevice physicalDevice = (PhysicalBlockDevice)aBlockDevice;
-			SecureBlockDevice secureDevice;
-
-			if (aCreate)
+			else if (aAccessCredentials == null)
 			{
-				secureDevice = SecureBlockDevice.create(aAccessCredentials, physicalDevice);
+				Log.d("creating a managed block device");
+
+				blockDevice = new ManagedBlockDevice((PhysicalBlockDevice)aBlockDevice);
 			}
 			else
 			{
-				secureDevice = SecureBlockDevice.open(aAccessCredentials, physicalDevice);
-			}
+				Log.d("creating a secure block device");
 
-			if (secureDevice == null)
-			{
-				throw new InvalidPasswordException("Incorrect password or not a secure BlockDevice");
-			}
+				PhysicalBlockDevice physicalDevice = (PhysicalBlockDevice)aBlockDevice;
+				SecureBlockDevice secureDevice;
 
-			blockDevice = new ManagedBlockDevice(secureDevice);
-		}
-
-		mDatabaseRoot = new DatabaseRoot();
-
-		if (aCreate)
-		{
-			Log.i("create database");
-			Log.inc();
-
-			blockDevice.getMetadata().put("tenantName", TENANT_NAME).put("tenantVersion", TENANT_VERSION);
-
-			if (blockDevice.size() > 0)
-			{
-				blockDevice.clear();
-				blockDevice.commit();
-			}
-
-			mBlockDevice = blockDevice;
-			mModified = true;
-
-			commit();
-
-			Log.dec();
-		}
-		else
-		{
-			Log.i("open database");
-			Log.inc();
-
-			if (!TENANT_NAME.equals(blockDevice.getMetadata().getString("tenantName")))
-			{
-				throw new DatabaseException("Not a Raccoon database file");
-			}
-			if (blockDevice.getMetadata().get("tenantVersion", -1) != TENANT_VERSION)
-			{
-				throw new DatabaseException("Unsupported Raccoon database version");
-			}
-
-			mBlockDevice = blockDevice;
-			mDatabaseRoot.readFromDevice(mBlockDevice);
-			mReadOnly = mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY;
-
-			for (String name : mDatabaseRoot.listCollections())
-			{
-				Document conf = mDatabaseRoot.getCollection(name);
-
-				if (conf == null)
+				if (aCreate)
 				{
-					conf = createDefaultConfig(name);
+					secureDevice = SecureBlockDevice.create(aAccessCredentials, physicalDevice);
+				}
+				else
+				{
+					secureDevice = SecureBlockDevice.open(aAccessCredentials, physicalDevice);
 				}
 
-				mCollections.put(name, new RaccoonCollection(this, conf));
+				if (secureDevice == null)
+				{
+					throw new InvalidPasswordException("Incorrect password or not a secure BlockDevice");
+				}
+
+				blockDevice = new ManagedBlockDevice(secureDevice);
 			}
 
-			Log.dec();
-		}
+			mDatabaseRoot = new DatabaseRoot();
 
-		mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
-
-		// remove this?
-		mShutdownHook = new Thread()
-		{
-			@Override
-			public void run()
+			if (aCreate)
 			{
-				Log.i("shutdown hook executing");
+				Log.i("create database");
 				Log.inc();
 
-				mShutdownHook = null;
+				blockDevice.getMetadata().put("tenantName", TENANT_NAME).put("tenantVersion", TENANT_VERSION);
 
-				close();
+				if (blockDevice.size() > 0)
+				{
+					blockDevice.clear();
+					blockDevice.commit();
+				}
+
+				mBlockDevice = blockDevice;
+				mModified = true;
+
+				commit();
 
 				Log.dec();
 			}
-		};
+			else
+			{
+				Log.i("open database");
+				Log.inc();
 
-		Runtime.getRuntime().addShutdownHook(mShutdownHook);
+				if (!TENANT_NAME.equals(blockDevice.getMetadata().getString("tenantName")))
+				{
+					throw new DatabaseException("Not a Raccoon database file");
+				}
+				if (blockDevice.getMetadata().get("tenantVersion", -1) != TENANT_VERSION)
+				{
+					throw new DatabaseException("Unsupported Raccoon database version");
+				}
+
+				mBlockDevice = blockDevice;
+				mDatabaseRoot.readFromDevice(mBlockDevice);
+				mReadOnly = mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY;
+
+				for (String name : mDatabaseRoot.listCollections())
+				{
+					Document conf = mDatabaseRoot.getCollection(name);
+
+					if (conf == null)
+					{
+						conf = createDefaultConfig(name);
+					}
+
+					mCollections.put(name, new RaccoonCollection(this, conf));
+				}
+
+				Log.dec();
+			}
+
+			mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
+
+			// remove this?
+			mShutdownHook = new Thread()
+			{
+				@Override
+				public void run()
+				{
+					Log.i("shutdown hook executing");
+					Log.inc();
+
+					mShutdownHook = null;
+
+					close();
+
+					Log.dec();
+				}
+			};
+
+			Runtime.getRuntime().addShutdownHook(mShutdownHook);
+		}
+		catch (IOException e)
+		{
+			throw new IllegalStateException(e);
+		}
 	}
 
 
@@ -442,41 +449,48 @@ public final class RaccoonDatabase implements AutoCloseable
 	 */
 	public void commit()
 	{
-		checkOpen();
-
-		Log.i("commit database");
-		Log.inc();
-
-		try (WriteLock lock = mLock.writeLock())
+		try
 		{
-			for (Entry<String, RaccoonCollection> entry : mCollections.entrySet())
-			{
-				if (entry.getValue().commit())
-				{
-					Log.i("table updated '%s'", entry.getKey());
+			checkOpen();
 
-					mDatabaseRoot.putCollection(entry.getKey(), entry.getValue().getConfiguration());
-					mModified = true;
+			Log.i("commit database");
+			Log.inc();
+
+			try (WriteLock lock = mLock.writeLock())
+			{
+				for (Entry<String, RaccoonCollection> entry : mCollections.entrySet())
+				{
+					if (entry.getValue().commit())
+					{
+						Log.i("table updated '%s'", entry.getKey());
+
+						mDatabaseRoot.putCollection(entry.getKey(), entry.getValue().getConfiguration());
+						mModified = true;
+					}
+				}
+
+				if (mModified)
+				{
+					Log.i("updating super block");
+					Log.inc();
+
+					mDatabaseRoot.writeToDevice(mBlockDevice);
+					mBlockDevice.commit();
+					mModified = false;
+
+					assert integrityCheck() == null : integrityCheck();
+
+					Log.dec();
 				}
 			}
-
-			if (mModified)
+			finally
 			{
-				Log.i("updating super block");
-				Log.inc();
-
-				mDatabaseRoot.writeToDevice(mBlockDevice);
-				mBlockDevice.commit();
-				mModified = false;
-
-				assert integrityCheck() == null : integrityCheck();
-
 				Log.dec();
 			}
 		}
-		finally
+		catch (IOException e)
 		{
-			Log.dec();
+			throw new IllegalStateException(e);
 		}
 	}
 
@@ -500,6 +514,10 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			mDatabaseRoot.readFromDevice(mBlockDevice);
 			mBlockDevice.rollback();
+		}
+		catch (IOException e)
+		{
+			throw new IllegalStateException(e);
 		}
 		finally
 		{
@@ -589,6 +607,10 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			Log.i("database finished closing");
 			Log.dec();
+		}
+		catch (IOException e)
+		{
+			throw new IllegalStateException(e);
 		}
 	}
 
