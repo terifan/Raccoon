@@ -11,12 +11,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Supplier;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.DeviceException;
-import org.terifan.raccoon.blockdevice.Listener;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
@@ -31,6 +29,7 @@ import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
+import org.terifan.raccoon.blockdevice.LobHeader;
 
 
 public final class RaccoonDatabase implements AutoCloseable
@@ -361,15 +360,9 @@ public final class RaccoonDatabase implements AutoCloseable
 			throw new FileNotFoundException("No LOB " + aObjectId);
 		}
 
-		Listener<LobByteChannel> onFinish = lob ->
-		{
-			byte[] header = lob.finish();
-//				Log.hexDump(header);
-//				lob.scan(new ScanResult());
-			collection.save(entry.put("header", header));
-		};
+		LobHeader header = new LobHeader(entry.get("header"));
 
-		return new LobByteChannel(getBlockAccessor(), entry.get("header"), aLobOpenOption, onFinish);
+		return new LobByteChannel(getBlockAccessor(), header, aLobOpenOption);
 	}
 
 
@@ -381,7 +374,9 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		if (collection.tryGet(entry))
 		{
-			new LobByteChannel(getBlockAccessor(), entry.get("header"), LobOpenOption.APPEND, null).delete();
+			LobHeader header = new LobHeader(entry.get("header"));
+
+			new LobByteChannel(getBlockAccessor(), header, LobOpenOption.APPEND).delete();
 
 			collection.delete(entry);
 		}

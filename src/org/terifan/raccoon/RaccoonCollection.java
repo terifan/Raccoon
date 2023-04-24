@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 import static org.terifan.raccoon.RaccoonDatabase.INDEX_COLLECTION;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
+import org.terifan.raccoon.blockdevice.LobHeader;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.util.Log;
 import org.terifan.raccoon.document.Document;
@@ -228,19 +229,23 @@ public final class RaccoonCollection
 		{
 			type = TYPE_EXTERNAL;
 
-			try (LobByteChannel blob = new LobByteChannel(mDatabase.getBlockAccessor(), null, LobOpenOption.WRITE, null))
+			LobHeader header = new LobHeader();
+
+			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.WRITE))
 			{
-				value = blob.writeAllBytes(value).finish();
+				lob.writeAllBytes(value);
 			}
 			catch (Exception | Error e)
 			{
 				throw new DatabaseException(e);
 			}
+
+			value = header.marshal().toByteArray();
 		}
 
 		ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
 		ArrayMapEntry prev = mImplementation.put(entry);
-		deleteIfBlob(prev);
+		deleteLob(prev);
 
 		return prev == null;
 	}
@@ -263,7 +268,7 @@ public final class RaccoonCollection
 
 			ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(aDocument, false));
 			ArrayMapEntry prev = mImplementation.remove(entry);
-			deleteIfBlob(prev);
+			deleteLob(prev);
 
 			return prev != null;
 		}
@@ -389,7 +394,7 @@ public final class RaccoonCollection
 				@Override
 				void leaf(BTree aImplementation, BTreeLeaf aNode)
 				{
-					aNode.mMap.forEach(RaccoonCollection.this::deleteIfBlob);
+					aNode.mMap.forEach(RaccoonCollection.this::deleteLob);
 					prev.freeBlock(aNode.mBlockPointer);
 				}
 
@@ -477,11 +482,13 @@ public final class RaccoonCollection
 	}
 
 
-	private void deleteIfBlob(ArrayMapEntry aEntry)
+	private void deleteLob(ArrayMapEntry aEntry)
 	{
 		if (aEntry != null && aEntry.getType() == TYPE_EXTERNAL)
 		{
-			try (LobByteChannel blob = new LobByteChannel(mDatabase.getBlockAccessor(), aEntry.getValue(), LobOpenOption.REPLACE, null))
+			LobHeader header = new LobHeader(new Document().fromByteArray(aEntry.getValue()));
+
+			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE))
 			{
 			}
 			catch (IOException e)
@@ -510,9 +517,11 @@ public final class RaccoonCollection
 
 		if (aEntry.getType() == TYPE_EXTERNAL)
 		{
-			try (LobByteChannel blob = new LobByteChannel(mDatabase.getBlockAccessor(), aEntry.getValue(), LobOpenOption.READ, null))
+			LobHeader header = new LobHeader(new Document().fromByteArray(aEntry.getValue()));
+
+			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ))
 			{
-				buffer = blob.readAllBytes();
+				buffer = lob.readAllBytes();
 			}
 			catch (IOException e)
 			{
