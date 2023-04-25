@@ -81,7 +81,7 @@ public class BTree implements AutoCloseable
 
 	private void unmarshalHeader()
 	{
-		BlockPointer bp = new BlockPointer().unmarshalDoc(mConfiguration.getArray(ROOT));
+		BlockPointer bp = new BlockPointer().unmarshalDoc(mConfiguration.getDocument(ROOT));
 
 		mRoot = bp.getBlockType() == BlockType.TREE_INDEX ? new BTreeIndex(bp.getBlockLevel()) : new BTreeLeaf();
 		mRoot.mBlockPointer = bp;

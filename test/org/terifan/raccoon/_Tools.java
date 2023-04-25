@@ -44,7 +44,7 @@ public class _Tools
 
 	public static BlockAccessor createSecureMemoryStorage() throws IOException
 	{
-		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), new MemoryBlockDevice(512))), false);
+		return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), new MemoryBlockDevice(512))), false);
 	}
 
 
@@ -53,7 +53,7 @@ public class _Tools
 		PhysicalBlockDevice device = aSupplier.get();
 		if (device.size() > 0)
 		{
-			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), false);
+			return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), device)), false);
 		}
 		return new BlockAccessor(new ManagedBlockDevice(device), false);
 	}
@@ -64,9 +64,9 @@ public class _Tools
 		PhysicalBlockDevice device = aSupplier.get();
 		if (device.size() > 0)
 		{
-			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), device)), false);
+			return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), device)), false);
 		}
-		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), device)), false);
+		return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), device)), false);
 	}
 
 
@@ -74,8 +74,8 @@ public class _Tools
 	{
 		if (aDevice.size() > 0)
 		{
-			return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), aDevice)), false);
+			return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), aDevice)), false);
 		}
-		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.create(new AccessCredentials("password"), aDevice)), false);
+		return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), aDevice)), false);
 	}
 }

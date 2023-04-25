@@ -47,7 +47,7 @@ public class _Tools
 
 	public static BlockAccessor createSecureMemoryStorage() throws IOException
 	{
-		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), new MemoryBlockDevice(512))), true);
+		return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), new MemoryBlockDevice(512))), true);
 	}
 
 
@@ -59,7 +59,7 @@ public class _Tools
 
 	public static BlockAccessor createSecureStorage(Supplier<PhysicalBlockDevice> aSupplier) throws IOException
 	{
-		return new BlockAccessor(new ManagedBlockDevice(SecureBlockDevice.open(new AccessCredentials("password"), aSupplier.get())), true);
+		return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), aSupplier.get())), true);
 	}
 
 
