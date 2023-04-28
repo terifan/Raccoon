@@ -205,7 +205,6 @@ public class BTree implements AutoCloseable
 
 		if (!mRoot.mModified)
 		{
-			marshalHeader();
 			return false;
 		}
 

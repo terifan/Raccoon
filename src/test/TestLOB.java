@@ -1,8 +1,10 @@
 package test;
 
+import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import javax.imageio.ImageIO;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonCollection;
@@ -30,7 +32,7 @@ public class TestLOB
 			{
 				RaccoonCollection files = db.getCollection("files");
 
-				Files.walk(Paths.get("d:\\pictures")).filter(p -> p.getFileName().toString().toLowerCase().matches(".*jpg|.*png")).limit(10).forEach(path ->
+				Files.walk(Paths.get("d:\\pictures")).filter(p -> p.getFileName().toString().toLowerCase().matches(".*jpg|.*png")).limit(1000).forEach(path ->
 				{
 					System.out.println(path);
 
@@ -41,7 +43,7 @@ public class TestLOB
 						file.put("length", Files.size(path));
 						files.save(file);
 
-						try (LobByteChannel lob = db.openLob("/", file.getArray("_id").getObjectId(1), LobOpenOption.CREATE))
+						try (LobByteChannel lob = db.openLob("lobs", file.getArray("_id").getObjectId(1), LobOpenOption.CREATE))
 						{
 							try (InputStream in = Files.newInputStream(path))
 							{
@@ -64,18 +66,18 @@ public class TestLOB
 				db.getCollection("files").listAll();
 				System.out.println(System.currentTimeMillis()-t);
 
-//				db.getCollection("files").listAll().forEach(file ->
-//				{
-//					try ( LobByteChannel lob = db.openLob(file.getObjectId("_id"), LobOpenOption.READ))
-//					{
-//						BufferedImage image = ImageIO.read(lob.newInputStream());
-//						System.out.println(image);
-//					}
-//					catch (Exception e)
-//					{
-//						e.printStackTrace(System.out);
-//					}
-//				});
+				db.getCollection("files").listAll().forEach(file ->
+				{
+					try (LobByteChannel lob = db.openLob("lobs", file.getArray("_id").getObjectId(1), LobOpenOption.READ))
+					{
+						BufferedImage image = ImageIO.read(lob.newInputStream());
+						System.out.println(image);
+					}
+					catch (Exception e)
+					{
+						e.printStackTrace(System.out);
+					}
+				});
 			}
 		}
 		catch (Throwable e)

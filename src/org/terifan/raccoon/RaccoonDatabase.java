@@ -359,7 +359,9 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		LobHeader header = new LobHeader(entry.get("header"));
 
-		return new LobByteChannel(getBlockAccessor(), header, aLobOpenOption);
+		Runnable closeAction = () -> collection.save(entry.put("header", header.marshal()));
+
+		return new LobByteChannel(getBlockAccessor(), header, aLobOpenOption, closeAction);
 	}
 
 
@@ -638,8 +640,6 @@ public final class RaccoonDatabase implements AutoCloseable
 //		mBlockDevice.forceClose();
 //		mDatabaseRoot = null;
 //	}
-
-
 	private void reportStatus(LogLevel aLevel, String aMessage, Throwable aThrowable)
 	{
 		System.out.printf("%-6s%s%n", aLevel, aMessage);
@@ -706,7 +706,8 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		RaccoonEntity entity = aType.getAnnotation(RaccoonEntity.class);
 
-		Supplier<T> supplier = () -> {
+		Supplier<T> supplier = () ->
+		{
 			try
 			{
 				Constructor<T> c = aType.getConstructor();
