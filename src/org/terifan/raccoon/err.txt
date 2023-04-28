@@ -1,0 +1,17 @@
+java.lang.NullPointerException: Cannot invoke "org.terifan.raccoon.blockdevice.BlockPointer.setBlockType(int)" because "this.mRoot.mBlockPointer" is null
+	at org.terifan.raccoon.BTree.marshalHeader(BTree.java:76)
+	at org.terifan.raccoon.BTree.commit(BTree.java:208)
+	at org.terifan.raccoon.RaccoonCollection.commit(RaccoonCollection.java:448)
+	at org.terifan.raccoon.RaccoonDatabase.commit(RaccoonDatabase.java:453)
+Exception in thread "Thread-0" java.lang.ClassCastException: class java.lang.Integer cannot be cast to class org.terifan.raccoon.document.Array (java.lang.Integer is in module java.base of loader 'bootstrap'; org.terifan.raccoon.document.Array is in unnamed module of loader 'app')
+	at org.terifan.raccoon.document.KeyValueCollection.getArray(KeyValueCollection.java:392)
+	at org.terifan.raccoon.document.Document.getArray(Document.java:13)
+	at org.terifan.raccoon.blockdevice.BlockPointer.unmarshalDoc(BlockPointer.java:282)
+	at org.terifan.raccoon.BTree.unmarshalHeader(BTree.java:84)
+	at org.terifan.raccoon.BTree.rollback(BTree.java:247)
+	at org.terifan.raccoon.RaccoonCollection.rollback(RaccoonCollection.java:455)
+	at org.terifan.raccoon.RaccoonDatabase.close(RaccoonDatabase.java:569)
+	at org.terifan.raccoon.RaccoonDatabase$1.run(RaccoonDatabase.java:259)
+	at org.terifan.photoalbum.PhotoAlbum.close(PhotoAlbum.java:194)
+	at org.terifan.photoalbum.Create.main(Create.java:61)
+
