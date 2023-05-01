@@ -46,7 +46,7 @@ public class BTreeIndex extends BTreeNode
 		mMap.loadNearestIndexEntry(nearestEntry);
 		BTreeNode nearestNode = getNode(aImplementation, nearestEntry);
 
-		if (mLevel == 1 ? nearestNode.mMap.getCapacity() > aImplementation.getConfiguration().getInt("leafSize") || nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > aImplementation.getConfiguration().getInt("indexSize"))
+		if (mLevel == 1 ? nearestNode.mMap.getCapacity() > aImplementation.getConfiguration().getInt("leafBlockSize") || nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > aImplementation.getConfiguration().getInt("intBlockSize"))
 		{
 			ArrayMapKey leftKey = nearestEntry.getKey();
 
@@ -84,7 +84,7 @@ public class BTreeIndex extends BTreeNode
 		BTreeNode rghtChild = index + 1 == mMap.size() ? null : getNode(aImplementation, index + 1);
 
 		int keyLimit = mLevel == 1 ? 0 : 1;
-		int sizeLimit = mLevel == 1 ? aImplementation.getConfiguration().getInt("leafSize") : aImplementation.getConfiguration().getInt("indexSize");
+		int sizeLimit = mLevel == 1 ? aImplementation.getConfiguration().getInt("leafBlockSize") : aImplementation.getConfiguration().getInt("intBlockSize");
 
 		if (leftChild != null && (curntChld.mMap.size() + leftChild.mMap.size()) < sizeLimit || rghtChild != null && (curntChld.mMap.size() + rghtChild.mMap.size()) < sizeLimit)
 		{
@@ -239,7 +239,7 @@ public class BTreeIndex extends BTreeNode
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("indexSize"));
+		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("intBlockSize"));
 
 		BTreeIndex left = new BTreeIndex(mLevel);
 		left.mMap = maps[0];
@@ -288,7 +288,7 @@ public class BTreeIndex extends BTreeNode
 
 		BTreeIndex index = new BTreeIndex(mLevel + 1);
 		index.mModified = true;
-		index.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("indexSize"));
+		index.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("intBlockSize"));
 		index.mMap.insert(new ArrayMapEntry(split.leftKey(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
 		index.mMap.insert(new ArrayMapEntry(split.rightKey(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
 		index.mChildNodes.put(split.leftKey(), split.left());
@@ -307,7 +307,7 @@ public class BTreeIndex extends BTreeNode
 	{
 		BTreeIndex index = new BTreeIndex(mLevel - 1);
 		index.mModified = true;
-		index.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("indexSize"));
+		index.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("intBlockSize"));
 
 		for (int i = 0; i < mMap.size(); i++)
 		{

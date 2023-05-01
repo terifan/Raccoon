@@ -58,7 +58,7 @@ public class BTreeLeaf extends BTreeNode
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("leafSize"));
+		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("leafBlockSize"));
 
 		BTreeLeaf a = new BTreeLeaf();
 		BTreeLeaf b = new BTreeLeaf();
@@ -75,7 +75,7 @@ public class BTreeLeaf extends BTreeNode
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("leafSize"));
+		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("leafBlockSize"));
 
 		BTreeLeaf a = new BTreeLeaf();
 		BTreeLeaf b = new BTreeLeaf();
@@ -89,7 +89,7 @@ public class BTreeLeaf extends BTreeNode
 
 		BTreeIndex newIndex = new BTreeIndex(1);
 		newIndex.mModified = true;
-		newIndex.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("indexSize"));
+		newIndex.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("intBlockSize"));
 		newIndex.mMap.put(new ArrayMapEntry(keyA, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
 		newIndex.mMap.put(new ArrayMapEntry(keyB, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
 		newIndex.mChildNodes.put(keyA, a);

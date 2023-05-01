@@ -342,6 +342,12 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		checkOpen();
 
+		aCollection.clear();
+
+		mDatabaseRoot.removeCollection(aCollection.getName());
+
+		mModified = true;
+
 		return mCollections.remove(aCollection.getName(), aCollection);
 	}
 
@@ -669,8 +675,8 @@ public final class RaccoonDatabase implements AutoCloseable
 			.put("_id", ObjectId.randomId())
 			.put("name", aName)
 			.put("btree", new Document()
-				.put("indexSize", mBlockDevice.getBlockSize())
-				.put("leafSize", mBlockDevice.getBlockSize())
+				.put("intBlockSize", mBlockDevice.getBlockSize())
+				.put("leafBlockSize", mBlockDevice.getBlockSize())
 				.put("entrySizeLimit", mBlockDevice.getBlockSize() / 4)
 			);
 	}

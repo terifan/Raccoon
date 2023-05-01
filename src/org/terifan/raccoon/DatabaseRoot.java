@@ -63,6 +63,12 @@ public class DatabaseRoot
 	}
 
 
+	void removeCollection(String aName)
+	{
+		mMetadata.getDocument(COLLECTIONS).remove(aName);
+	}
+
+
 	void putCollection(String aName, Document aConfiguration)
 	{
 		mMetadata.getDocument(COLLECTIONS).put(aName, aConfiguration);
