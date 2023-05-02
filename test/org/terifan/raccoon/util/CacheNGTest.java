@@ -1,6 +1,6 @@
 package org.terifan.raccoon.util;
 
-import org.terifan.raccoon.util.Cache;
+import org.terifan.raccoon.util.LRUMap;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
@@ -10,7 +10,7 @@ public class CacheNGTest
 	@Test
 	public void testPut()
 	{
-		Cache<String,Integer> cache = new Cache<>(4);
+		LRUMap<String,Integer> cache = new LRUMap<>(4);
 		
 		cache.put("a", 1);
 		cache.put("b", 2);
@@ -32,7 +32,7 @@ public class CacheNGTest
 	@Test
 	public void testGet()
 	{
-		Cache<String,Integer> cache = new Cache<>(4);
+		LRUMap<String,Integer> cache = new LRUMap<>(4);
 		
 		cache.put("a", 1);
 		cache.put("b", 2);
