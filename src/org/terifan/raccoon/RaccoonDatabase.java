@@ -352,15 +352,28 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public LobByteChannel openLob(String aCollection, ObjectId aObjectId, LobOpenOption aLobOpenOption) throws IOException
+	public LobByteChannel openLob(String aCollection, Object aId, LobOpenOption aLobOpenOption) throws IOException
 	{
-		Document entry = new Document().put("_id", aObjectId);
+		LobByteChannel lob = tryOpenLob(aCollection, aId, aLobOpenOption);
+
+		if (lob == null)
+		{
+			throw new FileNotFoundException("No LOB " + aId);
+		}
+
+		return lob;
+	}
+
+
+	public LobByteChannel tryOpenLob(String aCollection, Object aId, LobOpenOption aLobOpenOption) throws IOException
+	{
+		Document entry = new Document().put("_id", aId);
 
 		RaccoonCollection collection = getCollection(aCollection);
 
 		if (!collection.tryGet(entry) && aLobOpenOption == LobOpenOption.READ)
 		{
-			throw new FileNotFoundException("No LOB " + aObjectId);
+			return null;
 		}
 
 		LobHeader header = new LobHeader(entry.get("header"));
