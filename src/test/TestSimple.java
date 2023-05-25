@@ -25,7 +25,8 @@ public class TestSimple
 			{
 //				db.createIndex("lookup", "people", "name");
 
-				db.getCollection("people").saveAll(new Document().put("name", "adam"),
+				db.getCollection("people").saveAll(
+					new Document().put("name", "adam"),
 					new Document().put("name", "eve"),
 					new Document().put("name", "steve").put("_id", 7),
 					new Document().put("name", "barbara"),
@@ -33,7 +34,8 @@ public class TestSimple
 					new Document().put("name", "walter")
 				);
 
-				db.getCollection("lookup").saveAll(new Document().put("_id", "adam").put("id", ObjectId.randomId()),
+				db.getCollection("lookup").saveAll(
+					new Document().put("_id", "adam").put("id", ObjectId.randomId()),
 					new Document().put("_id", "eve").put("id", ObjectId.randomId()),
 					new Document().put("_id", "steve").put("id", ObjectId.randomId()),
 					new Document().put("_id", "barbara").put("id", ObjectId.randomId()),
@@ -42,14 +44,19 @@ public class TestSimple
 				);
 
 				byte[] bytes = Files.readAllBytes(Paths.get("d:\\pictures\\babe.jpg"));
-				db.getCollection("files").save(new Document().put("_id",1).put("content", bytes));
+
+				db.getCollection("files").save(new Document().put("_id", 1).put("content", bytes));
 
 				db.commit();
 			}
 
+			System.out.println("-".repeat(100));
+
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 			{
+				System.out.println(db.getCollectionNames());
+
 				db.getCollection("people").listAll().forEach(System.out::println);
 				db.getCollection("lookup").listAll().forEach(System.out::println);
 
