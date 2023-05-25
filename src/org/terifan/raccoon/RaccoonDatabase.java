@@ -177,14 +177,7 @@ public final class RaccoonDatabase implements AutoCloseable
 			{
 				Log.d("creating a secure block device");
 
-				SecureBlockDevice secureDevice = new SecureBlockDevice(aAccessCredentials, (PhysicalBlockDevice)aBlockDevice);
-
-				if (secureDevice == null)
-				{
-					throw new InvalidPasswordException("Incorrect password or not a secure BlockDevice");
-				}
-
-				blockDevice = new ManagedBlockDevice(secureDevice);
+				blockDevice = new ManagedBlockDevice(new SecureBlockDevice(aAccessCredentials, (PhysicalBlockDevice)aBlockDevice));
 			}
 
 			if (aCreate)
