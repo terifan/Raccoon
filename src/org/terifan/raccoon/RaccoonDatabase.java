@@ -265,23 +265,6 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-//	public HashMap<String, RaccoonCollection> getCollectionEntries()
-//	{
-//		checkOpen();
-//
-//		HashMap<String, RaccoonCollection> colls = new HashMap<>();
-//		for (Entry<String, RaccoonCollection> entry : mCollectionInstances.entrySet())
-//		{
-//			if (!entry.getKey().startsWith("::"))
-//			{
-//				colls.put(entry.getKey(), entry.getValue());
-//			}
-//		}
-//
-//		return colls;
-//	}
-
-
 	public synchronized boolean existsCollection(String aName)
 	{
 		checkOpen();
@@ -675,33 +658,18 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public boolean save(Document aDocument)
-	{
-		RaccoonEntity entity = aDocument.getClass().getAnnotation(RaccoonEntity.class);
-		String collection;
-		if (entity == null)
-		{
-			collection = "default-collection";
-		}
-		else
-		{
-			collection = entity.collection();
-		}
-		return getCollection(collection).save(aDocument);
-	}
-
-
-	public void saveAll(Document... aDocuments)
+	public RaccoonDatabase saveEntity(Document... aDocuments)
 	{
 		for (Document doc : aDocuments)
 		{
 			RaccoonEntity entity = doc.getClass().getAnnotation(RaccoonEntity.class);
 			getCollection(entity.collection()).save(doc);
 		}
+		return this;
 	}
 
 
-	public <T extends Document> List<T> listAll(Class<T> aType)
+	public <T extends Document> List<T> listEntity(Class<T> aType)
 	{
 		RaccoonEntity entity = aType.getAnnotation(RaccoonEntity.class);
 
