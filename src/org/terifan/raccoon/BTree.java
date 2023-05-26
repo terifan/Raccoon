@@ -22,7 +22,7 @@ public class BTree implements AutoCloseable
 	private static final String LEAF_BLOCK_COMPRESSOR = "leafBlockCompressor";
 	private static final String ROOT = "root";
 
-	static Document BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshalDoc();
+	static Document BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL);
 
 	private BlockAccessor mBlockAccessor;
 	private CompressorLevel mCompressorInteriorBlocks;
@@ -74,13 +74,13 @@ public class BTree implements AutoCloseable
 	{
 		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeIndex ? BlockType.TREE_INDEX : BlockType.TREE_LEAF);
 
-		mConfiguration.put(ROOT, mRoot.mBlockPointer.marshalDoc());
+		mConfiguration.put(ROOT, mRoot.mBlockPointer);
 	}
 
 
 	private void unmarshalHeader()
 	{
-		BlockPointer bp = new BlockPointer().unmarshalDoc(mConfiguration.getDocument(ROOT));
+		BlockPointer bp = new BlockPointer().putAll(mConfiguration.getDocument(ROOT));
 
 		mRoot = bp.getBlockType() == BlockType.TREE_INDEX ? new BTreeIndex(bp.getBlockLevel()) : new BTreeLeaf();
 		mRoot.mBlockPointer = bp;

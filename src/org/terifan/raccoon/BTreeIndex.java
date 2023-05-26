@@ -505,7 +505,7 @@ public class BTreeIndex extends BTreeNode
 			{
 				mModified = true;
 
-				mMap.insert(new ArrayMapEntry(entry.getKey(), node.mBlockPointer.marshalDoc(), TYPE_TREENODE));
+				mMap.insert(new ArrayMapEntry(entry.getKey(), node.mBlockPointer, TYPE_TREENODE));
 			}
 		}
 
@@ -563,7 +563,7 @@ public class BTreeIndex extends BTreeNode
 
 		if (childNode == null)
 		{
-			BlockPointer bp = new BlockPointer().unmarshalDoc(aEntry.getValue());
+			BlockPointer bp = new BlockPointer().putAll(aEntry.getValue());
 
 			childNode = bp.getBlockType() == BlockType.TREE_INDEX ? new BTreeIndex(mLevel - 1) : new BTreeLeaf();
 			childNode.mBlockPointer = bp;
