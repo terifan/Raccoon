@@ -44,7 +44,7 @@ public class TestBigTable
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, null))
 			{
-				System.out.println(db.getCollection("emails").listAll().size());
+				System.out.println(db.getCollection("people").listAll().size());
 			}
 		}
 		catch (Exception e)
