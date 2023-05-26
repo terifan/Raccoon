@@ -275,38 +275,34 @@ public final class RaccoonCollection
 
 	public void deleteAll(Document... aDocuments)
 	{
-		for (Document document : aDocuments)
-		{
-			delete(document);
-		}
-	}
-
-
-	public Document delete(Document aDocument)
-	{
 		try (WriteLock lock = mLock.writeLock())
 		{
 			mModCount++;
 
-			ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(aDocument, false));
-			ArrayMapEntry prev = mImplementation.remove(entry);
-
-			if (prev == null)
+			for (Document document : aDocuments)
 			{
-				return null;
+				ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(document, false));
+				ArrayMapEntry prev = mImplementation.remove(entry);
+
+				if (prev != null)
+				{
+					Document prevDoc = deleteLob(prev, true);
+
+					if (prevDoc == null)
+					{
+						prevDoc = prev.getValue();
+					}
+
+					deleteIndexEntries(prevDoc);
+				}
 			}
-
-			Document prevDoc = deleteLob(prev, true);
-
-			if (prevDoc == null)
-			{
-				prevDoc = prev.getValue();
-			}
-
-			deleteIndexEntries(prevDoc);
-
-			return prevDoc;
 		}
+	}
+
+
+	public void delete(Document aDocument)
+	{
+		deleteAll(aDocument);
 	}
 
 
@@ -335,7 +331,13 @@ public final class RaccoonCollection
 
 	public List<Document> listAll()
 	{
-		ArrayList<Document> list = new ArrayList<>();
+		return listAll(() -> new Document());
+	}
+
+
+	public <T extends Document> List<T> listAll(Supplier<T> aDocumentSupplier)
+	{
+		ArrayList<T> list = new ArrayList<>();
 
 		try (ReadLock lock = mLock.readLock())
 		{
@@ -346,7 +348,7 @@ public final class RaccoonCollection
 				@Override
 				void leaf(BTree aImplementation, BTreeLeaf aNode)
 				{
-					aNode.mMap.forEach(e -> list.add(unmarshalDocument(e, new Document())));
+					aNode.mMap.forEach(e -> list.add((T)unmarshalDocument(e, aDocumentSupplier.get())));
 				}
 			});
 		}
@@ -370,28 +372,6 @@ public final class RaccoonCollection
 				}
 			});
 		}
-	}
-
-
-	public <T extends Document> List<T> listAll(Supplier<T> aSupplier)
-	{
-		ArrayList<T> list = new ArrayList<>();
-
-		try (ReadLock lock = mLock.readLock())
-		{
-			mModCount++;
-
-			mImplementation.visit(new BTreeVisitor()
-			{
-				@Override
-				void leaf(BTree aImplementation, BTreeLeaf aNode)
-				{
-					aNode.mMap.forEach(e -> list.add((T)unmarshalDocument(e, aSupplier.get())));
-				}
-			});
-		}
-
-		return list;
 	}
 
 
@@ -606,7 +586,6 @@ public final class RaccoonCollection
 		Log.inc();
 
 //		System.out.println(aQuery);
-
 		try (ReadLock lock = mLock.readLock())
 		{
 			ArrayList<Document> list = new ArrayList<>();
