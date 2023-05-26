@@ -8,6 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -29,6 +30,7 @@ import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
 import org.terifan.raccoon.blockdevice.LobHeader;
+import org.terifan.raccoon.document.Array;
 
 
 public final class RaccoonDatabase implements AutoCloseable
@@ -46,6 +48,8 @@ public final class RaccoonDatabase implements AutoCloseable
 	private final ConcurrentSkipListMap<String, RaccoonCollection> mCollectionInstances;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 
+	final HashMap<String, Array> mIndices;
+
 	private boolean mModified;
 	private boolean mCloseDeviceOnCloseDatabase;
 	private boolean mReadOnly;
@@ -54,6 +58,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	private RaccoonDatabase()
 	{
+		mIndices = new HashMap<>();
 		mLock = new ReadWriteLock();
 		mCollectionInstances = new ConcurrentSkipListMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
@@ -218,6 +223,11 @@ public final class RaccoonDatabase implements AutoCloseable
 				mBlockDevice = blockDevice;
 				mDatabaseDirectory = new DatabaseDirectory(mBlockDevice);
 				mReadOnly = mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY;
+
+				for (Document indexConf : getCollection("system:indices").listAll())
+				{
+					mIndices.computeIfAbsent(indexConf.getString("onCollection"), n -> new Array()).add(indexConf);
+				}
 
 				Log.dec();
 			}
@@ -681,5 +691,15 @@ public final class RaccoonDatabase implements AutoCloseable
 		};
 
 		return (List<T>)getCollection(entity.collection()).listAll(supplier);
+	}
+
+
+	public void createIndex(String aIndexName, String aOnCollection, String... aFieldNames)
+	{
+		Document indexConf = new Document().put("_id", aIndexName).put("onCollection", aOnCollection).put("fields", Array.of(aFieldNames));
+
+		getCollection("system:indices").save(indexConf);
+
+		mIndices.computeIfAbsent(aOnCollection, n -> new Array()).add(indexConf);
 	}
 }

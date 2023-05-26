@@ -39,7 +39,7 @@ class DatabaseDirectory
 
 		if (mStorage.get(entry))
 		{
-			return new Document().fromByteArray(entry.getValue());
+			return entry.getValue();
 		}
 
 		return null;
@@ -54,7 +54,7 @@ class DatabaseDirectory
 
 	void put(String aName, Document aConfiguration)
 	{
-		mStorage.put(new ArrayMapEntry(new ArrayMapKey(aName), aConfiguration.toByteArray(), (byte)0));
+		mStorage.put(new ArrayMapEntry(new ArrayMapKey(aName), aConfiguration, (byte)0));
 	}
 
 

@@ -7,6 +7,7 @@ import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.Random;
 import org.terifan.raccoon.blockdevice.util.Log;
+import org.terifan.raccoon.document.Document;
 
 
 public class __TestUtils
@@ -71,6 +72,18 @@ public class __TestUtils
 	public static String t(int aMaxLength)
 	{
 		return new String(tb(aMaxLength));
+	}
+
+
+	public static Document doc()
+	{
+		return new Document().put("text", tb());
+	}
+
+
+	public static Document doc(int len)
+	{
+		return new Document().put("text", tb(len));
 	}
 
 

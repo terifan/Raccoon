@@ -7,7 +7,6 @@ import org.terifan.raccoon.BTreeNode.RemoveResult;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.blockdevice.compressor.CompressorLevel;
-import org.terifan.raccoon.blockdevice.util.ByteArrayBuffer;
 import org.terifan.raccoon.blockdevice.util.Log;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.util.AbortIteratorException;
@@ -23,7 +22,7 @@ public class BTree implements AutoCloseable
 	private static final String LEAF_BLOCK_COMPRESSOR = "leafBlockCompressor";
 	private static final String ROOT = "root";
 
-	static byte[] BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array();
+	static Document BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).marshalDoc();
 
 	private BlockAccessor mBlockAccessor;
 	private CompressorLevel mCompressorInteriorBlocks;
@@ -108,9 +107,9 @@ public class BTree implements AutoCloseable
 	{
 		assertNotClosed();
 
-		if (aEntry.getKey().size() + aEntry.getValue().length > mConfiguration.getInt(ENTRY_SIZE_LIMIT))
+		if (aEntry.length() > mConfiguration.getInt(ENTRY_SIZE_LIMIT))
 		{
-			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().size() + ", value: " + aEntry.getValue().length + ", maximum: " + mConfiguration.getInt(ENTRY_SIZE_LIMIT));
+			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().size() + ", value: " + aEntry.length() + ", maximum: " + mConfiguration.getInt(ENTRY_SIZE_LIMIT));
 		}
 
 		Log.i("put");

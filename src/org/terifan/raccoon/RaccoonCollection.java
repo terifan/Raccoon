@@ -13,6 +13,7 @@ import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobHeader;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.util.Log;
+import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
@@ -222,30 +223,51 @@ public final class RaccoonCollection
 			}
 		}
 
-		byte[] value = aDocument.toByteArray();
-		byte type = TYPE_DOCUMENT;
+		ArrayMapEntry entry = new ArrayMapEntry(key, aDocument, TYPE_DOCUMENT);
 
-		if (key.size() + value.length + 1 > mImplementation.getConfiguration().getInt("entrySizeLimit"))
+		if (entry.length() > mImplementation.getConfiguration().getInt("entrySizeLimit"))
 		{
-			type = TYPE_EXTERNAL;
-
 			LobHeader header = new LobHeader();
 
 			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.WRITE))
 			{
-				lob.writeAllBytes(value);
+				lob.writeAllBytes(aDocument.toByteArray());
 			}
 			catch (Exception | Error e)
 			{
 				throw new DatabaseException(e);
 			}
 
-			value = header.marshal().toByteArray();
+			entry.setValue(header.marshal());
+			entry.setType(TYPE_EXTERNAL);
 		}
 
-		ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
 		ArrayMapEntry prev = mImplementation.put(entry);
-		deleteLob(prev);
+
+		if (prev != null)
+		{
+			Document prevDoc = deleteLob(prev, true);
+
+			if (prevDoc == null)
+			{
+				prevDoc = prev.getValue();
+			}
+
+			deleteIndexEntries(prevDoc);
+		}
+
+		for (Document indexConf : mDatabase.mIndices.getOrDefault(mConfiguration.getString("name"), new Array()).iterable(Document.class))
+		{
+			Array indexKey = new Array();
+			for (String field : indexConf.getArray("fields").iterable(String.class))
+			{
+				indexKey.add(aDocument.get(field));
+			}
+
+			Document indexEntry = new Document().put("_ref", aDocument.get("_id")).put("_id", indexKey);
+
+			mDatabase.getCollection("index:" + indexConf.getString("_id")).save(indexEntry);
+		}
 
 		return prev == null;
 	}
@@ -260,7 +282,7 @@ public final class RaccoonCollection
 	}
 
 
-	public boolean delete(Document aDocument)
+	public Document delete(Document aDocument)
 	{
 		try (WriteLock lock = mLock.writeLock())
 		{
@@ -268,9 +290,36 @@ public final class RaccoonCollection
 
 			ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(aDocument, false));
 			ArrayMapEntry prev = mImplementation.remove(entry);
-			deleteLob(prev);
 
-			return prev != null;
+			if (prev == null)
+			{
+				return null;
+			}
+
+			Document prevDoc = deleteLob(prev, true);
+
+			if (prevDoc == null)
+			{
+				prevDoc = prev.getValue();
+			}
+
+			deleteIndexEntries(prevDoc);
+
+			return prevDoc;
+		}
+	}
+
+
+	private void deleteIndexEntries(Document aPrevDoc)
+	{
+		for (Document indexConf : mDatabase.mIndices.getOrDefault(mConfiguration.getString("name"), new Array()).iterable(Document.class))
+		{
+			Array indexKey = new Array();
+			for (String field : indexConf.getArray("fields").iterable(String.class))
+			{
+				indexKey.add(aPrevDoc.get(field));
+			}
+			mDatabase.getCollection("index:" + indexConf.getString("_id")).delete(new Document().put("_id", indexKey));
 		}
 	}
 
@@ -394,7 +443,7 @@ public final class RaccoonCollection
 				@Override
 				void leaf(BTree aImplementation, BTreeLeaf aNode)
 				{
-					aNode.mMap.forEach(RaccoonCollection.this::deleteLob);
+					aNode.mMap.forEach(e -> deleteLob(e, false));
 					prev.freeBlock(aNode.mBlockPointer);
 				}
 
@@ -405,6 +454,11 @@ public final class RaccoonCollection
 					prev.freeBlock(aNode.mBlockPointer);
 				}
 			});
+
+			for (Document indexConf : mDatabase.mIndices.getOrDefault(mConfiguration.getString("name"), new Array()).iterable(Document.class))
+			{
+				mDatabase.getCollection("index:" + indexConf.getString("_id")).clear();
+			}
 		}
 	}
 
@@ -482,20 +536,35 @@ public final class RaccoonCollection
 	}
 
 
-	private void deleteLob(ArrayMapEntry aEntry)
+	private Document deleteLob(ArrayMapEntry aEntry, boolean aRestoreOldValue)
 	{
+		Document prev = null;
+
 		if (aEntry != null && aEntry.getType() == TYPE_EXTERNAL)
 		{
-			LobHeader header = new LobHeader(new Document().fromByteArray(aEntry.getValue()));
+			LobHeader header = new LobHeader(aEntry.getValue());
 
-			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE))
+			try
 			{
+				if (aRestoreOldValue)
+				{
+					try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ))
+					{
+						prev = new Document().fromByteArray(lob.readAllBytes());
+					}
+				}
+
+				try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE))
+				{
+				}
 			}
 			catch (IOException e)
 			{
 				throw new DatabaseException(e);
 			}
 		}
+
+		return prev;
 	}
 
 
@@ -513,27 +582,21 @@ public final class RaccoonCollection
 
 	Document unmarshalDocument(ArrayMapEntry aEntry, Document aDestination)
 	{
-		byte[] buffer;
-
 		if (aEntry.getType() == TYPE_EXTERNAL)
 		{
-			LobHeader header = new LobHeader(new Document().fromByteArray(aEntry.getValue()));
+			LobHeader header = new LobHeader(aEntry.getValue());
 
 			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ))
 			{
-				buffer = lob.readAllBytes();
+				return aDestination.putAll(new Document().fromByteArray(lob.readAllBytes()));
 			}
 			catch (IOException e)
 			{
 				throw new DatabaseException(e);
 			}
 		}
-		else
-		{
-			buffer = aEntry.getValue();
-		}
 
-		return aDestination.putAll(new Document().fromByteArray(buffer));
+		return aDestination.putAll(aEntry.getValue());
 	}
 
 

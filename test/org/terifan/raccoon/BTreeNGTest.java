@@ -11,6 +11,7 @@ import org.terifan.raccoon.blockdevice.physical.FileBlockDevice;
 import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import static resources.__TestUtils.doc;
 
 
 public class BTreeNGTest
@@ -21,7 +22,7 @@ public class BTreeNGTest
 		Files.deleteIfExists(Paths.get("d:\\test.rdb"));
 
 		ArrayMapKey key = new ArrayMapKey("key");
-		byte[] value = "value".getBytes();
+		Document value = doc(5);
 
 		try (PhysicalBlockDevice device = new FileBlockDevice(Paths.get("d:\\test.rdb")))
 		{

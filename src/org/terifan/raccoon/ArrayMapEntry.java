@@ -2,6 +2,7 @@ package org.terifan.raccoon;
 
 import java.util.Arrays;
 import org.terifan.raccoon.blockdevice.util.Console;
+import org.terifan.raccoon.document.Document;
 
 
 public final class ArrayMapEntry
@@ -22,11 +23,19 @@ public final class ArrayMapEntry
 	}
 
 
-	public ArrayMapEntry(ArrayMapKey aKey, byte[] aValue, byte aType)
+	public ArrayMapEntry(ArrayMapKey aKey, Document aValue, byte aType)
 	{
 		mKey = aKey;
-		mValue = aValue;
+		mValue = aValue.toByteArray();
 		mType = aType;
+	}
+
+
+	ArrayMapEntry(ArrayMapKey aKey, ArrayMapEntry aEntry)
+	{
+		mKey = aKey;
+		mValue = aEntry.mValue;
+		mType = aEntry.mType;
 	}
 
 
@@ -48,15 +57,15 @@ public final class ArrayMapEntry
 	}
 
 
-	public byte[] getValue()
+	public Document getValue()
 	{
-		return mValue;
+		return new Document().fromByteArray(mValue);
 	}
 
 
-	public void setValue(byte[] aValue)
+	public void setValue(Document aDocument)
 	{
-		mValue = aValue;
+		mValue = aDocument.toByteArray();
 	}
 
 
@@ -95,6 +104,12 @@ public final class ArrayMapEntry
 	public int getMarshalledValueLength()
 	{
 		return 1 + mValue.length;
+	}
+
+
+	public int length()
+	{
+		return mKey.size() + 1 + mValue.length;
 	}
 
 

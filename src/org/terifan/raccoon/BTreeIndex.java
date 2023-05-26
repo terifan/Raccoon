@@ -319,7 +319,7 @@ public class BTreeIndex extends BTreeNode
 				ArrayMapEntry newEntry;
 				if (first)
 				{
-					newEntry = new ArrayMapEntry(mMap.getKey(i), entry.getValue(), entry.getType());
+					newEntry = new ArrayMapEntry(mMap.getKey(i), entry);
 					first = false;
 				}
 				else
@@ -505,7 +505,7 @@ public class BTreeIndex extends BTreeNode
 			{
 				mModified = true;
 
-				mMap.insert(new ArrayMapEntry(entry.getKey(), node.mBlockPointer.marshal(ByteArrayBuffer.alloc(BlockPointer.SIZE)).array(), TYPE_TREENODE));
+				mMap.insert(new ArrayMapEntry(entry.getKey(), node.mBlockPointer.marshalDoc(), TYPE_TREENODE));
 			}
 		}
 
@@ -563,7 +563,7 @@ public class BTreeIndex extends BTreeNode
 
 		if (childNode == null)
 		{
-			BlockPointer bp = new BlockPointer().unmarshal(ByteArrayBuffer.wrap(aEntry.getValue()));
+			BlockPointer bp = new BlockPointer().unmarshalDoc(aEntry.getValue());
 
 			childNode = bp.getBlockType() == BlockType.TREE_INDEX ? new BTreeIndex(mLevel - 1) : new BTreeLeaf();
 			childNode.mBlockPointer = bp;

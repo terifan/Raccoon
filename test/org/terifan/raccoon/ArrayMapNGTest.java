@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import org.terifan.raccoon.ArrayMap.NearResult;
 import org.terifan.raccoon.ArrayMap.PutResult;
+import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.Result;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
@@ -26,7 +27,7 @@ public class ArrayMapNGTest
 	{
 		ArrayMap map = new ArrayMap(100);
 
-		byte[] original = "green".getBytes();
+		Document original = doc();
 		ArrayMapEntry out = new ArrayMapEntry(new ArrayMapKey("apple"), original, (byte)'-');
 
 		Result<ArrayMapEntry> existing = new Result<>();
@@ -45,7 +46,7 @@ public class ArrayMapNGTest
 		assertEquals(in.getType(), out.getType());
 //		assertEquals(map.getFreeSpace(), 73);
 
-		out.setValue("red".getBytes());
+		out.setValue(doc());
 
 		wasAdd = map.put(out, existing);
 
@@ -82,7 +83,7 @@ public class ArrayMapNGTest
 		ArrayMap map = new ArrayMap(1000_000);
 
 		String key = t();
-		byte[] value = tb();
+		Document value = doc();
 		byte flags = (byte)77;
 
 		ArrayMapEntry entry = new ArrayMapEntry(new ArrayMapKey(key), value, flags);
@@ -119,11 +120,11 @@ public class ArrayMapNGTest
 	{
 		ArrayMap map = new ArrayMap(1000_000);
 
-		HashMap<ArrayMapKey, byte[]> expected = new HashMap<>();
+		HashMap<ArrayMapKey, Document> expected = new HashMap<>();
 
 		fillArrayMap(map, expected);
 
-		for (Entry<ArrayMapKey, byte[]> expectedEntry : expected.entrySet())
+		for (Entry<ArrayMapKey, Document> expectedEntry : expected.entrySet())
 		{
 			ArrayMapEntry entry = new ArrayMapEntry(expectedEntry.getKey());
 
@@ -138,7 +139,7 @@ public class ArrayMapNGTest
 	{
 		ArrayMap map = new ArrayMap(2_000_000);
 
-		byte[] value = new byte[0];
+		Document value = doc(1);
 
 		for (int i = 0; i < ArrayMap.MAX_ENTRY_COUNT; i++)
 		{
@@ -160,7 +161,7 @@ public class ArrayMapNGTest
 	{
 		ArrayMap map = new ArrayMap(1000_000);
 
-		HashMap<ArrayMapKey, byte[]> expected = new HashMap<>();
+		HashMap<ArrayMapKey, Document> expected = new HashMap<>();
 
 		fillArrayMap(map, expected);
 
@@ -182,12 +183,12 @@ public class ArrayMapNGTest
 	{
 		ArrayMap map = new ArrayMap(1000_000);
 
-		HashMap<ArrayMapKey, byte[]> values = new HashMap<>();
+		HashMap<ArrayMapKey, Document> values = new HashMap<>();
 
 		int n = map.getCapacity() - 2-4 - 2-2 - 4;
 
-		ArrayMapKey key = new ArrayMapKey(createRandomBuffer(0, n / 2));
-		byte[] value = createRandomBuffer(1, n - n / 2 + 1); // one byte exceeding maximum size
+		ArrayMapKey key = new ArrayMapKey(doc(n / 2));
+		Document value = doc(n - n / 2 + 1); // one byte exceeding maximum size
 		byte flags = (byte)77;
 
 		map.put(new ArrayMapEntry(key, value, flags), null);
@@ -209,14 +210,14 @@ public class ArrayMapNGTest
 
 		ArrayMap map = new ArrayMap(1000_000);
 
-		HashMap<ArrayMapKey, byte[]> values = new HashMap<>();
+		HashMap<ArrayMapKey, Document> values = new HashMap<>();
 
 		byte type = (byte)77;
 
 		for (int i = 0; i < 100_000; i++)
 		{
 			int j = c() % keys.length;
-			byte[] value = tb();
+			Document value = doc();
 			ArrayMapKey key = keys[j];
 
 			if (map.put(new ArrayMapEntry(key, value, type), null) != PutResult.OVERFLOW)
@@ -227,7 +228,7 @@ public class ArrayMapNGTest
 
 		assertNull(map.integrityCheck());
 
-		for (Entry<ArrayMapKey, byte[]> entry : values.entrySet())
+		for (Entry<ArrayMapKey, Document> entry : values.entrySet())
 		{
 			ArrayMapEntry entry1 = new ArrayMapEntry(entry.getKey());
 			assertTrue(map.get(entry1));
@@ -240,8 +241,8 @@ public class ArrayMapNGTest
 	@Test
 	public void testNearestA() throws IOException
 	{
-		byte[] value1 = "123".getBytes();
-		byte[] value2 = "456".getBytes();
+		Document value1 = doc(3);
+		Document value2 = doc(3);
 
 		ArrayMap map = new ArrayMap(new byte[512]);
 		map.put(new ArrayMapEntry(new ArrayMapKey("b"), value1, (byte)77), null);
@@ -272,8 +273,8 @@ public class ArrayMapNGTest
 	@Test
 	public void testNearestB() throws IOException
 	{
-		byte[] value1 = "123".getBytes();
-		byte[] value2 = "456".getBytes();
+		Document value1 = doc(3);
+		Document value2 = doc(3);
 
 		ArrayMap map = new ArrayMap(new byte[512]);
 		map.put(new ArrayMapEntry(new ArrayMapKey("bbb"), value1, (byte)77), null);
@@ -304,7 +305,7 @@ public class ArrayMapNGTest
 	@Test
 	public void testKeyOrder() throws IOException
 	{
-		byte[] value = "123".getBytes();
+		Document value = doc();
 
 		ArrayMap map = new ArrayMap(new byte[512]);
 		map.put(new ArrayMapEntry(new ArrayMapKey("eeee"), value, (byte)77), null);
@@ -318,12 +319,12 @@ public class ArrayMapNGTest
 	}
 
 
-	public static void fillArrayMap(ArrayMap aMap, HashMap<ArrayMapKey, byte[]> aValues)
+	public static void fillArrayMap(ArrayMap aMap, HashMap<ArrayMapKey, Document> aValues)
 	{
 		for (;;)
 		{
 			ArrayMapKey key = new ArrayMapKey(t());
-			byte[] value = tb();
+			Document value = doc();
 			byte type = b();
 
 			ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
