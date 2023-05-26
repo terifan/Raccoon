@@ -1,7 +1,9 @@
 package org.terifan.raccoon;
 
 import java.util.Arrays;
+import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.blockdevice.util.Console;
+import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 
 
@@ -24,6 +26,14 @@ public final class ArrayMapEntry
 
 
 	public ArrayMapEntry(ArrayMapKey aKey, Document aValue, byte aType)
+	{
+		mKey = aKey;
+		mValue = aValue.toByteArray();
+		mType = aType;
+	}
+
+
+	public ArrayMapEntry(ArrayMapKey aKey, BlockPointer aValue, byte aType)
 	{
 		mKey = aKey;
 		mValue = aValue.toByteArray();
@@ -60,6 +70,12 @@ public final class ArrayMapEntry
 	public Document getValue()
 	{
 		return new Document().fromByteArray(mValue);
+	}
+
+
+	public BlockPointer getBlockPointer()
+	{
+		return (BlockPointer)new BlockPointer().fromByteArray(mValue);
 	}
 
 

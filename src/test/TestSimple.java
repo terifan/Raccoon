@@ -37,7 +37,7 @@ public class TestSimple
 					Document.of("name:bob").put("_id", UUID.randomUUID())
 				);
 
-				byte[] bytes = Files.readAllBytes(Paths.get("d:\\pictures\\babe.jpg"));
+				byte[] bytes = Files.readAllBytes(Paths.get("d:\\pictures\\4k-daenerys-targaryen.jpg"));
 
 				db.getCollection("files").save(new Document().put("_id", 1).put("content", bytes));
 

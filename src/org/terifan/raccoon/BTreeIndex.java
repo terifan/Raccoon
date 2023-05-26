@@ -563,7 +563,7 @@ public class BTreeIndex extends BTreeNode
 
 		if (childNode == null)
 		{
-			BlockPointer bp = new BlockPointer().putAll(aEntry.getValue());
+			BlockPointer bp = aEntry.getBlockPointer();
 
 			childNode = bp.getBlockType() == BlockType.TREE_INDEX ? new BTreeIndex(mLevel - 1) : new BTreeLeaf();
 			childNode.mBlockPointer = bp;
