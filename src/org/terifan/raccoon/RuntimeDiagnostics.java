@@ -11,18 +11,18 @@ public class RuntimeDiagnostics
 	private static int mReadLeafs;
 	private static int mWriteLeafs;
 	private static int mFreeLeafs;
-	private static int mReadBlocks;
-	private static int mWriteBlocks;
-	private static int mFreeBlocks;
-	private static int mReadBytes;
-	private static int mWriteBytes;
-	private static int mFreeBytes;
+//	private static int mReadBlocks;
+//	private static int mWriteBlocks;
+//	private static int mFreeBlocks;
+//	private static int mReadBytes;
+//	private static int mWriteBytes;
+//	private static int mFreeBytes;
 
 	public enum Operation
 	{
-		READ_BLOCK(n -> {mReadBlocks++; mReadBytes += n;}),
-		WRITE_BLOCK(n -> {mWriteBlocks++; mWriteBytes += n;}),
-		FREE_BLOCK(n -> {mFreeBlocks++; mFreeBytes += n;}),
+//		READ_BLOCK(n -> {mReadBlocks++; mReadBytes += n;}),
+//		WRITE_BLOCK(n -> {mWriteBlocks++; mWriteBytes += n;}),
+//		FREE_BLOCK(n -> {mFreeBlocks++; mFreeBytes += n;}),
 		READ_NODE(n -> mReadNodes++),
 		WRITE_NODE(n -> mWriteNodes++),
 		FREE_NODE(n -> mFreeNodes++),
@@ -55,12 +55,15 @@ public class RuntimeDiagnostics
 
 	public static void reset()
 	{
-		mReadBlocks = 0;
-		mWriteBlocks = 0;
-		mFreeBlocks = 0;
-		mReadBytes = 0;
-		mWriteBytes = 0;
-		mFreeBytes = 0;
+//		mReadBlocks = 0;
+//		mWriteBlocks = 0;
+//		mFreeBlocks = 0;
+//		mReadBytes = 0;
+//		mWriteBytes = 0;
+//		mFreeBytes = 0;
+		mReadLeafs = 0;
+		mWriteLeafs = 0;
+		mFreeLeafs = 0;
 		mReadNodes = 0;
 		mWriteNodes = 0;
 		mFreeNodes = 0;
@@ -75,19 +78,18 @@ public class RuntimeDiagnostics
 
 	public static String string()
 	{
-		return "RuntimeDiagnostics{" +
-			"readBlocks=" + mReadBlocks +
-			", writeBlocks=" + mWriteBlocks +
-			", freeBlocks=" + mFreeBlocks +
-			", readBytes=" + mReadBytes +
-			", writeBytes=" + mWriteBytes +
-			", freeBytes=" + mFreeBytes +
-			", readNodes=" + mReadNodes +
-			", writeNodes=" + mWriteNodes +
-			", freeNodes=" + mFreeNodes +
-			", readLeafs=" + mReadLeafs +
-			", writeLeafs=" + mWriteLeafs +
-			", freeLeafs=" + mFreeLeafs
-			+ '}';
+		return
+//			"readBlocks=" + mReadBlocks +
+//			", writeBlocks=" + mWriteBlocks +
+//			", freeBlocks=" + mFreeBlocks +
+//			", readBytes=" + mReadBytes +
+//			", writeBytes=" + mWriteBytes +
+//			", freeBytes=" + mFreeBytes +
+			"rNode=" + mReadNodes +
+			", wNode=" + mWriteNodes +
+			", fNode=" + mFreeNodes +
+			", rLeaf=" + mReadLeafs +
+			", wLeaf=" + mWriteLeafs +
+			", fLeaf=" + mFreeLeafs;
 	}
 }

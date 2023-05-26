@@ -445,6 +445,8 @@ public final class RaccoonDatabase implements AutoCloseable
 			Log.i("commit database");
 			Log.inc();
 
+
+
 			try (WriteLock lock = mLock.writeLock())
 			{
 				for (Entry<String, RaccoonCollection> entry : mCollectionInstances.entrySet())

@@ -6,7 +6,6 @@ import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
 import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.blockdevice.BlockPointer;
-import org.terifan.raccoon.blockdevice.util.ByteArrayBuffer;
 import org.terifan.raccoon.blockdevice.util.Console;
 import org.terifan.raccoon.util.Result;
 
@@ -511,8 +510,8 @@ public class BTreeIndex extends BTreeNode
 
 		if (mModified)
 		{
-			assert RuntimeDiagnostics.collectStatistics(Operation.FREE_NODE, mBlockPointer);
-			assert RuntimeDiagnostics.collectStatistics(Operation.WRITE_NODE, 1);
+			RuntimeDiagnostics.collectStatistics(Operation.FREE_NODE, mBlockPointer);
+			RuntimeDiagnostics.collectStatistics(Operation.WRITE_NODE, 1);
 
 			aImplementation.freeBlock(mBlockPointer);
 
@@ -526,14 +525,17 @@ public class BTreeIndex extends BTreeNode
 	@Override
 	protected void postCommit()
 	{
-		for (BTreeNode node : mChildNodes.values())
+		if (mModified)
 		{
-			node.postCommit();
+			for (BTreeNode node : mChildNodes.values())
+			{
+				node.postCommit();
+			}
+
+			mModified = false;
 		}
 
 		mChildNodes.clear();
-
-		mModified = false;
 	}
 
 
@@ -571,7 +573,7 @@ public class BTreeIndex extends BTreeNode
 
 			mChildNodes.put(key, childNode);
 
-			assert RuntimeDiagnostics.collectStatistics(bp.getBlockType() == BlockType.TREE_INDEX ? Operation.READ_NODE : Operation.READ_LEAF, 1);
+			RuntimeDiagnostics.collectStatistics(bp.getBlockType() == BlockType.TREE_INDEX ? Operation.READ_NODE : Operation.READ_LEAF, 1);
 		}
 
 		return childNode;

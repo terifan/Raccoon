@@ -104,8 +104,8 @@ public class BTreeLeaf extends BTreeNode
 	{
 		if (mModified)
 		{
-			assert RuntimeDiagnostics.collectStatistics(Operation.FREE_LEAF, mBlockPointer);
-			assert RuntimeDiagnostics.collectStatistics(Operation.WRITE_LEAF, 1);
+			RuntimeDiagnostics.collectStatistics(Operation.FREE_LEAF, mBlockPointer);
+			RuntimeDiagnostics.collectStatistics(Operation.WRITE_LEAF, 1);
 
 			aImplementation.freeBlock(mBlockPointer);
 

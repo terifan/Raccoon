@@ -78,7 +78,7 @@ public class TestSimple
 				db.commit();
 			}
 
-			RuntimeDiagnostics.print();
+//			RuntimeDiagnostics.print();
 
 //			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))

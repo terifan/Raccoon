@@ -235,7 +235,7 @@ public class TestPerformance
 			}
 			System.out.println();
 
-			RuntimeDiagnostics.print();
+//			RuntimeDiagnostics.print();
 		}
 		catch (Exception e)
 		{
