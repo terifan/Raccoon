@@ -19,7 +19,7 @@ public class TestBigTable
 
 			System.out.printf("%8s %8s %8s %8s %8s%n", "count", "insert", "commit", "total", "memory");
 
-			int s1 = 100;
+			int s1 = 10;
 			int s2 = 1000_000 / s1;
 
 			long t0 = System.currentTimeMillis();
