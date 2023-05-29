@@ -77,7 +77,35 @@ public class TestSimple
 				System.out.println("index:ratings");
 				db.getCollection("index:ratings").forEach(System.out::println);
 
+				System.out.println("-".repeat(100));
 				System.out.println(db.getCollection("files").get(new Document().put("_id", 1)).getBinary("content").length);
+
+				System.out.println("-".repeat(100));
+
+				System.out.println("-".repeat(100));
+				db.getCollection("people").find(Document.of("ratings:2")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("ratings:{$eq:2}")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("ratings:{$eq:2}")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("ratings:{$gt:2}")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("ratings:{$gte:2}")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("ratings:{$lt:2}")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("ratings:{$lte:2}")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("ratings:{$in:[4,5]}")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("ratings:{$all:[1,2]}")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("ratings:{$size:4}")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("ratings:{$exists:false}")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("$or:[{$and:[{ratings:1},{name:{$regex:'n.*'}}]},{$and:[{ratings:2},{name:{$regex:'w.*'}}]}]")).forEach(System.out::println);
 
 				db.commit();
 			}

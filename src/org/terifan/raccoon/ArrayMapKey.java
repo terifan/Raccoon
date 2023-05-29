@@ -5,12 +5,17 @@ import java.util.UUID;
 import org.terifan.raccoon.document.Array;
 
 
-public class ArrayMapKey implements Comparable<ArrayMapKey>
+public class ArrayMapKey
 {
 	public final static ArrayMapKey EMPTY = new ArrayMapKey("");
 
-	private final byte[] mBuffer;
+	private byte[] mBuffer;
 	private Object mDeserialized;
+
+
+	public ArrayMapKey()
+	{
+	}
 
 
 	public ArrayMapKey(Object aValue)
@@ -38,11 +43,12 @@ public class ArrayMapKey implements Comparable<ArrayMapKey>
 	}
 
 
-	@Override
 	public int compareTo(ArrayMapKey aOther)
 	{
 		Object a = get();
 		Object b = aOther.get();
+
+//		System.out.println(a + "\t" + b);
 
 		if (a.getClass() != b.getClass() || a instanceof UUID)
 		{

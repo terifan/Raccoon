@@ -262,11 +262,8 @@ public final class RaccoonCollection
 			generatePermutations(indexConf, aDocument, new Array(), 0, result);
 			for (Array values : result)
 			{
-//				if (!unique)
-//				{
-					values.add(ObjectId.randomId());
-//				}
-				Document indexEntry = new Document().put("_ref", aDocument.get("_id")).put("_id", values);
+				values.add(aDocument.get("_id"));
+				Document indexEntry = new Document().put("_id", values);
 				mDatabase.getCollection("index:" + indexConf.getString("_id")).save(indexEntry);
 			}
 		}
@@ -321,7 +318,7 @@ public final class RaccoonCollection
 			List<Document> list = mDatabase.getCollection("index:" + indexConf.getString("_id")).listAll();
 			for (Document doc : list)
 			{
-				if (doc.get("_ref").equals(aPrevDoc.get("_id")))
+//				if (doc.get("_ref").equals(aPrevDoc.get("_id")))
 				{
 					mDatabase.getCollection("index:" + indexConf.getString("_id")).delete(doc);
 					break;

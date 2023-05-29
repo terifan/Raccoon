@@ -210,8 +210,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>,/* SequenceFilter<Array
 
 				if (oExistingEntry != null)
 				{
-					ArrayMapEntry old = new ArrayMapEntry();
-					old.setKey(key);
+					ArrayMapEntry old = new ArrayMapEntry(key);
 					old.unmarshallValue(mBuffer, mStartOffset + valueOffset, oldValueLength);
 					oExistingEntry.set(old);
 				}
@@ -351,7 +350,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>,/* SequenceFilter<Array
 		int keyOffset = readKeyOffset(entryOffset);
 		int keyLength = readKeyLength(entryOffset);
 
-		aEntry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
+		aEntry.setKey(new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength));
 		aEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
 		return aEntry;
 	}
@@ -363,7 +362,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>,/* SequenceFilter<Array
 		int keyOffset = readKeyOffset(entryOffset);
 		int keyLength = readKeyLength(entryOffset);
 
-		aEntry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
+		aEntry.setKey(new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength));
 	}
 
 
@@ -461,7 +460,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>,/* SequenceFilter<Array
 		int valueOffset = readValueOffset(entryOffset);
 		int valueLength = readValueLength(entryOffset);
 
-		aOutputEntry.unmarshallKey(mBuffer, mStartOffset + keyOffset, keyLength);
+		aOutputEntry.setKey(new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength));
 		aOutputEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
 
 		return aOutputEntry;
@@ -508,6 +507,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>,/* SequenceFilter<Array
 	{
 		int low = 0;
 		int high = mEntryCount - 1;
+		ArrayMapKey key = new ArrayMapKey();
 
 		while (low <= high)
 		{
