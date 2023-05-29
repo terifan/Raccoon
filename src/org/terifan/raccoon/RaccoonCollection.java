@@ -258,15 +258,17 @@ public final class RaccoonCollection
 
 		for (Document indexConf : mDatabase.mIndices.getOrDefault(mConfiguration.getString("name"), new Array()).iterable(Document.class))
 		{
-			Array indexKey = new Array();
-			for (String field : indexConf.getArray("fields").iterable(String.class))
+			ArrayList<Array> result = new ArrayList<>();
+			generatePermutations(indexConf, aDocument, new Array(), 0, result);
+			for (Array values : result)
 			{
-				indexKey.add(aDocument.get(field));
+//				if (!unique)
+//				{
+					values.add(ObjectId.randomId());
+//				}
+				Document indexEntry = new Document().put("_ref", aDocument.get("_id")).put("_id", values);
+				mDatabase.getCollection("index:" + indexConf.getString("_id")).save(indexEntry);
 			}
-
-			Document indexEntry = new Document().put("_ref", aDocument.get("_id")).put("_id", indexKey);
-
-			mDatabase.getCollection("index:" + indexConf.getString("_id")).save(indexEntry);
 		}
 
 		return prev == null;
@@ -310,12 +312,40 @@ public final class RaccoonCollection
 	{
 		for (Document indexConf : mDatabase.mIndices.getOrDefault(mConfiguration.getString("name"), new Array()).iterable(Document.class))
 		{
-			Array indexKey = new Array();
-			for (String field : indexConf.getArray("fields").iterable(String.class))
+//			ArrayList<Array> result = new ArrayList<>();
+//			generatePermutations(indexConf, aPrevDoc, new Array(), 0, result);
+//			for (Array values : result)
+//			{
+//			}
+
+			List<Document> list = mDatabase.getCollection("index:" + indexConf.getString("_id")).listAll();
+			for (Document doc : list)
 			{
-				indexKey.add(aPrevDoc.get(field));
+				if (doc.get("_ref").equals(aPrevDoc.get("_id")))
+				{
+					mDatabase.getCollection("index:" + indexConf.getString("_id")).delete(doc);
+					break;
+				}
 			}
-			mDatabase.getCollection("index:" + indexConf.getString("_id")).delete(new Document().put("_id", indexKey));
+		}
+	}
+
+
+	private void generatePermutations(Document aIndexConf, Document aDocument, Array aIndexValues, int aPosition, ArrayList<Array> aResult)
+	{
+		Array confs = aIndexConf.getArray("fields");
+		if (aPosition == confs.size())
+		{
+			aResult.add(aIndexValues);
+		}
+		else
+		{
+			for (Object value : aDocument.findMany(confs.get(aPosition)))
+			{
+				Array tmp = aIndexValues.clone();
+				tmp.add(value);
+				generatePermutations(aIndexConf, aDocument, tmp, aPosition + 1, aResult);
+			}
 		}
 	}
 

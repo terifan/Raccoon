@@ -5,10 +5,7 @@ import java.nio.file.Paths;
 import java.util.UUID;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
-import org.terifan.raccoon.RuntimeDiagnostics;
 import org.terifan.raccoon.DatabaseOpenOption;
-import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
-import org.terifan.raccoon.document.ObjectId;
 
 
 public class TestSimple
@@ -17,89 +14,73 @@ public class TestSimple
 	{
 		try
 		{
-//			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
-//			AccessCredentials ac = new AccessCredentials("password");
-			AccessCredentials ac = null;
-
-			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
-//			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.REPLACE, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
 			{
-//				db.createIndex("lookup", "people", "name");
-
-				db.createIndex("lookup", "people", "name");
+				db.createIndex("names", "people", "name");
+				db.createIndex("ratings", "people", "ratings/*");
 
 				db.getCollection("people").saveAll(
-					Document.of("name:adam"),
-					Document.of("name:eve"),
-					Document.of("name:steve,_id:7"),
-					Document.of("name:walter,_id:3219649164198494619"),
-					Document.of("name:barbara,_id:superuser"),
-					Document.of("name:bob").put("_id", UUID.randomUUID())
+					Document.of("name:adam,ratings:[1,2]"),
+					Document.of("name:eve,ratings:[3,4]"),
+					Document.of("name:steve,ratings:[1,3],_id:7"),
+					Document.of("name:walter,ratings:[2,4],_id:3219649164198494619"),
+					Document.of("name:barbara,ratings:[2],_id:superuser"),
+					Document.of("name:bob,ratings:[1,2,3,4]").put("_id", UUID.randomUUID())
 				);
 
-				byte[] bytes = Files.readAllBytes(Paths.get("d:\\pictures\\4k-daenerys-targaryen.jpg"));
+				byte[] bytes = Files.readAllBytes(Paths.get("d:\\pictures\\62zqkw9mqo8a1.jpg"));
 
 				db.getCollection("files").save(new Document().put("_id", 1).put("content", bytes));
 
 				db.commit();
 			}
 
-			System.out.println("-".repeat(100));
-
-			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
-//			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, null))
 			{
+				System.out.println(db.getCollectionNames());
+
 				db.getCollection("people").saveAll(
-					Document.of("name:gregor")
+					Document.of("name:gregor,ratings:[5]")
 				);
 
 				db.getCollection("people").deleteAll(
 					Document.of("_id:7")
 				);
 
-				System.out.println(db.getCollectionNames());
-
-				db.getCollection("files").listAll().forEach(System.out::println);
-				db.getCollection("people").listAll().forEach(System.out::println);
-				db.getCollection("index:lookup").listAll().forEach(System.out::println);
-				db.getCollection("system:indices").listAll().forEach(System.out::println);
-
 				System.out.println("-".repeat(100));
+				System.out.println("files");
+				db.getCollection("files").forEach(System.out::println);
+				System.out.println("-".repeat(100));
+				System.out.println("people");
+				db.getCollection("people").forEach(System.out::println);
+				System.out.println("-".repeat(100));
+				System.out.println("index:names");
+				db.getCollection("index:names").forEach(System.out::println);
+				System.out.println("-".repeat(100));
+				System.out.println("index:ratings");
+				db.getCollection("index:ratings").forEach(System.out::println);
+				System.out.println("-".repeat(100));
+				System.out.println("system:indices");
+				db.getCollection("system:indices").forEach(System.out::println);
 
 				db.getCollection("people").saveAll(
 					Document.of("_id:superuser,name:sam")
 				);
 
-				db.getCollection("people").listAll().forEach(System.out::println);
-				db.getCollection("index:lookup").listAll().forEach(System.out::println);
+				System.out.println("-".repeat(100));
+				System.out.println("people");
+				db.getCollection("people").forEach(System.out::println);
+				System.out.println("-".repeat(100));
+				System.out.println("index:names");
+				db.getCollection("index:names").forEach(System.out::println);
+				System.out.println("-".repeat(100));
+				System.out.println("index:ratings");
+				db.getCollection("index:ratings").forEach(System.out::println);
 
 				System.out.println(db.getCollection("files").get(new Document().put("_id", 1)).getBinary("content").length);
 
 				db.commit();
 			}
-
-//			RuntimeDiagnostics.print();
-
-//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
-//			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
-//			{
-//				db.getCollection("people").list().forEach(e -> System.out.println(e));
-//			}
-//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
-//			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
-//			{
-//				db.getCollection("people").list().forEach(e -> System.out.println(e));
-//			}
-//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
-//			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
-//			{
-//				db.getCollection("people").list().forEach(e -> System.out.println(e));
-//			}
-//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
-//			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
-//			{
-//				db.getCollection("people").list().forEach(e -> System.out.println(e));
-//			}
 		}
 		catch (Exception e)
 		{

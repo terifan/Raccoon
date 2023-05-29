@@ -20,7 +20,7 @@ public class TestBigTable
 			System.out.printf("%8s %8s %8s %8s %8s%n", "count", "insert", "commit", "total", "memory");
 
 			int s1 = 100;
-			int s2 = 100 / s1;
+			int s2 = 1000_000 / s1;
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
 			{
@@ -46,7 +46,7 @@ public class TestBigTable
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, null))
 			{
-				System.out.println(db.getCollection("people").listAll().size());
+				System.out.println(db.getCollection("people").size());
 			}
 		}
 		catch (Exception e)
