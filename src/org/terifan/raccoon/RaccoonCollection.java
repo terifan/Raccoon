@@ -265,7 +265,7 @@ public final class RaccoonCollection
 			{
 				Document indexEntry = new Document().put("_id", values);
 
-				if (indexConf.getBoolean("unique"))
+				if (indexConf.get("unique", false))
 				{
 					indexEntry.put("_ref", aDocument.get("_id"));
 				}
