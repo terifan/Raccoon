@@ -108,6 +108,12 @@ public class TestSimple
 //				db.getCollection("people").find(Document.of("ratings:{$exists:false}")).forEach(System.out::println);
 //				System.out.println("-".repeat(100));
 //				db.getCollection("people").find(Document.of("$or:[{$and:[{ratings:1},{name:{$regex:'n.*'}}]},{$and:[{ratings:2},{name:{$regex:'w.*'}}]}]")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("firstName:{$startsWith:bob, $ignoreCase:true}")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("firstName:{$endsWith:bob, $ignoreCase:true}")).forEach(System.out::println);
+//				System.out.println("-".repeat(100));
+//				db.getCollection("people").find(Document.of("firstName:{$contains:bob, $ignoreCase:true}")).forEach(System.out::println);
 
 				db.commit();
 			}
