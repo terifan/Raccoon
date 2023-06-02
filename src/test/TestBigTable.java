@@ -19,13 +19,13 @@ public class TestBigTable
 
 			System.out.printf("%8s %8s %8s %8s %8s%n", "count", "insert", "commit", "total", "memory");
 
-			int s1 = 10;
+			int s1 = 100;
 			int s2 = 1000_000 / s1;
 
-			long t0 = System.currentTimeMillis();
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
 			{
 				RaccoonCollection people = db.getCollection("people");
+				long t0 = System.currentTimeMillis();
 				for (int j = 0; j < s1; j++)
 				{
 					long t1 = System.currentTimeMillis();
@@ -42,9 +42,11 @@ public class TestBigTable
 				}
 			}
 
+			System.out.println("-".repeat(100));
+
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, null))
 			{
-				System.out.println(db.getCollection("people").listAll().size());
+				System.out.println(db.getCollection("people").size());
 			}
 		}
 		catch (Exception e)

@@ -259,23 +259,22 @@ public final class RaccoonCollection
 
 		for (Document indexConf : mDatabase.mIndices.getOrDefault(mConfiguration.getString("name"), new Array()).iterable(Document.class))
 		{
-			Array indexKey = new Array();
-			for (String field : indexConf.getArray("fields").iterable(String.class))
+			ArrayList<Array> result = new ArrayList<>();
+			generatePermutations(indexConf, aDocument, new Array(), 0, result);
+			for (Array values : result)
 			{
-				indexKey.add(aDocument.get(field));
-			}
+				Document indexEntry = new Document().put("_id", values);
 
-			Document indexEntry = new Document().put("_id", indexKey);
-			if (indexConf.getBoolean("unique"))
-			{
-				indexEntry.put("_ref", aDocument.get("_id"));
+				if (indexConf.getBoolean("unique"))
+				{
+					indexEntry.put("_ref", aDocument.get("_id"));
+				}
+				else
+				{
+					values.add(aDocument.get("_id"));
+				}
+				mDatabase.getCollection("index:" + indexConf.getString("_id")).save(indexEntry);
 			}
-			else
-			{
-				indexKey.add(aDocument.get("_id"));
-			}
-
-			mDatabase.getCollection("index:" + indexConf.getString("_id")).save(indexEntry);
 		}
 
 		return prev == null;
@@ -284,38 +283,34 @@ public final class RaccoonCollection
 
 	public void deleteAll(Document... aDocuments)
 	{
-		for (Document document : aDocuments)
-		{
-			delete(document);
-		}
-	}
-
-
-	public Document delete(Document aDocument)
-	{
 		try (WriteLock lock = mLock.writeLock())
 		{
 			mModCount++;
 
-			ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(aDocument, false));
-			ArrayMapEntry prev = mImplementation.remove(entry);
-
-			if (prev == null)
+			for (Document document : aDocuments)
 			{
-				return null;
+				ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(document, false));
+				ArrayMapEntry prev = mImplementation.remove(entry);
+
+				if (prev != null)
+				{
+					Document prevDoc = deleteLob(prev, true);
+
+					if (prevDoc == null)
+					{
+						prevDoc = prev.getValue();
+					}
+
+					deleteIndexEntries(prevDoc);
+				}
 			}
-
-			Document prevDoc = deleteLob(prev, true);
-
-			if (prevDoc == null)
-			{
-				prevDoc = prev.getValue();
-			}
-
-			deleteIndexEntries(prevDoc);
-
-			return prevDoc;
 		}
+	}
+
+
+	public void delete(Document aDocument)
+	{
+		deleteAll(aDocument);
 	}
 
 
@@ -323,12 +318,40 @@ public final class RaccoonCollection
 	{
 		for (Document indexConf : mDatabase.mIndices.getOrDefault(mConfiguration.getString("name"), new Array()).iterable(Document.class))
 		{
-			Array indexKey = new Array();
-			for (String field : indexConf.getArray("fields").iterable(String.class))
+//			ArrayList<Array> result = new ArrayList<>();
+//			generatePermutations(indexConf, aPrevDoc, new Array(), 0, result);
+//			for (Array values : result)
+//			{
+//			}
+
+			List<Document> list = mDatabase.getCollection("index:" + indexConf.getString("_id")).listAll();
+			for (Document doc : list)
 			{
-				indexKey.add(aPrevDoc.get(field));
+//				if (doc.get("_ref").equals(aPrevDoc.get("_id")))
+				{
+					mDatabase.getCollection("index:" + indexConf.getString("_id")).delete(doc);
+					break;
+				}
 			}
-			mDatabase.getCollection("index:" + indexConf.getString("_id")).delete(new Document().put("_id", indexKey));
+		}
+	}
+
+
+	private void generatePermutations(Document aIndexConf, Document aDocument, Array aIndexValues, int aPosition, ArrayList<Array> aResult)
+	{
+		Array confs = aIndexConf.getArray("fields");
+		if (aPosition == confs.size())
+		{
+			aResult.add(aIndexValues);
+		}
+		else
+		{
+			for (Object value : aDocument.findMany(confs.get(aPosition)))
+			{
+				Array tmp = aIndexValues.clone();
+				tmp.add(value);
+				generatePermutations(aIndexConf, aDocument, tmp, aPosition + 1, aResult);
+			}
 		}
 	}
 
@@ -344,7 +367,13 @@ public final class RaccoonCollection
 
 	public List<Document> listAll()
 	{
-		ArrayList<Document> list = new ArrayList<>();
+		return listAll(() -> new Document());
+	}
+
+
+	public <T extends Document> List<T> listAll(Supplier<T> aDocumentSupplier)
+	{
+		ArrayList<T> list = new ArrayList<>();
 
 		try (ReadLock lock = mLock.readLock())
 		{
@@ -355,7 +384,7 @@ public final class RaccoonCollection
 				@Override
 				void leaf(BTree aImplementation, BTreeLeaf aNode)
 				{
-					aNode.mMap.forEach(e -> list.add(unmarshalDocument(e, new Document())));
+					aNode.mMap.forEach(e -> list.add((T)unmarshalDocument(e, aDocumentSupplier.get())));
 				}
 			});
 		}
@@ -379,28 +408,6 @@ public final class RaccoonCollection
 				}
 			});
 		}
-	}
-
-
-	public <T extends Document> List<T> listAll(Supplier<T> aSupplier)
-	{
-		ArrayList<T> list = new ArrayList<>();
-
-		try (ReadLock lock = mLock.readLock())
-		{
-			mModCount++;
-
-			mImplementation.visit(new BTreeVisitor()
-			{
-				@Override
-				void leaf(BTree aImplementation, BTreeLeaf aNode)
-				{
-					aNode.mMap.forEach(e -> list.add((T)unmarshalDocument(e, aSupplier.get())));
-				}
-			});
-		}
-
-		return list;
 	}
 
 
@@ -615,7 +622,6 @@ public final class RaccoonCollection
 		Log.inc();
 
 //		System.out.println(aQuery);
-
 		try (ReadLock lock = mLock.readLock())
 		{
 			ArrayList<Document> list = new ArrayList<>();

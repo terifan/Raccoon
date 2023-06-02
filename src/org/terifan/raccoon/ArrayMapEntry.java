@@ -3,11 +3,10 @@ package org.terifan.raccoon;
 import java.util.Arrays;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.blockdevice.util.Console;
-import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 
 
-public final class ArrayMapEntry
+final class ArrayMapEntry
 {
 	private byte mType;
 	private ArrayMapKey mKey;
@@ -41,7 +40,7 @@ public final class ArrayMapEntry
 	}
 
 
-	ArrayMapEntry(ArrayMapKey aKey, ArrayMapEntry aEntry)
+	public ArrayMapEntry(ArrayMapKey aKey, ArrayMapEntry aEntry)
 	{
 		mKey = aKey;
 		mValue = aEntry.mValue;
@@ -58,12 +57,6 @@ public final class ArrayMapEntry
 	public void setKey(ArrayMapKey aKey)
 	{
 		mKey = aKey;
-	}
-
-
-	public void unmarshallKey(byte[] aBuffer, int aOffset, int aLength)
-	{
-		setKey(new ArrayMapKey(aBuffer, aOffset, aLength));
 	}
 
 
