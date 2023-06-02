@@ -113,29 +113,6 @@ public class TestSimple
 			}
 
 			System.out.println(Document.of("name:malesByName,unique:false,sparse:true,clone:true,filter:[{gender:{$eq:male}}],fields:[{firstName:1},{lastName:1}]"));
-
-//			RuntimeDiagnostics.print();
-
-//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
-//			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
-//			{
-//				db.getCollection("people").list().forEach(e -> System.out.println(e));
-//			}
-//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
-//			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
-//			{
-//				db.getCollection("people").list().forEach(e -> System.out.println(e));
-//			}
-//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
-//			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
-//			{
-//				db.getCollection("people").list().forEach(e -> System.out.println(e));
-//			}
-//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
-//			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
-//			{
-//				db.getCollection("people").list().forEach(e -> System.out.println(e));
-//			}
 		}
 		catch (Exception e)
 		{
