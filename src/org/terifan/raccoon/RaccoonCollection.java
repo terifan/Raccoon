@@ -19,6 +19,7 @@ import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 
+// db.getCollection("people").createIndex(Document.of("name:malesByName,unique:false,sparse:true,clone:true,filter:[{gender:{$eq:male}}],fields:[{firstName:1},{lastName:1}]"));
 
 public final class RaccoonCollection
 {
@@ -187,27 +188,27 @@ public final class RaccoonCollection
 	}
 
 
-	public void createIndex(Document aDocument)
-	{
-		Log.i("create index");
-		Log.inc();
-
-		try (WriteLock lock = mLock.writeLock())
-		{
-			RaccoonCollection collection = mDatabase.getCollection(INDEX_COLLECTION);
-
-			collection.find(new Document().put("collection", mConfiguration.getObjectId("_id")));
-
-			Document conf = new Document().put("_id", new Document().put("collection", mConfiguration.getObjectId("object")).put("_id", ObjectId.randomId())).put("configuration", aDocument);
-			collection.save(conf);
-
-			System.out.println(conf);
-		}
-		finally
-		{
-			Log.dec();
-		}
-	}
+//	public void createIndex(Document aDocument)
+//	{
+//		Log.i("create index");
+//		Log.inc();
+//
+//		try (WriteLock lock = mLock.writeLock())
+//		{
+//			RaccoonCollection collection = mDatabase.getCollection(INDEX_COLLECTION);
+//
+//			collection.find(new Document().put("collection", mConfiguration.getObjectId("_id")));
+//
+//			Document conf = new Document().put("_id", new Document().put("collection", mConfiguration.getObjectId("object")).put("_id", ObjectId.randomId())).put("configuration", aDocument);
+//			collection.save(conf);
+//
+//			System.out.println(conf);
+//		}
+//		finally
+//		{
+//			Log.dec();
+//		}
+//	}
 
 
 	private boolean insertOrUpdate(Document aDocument, boolean aInsert)
@@ -264,7 +265,15 @@ public final class RaccoonCollection
 				indexKey.add(aDocument.get(field));
 			}
 
-			Document indexEntry = new Document().put("_ref", aDocument.get("_id")).put("_id", indexKey);
+			Document indexEntry = new Document().put("_id", indexKey);
+			if (indexConf.getBoolean("unique"))
+			{
+				indexEntry.put("_ref", aDocument.get("_id"));
+			}
+			else
+			{
+				indexKey.add(aDocument.get("_id"));
+			}
 
 			mDatabase.getCollection("index:" + indexConf.getString("_id")).save(indexEntry);
 		}

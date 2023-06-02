@@ -24,17 +24,16 @@ public class TestSimple
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.REPLACE, ac))
 			{
-//				db.createIndex("lookup", "people", "name");
-
-				db.createIndex("lookup", "people", "name");
+				db.createIndex("peopleFirstName", "people", false, "firstName");
+				db.createIndex("peopleLastName", "people", false, "lastName");
 
 				db.getCollection("people").saveAll(
-					Document.of("name:adam"),
-					Document.of("name:eve"),
-					Document.of("name:steve,_id:7"),
-					Document.of("name:walter,_id:3219649164198494619"),
-					Document.of("name:barbara,_id:superuser"),
-					Document.of("name:bob").put("_id", UUID.randomUUID())
+					Document.of("firstName:adam,lastName:irwing"),
+					Document.of("firstName:eve,lastName:king"),
+					Document.of("firstName:steve,lastName:king,_id:7"),
+					Document.of("firstName:walter,lastName:black,_id:3219649164198494619"),
+					Document.of("firstName:barbara,lastName:black,_id:superuser"),
+					Document.of("firstName:bob,lastName:townhill").put("_id", UUID.randomUUID())
 				);
 
 				byte[] bytes = Files.readAllBytes(Paths.get("d:\\pictures\\4k-daenerys-targaryen.jpg"));
@@ -50,7 +49,7 @@ public class TestSimple
 //			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 			{
 				db.getCollection("people").saveAll(
-					Document.of("name:gregor")
+					Document.of("firstName:gregor,lastName:king")
 				);
 
 				db.getCollection("people").deleteAll(
@@ -61,22 +60,26 @@ public class TestSimple
 
 				db.getCollection("files").listAll().forEach(System.out::println);
 				db.getCollection("people").listAll().forEach(System.out::println);
-				db.getCollection("index:lookup").listAll().forEach(System.out::println);
+				db.getCollection("index:peopleFirstName").listAll().forEach(System.out::println);
+				db.getCollection("index:peopleLastName").listAll().forEach(System.out::println);
 				db.getCollection("system:indices").listAll().forEach(System.out::println);
 
 				System.out.println("-".repeat(100));
 
 				db.getCollection("people").saveAll(
-					Document.of("_id:superuser,name:sam")
+					Document.of("_id:superuser,firstName:anne,lastName:black")
 				);
 
 				db.getCollection("people").listAll().forEach(System.out::println);
-				db.getCollection("index:lookup").listAll().forEach(System.out::println);
+				db.getCollection("index:peopleFirstName").listAll().forEach(System.out::println);
+				db.getCollection("index:peopleLastName").listAll().forEach(System.out::println);
 
 				System.out.println(db.getCollection("files").get(new Document().put("_id", 1)).getBinary("content").length);
 
 				db.commit();
 			}
+
+			System.out.println(Document.of("name:malesByName,unique:false,sparse:true,clone:true,filter:[{gender:{$eq:male}}],fields:[{firstName:1},{lastName:1}]"));
 
 //			RuntimeDiagnostics.print();
 

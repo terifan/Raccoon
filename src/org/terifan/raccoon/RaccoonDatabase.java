@@ -696,9 +696,18 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public void createIndex(String aIndexName, String aOnCollection, String... aFieldNames)
+	public void createIndex(String aIndexName, String aOnCollection, boolean aUnique, String... aFieldNames)
 	{
-		Document indexConf = new Document().put("_id", aIndexName).put("onCollection", aOnCollection).put("fields", Array.of(aFieldNames));
+		if (aFieldNames.length == 0)
+		{
+			throw new IllegalArgumentException();
+		}
+
+		Document indexConf = new Document()
+			.put("_id", aIndexName)
+			.put("onCollection", aOnCollection)
+			.put("unique", aUnique)
+			.put("fields", Array.of(aFieldNames));
 
 		getCollection("system:indices").save(indexConf);
 
