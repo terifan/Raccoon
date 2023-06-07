@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.document.Array;
 
 
 public class TestSimple
@@ -18,6 +19,8 @@ public class TestSimple
 			{
 				db.createIndex("peopleFirstName", "people", false, "firstName");
 				db.createIndex("peopleLastName", "people", false, "lastName");
+				db.createIndex("peopleRatings", "people", false, "ratings/*");
+				db.createIndex("peopleLanguage", "people", false, "language/*");
 
 				db.getCollection("people").saveAll(
 					Document.of("firstName:adam,lastName:irwing,language:[en,fr],ratings:[1,2]"),
@@ -39,50 +42,38 @@ public class TestSimple
 			{
 				System.out.println(db.getCollectionNames());
 
-				db.getCollection("people").saveAll(
-					Document.of("firstName:gregor,lastName:king,language:[en,ru],ratings:[1]")
-				);
-
-				db.getCollection("people").deleteAll(
-					Document.of("_id:7")
-				);
-
-				System.out.println(db.getCollectionNames());
-
-				db.getCollection("files").listAll().forEach(System.out::println);
-				db.getCollection("people").listAll().forEach(System.out::println);
-				db.getCollection("index:peopleFirstName").listAll().forEach(System.out::println);
-				db.getCollection("index:peopleLastName").listAll().forEach(System.out::println);
-				db.getCollection("system:indices").listAll().forEach(System.out::println);
+				db.getCollection("people").saveAll(Document.of("firstName:gregor,lastName:king,language:[en,ru],ratings:[1]"));
+				db.getCollection("people").deleteAll(Document.of("_id:7"));
+				db.getCollection("people").saveAll(Document.of("_id:superuser,firstName:anne,lastName:black,ratings:[1,2,4]"));
 
 				System.out.println("-".repeat(100));
 				System.out.println("files");
 				db.getCollection("files").forEach(System.out::println);
 				System.out.println("-".repeat(100));
+				System.out.println(db.getCollection("files").get(new Document().put("_id", 1)).getBinary("content").length);
+				System.out.println("-".repeat(100));
 				System.out.println("people");
 				db.getCollection("people").forEach(System.out::println);
 				System.out.println("-".repeat(100));
-				System.out.println("index:names");
-				db.getCollection("index:names").forEach(System.out::println);
+				System.out.println("index:peopleLanguage");
+				db.getCollection("index:peopleLanguage").forEach(System.out::println);
 				System.out.println("-".repeat(100));
-				System.out.println("index:ratings");
-				db.getCollection("index:ratings").forEach(System.out::println);
+				System.out.println("index:peopleRatings");
+				db.getCollection("index:peopleRatings").forEach(System.out::println);
+				System.out.println("-".repeat(100));
+				System.out.println("index:peopleFirstName");
+				db.getCollection("index:peopleFirstName").forEach(System.out::println);
+				System.out.println("-".repeat(100));
+				System.out.println("index:peopleLastName");
+				db.getCollection("index:peopleLastName").forEach(System.out::println);
 				System.out.println("-".repeat(100));
 				System.out.println("system:indices");
 				db.getCollection("system:indices").forEach(System.out::println);
 
-				db.getCollection("people").saveAll(
-					Document.of("_id:superuser,firstName:anne,lastName:black,ratings:[1,2,4]")
-				);
-
-				db.getCollection("people").listAll().forEach(System.out::println);
-				db.getCollection("index:peopleFirstName").listAll().forEach(System.out::println);
-				db.getCollection("index:peopleLastName").listAll().forEach(System.out::println);
-
 				System.out.println("-".repeat(100));
-				System.out.println(db.getCollection("files").get(new Document().put("_id", 1)).getBinary("content").length);
 
-				System.out.println("-".repeat(100));
+				db.getCollection("index:peopleRatings").find(Document.of("rating:1")).forEach(System.out::println);
+
 
 //				System.out.println("-".repeat(100));
 //				db.getCollection("people").find(Document.of("ratings:2")).forEach(System.out::println);
@@ -118,7 +109,7 @@ public class TestSimple
 				db.commit();
 			}
 
-			System.out.println(Document.of("name:malesByName,unique:false,sparse:true,clone:true,filter:[{gender:{$eq:male}}],fields:[{firstName:1},{lastName:1}]"));
+//			System.out.println(Document.of("name:malesByName,unique:false,sparse:true,clone:true,filter:[{gender:{$eq:male}}],fields:[{firstName:1},{lastName:1}]"));
 		}
 		catch (Exception e)
 		{

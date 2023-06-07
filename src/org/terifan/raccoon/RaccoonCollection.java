@@ -281,6 +281,25 @@ public final class RaccoonCollection
 	}
 
 
+	private void generatePermutations(Document aIndexConf, Document aDocument, Array aIndexValues, int aPosition, ArrayList<Array> aResult)
+	{
+		Array confs = aIndexConf.getArray("fields");
+		if (aPosition == confs.size())
+		{
+			aResult.add(aIndexValues);
+		}
+		else
+		{
+			for (Object value : aDocument.findMany(confs.get(aPosition)))
+			{
+				Array tmp = aIndexValues.clone();
+				tmp.add(value);
+				generatePermutations(aIndexConf, aDocument, tmp, aPosition + 1, aResult);
+			}
+		}
+	}
+
+
 	public void deleteAll(Document... aDocuments)
 	{
 		try (WriteLock lock = mLock.writeLock())
@@ -332,25 +351,6 @@ public final class RaccoonCollection
 					mDatabase.getCollection("index:" + indexConf.getString("_id")).delete(doc);
 					break;
 				}
-			}
-		}
-	}
-
-
-	private void generatePermutations(Document aIndexConf, Document aDocument, Array aIndexValues, int aPosition, ArrayList<Array> aResult)
-	{
-		Array confs = aIndexConf.getArray("fields");
-		if (aPosition == confs.size())
-		{
-			aResult.add(aIndexValues);
-		}
-		else
-		{
-			for (Object value : aDocument.findMany(confs.get(aPosition)))
-			{
-				Array tmp = aIndexValues.clone();
-				tmp.add(value);
-				generatePermutations(aIndexConf, aDocument, tmp, aPosition + 1, aResult);
 			}
 		}
 	}
