@@ -17,18 +17,22 @@ public class TestSimple
 		{
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
 			{
-				db.createIndex("peopleFirstName", "people", false, "firstName");
-				db.createIndex("peopleLastName", "people", false, "lastName");
-				db.createIndex("peopleRatings", "people", false, "ratings/*");
-				db.createIndex("peopleLanguage", "people", false, "language/*");
+				db.getCollection("people").createIndex(Document.of("name:peopleFirstName,unique:false,clone:true"), Document.of("firstName:1"));
+				db.getCollection("people").createIndex(Document.of("name:peopleLastName,unique:false"), Document.of("lastName:1"));
+				db.getCollection("people").createIndex(Document.of("name:peopleRating,unique:false,"), Document.of("details/ratings/*:1"));
+				db.getCollection("people").createIndex(Document.of("name:peopleLanguage,unique:false"), Document.of("details/language/*:1"));
+//				db.createIndex("peopleFirstName", "people", false, "firstName");
+//				db.createIndex("peopleLastName", "people", false, "lastName");
+//				db.createIndex("peopleRatings", "people", false, "details/ratings/*");
+//				db.createIndex("peopleLanguage", "people", false, "details/language/*");
 
 				db.getCollection("people").saveAll(
-					Document.of("firstName:adam,lastName:irwing,language:[en,fr],ratings:[1,2]"),
-					Document.of("firstName:eve,lastName:king,language:[en],ratings:[1,3]"),
-					Document.of("firstName:steve,lastName:king,language:[kr],ratings:[1,2,3,4],_id:7"),
-					Document.of("firstName:walter,lastName:black,language:[en],ratings:[3,4],_id:3219649164198494619"),
-					Document.of("firstName:barbara,lastName:black,language:[en,fr,de],ratings:[3],_id:superuser"),
-					Document.of("firstName:bob,lastName:townhill,language:[en,de]").put("_id", UUID.randomUUID())
+					Document.of("firstName:adam,lastName:irwing,details:{language:[en,fr],ratings:[1,2]}"),
+					Document.of("firstName:eve,lastName:king,details:{language:[en],ratings:[1,3]}"),
+					Document.of("firstName:steve,lastName:king,details:{language:[kr],ratings:[1,2,3,4]},_id:7"),
+					Document.of("firstName:walter,lastName:black,details:{language:[en],ratings:[3,4]},_id:3219649164198494619"),
+					Document.of("firstName:barbara,lastName:black,details:{language:[en,fr,de],ratings:[3]},_id:superuser"),
+					Document.of("firstName:bob,lastName:townhill,details:{language:[en,de]}").put("_id", UUID.randomUUID())
 				);
 
 				byte[] bytes = Files.readAllBytes(Paths.get("d:\\pictures\\62zqkw9mqo8a1.jpg"));
@@ -42,9 +46,9 @@ public class TestSimple
 			{
 				System.out.println(db.getCollectionNames());
 
-				db.getCollection("people").saveAll(Document.of("firstName:gregor,lastName:king,language:[en,ru],ratings:[1]"));
+				db.getCollection("people").saveAll(Document.of("firstName:gregor,lastName:king,details:{language:[en,ru],ratings:[1]}"));
 				db.getCollection("people").deleteAll(Document.of("_id:7"));
-				db.getCollection("people").saveAll(Document.of("_id:superuser,firstName:anne,lastName:black,ratings:[1,2,4]"));
+				db.getCollection("people").saveAll(Document.of("_id:superuser,firstName:anne,lastName:black,details:{ratings:[1,2,4]}"));
 
 				System.out.println("-".repeat(100));
 				System.out.println("files");
@@ -56,24 +60,23 @@ public class TestSimple
 				db.getCollection("people").forEach(System.out::println);
 				System.out.println("-".repeat(100));
 				System.out.println("index:peopleLanguage");
-				db.getCollection("index:peopleLanguage").forEach(System.out::println);
+				db.getIndex("peopleLanguage").forEach(System.out::println);
 				System.out.println("-".repeat(100));
 				System.out.println("index:peopleRatings");
-				db.getCollection("index:peopleRatings").forEach(System.out::println);
+				db.getIndex("peopleRatings").forEach(System.out::println);
 				System.out.println("-".repeat(100));
 				System.out.println("index:peopleFirstName");
-				db.getCollection("index:peopleFirstName").forEach(System.out::println);
+				db.getIndex("peopleFirstName").forEach(System.out::println);
 				System.out.println("-".repeat(100));
 				System.out.println("index:peopleLastName");
-				db.getCollection("index:peopleLastName").forEach(System.out::println);
+				db.getIndex("peopleLastName").forEach(System.out::println);
 				System.out.println("-".repeat(100));
 				System.out.println("system:indices");
 				db.getCollection("system:indices").forEach(System.out::println);
 
 				System.out.println("-".repeat(100));
 
-				db.getCollection("index:peopleRatings").find(Document.of("rating:1")).forEach(System.out::println);
-
+				db.getIndex("peopleRatings").find(Document.of("rating:1")).forEach(System.out::println);
 
 //				System.out.println("-".repeat(100));
 //				db.getCollection("people").find(Document.of("ratings:2")).forEach(System.out::println);
@@ -105,7 +108,6 @@ public class TestSimple
 //				db.getCollection("people").find(Document.of("firstName:{$endsWith:bob, $ignoreCase:true}")).forEach(System.out::println);
 //				System.out.println("-".repeat(100));
 //				db.getCollection("people").find(Document.of("firstName:{$contains:bob, $ignoreCase:true}")).forEach(System.out::println);
-
 				db.commit();
 			}
 

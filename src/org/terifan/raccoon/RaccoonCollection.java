@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import static org.terifan.raccoon.RaccoonDatabase.INDEX_COLLECTION;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobHeader;
@@ -188,13 +187,13 @@ public final class RaccoonCollection
 	}
 
 
-//	public void createIndex(Document aDocument)
-//	{
-//		Log.i("create index");
-//		Log.inc();
-//
-//		try (WriteLock lock = mLock.writeLock())
-//		{
+	public void createIndex(Document aConfiguration, Document aFields)
+	{
+		Log.i("create index");
+		Log.inc();
+
+		try (WriteLock lock = mLock.writeLock())
+		{
 //			RaccoonCollection collection = mDatabase.getCollection(INDEX_COLLECTION);
 //
 //			collection.find(new Document().put("collection", mConfiguration.getObjectId("_id")));
@@ -203,12 +202,12 @@ public final class RaccoonCollection
 //			collection.save(conf);
 //
 //			System.out.println(conf);
-//		}
-//		finally
-//		{
-//			Log.dec();
-//		}
-//	}
+		}
+		finally
+		{
+			Log.dec();
+		}
+	}
 
 
 	private boolean insertOrUpdate(Document aDocument, boolean aInsert)

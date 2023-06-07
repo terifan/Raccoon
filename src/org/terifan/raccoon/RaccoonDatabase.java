@@ -276,6 +276,12 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
+	public synchronized RaccoonCollection getIndex(String aName)
+	{
+		return getCollection("index:" + aName);
+	}
+
+
 	public synchronized RaccoonCollection getCollection(String aName)
 	{
 		checkOpen();
