@@ -6,12 +6,44 @@ import java.util.UUID;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
-import org.terifan.raccoon.document.Array;
 
 
 public class TestSimple
 {
-	public static void main(String... args)
+	public static void main(String ... args)
+	{
+		try
+		{
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
+			{
+				db.getCollection("people").createIndex(Document.of("name:language,unique:false"), Document.of("language/*:1"));
+
+				db.getCollection("people").saveAll(
+					Document.of("_id:1,firstName:adam,language:[en,fr]"),
+					Document.of("_id:2,firstName:eve,language:[en]"),
+					Document.of("_id:3,firstName:steve,language:[kr]"),
+					Document.of("_id:4,firstName:walter,language:[en]"),
+					Document.of("_id:5,firstName:barbara,language:[en,fr,de]"),
+					Document.of("_id:6,firstName:bob,language:[en,de]")
+				);
+
+				System.out.println(db.getCollectionNames());
+
+				db.getIndex("language").forEach(System.out::println);
+
+				System.out.println("-".repeat(100));
+
+				db.getCollection("people").find(Document.of("language:en")).forEach(System.out::println);
+			}
+		}
+		catch (Throwable e)
+		{
+			e.printStackTrace(System.out);
+		}
+	}
+
+
+	public static void xmain(String... args)
 	{
 		try
 		{

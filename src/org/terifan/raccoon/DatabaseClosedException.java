@@ -11,9 +11,9 @@ public class DatabaseClosedException extends IllegalStateException
 	}
 
 
-	public DatabaseClosedException(String aS)
+	public DatabaseClosedException(String aMessage)
 	{
-		super(aS);
+		super(aMessage);
 	}
 
 

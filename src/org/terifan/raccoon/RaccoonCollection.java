@@ -192,8 +192,17 @@ public final class RaccoonCollection
 		Log.i("create index");
 		Log.inc();
 
-		try (WriteLock lock = mLock.writeLock())
-		{
+		Document indexConf = new Document()
+			.put("_id", aConfiguration.getString("name"))
+			.put("conf", aConfiguration)
+			.put("fields", aFields);
+
+		mDatabase.getCollection("system:indices").save(indexConf);
+
+		mDatabase.mIndices.computeIfAbsent(getName(), n -> new Array()).add(indexConf);
+
+//		try (WriteLock lock = mLock.writeLock())
+//		{
 //			RaccoonCollection collection = mDatabase.getCollection(INDEX_COLLECTION);
 //
 //			collection.find(new Document().put("collection", mConfiguration.getObjectId("_id")));
@@ -202,11 +211,11 @@ public final class RaccoonCollection
 //			collection.save(conf);
 //
 //			System.out.println(conf);
-		}
-		finally
-		{
-			Log.dec();
-		}
+//		}
+//		finally
+//		{
+//			Log.dec();
+//		}
 	}
 
 
@@ -258,15 +267,21 @@ public final class RaccoonCollection
 
 		for (Document indexConf : mDatabase.mIndices.getOrDefault(mConfiguration.getString("name"), new Array()).iterable(Document.class))
 		{
+			boolean unique = indexConf.getDocument("conf").get("unique", false);
 			ArrayList<Array> result = new ArrayList<>();
 			generatePermutations(indexConf, aDocument, new Array(), 0, result);
 			for (Array values : result)
 			{
 				Document indexEntry = new Document().put("_id", values);
 
-				if (indexConf.get("unique", false))
+				if (unique)
 				{
 					indexEntry.put("_ref", aDocument.get("_id"));
+					Document existing = mDatabase.getCollection("index:" + indexConf.getString("_id")).get(new Document().put("_id", values));
+					if (existing != null && !existing.get("_ref").equals(aDocument.get("_id")))
+					{
+						throw new UniqueConstraintException("Collection <" + getName() + ">, index <" + indexConf.getString("_id") + ">, existing ID <" + existing.get("_ref") + ">, saving ID <" + aDocument.get("_id") + ">, values " + values.toJson());
+					}
 				}
 				else
 				{
@@ -282,14 +297,14 @@ public final class RaccoonCollection
 
 	private void generatePermutations(Document aIndexConf, Document aDocument, Array aIndexValues, int aPosition, ArrayList<Array> aResult)
 	{
-		Array confs = aIndexConf.getArray("fields");
+		Document confs = aIndexConf.getDocument("fields");
 		if (aPosition == confs.size())
 		{
 			aResult.add(aIndexValues);
 		}
 		else
 		{
-			for (Object value : aDocument.findMany(confs.get(aPosition)))
+			for (Object value : aDocument.findMany(confs.keySet().get(aPosition)))
 			{
 				Array tmp = aIndexValues.clone();
 				tmp.add(value);

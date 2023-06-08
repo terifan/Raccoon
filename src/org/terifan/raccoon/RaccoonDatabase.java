@@ -702,21 +702,21 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public void createIndex(String aIndexName, String aOnCollection, boolean aUnique, String... aFieldNames)
-	{
-		if (aFieldNames.length == 0)
-		{
-			throw new IllegalArgumentException();
-		}
-
-		Document indexConf = new Document()
-			.put("_id", aIndexName)
-			.put("onCollection", aOnCollection)
-			.put("unique", aUnique)
-			.put("fields", Array.of(aFieldNames));
-
-		getCollection("system:indices").save(indexConf);
-
-		mIndices.computeIfAbsent(aOnCollection, n -> new Array()).add(indexConf);
-	}
+//	public void createIndex(String aIndexName, String aOnCollection, boolean aUnique, String... aFieldNames)
+//	{
+//		if (aFieldNames.length == 0)
+//		{
+//			throw new IllegalArgumentException();
+//		}
+//
+//		Document indexConf = new Document()
+//			.put("_id", aIndexName)
+//			.put("onCollection", aOnCollection)
+//			.put("unique", aUnique)
+//			.put("fields", Array.of(aFieldNames));
+//
+//		getCollection("system:indices").save(indexConf);
+//
+//		mIndices.computeIfAbsent(aOnCollection, n -> new Array()).add(indexConf);
+//	}
 }
