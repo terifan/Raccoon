@@ -1,24 +1,30 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.BTreeNode.VisitorState;
+
 
 class BTreeVisitor
 {
-	void anyNode(BTree aImplementation, BTreeNode aNode)
+	VisitorState anyNode(BTree aImplementation, BTreeNode aNode)
 	{
+		return VisitorState.CONTINUE;
 	}
 
 
-	void beforeIndex(BTree aImplementation, BTreeIndex aNode)
+	VisitorState beforeIndex(BTree aImplementation, BTreeIndex aNode, ArrayMapKey aLowestKey)
 	{
+		return VisitorState.CONTINUE;
 	}
 
 
-	void afterIndex(BTree aImplementation, BTreeIndex aNode)
+	VisitorState afterIndex(BTree aImplementation, BTreeIndex aNode)
 	{
+		return VisitorState.CONTINUE;
 	}
 
 
-	void leaf(BTree aImplementation, BTreeLeaf aNode)
+	VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
 	{
+		return VisitorState.CONTINUE;
 	}
 }

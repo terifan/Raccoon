@@ -2,6 +2,7 @@ package test;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Random;
 import java.util.UUID;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
@@ -14,26 +15,26 @@ public class TestSimple
 	{
 		try
 		{
+			Random rnd = new Random(1);
+
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
 			{
-				db.getCollection("people").createIndex(Document.of("name:language,unique:false"), Document.of("language/*:1"));
+				db.getCollection("numbers").createIndex(Document.of("name:number,unique:false"), Document.of("number:1,subject:1"));
 
-				db.getCollection("people").saveAll(
-					Document.of("_id:1,firstName:adam,language:[en,fr]"),
-					Document.of("_id:2,firstName:eve,language:[en]"),
-					Document.of("_id:3,firstName:steve,language:[kr]"),
-					Document.of("_id:4,firstName:walter,language:[en]"),
-					Document.of("_id:5,firstName:barbara,language:[en,fr,de]"),
-					Document.of("_id:6,firstName:bob,language:[en,de]")
-				);
+				for (int i = 0; i < 10_000; i++)
+				{
+					int j = rnd.nextInt(1000);
+					db.getCollection("numbers").save(Document.of("number:" + j + ",_id:" + j+",subject:"+"s".repeat(600)+",body:"+"b".repeat(800)));
+				}
 
 				System.out.println(db.getCollectionNames());
 
-				db.getIndex("language").forEach(System.out::println);
+//				db.getIndex("number").forEach(System.out::println);
 
 				System.out.println("-".repeat(100));
 
-				db.getCollection("people").find(Document.of("language:en")).forEach(System.out::println);
+				System.out.println(db.getCollection("numbers").find(Document.of("number:7")).size());
+//				db.getCollection("numbers").find(Document.of("number:7")).forEach(System.out::println);
 			}
 		}
 		catch (Throwable e)

@@ -77,7 +77,7 @@ public abstract class BTreeNode
 	abstract RemoveResult remove(BTree aImplementation, ArrayMapKey aKey, Result<ArrayMapEntry> oOldEntry);
 
 
-	abstract void visit(BTree aImplementation, BTreeVisitor aVisitor);
+	abstract VisitorState visit(BTree aImplementation, BTreeVisitor aVisitor, ArrayMapKey aLowestKey);
 
 
 	abstract SplitResult split(BTree aImplementation);
@@ -87,4 +87,12 @@ public abstract class BTreeNode
 
 
 	protected abstract void postCommit();
+
+
+	enum VisitorState
+	{
+		CONTINUE,
+		ABORT,
+		SKIP
+	}
 }

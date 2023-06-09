@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.BTreeNode.RemoveResult;
+import org.terifan.raccoon.BTreeNode.VisitorState;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.blockdevice.compressor.CompressorLevel;
@@ -175,7 +176,7 @@ public class BTree implements AutoCloseable
 
 		try
 		{
-			mRoot.visit(this, aVisitor);
+			mRoot.visit(this, aVisitor, null);
 		}
 		catch (AbortIteratorException e)
 		{
@@ -277,9 +278,10 @@ public class BTree implements AutoCloseable
 		visit(new BTreeVisitor()
 		{
 			@Override
-			void leaf(BTree aImplementation, BTreeLeaf aNode)
+			VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
 			{
 				result.addAndGet(aNode.mMap.size());
+				return VisitorState.CONTINUE;
 			}
 		});
 
@@ -337,16 +339,17 @@ public class BTree implements AutoCloseable
 		mRoot.visit(this, new BTreeVisitor()
 		{
 			@Override
-			void anyNode(BTree aImplementation, BTreeNode aNode)
+			VisitorState anyNode(BTree aImplementation, BTreeNode aNode)
 			{
 				String tmp = aNode.mMap.integrityCheck();
 				if (tmp != null)
 				{
 					result.set(tmp);
-					throw new AbortIteratorException();
+					return VisitorState.ABORT;
 				}
+				return VisitorState.CONTINUE;
 			}
-		});
+		}, null);
 
 		return result.get();
 	}

@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.terifan.raccoon.BTreeNode.VisitorState;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobHeader;
@@ -396,9 +397,10 @@ public final class RaccoonCollection
 			mImplementation.visit(new BTreeVisitor()
 			{
 				@Override
-				void leaf(BTree aImplementation, BTreeLeaf aNode)
+				VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
 				{
 					aNode.mMap.forEach(e -> list.add((T)unmarshalDocument(e, aDocumentSupplier.get())));
+					return VisitorState.CONTINUE;
 				}
 			});
 		}
@@ -416,9 +418,10 @@ public final class RaccoonCollection
 			mImplementation.visit(new BTreeVisitor()
 			{
 				@Override
-				void leaf(BTree aImplementation, BTreeLeaf aNode)
+				VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
 				{
 					aNode.mMap.forEach(e -> aAction.accept(unmarshalDocument(e, new Document())));
+					return VisitorState.CONTINUE;
 				}
 			});
 		}
@@ -471,17 +474,19 @@ public final class RaccoonCollection
 			mImplementation.visit(new BTreeVisitor()
 			{
 				@Override
-				void leaf(BTree aImplementation, BTreeLeaf aNode)
+				VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
 				{
 					aNode.mMap.forEach(e -> deleteLob(e, false));
 					prev.freeBlock(aNode.mBlockPointer);
+					return VisitorState.CONTINUE;
 				}
 
 
 				@Override
-				void afterIndex(BTree aImplementation, BTreeIndex aNode)
+				VisitorState afterIndex(BTree aImplementation, BTreeIndex aNode)
 				{
 					prev.freeBlock(aNode.mBlockPointer);
+					return VisitorState.CONTINUE;
 				}
 			});
 
@@ -635,7 +640,8 @@ public final class RaccoonCollection
 		Log.i("find %s", aQuery);
 		Log.inc();
 
-//		System.out.println(aQuery);
+		System.out.println(aQuery);
+
 		try (ReadLock lock = mLock.readLock())
 		{
 			ArrayList<Document> list = new ArrayList<>();
@@ -643,14 +649,31 @@ public final class RaccoonCollection
 			mImplementation.visit(new BTreeVisitor()
 			{
 				@Override
-				void leaf(BTree aImplementation, BTreeLeaf aNode)
+				VisitorState beforeIndex(BTree aImplementation, BTreeIndex aNode, ArrayMapKey aLowestKey)
 				{
+					System.out.println("*" + aLowestKey);
+					System.out.println("*" + aNode);
+//					VisitorState s = aNode.toString().startsWith("BTreeIndex{mLevel=2, mMap=[\"\",\"266\"") || aNode.toString().startsWith("BTreeIndex{mLevel=1, mMap=[\"\",\"268\"") ? VisitorState.CONTINUE : VisitorState.SKIP;
+//					System.out.println(s);
+//					return s;
+					return VisitorState.CONTINUE;
+				}
+
+				@Override
+				VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
+				{
+//					System.out.println(aNode);
 					for (int i = 0; i < aNode.mMap.size(); i++)
 					{
-						list.add(unmarshalDocument(aNode.mMap.get(i, new ArrayMapEntry()), new Document()));
+						ArrayMapEntry entry = aNode.mMap.get(i, new ArrayMapEntry());
+						Document doc = unmarshalDocument(entry, new Document());
+						list.add(doc);
 					}
+					return VisitorState.CONTINUE;
 				}
 			});
+
+			System.out.println(list.size());
 
 			return list;
 		}

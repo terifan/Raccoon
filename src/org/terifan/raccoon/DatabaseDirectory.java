@@ -1,6 +1,7 @@
 package org.terifan.raccoon;
 
 import java.util.ArrayList;
+import org.terifan.raccoon.BTreeNode.VisitorState;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.document.Document;
@@ -65,9 +66,10 @@ class DatabaseDirectory
 		mStorage.visit(new BTreeVisitor()
 		{
 			@Override
-			void leaf(BTree aImplementation, BTreeLeaf aNode)
+			VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
 			{
 				aNode.mMap.forEach(entry -> list.add(entry.getKey().toString()));
+				return VisitorState.CONTINUE;
 			}
 		});
 

@@ -135,17 +135,30 @@ public class BTreeIndex extends BTreeNode
 
 
 	@Override
-	void visit(BTree aImplementation, BTreeVisitor aVisitor)
+	VisitorState visit(BTree aImplementation, BTreeVisitor aVisitor, ArrayMapKey aLowestKey)
 	{
-		aVisitor.anyNode(aImplementation, this);
-		aVisitor.beforeIndex(aImplementation, this);
+		VisitorState state = aVisitor.anyNode(aImplementation, this);
 
-		for (int i = 0; i < mMap.size(); i++)
+		if (state == VisitorState.CONTINUE)
 		{
-			getNode(aImplementation, i).visit(aImplementation, aVisitor);
+			state = aVisitor.beforeIndex(aImplementation, this, aLowestKey);
+
+			if (state == VisitorState.CONTINUE)
+			{
+				for (int i = 0; i < mMap.size(); i++)
+				{
+					BTreeNode node = getNode(aImplementation, i);
+
+					node.visit(aImplementation, aVisitor, aLowestKey);
+
+					aLowestKey = node.mMap.getLast().getKey();
+				}
+
+				state = aVisitor.afterIndex(aImplementation, this);
+			}
 		}
 
-		aVisitor.afterIndex(aImplementation, this);
+		return state;
 	}
 
 

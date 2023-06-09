@@ -3,6 +3,7 @@ package org.terifan.raccoon;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
 import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import org.terifan.raccoon.ArrayMap.PutResult;
+import static org.terifan.raccoon.BTreeNode.VisitorState.CONTINUE;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.blockdevice.util.Console;
 import org.terifan.raccoon.util.Result;
@@ -46,10 +47,14 @@ public class BTreeLeaf extends BTreeNode
 
 
 	@Override
-	void visit(BTree aImplementation, BTreeVisitor aVisitor)
+	VisitorState visit(BTree aImplementation, BTreeVisitor aVisitor, ArrayMapKey aLowestKey)
 	{
-		aVisitor.anyNode(aImplementation, this);
-		aVisitor.leaf(aImplementation, this);
+		VisitorState state = aVisitor.anyNode(aImplementation, this);
+		if (state == CONTINUE)
+		{
+			state = aVisitor.leaf(aImplementation, this);
+		}
+		return state;
 	}
 
 
