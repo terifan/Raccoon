@@ -18,23 +18,33 @@ public class TestSimple
 			Random rnd = new Random(1);
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
+//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.READ_ONLY, null))
 			{
-				db.getCollection("numbers").createIndex(Document.of("name:number,unique:false"), Document.of("number:1,subject:1"));
+				db.getCollection("numbers").createIndex(Document.of("name:number,unique:false,clone:true"), Document.of("number:1,subject:1"));
 
 				for (int i = 0; i < 10_000; i++)
 				{
 					int j = rnd.nextInt(1000);
-					db.getCollection("numbers").save(Document.of("number:" + j + ",_id:" + j+",subject:"+"s".repeat(600)+",body:"+"b".repeat(800)));
+					String subject = "";
+					for (int k = 0; k < 200; k++)
+					{
+						subject += (char)('a' + rnd.nextInt(25));
+					}
+					db.getCollection("numbers").save(Document.of("number:" + j + ",_id:" + i+",subject:"+subject+",body:"+"b".repeat(800)));
 				}
 
 				System.out.println(db.getCollectionNames());
+				System.out.println(db.getCollection("numbers").listAll().size());
+				System.out.println(db.getCollection("index:number").listAll().size());
 
 //				db.getIndex("number").forEach(System.out::println);
 
 				System.out.println("-".repeat(100));
 
-				System.out.println(db.getCollection("numbers").find(Document.of("number:7")).size());
+				System.out.println(db.getCollection("index:number").find(Document.of("number:7")).size());
 //				db.getCollection("numbers").find(Document.of("number:7")).forEach(System.out::println);
+
+				db.commit();
 			}
 		}
 		catch (Throwable e)

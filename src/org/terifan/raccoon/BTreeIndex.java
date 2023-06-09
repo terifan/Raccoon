@@ -45,7 +45,10 @@ public class BTreeIndex extends BTreeNode
 		mMap.loadNearestIndexEntry(nearestEntry);
 		BTreeNode nearestNode = getNode(aImplementation, nearestEntry);
 
-		if (mLevel == 1 ? nearestNode.mMap.getCapacity() > aImplementation.getConfiguration().getInt("leafBlockSize") || nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > aImplementation.getConfiguration().getInt("intBlockSize"))
+		int leafBlockSize = aImplementation.getConfiguration().getInt("leafBlockSize");
+		int intBlockSize = aImplementation.getConfiguration().getInt("intBlockSize");
+
+		if (mLevel == 1 ? nearestNode.mMap.getCapacity() > leafBlockSize || nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > intBlockSize)
 		{
 			ArrayMapKey leftKey = nearestEntry.getKey();
 

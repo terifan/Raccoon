@@ -269,6 +269,8 @@ public final class RaccoonCollection
 		for (Document indexConf : mDatabase.mIndices.getOrDefault(mConfiguration.getString("name"), new Array()).iterable(Document.class))
 		{
 			boolean unique = indexConf.getDocument("conf").get("unique", false);
+			boolean clone = indexConf.getDocument("conf").get("clone", false);
+
 			ArrayList<Array> result = new ArrayList<>();
 			generatePermutations(indexConf, aDocument, new Array(), 0, result);
 			for (Array values : result)
@@ -278,8 +280,10 @@ public final class RaccoonCollection
 				if (unique)
 				{
 					indexEntry.put("_ref", aDocument.get("_id"));
+
 					Document existing = mDatabase.getCollection("index:" + indexConf.getString("_id")).get(new Document().put("_id", values));
-					if (existing != null && !existing.get("_ref").equals(aDocument.get("_id")))
+
+					if (existing != null && !aDocument.get("_id").equals(existing.get("_ref")))
 					{
 						throw new UniqueConstraintException("Collection <" + getName() + ">, index <" + indexConf.getString("_id") + ">, existing ID <" + existing.get("_ref") + ">, saving ID <" + aDocument.get("_id") + ">, values " + values.toJson());
 					}
@@ -288,6 +292,12 @@ public final class RaccoonCollection
 				{
 					values.add(aDocument.get("_id"));
 				}
+
+				if (clone)
+				{
+					indexEntry.put("_clone", aDocument);
+				}
+
 				mDatabase.getCollection("index:" + indexConf.getString("_id")).save(indexEntry);
 			}
 		}
@@ -652,7 +662,7 @@ public final class RaccoonCollection
 				VisitorState beforeIndex(BTree aImplementation, BTreeIndex aNode, ArrayMapKey aLowestKey)
 				{
 					System.out.println("*" + aLowestKey);
-					System.out.println("*" + aNode);
+					System.out.println("... ".repeat(3-aNode.mLevel) + aNode.mLevel+", "+aNode.size());
 //					VisitorState s = aNode.toString().startsWith("BTreeIndex{mLevel=2, mMap=[\"\",\"266\"") || aNode.toString().startsWith("BTreeIndex{mLevel=1, mMap=[\"\",\"268\"") ? VisitorState.CONTINUE : VisitorState.SKIP;
 //					System.out.println(s);
 //					return s;
