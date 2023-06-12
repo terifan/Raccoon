@@ -30,13 +30,11 @@ import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
 import org.terifan.raccoon.blockdevice.LobHeader;
-import org.terifan.raccoon.document.Array;
+import org.terifan.raccoon.util.DualMap;
 
 
 public final class RaccoonDatabase implements AutoCloseable
 {
-	final static String INDEX_COLLECTION = "::index";
-
 	public final static String TENANT_NAME = "RaccoonDB";
 	public final static int TENANT_VERSION = 1;
 
@@ -48,7 +46,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	private final ConcurrentSkipListMap<String, RaccoonCollection> mCollectionInstances;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 
-	final HashMap<String, Array> mIndices;
+	final DualMap<ObjectId, ObjectId, Document> mIndices;
 
 	private boolean mModified;
 	private boolean mCloseDeviceOnCloseDatabase;
@@ -58,7 +56,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	private RaccoonDatabase()
 	{
-		mIndices = new HashMap<>();
+		mIndices = new DualMap<>();
 		mLock = new ReadWriteLock();
 		mCollectionInstances = new ConcurrentSkipListMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
@@ -226,7 +224,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 				for (Document indexConf : getCollection("system:indices").listAll())
 				{
-					mIndices.computeIfAbsent(indexConf.getString("onCollection"), n -> new Array()).add(indexConf);
+					mIndices.put(indexConf.getArray("_id").getObjectId(0), indexConf.getArray("_id").getObjectId(1), indexConf);
 				}
 
 				Log.dec();
@@ -278,7 +276,17 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	public synchronized RaccoonCollection getIndex(String aName)
 	{
-		return getCollection("index:" + aName);
+		for (HashMap<ObjectId, Document> entry : mIndices.values())
+		{
+			for (Document conf : entry.values())
+			{
+				if (aName.equals(conf.getDocument("configuration").getString("name")))
+				{
+					return getCollection("index:" + conf.getObjectId("_id"));
+				}
+			}
+		}
+		return null;
 	}
 
 

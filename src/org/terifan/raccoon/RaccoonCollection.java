@@ -193,14 +193,16 @@ public final class RaccoonCollection
 		Log.i("create index");
 		Log.inc();
 
+		Array id = Array.of(mConfiguration.getObjectId("_id"), ObjectId.randomId());
+
 		Document indexConf = new Document()
-			.put("_id", aConfiguration.getString("name"))
-			.put("conf", aConfiguration)
+			.put("_id", id)
+			.put("configuration", aConfiguration)
 			.put("fields", aFields);
 
 		mDatabase.getCollection("system:indices").save(indexConf);
 
-		mDatabase.mIndices.computeIfAbsent(getName(), n -> new Array()).add(indexConf);
+		mDatabase.mIndices.put(id.getObjectId(0), id.getObjectId(1), indexConf);
 
 //		try (WriteLock lock = mLock.writeLock())
 //		{
@@ -266,10 +268,10 @@ public final class RaccoonCollection
 			deleteIndexEntries(prevDoc);
 		}
 
-		for (Document indexConf : mDatabase.mIndices.getOrDefault(mConfiguration.getString("name"), new Array()).iterable(Document.class))
+		for (Document indexConf : mDatabase.mIndices.values(mConfiguration.getObjectId("_id")))
 		{
-			boolean unique = indexConf.getDocument("conf").get("unique", false);
-			boolean clone = indexConf.getDocument("conf").get("clone", false);
+			boolean unique = indexConf.getDocument("configuration").get("unique", false);
+			boolean clone = indexConf.getDocument("configuration").get("clone", false);
 
 			ArrayList<Array> result = new ArrayList<>();
 			generatePermutations(indexConf, aDocument, new Array(), 0, result);
@@ -281,11 +283,11 @@ public final class RaccoonCollection
 				{
 					indexEntry.put("_ref", aDocument.get("_id"));
 
-					Document existing = mDatabase.getCollection("index:" + indexConf.getString("_id")).get(new Document().put("_id", values));
+					Document existing = getIndexByConf(indexConf).get(new Document().put("_id", values));
 
 					if (existing != null && !aDocument.get("_id").equals(existing.get("_ref")))
 					{
-						throw new UniqueConstraintException("Collection <" + getName() + ">, index <" + indexConf.getString("_id") + ">, existing ID <" + existing.get("_ref") + ">, saving ID <" + aDocument.get("_id") + ">, values " + values.toJson());
+						throw new UniqueConstraintException("Collection <" + getName() + ">, index <" + indexConf.getObjectId("_id") + ">, existing ID <" + existing.get("_ref") + ">, saving ID <" + aDocument.get("_id") + ">, values " + values.toJson());
 					}
 				}
 				else
@@ -298,7 +300,7 @@ public final class RaccoonCollection
 					indexEntry.put("_clone", aDocument);
 				}
 
-				mDatabase.getCollection("index:" + indexConf.getString("_id")).save(indexEntry);
+				getIndexByConf(indexConf).save(indexEntry);
 			}
 		}
 
@@ -360,7 +362,7 @@ public final class RaccoonCollection
 
 	private void deleteIndexEntries(Document aPrevDoc)
 	{
-		for (Document indexConf : mDatabase.mIndices.getOrDefault(mConfiguration.getString("name"), new Array()).iterable(Document.class))
+		for (Document indexConf : mDatabase.mIndices.values(mConfiguration.getObjectId("_id")))
 		{
 //			ArrayList<Array> result = new ArrayList<>();
 //			generatePermutations(indexConf, aPrevDoc, new Array(), 0, result);
@@ -368,16 +370,22 @@ public final class RaccoonCollection
 //			{
 //			}
 
-			List<Document> list = mDatabase.getCollection("index:" + indexConf.getString("_id")).listAll();
+			List<Document> list = getIndexByConf(indexConf).listAll();
 			for (Document doc : list)
 			{
 //				if (doc.get("_ref").equals(aPrevDoc.get("_id")))
 				{
-					mDatabase.getCollection("index:" + indexConf.getString("_id")).delete(doc);
+					getIndexByConf(indexConf).delete(doc);
 					break;
 				}
 			}
 		}
+	}
+
+
+	public RaccoonCollection getIndexByConf(Document aIndexConf)
+	{
+		return mDatabase.getCollection("index:" + aIndexConf.getArray("_id"));
 	}
 
 
@@ -500,9 +508,9 @@ public final class RaccoonCollection
 				}
 			});
 
-			for (Document indexConf : mDatabase.mIndices.getOrDefault(mConfiguration.getString("name"), new Array()).iterable(Document.class))
+			for (Document indexConf : mDatabase.mIndices.values(mConfiguration.getObjectId("_id")))
 			{
-				mDatabase.getCollection("index:" + indexConf.getString("_id")).clear();
+				getIndexByConf(indexConf).clear();
 			}
 		}
 	}
@@ -652,36 +660,33 @@ public final class RaccoonCollection
 
 		System.out.println(aQuery);
 
+		System.out.println(mDatabase.mIndices);
+
 		try (ReadLock lock = mLock.readLock())
 		{
 			ArrayList<Document> list = new ArrayList<>();
 
-			mImplementation.visit(new BTreeVisitor()
-			{
-				@Override
-				VisitorState beforeIndex(BTree aImplementation, BTreeIndex aNode, ArrayMapKey aLowestKey)
-				{
-					System.out.println("*" + aLowestKey);
-					System.out.println("... ".repeat(3-aNode.mLevel) + aNode.mLevel+", "+aNode.size());
-//					VisitorState s = aNode.toString().startsWith("BTreeIndex{mLevel=2, mMap=[\"\",\"266\"") || aNode.toString().startsWith("BTreeIndex{mLevel=1, mMap=[\"\",\"268\"") ? VisitorState.CONTINUE : VisitorState.SKIP;
-//					System.out.println(s);
-//					return s;
-					return VisitorState.CONTINUE;
-				}
-
-				@Override
-				VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
-				{
-//					System.out.println(aNode);
-					for (int i = 0; i < aNode.mMap.size(); i++)
-					{
-						ArrayMapEntry entry = aNode.mMap.get(i, new ArrayMapEntry());
-						Document doc = unmarshalDocument(entry, new Document());
-						list.add(doc);
-					}
-					return VisitorState.CONTINUE;
-				}
-			});
+//			mImplementation.visit(new BTreeVisitor()
+//			{
+//				@Override
+//				VisitorState beforeIndex(BTree aImplementation, BTreeIndex aNode, ArrayMapKey aLowestKey)
+//				{
+//					return x(aImplementation, aNode, aLowestKey, aQuery)? VisitorState.CONTINUE : VisitorState.SKIP;
+//				}
+//
+//				@Override
+//				VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
+//				{
+////					System.out.println(aNode);
+//					for (int i = 0; i < aNode.mMap.size(); i++)
+//					{
+//						ArrayMapEntry entry = aNode.mMap.get(i, new ArrayMapEntry());
+//						Document doc = unmarshalDocument(entry, new Document());
+//						list.add(doc);
+//					}
+//					return VisitorState.CONTINUE;
+//				}
+//			});
 
 			System.out.println(list.size());
 
@@ -691,5 +696,15 @@ public final class RaccoonCollection
 		{
 			Log.dec();
 		}
+	}
+
+
+	private boolean x(BTree aImplementation, BTreeIndex aNode, ArrayMapKey aLowestKey, Document aQuery)
+	{
+		System.out.println("*" + aLowestKey);
+		System.out.println("... ".repeat(3-aNode.mLevel) + aNode.mLevel+", "+aNode.size());
+		System.out.println(aQuery);
+
+		return true;
 	}
 }

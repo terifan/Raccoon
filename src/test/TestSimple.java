@@ -11,7 +11,7 @@ import org.terifan.raccoon.DatabaseOpenOption;
 
 public class TestSimple
 {
-	public static void main(String ... args)
+	public static void main(String... args)
 	{
 		try
 		{
@@ -30,21 +30,19 @@ public class TestSimple
 					{
 						subject += (char)('a' + rnd.nextInt(25));
 					}
-					db.getCollection("numbers").save(Document.of("number:" + j + ",_id:" + i+",subject:"+subject+",body:"+"b".repeat(800)));
+					db.getCollection("numbers").save(Document.of("number:" + j + ",_id:" + i + ",subject:" + subject + ",body:" + "b".repeat(800)));
 				}
 
-				System.out.println(db.getCollectionNames());
-				System.out.println(db.getCollection("numbers").listAll().size());
-				System.out.println(db.getCollection("index:number").listAll().size());
-
-//				db.getIndex("number").forEach(System.out::println);
-
-				System.out.println("-".repeat(100));
-
-				System.out.println(db.getCollection("index:number").find(Document.of("number:7")).size());
-//				db.getCollection("numbers").find(Document.of("number:7")).forEach(System.out::println);
+				System.out.println(db.getCollection("numbers").find(Document.of("number:7")).size());
 
 				db.commit();
+			}
+
+			System.out.println("-".repeat(100));
+
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.READ_ONLY, null))
+			{
+				System.out.println(db.getCollection("numbers").find(Document.of("number:7")).size());
 			}
 		}
 		catch (Throwable e)
