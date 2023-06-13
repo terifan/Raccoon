@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.terifan.raccoon.BTreeNode.VisitorState;
@@ -193,7 +194,7 @@ public final class RaccoonCollection
 		Log.i("create index");
 		Log.inc();
 
-		Array id = Array.of(mConfiguration.getObjectId("_id"), ObjectId.randomId());
+		Array id = Array.of(getCollectionId(), ObjectId.randomId());
 
 		Document indexConf = new Document()
 			.put("_id", id)
@@ -208,7 +209,7 @@ public final class RaccoonCollection
 //		{
 //			RaccoonCollection collection = mDatabase.getCollection(INDEX_COLLECTION);
 //
-//			collection.find(new Document().put("collection", mConfiguration.getObjectId("_id")));
+//			collection.find(new Document().put("collection", getCollectionId()));
 //
 //			Document conf = new Document().put("_id", new Document().put("collection", mConfiguration.getObjectId("object")).put("_id", ObjectId.randomId())).put("configuration", aDocument);
 //			collection.save(conf);
@@ -268,7 +269,7 @@ public final class RaccoonCollection
 			deleteIndexEntries(prevDoc);
 		}
 
-		for (Document indexConf : mDatabase.mIndices.values(mConfiguration.getObjectId("_id")))
+		for (Document indexConf : mDatabase.mIndices.values(getCollectionId()))
 		{
 			boolean unique = indexConf.getDocument("configuration").get("unique", false);
 			boolean clone = indexConf.getDocument("configuration").get("clone", false);
@@ -362,7 +363,7 @@ public final class RaccoonCollection
 
 	private void deleteIndexEntries(Document aPrevDoc)
 	{
-		for (Document indexConf : mDatabase.mIndices.values(mConfiguration.getObjectId("_id")))
+		for (Document indexConf : mDatabase.mIndices.values(getCollectionId()))
 		{
 //			ArrayList<Array> result = new ArrayList<>();
 //			generatePermutations(indexConf, aPrevDoc, new Array(), 0, result);
@@ -477,8 +478,6 @@ public final class RaccoonCollection
 //
 //		return tmp;
 //	}
-
-
 	public void clear()
 	{
 		try (WriteLock lock = mLock.writeLock())
@@ -508,11 +507,17 @@ public final class RaccoonCollection
 				}
 			});
 
-			for (Document indexConf : mDatabase.mIndices.values(mConfiguration.getObjectId("_id")))
+			for (Document indexConf : mDatabase.mIndices.values(getCollectionId()))
 			{
 				getIndexByConf(indexConf).clear();
 			}
 		}
+	}
+
+
+	protected ObjectId getCollectionId()
+	{
+		return mConfiguration.getObjectId("_id");
 	}
 
 
@@ -659,34 +664,56 @@ public final class RaccoonCollection
 		Log.inc();
 
 		System.out.println(aQuery);
+//		System.out.println(mDatabase.mIndices);
 
-		System.out.println(mDatabase.mIndices);
+		Document bestIndex = null;
+		int matchingFields = 0;
+		ArrayList<String> queryKeys = aQuery.keySet();
+
+		for (Document conf : mDatabase.mIndices.get(getCollectionId()).values())
+		{
+			ArrayList<String> indexKeys = conf.getDocument("fields").keySet();
+
+			int i = 0;
+			for (; i < Math.min(indexKeys.size(), queryKeys.size()) && indexKeys.get(i).equals(queryKeys.get(i)); i++)
+			{
+			}
+
+			if (i > matchingFields || i == matchingFields && bestIndex != null && indexKeys.size() < conf.getDocument("fields").size())
+			{
+				bestIndex = conf;
+				matchingFields = i;
+			}
+		}
+
+//		System.out.println(matchingFields+" "+queryKeys.size());
+//		System.out.println(bestIndex);
 
 		try (ReadLock lock = mLock.readLock())
 		{
 			ArrayList<Document> list = new ArrayList<>();
 
-//			mImplementation.visit(new BTreeVisitor()
-//			{
-//				@Override
-//				VisitorState beforeIndex(BTree aImplementation, BTreeIndex aNode, ArrayMapKey aLowestKey)
-//				{
-//					return x(aImplementation, aNode, aLowestKey, aQuery)? VisitorState.CONTINUE : VisitorState.SKIP;
-//				}
-//
-//				@Override
-//				VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
-//				{
-////					System.out.println(aNode);
-//					for (int i = 0; i < aNode.mMap.size(); i++)
-//					{
-//						ArrayMapEntry entry = aNode.mMap.get(i, new ArrayMapEntry());
-//						Document doc = unmarshalDocument(entry, new Document());
-//						list.add(doc);
-//					}
-//					return VisitorState.CONTINUE;
-//				}
-//			});
+			mImplementation.visit(new BTreeVisitor()
+			{
+				@Override
+				VisitorState beforeIndex(BTree aImplementation, BTreeIndex aNode, ArrayMapKey aLowestKey)
+				{
+					return x(aImplementation, aNode, aLowestKey, aQuery)? VisitorState.CONTINUE : VisitorState.SKIP;
+				}
+
+				@Override
+				VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
+				{
+//					System.out.println(aNode);
+					for (int i = 0; i < aNode.mMap.size(); i++)
+					{
+						ArrayMapEntry entry = aNode.mMap.get(i, new ArrayMapEntry());
+						Document doc = unmarshalDocument(entry, new Document());
+						list.add(doc);
+					}
+					return VisitorState.CONTINUE;
+				}
+			});
 
 			System.out.println(list.size());
 
@@ -702,8 +729,7 @@ public final class RaccoonCollection
 	private boolean x(BTree aImplementation, BTreeIndex aNode, ArrayMapKey aLowestKey, Document aQuery)
 	{
 		System.out.println("*" + aLowestKey);
-		System.out.println("... ".repeat(3-aNode.mLevel) + aNode.mLevel+", "+aNode.size());
-		System.out.println(aQuery);
+		System.out.println("... ".repeat(3 - aNode.mLevel) + aNode.mLevel + ", " + aNode.size());
 
 		return true;
 	}
