@@ -11,7 +11,7 @@ import org.terifan.raccoon.DatabaseOpenOption;
 
 public class TestSimple
 {
-	public static void main(String... args)
+	public static void xxxmain(String... args)
 	{
 		try
 		{
