@@ -5,6 +5,7 @@ import org.terifan.raccoon.BTreeNode.VisitorState;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.document.Document;
+import org.terifan.raccoon.document.ObjectId;
 
 
 class DatabaseDirectory
@@ -34,9 +35,9 @@ class DatabaseDirectory
 	}
 
 
-	Document get(String aName)
+	Document get(Object aValue)
 	{
-		ArrayMapEntry entry = new ArrayMapEntry(new ArrayMapKey(aName));
+		ArrayMapEntry entry = new ArrayMapEntry(new ArrayMapKey(aValue));
 
 		if (mStorage.get(entry))
 		{
@@ -49,13 +50,16 @@ class DatabaseDirectory
 
 	void remove(String aName)
 	{
-		mStorage.remove(new ArrayMapEntry(new ArrayMapKey(aName)));
+		Document conf = get(aName);
+		mStorage.remove(new ArrayMapEntry(new ArrayMapKey(conf.getObjectId("_id"))));
+		mStorage.remove(new ArrayMapEntry(new ArrayMapKey(conf.getString("name"))));
 	}
 
 
-	void put(String aName, Document aConfiguration)
+	void put(Document aConfiguration)
 	{
-		mStorage.put(new ArrayMapEntry(new ArrayMapKey(aName), aConfiguration, (byte)0));
+		mStorage.put(new ArrayMapEntry(new ArrayMapKey(aConfiguration.getObjectId("_id")), aConfiguration, (byte)0));
+		mStorage.put(new ArrayMapEntry(new ArrayMapKey(aConfiguration.getString("name")), aConfiguration, (byte)0));
 	}
 
 
@@ -68,7 +72,13 @@ class DatabaseDirectory
 			@Override
 			VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
 			{
-				aNode.mMap.forEach(entry -> list.add(entry.getKey().toString()));
+				aNode.mMap.forEach(entry ->
+				{
+					if (entry.getKey().get() instanceof String)
+					{
+						list.add(entry.getKey().toString());
+					}
+				});
 				return VisitorState.CONTINUE;
 			}
 		});

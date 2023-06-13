@@ -689,6 +689,19 @@ public final class RaccoonCollection
 //		System.out.println(matchingFields+" "+queryKeys.size());
 //		System.out.println(bestIndex);
 
+		if (bestIndex != null)
+		{
+			System.out.println("INDEX: " + bestIndex);
+
+			return mDatabase.getCollection("index:" + bestIndex.getArray("_id")).findImpl(aQuery);
+		}
+
+		return findImpl(aQuery);
+	}
+
+
+	protected List<Document> findImpl(Document aQuery)
+	{
 		try (ReadLock lock = mLock.readLock())
 		{
 			ArrayList<Document> list = new ArrayList<>();

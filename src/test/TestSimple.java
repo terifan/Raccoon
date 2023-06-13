@@ -42,6 +42,8 @@ public class TestSimple
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.READ_ONLY, null))
 			{
+				System.out.println("" + db.getCollectionNames());
+
 				System.out.println(db.getCollection("numbers").find(Document.of("number:7")).size());
 			}
 		}

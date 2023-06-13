@@ -9,8 +9,8 @@ public class ArrayMapKey
 {
 	public final static ArrayMapKey EMPTY = new ArrayMapKey("");
 
-	private byte[] mBuffer;
-	private Object mDeserialized;
+	private byte[] mSerialized;
+	private Object mInstance;
 
 
 	public ArrayMapKey()
@@ -18,28 +18,28 @@ public class ArrayMapKey
 	}
 
 
-	public ArrayMapKey(Object aValue)
+	public ArrayMapKey(Object aInstance)
 	{
-		mDeserialized = aValue;
-		mBuffer = Array.of(aValue).toByteArray();
+		mInstance = aInstance;
+		mSerialized = Array.of(aInstance).toByteArray();
 	}
 
 
 	public ArrayMapKey(byte[] aBuffer, int aOffset, int aLength)
 	{
-		mBuffer = Arrays.copyOfRange(aBuffer, aOffset, aOffset + aLength);
+		mSerialized = Arrays.copyOfRange(aBuffer, aOffset, aOffset + aLength);
 	}
 
 
 	public byte[] array()
 	{
-		return mBuffer;
+		return mSerialized;
 	}
 
 
 	public int size()
 	{
-		return mBuffer.length;
+		return mSerialized.length;
 	}
 
 
@@ -50,7 +50,7 @@ public class ArrayMapKey
 
 //		System.out.println(a + "\t" + b);
 
-		if (a.getClass() != b.getClass() || a instanceof UUID)
+		if (a.getClass() != b.getClass())
 		{
 			return a.toString().compareTo(b.toString());
 		}
@@ -62,7 +62,7 @@ public class ArrayMapKey
 	@Override
 	public int hashCode()
 	{
-		return Arrays.hashCode(mBuffer);
+		return Arrays.hashCode(mSerialized);
 	}
 
 
@@ -72,7 +72,7 @@ public class ArrayMapKey
 		if (aOther instanceof ArrayMapKey)
 		{
 			ArrayMapKey other = (ArrayMapKey)aOther;
-			return Arrays.equals(mBuffer, other.mBuffer);
+			return Arrays.equals(mSerialized, other.mSerialized);
 		}
 		return false;
 	}
@@ -87,6 +87,6 @@ public class ArrayMapKey
 
 	public Object get()
 	{
-		return mDeserialized = (mDeserialized != null ? mDeserialized : new Array().fromByteArray(mBuffer).get(0));
+		return mInstance = (mInstance != null ? mInstance : new Array().fromByteArray(mSerialized).get(0));
 	}
 }
