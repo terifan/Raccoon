@@ -416,7 +416,7 @@ public final class RaccoonCollection
 			mImplementation.visit(new BTreeVisitor()
 			{
 				@Override
-				VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
+				VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
 				{
 					aNode.mMap.forEach(e -> list.add((T)unmarshalDocument(e, aDocumentSupplier.get())));
 					return VisitorState.CONTINUE;
@@ -437,7 +437,7 @@ public final class RaccoonCollection
 			mImplementation.visit(new BTreeVisitor()
 			{
 				@Override
-				VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
+				VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
 				{
 					aNode.mMap.forEach(e -> aAction.accept(unmarshalDocument(e, new Document())));
 					return VisitorState.CONTINUE;
@@ -491,7 +491,7 @@ public final class RaccoonCollection
 			mImplementation.visit(new BTreeVisitor()
 			{
 				@Override
-				VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
+				VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
 				{
 					aNode.mMap.forEach(e -> deleteLob(e, false));
 					prev.freeBlock(aNode.mBlockPointer);
@@ -500,7 +500,7 @@ public final class RaccoonCollection
 
 
 				@Override
-				VisitorState afterIndex(BTree aImplementation, BTreeIndex aNode)
+				VisitorState afterInteriorNode(BTree aImplementation, BTreeInteriorNode aNode)
 				{
 					prev.freeBlock(aNode.mBlockPointer);
 					return VisitorState.CONTINUE;
@@ -696,13 +696,13 @@ public final class RaccoonCollection
 			mImplementation.visit(new BTreeVisitor()
 			{
 				@Override
-				VisitorState beforeIndex(BTree aImplementation, BTreeIndex aNode, ArrayMapKey aLowestKey)
+				VisitorState beforeInteriorNode(BTree aImplementation, BTreeInteriorNode aNode, ArrayMapKey aLowestKey)
 				{
 					return x(aImplementation, aNode, aLowestKey, aQuery)? VisitorState.CONTINUE : VisitorState.SKIP;
 				}
 
 				@Override
-				VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
+				VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
 				{
 //					System.out.println(aNode);
 					for (int i = 0; i < aNode.mMap.size(); i++)
@@ -726,7 +726,7 @@ public final class RaccoonCollection
 	}
 
 
-	private boolean x(BTree aImplementation, BTreeIndex aNode, ArrayMapKey aLowestKey, Document aQuery)
+	private boolean x(BTree aImplementation, BTreeInteriorNode aNode, ArrayMapKey aLowestKey, Document aQuery)
 	{
 		System.out.println("*" + aLowestKey);
 		System.out.println("... ".repeat(3 - aNode.mLevel) + aNode.mLevel + ", " + aNode.size());

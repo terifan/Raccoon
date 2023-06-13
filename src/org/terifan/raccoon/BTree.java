@@ -73,7 +73,7 @@ public class BTree implements AutoCloseable
 
 	private void marshalHeader()
 	{
-		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeIndex ? BlockType.TREE_INDEX : BlockType.TREE_LEAF);
+		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeInteriorNode ? BlockType.TREE_INTERIOR_NODE : BlockType.TREE_LEAF_NODE);
 
 		mConfiguration.put(ROOT, mRoot.mBlockPointer);
 	}
@@ -83,7 +83,7 @@ public class BTree implements AutoCloseable
 	{
 		BlockPointer bp = new BlockPointer(mConfiguration.get(ROOT));
 
-		mRoot = bp.getBlockType() == BlockType.TREE_INDEX ? new BTreeIndex(bp.getBlockLevel()) : new BTreeLeaf();
+		mRoot = bp.getBlockType() == BlockType.TREE_INTERIOR_NODE ? new BTreeInteriorNode(bp.getBlockLevel()) : new BTreeLeafNode();
 		mRoot.mBlockPointer = bp;
 		mRoot.mMap = new ArrayMap(readBlock(bp));
 	}
@@ -91,7 +91,7 @@ public class BTree implements AutoCloseable
 
 	private void setupEmptyTable()
 	{
-		mRoot = new BTreeLeaf();
+		mRoot = new BTreeLeafNode();
 		mRoot.mMap = new ArrayMap(mConfiguration.getInt(LEAF_BLOCK_SIZE));
 	}
 
@@ -120,13 +120,13 @@ public class BTree implements AutoCloseable
 
 		if (mRoot.mLevel == 0 ? mRoot.mMap.getCapacity() > mConfiguration.getInt(LEAF_BLOCK_SIZE) || mRoot.mMap.getFreeSpace() < aEntry.getMarshalledLength() : mRoot.mMap.getUsedSpace() > mConfiguration.getInt(INT_BLOCK_SIZE))
 		{
-			if (mRoot instanceof BTreeLeaf)
+			if (mRoot instanceof BTreeLeafNode)
 			{
-				mRoot = ((BTreeLeaf)mRoot).upgrade(this);
+				mRoot = ((BTreeLeafNode)mRoot).upgrade(this);
 			}
 			else
 			{
-				mRoot = ((BTreeIndex)mRoot).grow(this);
+				mRoot = ((BTreeInteriorNode)mRoot).grow(this);
 			}
 		}
 
@@ -151,13 +151,13 @@ public class BTree implements AutoCloseable
 
 		if (result == RemoveResult.REMOVED)
 		{
-			if (mRoot.mLevel > 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
+			if (mRoot.mLevel > 1 && ((BTreeInteriorNode)mRoot).mMap.size() == 1)
 			{
-				mRoot = ((BTreeIndex)mRoot).shrink(this);
+				mRoot = ((BTreeInteriorNode)mRoot).shrink(this);
 			}
-			if (mRoot.mLevel == 1 && ((BTreeIndex)mRoot).mMap.size() == 1)
+			if (mRoot.mLevel == 1 && ((BTreeInteriorNode)mRoot).mMap.size() == 1)
 			{
-				mRoot = ((BTreeIndex)mRoot).downgrade(this);
+				mRoot = ((BTreeInteriorNode)mRoot).downgrade(this);
 			}
 		}
 
@@ -278,7 +278,7 @@ public class BTree implements AutoCloseable
 		visit(new BTreeVisitor()
 		{
 			@Override
-			VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
+			VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
 			{
 				result.addAndGet(aNode.mMap.size());
 				return VisitorState.CONTINUE;
@@ -291,7 +291,7 @@ public class BTree implements AutoCloseable
 
 	protected byte[] readBlock(BlockPointer aBlockPointer)
 	{
-		if (aBlockPointer.getBlockType() != BlockType.TREE_INDEX && aBlockPointer.getBlockType() != BlockType.TREE_LEAF)
+		if (aBlockPointer.getBlockType() != BlockType.TREE_INTERIOR_NODE && aBlockPointer.getBlockType() != BlockType.TREE_LEAF_NODE)
 		{
 			throw new IllegalArgumentException("Attempt to read bad block: " + aBlockPointer);
 		}
@@ -367,16 +367,16 @@ public class BTree implements AutoCloseable
 
 	private void scan(BTreeNode aNode, ScanResult aScanResult, int aLevel)
 	{
-		if (aNode instanceof BTreeIndex)
+		if (aNode instanceof BTreeInteriorNode)
 		{
-			BTreeIndex indexNode = (BTreeIndex)aNode;
+			BTreeInteriorNode interiorNode = (BTreeInteriorNode)aNode;
 
-			int fillRatio = indexNode.mMap.getUsedSpace() * 100 / mConfiguration.getInt(INT_BLOCK_SIZE);
+			int fillRatio = interiorNode.mMap.getUsedSpace() * 100 / mConfiguration.getInt(INT_BLOCK_SIZE);
 			aScanResult.log.append("{" + (aNode.mBlockPointer == null ? "" : aNode.mBlockPointer.getBlockIndex0()) + ":" + fillRatio + "%" + "}");
 
 			boolean first = true;
 			aScanResult.log.append("'");
-			for (ArrayMapEntry entry : indexNode.mMap)
+			for (ArrayMapEntry entry : interiorNode.mMap)
 			{
 				if (!first)
 				{
@@ -388,23 +388,23 @@ public class BTree implements AutoCloseable
 			}
 			aScanResult.log.append("'");
 
-			if (indexNode.mMap.size() == 1)
+			if (interiorNode.mMap.size() == 1)
 			{
 				aScanResult.log.append("#000#ff0#000");
 			}
 			else if (fillRatio > 100)
 			{
-				aScanResult.log.append(indexNode.mModified ? "#a00#a00#fff" : "#666#666#fff");
+				aScanResult.log.append(interiorNode.mModified ? "#a00#a00#fff" : "#666#666#fff");
 			}
 			else
 			{
-				aScanResult.log.append(indexNode.mModified ? "#f00#f00#fff" : "#888#fff#000");
+				aScanResult.log.append(interiorNode.mModified ? "#f00#f00#fff" : "#888#fff#000");
 			}
 
 			first = true;
 			aScanResult.log.append("[");
 
-			for (int i = 0, sz = indexNode.mMap.size(); i < sz; i++)
+			for (int i = 0, sz = interiorNode.mMap.size(); i < sz; i++)
 			{
 				if (!first)
 				{
@@ -412,11 +412,11 @@ public class BTree implements AutoCloseable
 				}
 				first = false;
 
-				BTreeNode child = indexNode.getNode(this, i);
+				BTreeNode child = interiorNode.getNode(this, i);
 
 				ArrayMapEntry entry = new ArrayMapEntry();
-				indexNode.mMap.get(i, entry);
-				indexNode.mChildNodes.put(entry.getKey(), child);
+				interiorNode.mMap.get(i, entry);
+				interiorNode.mChildNodes.put(entry.getKey(), child);
 
 				scan(child, aScanResult, aLevel + 1);
 			}

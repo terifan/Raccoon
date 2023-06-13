@@ -66,7 +66,7 @@ class DatabaseDirectory
 		mStorage.visit(new BTreeVisitor()
 		{
 			@Override
-			VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
+			VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
 			{
 				aNode.mMap.forEach(entry -> list.add(entry.getKey().toString()));
 				return VisitorState.CONTINUE;

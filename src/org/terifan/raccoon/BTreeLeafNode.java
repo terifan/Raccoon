@@ -9,9 +9,9 @@ import org.terifan.raccoon.blockdevice.util.Console;
 import org.terifan.raccoon.util.Result;
 
 
-public class BTreeLeaf extends BTreeNode
+public class BTreeLeafNode extends BTreeNode
 {
-	BTreeLeaf()
+	BTreeLeafNode()
 	{
 		super(0);
 	}
@@ -65,8 +65,8 @@ public class BTreeLeaf extends BTreeNode
 
 		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("leafBlockSize"));
 
-		BTreeLeaf a = new BTreeLeaf();
-		BTreeLeaf b = new BTreeLeaf();
+		BTreeLeafNode a = new BTreeLeafNode();
+		BTreeLeafNode b = new BTreeLeafNode();
 		a.mMap = maps[0];
 		b.mMap = maps[1];
 		a.mModified = true;
@@ -76,14 +76,14 @@ public class BTreeLeaf extends BTreeNode
 	}
 
 
-	BTreeIndex upgrade(BTree aImplementation)
+	BTreeInteriorNode upgrade(BTree aImplementation)
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
 		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("leafBlockSize"));
 
-		BTreeLeaf a = new BTreeLeaf();
-		BTreeLeaf b = new BTreeLeaf();
+		BTreeLeafNode a = new BTreeLeafNode();
+		BTreeLeafNode b = new BTreeLeafNode();
 		a.mMap = maps[0];
 		b.mMap = maps[1];
 		a.mModified = true;
@@ -92,15 +92,15 @@ public class BTreeLeaf extends BTreeNode
 		ArrayMapKey keyA = ArrayMapKey.EMPTY;
 		ArrayMapKey keyB = b.mMap.getKey(0);
 
-		BTreeIndex newIndex = new BTreeIndex(1);
-		newIndex.mModified = true;
-		newIndex.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("intBlockSize"));
-		newIndex.mMap.put(new ArrayMapEntry(keyA, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
-		newIndex.mMap.put(new ArrayMapEntry(keyB, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
-		newIndex.mChildNodes.put(keyA, a);
-		newIndex.mChildNodes.put(keyB, b);
+		BTreeInteriorNode newInterior = new BTreeInteriorNode(1);
+		newInterior.mModified = true;
+		newInterior.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("intBlockSize"));
+		newInterior.mMap.put(new ArrayMapEntry(keyA, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
+		newInterior.mMap.put(new ArrayMapEntry(keyB, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
+		newInterior.mChildNodes.put(keyA, a);
+		newInterior.mChildNodes.put(keyB, b);
 
-		return newIndex;
+		return newInterior;
 	}
 
 
@@ -114,7 +114,7 @@ public class BTreeLeaf extends BTreeNode
 
 			aImplementation.freeBlock(mBlockPointer);
 
-			mBlockPointer = aImplementation.writeBlock(mMap.array(), 0, BlockType.TREE_LEAF);
+			mBlockPointer = aImplementation.writeBlock(mMap.array(), 0, BlockType.TREE_LEAF_NODE);
 		}
 
 		return mModified;

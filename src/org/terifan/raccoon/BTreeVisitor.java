@@ -11,19 +11,19 @@ class BTreeVisitor
 	}
 
 
-	VisitorState beforeIndex(BTree aImplementation, BTreeIndex aNode, ArrayMapKey aLowestKey)
+	VisitorState beforeInteriorNode(BTree aImplementation, BTreeInteriorNode aNode, ArrayMapKey aLowestKey)
 	{
 		return VisitorState.CONTINUE;
 	}
 
 
-	VisitorState afterIndex(BTree aImplementation, BTreeIndex aNode)
+	VisitorState afterInteriorNode(BTree aImplementation, BTreeInteriorNode aNode)
 	{
 		return VisitorState.CONTINUE;
 	}
 
 
-	VisitorState leaf(BTree aImplementation, BTreeLeaf aNode)
+	VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
 	{
 		return VisitorState.CONTINUE;
 	}

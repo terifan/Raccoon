@@ -323,7 +323,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>,/* SequenceFilter<Array
 	}
 
 
-	public int loadNearestIndexEntry(ArrayMapEntry aEntry)
+	public int loadNearestEntry(ArrayMapEntry aEntry)
 	{
 		int index = indexOf(aEntry.getKey());
 
