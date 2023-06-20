@@ -21,7 +21,7 @@ public class ArrayMapKey
 	public ArrayMapKey(Object aInstance)
 	{
 		mInstance = aInstance;
-		mSerialized = Array.of(aInstance).toByteArray();
+		mSerialized = Array.of(mInstance).toByteArray();
 	}
 
 
@@ -50,7 +50,7 @@ public class ArrayMapKey
 
 //		System.out.println(a + "\t" + b);
 
-		if (a.getClass() != b.getClass())
+		if (a.getClass() != b.getClass() || a instanceof UUID)
 		{
 			return a.toString().compareTo(b.toString());
 		}

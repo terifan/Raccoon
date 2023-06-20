@@ -2,43 +2,78 @@ package test;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.document.Array;
 
 
 public class TestSimple
 {
-	public static void xxxmain(String... args)
+	public static void main(String... args)
 	{
 		try
 		{
 			Random rnd = new Random(1);
 
-			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
-			{
-				db.getCollection("numbers").createIndex(Document.of("name:numberOnly,unique:false,clone:true"), Document.of("number:1"));
-				db.getCollection("numbers").createIndex(Document.of("name:numberSubject,unique:false,clone:true"), Document.of("number:1,subject:1"));
-
-				for (int i = 0; i < 10_000; i++)
-				{
-					int j = rnd.nextInt(1000);
-					String subject = "";
-					for (int k = 0; k < 200; k++)
-					{
-						subject += (char)('a' + rnd.nextInt(25));
-					}
-					db.getCollection("numbers").save(Document.of("number:" + j + ",_id:" + i + ",subject:" + subject + ",body:" + "b".repeat(800)));
-				}
-
-//				System.out.println(db.getCollection("numbers").find(Document.of("number:7")).size());
-
-				db.commit();
-			}
+//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
+//			{
+//				for (int i = 0; i < 10_000; i++)
+//				{
+//					db.getCollection("numbers").save(Document.of("_id:" + Array.of(i/100, i%100, i) + ",text:"+"-".repeat(100)));
+//				}
+//				db.commit();
+//			}
 
 			System.out.println("-".repeat(100));
+
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.READ_ONLY, null))
+			{
+				System.out.println("" + db.getCollectionNames());
+
+				List<Document> result = db.getCollection("numbers").find(Document.of("_id:["+74+"]"));
+
+				System.out.println(result.size());
+				System.out.println(result);
+			}
+		}
+		catch (Throwable e)
+		{
+			e.printStackTrace(System.out);
+		}
+	}
+
+
+	public static void asasmain(String... args)
+	{
+		try
+		{
+			Random rnd = new Random(1);
+
+//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
+//			{
+//				db.getCollection("numbers").createIndex(Document.of("name:numberOnly,unique:false,clone:true"), Document.of("number:1"));
+////				db.getCollection("numbers").createIndex(Document.of("name:numberSubject,unique:false,clone:true"), Document.of("number:1,subject:1"));
+//
+//				for (int i = 0; i < 10_000; i++)
+//				{
+//					int j = rnd.nextInt(1000);
+//					String subject = "";
+//					for (int k = 0; k < 200; k++)
+//					{
+//						subject += (char)('a' + rnd.nextInt(25));
+//					}
+//					db.getCollection("numbers").save(Document.of("number:" + j + ",_id:" + i + ",subject:" + subject + ",body:" + "b".repeat(800)));
+//				}
+//
+////				System.out.println(db.getCollection("numbers").find(Document.of("number:7")).size());
+//				db.commit();
+//			}
+//
+//			System.out.println("-".repeat(100));
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.READ_ONLY, null))
 			{

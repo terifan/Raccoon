@@ -3,6 +3,7 @@ package org.terifan.raccoon;
 import org.terifan.raccoon.document.ObjectId;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -670,25 +671,28 @@ public final class RaccoonCollection
 		int matchingFields = 0;
 		ArrayList<String> queryKeys = aQuery.keySet();
 
-		for (Document conf : mDatabase.mIndices.get(getCollectionId()).values())
+		HashMap<ObjectId, Document> indices = mDatabase.mIndices.get(getCollectionId());
+		if (indices != null)
 		{
-			ArrayList<String> indexKeys = conf.getDocument("fields").keySet();
-
-			int i = 0;
-			for (; i < Math.min(indexKeys.size(), queryKeys.size()) && indexKeys.get(i).equals(queryKeys.get(i)); i++)
+			for (Document conf : indices.values())
 			{
-			}
+				ArrayList<String> indexKeys = conf.getDocument("fields").keySet();
 
-			if (i > matchingFields || i == matchingFields && bestIndex != null && indexKeys.size() < conf.getDocument("fields").size())
-			{
-				bestIndex = conf;
-				matchingFields = i;
+				int i = 0;
+				for (; i < Math.min(indexKeys.size(), queryKeys.size()) && indexKeys.get(i).equals(queryKeys.get(i)); i++)
+				{
+				}
+
+				if (i > matchingFields || i == matchingFields && bestIndex != null && indexKeys.size() < conf.getDocument("fields").size())
+				{
+					bestIndex = conf;
+					matchingFields = i;
+				}
 			}
 		}
 
 //		System.out.println(matchingFields+" "+queryKeys.size());
 //		System.out.println(bestIndex);
-
 		if (bestIndex != null)
 		{
 			System.out.println("INDEX: " + bestIndex);
@@ -711,8 +715,9 @@ public final class RaccoonCollection
 				@Override
 				VisitorState beforeInteriorNode(BTree aImplementation, BTreeInteriorNode aNode, ArrayMapKey aLowestKey)
 				{
-					return x(aImplementation, aNode, aLowestKey, aQuery)? VisitorState.CONTINUE : VisitorState.SKIP;
+					return x(aImplementation, aNode, aLowestKey, aQuery) ? VisitorState.CONTINUE : VisitorState.SKIP;
 				}
+
 
 				@Override
 				VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
@@ -728,8 +733,6 @@ public final class RaccoonCollection
 				}
 			});
 
-			System.out.println(list.size());
-
 			return list;
 		}
 		finally
@@ -741,9 +744,26 @@ public final class RaccoonCollection
 
 	private boolean x(BTree aImplementation, BTreeInteriorNode aNode, ArrayMapKey aLowestKey, Document aQuery)
 	{
-		System.out.println("*" + aLowestKey);
-		System.out.println("... ".repeat(3 - aNode.mLevel) + aNode.mLevel + ", " + aNode.size());
+		Array lowestKey = aLowestKey == null ? null : (Array)aLowestKey.get();
+		Array highestKey = (Array)aNode.mMap.getLast().getKey().get();
 
-		return true;
+		Array array = aQuery.getArray("_id");
+
+		for (int i = 0; i < array.size(); i++)
+		{
+			Comparable v = array.get(i);
+			Object b = lowestKey == null ? null : lowestKey.get(i);
+			Object c = highestKey.get(i);
+
+			if ((b == null || v.compareTo(b) >= 0) && (v.compareTo(c) <= 0))
+			{
+				System.out.println("" + b + " <= " + v + " <= " + c + " " + "OK");
+				return true;
+			}
+			else
+				System.out.println("" + b + " <= " + v + " <= " + c);
+		}
+
+		return false;
 	}
 }

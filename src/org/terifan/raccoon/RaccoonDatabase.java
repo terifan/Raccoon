@@ -202,6 +202,8 @@ public final class RaccoonDatabase implements AutoCloseable
 				mBlockDevice = blockDevice;
 				mDatabaseDirectory = new DatabaseDirectory(mBlockDevice);
 
+				getCollection("system:indices");
+
 				commit();
 
 				Log.dec();
