@@ -5,26 +5,26 @@ import org.terifan.raccoon.BTreeNode.VisitorState;
 
 class BTreeVisitor
 {
-	VisitorState anyNode(BTree aImplementation, BTreeNode aNode)
+	boolean anyNode(BTree aImplementation, BTreeNode aNode)
 	{
-		return VisitorState.CONTINUE;
+		return true;
 	}
 
 
-	VisitorState beforeInteriorNode(BTree aImplementation, BTreeInteriorNode aNode, ArrayMapKey aLowestKey)
+	boolean beforeInteriorNode(BTree aImplementation, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
 	{
-		return VisitorState.CONTINUE;
+		return true;
 	}
 
 
-	VisitorState afterInteriorNode(BTree aImplementation, BTreeInteriorNode aNode)
+	boolean afterInteriorNode(BTree aImplementation, BTreeInteriorNode aNode)
 	{
-		return VisitorState.CONTINUE;
+		return true;
 	}
 
 
-	VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
+	boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
 	{
-		return VisitorState.CONTINUE;
+		return true;
 	}
 }

@@ -19,14 +19,14 @@ public class TestSimple
 		{
 			Random rnd = new Random(1);
 
-//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
-//			{
-//				for (int i = 0; i < 10_000; i++)
-//				{
-//					db.getCollection("numbers").save(Document.of("_id:" + Array.of(i/100, i%100, i) + ",text:"+"-".repeat(100)));
-//				}
-//				db.commit();
-//			}
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
+			{
+				for (int i = 0; i < 10_000; i++)
+				{
+					db.getCollection("numbers").save(Document.of("_id:" + Array.of(i/100, i%100, i) + ",text:"+"-".repeat(100)));
+				}
+				db.commit();
+			}
 
 			System.out.println("-".repeat(100));
 
@@ -34,10 +34,29 @@ public class TestSimple
 			{
 				System.out.println("" + db.getCollectionNames());
 
-				List<Document> result = db.getCollection("numbers").find(Document.of("_id:["+74+"]"));
+				System.out.println(db.getCollection("numbers").size());
 
-				System.out.println(result.size());
-				System.out.println(result);
+				int sz1 = 0;
+				for (int i = 0; i < 100; i++)
+				{
+					List<Document> result = db.getCollection("numbers").find(Document.of("_id:[" + i + "]"));
+//					System.out.println("*********"+result.size());
+					sz1 += result.size();
+				}
+
+				int sz2 = 0;
+				for (int i = 0; i < 10_000; i++)
+				{
+					List<Document> result = db.getCollection("numbers").find(Document.of("_id:" + Array.of(i/100, i%100)));
+//					System.out.println("*********"+result.size());
+					sz2 += result.size();
+				}
+
+				System.out.println("-".repeat(20));
+				System.out.println(sz1);
+				System.out.println(sz2);
+
+//				System.out.println(db.getCollection("numbers").find(Document.of("_id:[" + 84 + "]")).size());
 			}
 		}
 		catch (Throwable e)
@@ -74,7 +93,6 @@ public class TestSimple
 //			}
 //
 //			System.out.println("-".repeat(100));
-
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.READ_ONLY, null))
 			{
 				System.out.println("" + db.getCollectionNames());

@@ -47,14 +47,12 @@ public class BTreeLeafNode extends BTreeNode
 
 
 	@Override
-	VisitorState visit(BTree aImplementation, BTreeVisitor aVisitor, ArrayMapKey aLowestKey)
+	void visit(BTree aImplementation, BTreeVisitor aVisitor, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
 	{
-		VisitorState state = aVisitor.anyNode(aImplementation, this);
-		if (state == CONTINUE)
+		if (aVisitor.anyNode(aImplementation, this))
 		{
-			state = aVisitor.leaf(aImplementation, this);
+			aVisitor.leaf(aImplementation, this);
 		}
-		return state;
 	}
 
 

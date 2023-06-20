@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.terifan.raccoon.BTreeNode.VisitorState;
@@ -417,10 +417,10 @@ public final class RaccoonCollection
 			mImplementation.visit(new BTreeVisitor()
 			{
 				@Override
-				VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
+				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
 				{
 					aNode.mMap.forEach(e -> list.add((T)unmarshalDocument(e, aDocumentSupplier.get())));
-					return VisitorState.CONTINUE;
+					return true;
 				}
 			});
 		}
@@ -438,10 +438,10 @@ public final class RaccoonCollection
 			mImplementation.visit(new BTreeVisitor()
 			{
 				@Override
-				VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
+				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
 				{
 					aNode.mMap.forEach(e -> aAction.accept(unmarshalDocument(e, new Document())));
-					return VisitorState.CONTINUE;
+					return true;
 				}
 			});
 		}
@@ -492,19 +492,19 @@ public final class RaccoonCollection
 			mImplementation.visit(new BTreeVisitor()
 			{
 				@Override
-				VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
+				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
 				{
 					aNode.mMap.forEach(e -> deleteLob(e, false));
 					prev.freeBlock(aNode.mBlockPointer);
-					return VisitorState.CONTINUE;
+					return true;
 				}
 
 
 				@Override
-				VisitorState afterInteriorNode(BTree aImplementation, BTreeInteriorNode aNode)
+				boolean afterInteriorNode(BTree aImplementation, BTreeInteriorNode aNode)
 				{
 					prev.freeBlock(aNode.mBlockPointer);
-					return VisitorState.CONTINUE;
+					return true;
 				}
 			});
 
@@ -664,7 +664,7 @@ public final class RaccoonCollection
 		Log.i("find %s", aQuery);
 		Log.inc();
 
-		System.out.println(aQuery);
+//		System.out.println(aQuery);
 //		System.out.println(mDatabase.mIndices);
 
 		Document bestIndex = null;
@@ -693,6 +693,7 @@ public final class RaccoonCollection
 
 //		System.out.println(matchingFields+" "+queryKeys.size());
 //		System.out.println(bestIndex);
+
 		if (bestIndex != null)
 		{
 			System.out.println("INDEX: " + bestIndex);
@@ -713,23 +714,30 @@ public final class RaccoonCollection
 			mImplementation.visit(new BTreeVisitor()
 			{
 				@Override
-				VisitorState beforeInteriorNode(BTree aImplementation, BTreeInteriorNode aNode, ArrayMapKey aLowestKey)
+				boolean beforeInteriorNode(BTree aImplementation, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
 				{
-					return x(aImplementation, aNode, aLowestKey, aQuery) ? VisitorState.CONTINUE : VisitorState.SKIP;
+					return matchKey(aLowestKey, aHighestKey, aQuery);
 				}
 
 
 				@Override
-				VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
+				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
 				{
-//					System.out.println(aNode);
-					for (int i = 0; i < aNode.mMap.size(); i++)
+					if (matchKey(aNode.mMap.getFirst().getKey(), aNode.mMap.getLast().getKey(), aQuery))
 					{
-						ArrayMapEntry entry = aNode.mMap.get(i, new ArrayMapEntry());
-						Document doc = unmarshalDocument(entry, new Document());
-						list.add(doc);
+//						System.out.println(aNode);
+						for (int i = 0; i < aNode.mMap.size(); i++)
+						{
+							ArrayMapEntry entry = aNode.mMap.get(i, new ArrayMapEntry());
+							Document doc = unmarshalDocument(entry, new Document());
+
+							if (matchKey(doc, aQuery))
+							{
+								list.add(doc);
+							}
+						}
 					}
-					return VisitorState.CONTINUE;
+					return true;
 				}
 			});
 
@@ -742,28 +750,50 @@ public final class RaccoonCollection
 	}
 
 
-	private boolean x(BTree aImplementation, BTreeInteriorNode aNode, ArrayMapKey aLowestKey, Document aQuery)
+	private boolean matchKey(ArrayMapKey aLowestKey, ArrayMapKey aHighestKey, Document aQuery)
 	{
 		Array lowestKey = aLowestKey == null ? null : (Array)aLowestKey.get();
-		Array highestKey = (Array)aNode.mMap.getLast().getKey().get();
-
+		Array highestKey = aHighestKey == null ? null : (Array)aHighestKey.get();
 		Array array = aQuery.getArray("_id");
+
+//		System.out.println("******"+lowestKey+" "+highestKey);
 
 		for (int i = 0; i < array.size(); i++)
 		{
 			Comparable v = array.get(i);
 			Object b = lowestKey == null ? null : lowestKey.get(i);
-			Object c = highestKey.get(i);
+			Object c = highestKey == null ? null : highestKey.get(i);
 
-			if ((b == null || v.compareTo(b) >= 0) && (v.compareTo(c) <= 0))
+			if ((b == null || v.compareTo(b) >= 0) && (c == null || v.compareTo(c) <= 0))
 			{
-				System.out.println("" + b + " <= " + v + " <= " + c + " " + "OK");
-				return true;
+//				System.out.println("" + b + " <= " + v + " <= " + c + " " + "OK");
 			}
 			else
-				System.out.println("" + b + " <= " + v + " <= " + c);
+			{
+//				System.out.println("" + b + " <= " + v + " <= " + c);
+				return false;
+			}
 		}
 
-		return false;
+		return true;
+	}
+
+
+	private boolean matchKey(Document aEntry, Document aQuery)
+	{
+		Array array = aQuery.getArray("_id");
+
+		for (int i = 0; i < array.size(); i++)
+		{
+			Comparable v = array.get(i);
+			Object b = aEntry.getArray("_id").get(i);
+
+			if (v.compareTo(b) != 0)
+			{
+				return false;
+			}
+		}
+
+		return true;
 	}
 }

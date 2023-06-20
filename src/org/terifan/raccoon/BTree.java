@@ -176,7 +176,7 @@ public class BTree implements AutoCloseable
 
 		try
 		{
-			mRoot.visit(this, aVisitor, null);
+			mRoot.visit(this, aVisitor, null, null);
 		}
 		catch (AbortIteratorException e)
 		{
@@ -278,10 +278,10 @@ public class BTree implements AutoCloseable
 		visit(new BTreeVisitor()
 		{
 			@Override
-			VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
+			boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
 			{
 				result.addAndGet(aNode.mMap.size());
-				return VisitorState.CONTINUE;
+				return true;
 			}
 		});
 
@@ -339,17 +339,17 @@ public class BTree implements AutoCloseable
 		mRoot.visit(this, new BTreeVisitor()
 		{
 			@Override
-			VisitorState anyNode(BTree aImplementation, BTreeNode aNode)
+			boolean anyNode(BTree aImplementation, BTreeNode aNode)
 			{
 				String tmp = aNode.mMap.integrityCheck();
 				if (tmp != null)
 				{
 					result.set(tmp);
-					return VisitorState.ABORT;
+					return false;
 				}
-				return VisitorState.CONTINUE;
+				return true;
 			}
-		}, null);
+		}, null, null);
 
 		return result.get();
 	}

@@ -7,6 +7,7 @@ import org.terifan.raccoon.ArrayMap.PutResult;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.blockdevice.util.Console;
+import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.util.Result;
 
 
@@ -138,30 +139,31 @@ public class BTreeInteriorNode extends BTreeNode
 
 
 	@Override
-	VisitorState visit(BTree aImplementation, BTreeVisitor aVisitor, ArrayMapKey aLowestKey)
+	void visit(BTree aImplementation, BTreeVisitor aVisitor, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
 	{
-		VisitorState state = aVisitor.anyNode(aImplementation, this);
-
-		if (state == VisitorState.CONTINUE)
+		if (aVisitor.anyNode(aImplementation, this))
 		{
-			state = aVisitor.beforeInteriorNode(aImplementation, this, aLowestKey);
-
-			if (state == VisitorState.CONTINUE)
+			if (aVisitor.beforeInteriorNode(aImplementation, aLowestKey, aHighestKey))
 			{
 				for (int i = 0; i < mMap.size(); i++)
 				{
 					BTreeNode node = getNode(aImplementation, i);
 
-					node.visit(aImplementation, aVisitor, aLowestKey);
+					if (i == mMap.size() - 1)
+					{
+						node.visit(aImplementation, aVisitor, aLowestKey, aHighestKey);
+					}
+					else
+					{
+						ArrayMapKey nextHigh = getNode(aImplementation, i + 1).mMap.getKey(1);
 
-					aLowestKey = node.mMap.getLast().getKey();
+						node.visit(aImplementation, aVisitor, aLowestKey, nextHigh);
+
+						aLowestKey = node.mMap.getLast().getKey();
+					}
 				}
-
-				state = aVisitor.afterInteriorNode(aImplementation, this);
 			}
 		}
-
-		return state;
 	}
 
 
@@ -464,7 +466,7 @@ public class BTreeInteriorNode extends BTreeNode
 		if (aNode instanceof BTreeInteriorNode)
 		{
 			BTreeInteriorNode node = (BTreeInteriorNode)aNode;
-			for (int i = 0; i < node.mMap.size() ; i++)
+			for (int i = 0; i < node.mMap.size(); i++)
 			{
 				ArrayMapKey b = findLowestLeafKey(aImplementation, node.getNode(aImplementation, i));
 				if (b.size() > 0)
@@ -476,7 +478,10 @@ public class BTreeInteriorNode extends BTreeNode
 		}
 
 //		assert !aNode.mMap.isEmpty();
-		if (aNode.mMap.isEmpty()) return ArrayMapKey.EMPTY;
+		if (aNode.mMap.isEmpty())
+		{
+			return ArrayMapKey.EMPTY;
+		}
 
 		return aNode.mMap.getKey(0);
 	}

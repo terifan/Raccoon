@@ -70,7 +70,7 @@ class DatabaseDirectory
 		mStorage.visit(new BTreeVisitor()
 		{
 			@Override
-			VisitorState leaf(BTree aImplementation, BTreeLeafNode aNode)
+			boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
 			{
 				aNode.mMap.forEach(entry ->
 				{
@@ -79,7 +79,7 @@ class DatabaseDirectory
 						list.add(entry.getKey().toString());
 					}
 				});
-				return VisitorState.CONTINUE;
+				return true;
 			}
 		});
 
