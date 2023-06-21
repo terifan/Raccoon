@@ -25,6 +25,8 @@ public class BTree implements AutoCloseable
 
 	static BlockPointer BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL);
 
+	public static boolean RECORD_USE;
+
 	private BlockAccessor mBlockAccessor;
 	private CompressorLevel mCompressorInteriorBlocks;
 	private CompressorLevel mCompressorLeafBlocks;
@@ -388,7 +390,11 @@ public class BTree implements AutoCloseable
 			}
 			aScanResult.log.append("'");
 
-			if (interiorNode.mMap.size() == 1)
+			if (aNode.mHighlight)
+			{
+				aScanResult.log.append("#a00#a00#fff");
+			}
+			else if (interiorNode.mMap.size() == 1)
 			{
 				aScanResult.log.append("#000#ff0#000");
 			}
@@ -444,7 +450,11 @@ public class BTree implements AutoCloseable
 
 			aScanResult.log.append("]");
 
-			if (fillRatio > 100)
+			if (aNode.mHighlight)
+			{
+				aScanResult.log.append("#a00#a00#fff");
+			}
+			else if (fillRatio > 100)
 			{
 				aScanResult.log.append(aNode.mModified ? "#a00#a00#fff" : "#666#666#fff");
 			}

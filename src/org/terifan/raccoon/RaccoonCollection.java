@@ -721,20 +721,28 @@ public final class RaccoonCollection
 
 
 				@Override
+				boolean beforeLeafNode(BTree aImplementation, BTreeLeafNode aNode)
+				{
+					boolean b = matchKey(aNode.mMap.getFirst().getKey(), aNode.mMap.getLast().getKey(), aQuery);
+
+//					System.out.println("#" + aNode.mMap.getFirst().getKey()+", "+aNode.mMap.getLast().getKey() +" " + b+ " "+aQuery.getArray("_id"));
+
+					return b;
+				}
+
+
+				@Override
 				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
 				{
-					if (matchKey(aNode.mMap.getFirst().getKey(), aNode.mMap.getLast().getKey(), aQuery))
+//					System.out.println(aNode);
+					for (int i = 0; i < aNode.mMap.size(); i++)
 					{
-//						System.out.println(aNode);
-						for (int i = 0; i < aNode.mMap.size(); i++)
-						{
-							ArrayMapEntry entry = aNode.mMap.get(i, new ArrayMapEntry());
-							Document doc = unmarshalDocument(entry, new Document());
+						ArrayMapEntry entry = aNode.mMap.get(i, new ArrayMapEntry());
+						Document doc = unmarshalDocument(entry, new Document());
 
-							if (matchKey(doc, aQuery))
-							{
-								list.add(doc);
-							}
+						if (matchKey(doc, aQuery))
+						{
+							list.add(doc);
 						}
 					}
 					return true;
@@ -749,6 +757,29 @@ public final class RaccoonCollection
 		}
 	}
 
+	//    A     B	Node
+	//    1     1	1
+	//    1     2	1
+	//    1     3	1
+	//    1     4	1
+	//    2     1	1
+	//    2     2	1
+	//    2     3	2
+	//    2     4	2
+	//    3     1	2
+	//    3     2	3
+	//    3     3	3
+	//    3     4	3
+	//    4     1	3
+	//    4     2	3
+	//    4     3	3
+	//    4     4	4
+	//
+	// 1: null -- 2,2
+	// 2: 2,3  -- 3,1
+	// 3: 3,2  -- 4,3
+	// 4: 4,4  -- null
+
 
 	private boolean matchKey(ArrayMapKey aLowestKey, ArrayMapKey aHighestKey, Document aQuery)
 	{
@@ -756,21 +787,21 @@ public final class RaccoonCollection
 		Array highestKey = aHighestKey == null ? null : (Array)aHighestKey.get();
 		Array array = aQuery.getArray("_id");
 
-//		System.out.println("******"+lowestKey+" "+highestKey);
+//		System.out.printf("%-16s %-16s", lowestKey, highestKey);
+
+//      ........|........|........|........|........|........|........|........|........|
+//                  ----------x-----------------
 
 		for (int i = 0; i < array.size(); i++)
 		{
 			Comparable v = array.get(i);
-			Object b = lowestKey == null ? null : lowestKey.get(i);
-			Object c = highestKey == null ? null : highestKey.get(i);
+			Comparable b = lowestKey == null ? null : lowestKey.get(i);
+			Comparable c = highestKey == null ? null : highestKey.get(i);
 
-			if ((b == null || v.compareTo(b) >= 0) && (c == null || v.compareTo(c) <= 0))
+//			System.out.println("[%-4s <= %-4s <= %-4s]   ", b, v, c);
+
+			if (!((b == null || v.compareTo(b) >= 0) && (c == null || v.compareTo(c) <= 0)))
 			{
-//				System.out.println("" + b + " <= " + v + " <= " + c + " " + "OK");
-			}
-			else
-			{
-//				System.out.println("" + b + " <= " + v + " <= " + c);
 				return false;
 			}
 		}

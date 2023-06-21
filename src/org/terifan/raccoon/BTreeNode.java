@@ -11,6 +11,7 @@ public abstract class BTreeNode
 	protected ArrayMap mMap;
 	protected boolean mModified;
 	protected int mLevel;
+	protected boolean mHighlight;
 
 
 	static class SplitResult

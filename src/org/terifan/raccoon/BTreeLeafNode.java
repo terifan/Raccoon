@@ -51,7 +51,12 @@ public class BTreeLeafNode extends BTreeNode
 	{
 		if (aVisitor.anyNode(aImplementation, this))
 		{
-			aVisitor.leaf(aImplementation, this);
+			if (aVisitor.beforeLeafNode(aImplementation, this))
+			{
+				mHighlight = BTree.RECORD_USE;
+
+				aVisitor.leaf(aImplementation, this);
+			}
 		}
 	}
 

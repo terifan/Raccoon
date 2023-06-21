@@ -145,6 +145,8 @@ public class BTreeInteriorNode extends BTreeNode
 		{
 			if (aVisitor.beforeInteriorNode(aImplementation, aLowestKey, aHighestKey))
 			{
+				mHighlight = BTree.RECORD_USE;
+
 				for (int i = 0; i < mMap.size(); i++)
 				{
 					BTreeNode node = getNode(aImplementation, i);

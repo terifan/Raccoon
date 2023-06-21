@@ -11,6 +11,12 @@ class BTreeVisitor
 	}
 
 
+	boolean beforeLeafNode(BTree aImplementation, BTreeLeafNode aNode)
+	{
+		return true;
+	}
+
+
 	boolean beforeInteriorNode(BTree aImplementation, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
 	{
 		return true;
