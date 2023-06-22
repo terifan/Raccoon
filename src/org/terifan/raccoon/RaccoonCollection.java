@@ -714,7 +714,7 @@ public final class RaccoonCollection
 			mImplementation.visit(new BTreeVisitor()
 			{
 				@Override
-				boolean beforeInteriorNode(BTree aImplementation, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
+				boolean beforeInteriorNode(BTree aImplementation, BTreeInteriorNode aNode, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
 				{
 					return matchKey(aLowestKey, aHighestKey, aQuery);
 				}
@@ -787,26 +787,29 @@ public final class RaccoonCollection
 		Array highestKey = aHighestKey == null ? null : (Array)aHighestKey.get();
 		Array array = aQuery.getArray("_id");
 
-//		System.out.printf("%-16s %-16s", lowestKey, highestKey);
+		int a = lowestKey == null ? 0 : compare(lowestKey, array);
+		int b = highestKey == null ? 0 : compare(highestKey, array);
 
-//      ........|........|........|........|........|........|........|........|........|
-//                  ----------x-----------------
+		return a >= 0 && b <= 0;
+	}
 
-		for (int i = 0; i < array.size(); i++)
+
+	private int compare(Array aCompare, Array aWith)
+	{
+		for (int i = 0; i < aWith.size(); i++)
 		{
-			Comparable v = array.get(i);
-			Comparable b = lowestKey == null ? null : lowestKey.get(i);
-			Comparable c = highestKey == null ? null : highestKey.get(i);
+			Comparable v = aWith.get(i);
+			Comparable b = aCompare.get(i);
 
-//			System.out.println("[%-4s <= %-4s <= %-4s]   ", b, v, c);
+			int r = v.compareTo(b);
 
-			if (!((b == null || v.compareTo(b) >= 0) && (c == null || v.compareTo(c) <= 0)))
+			if (r != 0)
 			{
-				return false;
+				return r;
 			}
 		}
 
-		return true;
+		return 0;
 	}
 
 

@@ -1,11 +1,9 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.BTreeNode.VisitorState;
-
 
 class BTreeVisitor
 {
-	boolean anyNode(BTree aImplementation, BTreeNode aNode)
+	boolean beforeAnyNode(BTree aImplementation, BTreeNode aNode)
 	{
 		return true;
 	}
@@ -17,7 +15,7 @@ class BTreeVisitor
 	}
 
 
-	boolean beforeInteriorNode(BTree aImplementation, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
+	boolean beforeInteriorNode(BTree aImplementation, BTreeInteriorNode aNode, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
 	{
 		return true;
 	}

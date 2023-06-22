@@ -49,7 +49,7 @@ public class BTreeLeafNode extends BTreeNode
 	@Override
 	void visit(BTree aImplementation, BTreeVisitor aVisitor, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
 	{
-		if (aVisitor.anyNode(aImplementation, this))
+		if (aVisitor.beforeAnyNode(aImplementation, this))
 		{
 			if (aVisitor.beforeLeafNode(aImplementation, this))
 			{

@@ -141,9 +141,9 @@ public class BTreeInteriorNode extends BTreeNode
 	@Override
 	void visit(BTree aImplementation, BTreeVisitor aVisitor, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
 	{
-		if (aVisitor.anyNode(aImplementation, this))
+		if (aVisitor.beforeAnyNode(aImplementation, this))
 		{
-			if (aVisitor.beforeInteriorNode(aImplementation, aLowestKey, aHighestKey))
+			if (aVisitor.beforeInteriorNode(aImplementation, this, aLowestKey, aHighestKey))
 			{
 				mHighlight = BTree.RECORD_USE;
 
@@ -165,6 +165,8 @@ public class BTreeInteriorNode extends BTreeNode
 					}
 				}
 			}
+
+			aVisitor.afterInteriorNode(aImplementation, this);
 		}
 	}
 

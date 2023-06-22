@@ -341,7 +341,7 @@ public class BTree implements AutoCloseable
 		mRoot.visit(this, new BTreeVisitor()
 		{
 			@Override
-			boolean anyNode(BTree aImplementation, BTreeNode aNode)
+			boolean beforeAnyNode(BTree aImplementation, BTreeNode aNode)
 			{
 				String tmp = aNode.mMap.integrityCheck();
 				if (tmp != null)

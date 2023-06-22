@@ -24,18 +24,18 @@ public class TestSimple
 //			{
 //				for (int i = 0; i < 10_000; i++)
 //				{
-//					db.getCollection("numbers").save(Document.of("_id:" + Array.of(i/100, i%100, i) + ",text:"+"-".repeat(100)));
+//					db.getCollection("numbers").save(Document.of("_id:" + Array.of(i/100, i%100, "-".repeat(100))));
 //				}
 //				db.commit();
 //			}
-//
-//			System.out.println("-".repeat(100));
+
+			System.out.println("-".repeat(100));
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.READ_ONLY, null))
 			{
-				System.out.println("" + db.getCollectionNames());
-
-				System.out.println(db.getCollection("numbers").size());
+//				System.out.println("" + db.getCollectionNames());
+//
+//				System.out.println(db.getCollection("numbers").size());
 
 				int sz1 = 0;
 				for (int i = 0; i < 100; i++)
@@ -48,17 +48,17 @@ public class TestSimple
 				for (int i = 0; i < 10_000; i++)
 				{
 					List<Document> result = db.getCollection("numbers").find(Document.of("_id:" + Array.of(i/100, i%100)));
-//					if (result.size()==0)System.out.println(i);
+					if (result.size()==0)System.out.println(i);
 					sz2 += result.size();
 				}
 
 				System.out.println("-".repeat(20));
 				System.out.println(sz1);
 				System.out.println(sz2);
-//
+
 				BTree.RECORD_USE = true;
-//				System.out.println(db.getCollection("numbers").find(Document.of("_id:[35,90]")).size());
-//				_Tools.showTree(db.getCollection("numbers")._getImplementation());
+				System.out.println(db.getCollection("numbers").find(Document.of("_id:[52,70]")).size());
+				_Tools.showTree(db.getCollection("numbers")._getImplementation());
 			}
 		}
 		catch (Throwable e)
