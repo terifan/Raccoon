@@ -57,7 +57,7 @@ public class TestSimple
 				System.out.println(sz2);
 
 				BTree.RECORD_USE = true;
-				System.out.println(db.getCollection("numbers").find(Document.of("_id:[52,70]")).size());
+				System.out.println(db.getCollection("numbers").find(Document.of("_id:[52]")).size());
 				_Tools.showTree(db.getCollection("numbers")._getImplementation());
 			}
 		}
