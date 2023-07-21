@@ -31,6 +31,11 @@ import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
 import org.terifan.raccoon.blockdevice.LobHeader;
 import org.terifan.raccoon.util.DualMap;
 
+// listCollectionNames()
+// createCollection - samma som getcollection
+// insert - skapar alltid ett nytt _id
+// coll:
+//  	mapReduce​(String mapFunction, String reduceFunction)
 
 public final class RaccoonDatabase implements AutoCloseable
 {
