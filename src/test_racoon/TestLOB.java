@@ -1,4 +1,4 @@
-package test;
+package test_racoon;
 
 import java.awt.image.BufferedImage;
 import java.io.InputStream;

@@ -1,4 +1,4 @@
-package test;
+package test_racoon;
 
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;

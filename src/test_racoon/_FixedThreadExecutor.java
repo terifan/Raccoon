@@ -1,4 +1,4 @@
-package test;
+package test_racoon;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;

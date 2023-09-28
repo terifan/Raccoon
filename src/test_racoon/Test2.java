@@ -1,13 +1,15 @@
-package test;
+package test_racoon;
 
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
+import org.terifan.raccoon.RaccoonCollection;
 import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 
 
-public class Test3
+// https://www.tutorialspoint.com/mongodb/mongodb_java.htm
+public class Test2
 {
 	public static void main(String... args)
 	{
@@ -20,31 +22,23 @@ public class Test3
 			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.REPLACE, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
-				for (String s : _WordLists.list26)
+				RaccoonCollection collection = db.getCollection("words");
+				for (String word : _WordLists.list130)
 				{
-					db.getCollection("words").save(new Document().put("word", s));
+					collection.save(new Document().put("_id", word));
 				}
 
 				db.commit();
-//				showTree(db.getCollection("words").getImplementation());
+
+//				showTree(db.getCollection("words"));
 			}
 
-//			blockDevice.dump();
-
-			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
-//			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
-			{
-				db.getCollection("words").save(new Document().put("word", "test"));
-				db.commit();
-			}
+			blockDevice.dump();
 
 			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
 				db.getCollection("words").listAll().forEach(e -> System.out.println(e));
-
-//				showTree(db.getCollection("words").getImplementation());
-				db.commit();
 			}
 		}
 		catch (Exception e)

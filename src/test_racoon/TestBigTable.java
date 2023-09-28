@@ -1,4 +1,4 @@
-package test;
+package test_racoon;
 
 import java.nio.file.Paths;
 import java.util.Random;

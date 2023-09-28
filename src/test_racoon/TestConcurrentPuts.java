@@ -1,4 +1,4 @@
-package test;
+package test_racoon;
 
 import java.util.Collections;
 import java.util.HashSet;

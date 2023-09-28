@@ -1,6 +1,5 @@
 package org.terifan.raccoon.util;
 
-import org.terifan.raccoon.util.LRUMap;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
