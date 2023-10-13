@@ -2,6 +2,7 @@ package org.terifan.raccoon;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.terifan.raccoon.document.Document;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
@@ -19,12 +20,12 @@ public class BTreeNGTest
 	@Test
 	public void testOpenCloseSecureBTree() throws IOException
 	{
-		Files.deleteIfExists(Paths.get("d:\\test.rdb"));
+		Path path = Files.createTempFile("raccoon", "db");
 
 		ArrayMapKey key = new ArrayMapKey("key");
 		Document value = doc(5);
 
-		try (PhysicalBlockDevice device = new FileBlockDevice(Paths.get("d:\\test.rdb")))
+		try (PhysicalBlockDevice device = new FileBlockDevice(path))
 		{
 			try (BlockAccessor storage = createSecureStorage(device); BTree tree = new BTree(storage, new Document()))
 			{
@@ -38,7 +39,7 @@ public class BTreeNGTest
 
 		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
-		try (PhysicalBlockDevice device = new FileBlockDevice(Paths.get("d:\\test.rdb")))
+		try (PhysicalBlockDevice device = new FileBlockDevice(path))
 		{
 			try (BlockAccessor storage = createSecureStorage(device); BTree tree = new BTree(storage, storage.getBlockDevice().getMetadata().getDocument("conf")))
 			{
@@ -48,5 +49,7 @@ public class BTreeNGTest
 				storage.getBlockDevice().commit();
 			}
 		}
+
+		Files.deleteIfExists(path);
 	}
 }

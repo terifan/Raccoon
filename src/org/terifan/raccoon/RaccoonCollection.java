@@ -1,15 +1,14 @@
 package org.terifan.raccoon;
 
+import java.io.FileNotFoundException;
 import org.terifan.raccoon.document.ObjectId;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.terifan.raccoon.BTreeNode.VisitorState;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobHeader;
@@ -17,6 +16,7 @@ import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.util.Log;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
+import org.terifan.raccoon.document.DocumentEntity;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
@@ -260,7 +260,7 @@ public final class RaccoonCollection
 
 		if (prev != null)
 		{
-			Document prevDoc = deleteLob(prev, true);
+			Document prevDoc = deleteLobImpl(prev, true);
 
 			if (prevDoc == null)
 			{
@@ -342,7 +342,7 @@ public final class RaccoonCollection
 
 				if (prev != null)
 				{
-					Document prevDoc = deleteLob(prev, true);
+					Document prevDoc = deleteLobImpl(prev, true);
 
 					if (prevDoc == null)
 					{
@@ -494,7 +494,7 @@ public final class RaccoonCollection
 				@Override
 				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
 				{
-					aNode.mMap.forEach(e -> deleteLob(e, false));
+					aNode.mMap.forEach(e -> deleteLobImpl(e, false));
 					prev.freeBlock(aNode.mBlockPointer);
 					return true;
 				}
@@ -595,7 +595,7 @@ public final class RaccoonCollection
 	}
 
 
-	private Document deleteLob(ArrayMapEntry aEntry, boolean aRestoreOldValue)
+	private Document deleteLobImpl(ArrayMapEntry aEntry, boolean aRestoreOldValue)
 	{
 		Document prev = null;
 
@@ -829,5 +829,50 @@ public final class RaccoonCollection
 		}
 
 		return true;
+	}
+
+
+	public LobByteChannel openLob(DocumentEntity aId, LobOpenOption aLobOpenOption) throws IOException
+	{
+		LobByteChannel lob = tryOpenLob(aId, aLobOpenOption);
+
+		if (lob == null)
+		{
+			throw new FileNotFoundException("No LOB " + aId);
+		}
+
+		return lob;
+	}
+
+
+	public LobByteChannel tryOpenLob(DocumentEntity aId, LobOpenOption aLobOpenOption) throws IOException
+	{
+		Document entry = new Document().put("_id", aId);
+
+		if (!tryGet(entry) && aLobOpenOption == LobOpenOption.READ)
+		{
+			return null;
+		}
+
+		LobHeader header = new LobHeader(entry.get("header"));
+
+		Runnable closeAction = () -> save(entry.put("header", header.marshal()));
+
+		return new LobByteChannel(getBlockAccessor(), header, aLobOpenOption, closeAction);
+	}
+
+
+	public void deleteLob(DocumentEntity aObjectId) throws IOException
+	{
+		Document entry = new Document().put("_id", aObjectId);
+
+		if (tryGet(entry))
+		{
+			LobHeader header = new LobHeader(entry.get("header"));
+
+			new LobByteChannel(getBlockAccessor(), header, LobOpenOption.APPEND).delete();
+
+			delete(entry);
+		}
 	}
 }

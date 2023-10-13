@@ -56,11 +56,13 @@ public final class RaccoonDatabase implements AutoCloseable
 	private boolean mModified;
 	private boolean mCloseDeviceOnCloseDatabase;
 	private boolean mReadOnly;
+	private boolean mShutdownHookEnabled;
 	private Thread mShutdownHook;
 
 
 	private RaccoonDatabase()
 	{
+		mShutdownHookEnabled = true;
 		mIndices = new DualMap<>();
 		mLock = new ReadWriteLock();
 		mCollectionInstancesName = new ConcurrentSkipListMap<>();
@@ -240,20 +242,22 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
 
-			// remove this?
 			mShutdownHook = new Thread()
 			{
 				@Override
 				public void run()
 				{
-					Log.i("shutdown hook executing");
-					Log.inc();
+					if (mShutdownHookEnabled)
+					{
+						Log.i("shutdown hook executing");
+						Log.inc();
 
-					mShutdownHook = null;
+						mShutdownHook = null;
 
-					close();
+						close();
 
-					Log.dec();
+						Log.dec();
+					}
 				}
 			};
 
@@ -376,53 +380,53 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public LobByteChannel openLob(String aCollection, Object aId, LobOpenOption aLobOpenOption) throws IOException
-	{
-		LobByteChannel lob = tryOpenLob(aCollection, aId, aLobOpenOption);
-
-		if (lob == null)
-		{
-			throw new FileNotFoundException("No LOB " + aId);
-		}
-
-		return lob;
-	}
-
-
-	public LobByteChannel tryOpenLob(String aCollection, Object aId, LobOpenOption aLobOpenOption) throws IOException
-	{
-		Document entry = new Document().put("_id", aId);
-
-		RaccoonCollection collection = getCollection(aCollection);
-
-		if (!collection.tryGet(entry) && aLobOpenOption == LobOpenOption.READ)
-		{
-			return null;
-		}
-
-		LobHeader header = new LobHeader(entry.get("header"));
-
-		Runnable closeAction = () -> collection.save(entry.put("header", header.marshal()));
-
-		return new LobByteChannel(getBlockAccessor(), header, aLobOpenOption, closeAction);
-	}
-
-
-	public void deleteLob(String aCollection, ObjectId aObjectId) throws IOException
-	{
-		Document entry = new Document().put("_id", aObjectId);
-
-		RaccoonCollection collection = getCollection(aCollection);
-
-		if (collection.tryGet(entry))
-		{
-			LobHeader header = new LobHeader(entry.get("header"));
-
-			new LobByteChannel(getBlockAccessor(), header, LobOpenOption.APPEND).delete();
-
-			collection.delete(entry);
-		}
-	}
+//	public LobByteChannel openLob(String aCollection, Object aId, LobOpenOption aLobOpenOption) throws IOException
+//	{
+//		LobByteChannel lob = tryOpenLob(aCollection, aId, aLobOpenOption);
+//
+//		if (lob == null)
+//		{
+//			throw new FileNotFoundException("No LOB " + aId);
+//		}
+//
+//		return lob;
+//	}
+//
+//
+//	public LobByteChannel tryOpenLob(String aCollection, Object aId, LobOpenOption aLobOpenOption) throws IOException
+//	{
+//		Document entry = new Document().put("_id", aId);
+//
+//		RaccoonCollection collection = getCollection(aCollection);
+//
+//		if (!collection.tryGet(entry) && aLobOpenOption == LobOpenOption.READ)
+//		{
+//			return null;
+//		}
+//
+//		LobHeader header = new LobHeader(entry.get("header"));
+//
+//		Runnable closeAction = () -> collection.save(entry.put("header", header.marshal()));
+//
+//		return new LobByteChannel(getBlockAccessor(), header, aLobOpenOption, closeAction);
+//	}
+//
+//
+//	public void deleteLob(String aCollection, ObjectId aObjectId) throws IOException
+//	{
+//		Document entry = new Document().put("_id", aObjectId);
+//
+//		RaccoonCollection collection = getCollection(aCollection);
+//
+//		if (collection.tryGet(entry))
+//		{
+//			LobHeader header = new LobHeader(entry.get("header"));
+//
+//			new LobByteChannel(getBlockAccessor(), header, LobOpenOption.APPEND).delete();
+//
+//			collection.delete(entry);
+//		}
+//	}
 
 
 	private void checkOpen()
@@ -490,8 +494,6 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			Log.i("commit database");
 			Log.inc();
-
-
 
 			try (WriteLock lock = mLock.writeLock())
 			{
@@ -739,5 +741,21 @@ public final class RaccoonDatabase implements AutoCloseable
 		};
 
 		return (List<T>)getCollection(entity.collection()).listAll(supplier);
+	}
+
+
+	/**
+	 * Enables or disable the shutdown hook that will close the database and release resources on a JVM shutdown. Enabled by default.
+	 */
+	public RaccoonDatabase setShutdownHookEnabled(boolean aShutdownHookEnabled)
+	{
+		mShutdownHookEnabled = aShutdownHookEnabled;
+		return this;
+	}
+
+
+	public boolean isShutdownHookEnabled()
+	{
+		return mShutdownHookEnabled;
 	}
 }

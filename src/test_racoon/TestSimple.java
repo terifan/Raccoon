@@ -22,14 +22,14 @@ public class TestSimple
 		{
 			Random rnd = new Random(1);
 
-//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
-//			{
-//				for (int i = 0; i < 10_000; i++)
-//				{
-//					db.getCollection("numbers").save(Document.of("_id:" + Array.of(i/100, i%100, "-".repeat(100))));
-//				}
-//				db.commit();
-//			}
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
+			{
+				for (int i = 0; i < 10_000; i++)
+				{
+					db.getCollection("numbers").save(Document.of("_id:" + Array.of(i/100, i%100, "-".repeat(100))));
+				}
+				db.commit();
+			}
 
 			System.out.println("-".repeat(100));
 
@@ -50,7 +50,7 @@ public class TestSimple
 				for (int i = 0; i < 10_000; i++)
 				{
 					List<Document> result = db.getCollection("numbers").find(Document.of("_id:" + Array.of(i/100, i%100)));
-					if (result.size()==0)System.out.println(i);
+					if (result.isEmpty())System.out.println(i);
 					sz2 += result.size();
 				}
 

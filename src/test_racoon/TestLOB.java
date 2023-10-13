@@ -30,9 +30,10 @@ public class TestLOB
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
 			{
-				RaccoonCollection files = db.getCollection("files");
+				RaccoonCollection filesCollection = db.getCollection("files");
+				RaccoonCollection lobsCollection = db.getCollection("lobs");
 
-				Files.walk(Paths.get("d:\\pictures")).filter(p -> p.getFileName().toString().toLowerCase().matches(".*jpg|.*png")).limit(1000).forEach(path ->
+				Files.walk(Paths.get("d:\\pictures")).filter(p -> p.getFileName().toString().toLowerCase().matches(".*jpg|.*png")).limit(10).forEach(path ->
 				{
 					System.out.println(path);
 
@@ -41,9 +42,9 @@ public class TestLOB
 						Document file = new Document();
 						file.put("_id", Array.of(path.getFileName().toString(), ObjectId.randomId()));
 						file.put("length", Files.size(path));
-						files.save(file);
+						filesCollection.save(file);
 
-						try (LobByteChannel lob = db.openLob("lobs", file.getArray("_id").getObjectId(1), LobOpenOption.CREATE))
+						try (LobByteChannel lob = lobsCollection.openLob(file.get("_id"), LobOpenOption.CREATE))
 						{
 							try (InputStream in = Files.newInputStream(path))
 							{
@@ -66,9 +67,13 @@ public class TestLOB
 				db.getCollection("files").listAll();
 				System.out.println(System.currentTimeMillis()-t);
 
+				RaccoonCollection lobCollection = db.getCollection("lobs");
+
+				lobCollection.listAll().forEach(System.out::println);
+
 				db.getCollection("files").listAll().forEach(file ->
 				{
-					try (LobByteChannel lob = db.openLob("lobs", file.getArray("_id").getObjectId(1), LobOpenOption.READ))
+					try (LobByteChannel lob = lobCollection.openLob(file.get("_id"), LobOpenOption.READ))
 					{
 						BufferedImage image = ImageIO.read(lob.newInputStream());
 						System.out.println(image);
