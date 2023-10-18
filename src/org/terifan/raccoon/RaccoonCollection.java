@@ -865,11 +865,13 @@ public final class RaccoonCollection
 	{
 		Document entry = new Document().put("_id", aId);
 
-		if (tryGet(entry))
+		if (!tryGet(entry))
 		{
-			Document header = entry.get("$lob");
-			new LobByteChannel(getBlockAccessor(), header, LobOpenOption.APPEND, entry, null).delete();
-			delete(entry);
+			throw new FileNotFoundException("No LOB " + aId);
 		}
+
+		Document header = entry.get("$lob");
+		new LobByteChannel(getBlockAccessor(), header, LobOpenOption.APPEND, entry, null).delete();
+		delete(entry);
 	}
 }
