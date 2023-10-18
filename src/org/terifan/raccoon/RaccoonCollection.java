@@ -11,12 +11,10 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
-import org.terifan.raccoon.blockdevice.LobHeader;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.util.Log;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
-import org.terifan.raccoon.document.DocumentEntity;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
@@ -28,6 +26,8 @@ public final class RaccoonCollection
 	public final static byte TYPE_TREENODE = 0;
 	public final static byte TYPE_DOCUMENT = 1;
 	public final static byte TYPE_EXTERNAL = 2;
+
+	public static final String BTREE = "conf";
 
 	private final ReadWriteLock mLock;
 
@@ -45,7 +45,7 @@ public final class RaccoonCollection
 
 		mLock = new ReadWriteLock();
 		mCommitLocks = new HashSet<>();
-		mImplementation = new BTree(getBlockAccessor(), aConfiguration.getDocument("btree"));
+		mImplementation = new BTree(getBlockAccessor(), aConfiguration.getDocument(BTREE));
 	}
 
 
@@ -239,11 +239,11 @@ public final class RaccoonCollection
 
 		ArrayMapEntry entry = new ArrayMapEntry(key, aDocument, TYPE_DOCUMENT);
 
-		if (entry.length() > mImplementation.getConfiguration().getInt("entrySizeLimit"))
+		if (entry.length() > mImplementation.getConfiguration().getInt(BTree.ENTRY_SIZE_LIMIT))
 		{
-			LobHeader header = new LobHeader();
+			Document header = new Document();
 
-			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.WRITE))
+			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.WRITE, aDocument, null))
 			{
 				lob.writeAllBytes(aDocument.toByteArray());
 			}
@@ -252,7 +252,7 @@ public final class RaccoonCollection
 				throw new DatabaseException(e);
 			}
 
-			entry.setValue(header.marshal());
+			entry.setValue(header);
 			entry.setType(TYPE_EXTERNAL);
 		}
 
@@ -601,19 +601,19 @@ public final class RaccoonCollection
 
 		if (aEntry != null && aEntry.getType() == TYPE_EXTERNAL)
 		{
-			LobHeader header = new LobHeader(aEntry.getValue());
+			Document header = aEntry.getValue();
 
 			try
 			{
 				if (aRestoreOldValue)
 				{
-					try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ))
+					try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, aEntry.getValue(), null))
 					{
 						prev = new Document().fromByteArray(lob.readAllBytes());
 					}
 				}
 
-				try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE))
+				try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE, aEntry.getValue(), null))
 				{
 				}
 			}
@@ -643,9 +643,9 @@ public final class RaccoonCollection
 	{
 		if (aEntry.getType() == TYPE_EXTERNAL)
 		{
-			LobHeader header = new LobHeader(aEntry.getValue());
+			Document header = aEntry.getValue();
 
-			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ))
+			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, aEntry.getValue(), null))
 			{
 				return aDestination.putAll(new Document().fromByteArray(lob.readAllBytes()));
 			}
@@ -666,7 +666,6 @@ public final class RaccoonCollection
 
 //		System.out.println(aQuery);
 //		System.out.println(mDatabase.mIndices);
-
 		Document bestIndex = null;
 		int matchingFields = 0;
 		ArrayList<String> queryKeys = aQuery.keySet();
@@ -693,7 +692,6 @@ public final class RaccoonCollection
 
 //		System.out.println(matchingFields+" "+queryKeys.size());
 //		System.out.println(bestIndex);
-
 		if (bestIndex != null)
 		{
 			System.out.println("INDEX: " + bestIndex);
@@ -726,7 +724,6 @@ public final class RaccoonCollection
 					boolean b = matchKey(aNode.mMap.getFirst().getKey(), aNode.mMap.getLast().getKey(), aQuery);
 
 //					System.out.println("#" + aNode.mMap.getFirst().getKey()+", "+aNode.mMap.getLast().getKey() +" " + b+ " "+aQuery.getArray("_id"));
-
 					return b;
 				}
 
@@ -780,7 +777,6 @@ public final class RaccoonCollection
 	// 3: 3,2  -- 4,3
 	// 4: 4,4  -- null
 
-
 	private boolean matchKey(ArrayMapKey aLowestKey, ArrayMapKey aHighestKey, Document aQuery)
 	{
 		Array lowestKey = aLowestKey == null ? null : (Array)aLowestKey.get();
@@ -832,8 +828,13 @@ public final class RaccoonCollection
 	}
 
 
-	public LobByteChannel openLob(DocumentEntity aId, LobOpenOption aLobOpenOption) throws IOException
+	public LobByteChannel openLob(Object aId, LobOpenOption aLobOpenOption) throws IOException
 	{
+		if (aId instanceof Document)
+		{
+			aId = ((Document)aId).get("_id");
+		}
+
 		LobByteChannel lob = tryOpenLob(aId, aLobOpenOption);
 
 		if (lob == null)
@@ -845,7 +846,7 @@ public final class RaccoonCollection
 	}
 
 
-	public LobByteChannel tryOpenLob(DocumentEntity aId, LobOpenOption aLobOpenOption) throws IOException
+	public LobByteChannel tryOpenLob(Object aId, LobOpenOption aLobOpenOption) throws IOException
 	{
 		Document entry = new Document().put("_id", aId);
 
@@ -854,24 +855,20 @@ public final class RaccoonCollection
 			return null;
 		}
 
-		LobHeader header = new LobHeader(entry.get("header"));
-
-		Runnable closeAction = () -> save(entry.put("header", header.marshal()));
-
-		return new LobByteChannel(getBlockAccessor(), header, aLobOpenOption, closeAction);
+		Document header = entry.get("$lob", () -> new Document());
+		Runnable closeAction = () -> save(entry.put("$lob", header));
+		return new LobByteChannel(getBlockAccessor(), header, aLobOpenOption, entry, closeAction);
 	}
 
 
-	public void deleteLob(DocumentEntity aObjectId) throws IOException
+	public void deleteLob(Object aId) throws IOException
 	{
-		Document entry = new Document().put("_id", aObjectId);
+		Document entry = new Document().put("_id", aId);
 
 		if (tryGet(entry))
 		{
-			LobHeader header = new LobHeader(entry.get("header"));
-
-			new LobByteChannel(getBlockAccessor(), header, LobOpenOption.APPEND).delete();
-
+			Document header = entry.get("$lob");
+			new LobByteChannel(getBlockAccessor(), header, LobOpenOption.APPEND, entry, null).delete();
 			delete(entry);
 		}
 	}

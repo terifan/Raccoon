@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.document.ObjectId;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -14,8 +13,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Supplier;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.DeviceException;
-import org.terifan.raccoon.blockdevice.LobByteChannel;
-import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.managed.UnsupportedVersionException;
 import org.terifan.raccoon.blockdevice.physical.FileBlockDevice;
@@ -28,7 +25,6 @@ import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
-import org.terifan.raccoon.blockdevice.LobHeader;
 import org.terifan.raccoon.util.DualMap;
 
 // listCollectionNames()
@@ -39,8 +35,8 @@ import org.terifan.raccoon.util.DualMap;
 
 public final class RaccoonDatabase implements AutoCloseable
 {
-	public final static String TENANT_NAME = "RaccoonDB";
-	public final static int TENANT_VERSION = 1;
+	public final static String TENANT = "tenant";
+	public final static String TENANT_IDENTITY = "RaccoonDatabase.1";
 
 	private final ReadWriteLock mLock;
 
@@ -196,7 +192,7 @@ public final class RaccoonDatabase implements AutoCloseable
 				Log.i("create database");
 				Log.inc();
 
-				blockDevice.getMetadata().put("tenantName", TENANT_NAME).put("tenantVersion", TENANT_VERSION);
+				blockDevice.getMetadata().put(TENANT, TENANT_IDENTITY);
 
 				if (blockDevice.size() > 0)
 				{
@@ -219,13 +215,9 @@ public final class RaccoonDatabase implements AutoCloseable
 				Log.i("open database");
 				Log.inc();
 
-				if (!TENANT_NAME.equals(blockDevice.getMetadata().getString("tenantName")))
+				if (!TENANT_IDENTITY.equals(blockDevice.getMetadata().getString(TENANT)))
 				{
 					throw new DatabaseException("Not a Raccoon database file");
-				}
-				if (blockDevice.getMetadata().get("tenantVersion", -1) != TENANT_VERSION)
-				{
-					throw new DatabaseException("Unsupported Raccoon database version");
 				}
 
 				mBlockDevice = blockDevice;
@@ -703,11 +695,7 @@ public final class RaccoonDatabase implements AutoCloseable
 		return new Document()
 			.put("_id", ObjectId.randomId())
 			.put("name", aName)
-			.put("btree", new Document()
-				.put("intBlockSize", mBlockDevice.getBlockSize())
-				.put("leafBlockSize", mBlockDevice.getBlockSize())
-				.put("entrySizeLimit", mBlockDevice.getBlockSize() / 4)
-			);
+			.put(RaccoonCollection.BTREE, BTree.createDefaultConfig());
 	}
 
 

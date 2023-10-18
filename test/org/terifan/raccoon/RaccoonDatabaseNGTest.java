@@ -1,30 +1,36 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+import org.testng.annotations.Test;
+import resources.entities._Fruit;
+
 
 public class RaccoonDatabaseNGTest
 {
-//	@Test
-//	public void testSingleTableInsertTiny() throws Exception
-//	{
-//		MemoryBlockDevice device = new MemoryBlockDevice(512);
-//
-//		try (RaccoonDatabase database = new RaccoonDatabase(device, DatabaseOpenOption.CREATE_NEW))
-//		{
-//			database.save(new _Fruit1K("apple", 123.0));
-//			database.commit();
-//		}
-//
-//		try (RaccoonDatabase database = new RaccoonDatabase(device, DatabaseOpenOption.OPEN))
-//		{
-//			_Fruit1K apple = new _Fruit1K("apple");
-//
-//			assertTrue(database.tryGet(apple));
-//			assertEquals(apple._name, "apple");
-//			assertEquals(apple.calories, 123.0);
-//		}
-//	}
-//
-//
+	@Test
+	public void testSingleTableInsertTiny() throws Exception
+	{
+		MemoryBlockDevice device = new MemoryBlockDevice(512);
+
+		try (RaccoonDatabase database = new RaccoonDatabase(device, DatabaseOpenOption.CREATE, null))
+		{
+			database.getCollection("fruits").save(new _Fruit("apple", 123.0));
+			database.commit();
+		}
+
+		try (RaccoonDatabase database = new RaccoonDatabase(device, DatabaseOpenOption.OPEN, null))
+		{
+			_Fruit apple = new _Fruit("apple");
+
+			assertTrue(database.getCollection("fruits").tryGet(apple));
+			assertEquals(apple.get("_id"), "apple");
+			assertEquals(apple.get("calories"), 123.0);
+		}
+	}
+
+
 //	@Test
 //	public void testSingleTableInsertTiny2() throws Exception
 //	{

@@ -1,16 +1,14 @@
 package org.terifan.raccoon;
 
 import java.util.ArrayList;
-import org.terifan.raccoon.BTreeNode.VisitorState;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.document.Document;
-import org.terifan.raccoon.document.ObjectId;
 
 
 class DatabaseDirectory
 {
-	private final static String DIRECTORY = "directory";
+	private final static String DIRECTORY = "dir";
 
 	private BTree mStorage;
 
@@ -20,7 +18,7 @@ class DatabaseDirectory
 		Document conf = aBlockDevice.getMetadata().getDocument(DIRECTORY);
 		if (conf == null)
 		{
-			conf = new Document();
+			conf = BTree.createDefaultConfig();
 		}
 
 		mStorage = new BTree(new BlockAccessor(aBlockDevice), conf);

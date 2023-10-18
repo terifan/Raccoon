@@ -4,10 +4,11 @@ import java.util.Map.Entry;
 import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
 import org.terifan.raccoon.ArrayMap.PutResult;
+import static org.terifan.raccoon.BTree.INT_BLOCK_SIZE;
+import static org.terifan.raccoon.BTree.LEAF_BLOCK_SIZE;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.blockdevice.util.Console;
-import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.util.Result;
 
 
@@ -46,8 +47,8 @@ public class BTreeInteriorNode extends BTreeNode
 		mMap.loadNearestEntry(nearestEntry);
 		BTreeNode nearestNode = getNode(aImplementation, nearestEntry);
 
-		int leafBlockSize = aImplementation.getConfiguration().getInt("leafBlockSize");
-		int intBlockSize = aImplementation.getConfiguration().getInt("intBlockSize");
+		int leafBlockSize = aImplementation.getConfiguration().getInt(LEAF_BLOCK_SIZE);
+		int intBlockSize = aImplementation.getConfiguration().getInt(INT_BLOCK_SIZE);
 
 		if (mLevel == 1 ? nearestNode.mMap.getCapacity() > leafBlockSize || nearestNode.mMap.getFreeSpace() < aEntry.getMarshalledLength() : nearestNode.mMap.getUsedSpace() > intBlockSize)
 		{
@@ -87,7 +88,7 @@ public class BTreeInteriorNode extends BTreeNode
 		BTreeNode rghtChild = offset + 1 == mMap.size() ? null : getNode(aImplementation, offset + 1);
 
 		int keyLimit = mLevel == 1 ? 0 : 1;
-		int sizeLimit = mLevel == 1 ? aImplementation.getConfiguration().getInt("leafBlockSize") : aImplementation.getConfiguration().getInt("intBlockSize");
+		int sizeLimit = mLevel == 1 ? aImplementation.getConfiguration().getInt(LEAF_BLOCK_SIZE) : aImplementation.getConfiguration().getInt(INT_BLOCK_SIZE);
 
 		if (leftChild != null && (curntChld.mMap.size() + leftChild.mMap.size()) < sizeLimit || rghtChild != null && (curntChld.mMap.size() + rghtChild.mMap.size()) < sizeLimit)
 		{
@@ -260,7 +261,7 @@ public class BTreeInteriorNode extends BTreeNode
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("intBlockSize"));
+		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt(INT_BLOCK_SIZE));
 
 		BTreeInteriorNode left = new BTreeInteriorNode(mLevel);
 		left.mMap = maps[0];
@@ -309,7 +310,7 @@ public class BTreeInteriorNode extends BTreeNode
 
 		BTreeInteriorNode interior = new BTreeInteriorNode(mLevel + 1);
 		interior.mModified = true;
-		interior.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("intBlockSize"));
+		interior.mMap = new ArrayMap(aImplementation.getConfiguration().getInt(INT_BLOCK_SIZE));
 		interior.mMap.insert(new ArrayMapEntry(split.leftKey(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
 		interior.mMap.insert(new ArrayMapEntry(split.rightKey(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
 		interior.mChildNodes.put(split.leftKey(), split.left());
@@ -328,7 +329,7 @@ public class BTreeInteriorNode extends BTreeNode
 	{
 		BTreeInteriorNode interior = new BTreeInteriorNode(mLevel - 1);
 		interior.mModified = true;
-		interior.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("intBlockSize"));
+		interior.mMap = new ArrayMap(aImplementation.getConfiguration().getInt(INT_BLOCK_SIZE));
 
 		for (int i = 0; i < mMap.size(); i++)
 		{

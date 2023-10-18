@@ -4,7 +4,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.BTreeNode.RemoveResult;
-import org.terifan.raccoon.BTreeNode.VisitorState;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.blockdevice.compressor.CompressorLevel;
@@ -16,12 +15,12 @@ import org.terifan.raccoon.util.Result;
 
 public class BTree implements AutoCloseable
 {
-	private static final String ENTRY_SIZE_LIMIT = "entrySizeLimit";
-	private static final String INT_BLOCK_SIZE = "intBlockSize";
-	private static final String LEAF_BLOCK_SIZE = "leafBlockSize";
-	private static final String INT_BLOCK_COMPRESSOR = "intBlockCompressor";
-	private static final String LEAF_BLOCK_COMPRESSOR = "leafBlockCompressor";
-	private static final String ROOT = "root";
+	static final String ENTRY_SIZE_LIMIT = "0";
+	static final String INT_BLOCK_SIZE = "1";
+	static final String LEAF_BLOCK_SIZE = "2";
+	static final String INT_BLOCK_COMPRESSOR = "3";
+	static final String LEAF_BLOCK_COMPRESSOR = "4";
+	static final String ROOT = "5";
 
 	static BlockPointer BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL);
 
@@ -43,18 +42,17 @@ public class BTree implements AutoCloseable
 		mBlockAccessor = aBlockAccessor;
 		mConfiguration = aConfiguration;
 
-		mConfiguration.put(INT_BLOCK_COMPRESSOR, mConfiguration.get(INT_BLOCK_COMPRESSOR, k -> CompressorLevel.ZLE.ordinal()));
-		mConfiguration.put(LEAF_BLOCK_COMPRESSOR, mConfiguration.get(LEAF_BLOCK_COMPRESSOR, k -> CompressorLevel.DEFLATE_FAST.ordinal()));
-		mConfiguration.put(INT_BLOCK_SIZE, mConfiguration.get(INT_BLOCK_SIZE, k -> mBlockAccessor.getBlockDevice().getBlockSize()));
-		mConfiguration.put(LEAF_BLOCK_SIZE, mConfiguration.get(LEAF_BLOCK_SIZE, k -> mBlockAccessor.getBlockDevice().getBlockSize()));
-		mConfiguration.put(ENTRY_SIZE_LIMIT, mConfiguration.get(ENTRY_SIZE_LIMIT, k -> mBlockAccessor.getBlockDevice().getBlockSize() / 4));
+		if (mConfiguration == null)
+		{
+			mConfiguration = BTree.createDefaultConfig();
+		}
 
 		mCompressorInteriorBlocks = CompressorLevel.values()[mConfiguration.getInt(INT_BLOCK_COMPRESSOR)];
 		mCompressorLeafBlocks = CompressorLevel.values()[mConfiguration.getInt(LEAF_BLOCK_COMPRESSOR)];
 
 		if (mConfiguration.containsKey(ROOT))
 		{
-			Log.i("open table %s", aConfiguration.get("name", "?"));
+			Log.i("open table %s", mConfiguration.get("name", "?"));
 			Log.inc();
 
 			unmarshalHeader();
@@ -63,7 +61,7 @@ public class BTree implements AutoCloseable
 		}
 		else
 		{
-			Log.i("create table %s", aConfiguration.get("name", "?"));
+			Log.i("create table %s", mConfiguration.get("name", "?"));
 			Log.inc();
 
 			setupEmptyTable();
@@ -77,13 +75,13 @@ public class BTree implements AutoCloseable
 	{
 		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeInteriorNode ? BlockType.TREE_INTERIOR_NODE : BlockType.TREE_LEAF_NODE);
 
-		mConfiguration.put(ROOT, mRoot.mBlockPointer);
+		mConfiguration.put(ROOT, mRoot.mBlockPointer.marshal());
 	}
 
 
 	private void unmarshalHeader()
 	{
-		BlockPointer bp = new BlockPointer(mConfiguration.get(ROOT));
+		BlockPointer bp = new BlockPointer().unmarshal(mConfiguration.get(ROOT));
 
 		mRoot = bp.getBlockType() == BlockType.TREE_INTERIOR_NODE ? new BTreeInteriorNode(bp.getBlockLevel()) : new BTreeLeafNode();
 		mRoot.mBlockPointer = bp;
@@ -489,5 +487,16 @@ public class BTree implements AutoCloseable
 		}
 
 		return value;
+	}
+
+
+	static Document createDefaultConfig()
+	{
+		return new Document()
+			.put(BTree.INT_BLOCK_SIZE, 4096)
+			.put(BTree.LEAF_BLOCK_SIZE, 4096)
+			.put(BTree.ENTRY_SIZE_LIMIT, 1024)
+			.put(BTree.INT_BLOCK_COMPRESSOR, CompressorLevel.DEFLATE_FAST.ordinal())
+			.put(BTree.LEAF_BLOCK_COMPRESSOR, CompressorLevel.ZLE.ordinal());
 	}
 }

@@ -35,7 +35,7 @@ final class ArrayMapEntry
 	public ArrayMapEntry(ArrayMapKey aKey, BlockPointer aValue, byte aType)
 	{
 		mKey = aKey;
-		mValue = aValue.toByteArray();
+		mValue = aValue.marshal();
 		mType = aType;
 	}
 
@@ -68,7 +68,7 @@ final class ArrayMapEntry
 
 	public BlockPointer getBlockPointer()
 	{
-		return (BlockPointer)new BlockPointer().fromByteArray(mValue);
+		return new BlockPointer().unmarshal(mValue);
 	}
 
 

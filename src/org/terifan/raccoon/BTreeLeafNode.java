@@ -3,7 +3,8 @@ package org.terifan.raccoon;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
 import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import org.terifan.raccoon.ArrayMap.PutResult;
-import static org.terifan.raccoon.BTreeNode.VisitorState.CONTINUE;
+import static org.terifan.raccoon.BTree.INT_BLOCK_SIZE;
+import static org.terifan.raccoon.BTree.LEAF_BLOCK_SIZE;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.blockdevice.util.Console;
 import org.terifan.raccoon.util.Result;
@@ -66,7 +67,7 @@ public class BTreeLeafNode extends BTreeNode
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("leafBlockSize"));
+		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt(LEAF_BLOCK_SIZE));
 
 		BTreeLeafNode a = new BTreeLeafNode();
 		BTreeLeafNode b = new BTreeLeafNode();
@@ -83,7 +84,7 @@ public class BTreeLeafNode extends BTreeNode
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt("leafBlockSize"));
+		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getInt(LEAF_BLOCK_SIZE));
 
 		BTreeLeafNode a = new BTreeLeafNode();
 		BTreeLeafNode b = new BTreeLeafNode();
@@ -97,7 +98,7 @@ public class BTreeLeafNode extends BTreeNode
 
 		BTreeInteriorNode newInterior = new BTreeInteriorNode(1);
 		newInterior.mModified = true;
-		newInterior.mMap = new ArrayMap(aImplementation.getConfiguration().getInt("intBlockSize"));
+		newInterior.mMap = new ArrayMap(aImplementation.getConfiguration().getInt(INT_BLOCK_SIZE));
 		newInterior.mMap.put(new ArrayMapEntry(keyA, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
 		newInterior.mMap.put(new ArrayMapEntry(keyB, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
 		newInterior.mChildNodes.put(keyA, a);
