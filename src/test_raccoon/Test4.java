@@ -1,4 +1,4 @@
-package test_racoon;
+package test_raccoon;
 
 import java.util.List;
 import org.terifan.raccoon.DatabaseOpenOption;

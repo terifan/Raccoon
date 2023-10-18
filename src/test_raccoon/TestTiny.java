@@ -1,4 +1,4 @@
-package test_racoon;
+package test_raccoon;
 
 import java.nio.file.Paths;
 import org.terifan.raccoon.document.Document;

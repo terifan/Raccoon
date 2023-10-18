@@ -1,4 +1,4 @@
-package test_racoon;
+package test_raccoon;
 
 import java.io.IOException;
 import java.util.Random;
