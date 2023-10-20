@@ -31,22 +31,22 @@ public class TestLOB
 			AccessCredentials ac = new AccessCredentials("password".toCharArray(), EncryptionFunction.AES, KeyGenerationFunction.SHA3, CipherModeFunction.XTS);
 //			AccessCredentials ac = null;
 
-//			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\dev\\rdb_pictures\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
-//			{
-//				for (File file : new File("d:\\dev\\rdb_pictures\\in\\").listFiles())
-//				{
-//					System.out.println(file);
-//
-//					byte[] imageData = Files.readAllBytes(file.toPath());
-//					try (LobByteChannel lob = db.getLobCollection("pics").open(ObjectId.randomId(), LobOpenOption.CREATE))
-//					{
-//						lob.getMetadata().put("width", 3200).put("height", 2400).putEpochTime("modified", file.lastModified()).put("name", file.getName());
-//						lob.writeAllBytes(imageData);
-//					}
-//				}
-//
-//				db.commit();
-//			}
+			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\dev\\rdb_pictures\\test.rdb"), DatabaseOpenOption.REPLACE, ac))
+			{
+				for (File file : new File("d:\\dev\\rdb_pictures\\in\\").listFiles())
+				{
+					System.out.println(file);
+
+					byte[] imageData = Files.readAllBytes(file.toPath());
+					try (LobByteChannel lob = db.getDirectory("pics").open(ObjectId.randomId(), LobOpenOption.CREATE))
+					{
+						lob.getMetadata().put("width", 3200).put("height", 2400).putEpochTime("modified", file.lastModified()).put("name", file.getName());
+						lob.writeAllBytes(imageData);
+					}
+				}
+
+				db.commit();
+			}
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\dev\\rdb_pictures\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{

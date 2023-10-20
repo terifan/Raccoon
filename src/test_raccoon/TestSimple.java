@@ -28,6 +28,9 @@ public class TestSimple
 				{
 					db.getCollection("numbers").save(Document.of("_id:" + Array.of(i/100, i%100, "-".repeat(100))));
 				}
+
+				System.out.println(db.listCollectionNames());
+
 				db.commit();
 			}
 
@@ -99,7 +102,7 @@ public class TestSimple
 //			System.out.println("-".repeat(100));
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.READ_ONLY, null))
 			{
-				System.out.println("" + db.getCollectionNames());
+				System.out.println("" + db.listCollectionNames());
 
 				System.out.println(db.getCollection("numbers").find(Document.of("number:7")).size());
 			}
@@ -144,7 +147,7 @@ public class TestSimple
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.OPEN, null))
 			{
-				System.out.println(db.getCollectionNames());
+				System.out.println(db.listCollectionNames());
 
 				db.getCollection("people").saveAll(Document.of("firstName:gregor,lastName:king,details:{language:[en,ru],ratings:[1]}"));
 				db.getCollection("people").deleteAll(Document.of("_id:7"));
@@ -171,8 +174,8 @@ public class TestSimple
 				System.out.println("index:peopleLastName");
 				db.getIndex("peopleLastName").forEach(System.out::println);
 				System.out.println("-".repeat(100));
-				System.out.println("system:indices");
-				db.getCollection("system:indices").forEach(System.out::println);
+				System.out.println("$indices");
+				db.getCollection("$indices").forEach(System.out::println);
 
 				System.out.println("-".repeat(100));
 

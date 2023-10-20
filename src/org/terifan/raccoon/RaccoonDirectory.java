@@ -20,6 +20,12 @@ public class RaccoonDirectory
 	}
 
 
+	public String getName()
+	{
+		return mCollection.getName();
+	}
+
+
 	public LobByteChannel open(ObjectId aId, LobOpenOption aLobOpenOption) throws IOException
 	{
 		LobByteChannel lob = tryOpen(aId, aLobOpenOption);
@@ -72,7 +78,7 @@ public class RaccoonDirectory
 	}
 
 
-	public long size() throws IOException
+	public long size()
 	{
 		return mCollection.size();
 	}

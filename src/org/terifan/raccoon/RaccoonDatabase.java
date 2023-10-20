@@ -2,15 +2,12 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.document.ObjectId;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.DeviceException;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
@@ -27,7 +24,6 @@ import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
 import org.terifan.raccoon.util.DualMap;
 
-// listCollectionNames()
 // createCollection - samma som getcollection
 // insert - skapar alltid ett nytt _id
 // coll:
@@ -35,13 +31,12 @@ import org.terifan.raccoon.util.DualMap;
 
 public final class RaccoonDatabase implements AutoCloseable
 {
-	public final static String TENANT = "tenant";
-	public final static String TENANT_IDENTITY = "RaccoonDatabase.1";
-
-	final static String DIRECTORY = "dir";
+	private final static String TENANT = "tenant";
+	private final static String VERSION = "RaccoonDatabase.1";
+	private final static String DIRECTORY = "dir";
 
 	private ManagedBlockDevice mBlockDevice;
-	private DatabaseDirectory mDatabaseDirectory;
+	private DatabaseRoot mDatabaseRoot;
 	private DatabaseOpenOption mDatabaseOpenOption;
 	private final ConcurrentSkipListMap<String, RaccoonCollection> mCollectionInstances;
 	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
@@ -191,7 +186,7 @@ public final class RaccoonDatabase implements AutoCloseable
 				Log.i("create database");
 				Log.inc();
 
-				blockDevice.getMetadata().put(TENANT, TENANT_IDENTITY);
+				blockDevice.getMetadata().put(TENANT, VERSION);
 
 				if (blockDevice.size() > 0)
 				{
@@ -202,9 +197,7 @@ public final class RaccoonDatabase implements AutoCloseable
 				mModified = true;
 				mBlockDevice = blockDevice;
 				mBlockDevice.getMetadata().put(DIRECTORY, BTree.createDefaultConfig());
-				mDatabaseDirectory = new DatabaseDirectory(mBlockDevice);
-
-				getCollection("system:indices");
+				mDatabaseRoot = new DatabaseRoot(mBlockDevice, mBlockDevice.getMetadata().getDocument(DIRECTORY));
 
 				commit();
 
@@ -215,18 +208,22 @@ public final class RaccoonDatabase implements AutoCloseable
 				Log.i("open database");
 				Log.inc();
 
-				if (!TENANT_IDENTITY.equals(blockDevice.getMetadata().getString(TENANT)))
+				if (!VERSION.equals(blockDevice.getMetadata().getString(TENANT)))
 				{
 					throw new DatabaseException("Not a Raccoon database file");
 				}
 
 				mBlockDevice = blockDevice;
-				mDatabaseDirectory = new DatabaseDirectory(mBlockDevice);
+				mDatabaseRoot = new DatabaseRoot(mBlockDevice, mBlockDevice.getMetadata().getDocument(DIRECTORY));
 				mReadOnly = mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY;
 
-				for (Document indexConf : getCollection("system:indices").listAll())
+				RaccoonCollection indices = getCollectionImpl("$indices", false);
+				if (indices != null)
 				{
-					mIndices.put(indexConf.getArray("_id").getObjectId(0), indexConf.getArray("_id").getObjectId(1), indexConf);
+					for (Document indexConf : indices.listAll())
+					{
+						mIndices.put(indexConf.getArray("_id").getObjectId(0), indexConf.getArray("_id").getObjectId(1), indexConf);
+					}
 				}
 
 				Log.dec();
@@ -262,11 +259,17 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public ArrayList<String> getCollectionNames()
+	public ArrayList<String> listCollectionNames()
 	{
 		checkOpen();
+		return new ArrayList<>(mDatabaseRoot.list().stream().filter(e -> !e.startsWith("$")).collect(Collectors.toList()));
+	}
 
-		return new ArrayList<>(mDatabaseDirectory.list());
+
+	public ArrayList<String> listDirectoryNames()
+	{
+		checkOpen();
+		return new ArrayList<>(mDatabaseRoot.list().stream().filter(e -> e.startsWith("$lob.")).collect(Collectors.toList()));
 	}
 
 
@@ -274,7 +277,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		checkOpen();
 
-		return mCollectionInstances.containsKey(aName) || mDatabaseDirectory.exists(aName);
+		return mCollectionInstances.containsKey(aName) || mDatabaseRoot.exists(aName);
 	}
 
 
@@ -301,11 +304,11 @@ public final class RaccoonDatabase implements AutoCloseable
 			throw new IllegalArgumentException("Collection names cannot start with dollar sign.");
 		}
 
-		return getCollectionImpl(aName);
+		return getCollectionImpl(aName, true);
 	}
 
 
-	private synchronized RaccoonCollection getCollectionImpl(String aName)
+	private synchronized RaccoonCollection getCollectionImpl(String aName, boolean aCreateMissing)
 	{
 		checkOpen();
 
@@ -315,12 +318,17 @@ public final class RaccoonDatabase implements AutoCloseable
 			return instance;
 		}
 
-		Document conf = mDatabaseDirectory.get(aName);
+		Document conf = mDatabaseRoot.get(aName);
 		if (conf != null)
 		{
 			instance = new RaccoonCollection(this, conf);
 			mCollectionInstances.put(aName, instance);
 			return instance;
+		}
+
+		if (!aCreateMissing)
+		{
+			return null;
 		}
 
 		if (mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY)
@@ -335,7 +343,7 @@ public final class RaccoonDatabase implements AutoCloseable
 		{
 			conf = createDefaultConfig(aName);
 			instance = new RaccoonCollection(this, conf);
-			mDatabaseDirectory.put(conf);
+			mDatabaseRoot.put(conf);
 			mCollectionInstances.put(aName, instance);
 		}
 		finally
@@ -352,16 +360,31 @@ public final class RaccoonDatabase implements AutoCloseable
 		checkOpen();
 
 		aCollection.clear();
-		mDatabaseDirectory.remove(aCollection.getName());
+		mDatabaseRoot.remove(aCollection.getName());
 		mModified = true;
 
 		mCollectionInstances.remove(aCollection.getName());
 	}
 
 
+	public synchronized void removeDirectory(RaccoonDirectory aCollection)
+	{
+		checkOpen();
+
+		if (aCollection.size() != 0)
+		{
+			throw new IllegalStateException("The RaccoonDirectory is not empty.");
+		}
+
+		mDatabaseRoot.remove(aCollection.getName());
+		mCollectionInstances.remove(aCollection.getName());
+		mModified = true;
+	}
+
+
 	public RaccoonDirectory getDirectory(String aName)
 	{
-		RaccoonCollection collection = getCollectionImpl("$lob." + aName);
+		RaccoonCollection collection = getCollectionImpl("$lob." + aName, true);
 
 		return new RaccoonDirectory(collection);
 	}
@@ -369,7 +392,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	private void checkOpen()
 	{
-		if (mDatabaseDirectory == null)
+		if (mDatabaseRoot == null)
 		{
 			throw new DatabaseClosedException("Database is closed");
 		}
@@ -394,7 +417,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	public boolean isOpen()
 	{
-		return mDatabaseDirectory != null;
+		return mDatabaseRoot != null;
 	}
 
 
@@ -441,7 +464,7 @@ public final class RaccoonDatabase implements AutoCloseable
 					{
 						Log.i("table updated '%s'", collection.getConfiguration().getString("name"));
 
-						mDatabaseDirectory.put(collection.getConfiguration());
+						mDatabaseRoot.put(collection.getConfiguration());
 						mModified = true;
 					}
 				}
@@ -451,7 +474,7 @@ public final class RaccoonDatabase implements AutoCloseable
 					Log.i("updating super block");
 					Log.inc();
 
-					mBlockDevice.getMetadata().put(DIRECTORY, mDatabaseDirectory.commit(mBlockDevice));
+					mBlockDevice.getMetadata().put(DIRECTORY, mDatabaseRoot.commit(mBlockDevice));
 					mBlockDevice.commit();
 					mModified = false;
 
@@ -489,7 +512,7 @@ public final class RaccoonDatabase implements AutoCloseable
 				instance.rollback();
 			}
 
-			mDatabaseDirectory = new DatabaseDirectory(mBlockDevice);
+			mDatabaseRoot = new DatabaseRoot(mBlockDevice, mBlockDevice.getMetadata().getDocument(DIRECTORY));
 			mBlockDevice.rollback();
 		}
 		catch (IOException e)
@@ -556,13 +579,13 @@ public final class RaccoonDatabase implements AutoCloseable
 					instance.rollback();
 				}
 
-				mDatabaseDirectory = new DatabaseDirectory(mBlockDevice);
+				mDatabaseRoot = new DatabaseRoot(mBlockDevice, mBlockDevice.getMetadata().getDocument(DIRECTORY));
 				mBlockDevice.rollback();
 
 				Log.dec();
 			}
 
-			if (mDatabaseDirectory != null)
+			if (mDatabaseRoot != null)
 			{
 				for (RaccoonCollection instance : mCollectionInstances.values())
 				{
@@ -571,8 +594,8 @@ public final class RaccoonDatabase implements AutoCloseable
 
 				mCollectionInstances.clear();
 
-				mDatabaseDirectory.commit(mBlockDevice);
-				mDatabaseDirectory = null;
+				mDatabaseRoot.commit(mBlockDevice);
+				mDatabaseRoot = null;
 			}
 
 			if (mBlockDevice != null && mCloseDeviceOnCloseDatabase)
@@ -636,45 +659,9 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	private Document createDefaultConfig(String aName)
+	public boolean isShutdownHookEnabled()
 	{
-		return new Document()
-			.put("_id", ObjectId.randomId())
-			.put("name", aName)
-			.put(RaccoonCollection.CONFIGURATION, BTree.createDefaultConfig());
-	}
-
-
-	public RaccoonDatabase saveEntity(Document... aDocuments)
-	{
-		for (Document doc : aDocuments)
-		{
-			RaccoonEntity entity = doc.getClass().getAnnotation(RaccoonEntity.class);
-			getCollection(entity.collection()).save(doc);
-		}
-		return this;
-	}
-
-
-	public <T extends Document> List<T> listEntity(Class<T> aType)
-	{
-		RaccoonEntity entity = aType.getAnnotation(RaccoonEntity.class);
-
-		Supplier<T> supplier = () ->
-		{
-			try
-			{
-				Constructor<T> c = aType.getConstructor();
-				c.setAccessible(true);
-				return (T)c.newInstance();
-			}
-			catch (IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException | SecurityException | InvocationTargetException e)
-			{
-				throw new IllegalArgumentException("Failed to create instance. Ensure class has a public zero argument constructor: " + aType, e);
-			}
-		};
-
-		return (List<T>)getCollection(entity.collection()).listAll(supplier);
+		return mShutdownHookEnabled;
 	}
 
 
@@ -688,8 +675,11 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public boolean isShutdownHookEnabled()
+	private Document createDefaultConfig(String aName)
 	{
-		return mShutdownHookEnabled;
+		return new Document()
+			.put("_id", ObjectId.randomId())
+			.put("name", aName)
+			.put(RaccoonCollection.CONFIGURATION, BTree.createDefaultConfig());
 	}
 }

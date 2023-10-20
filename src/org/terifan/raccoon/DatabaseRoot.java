@@ -1,20 +1,19 @@
 package org.terifan.raccoon;
 
 import java.util.ArrayList;
-import static org.terifan.raccoon.RaccoonDatabase.DIRECTORY;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.document.Document;
 
 
-class DatabaseDirectory
+class DatabaseRoot
 {
 	private BTree mStorage;
 
 
-	DatabaseDirectory(ManagedBlockDevice aBlockDevice)
+	DatabaseRoot(ManagedBlockDevice aBlockDevice, Document aConfiguration)
 	{
-		mStorage = new BTree(new BlockAccessor(aBlockDevice), aBlockDevice.getMetadata().getDocument(DIRECTORY));
+		mStorage = new BTree(new BlockAccessor(aBlockDevice), aConfiguration);
 	}
 
 

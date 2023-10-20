@@ -201,7 +201,7 @@ public final class RaccoonCollection
 			.put("configuration", aConfiguration)
 			.put("fields", aFields);
 
-		mDatabase.getCollection("system:indices").save(indexConf);
+		mDatabase.getCollection("$indices").save(indexConf);
 
 		mDatabase.mIndices.put(id.getObjectId(0), id.getObjectId(1), indexConf);
 
