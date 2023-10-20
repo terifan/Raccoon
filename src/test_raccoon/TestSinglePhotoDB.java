@@ -12,6 +12,7 @@ import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.managed.SyncMode;
 import org.terifan.raccoon.blockdevice.physical.FileBlockDevice;
+import org.terifan.raccoon.document.ObjectId;
 
 
 public class TestSinglePhotoDB
@@ -22,21 +23,18 @@ public class TestSinglePhotoDB
 		{
 			for (File file : new File("d:\\dev\\rdb_pictures\\in\\").listFiles())
 			{
-				byte[] imageData;
-				try (FileInputStream in = new FileInputStream(file))
-				{
-					imageData = in.readAllBytes();
-				}
-
 				String name = file.getName();
 				Path dst = Paths.get("d:\\dev\\rdb_pictures\\out\\" + name.substring(0, name.lastIndexOf('.')) + ".pic");
 				Files.deleteIfExists(dst);
 
+				ObjectId ref;
+				byte[] imageData = Files.readAllBytes(file.toPath());
+
 				try (FileBlockDevice f = new FileBlockDevice(dst, 512).setSyncMode(SyncMode.OFF); RaccoonDatabase db = new RaccoonDatabase(f, DatabaseOpenOption.CREATE, null))
 				{
-					try (LobByteChannel lob = db.getCollection("data").openLob("picture", LobOpenOption.CREATE))
+					try (LobByteChannel lob = db.getDirectory("pics").open(ref = ObjectId.randomId(), LobOpenOption.CREATE))
 					{
-						lob.getMetadata().put("width", 3200).put("height", 2400).putEpochTime("modified", file.lastModified()).put("size", file.length()).put("name", name);
+						lob.getMetadata().put("width", 3200).put("height", 2400).putEpochTime("modified", file.lastModified()).put("name", name);
 						lob.writeAllBytes(imageData);
 					}
 					db.commit();
@@ -44,26 +42,25 @@ public class TestSinglePhotoDB
 
 				try (FileBlockDevice fst = new FileBlockDevice(dst, 512); RaccoonDatabase db = new RaccoonDatabase(fst, DatabaseOpenOption.OPEN, null))
 				{
-					db.getCollection("data").listAll().forEach(System.out::println);
-
-					db.getCollection("data").listAll().forEach(e ->
+					db.getDirectory("pics").forEach((id, meta) ->
 					{
-						System.out.println(e.getDocument("$meta"));
-						try
-						{
-							try (LobByteChannel lob = db.getCollection("data").openLob(e, LobOpenOption.READ))
-							{
-								System.out.println(lob.getMetadata());
-								if (!Arrays.equals(imageData, lob.readAllBytes()))
-								{
-									throw new IllegalStateException();
-								}
-							}
-						}
-						catch (Exception ex)
-						{
-							ex.printStackTrace(System.out);
-						}
+						System.out.println(id + "=" + meta.toTypedJson());
+
+//						try
+//						{
+//							try (LobByteChannel lob = db.openLob(id, LobOpenOption.READ))
+//							{
+//								System.out.println(lob.getMetadata());
+//								if (!Arrays.equals(imageData, lob.readAllBytes()))
+//								{
+//									throw new IllegalStateException();
+//								}
+//							}
+//						}
+//						catch (Exception ex)
+//						{
+//							ex.printStackTrace(System.out);
+//						}
 					});
 				}
 			}

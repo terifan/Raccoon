@@ -1,6 +1,5 @@
 package org.terifan.raccoon;
 
-import java.io.FileNotFoundException;
 import org.terifan.raccoon.document.ObjectId;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,7 +26,7 @@ public final class RaccoonCollection
 	public final static byte TYPE_DOCUMENT = 1;
 	public final static byte TYPE_EXTERNAL = 2;
 
-	public static final String BTREE = "conf";
+	public static final String CONFIGURATION = "conf";
 
 	private final ReadWriteLock mLock;
 
@@ -45,7 +44,7 @@ public final class RaccoonCollection
 
 		mLock = new ReadWriteLock();
 		mCommitLocks = new HashSet<>();
-		mImplementation = new BTree(getBlockAccessor(), aConfiguration.getDocument(BTREE));
+		mImplementation = new BTree(getBlockAccessor(), aConfiguration.getDocument(CONFIGURATION));
 	}
 
 
@@ -243,7 +242,7 @@ public final class RaccoonCollection
 		{
 			Document header = new Document();
 
-			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.WRITE, aDocument, null))
+			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.WRITE, null))
 			{
 				lob.writeAllBytes(aDocument.toByteArray());
 			}
@@ -607,13 +606,13 @@ public final class RaccoonCollection
 			{
 				if (aRestoreOldValue)
 				{
-					try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, aEntry.getValue(), null))
+					try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, null))
 					{
 						prev = new Document().fromByteArray(lob.readAllBytes());
 					}
 				}
 
-				try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE, aEntry.getValue(), null))
+				try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE, null))
 				{
 				}
 			}
@@ -645,7 +644,7 @@ public final class RaccoonCollection
 		{
 			Document header = aEntry.getValue();
 
-			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, aEntry.getValue(), null))
+			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, null))
 			{
 				return aDestination.putAll(new Document().fromByteArray(lob.readAllBytes()));
 			}
@@ -825,53 +824,5 @@ public final class RaccoonCollection
 		}
 
 		return true;
-	}
-
-
-	public LobByteChannel openLob(Object aId, LobOpenOption aLobOpenOption) throws IOException
-	{
-		if (aId instanceof Document)
-		{
-			aId = ((Document)aId).get("_id");
-		}
-
-		LobByteChannel lob = tryOpenLob(aId, aLobOpenOption);
-
-		if (lob == null)
-		{
-			throw new FileNotFoundException("No LOB " + aId);
-		}
-
-		return lob;
-	}
-
-
-	public LobByteChannel tryOpenLob(Object aId, LobOpenOption aLobOpenOption) throws IOException
-	{
-		Document entry = new Document().put("_id", aId);
-
-		if (!tryGet(entry) && aLobOpenOption == LobOpenOption.READ)
-		{
-			return null;
-		}
-
-		Document header = entry.get("$lob", () -> new Document());
-		Runnable closeAction = () -> save(entry.put("$lob", header));
-		return new LobByteChannel(getBlockAccessor(), header, aLobOpenOption, entry, closeAction);
-	}
-
-
-	public void deleteLob(Object aId) throws IOException
-	{
-		Document entry = new Document().put("_id", aId);
-
-		if (!tryGet(entry))
-		{
-			throw new FileNotFoundException("No LOB " + aId);
-		}
-
-		Document header = entry.get("$lob");
-		new LobByteChannel(getBlockAccessor(), header, LobOpenOption.APPEND, entry, null).delete();
-		delete(entry);
 	}
 }

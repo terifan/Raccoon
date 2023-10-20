@@ -1,6 +1,7 @@
 package org.terifan.raccoon;
 
 import java.util.ArrayList;
+import static org.terifan.raccoon.RaccoonDatabase.DIRECTORY;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.document.Document;
@@ -8,28 +9,19 @@ import org.terifan.raccoon.document.Document;
 
 class DatabaseDirectory
 {
-	private final static String DIRECTORY = "dir";
-
 	private BTree mStorage;
 
 
 	DatabaseDirectory(ManagedBlockDevice aBlockDevice)
 	{
-		Document conf = aBlockDevice.getMetadata().getDocument(DIRECTORY);
-		if (conf == null)
-		{
-			conf = BTree.createDefaultConfig();
-		}
-
-		mStorage = new BTree(new BlockAccessor(aBlockDevice), conf);
+		mStorage = new BTree(new BlockAccessor(aBlockDevice), aBlockDevice.getMetadata().getDocument(DIRECTORY));
 	}
 
 
-	void commit(ManagedBlockDevice aBlockDevice)
+	Document commit(ManagedBlockDevice aBlockDevice)
 	{
 		mStorage.commit();
-
-		aBlockDevice.getMetadata().put(DIRECTORY, mStorage.getConfiguration());
+		return mStorage.getConfiguration();
 	}
 
 
@@ -49,14 +41,12 @@ class DatabaseDirectory
 	void remove(String aName)
 	{
 		Document conf = get(aName);
-		mStorage.remove(new ArrayMapEntry(new ArrayMapKey(conf.getObjectId("_id"))));
 		mStorage.remove(new ArrayMapEntry(new ArrayMapKey(conf.getString("name"))));
 	}
 
 
 	void put(Document aConfiguration)
 	{
-		mStorage.put(new ArrayMapEntry(new ArrayMapKey(aConfiguration.getObjectId("_id")), aConfiguration, (byte)0));
 		mStorage.put(new ArrayMapEntry(new ArrayMapKey(aConfiguration.getString("name")), aConfiguration, (byte)0));
 	}
 
