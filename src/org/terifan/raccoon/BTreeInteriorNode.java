@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.blockdevice.BlockType;
 import java.util.Map.Entry;
 import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
@@ -59,10 +60,10 @@ public class BTreeInteriorNode extends BTreeNode
 
 			SplitResult split = nearestNode.split(aImplementation);
 
-			ArrayMapKey rightKey = split.rightKey();
+			ArrayMapKey rightKey = split.getRightKey();
 
-			mChildNodes.put(leftKey, split.left());
-			mChildNodes.put(rightKey, split.right());
+			mChildNodes.put(leftKey, split.getLeftNode());
+			mChildNodes.put(rightKey, split.getRightNode());
 
 			mMap.insert(new ArrayMapEntry(leftKey, BTree.BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
 			mMap.insert(new ArrayMapEntry(rightKey, BTree.BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
@@ -311,10 +312,10 @@ public class BTreeInteriorNode extends BTreeNode
 		BTreeInteriorNode interior = new BTreeInteriorNode(mLevel + 1);
 		interior.mModified = true;
 		interior.mMap = new ArrayMap(aImplementation.getConfiguration().getInt(INT_BLOCK_SIZE));
-		interior.mMap.insert(new ArrayMapEntry(split.leftKey(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
-		interior.mMap.insert(new ArrayMapEntry(split.rightKey(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
-		interior.mChildNodes.put(split.leftKey(), split.left());
-		interior.mChildNodes.put(split.rightKey(), split.right());
+		interior.mMap.insert(new ArrayMapEntry(split.getLeftKey(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
+		interior.mMap.insert(new ArrayMapEntry(split.getRightKey(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
+		interior.mChildNodes.put(split.getLeftKey(), split.getLeftNode());
+		interior.mChildNodes.put(split.getRightKey(), split.getRightNode());
 
 		mChildNodes.clear();
 
@@ -541,7 +542,7 @@ public class BTreeInteriorNode extends BTreeNode
 
 			aImplementation.freeBlock(mBlockPointer);
 
-			mBlockPointer = aImplementation.writeBlock(mMap.array(), mLevel, BlockType.TREE_INTERIOR_NODE);
+			mBlockPointer = aImplementation.writeBlock(mMap.array(), mLevel, BlockType.TREE_NODE);
 		}
 
 		return mModified;
@@ -593,13 +594,13 @@ public class BTreeInteriorNode extends BTreeNode
 		{
 			BlockPointer bp = aEntry.getBlockPointer();
 
-			childNode = bp.getBlockType() == BlockType.TREE_INTERIOR_NODE ? new BTreeInteriorNode(mLevel - 1) : new BTreeLeafNode();
+			childNode = bp.getBlockType() == BlockType.TREE_NODE ? new BTreeInteriorNode(mLevel - 1) : new BTreeLeafNode();
 			childNode.mBlockPointer = bp;
 			childNode.mMap = new ArrayMap(aImplementation.readBlock(bp));
 
 			mChildNodes.put(key, childNode);
 
-			RuntimeDiagnostics.collectStatistics(bp.getBlockType() == BlockType.TREE_INTERIOR_NODE ? Operation.READ_NODE : Operation.READ_LEAF, 1);
+			RuntimeDiagnostics.collectStatistics(bp.getBlockType() == BlockType.TREE_NODE ? Operation.READ_NODE : Operation.READ_LEAF, 1);
 		}
 
 		return childNode;

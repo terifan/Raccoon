@@ -39,14 +39,13 @@ class DatabaseRoot
 
 	void remove(String aName)
 	{
-		Document conf = get(aName);
-		mStorage.remove(new ArrayMapEntry(new ArrayMapKey(conf.getString("name"))));
+		mStorage.remove(new ArrayMapEntry(new ArrayMapKey(aName)));
 	}
 
 
-	void put(Document aConfiguration)
+	void put(String aName, Document aConfiguration)
 	{
-		mStorage.put(new ArrayMapEntry(new ArrayMapKey(aConfiguration.getString("name")), aConfiguration, (byte)0));
+		mStorage.put(new ArrayMapEntry(new ArrayMapKey(aName), aConfiguration, (byte)0));
 	}
 
 

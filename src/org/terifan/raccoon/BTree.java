@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.blockdevice.BlockType;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.terifan.raccoon.document.Document;
@@ -73,7 +74,7 @@ public class BTree implements AutoCloseable
 
 	private void marshalHeader()
 	{
-		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeInteriorNode ? BlockType.TREE_INTERIOR_NODE : BlockType.TREE_LEAF_NODE);
+		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeInteriorNode ? BlockType.TREE_NODE : BlockType.TREE_LEAF);
 
 		mConfiguration.put(ROOT, mRoot.mBlockPointer.marshal());
 	}
@@ -83,7 +84,7 @@ public class BTree implements AutoCloseable
 	{
 		BlockPointer bp = new BlockPointer().unmarshal(mConfiguration.get(ROOT));
 
-		mRoot = bp.getBlockType() == BlockType.TREE_INTERIOR_NODE ? new BTreeInteriorNode(bp.getBlockLevel()) : new BTreeLeafNode();
+		mRoot = bp.getBlockType() == BlockType.TREE_NODE ? new BTreeInteriorNode(bp.getBlockLevel()) : new BTreeLeafNode();
 		mRoot.mBlockPointer = bp;
 		mRoot.mMap = new ArrayMap(readBlock(bp));
 	}
@@ -291,7 +292,7 @@ public class BTree implements AutoCloseable
 
 	protected byte[] readBlock(BlockPointer aBlockPointer)
 	{
-		if (aBlockPointer.getBlockType() != BlockType.TREE_INTERIOR_NODE && aBlockPointer.getBlockType() != BlockType.TREE_LEAF_NODE)
+		if (aBlockPointer.getBlockType() != BlockType.TREE_NODE && aBlockPointer.getBlockType() != BlockType.TREE_LEAF)
 		{
 			throw new IllegalArgumentException("Attempt to read bad block: " + aBlockPointer);
 		}

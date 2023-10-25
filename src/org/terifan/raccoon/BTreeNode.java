@@ -16,50 +16,43 @@ public abstract class BTreeNode
 
 	static class SplitResult
 	{
-		private final BTreeNode left;
-		private final BTreeNode right;
-		private final ArrayMapKey leftKey;
-		private final ArrayMapKey rightKey;
+		private final BTreeNode mLeftNode;
+		private final BTreeNode mRightNode;
+		private final ArrayMapKey mLeftKey;
+		private final ArrayMapKey mRightKey;
 
 
-		SplitResult(BTreeNode left, BTreeNode right, ArrayMapKey leftKey, ArrayMapKey rightKey)
+		SplitResult(BTreeNode aLeftNode, BTreeNode aRightNode, ArrayMapKey aLeftKey, ArrayMapKey aRightKey)
 		{
-			this.left = left;
-			this.right = right;
-			this.leftKey = leftKey;
-			this.rightKey = rightKey;
+			mLeftNode = aLeftNode;
+			mRightNode = aRightNode;
+			mLeftKey = aLeftKey;
+			mRightKey = aRightKey;
 		}
 
 
-		public BTreeNode left()
+		public BTreeNode getLeftNode()
 		{
-			return left;
+			return mLeftNode;
 		}
 
 
-		public ArrayMapKey leftKey()
+		public ArrayMapKey getLeftKey()
 		{
-			return leftKey;
+			return mLeftKey;
 		}
 
 
-		public BTreeNode right()
+		public BTreeNode getRightNode()
 		{
-			return right;
+			return mRightNode;
 		}
 
 
-		public ArrayMapKey rightKey()
+		public ArrayMapKey getRightKey()
 		{
-			return rightKey;
+			return mRightKey;
 		}
-	}
-
-
-	enum RemoveResult
-	{
-		REMOVED,
-		NO_MATCH
 	}
 
 
@@ -88,6 +81,13 @@ public abstract class BTreeNode
 
 
 	protected abstract void postCommit();
+
+
+	enum RemoveResult
+	{
+		REMOVED,
+		NO_MATCH
+	}
 
 
 	enum VisitorState

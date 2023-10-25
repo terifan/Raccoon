@@ -2,14 +2,16 @@ package org.terifan.raccoon;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobConsumer;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.document.Document;
-import org.terifan.raccoon.document.ObjectId;
 
 
-public class RaccoonDirectory
+public class RaccoonDirectory<K>
 {
 	private final RaccoonCollection mCollection;
 
@@ -20,26 +22,26 @@ public class RaccoonDirectory
 	}
 
 
-	public String getName()
+	RaccoonCollection getCollection()
 	{
-		return mCollection.getName();
+		return mCollection;
 	}
 
 
-	public LobByteChannel open(ObjectId aId, LobOpenOption aLobOpenOption) throws IOException
+	public LobByteChannel open(K aId, LobOpenOption aLobOpenOption) throws IOException
 	{
 		LobByteChannel lob = tryOpen(aId, aLobOpenOption);
 
 		if (lob == null)
 		{
-			throw new FileNotFoundException(aId.toString());
+			throw new LobNotFoundException(aId);
 		}
 
 		return lob;
 	}
 
 
-	public LobByteChannel tryOpen(ObjectId aId, LobOpenOption aLobOpenOption) throws IOException
+	public LobByteChannel tryOpen(K aId, LobOpenOption aLobOpenOption) throws IOException
 	{
 		Document entry = new Document().put("_id", aId);
 
@@ -48,13 +50,13 @@ public class RaccoonDirectory
 			return null;
 		}
 
-		Runnable closeAction = () -> mCollection.save(entry);
+		Consumer<LobByteChannel> closeAction = ch -> mCollection.save(entry);
 
 		return new LobByteChannel(mCollection.getBlockAccessor(), entry, aLobOpenOption, closeAction);
 	}
 
 
-	public void delete(ObjectId aId) throws IOException
+	public void delete(K aId) throws IOException
 	{
 		Document entry = new Document().put("_id", aId);
 
@@ -63,7 +65,11 @@ public class RaccoonDirectory
 			throw new FileNotFoundException(aId.toString());
 		}
 
-		new LobByteChannel(mCollection.getBlockAccessor(), entry, LobOpenOption.APPEND, null).delete();
+		LobByteChannel lob = tryOpen(aId, LobOpenOption.READ);
+		if (lob != null)
+		{
+			lob.delete();
+		}
 
 		mCollection.delete(entry);
 	}
@@ -73,8 +79,14 @@ public class RaccoonDirectory
 	{
 		mCollection.listAll().forEach(e ->
 		{
-			aConsumer.accept(e.getObjectId("_id"), e.getDocument("metadata"));
+			aConsumer.accept(e.get("_id"), e.getDocument("metadata"));
 		});
+	}
+
+
+	public List<K> list() throws IOException
+	{
+		return (List<K>)mCollection.listAll().stream().map(e->e.get("_id")).collect(Collectors.toList());
 	}
 
 

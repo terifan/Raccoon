@@ -26,7 +26,7 @@ public final class RaccoonCollection
 	public final static byte TYPE_DOCUMENT = 1;
 	public final static byte TYPE_EXTERNAL = 2;
 
-	public static final String CONFIGURATION = "conf";
+	public static final String CONFIGURATION = "0";
 
 	private final ReadWriteLock mLock;
 
@@ -45,12 +45,6 @@ public final class RaccoonCollection
 		mLock = new ReadWriteLock();
 		mCommitLocks = new HashSet<>();
 		mImplementation = new BTree(getBlockAccessor(), aConfiguration.getDocument(CONFIGURATION));
-	}
-
-
-	public String getName()
-	{
-		return mConfiguration.getString("name");
 	}
 
 
@@ -259,7 +253,7 @@ public final class RaccoonCollection
 
 		if (prev != null)
 		{
-			Document prevDoc = deleteLobImpl(prev, true);
+			Document prevDoc = deleteExternal(prev, true);
 
 			if (prevDoc == null)
 			{
@@ -288,7 +282,7 @@ public final class RaccoonCollection
 
 					if (existing != null && !aDocument.get("_id").equals(existing.get("_ref")))
 					{
-						throw new UniqueConstraintException("Collection <" + getName() + ">, index <" + indexConf.getObjectId("_id") + ">, existing ID <" + existing.get("_ref") + ">, saving ID <" + aDocument.get("_id") + ">, values " + values.toJson());
+						throw new UniqueConstraintException("Collection index <" + indexConf.getObjectId("_id") + ">, existing ID <" + existing.get("_ref") + ">, saving ID <" + aDocument.get("_id") + ">, values " + values.toJson());
 					}
 				}
 				else
@@ -336,20 +330,21 @@ public final class RaccoonCollection
 
 			for (Document document : aDocuments)
 			{
-				ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(document, false));
-				ArrayMapEntry prev = mImplementation.remove(entry);
+				ArrayMapEntry prev = mImplementation.remove(new ArrayMapEntry(getDocumentKey(document, false)));
 
-				if (prev != null)
+				if (prev == null)
 				{
-					Document prevDoc = deleteLobImpl(prev, true);
-
-					if (prevDoc == null)
-					{
-						prevDoc = prev.getValue();
-					}
-
-					deleteIndexEntries(prevDoc);
+					throw new EntryNotFoundException(document.get("_id"));
 				}
+
+				Document prevDoc = deleteExternal(prev, true);
+
+				if (prevDoc == null)
+				{
+					prevDoc = prev.getValue();
+				}
+
+				deleteIndexEntries(prevDoc);
 			}
 		}
 	}
@@ -493,7 +488,7 @@ public final class RaccoonCollection
 				@Override
 				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
 				{
-					aNode.mMap.forEach(e -> deleteLobImpl(e, false));
+					aNode.mMap.forEach(e -> deleteExternal(e, false));
 					prev.freeBlock(aNode.mBlockPointer);
 					return true;
 				}
@@ -594,7 +589,7 @@ public final class RaccoonCollection
 	}
 
 
-	private Document deleteLobImpl(ArrayMapEntry aEntry, boolean aRestoreOldValue)
+	private Document deleteExternal(ArrayMapEntry aEntry, boolean aRestoreOldValue)
 	{
 		Document prev = null;
 
