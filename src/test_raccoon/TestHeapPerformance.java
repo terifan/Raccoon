@@ -4,7 +4,6 @@ import java.nio.file.Paths;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
-import org.terifan.raccoon.RaccoonCollection;
 import org.terifan.raccoon.RaccoonHeap;
 
 
