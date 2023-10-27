@@ -542,7 +542,7 @@ public class BTreeInteriorNode extends BTreeNode
 
 			aImplementation.freeBlock(mBlockPointer);
 
-			mBlockPointer = aImplementation.writeBlock(mMap.array(), mLevel, BlockType.TREE_NODE);
+			mBlockPointer = aImplementation.writeBlock(mMap.array(), mLevel, BlockType.BTREE_NODE);
 		}
 
 		return mModified;
@@ -594,13 +594,13 @@ public class BTreeInteriorNode extends BTreeNode
 		{
 			BlockPointer bp = aEntry.getBlockPointer();
 
-			childNode = bp.getBlockType() == BlockType.TREE_NODE ? new BTreeInteriorNode(mLevel - 1) : new BTreeLeafNode();
+			childNode = bp.getBlockType() == BlockType.BTREE_NODE ? new BTreeInteriorNode(mLevel - 1) : new BTreeLeafNode();
 			childNode.mBlockPointer = bp;
 			childNode.mMap = new ArrayMap(aImplementation.readBlock(bp));
 
 			mChildNodes.put(key, childNode);
 
-			RuntimeDiagnostics.collectStatistics(bp.getBlockType() == BlockType.TREE_NODE ? Operation.READ_NODE : Operation.READ_LEAF, 1);
+			RuntimeDiagnostics.collectStatistics(bp.getBlockType() == BlockType.BTREE_NODE ? Operation.READ_NODE : Operation.READ_LEAF, 1);
 		}
 
 		return childNode;

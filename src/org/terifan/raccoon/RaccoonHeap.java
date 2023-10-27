@@ -18,9 +18,9 @@ public class RaccoonHeap implements AutoCloseable
 	private final static int EXTERNAL = 2;
 
 	private Consumer<RaccoonHeap> mCloseAction;
-	private LobByteChannel mChannel;
 	private BlockAccessor mBlockAccessor;
 	private TreeSet<Long> mFreeEntries;
+	private LobByteChannel mChannel;
 	private int mRecordSize;
 
 
@@ -80,7 +80,7 @@ public class RaccoonHeap implements AutoCloseable
 		if (buf.length > mRecordSize - 1)
 		{
 			Document header = new Document();
-			try (LobByteChannel lob = new LobByteChannel(mBlockAccessor, header, LobOpenOption.WRITE, null, 1, false))
+			try (LobByteChannel lob = new LobByteChannel(mBlockAccessor, header, LobOpenOption.WRITE, null, 1, false, LobByteChannel.DEFAULT_LEAF_SIZE))
 			{
 				lob.writeAllBytes(aDocument.toByteArray());
 			}

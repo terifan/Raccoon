@@ -20,24 +20,16 @@ public class RaccoonHeapNGTest
 		{
 			try (RaccoonHeap heap = db.getHeap("test"))
 			{
-				heap.save(Document.of("hello:world"));
-				heap.save(Document.of("hello:world12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"));
-//				heap.put(100000, Document.of("hello:world"));
+//				heap.save(Document.of("hello:world"));
+//				heap.save(Document.of("hello:world 12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"));
+//
+//				for (int i = 0; i < 1000; i++)
+//				{
+//					heap.save(Document.of("hello:world"));
+//				}
 
-				for (int i = 0; i < 1000; i++)
-				{
-					heap.save(Document.of("hello:world"));
-				}
+				heap.put(100000, Document.of("hello:world"));
 			}
-
-//			RaccoonDirectory collection = db.getDirectory("test");
-//			try (LobByteChannel lob = collection.open(ObjectId.randomId(), LobOpenOption.CREATE))
-//			{
-//				lob.writeAllBytes("hello world".getBytes());
-//			}
-
-//			RaccoonCollection collection = db.getCollection("test");
-//			collection.save(Document.of("hello:world"));
 
 			db.commit();
 		}

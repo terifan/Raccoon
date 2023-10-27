@@ -421,17 +421,13 @@ public final class RaccoonDatabase implements AutoCloseable
 		RaccoonCollection collection = getCollectionImpl(HEAP_COLLECTION, true);
 
 		Document header = new Document().put("_id", aName);
-		if (collection.tryGet(header))
-		{
-//			LobByteChannel channel = new LobByteChannel(getBlockAccessor(), header, LobOpenOption.WRITE, null);
-//			return new RaccoonHeap(getBlockAccessor(), channel, 128);
-		}
+		collection.tryGet(header);
 
 		BlockAccessor blockAccessor = getBlockAccessor();
 
 		LobByteChannel channel = new LobByteChannel(blockAccessor, header, LobOpenOption.CREATE, ch -> {
 			mModified = true;
-		}, 1, false);
+		}, 1, false, blockAccessor.getBlockDevice().getBlockSize());
 
 		RaccoonHeap heap = new RaccoonHeap(blockAccessor, channel, 128, he -> {
 			mHeapInstances.remove(aName);

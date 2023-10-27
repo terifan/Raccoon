@@ -74,7 +74,7 @@ public class BTree implements AutoCloseable
 
 	private void marshalHeader()
 	{
-		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeInteriorNode ? BlockType.TREE_NODE : BlockType.TREE_LEAF);
+		mRoot.mBlockPointer.setBlockType(mRoot instanceof BTreeInteriorNode ? BlockType.BTREE_NODE : BlockType.BTREE_LEAF);
 
 		mConfiguration.put(ROOT, mRoot.mBlockPointer.marshal());
 	}
@@ -84,7 +84,7 @@ public class BTree implements AutoCloseable
 	{
 		BlockPointer bp = new BlockPointer().unmarshal(mConfiguration.get(ROOT));
 
-		mRoot = bp.getBlockType() == BlockType.TREE_NODE ? new BTreeInteriorNode(bp.getBlockLevel()) : new BTreeLeafNode();
+		mRoot = bp.getBlockType() == BlockType.BTREE_NODE ? new BTreeInteriorNode(bp.getBlockLevel()) : new BTreeLeafNode();
 		mRoot.mBlockPointer = bp;
 		mRoot.mMap = new ArrayMap(readBlock(bp));
 	}
@@ -292,7 +292,7 @@ public class BTree implements AutoCloseable
 
 	protected byte[] readBlock(BlockPointer aBlockPointer)
 	{
-		if (aBlockPointer.getBlockType() != BlockType.TREE_NODE && aBlockPointer.getBlockType() != BlockType.TREE_LEAF)
+		if (aBlockPointer.getBlockType() != BlockType.BTREE_NODE && aBlockPointer.getBlockType() != BlockType.BTREE_LEAF)
 		{
 			throw new IllegalArgumentException("Attempt to read bad block: " + aBlockPointer);
 		}
@@ -301,7 +301,7 @@ public class BTree implements AutoCloseable
 	}
 
 
-	protected BlockPointer writeBlock(byte[] aContent, int aLevel, int aBlockType)
+	protected BlockPointer writeBlock(byte[] aContent, int aLevel, BlockType aBlockType)
 	{
 		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, aBlockType, aLevel, aLevel == 0 ? mCompressorLeafBlocks : mCompressorInteriorBlocks);
 	}
@@ -309,10 +309,7 @@ public class BTree implements AutoCloseable
 
 	protected void freeBlock(BlockPointer aBlockPointer)
 	{
-		if (aBlockPointer != null)
-		{
-			mBlockAccessor.freeBlock(aBlockPointer);
-		}
+		mBlockAccessor.freeBlock(aBlockPointer);
 	}
 
 

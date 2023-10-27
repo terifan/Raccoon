@@ -119,7 +119,7 @@ public class BTreeLeafNode extends BTreeNode
 
 			aImplementation.freeBlock(mBlockPointer);
 
-			mBlockPointer = aImplementation.writeBlock(mMap.array(), 0, BlockType.TREE_LEAF);
+			mBlockPointer = aImplementation.writeBlock(mMap.array(), 0, BlockType.BTREE_LEAF);
 		}
 
 		return mModified;
