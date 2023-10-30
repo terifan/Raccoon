@@ -236,7 +236,7 @@ public final class RaccoonCollection
 		{
 			Document header = new Document();
 
-			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.WRITE, null))
+			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.WRITE))
 			{
 				lob.writeAllBytes(aDocument.toByteArray());
 			}
@@ -601,13 +601,13 @@ public final class RaccoonCollection
 			{
 				if (aRestoreOldValue)
 				{
-					try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, null))
+					try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ))
 					{
 						prev = new Document().fromByteArray(lob.readAllBytes());
 					}
 				}
 
-				try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE, null))
+				try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE))
 				{
 				}
 			}
@@ -639,7 +639,7 @@ public final class RaccoonCollection
 		{
 			Document header = aEntry.getValue();
 
-			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, null))
+			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ))
 			{
 				return aDestination.putAll(new Document().fromByteArray(lob.readAllBytes()));
 			}

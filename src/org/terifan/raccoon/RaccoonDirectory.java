@@ -50,9 +50,7 @@ public class RaccoonDirectory<K>
 			return null;
 		}
 
-		Consumer<LobByteChannel> closeAction = ch -> mCollection.save(entry);
-
-		return new LobByteChannel(mCollection.getBlockAccessor(), entry, aLobOpenOption, closeAction);
+		return new LobByteChannel(mCollection.getBlockAccessor(), entry, aLobOpenOption).setCloseAction(ch -> mCollection.save(entry));
 	}
 
 

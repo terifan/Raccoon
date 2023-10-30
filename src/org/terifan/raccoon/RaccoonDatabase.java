@@ -425,9 +425,9 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		BlockAccessor blockAccessor = getBlockAccessor();
 
-		LobByteChannel channel = new LobByteChannel(blockAccessor, header, LobOpenOption.CREATE, ch -> {
+		LobByteChannel channel = new LobByteChannel(blockAccessor, header, LobOpenOption.CREATE, 1, false, blockAccessor.getBlockDevice().getBlockSize()).setCloseAction(ch -> {
 			mModified = true;
-		}, 1, false, blockAccessor.getBlockDevice().getBlockSize());
+		});
 
 		RaccoonHeap heap = new RaccoonHeap(blockAccessor, channel, 128, he -> {
 			mHeapInstances.remove(aName);
