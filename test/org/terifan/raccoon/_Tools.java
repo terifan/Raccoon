@@ -5,13 +5,13 @@ import java.util.function.Supplier;
 import javax.swing.JFrame;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
-import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.SecureBlockDevice;
 import org.terifan.treegraph.HorizontalLayout;
 import org.terifan.treegraph.TreeGraph;
 import org.terifan.treegraph.util.VerticalImageFrame;
-import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
+import org.terifan.raccoon.blockdevice.storage.BlockStorage;
 
 
 public class _Tools
@@ -38,19 +38,19 @@ public class _Tools
 
 	public static BlockAccessor createMemoryStorage() throws IOException
 	{
-		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockDevice(512)), false);
+		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockStorage(512)), false);
 	}
 
 
 	public static BlockAccessor createSecureMemoryStorage() throws IOException
 	{
-		return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), new MemoryBlockDevice(512))), false);
+		return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), new MemoryBlockStorage(512))), false);
 	}
 
 
-	public static BlockAccessor createStorage(Supplier<PhysicalBlockDevice> aSupplier) throws IOException
+	public static BlockAccessor createStorage(Supplier<BlockStorage> aSupplier) throws IOException
 	{
-		PhysicalBlockDevice device = aSupplier.get();
+		BlockStorage device = aSupplier.get();
 		if (device.size() > 0)
 		{
 			return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), device)), false);
@@ -59,9 +59,9 @@ public class _Tools
 	}
 
 
-	public static BlockAccessor createSecureStorage(Supplier<PhysicalBlockDevice> aSupplier) throws IOException
+	public static BlockAccessor createSecureStorage(Supplier<BlockStorage> aSupplier) throws IOException
 	{
-		PhysicalBlockDevice device = aSupplier.get();
+		BlockStorage device = aSupplier.get();
 		if (device.size() > 0)
 		{
 			return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), device)), false);
@@ -70,7 +70,7 @@ public class _Tools
 	}
 
 
-	public static BlockAccessor createSecureStorage(PhysicalBlockDevice aDevice) throws IOException
+	public static BlockAccessor createSecureStorage(BlockStorage aDevice) throws IOException
 	{
 		if (aDevice.size() > 0)
 		{

@@ -3,7 +3,7 @@ package test_raccoon;
 import java.util.List;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonDatabase;
-import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 
@@ -15,7 +15,7 @@ public class Test4
 	{
 		try
 		{
-			try (RaccoonDatabase db = new RaccoonDatabase(new MemoryBlockDevice(512), DatabaseOpenOption.CREATE, null))
+			try (RaccoonDatabase db = new RaccoonDatabase(new MemoryBlockStorage(512), DatabaseOpenOption.CREATE, null))
 			{
 				for (int i = 0; i < 30; i++)
 				{

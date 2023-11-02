@@ -8,6 +8,7 @@ import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.document.Document;
+import org.terifan.raccoon.blockdevice.compressor.CompressorAlgorithm;
 
 
 public class RaccoonHeap implements AutoCloseable
@@ -80,7 +81,7 @@ public class RaccoonHeap implements AutoCloseable
 		if (buf.length > mRecordSize - 1)
 		{
 			Document header = new Document();
-			try (LobByteChannel lob = new LobByteChannel(mBlockAccessor, header, LobOpenOption.WRITE, 1, false, LobByteChannel.DEFAULT_LEAF_SIZE))
+			try (LobByteChannel lob = new LobByteChannel(mBlockAccessor, header, LobOpenOption.WRITE, false, LobByteChannel.DEFAULT_LEAF_SIZE, CompressorAlgorithm.ZLE))
 			{
 				lob.writeAllBytes(aDocument.toByteArray());
 			}

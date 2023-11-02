@@ -8,13 +8,13 @@ import javax.swing.JFrame;
 import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
-import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.SecureBlockDevice;
 import org.terifan.treegraph.HorizontalLayout;
 import org.terifan.treegraph.TreeGraph;
 import org.terifan.treegraph.util.VerticalImageFrame;
-import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
+import org.terifan.raccoon.blockdevice.storage.BlockStorage;
 
 
 public class _Tools
@@ -41,23 +41,23 @@ public class _Tools
 
 	public static BlockAccessor createMemoryStorage() throws IOException
 	{
-		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockDevice(512)), true);
+		return new BlockAccessor(new ManagedBlockDevice(new MemoryBlockStorage(512)), true);
 	}
 
 
 	public static BlockAccessor createSecureMemoryStorage() throws IOException
 	{
-		return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), new MemoryBlockDevice(512))), true);
+		return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), new MemoryBlockStorage(512))), true);
 	}
 
 
-	public static BlockAccessor createStorage(Supplier<PhysicalBlockDevice> aSupplier) throws IOException
+	public static BlockAccessor createStorage(Supplier<BlockStorage> aSupplier) throws IOException
 	{
 		return new BlockAccessor(new ManagedBlockDevice(aSupplier.get()), true);
 	}
 
 
-	public static BlockAccessor createSecureStorage(Supplier<PhysicalBlockDevice> aSupplier) throws IOException
+	public static BlockAccessor createSecureStorage(Supplier<BlockStorage> aSupplier) throws IOException
 	{
 		return new BlockAccessor(new ManagedBlockDevice(new SecureBlockDevice(new AccessCredentials("password"), aSupplier.get())), true);
 	}

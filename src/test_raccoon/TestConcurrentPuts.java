@@ -8,7 +8,7 @@ import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonCollection;
-import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 
 
@@ -18,7 +18,7 @@ public class TestConcurrentPuts
 	{
 		try
 		{
-			MemoryBlockDevice blockDevice = new MemoryBlockDevice(4096);
+			MemoryBlockStorage blockDevice = new MemoryBlockStorage(4096);
 //			AccessCredentials ac = new AccessCredentials("password");
 			AccessCredentials ac = null;
 

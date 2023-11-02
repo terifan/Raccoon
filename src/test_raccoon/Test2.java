@@ -4,7 +4,7 @@ import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonCollection;
-import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 
 
@@ -15,7 +15,7 @@ public class Test2
 	{
 		try
 		{
-			MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+			MemoryBlockStorage blockDevice = new MemoryBlockStorage(512);
 //			AccessCredentials ac = new AccessCredentials("password");
 			AccessCredentials ac = null;
 

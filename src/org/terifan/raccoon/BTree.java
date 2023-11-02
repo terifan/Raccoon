@@ -7,11 +7,11 @@ import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.BTreeNode.RemoveResult;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.BlockPointer;
-import org.terifan.raccoon.blockdevice.compressor.CompressorLevel;
 import org.terifan.raccoon.blockdevice.util.Log;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.util.AbortIteratorException;
 import org.terifan.raccoon.util.Result;
+import org.terifan.raccoon.blockdevice.compressor.CompressorAlgorithm;
 
 
 public class BTree implements AutoCloseable
@@ -28,8 +28,8 @@ public class BTree implements AutoCloseable
 	public static boolean RECORD_USE;
 
 	private BlockAccessor mBlockAccessor;
-	private CompressorLevel mCompressorInteriorBlocks;
-	private CompressorLevel mCompressorLeafBlocks;
+	private int mCompressorInteriorBlocks;
+	private int mCompressorLeafBlocks;
 	private Document mConfiguration;
 	private BTreeNode mRoot;
 	private long mModCount;
@@ -48,8 +48,8 @@ public class BTree implements AutoCloseable
 			mConfiguration = BTree.createDefaultConfig();
 		}
 
-		mCompressorInteriorBlocks = CompressorLevel.values()[mConfiguration.getInt(INT_BLOCK_COMPRESSOR)];
-		mCompressorLeafBlocks = CompressorLevel.values()[mConfiguration.getInt(LEAF_BLOCK_COMPRESSOR)];
+		mCompressorInteriorBlocks = mConfiguration.getInt(INT_BLOCK_COMPRESSOR);
+		mCompressorLeafBlocks = mConfiguration.getInt(LEAF_BLOCK_COMPRESSOR);
 
 		if (mConfiguration.containsKey(ROOT))
 		{
@@ -301,7 +301,7 @@ public class BTree implements AutoCloseable
 	}
 
 
-	protected BlockPointer writeBlock(byte[] aContent, int aLevel, BlockType aBlockType)
+	protected BlockPointer writeBlock(byte[] aContent, int aLevel, int aBlockType)
 	{
 		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, aBlockType, aLevel, aLevel == 0 ? mCompressorLeafBlocks : mCompressorInteriorBlocks);
 	}
@@ -494,7 +494,7 @@ public class BTree implements AutoCloseable
 			.put(BTree.INT_BLOCK_SIZE, 4096)
 			.put(BTree.LEAF_BLOCK_SIZE, 4096)
 			.put(BTree.ENTRY_SIZE_LIMIT, 1024)
-			.put(BTree.INT_BLOCK_COMPRESSOR, CompressorLevel.DEFLATE_FAST.ordinal())
-			.put(BTree.LEAF_BLOCK_COMPRESSOR, CompressorLevel.ZLE.ordinal());
+			.put(BTree.INT_BLOCK_COMPRESSOR, CompressorAlgorithm.DEFLATE_FAST)
+			.put(BTree.LEAF_BLOCK_COMPRESSOR, CompressorAlgorithm.ZLE);
 	}
 }

@@ -3,7 +3,7 @@ package org.terifan.raccoon;
 import java.io.IOException;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
-import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.document.ObjectId;
 import org.testng.annotations.Test;
@@ -14,7 +14,7 @@ public class RaccoonHeapNGTest
 	@Test
 	public void testSomeMethod() throws IOException
 	{
-		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+		MemoryBlockStorage blockDevice = new MemoryBlockStorage(512);
 
 		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE, null))
 		{

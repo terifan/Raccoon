@@ -3,7 +3,7 @@ package org.terifan.raccoon;
 import java.util.Random;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
-import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import org.terifan.raccoon.document.ObjectId;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
@@ -19,7 +19,7 @@ public class RaccoonDirectoryNGTest
 		new Random().nextBytes(output);
 		Object id = ObjectId.randomId();
 
-		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+		MemoryBlockStorage blockDevice = new MemoryBlockStorage(512);
 
 		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE, null))
 		{
@@ -57,7 +57,7 @@ public class RaccoonDirectoryNGTest
 	{
 		Object id = ObjectId.randomId();
 
-		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+		MemoryBlockStorage blockDevice = new MemoryBlockStorage(512);
 
 		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE, null))
 		{
@@ -75,7 +75,7 @@ public class RaccoonDirectoryNGTest
 	{
 		Object id = ObjectId.randomId();
 
-		MemoryBlockDevice blockDevice = new MemoryBlockDevice(512);
+		MemoryBlockStorage blockDevice = new MemoryBlockStorage(512);
 
 		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE, null))
 		{

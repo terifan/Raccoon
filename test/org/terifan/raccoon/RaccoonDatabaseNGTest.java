@@ -1,6 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.blockdevice.physical.MemoryBlockDevice;
+import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
@@ -12,7 +12,7 @@ public class RaccoonDatabaseNGTest
 	@Test
 	public void testSingleTableInsertTiny() throws Exception
 	{
-		MemoryBlockDevice device = new MemoryBlockDevice(512);
+		MemoryBlockStorage device = new MemoryBlockStorage(512);
 
 		try (RaccoonDatabase database = new RaccoonDatabase(device, DatabaseOpenOption.CREATE, null))
 		{

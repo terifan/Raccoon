@@ -11,12 +11,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
-import org.terifan.raccoon.blockdevice.DeviceException;
+import org.terifan.raccoon.blockdevice.RaccoonDeviceException;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.managed.UnsupportedVersionException;
-import org.terifan.raccoon.blockdevice.physical.FileBlockDevice;
+import org.terifan.raccoon.blockdevice.storage.FileBlockStorage;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.SecureBlockDevice;
 import org.terifan.raccoon.blockdevice.util.Log;
@@ -25,8 +25,9 @@ import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
-import org.terifan.raccoon.blockdevice.physical.PhysicalBlockDevice;
 import org.terifan.raccoon.util.DualMap;
+import org.terifan.raccoon.blockdevice.compressor.CompressorAlgorithm;
+import org.terifan.raccoon.blockdevice.storage.BlockStorage;
 
 // createCollection - samma som getcollection
 // insert - skapar alltid ett nytt _id
@@ -75,7 +76,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		this();
 
-		FileBlockDevice fileBlockDevice = null;
+		FileBlockStorage fileBlockDevice = null;
 
 		try
 		{
@@ -85,26 +86,26 @@ public final class RaccoonDatabase implements AutoCloseable
 				{
 					if (!Files.deleteIfExists(aPath))
 					{
-						throw new DeviceException("Failed to delete existing file: " + aPath);
+						throw new RaccoonDeviceException("Failed to delete existing file: " + aPath);
 					}
 				}
 				else if ((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && Files.size(aPath) == 0)
 				{
-					throw new DeviceException("File is empty.");
+					throw new RaccoonDeviceException("File is empty.");
 				}
 			}
 			else if (aOpenOptions == DatabaseOpenOption.OPEN || aOpenOptions == DatabaseOpenOption.READ_ONLY)
 			{
-				throw new DeviceException("File not found: " + aPath);
+				throw new RaccoonDeviceException("File not found: " + aPath);
 			}
 
 			boolean newFile = !Files.exists(aPath);
 
-			fileBlockDevice = new FileBlockDevice(aPath, 4096, aOpenOptions == DatabaseOpenOption.READ_ONLY);
+			fileBlockDevice = new FileBlockStorage(aPath, 4096, aOpenOptions == DatabaseOpenOption.READ_ONLY);
 
 			init(fileBlockDevice, newFile, true, aOpenOptions, aAccessCredentials);
 		}
-		catch (DatabaseException | DeviceException | DatabaseClosedException e)
+		catch (DatabaseException | RaccoonDeviceException | DatabaseClosedException e)
 		{
 			if (fileBlockDevice != null)
 			{
@@ -137,7 +138,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public RaccoonDatabase(PhysicalBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
+	public RaccoonDatabase(BlockStorage aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
 
@@ -182,13 +183,13 @@ public final class RaccoonDatabase implements AutoCloseable
 			{
 				Log.d("creating a managed block device");
 
-				blockDevice = new ManagedBlockDevice((PhysicalBlockDevice)aBlockDevice);
+				blockDevice = new ManagedBlockDevice((BlockStorage)aBlockDevice);
 			}
 			else
 			{
 				Log.d("creating a secure block device");
 
-				blockDevice = new ManagedBlockDevice(new SecureBlockDevice(aAccessCredentials, (PhysicalBlockDevice)aBlockDevice));
+				blockDevice = new ManagedBlockDevice(new SecureBlockDevice(aAccessCredentials, (BlockStorage)aBlockDevice));
 			}
 
 			if (aCreate)
@@ -425,7 +426,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		BlockAccessor blockAccessor = getBlockAccessor();
 
-		LobByteChannel channel = new LobByteChannel(blockAccessor, header, LobOpenOption.CREATE, 1, false, blockAccessor.getBlockDevice().getBlockSize()).setCloseAction(ch -> {
+		LobByteChannel channel = new LobByteChannel(blockAccessor, header, LobOpenOption.CREATE, false, blockAccessor.getBlockDevice().getBlockSize(), CompressorAlgorithm.NONE).setCloseAction(ch -> {
 			mModified = true;
 		});
 
