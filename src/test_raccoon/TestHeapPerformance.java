@@ -16,6 +16,7 @@ public class TestHeapPerformance
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("c:\\temp\\test.rdb"), DatabaseOpenOption.REPLACE, null))
 			{
 				// 23s, 1 250 084 KB
+				// 48s, 1 265 216 KB
 				long t = System.currentTimeMillis();
 				try (RaccoonHeap heap = db.getHeap("heap"))
 				{

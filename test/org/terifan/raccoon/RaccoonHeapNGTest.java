@@ -1,11 +1,8 @@
 package org.terifan.raccoon;
 
 import java.io.IOException;
-import org.terifan.raccoon.blockdevice.LobByteChannel;
-import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import org.terifan.raccoon.document.Document;
-import org.terifan.raccoon.document.ObjectId;
 import org.testng.annotations.Test;
 
 

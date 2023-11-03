@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
-import org.terifan.raccoon.blockdevice.LobByteChannel;
+import org.terifan.raccoon.blockdevice.LobByteChannelOld;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.blockdevice.compressor.CompressorAlgorithm;
@@ -21,11 +21,11 @@ public class RaccoonHeap implements AutoCloseable
 	private Consumer<RaccoonHeap> mCloseAction;
 	private BlockAccessor mBlockAccessor;
 	private TreeSet<Long> mFreeEntries;
-	private LobByteChannel mChannel;
+	private LobByteChannelOld mChannel;
 	private int mRecordSize;
 
 
-	RaccoonHeap(BlockAccessor aBlockAccessor, LobByteChannel aChannel, int aRecordSize, Consumer<RaccoonHeap> aCloseAction)
+	RaccoonHeap(BlockAccessor aBlockAccessor, LobByteChannelOld aChannel, int aRecordSize, Consumer<RaccoonHeap> aCloseAction)
 	{
 		mBlockAccessor = aBlockAccessor;
 		mChannel = aChannel;
@@ -81,7 +81,7 @@ public class RaccoonHeap implements AutoCloseable
 		if (buf.length > mRecordSize - 1)
 		{
 			Document header = new Document();
-			try (LobByteChannel lob = new LobByteChannel(mBlockAccessor, header, LobOpenOption.WRITE, false, LobByteChannel.DEFAULT_LEAF_SIZE, CompressorAlgorithm.ZLE))
+			try (LobByteChannelOld lob = new LobByteChannelOld(mBlockAccessor, header, LobOpenOption.WRITE, false, LobByteChannelOld.DEFAULT_LEAF_SIZE, CompressorAlgorithm.ZLE))
 			{
 				lob.writeAllBytes(aDocument.toByteArray());
 			}
@@ -120,7 +120,7 @@ public class RaccoonHeap implements AutoCloseable
 				return new Document().fromByteArray(buf);
 			case EXTERNAL:
 				Document header = new Document().fromByteArray(buf);
-				try (LobByteChannel lob = new LobByteChannel(mBlockAccessor, header, LobOpenOption.READ))
+				try (LobByteChannelOld lob = new LobByteChannelOld(mBlockAccessor, header, LobOpenOption.READ))
 				{
 					return new Document().fromByteArray(lob.readAllBytes());
 				}
@@ -170,7 +170,7 @@ public class RaccoonHeap implements AutoCloseable
 				break;
 			case EXTERNAL:
 				Document header = new Document().fromByteArray(buf);
-				try (LobByteChannel lob = new LobByteChannel(mBlockAccessor, header, LobOpenOption.READ))
+				try (LobByteChannelOld lob = new LobByteChannelOld(mBlockAccessor, header, LobOpenOption.READ))
 				{
 					doc = new Document().fromByteArray(lob.readAllBytes());
 					lob.delete();

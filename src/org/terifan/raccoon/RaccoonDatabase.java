@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.RaccoonDeviceException;
-import org.terifan.raccoon.blockdevice.LobByteChannel;
+import org.terifan.raccoon.blockdevice.LobByteChannelOld;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.managed.UnsupportedVersionException;
@@ -26,7 +26,6 @@ import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 import org.terifan.raccoon.util.DualMap;
-import org.terifan.raccoon.blockdevice.compressor.CompressorAlgorithm;
 import org.terifan.raccoon.blockdevice.storage.BlockStorage;
 
 // createCollection - samma som getcollection
@@ -426,7 +425,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		BlockAccessor blockAccessor = getBlockAccessor();
 
-		LobByteChannel channel = new LobByteChannel(blockAccessor, header, LobOpenOption.CREATE, false, blockAccessor.getBlockDevice().getBlockSize(), CompressorAlgorithm.NONE).setCloseAction(ch -> {
+		LobByteChannelOld channel = new LobByteChannelOld(blockAccessor, header, LobOpenOption.CREATE, false, LobByteChannelOld.DEFAULT_LEAF_SIZE, LobByteChannelOld.DEFAULT_COMPRESSOR).setCloseAction(ch -> {
 			mModified = true;
 		});
 

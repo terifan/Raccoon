@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
-import org.terifan.raccoon.blockdevice.LobByteChannel;
+import org.terifan.raccoon.blockdevice.LobByteChannelOld;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.util.Log;
 import org.terifan.raccoon.document.Array;
@@ -236,7 +236,7 @@ public final class RaccoonCollection
 		{
 			Document header = new Document();
 
-			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.WRITE))
+			try (LobByteChannelOld lob = new LobByteChannelOld(mDatabase.getBlockAccessor(), header, LobOpenOption.WRITE))
 			{
 				lob.writeAllBytes(aDocument.toByteArray());
 			}
@@ -601,13 +601,13 @@ public final class RaccoonCollection
 			{
 				if (aRestoreOldValue)
 				{
-					try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ))
+					try (LobByteChannelOld lob = new LobByteChannelOld(mDatabase.getBlockAccessor(), header, LobOpenOption.READ))
 					{
 						prev = new Document().fromByteArray(lob.readAllBytes());
 					}
 				}
 
-				try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE))
+				try (LobByteChannelOld lob = new LobByteChannelOld(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE))
 				{
 				}
 			}
@@ -639,7 +639,7 @@ public final class RaccoonCollection
 		{
 			Document header = aEntry.getValue();
 
-			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ))
+			try (LobByteChannelOld lob = new LobByteChannelOld(mDatabase.getBlockAccessor(), header, LobOpenOption.READ))
 			{
 				return aDestination.putAll(new Document().fromByteArray(lob.readAllBytes()));
 			}

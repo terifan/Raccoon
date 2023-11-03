@@ -69,9 +69,15 @@ public class LRUMap<K, V>
 			cache.put("c", 3);
 			cache.put("d", 4);
 			cache.put("e", 5);
+			cache.put("a", 1);
 			cache.put("f", 6);
 
 			System.out.println(cache.get("a"));
+			System.out.println(cache.get("b"));
+			System.out.println(cache.get("c"));
+			System.out.println(cache.get("d"));
+			System.out.println(cache.get("e"));
+			System.out.println(cache.get("f"));
 		}
 		catch (Throwable e)
 		{

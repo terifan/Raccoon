@@ -3,9 +3,8 @@ package org.terifan.raccoon;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.terifan.raccoon.blockdevice.LobByteChannel;
+import org.terifan.raccoon.blockdevice.LobByteChannelOld;
 import org.terifan.raccoon.blockdevice.LobConsumer;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.document.Document;
@@ -28,9 +27,9 @@ public class RaccoonDirectory<K>
 	}
 
 
-	public LobByteChannel open(K aId, LobOpenOption aLobOpenOption) throws IOException
+	public LobByteChannelOld open(K aId, LobOpenOption aLobOpenOption) throws IOException
 	{
-		LobByteChannel lob = tryOpen(aId, aLobOpenOption);
+		LobByteChannelOld lob = tryOpen(aId, aLobOpenOption);
 
 		if (lob == null)
 		{
@@ -41,7 +40,7 @@ public class RaccoonDirectory<K>
 	}
 
 
-	public LobByteChannel tryOpen(K aId, LobOpenOption aLobOpenOption) throws IOException
+	public LobByteChannelOld tryOpen(K aId, LobOpenOption aLobOpenOption) throws IOException
 	{
 		Document entry = new Document().put("_id", aId);
 
@@ -50,7 +49,7 @@ public class RaccoonDirectory<K>
 			return null;
 		}
 
-		return new LobByteChannel(mCollection.getBlockAccessor(), entry, aLobOpenOption).setCloseAction(ch -> mCollection.save(entry));
+		return new LobByteChannelOld(mCollection.getBlockAccessor(), entry, aLobOpenOption).setCloseAction(ch -> mCollection.save(entry));
 	}
 
 
@@ -63,7 +62,7 @@ public class RaccoonDirectory<K>
 			throw new FileNotFoundException(aId.toString());
 		}
 
-		LobByteChannel lob = tryOpen(aId, LobOpenOption.READ);
+		LobByteChannelOld lob = tryOpen(aId, LobOpenOption.READ);
 		if (lob != null)
 		{
 			lob.delete();
