@@ -2,7 +2,6 @@ package org.terifan.raccoon;
 
 import java.util.Arrays;
 import org.terifan.raccoon.blockdevice.BlockPointer;
-import org.terifan.raccoon.blockdevice.util.Console;
 import org.terifan.raccoon.document.Document;
 
 
@@ -125,6 +124,6 @@ final class ArrayMapEntry
 	@Override
 	public String toString()
 	{
-		return Console.format("ArrayMapEntry{mType=%s, mKey=%s, mValue=%s}", mType, (mKey == null ? "null" : "\"" + new String(mKey.array()).replaceAll("[^\\w]*", "") + "\""), (mValue == null ? "null" : "\"" + new String(mValue).replace('\u0000', '.').replaceAll("[^\\w\\.]*", "") + "\""));
+		return String.format("ArrayMapEntry{mType=%s, mKey=%s, mValue=%s}", mType, (mKey == null ? "null" : "\"" + new String(mKey.array()).replaceAll("[^\\w]*", "") + "\""), (mValue == null ? "null" : "\"" + new String(mValue).replace('\u0000', '.').replaceAll("[^\\w\\.]*", "") + "\""));
 	}
 }

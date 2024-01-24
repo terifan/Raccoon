@@ -6,7 +6,8 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.Random;
-import org.terifan.raccoon.blockdevice.util.Log;
+import org.terifan.logging.Level;
+import org.terifan.logging.Logger;
 import org.terifan.raccoon.document.Document;
 
 
@@ -147,9 +148,8 @@ public class __TestUtils
 				msg1buf = baos.toByteArray();
 			}
 
-			Log.hexDump(msg0buf);
-			Log.out.println();
-			Log.hexDump(msg1buf);
+			Logger.getLogger().hexDump(Level.ALL, msg0buf);
+			Logger.getLogger().hexDump(Level.ALL, msg1buf);
 
 			return Arrays.equals(msg0buf, msg1buf) ? "Identical" : "Object references missmatch";
 		}

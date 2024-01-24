@@ -1,4 +1,4 @@
-package org.terifan.raccoon.impl;
+package test_raccoon;
 
 import java.io.IOException;
 import java.nio.file.Files;

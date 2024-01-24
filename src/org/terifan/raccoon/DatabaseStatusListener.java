@@ -1,11 +1,10 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.blockdevice.util.LogLevel;
-
+import org.terifan.logging.Level;
 
 
 @FunctionalInterface
 public interface DatabaseStatusListener
 {
-	void statusChanged(LogLevel aLevel, String aMessage, Throwable aThrowable);
+	void statusChanged(Level aLevel, String aMessage, Throwable aThrowable);
 }

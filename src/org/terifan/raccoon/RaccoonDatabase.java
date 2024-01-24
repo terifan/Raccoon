@@ -19,8 +19,8 @@ import org.terifan.raccoon.blockdevice.managed.UnsupportedVersionException;
 import org.terifan.raccoon.blockdevice.storage.FileBlockStorage;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.SecureBlockDevice;
-import org.terifan.raccoon.blockdevice.util.Log;
-import org.terifan.raccoon.blockdevice.util.LogLevel;
+import org.terifan.logging.Level;
+import org.terifan.logging.Logger;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ReadWriteLock;
@@ -35,6 +35,8 @@ import org.terifan.raccoon.blockdevice.storage.BlockStorage;
 
 public final class RaccoonDatabase implements AutoCloseable
 {
+	private final static Logger log = Logger.getLogger();
+
 	private final static String TENANT = "tenant";
 	private final static String VERSION = "RaccoonDatabase.1";
 	private final static String DIRECTORY = "0";
@@ -180,21 +182,21 @@ public final class RaccoonDatabase implements AutoCloseable
 			}
 			else if (aAccessCredentials == null)
 			{
-				Log.d("creating a managed block device");
+				log.d("creating a managed block device");
 
 				blockDevice = new ManagedBlockDevice((BlockStorage)aBlockDevice);
 			}
 			else
 			{
-				Log.d("creating a secure block device");
+				log.d("creating a secure block device");
 
 				blockDevice = new ManagedBlockDevice(new SecureBlockDevice(aAccessCredentials, (BlockStorage)aBlockDevice));
 			}
 
 			if (aCreate)
 			{
-				Log.i("create database");
-				Log.inc();
+				log.i("create database");
+				log.inc();
 
 				blockDevice.getMetadata().put(TENANT, VERSION);
 
@@ -211,12 +213,12 @@ public final class RaccoonDatabase implements AutoCloseable
 
 				commit();
 
-				Log.dec();
+				log.dec();
 			}
 			else
 			{
-				Log.i("open database");
-				Log.inc();
+				log.i("open database");
+				log.inc();
 
 				if (!VERSION.equals(blockDevice.getMetadata().getString(TENANT)))
 				{
@@ -236,7 +238,7 @@ public final class RaccoonDatabase implements AutoCloseable
 					}
 				}
 
-				Log.dec();
+				log.dec();
 			}
 
 			mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
@@ -248,14 +250,14 @@ public final class RaccoonDatabase implements AutoCloseable
 				{
 					if (mShutdownHookEnabled)
 					{
-						Log.i("shutdown hook executing");
-						Log.inc();
+						log.i("shutdown hook executing");
+						log.inc();
 
 						mShutdownHook = null;
 
 						close();
 
-						Log.dec();
+						log.dec();
 					}
 				}
 			};
@@ -346,8 +348,8 @@ public final class RaccoonDatabase implements AutoCloseable
 			throw new DatabaseException("No such collection: " + aName);
 		}
 
-		Log.i("create table '%s' with option %s", aName, mDatabaseOpenOption);
-		Log.inc();
+		log.i("create table {} with option {}", aName, mDatabaseOpenOption);
+		log.inc();
 
 		try
 		{
@@ -358,7 +360,7 @@ public final class RaccoonDatabase implements AutoCloseable
 		}
 		finally
 		{
-			Log.dec();
+			log.dec();
 		}
 
 		return instance;
@@ -477,15 +479,15 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		try (WriteLock lock = mLock.writeLock())
 		{
-			Log.i("flush changes");
-			Log.inc();
+			log.i("flush changes");
+			log.inc();
 
 			for (RaccoonCollection entry : mCollectionInstances.values())
 			{
 				nodesWritten = entry.flush();
 			}
 
-			Log.dec();
+			log.dec();
 		}
 
 		return nodesWritten;
@@ -501,8 +503,8 @@ public final class RaccoonDatabase implements AutoCloseable
 		{
 			checkOpen();
 
-			Log.i("commit database");
-			Log.inc();
+			log.i("commit database");
+			log.inc();
 
 			try (WriteLock lock = mLock.writeLock())
 			{
@@ -510,7 +512,7 @@ public final class RaccoonDatabase implements AutoCloseable
 				{
 					if (entry.getValue().commit())
 					{
-						Log.i("table updated '%s'", entry.getKey());
+						log.i("table updated {}", entry.getKey());
 
 						mDatabaseRoot.put(entry.getKey(), entry.getValue().getConfiguration());
 						mModified = true;
@@ -519,8 +521,8 @@ public final class RaccoonDatabase implements AutoCloseable
 
 				if (mModified)
 				{
-					Log.i("updating super block");
-					Log.inc();
+					log.i("updating super block");
+					log.inc();
 
 					mBlockDevice.getMetadata().put(DIRECTORY, mDatabaseRoot.commit(mBlockDevice));
 					mBlockDevice.commit();
@@ -528,12 +530,12 @@ public final class RaccoonDatabase implements AutoCloseable
 
 					assert integrityCheck() == null : integrityCheck();
 
-					Log.dec();
+					log.dec();
 				}
 			}
 			finally
 			{
-				Log.dec();
+				log.dec();
 			}
 		}
 		catch (IOException e)
@@ -550,8 +552,8 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		checkOpen();
 
-		Log.i("rollback");
-		Log.inc();
+		log.i("rollback");
+		log.inc();
 
 		try (WriteLock lock = mLock.writeLock())
 		{
@@ -569,7 +571,7 @@ public final class RaccoonDatabase implements AutoCloseable
 		}
 		finally
 		{
-			Log.dec();
+			log.dec();
 		}
 	}
 
@@ -593,7 +595,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			if (mBlockDevice == null)
 			{
-				Log.w("database already closed");
+				log.w("database already closed");
 				return;
 			}
 
@@ -601,13 +603,13 @@ public final class RaccoonDatabase implements AutoCloseable
 			{
 				if (mModified)
 				{
-					reportStatus(LogLevel.WARN, "readonly database modified, changes are not committed", null);
+					reportStatus(Level.WARN, "readonly database modified, changes are not committed", null);
 				}
 				return;
 			}
 
-			Log.d("begin closing database");
-			Log.inc();
+			log.d("begin closing database");
+			log.inc();
 
 			if (!mModified)
 			{
@@ -619,8 +621,8 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			if (mModified)
 			{
-				Log.w("rollback on close");
-				Log.inc();
+				log.w("rollback on close");
+				log.inc();
 
 				for (RaccoonCollection instance : mCollectionInstances.values())
 				{
@@ -630,7 +632,7 @@ public final class RaccoonDatabase implements AutoCloseable
 				mDatabaseRoot = new DatabaseRoot(mBlockDevice, mBlockDevice.getMetadata().getDocument(DIRECTORY));
 				mBlockDevice.rollback();
 
-				Log.dec();
+				log.dec();
 			}
 
 			if (mDatabaseRoot != null)
@@ -653,8 +655,8 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			mBlockDevice = null;
 
-			Log.i("database finished closing");
-			Log.dec();
+			log.i("database was closed");
+			log.dec();
 		}
 		catch (IOException e)
 		{
@@ -684,7 +686,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	private void reportStatus(LogLevel aLevel, String aMessage, Throwable aThrowable)
+	private void reportStatus(Level aLevel, String aMessage, Throwable aThrowable)
 	{
 		System.out.printf("%-6s%s%n", aLevel, aMessage);
 

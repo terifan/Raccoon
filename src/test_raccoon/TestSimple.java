@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import org.terifan.logging.Level;
+import org.terifan.logging.Logger;
 import org.terifan.raccoon.BTree;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
@@ -20,6 +22,8 @@ public class TestSimple
 	{
 		try
 		{
+			Logger.getLogger().setLevel(Level.DEBUG);
+
 			Random rnd = new Random(1);
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))

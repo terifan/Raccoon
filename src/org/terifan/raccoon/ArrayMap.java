@@ -1,13 +1,10 @@
 package org.terifan.raccoon;
 
 import java.util.Arrays;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.getInt16;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.getInt32;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.putInt16;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.putInt32;
-import org.terifan.raccoon.util.FormattedOutput;
-import org.terifan.raccoon.util.FormattedToString;
 import org.terifan.raccoon.util.Result;
 
 
@@ -23,7 +20,7 @@ import org.terifan.raccoon.util.Result;
  * [header] 2 bytes - entry count 4 bytes - free space offset (minus HEADER_SIZE) [list of entries] (entry 1..n) 2 bytes - key length 2
  * bytes - value length n bytes - key n bytes - value [free space] n bytes - zeros [list of pointers] (pointer 1..n) 4 bytes - offset
  */
-public class ArrayMap implements Iterable<ArrayMapEntry>,/* SequenceFilter<ArrayMapEntry>,*/ FormattedToString
+public class ArrayMap implements Iterable<ArrayMapEntry>
 {
 	final static int HEADER_SIZE = 2 + 4;
 	final static int ENTRY_POINTER_SIZE = 4;
@@ -718,19 +715,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>,/* SequenceFilter<Array
 //		{
 //			throw new IllegalStateException(e);
 //		}
-	}
-
-
-	@Override
-	public void toFormattedString(FormattedOutput aOutput)
-	{
-		for (int i = 0; i < size(); i++)
-		{
-			ArrayMapEntry entry = get(i, new ArrayMapEntry());
-			aOutput.append("\"%s\"", new String(entry.getKey().array(), UTF_8).replaceAll("[^\\w]*", ""));
-		}
-
-//		aOutput.array(e -> aOutput.append("\"%s\"", new String(e.getKey().array(), "utf-8").replaceAll("[^\\w]*", "")), this);
 	}
 
 

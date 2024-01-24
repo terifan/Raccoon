@@ -8,10 +8,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.terifan.logging.Logger;
+import static org.terifan.raccoon.BTree.CONF;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.LobByteChannelOld;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
-import org.terifan.raccoon.blockdevice.util.Log;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.ReadWriteLock;
@@ -22,11 +23,13 @@ import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 
 public final class RaccoonCollection
 {
+	private final static Logger log = Logger.getLogger();
+
 	public final static byte TYPE_TREENODE = 0;
 	public final static byte TYPE_DOCUMENT = 1;
 	public final static byte TYPE_EXTERNAL = 2;
 
-	public static final String CONFIGURATION = "0";
+	public static final String CONFIGURATION = "collection";
 
 	private final ReadWriteLock mLock;
 
@@ -50,8 +53,8 @@ public final class RaccoonCollection
 
 	public boolean getAll(Document... aDocuments)
 	{
-		Log.i("get all entities %d", aDocuments.length);
-		Log.inc();
+		log.i("get all entities {}", aDocuments.length);
+		log.inc();
 
 		try (ReadLock lock = mLock.readLock())
 		{
@@ -75,15 +78,15 @@ public final class RaccoonCollection
 		}
 		finally
 		{
-			Log.dec();
+			log.dec();
 		}
 	}
 
 
 	public <T extends Document> T get(T aDocument)
 	{
-		Log.i("get entity %s", aDocument);
-		Log.inc();
+		log.i("get entity {}", aDocument);
+		log.inc();
 
 		try (ReadLock lock = mLock.readLock())
 		{
@@ -98,7 +101,7 @@ public final class RaccoonCollection
 		}
 		finally
 		{
-			Log.dec();
+			log.dec();
 		}
 	}
 
@@ -111,8 +114,8 @@ public final class RaccoonCollection
 
 	public boolean save(Document aDocument)
 	{
-		Log.i("save %s", aDocument);
-		Log.inc();
+		log.i("save {}", aDocument);
+		log.inc();
 
 		try (WriteLock lock = mLock.writeLock())
 		{
@@ -121,15 +124,15 @@ public final class RaccoonCollection
 		}
 		finally
 		{
-			Log.dec();
+			log.dec();
 		}
 	}
 
 
 	public void saveAll(Document... aDocuments)
 	{
-		Log.i("save all %d", aDocuments.length);
-		Log.inc();
+		log.i("save all {}", aDocuments.length);
+		log.inc();
 
 		try (WriteLock lock = mLock.writeLock())
 		{
@@ -141,15 +144,15 @@ public final class RaccoonCollection
 		}
 		finally
 		{
-			Log.dec();
+			log.dec();
 		}
 	}
 
 
 	public boolean insert(Document aDocument)
 	{
-		Log.i("insert %s", aDocument);
-		Log.inc();
+		log.i("insert {}", aDocument);
+		log.inc();
 
 		try (WriteLock lock = mLock.writeLock())
 		{
@@ -158,15 +161,15 @@ public final class RaccoonCollection
 		}
 		finally
 		{
-			Log.dec();
+			log.dec();
 		}
 	}
 
 
 	public void insertAll(Document... aDocuments)
 	{
-		Log.i("insert all %d", aDocuments.length);
-		Log.inc();
+		log.i("insert all {}", aDocuments.length);
+		log.inc();
 
 		try (WriteLock lock = mLock.writeLock())
 		{
@@ -178,15 +181,15 @@ public final class RaccoonCollection
 		}
 		finally
 		{
-			Log.dec();
+			log.dec();
 		}
 	}
 
 
 	public void createIndex(Document aConfiguration, Document aFields)
 	{
-		Log.i("create index");
-		Log.inc();
+		log.i("create index");
+		log.inc();
 
 		Array id = Array.of(getCollectionId(), ObjectId.randomId());
 
@@ -232,7 +235,7 @@ public final class RaccoonCollection
 
 		ArrayMapEntry entry = new ArrayMapEntry(key, aDocument, TYPE_DOCUMENT);
 
-		if (entry.length() > mImplementation.getConfiguration().getInt(BTree.ENTRY_SIZE_LIMIT))
+		if (entry.length() > mImplementation.getConfiguration().getArray(CONF).getInt(BTree.ENTRY_SIZE_LIMIT))
 		{
 			Document header = new Document();
 
@@ -473,6 +476,8 @@ public final class RaccoonCollection
 //
 //		return tmp;
 //	}
+
+
 	public void clear()
 	{
 		try (WriteLock lock = mLock.writeLock())
@@ -655,8 +660,8 @@ public final class RaccoonCollection
 
 	public List<Document> find(Document aQuery)
 	{
-		Log.i("find %s", aQuery);
-		Log.inc();
+		log.i("find {}", aQuery);
+		log.inc();
 
 //		System.out.println(aQuery);
 //		System.out.println(mDatabase.mIndices);
@@ -744,7 +749,7 @@ public final class RaccoonCollection
 		}
 		finally
 		{
-			Log.dec();
+			log.dec();
 		}
 	}
 
