@@ -6,7 +6,7 @@ import java.nio.file.Paths;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonDirectory;
-import org.terifan.raccoon.blockdevice.LobByteChannelOld;
+import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.CipherModeFunction;
@@ -31,9 +31,9 @@ public class TestLOB
 					System.out.println(file);
 
 					byte[] imageData = Files.readAllBytes(file.toPath());
-					try (LobByteChannelOld lob = db.getDirectory("pics").open(ObjectId.randomId(), LobOpenOption.CREATE))
+					try (LobByteChannel lob = db.getDirectory("pics").open(ObjectId.randomId(), LobOpenOption.CREATE))
 					{
-						lob.getMetadata().put("width", 3200).put("height", 2400).putEpochTime("modified", file.lastModified()).put("name", file.getName());
+//						lob.getMetadata().put("width", 3200).put("height", 2400).putEpochTime("modified", file.lastModified()).put("name", file.getName());
 						lob.writeAllBytes(imageData);
 					}
 				}
@@ -50,7 +50,7 @@ public class TestLOB
 				db.getDirectory("pics").forEach((id, metadata) ->
 				{
 					System.out.println(metadata.toTypedJson());
-					try (LobByteChannelOld lob = collection.open(id, LobOpenOption.READ))
+					try (LobByteChannel lob = collection.open(id, LobOpenOption.READ))
 					{
 						lob.newInputStream().readAllBytes();
 //						BufferedImage image = ImageIO.read(lob.newInputStream());

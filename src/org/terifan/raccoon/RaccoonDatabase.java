@@ -7,12 +7,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.RaccoonDeviceException;
-import org.terifan.raccoon.blockdevice.LobByteChannelOld;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.managed.UnsupportedVersionException;
@@ -21,6 +22,7 @@ import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.SecureBlockDevice;
 import org.terifan.logging.Level;
 import org.terifan.logging.Logger;
+import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ReadWriteLock;
@@ -60,6 +62,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	private boolean mReadOnly;
 	private boolean mShutdownHookEnabled;
 	private Thread mShutdownHook;
+	private Timer mMaintenanceTimer;
 
 
 	private RaccoonDatabase()
@@ -263,12 +266,28 @@ public final class RaccoonDatabase implements AutoCloseable
 			};
 
 			Runtime.getRuntime().addShutdownHook(mShutdownHook);
+
+			mMaintenanceTimer = new Timer(false);
+			mMaintenanceTimer.schedule(mMaintenanceTimerTask, 1000, 1000);
 		}
 		catch (IOException e)
 		{
 			throw new IllegalStateException(e);
 		}
 	}
+
+
+	private TimerTask mMaintenanceTimerTask = new TimerTask()
+	{
+		@Override
+		public void run()
+		{
+			for (RaccoonHeap instance : mHeapInstances.values())
+			{
+				instance.getChannel().flush();
+			}
+		}
+	};
 
 
 	public ArrayList<String> listCollectionNames()
@@ -415,6 +434,12 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	public RaccoonHeap getHeap(String aName) throws IOException
 	{
+		return getHeap(aName, null);
+	}
+
+
+	public RaccoonHeap getHeap(String aName, Document aConfiguration) throws IOException
+	{
 		if (mHeapInstances.containsKey(aName))
 		{
 			return mHeapInstances.get(aName);
@@ -425,10 +450,16 @@ public final class RaccoonDatabase implements AutoCloseable
 		Document header = new Document().put("_id", aName);
 		collection.tryGet(header);
 
+		header.putIfAbsent("", aConfiguration::get);
+
 		BlockAccessor blockAccessor = getBlockAccessor();
 
-		LobByteChannelOld channel = new LobByteChannelOld(blockAccessor, header, LobOpenOption.CREATE, false, LobByteChannelOld.DEFAULT_LEAF_SIZE, LobByteChannelOld.DEFAULT_COMPRESSOR).setCloseAction(ch -> {
-			mModified = true;
+		LobByteChannel channel = new LobByteChannel(blockAccessor, header, mReadOnly ? LobOpenOption.READ : LobOpenOption.WRITE).setCloseAction(ch -> {
+			if (!mReadOnly)
+			{
+				collection.save(header);
+				mModified = true;
+			}
 		});
 
 		RaccoonHeap heap = new RaccoonHeap(blockAccessor, channel, 128, he -> {
@@ -581,6 +612,11 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		try (WriteLock lock = mLock.writeLock())
 		{
+			if (mMaintenanceTimer != null)
+			{
+				mMaintenanceTimer.cancel();
+			}
+
 			if (mShutdownHook != null)
 			{
 				try

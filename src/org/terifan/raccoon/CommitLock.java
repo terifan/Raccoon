@@ -1,13 +1,13 @@
 package org.terifan.raccoon;
 
 import java.util.Objects;
-import org.terifan.raccoon.blockdevice.LobByteChannelOld;
+import org.terifan.raccoon.blockdevice.LobByteChannel;
 
 
 class CommitLock
 {
 	private Exception mOwner;
-	private LobByteChannelOld mBlob;
+	private LobByteChannel mBlob;
 
 
 	public CommitLock()
@@ -16,7 +16,7 @@ class CommitLock
 	}
 
 
-	public void setBlob(LobByteChannelOld aBlob)
+	public void setBlob(LobByteChannel aBlob)
 	{
 		mBlob = aBlob;
 	}

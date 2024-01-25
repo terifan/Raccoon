@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
-import org.terifan.raccoon.blockdevice.LobByteChannelOld;
+import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.managed.SyncMode;
 import org.terifan.raccoon.blockdevice.storage.FileBlockStorage;
@@ -30,9 +30,9 @@ public class TestSinglePhotoDB
 
 				try (FileBlockStorage f = new FileBlockStorage(dst, 512).setSyncMode(SyncMode.OFF); RaccoonDatabase db = new RaccoonDatabase(f, DatabaseOpenOption.CREATE, null))
 				{
-					try (LobByteChannelOld lob = db.getDirectory("pics").open(ref = ObjectId.randomId(), LobOpenOption.CREATE))
+					try (LobByteChannel lob = db.getDirectory("pics").open(ref = ObjectId.randomId(), LobOpenOption.CREATE))
 					{
-						lob.getMetadata().put("width", 3200).put("height", 2400).putEpochTime("modified", file.lastModified()).put("name", name);
+//						lob.getMetadata().put("width", 3200).put("height", 2400).putEpochTime("modified", file.lastModified()).put("name", name);
 						lob.writeAllBytes(imageData);
 					}
 					db.commit();

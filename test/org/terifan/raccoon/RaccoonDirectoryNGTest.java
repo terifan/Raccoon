@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
 import java.util.Random;
-import org.terifan.raccoon.blockdevice.LobByteChannelOld;
+import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import org.terifan.raccoon.document.ObjectId;
@@ -24,10 +24,10 @@ public class RaccoonDirectoryNGTest
 		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE, null))
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
-			try (LobByteChannelOld lob = dir.open(id, LobOpenOption.CREATE))
+			try (LobByteChannel lob = dir.open(id, LobOpenOption.CREATE))
 			{
 				lob.writeAllBytes(output);
-				lob.getMetadata().put("test", "abc");
+//				lob.getMetadata().put("test", "abc");
 			}
 
 			db.commit();
@@ -36,9 +36,9 @@ public class RaccoonDirectoryNGTest
 		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, null))
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
-			try (LobByteChannelOld lob = dir.open(id, LobOpenOption.READ))
+			try (LobByteChannel lob = dir.open(id, LobOpenOption.READ))
 			{
-				System.out.println(lob.getMetadata());
+//				System.out.println(lob.getMetadata());
 				byte[] input = lob.readAllBytes();
 				assertEquals(input, output);
 			}
@@ -62,7 +62,7 @@ public class RaccoonDirectoryNGTest
 		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE, null))
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
-			try (LobByteChannelOld lob = dir.open(id, LobOpenOption.READ))
+			try (LobByteChannel lob = dir.open(id, LobOpenOption.READ))
 			{
 				fail();
 			}
@@ -80,7 +80,7 @@ public class RaccoonDirectoryNGTest
 		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE, null))
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
-			try (LobByteChannelOld lob = dir.open(id, LobOpenOption.READ))
+			try (LobByteChannel lob = dir.open(id, LobOpenOption.READ))
 			{
 				lob.writeAllBytes(new byte[100]);
 			}
@@ -92,7 +92,7 @@ public class RaccoonDirectoryNGTest
 		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, null))
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
-			try (LobByteChannelOld lob = dir.open(id, LobOpenOption.READ))
+			try (LobByteChannel lob = dir.open(id, LobOpenOption.READ))
 			{
 				fail();
 			}
