@@ -71,6 +71,8 @@ public class BTreeInteriorNode extends BTreeNode
 			nearestEntry = new ArrayMapEntry(aKey);
 			mMap.loadNearestEntry(nearestEntry);
 			nearestNode = getNode(aImplementation, nearestEntry);
+
+			assert mMap.size() >= 2;
 		}
 
 		return nearestNode.put(aImplementation, aKey, aEntry, aResult);
@@ -135,6 +137,7 @@ public class BTreeInteriorNode extends BTreeNode
 
 		assert assertValidCache() == null : assertValidCache();
 		assert mMap.get(0, new ArrayMapEntry()).getKey().size() == 0 : "First key expected to be empty: " + mMap.toString();
+		assert mMap.size() >= 2;
 
 		return result;
 	}
@@ -251,6 +254,8 @@ public class BTreeInteriorNode extends BTreeNode
 					mChildNodes.put(firstKey, childNode);
 				}
 			}
+
+			assert mMap.size() >= 2;
 		}
 
 		return newOffset;
@@ -300,6 +305,9 @@ public class BTreeInteriorNode extends BTreeNode
 
 		right.mMap.insert(firstRight);
 		right.mChildNodes.put(keyLeft, firstChild);
+
+		assert left.mMap.size() >= 2;
+		assert right.mMap.size() >= 2;
 
 		return new SplitResult(left, right, keyLeft, keyRight);
 	}
@@ -401,6 +409,10 @@ public class BTreeInteriorNode extends BTreeNode
 		}
 
 		aTo.mModified = true;
+
+		assert mMap.size() >= 2;
+		assert aFrom.mMap.size() >= 2;
+		assert aTo.mMap.size() >= 2;
 	}
 
 
@@ -484,6 +496,7 @@ public class BTreeInteriorNode extends BTreeNode
 		}
 
 //		assert !aNode.mMap.isEmpty();
+
 		if (aNode.mMap.isEmpty())
 		{
 			return ArrayMapKey.EMPTY;
@@ -522,6 +535,7 @@ public class BTreeInteriorNode extends BTreeNode
 	boolean commit(BTree aImplementation)
 	{
 		assert assertValidCache() == null : assertValidCache();
+		assert mMap.size() >= 2;
 
 		for (Entry<ArrayMapKey, BTreeNode> entry : mChildNodes.entrySet())
 		{

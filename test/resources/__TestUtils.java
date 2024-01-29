@@ -97,7 +97,7 @@ public class __TestUtils
 	public static byte[] tb(int aMaxLength)
 	{
 		byte[] alpha = "abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ§ß©".getBytes();
-		byte[] buf = new byte[3 + rnd.nextInt(aMaxLength-3)];
+		byte[] buf = new byte[3 + rnd.nextInt(Math.max(1,aMaxLength - 3))];
 		for (int i = 0; i < buf.length; i++)
 		{
 			buf[i] = alpha[rnd.nextInt(alpha.length)];

@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.terifan.raccoon.blockdevice.compressor.CompressorAlgorithm;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
+import org.terifan.raccoon.blockdevice.managed.SyncMode;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.CipherModeFunction;
 import org.terifan.raccoon.blockdevice.secure.EncryptionFunction;
@@ -23,9 +24,11 @@ public class RaccoonBuilder
 	protected ManagedBlockDevice mManagedBlockDevice;
 	protected int mKeyGeneratorIterationCount;
 	protected CompressorAlgorithm mCompressorAlgorithm;
-//	protected int mDefaultBTreeBlockSize;
-//	protected int mDefaultLobLeafSize;
+//	protected int mDefaultBTreebNodeSize;
+//	protected int mDefaultBTreeLeafSize;
 //	protected int mDefaultLobNodeSize;
+//	protected int mDefaultLobLeafSize;
+//	protected SyncMode mSyncMode;
 
 
 	public RaccoonBuilder()

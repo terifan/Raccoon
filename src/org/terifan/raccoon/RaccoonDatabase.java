@@ -77,7 +77,6 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	@Deprecated
 	public RaccoonDatabase(Path aPath, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
@@ -144,7 +143,6 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	@Deprecated
 	public RaccoonDatabase(BlockStorage aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
@@ -157,7 +155,6 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	@Deprecated
 	public RaccoonDatabase(ManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();

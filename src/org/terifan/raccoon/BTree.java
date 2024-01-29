@@ -492,8 +492,8 @@ public class BTree implements AutoCloseable
 	{
 		Array conf = new Array();
 		conf.put(BTree.ENTRY_SIZE_LIMIT, 1024);
-		conf.put(BTree.INT_BLOCK_SIZE, Math.max(4096, aBlockSize));
-		conf.put(BTree.LEAF_BLOCK_SIZE, Math.max(4096, aBlockSize));
+		conf.put(BTree.INT_BLOCK_SIZE, Math.max(8192, aBlockSize));
+		conf.put(BTree.LEAF_BLOCK_SIZE, Math.max(16384, aBlockSize));
 		conf.put(BTree.INT_BLOCK_COMPRESSOR, CompressorAlgorithm.ZLE.ordinal());
 		conf.put(BTree.LEAF_BLOCK_COMPRESSOR, CompressorAlgorithm.LZJB.ordinal());
 		return new Document().put(CONF, conf);
