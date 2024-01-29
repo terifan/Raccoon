@@ -100,7 +100,7 @@ public class RaccoonHeap implements AutoCloseable
 		if (doc.length >= mRecordSize)
 		{
 			Document header = new Document();
-			try (LobByteChannel lob = new LobByteChannel(mBlockAccessor, header, LobOpenOption.WRITE))
+			try (LobByteChannel lob = new LobByteChannel(mBlockAccessor, header, LobOpenOption.WRITE, null))
 			{
 				lob.writeAllBytes(aDocument.toByteArray());
 			}
@@ -163,7 +163,7 @@ public class RaccoonHeap implements AutoCloseable
 
 		if (buf.get(0) == EXTERNAL)
 		{
-			try (LobByteChannel lob = new LobByteChannel(mBlockAccessor, doc, LobOpenOption.READ))
+			try (LobByteChannel lob = new LobByteChannel(mBlockAccessor, doc, LobOpenOption.READ, null))
 			{
 				doc = new Document().fromByteArray(lob.readAllBytes());
 			}
@@ -219,7 +219,7 @@ public class RaccoonHeap implements AutoCloseable
 
 		if (buf.get(0) == EXTERNAL)
 		{
-			try (LobByteChannel lob = new LobByteChannel(mBlockAccessor, doc, LobOpenOption.READ))
+			try (LobByteChannel lob = new LobByteChannel(mBlockAccessor, doc, LobOpenOption.READ, null))
 			{
 				doc = new Document().fromByteArray(lob.readAllBytes());
 				lob.delete();

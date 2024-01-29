@@ -20,7 +20,9 @@ public class TestBigTable
 			System.out.printf("%8s %8s %8s %8s %8s%n", "count", "insert", "commit", "total", "memory");
 
 			int s1 = 100;
-			int s2 = 1000_000 / s1;
+			int s2 = 10_000_000 / s1;
+
+			// 4:24
 
 			try (RaccoonDatabase db = new RaccoonDatabase(Paths.get("d:\\test.rdb"), DatabaseOpenOption.REPLACE, null))
 			{
@@ -37,7 +39,7 @@ public class TestBigTable
 					db.commit();
 					long t3 = System.currentTimeMillis();
 					System.gc();
-					System.out.printf("%8d %8d %8d %8d %8d %s%n", s2 * (1 + j), t2 - t1, t3 - t2, t3 - t0, (r.totalMemory() - r.freeMemory()) / 1024 / 1024, RuntimeDiagnostics.string());
+					System.out.printf("%8d %8.1f %8.1f %8.1f %8d %s%n", s2 * (1 + j), (t2 - t1)/1000f, (t3 - t2)/1000f, (t3 - t0)/1000f, (r.totalMemory() - r.freeMemory()) / 1024 / 1024, RuntimeDiagnostics.string());
 					RuntimeDiagnostics.reset();
 				}
 			}

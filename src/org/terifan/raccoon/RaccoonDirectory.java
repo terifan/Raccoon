@@ -29,7 +29,13 @@ public class RaccoonDirectory<K>
 
 	public LobByteChannel open(K aId, LobOpenOption aLobOpenOption) throws IOException
 	{
-		LobByteChannel lob = tryOpen(aId, aLobOpenOption);
+		return open(aId, aLobOpenOption, null);
+	}
+
+
+	public LobByteChannel open(K aId, LobOpenOption aLobOpenOption, Document aOptions) throws IOException
+	{
+		LobByteChannel lob = tryOpen(aId, aLobOpenOption, aOptions);
 
 		if (lob == null)
 		{
@@ -42,6 +48,12 @@ public class RaccoonDirectory<K>
 
 	public LobByteChannel tryOpen(K aId, LobOpenOption aLobOpenOption) throws IOException
 	{
+		return tryOpen(aId, aLobOpenOption, null);
+	}
+
+
+	public LobByteChannel tryOpen(K aId, LobOpenOption aLobOpenOption, Document aOptions) throws IOException
+	{
 		Document entry = new Document().put("_id", aId);
 
 		if (!mCollection.tryGet(entry) && aLobOpenOption == LobOpenOption.READ)
@@ -49,7 +61,7 @@ public class RaccoonDirectory<K>
 			return null;
 		}
 
-		return new LobByteChannel(mCollection.getBlockAccessor(), entry, aLobOpenOption).setCloseAction(ch -> mCollection.save(entry));
+		return new LobByteChannel(mCollection.getBlockAccessor(), entry, aLobOpenOption, aOptions).setCloseAction(ch -> mCollection.save(entry));
 	}
 
 
@@ -74,10 +86,8 @@ public class RaccoonDirectory<K>
 
 	public void forEach(LobConsumer aConsumer) throws IOException
 	{
-		mCollection.listAll().forEach(e ->
-		{
-			aConsumer.accept(e.get("_id"), e.getDocument("metadata"));
-		});
+//		mCollection.listAll().forEach(e -> aConsumer.accept(e.get("_id"), e.getDocument(LobByteChannel.IX_METADATA)));
+		mCollection.listAll().forEach(e -> aConsumer.accept(e.get("_id"), e.getDocument("7")));
 	}
 
 

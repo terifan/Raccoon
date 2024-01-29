@@ -1,8 +1,6 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.blockdevice.BlockType;
 import java.util.Map.Entry;
-import org.terifan.logging.Logger;
 import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
 import org.terifan.raccoon.ArrayMap.PutResult;
@@ -12,6 +10,7 @@ import static org.terifan.raccoon.BTree.LEAF_BLOCK_SIZE;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.util.Result;
+import org.terifan.raccoon.blockdevice.BlockType;
 
 
 public class BTreeInteriorNode extends BTreeNode

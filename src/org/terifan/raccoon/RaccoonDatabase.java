@@ -58,13 +58,14 @@ public final class RaccoonDatabase implements AutoCloseable
 	final DualMap<ObjectId, ObjectId, Document> mIndices;
 
 	private boolean mModified;
-	private boolean mCloseDeviceOnCloseDatabase;
+	private boolean mCloseBlockDeviceWhenDatabaseClose;
 	private boolean mReadOnly;
 	private boolean mShutdownHookEnabled;
 	private Thread mShutdownHook;
 	private Timer mMaintenanceTimer;
 
 
+	@Deprecated
 	private RaccoonDatabase()
 	{
 		mShutdownHookEnabled = true;
@@ -76,6 +77,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
+	@Deprecated
 	public RaccoonDatabase(Path aPath, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
@@ -107,7 +109,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			fileBlockDevice = new FileBlockStorage(aPath, 4096, aOpenOptions == DatabaseOpenOption.READ_ONLY);
 
-			init(fileBlockDevice, newFile, true, aOpenOptions, aAccessCredentials);
+			init(fileBlockDevice, newFile, aOpenOptions, aAccessCredentials);
 		}
 		catch (DatabaseException | RaccoonDeviceException | DatabaseClosedException e)
 		{
@@ -142,6 +144,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
+	@Deprecated
 	public RaccoonDatabase(BlockStorage aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
@@ -150,10 +153,11 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		boolean create = aBlockDevice.size() == 0 || aOpenOptions == DatabaseOpenOption.REPLACE;
 
-		init(aBlockDevice, create, false, aOpenOptions, aAccessCredentials);
+		init(aBlockDevice, create, aOpenOptions, aAccessCredentials);
 	}
 
 
+	@Deprecated
 	public RaccoonDatabase(ManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
 	{
 		this();
@@ -162,11 +166,11 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		boolean create = aBlockDevice.size() == 0 || aOpenOptions == DatabaseOpenOption.REPLACE;
 
-		init(aBlockDevice, create, false, aOpenOptions, aAccessCredentials);
+		init(aBlockDevice, create, aOpenOptions, aAccessCredentials);
 	}
 
 
-	private void init(Object aBlockDevice, boolean aCreate, boolean aCloseDeviceOnCloseDatabase, DatabaseOpenOption aOpenOption, AccessCredentials aAccessCredentials)
+	private void init(Object aBlockDevice, boolean aCreate, DatabaseOpenOption aOpenOption, AccessCredentials aAccessCredentials)
 	{
 		try
 		{
@@ -211,7 +215,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 				mModified = true;
 				mBlockDevice = blockDevice;
-				mBlockDevice.getMetadata().put(DIRECTORY, BTree.createDefaultConfig());
+				mBlockDevice.getMetadata().put(DIRECTORY, BTree.createDefaultConfig(blockDevice.getBlockSize()));
 				mDatabaseRoot = new DatabaseRoot(mBlockDevice, mBlockDevice.getMetadata().getDocument(DIRECTORY));
 
 				commit();
@@ -244,8 +248,6 @@ public final class RaccoonDatabase implements AutoCloseable
 				log.dec();
 			}
 
-			mCloseDeviceOnCloseDatabase = aCloseDeviceOnCloseDatabase;
-
 			mShutdownHook = new Thread()
 			{
 				@Override
@@ -274,6 +276,13 @@ public final class RaccoonDatabase implements AutoCloseable
 		{
 			throw new IllegalStateException(e);
 		}
+	}
+
+
+	public RaccoonDatabase setCloseBlockDeviceWhenDatabaseClose(boolean aCloseBlockDeviceWhenDatabaseClose)
+	{
+		mCloseBlockDeviceWhenDatabaseClose = aCloseBlockDeviceWhenDatabaseClose;
+		return this;
 	}
 
 
@@ -438,7 +447,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public RaccoonHeap getHeap(String aName, Document aConfiguration) throws IOException
+	public RaccoonHeap getHeap(String aName, Document aOptions) throws IOException
 	{
 		if (mHeapInstances.containsKey(aName))
 		{
@@ -450,11 +459,9 @@ public final class RaccoonDatabase implements AutoCloseable
 		Document header = new Document().put("_id", aName);
 		collection.tryGet(header);
 
-		header.putIfAbsent("", aConfiguration::get);
-
 		BlockAccessor blockAccessor = getBlockAccessor();
 
-		LobByteChannel channel = new LobByteChannel(blockAccessor, header, mReadOnly ? LobOpenOption.READ : LobOpenOption.WRITE).setCloseAction(ch -> {
+		LobByteChannel channel = new LobByteChannel(blockAccessor, header, mReadOnly ? LobOpenOption.READ : LobOpenOption.WRITE, aOptions).setCloseAction(ch -> {
 			if (!mReadOnly)
 			{
 				collection.save(header);
@@ -462,7 +469,7 @@ public final class RaccoonDatabase implements AutoCloseable
 			}
 		});
 
-		RaccoonHeap heap = new RaccoonHeap(blockAccessor, channel, 128, he -> {
+		RaccoonHeap heap = new RaccoonHeap(blockAccessor, channel, header.getInt("record"), he -> {
 			mHeapInstances.remove(aName);
 		});
 		mHeapInstances.put(aName, heap);
@@ -684,7 +691,8 @@ public final class RaccoonDatabase implements AutoCloseable
 				mDatabaseRoot = null;
 			}
 
-			if (mBlockDevice != null && mCloseDeviceOnCloseDatabase)
+			if (mBlockDevice != null)
+//			if (mBlockDevice != null && mCloseDeviceOnCloseDatabase)
 			{
 				mBlockDevice.close();
 			}
@@ -765,6 +773,6 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		return new Document()
 			.put("_id", ObjectId.randomId())
-			.put(RaccoonCollection.CONFIGURATION, BTree.createDefaultConfig());
+			.put(RaccoonCollection.CONFIGURATION, BTree.createDefaultConfig(mBlockDevice.getBlockSize()));
 	}
 }

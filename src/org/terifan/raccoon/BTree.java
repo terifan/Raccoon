@@ -1,6 +1,5 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.blockdevice.BlockType;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.terifan.logging.Logger;
@@ -13,6 +12,7 @@ import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.util.AbortIteratorException;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.blockdevice.compressor.CompressorAlgorithm;
+import org.terifan.raccoon.blockdevice.BlockType;
 
 
 public class BTree implements AutoCloseable
@@ -49,7 +49,7 @@ public class BTree implements AutoCloseable
 
 		if (mConfiguration == null)
 		{
-			mConfiguration = BTree.createDefaultConfig();
+			mConfiguration = BTree.createDefaultConfig(aBlockAccessor.getBlockDevice().getBlockSize());
 		}
 
 		mCompressorInteriorBlocks = mConfiguration.getArray(CONF).getInt(INT_BLOCK_COMPRESSOR);
@@ -488,14 +488,14 @@ public class BTree implements AutoCloseable
 	}
 
 
-	static Document createDefaultConfig()
+	static Document createDefaultConfig(int aBlockSize)
 	{
 		Array conf = new Array();
 		conf.put(BTree.ENTRY_SIZE_LIMIT, 1024);
-		conf.put(BTree.INT_BLOCK_SIZE, 4096);
-		conf.put(BTree.LEAF_BLOCK_SIZE, 4096);
-		conf.put(BTree.INT_BLOCK_COMPRESSOR, CompressorAlgorithm.DEFLATE_FAST);
-		conf.put(BTree.LEAF_BLOCK_COMPRESSOR, CompressorAlgorithm.ZLE);
+		conf.put(BTree.INT_BLOCK_SIZE, Math.max(4096, aBlockSize));
+		conf.put(BTree.LEAF_BLOCK_SIZE, Math.max(4096, aBlockSize));
+		conf.put(BTree.INT_BLOCK_COMPRESSOR, CompressorAlgorithm.ZLE.ordinal());
+		conf.put(BTree.LEAF_BLOCK_COMPRESSOR, CompressorAlgorithm.LZJB.ordinal());
 		return new Document().put(CONF, conf);
 	}
 }
