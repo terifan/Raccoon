@@ -11,8 +11,11 @@ import java.util.function.Supplier;
 import org.terifan.logging.Logger;
 import static org.terifan.raccoon.BTree.CONF;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
+import org.terifan.raccoon.blockdevice.BlockPointer;
+import org.terifan.raccoon.blockdevice.BlockType;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
+import org.terifan.raccoon.blockdevice.compressor.CompressorAlgorithm;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.ReadWriteLock;
@@ -237,18 +240,22 @@ public final class RaccoonCollection
 
 		if (entry.length() > mImplementation.getConfiguration().getArray(CONF).getInt(BTree.ENTRY_SIZE_LIMIT))
 		{
-			Document header = new Document();
+			byte[] tmp = aDocument.toByteArray();
+			BlockPointer bp = mDatabase.getBlockAccessor().writeBlock(tmp, 0, tmp.length, BlockType.EXTERNAL, 0, CompressorAlgorithm.LZJB.ordinal());
+			entry.setValue(bp.marshalDocument());
 
-			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.WRITE, null))
-			{
-				lob.writeAllBytes(aDocument.toByteArray());
-			}
-			catch (Exception | Error e)
-			{
-				throw new DatabaseException(e);
-			}
-
-			entry.setValue(header);
+//			Document header = new Document();
+//
+//			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.WRITE, null))
+//			{
+//				lob.writeAllBytes(aDocument.toByteArray());
+//			}
+//			catch (Exception | Error e)
+//			{
+//				throw new DatabaseException(e);
+//			}
+//
+//			entry.setValue(header);
 			entry.setType(TYPE_EXTERNAL);
 		}
 
@@ -601,25 +608,29 @@ public final class RaccoonCollection
 		if (aEntry != null && aEntry.getType() == TYPE_EXTERNAL)
 		{
 			Document header = aEntry.getValue();
+			BlockPointer bp = new BlockPointer().unmarshalDocument(header);
 
-			try
-			{
+//			try
+//			{
 				if (aRestoreOldValue)
 				{
-					try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, null))
-					{
-						prev = new Document().fromByteArray(lob.readAllBytes());
-					}
+					prev = new Document().fromByteArray(mDatabase.getBlockAccessor().readBlock(bp));
+//					try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, null))
+//					{
+//						prev = new Document().fromByteArray(lob.readAllBytes());
+//					}
 				}
 
-				try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE, null))
-				{
-				}
-			}
-			catch (IOException e)
-			{
-				throw new DatabaseException(e);
-			}
+				mDatabase.getBlockAccessor().freeBlock(bp);
+
+//				try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE, null))
+//				{
+//				}
+//			}
+//			catch (IOException e)
+//			{
+//				throw new DatabaseException(e);
+//			}
 		}
 
 		return prev;
@@ -644,14 +655,17 @@ public final class RaccoonCollection
 		{
 			Document header = aEntry.getValue();
 
-			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, null))
-			{
-				return aDestination.putAll(new Document().fromByteArray(lob.readAllBytes()));
-			}
-			catch (IOException e)
-			{
-				throw new DatabaseException(e);
-			}
+			BlockPointer bp = new BlockPointer().unmarshalDocument(header);
+			return aDestination.putAll(new Document().fromByteArray(mDatabase.getBlockAccessor().readBlock(bp)));
+
+//			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, null))
+//			{
+//				return aDestination.putAll(new Document().fromByteArray(lob.readAllBytes()));
+//			}
+//			catch (IOException e)
+//			{
+//				throw new DatabaseException(e);
+//			}
 		}
 
 		return aDestination.putAll(aEntry.getValue());

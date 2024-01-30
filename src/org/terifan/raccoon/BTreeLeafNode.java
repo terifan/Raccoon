@@ -4,11 +4,11 @@ import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
 import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
 import org.terifan.raccoon.ArrayMap.PutResult;
 import static org.terifan.raccoon.BTree.CONF;
-import static org.terifan.raccoon.BTree.INT_BLOCK_SIZE;
-import static org.terifan.raccoon.BTree.LEAF_BLOCK_SIZE;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.blockdevice.BlockType;
+import static org.terifan.raccoon.BTree.NODE_SIZE;
+import static org.terifan.raccoon.BTree.LEAF_SIZE;
 
 
 public class BTreeLeafNode extends BTreeNode
@@ -68,7 +68,7 @@ public class BTreeLeafNode extends BTreeNode
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getArray(CONF).getInt(LEAF_BLOCK_SIZE));
+		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getArray(CONF).getInt(LEAF_SIZE));
 
 		BTreeLeafNode left = new BTreeLeafNode();
 		BTreeLeafNode rigt = new BTreeLeafNode();
@@ -85,7 +85,7 @@ public class BTreeLeafNode extends BTreeNode
 	{
 		aImplementation.freeBlock(mBlockPointer);
 
-		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getArray(CONF).getInt(LEAF_BLOCK_SIZE));
+		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getArray(CONF).getInt(LEAF_SIZE));
 
 		BTreeLeafNode left = new BTreeLeafNode();
 		BTreeLeafNode rigt = new BTreeLeafNode();
@@ -99,7 +99,7 @@ public class BTreeLeafNode extends BTreeNode
 
 		BTreeInteriorNode newInterior = new BTreeInteriorNode(1);
 		newInterior.mModified = true;
-		newInterior.mMap = new ArrayMap(aImplementation.getConfiguration().getArray(CONF).getInt(INT_BLOCK_SIZE));
+		newInterior.mMap = new ArrayMap(aImplementation.getConfiguration().getArray(CONF).getInt(NODE_SIZE));
 		newInterior.mMap.put(new ArrayMapEntry(keyLeft, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
 		newInterior.mMap.put(new ArrayMapEntry(keyRigt, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
 		newInterior.mChildNodes.put(keyLeft, left);

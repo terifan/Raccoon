@@ -4,10 +4,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.terifan.raccoon.blockdevice.LobAccessException;
 import org.terifan.raccoon.blockdevice.LobByteChannel;
 import org.terifan.raccoon.blockdevice.LobConsumer;
 import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.document.Document;
+import org.terifan.raccoon.document.ObjectId;
 
 
 public class RaccoonDirectory<K>
@@ -84,6 +86,47 @@ public class RaccoonDirectory<K>
 	}
 
 
+	public byte[] readAllBytes(K aObjectId)
+	{
+		return readAllBytes(aObjectId, null);
+	}
+
+
+	public byte[] readAllBytes(K aObjectId, Document oMetadata)
+	{
+		try (LobByteChannel channel = open(aObjectId, LobOpenOption.READ))
+		{
+			Document metadata = channel.getMetadata();
+			if (oMetadata != null)
+			{
+				oMetadata.putAll(metadata);
+			}
+			return channel.readAllBytes();
+		}
+		catch (IOException e)
+		{
+			throw new LobAccessException(e);
+		}
+	}
+
+
+	public void writeAllBytes(K aObjectId, byte[] aContent, Document aMetadata)
+	{
+		try (LobByteChannel channel = open(aObjectId, LobOpenOption.REPLACE))
+		{
+			if (aMetadata != null)
+			{
+				channel.getMetadata().putAll(aMetadata);
+			}
+			channel.writeAllBytes(aContent);
+		}
+		catch (IOException e)
+		{
+			throw new LobAccessException(e);
+		}
+	}
+
+
 	public void forEach(LobConsumer aConsumer) throws IOException
 	{
 //		mCollection.listAll().forEach(e -> aConsumer.accept(e.get("_id"), e.getDocument(LobByteChannel.IX_METADATA)));
@@ -91,9 +134,9 @@ public class RaccoonDirectory<K>
 	}
 
 
-	public List<K> list() throws IOException
+	public List<ObjectId> list() throws IOException
 	{
-		return (List<K>)mCollection.listAll().stream().map(e->e.get("_id")).collect(Collectors.toList());
+		return (List<ObjectId>)mCollection.listAll().stream().map(e -> e.getObjectId("_id")).collect(Collectors.toList());
 	}
 
 

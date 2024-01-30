@@ -6,6 +6,7 @@ import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonBuilder;
 import org.terifan.raccoon.RaccoonCollection;
 import org.terifan.raccoon.RuntimeDiagnostics;
+import org.terifan.raccoon.document.Document;
 
 
 public class TestBigTable
@@ -22,32 +23,34 @@ public class TestBigTable
 			int s1 = 100;
 			int s2 = 10_000_000 / s1;
 
-			//  1m 4:24
-			// 10m 
+			//  1m @  4k -- 4:24
+			// 10m @ 16k -- 66:25
+			// 10m @  4k -- 80:12, 80:26
 
-//			try (RaccoonDatabase db = new RaccoonBuilder().path("d:\\test.rdb").get(DatabaseOpenOption.REPLACE))
-//			{
-//				RaccoonCollection people = db.getCollection("people");
-//				long t0 = System.currentTimeMillis();
-//				for (int j = 0; j < s1; j++)
-//				{
-//					long t1 = System.currentTimeMillis();
-//					for (int i = 0; i < s2; i++)
-//					{
-//						people.save(_Person.createPerson(rnd));
-//					}
-//					long t2 = System.currentTimeMillis();
-//					db.commit();
-//					long t3 = System.currentTimeMillis();
-//					System.gc();
-//					System.out.printf("%8d %8.1f %8.1f %8.1f %8d %s%n", s2 * (1 + j), (t2 - t1)/1000f, (t3 - t2)/1000f, (t3 - t0)/1000f, (r.totalMemory() - r.freeMemory()) / 1024 / 1024, RuntimeDiagnostics.string());
-//					RuntimeDiagnostics.reset();
-//				}
-//			}
+			try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get(DatabaseOpenOption.REPLACE))
+			{
+				RaccoonCollection people = db.getCollection("people");
+				long t0 = System.currentTimeMillis();
+				for (int j = 0; j < s1; j++)
+				{
+					long t1 = System.currentTimeMillis();
+					for (int i = 0; i < s2; i++)
+					{
+						people.save(_Person.createPerson(rnd));
+//						people.save(Document.of("a:1"));
+					}
+					long t2 = System.currentTimeMillis();
+					db.commit();
+					long t3 = System.currentTimeMillis();
+					System.gc();
+					System.out.printf("%8d %8.1f %8.1f %8.1f %8d %s%n", s2 * (1 + j), (t2 - t1) / 1000f, (t3 - t2) / 1000f, (t3 - t0) / 1000f, (r.totalMemory() - r.freeMemory()) / 1024 / 1024, RuntimeDiagnostics.string());
+					RuntimeDiagnostics.reset();
+				}
+			}
 
 			System.out.println("-".repeat(100));
 
-			try (RaccoonDatabase db = new RaccoonBuilder().path("d:\\test.rdb").get())
+			try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get())
 			{
 				System.out.println(db.getCollection("people").size());
 			}
