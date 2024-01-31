@@ -8,6 +8,7 @@ import org.terifan.raccoon.RaccoonBuilder;
 import org.terifan.raccoon.RaccoonCollection;
 import org.terifan.raccoon.RuntimeDiagnostics;
 import org.terifan.raccoon.document.Document;
+import org.terifan.raccoon.document.ObjectId;
 
 
 public class TestBigTable
@@ -21,13 +22,15 @@ public class TestBigTable
 
 			System.out.printf("%8s %8s %8s %8s %8s%n", "count", "insert", "commit", "total", "memory");
 
-			int s1 = 100;
-			int s2 = 10_000_000 / s1;
+			int s1 = 1;
+			int s2 = 20 / s1;
 
 			// HDD  1m @  4k -- 4:24
 			// HDD 10m @ 16k -- 66:25
 			// HDD 10m @  4k -- 80:12, 80:26
 			// SSD 10m @  4k -- 25:10
+
+			HashSet<ObjectId> keys = new HashSet<>();
 
 			long t = System.currentTimeMillis();
 			try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get(DatabaseOpenOption.REPLACE))
@@ -39,8 +42,9 @@ public class TestBigTable
 					long t1 = System.currentTimeMillis();
 					for (int i = 0; i < s2; i++, k++)
 					{
-						people.save(_Person.createPerson(rnd, k));
-//						people.save(Document.of("index:" + k));
+						Document person = _Person.createPerson(rnd, k);
+						people.save(person);
+						keys.add(person.getObjectId("_id"));
 					}
 					long t2 = System.currentTimeMillis();
 					db.commit();
@@ -51,17 +55,18 @@ public class TestBigTable
 				}
 			}
 			t = System.currentTimeMillis() - t;
-			System.out.println(t);
 
 			System.out.println("-".repeat(100));
+
+			System.out.println("insert time: " + t);
 
 			t = System.currentTimeMillis();
 			try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get())
 			{
-				System.out.println(db.getCollection("people").size());
+				System.out.println("size: " + db.getCollection("people").size());
 			}
 			t = System.currentTimeMillis() - t;
-			System.out.println(t);
+			System.out.println("size time: " + t);
 
 			HashSet<Integer> unique = new HashSet<>();
 			t = System.currentTimeMillis();
@@ -72,9 +77,10 @@ public class TestBigTable
 				});
 			}
 			t = System.currentTimeMillis() - t;
-			System.out.println(t);
+			System.out.println("read all: " + t);
 
-			System.out.println(unique.size());
+			System.out.println("keys: " + keys.size());
+			System.out.println("unique: " + unique.size());
 		}
 		catch (Exception e)
 		{

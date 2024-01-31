@@ -8,7 +8,6 @@ import org.terifan.raccoon.util.Result;
 public abstract class BTreeNode
 {
 	protected BlockPointer mBlockPointer;
-	protected ArrayMap mMap;
 	protected boolean mModified;
 	protected int mLevel;
 	protected boolean mHighlight;
@@ -81,6 +80,12 @@ public abstract class BTreeNode
 
 
 	protected abstract void postCommit();
+
+
+	protected abstract String integrityCheck();
+
+
+	protected abstract int childCount();
 
 
 	enum RemoveResult

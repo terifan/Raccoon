@@ -13,9 +13,14 @@ import static org.terifan.raccoon.BTree.LEAF_SIZE;
 
 public class BTreeLeafNode extends BTreeNode
 {
-	BTreeLeafNode()
+	protected ArrayMap mMap;
+
+
+	BTreeLeafNode(ArrayMap aMap)
 	{
 		super(0);
+
+		mMap = aMap;
 	}
 
 
@@ -70,10 +75,8 @@ public class BTreeLeafNode extends BTreeNode
 
 		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getArray(CONF).getInt(LEAF_SIZE));
 
-		BTreeLeafNode left = new BTreeLeafNode();
-		BTreeLeafNode rigt = new BTreeLeafNode();
-		left.mMap = maps[0];
-		rigt.mMap = maps[1];
+		BTreeLeafNode left = new BTreeLeafNode(maps[0]);
+		BTreeLeafNode rigt = new BTreeLeafNode(maps[1]);
 		left.mModified = true;
 		rigt.mModified = true;
 
@@ -87,23 +90,22 @@ public class BTreeLeafNode extends BTreeNode
 
 		ArrayMap[] maps = mMap.split(aImplementation.getConfiguration().getArray(CONF).getInt(LEAF_SIZE));
 
-		BTreeLeafNode left = new BTreeLeafNode();
-		BTreeLeafNode rigt = new BTreeLeafNode();
-		left.mMap = maps[0];
-		rigt.mMap = maps[1];
+		BTreeLeafNode left = new BTreeLeafNode(maps[0]);
+		BTreeLeafNode rigt = new BTreeLeafNode(maps[1]);
 		left.mModified = true;
 		rigt.mModified = true;
 
 		ArrayMapKey keyLeft = ArrayMapKey.EMPTY;
 		ArrayMapKey keyRigt = rigt.mMap.getKey(0);
 
-		BTreeInteriorNode newInterior = new BTreeInteriorNode(1);
+		BTreeInteriorNode newInterior = new BTreeInteriorNode(1, new ArrayMap(aImplementation.getConfiguration().getArray(CONF).getInt(NODE_SIZE)));
 		newInterior.mModified = true;
-		newInterior.mMap = new ArrayMap(aImplementation.getConfiguration().getArray(CONF).getInt(NODE_SIZE));
-		newInterior.mMap.put(new ArrayMapEntry(keyLeft, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
-		newInterior.mMap.put(new ArrayMapEntry(keyRigt, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE), null);
+		newInterior.mChildNodes.putEntry(new ArrayMapEntry(keyLeft, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
+		newInterior.mChildNodes.putEntry(new ArrayMapEntry(keyRigt, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
 		newInterior.mChildNodes.put(keyLeft, left);
 		newInterior.mChildNodes.put(keyRigt, rigt);
+
+		System.out.println(newInterior);
 
 		return newInterior;
 	}
@@ -137,5 +139,19 @@ public class BTreeLeafNode extends BTreeNode
 	public String toString()
 	{
 		return String.format("BTreeLeaf{mMap=" + mMap + '}');
+	}
+
+
+	@Override
+	protected String integrityCheck()
+	{
+		return mMap.integrityCheck();
+	}
+
+
+	@Override
+	protected int childCount()
+	{
+		return mMap.size();
 	}
 }
