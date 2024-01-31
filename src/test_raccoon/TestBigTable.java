@@ -1,5 +1,6 @@
 package test_raccoon;
 
+import java.util.HashSet;
 import java.util.Random;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
@@ -15,7 +16,7 @@ public class TestBigTable
 	{
 		try
 		{
-			Random rnd = new Random();
+			Random rnd = new Random(1);
 			Runtime r = Runtime.getRuntime();
 
 			System.out.printf("%8s %8s %8s %8s %8s%n", "count", "insert", "commit", "total", "memory");
@@ -23,21 +24,23 @@ public class TestBigTable
 			int s1 = 100;
 			int s2 = 10_000_000 / s1;
 
-			//  1m @  4k -- 4:24
-			// 10m @ 16k -- 66:25
-			// 10m @  4k -- 80:12, 80:26
+			// HDD  1m @  4k -- 4:24
+			// HDD 10m @ 16k -- 66:25
+			// HDD 10m @  4k -- 80:12, 80:26
+			// SSD 10m @  4k -- 25:10
 
+			long t = System.currentTimeMillis();
 			try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get(DatabaseOpenOption.REPLACE))
 			{
 				RaccoonCollection people = db.getCollection("people");
 				long t0 = System.currentTimeMillis();
-				for (int j = 0; j < s1; j++)
+				for (int j = 0, k = 0; j < s1; j++)
 				{
 					long t1 = System.currentTimeMillis();
-					for (int i = 0; i < s2; i++)
+					for (int i = 0; i < s2; i++, k++)
 					{
-						people.save(_Person.createPerson(rnd));
-//						people.save(Document.of("a:1"));
+						people.save(_Person.createPerson(rnd, k));
+//						people.save(Document.of("index:" + k));
 					}
 					long t2 = System.currentTimeMillis();
 					db.commit();
@@ -47,13 +50,31 @@ public class TestBigTable
 					RuntimeDiagnostics.reset();
 				}
 			}
+			t = System.currentTimeMillis() - t;
+			System.out.println(t);
 
 			System.out.println("-".repeat(100));
 
+			t = System.currentTimeMillis();
 			try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get())
 			{
 				System.out.println(db.getCollection("people").size());
 			}
+			t = System.currentTimeMillis() - t;
+			System.out.println(t);
+
+			HashSet<Integer> unique = new HashSet<>();
+			t = System.currentTimeMillis();
+			try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get())
+			{
+				db.getCollection("people").forEach(doc -> {
+					unique.add(doc.getInt("index"));
+				});
+			}
+			t = System.currentTimeMillis() - t;
+			System.out.println(t);
+
+			System.out.println(unique.size());
 		}
 		catch (Exception e)
 		{

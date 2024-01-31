@@ -310,6 +310,12 @@ public class _Person
 
 	public static Document createPerson(Random rnd)
 	{
+		return createPerson(rnd, 0);
+	}
+
+
+	public static Document createPerson(Random rnd, int aIndex)
+	{
 		int gender = rnd.nextInt(2);
 
 		String firstName = createFirstName(gender, rnd);
@@ -318,6 +324,7 @@ public class _Person
 
 		return new Document()
 			.put("_id", ObjectId.randomId())
+			.put("index", aIndex)
 			.put("createDateTime", createNewDate(rnd))
 			.put("changeDateTime", createNewDate(rnd))
 			.put("version", rnd.nextInt(1000))

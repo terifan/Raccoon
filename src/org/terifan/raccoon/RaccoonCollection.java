@@ -1,7 +1,6 @@
 package org.terifan.raccoon;
 
 import org.terifan.raccoon.document.ObjectId;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,11 +9,10 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.terifan.logging.Logger;
 import static org.terifan.raccoon.BTree.CONF;
+import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.blockdevice.BlockType;
-import org.terifan.raccoon.blockdevice.LobByteChannel;
-import org.terifan.raccoon.blockdevice.LobOpenOption;
 import org.terifan.raccoon.blockdevice.compressor.CompressorAlgorithm;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
@@ -240,6 +238,8 @@ public final class RaccoonCollection
 
 		if (entry.length() > mImplementation.getConfiguration().getArray(CONF).getInt(BTree.ENTRY_SIZE_LIMIT))
 		{
+			RuntimeDiagnostics.collectStatistics(Operation.WRITE_EXT, 1);
+
 			byte[] tmp = aDocument.toByteArray();
 			BlockPointer bp = mDatabase.getBlockAccessor().writeBlock(tmp, 0, tmp.length, BlockType.EXTERNAL, 0, CompressorAlgorithm.LZJB.ordinal());
 			entry.setValue(bp.marshalDocument());
@@ -614,12 +614,16 @@ public final class RaccoonCollection
 //			{
 				if (aRestoreOldValue)
 				{
+					RuntimeDiagnostics.collectStatistics(Operation.READ_EXT, 1);
+
 					prev = new Document().fromByteArray(mDatabase.getBlockAccessor().readBlock(bp));
 //					try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, null))
 //					{
 //						prev = new Document().fromByteArray(lob.readAllBytes());
 //					}
 				}
+
+				RuntimeDiagnostics.collectStatistics(Operation.FREE_EXT, 1);
 
 				mDatabase.getBlockAccessor().freeBlock(bp);
 
@@ -653,6 +657,8 @@ public final class RaccoonCollection
 	{
 		if (aEntry.getType() == TYPE_EXTERNAL)
 		{
+			RuntimeDiagnostics.collectStatistics(Operation.READ_EXT, 1);
+
 			Document header = aEntry.getValue();
 
 			BlockPointer bp = new BlockPointer().unmarshalDocument(header);

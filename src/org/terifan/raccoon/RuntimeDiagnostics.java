@@ -74,6 +74,6 @@ public class RuntimeDiagnostics
 
 	public static String string()
 	{
-		return String.format("node [%5d,%5d,%5d] leaf [%5d,%5d,%5d] ext [%5d,%5d,%5d]", mReadNodes, mWriteNodes, mFreeNodes, mReadLeafs, mWriteLeafs, mFreeLeafs, mReadExternal, mWriteExternal, mFreeExternal);
+		return String.format("node [%6d,%6d,%6d] leaf [%6d,%6d,%6d] ext [%6d,%6d,%6d]", mReadNodes, mWriteNodes, mFreeNodes, mReadLeafs, mWriteLeafs, mFreeLeafs, mReadExternal, mWriteExternal, mFreeExternal);
 	}
 }

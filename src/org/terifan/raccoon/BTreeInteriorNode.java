@@ -152,23 +152,34 @@ public class BTreeInteriorNode extends BTreeNode
 			{
 				mHighlight = BTree.RECORD_USE;
 
-				for (int i = 0; i < mMap.size(); i++)
+				ArrayMapKey lowestKey = aLowestKey;
+				BTreeNode node = getNode(aImplementation, 0);
+
+				for (int i = 1, n = mMap.size() - 1; i < n; i++)
 				{
-					BTreeNode node = getNode(aImplementation, i);
+					BTreeNode nextNode = getNode(aImplementation, i);
 
-					if (i == mMap.size() - 1)
+					if (nextNode.mMap.size() == 1)
 					{
-						node.visit(aImplementation, aVisitor, aLowestKey, aHighestKey);
+						System.out.println("-".repeat(200));
+						System.out.println(nextNode.mBlockPointer==null?"null":nextNode.mBlockPointer.marshalDocument());
+						System.out.println(nextNode.mHighlight);
+						System.out.println(nextNode.mLevel);
+						System.out.println(nextNode.mMap);
+						System.out.println(nextNode.mModified);
+						System.out.println("-".repeat(200));
 					}
-					else
-					{
-						ArrayMapKey nextHigh = getNode(aImplementation, i + 1).mMap.getKey(1);
 
-						node.visit(aImplementation, aVisitor, aLowestKey, nextHigh);
+					ArrayMapKey nextHigh = nextNode.mMap.size() == 1 ? aHighestKey : nextNode.mMap.getKey(1);
 
-						aLowestKey = node.mMap.getLast().getKey();
-					}
+					node.visit(aImplementation, aVisitor, lowestKey, nextHigh);
+
+					lowestKey = node.mMap.getLast().getKey();
+
+					node = nextNode;
 				}
+
+				node.visit(aImplementation, aVisitor, lowestKey, aHighestKey);
 			}
 
 			aVisitor.afterInteriorNode(aImplementation, this);
