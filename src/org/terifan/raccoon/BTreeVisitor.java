@@ -3,31 +3,31 @@ package org.terifan.raccoon;
 
 class BTreeVisitor
 {
-	boolean beforeAnyNode(BTree aImplementation, BTreeNode aNode)
+	boolean beforeAnyNode(BTreeNode aNode)
 	{
 		return true;
 	}
 
 
-	boolean beforeLeafNode(BTree aImplementation, BTreeLeafNode aNode)
+	boolean beforeLeafNode(BTreeLeafNode aNode)
 	{
 		return true;
 	}
 
 
-	boolean beforeInteriorNode(BTree aImplementation, BTreeInteriorNode aNode, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
+	boolean beforeInteriorNode(BTreeInteriorNode aNode, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
 	{
 		return true;
 	}
 
 
-	boolean afterInteriorNode(BTree aImplementation, BTreeInteriorNode aNode)
+	boolean afterInteriorNode(BTreeInteriorNode aNode)
 	{
 		return true;
 	}
 
 
-	boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
+	boolean leaf(BTreeLeafNode aNode)
 	{
 		return true;
 	}

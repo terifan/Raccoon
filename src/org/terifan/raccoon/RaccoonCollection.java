@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.terifan.logging.Logger;
-import static org.terifan.raccoon.BTree.CONF;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.BlockPointer;
@@ -37,7 +36,7 @@ public final class RaccoonCollection
 	private Document mConfiguration;
 	private RaccoonDatabase mDatabase;
 	private HashSet<CommitLock> mCommitLocks;
-	private BTree mImplementation;
+	private BTree mTree;
 	private long mModCount;
 
 
@@ -48,7 +47,7 @@ public final class RaccoonCollection
 
 		mLock = new ReadWriteLock();
 		mCommitLocks = new HashSet<>();
-		mImplementation = new BTree(getBlockAccessor(), aConfiguration.getDocument(CONFIGURATION));
+		mTree = new BTree(getBlockAccessor(), aConfiguration.getDocument(CONFIGURATION));
 	}
 
 
@@ -65,7 +64,7 @@ public final class RaccoonCollection
 			{
 				ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(document, false));
 
-				if (mImplementation.get(entry))
+				if (mTree.get(entry))
 				{
 					unmarshalDocument(entry, document);
 				}
@@ -93,7 +92,7 @@ public final class RaccoonCollection
 		{
 			ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(aDocument, false));
 
-			if (mImplementation.get(entry))
+			if (mTree.get(entry))
 			{
 				return (T)unmarshalDocument(entry, aDocument);
 			}
@@ -228,7 +227,7 @@ public final class RaccoonCollection
 		if (aInsert)
 		{
 			ArrayMapEntry entry = new ArrayMapEntry(key);
-			if (mImplementation.get(entry))
+			if (mTree.get(entry))
 			{
 				throw new DuplicateKeyException();
 			}
@@ -236,7 +235,7 @@ public final class RaccoonCollection
 
 		ArrayMapEntry entry = new ArrayMapEntry(key, aDocument, TYPE_DOCUMENT);
 
-		if (entry.length() > mImplementation.getConfiguration().getArray(CONF).getInt(BTree.ENTRY_SIZE_LIMIT))
+		if (entry.length() > mTree.getEntrySizeLimit())
 		{
 			RuntimeDiagnostics.collectStatistics(Operation.WRITE_EXT, 1);
 
@@ -259,7 +258,7 @@ public final class RaccoonCollection
 			entry.setType(TYPE_EXTERNAL);
 		}
 
-		ArrayMapEntry prev = mImplementation.put(entry);
+		ArrayMapEntry prev = mTree.put(entry);
 
 		if (prev != null)
 		{
@@ -340,7 +339,7 @@ public final class RaccoonCollection
 
 			for (Document document : aDocuments)
 			{
-				ArrayMapEntry prev = mImplementation.remove(new ArrayMapEntry(getDocumentKey(document, false)));
+				ArrayMapEntry prev = mTree.remove(new ArrayMapEntry(getDocumentKey(document, false)));
 
 				if (prev == null)
 				{
@@ -399,7 +398,7 @@ public final class RaccoonCollection
 	{
 		try (ReadLock lock = mLock.readLock())
 		{
-			return mImplementation.size();
+			return mTree.size();
 		}
 	}
 
@@ -418,10 +417,10 @@ public final class RaccoonCollection
 		{
 			mModCount++;
 
-			mImplementation.visit(new BTreeVisitor()
+			mTree.visit(new BTreeVisitor()
 			{
 				@Override
-				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
+				boolean leaf(BTreeLeafNode aNode)
 				{
 					aNode.mMap.forEach(e -> list.add((T)unmarshalDocument(e, aDocumentSupplier.get())));
 					return true;
@@ -439,10 +438,10 @@ public final class RaccoonCollection
 		{
 			mModCount++;
 
-			mImplementation.visit(new BTreeVisitor()
+			mTree.visit(new BTreeVisitor()
 			{
 				@Override
-				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
+				boolean leaf(BTreeLeafNode aNode)
 				{
 					aNode.mMap.forEach(e -> aAction.accept(unmarshalDocument(e, new Document())));
 					return true;
@@ -491,14 +490,14 @@ public final class RaccoonCollection
 		{
 			mModCount++;
 
-			BTree prev = mImplementation;
+			BTree prev = mTree;
 
-			mImplementation = new BTree(getBlockAccessor(), mImplementation.getConfiguration().clone().remove("root"));
+			mTree = new BTree(getBlockAccessor(), mTree.getConfiguration().clone().remove("root"));
 
-			mImplementation.visit(new BTreeVisitor()
+			mTree.visit(new BTreeVisitor()
 			{
 				@Override
-				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
+				boolean leaf(BTreeLeafNode aNode)
 				{
 					aNode.mMap.forEach(e -> deleteExternal(e, false));
 					prev.freeBlock(aNode.mBlockPointer);
@@ -507,7 +506,7 @@ public final class RaccoonCollection
 
 
 				@Override
-				boolean afterInteriorNode(BTree aImplementation, BTreeInteriorNode aNode)
+				boolean afterInteriorNode(BTreeInteriorNode aNode)
 				{
 					prev.freeBlock(aNode.mBlockPointer);
 					return true;
@@ -530,20 +529,20 @@ public final class RaccoonCollection
 
 	void close()
 	{
-		mImplementation.close();
-		mImplementation = null;
+		mTree.close();
+		mTree = null;
 	}
 
 
 	boolean isModified()
 	{
-		return mImplementation.isChanged();
+		return mTree.isChanged();
 	}
 
 
 	long flush()
 	{
-		return mImplementation.flush();
+		return mTree.flush();
 	}
 
 
@@ -564,14 +563,14 @@ public final class RaccoonCollection
 				throw new CommitBlockedException("A table cannot be committed while a stream is open." + sb.toString());
 			}
 
-			return mImplementation.commit();
+			return mTree.commit();
 		}
 	}
 
 
 	void rollback()
 	{
-		mImplementation.rollback();
+		mTree.rollback();
 	}
 
 
@@ -643,7 +642,7 @@ public final class RaccoonCollection
 
 	public BTree _getImplementation()
 	{
-		return mImplementation;
+		return mTree;
 	}
 
 
@@ -728,17 +727,17 @@ public final class RaccoonCollection
 		{
 			ArrayList<Document> list = new ArrayList<>();
 
-			mImplementation.visit(new BTreeVisitor()
+			mTree.visit(new BTreeVisitor()
 			{
 				@Override
-				boolean beforeInteriorNode(BTree aImplementation, BTreeInteriorNode aNode, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
+				boolean beforeInteriorNode(BTreeInteriorNode aNode, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
 				{
 					return matchKey(aLowestKey, aHighestKey, aQuery);
 				}
 
 
 				@Override
-				boolean beforeLeafNode(BTree aImplementation, BTreeLeafNode aNode)
+				boolean beforeLeafNode(BTreeLeafNode aNode)
 				{
 					boolean b = matchKey(aNode.mMap.getFirst().getKey(), aNode.mMap.getLast().getKey(), aQuery);
 
@@ -748,7 +747,7 @@ public final class RaccoonCollection
 
 
 				@Override
-				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
+				boolean leaf(BTreeLeafNode aNode)
 				{
 //					System.out.println(aNode);
 					for (int i = 0; i < aNode.mMap.size(); i++)
@@ -844,5 +843,16 @@ public final class RaccoonCollection
 		}
 
 		return true;
+	}
+
+
+	public ScanResult getStats()
+	{
+		ScanResult scanResult = new ScanResult();
+		mTree.scan(scanResult);
+		System.out.println(scanResult);
+
+		return scanResult;
+//		return Document.of("depth:0, nodes:0, leafs:0, documents:0, externals:0, logicalSize:0, physicalSize:0, nodeFill: 0, leafFill: 0, nodeDegree: 0, pendingWrites:0, cacheSize:0");
 	}
 }

@@ -56,7 +56,7 @@ class DatabaseRoot
 		mStorage.visit(new BTreeVisitor()
 		{
 			@Override
-			boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
+			boolean leaf(BTreeLeafNode aNode)
 			{
 				aNode.mMap.forEach(entry ->
 				{

@@ -7,84 +7,118 @@ import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonBuilder;
 import org.terifan.raccoon.RaccoonCollection;
 import org.terifan.raccoon.RuntimeDiagnostics;
+import org.terifan.raccoon.ScanResult;
+import static org.terifan.raccoon.blockdevice.util.ValueFormatter.formatBytesSize;
+import static org.terifan.raccoon.blockdevice.util.ValueFormatter.formatDuration;
+import static org.terifan.raccoon.blockdevice.util.ValueFormatter.formatCount;
 import org.terifan.raccoon.document.Document;
-import org.terifan.raccoon.document.ObjectId;
+import org.terifan.treegraph.TreeGraph;
+import org.terifan.treegraph.VerticalLayout;
+import org.terifan.treegraph.util.VerticalImageFrame;
 
 
 public class TestBigTable
 {
-	public static void main(String... args)
+	public static void main(String ... args)
 	{
 		try
 		{
-			Random rnd = new Random(1);
-			Runtime r = Runtime.getRuntime();
-
-			System.out.printf("%8s %8s %8s %8s %8s%n", "count", "insert", "commit", "total", "memory");
-
-			int s1 = 1;
-			int s2 = 20 / s1;
-
-			// HDD  1m @  4k -- 4:24
-			// HDD 10m @ 16k -- 66:25
-			// HDD 10m @  4k -- 80:12, 80:26
-			// SSD 10m @  4k -- 25:10
-
-			HashSet<ObjectId> keys = new HashSet<>();
-
-			long t = System.currentTimeMillis();
-			try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get(DatabaseOpenOption.REPLACE))
-			{
-				RaccoonCollection people = db.getCollection("people");
-				long t0 = System.currentTimeMillis();
-				for (int j = 0, k = 0; j < s1; j++)
-				{
-					long t1 = System.currentTimeMillis();
-					for (int i = 0; i < s2; i++, k++)
-					{
-						Document person = _Person.createPerson(rnd, k);
-						people.save(person);
-						keys.add(person.getObjectId("_id"));
-					}
-					long t2 = System.currentTimeMillis();
-					db.commit();
-					long t3 = System.currentTimeMillis();
-					System.gc();
-					System.out.printf("%8d %8.1f %8.1f %8.1f %8d %s%n", s2 * (1 + j), (t2 - t1) / 1000f, (t3 - t2) / 1000f, (t3 - t0) / 1000f, (r.totalMemory() - r.freeMemory()) / 1024 / 1024, RuntimeDiagnostics.string());
-					RuntimeDiagnostics.reset();
-				}
-			}
-			t = System.currentTimeMillis() - t;
-
-			System.out.println("-".repeat(100));
-
-			System.out.println("insert time: " + t);
-
-			t = System.currentTimeMillis();
-			try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get())
-			{
-				System.out.println("size: " + db.getCollection("people").size());
-			}
-			t = System.currentTimeMillis() - t;
-			System.out.println("size time: " + t);
-
-			HashSet<Integer> unique = new HashSet<>();
-			t = System.currentTimeMillis();
-			try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get())
-			{
-				db.getCollection("people").forEach(doc -> {
-					unique.add(doc.getInt("index"));
-				});
-			}
-			t = System.currentTimeMillis() - t;
-			System.out.println("read all: " + t);
-
-			System.out.println("keys: " + keys.size());
-			System.out.println("unique: " + unique.size());
+			create(100_000_000, false);
+//			measureSize();
+//			measureStats();
+//			loadAll();
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			e.printStackTrace(System.out);
 		}
+	}
+
+
+	private static void create(int aSize, boolean aPerson)
+	{
+		Random rnd = new Random(1);
+		Runtime r = Runtime.getRuntime();
+
+		System.out.printf("%12s %10s %10s %10s %9s%n", "count", "insert", "commit", "total", "memory");
+
+		long t = System.currentTimeMillis();
+		try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get(DatabaseOpenOption.REPLACE))
+		{
+			long t0 = System.currentTimeMillis();
+			long t1 = t0;
+			RaccoonCollection collection = db.getCollection("people");
+			for (int index = 0, transIndex = 0; index < aSize; index++, transIndex++)
+			{
+				if (aPerson)
+				{
+					collection.save(_Person.createPerson(rnd, index));
+				}
+				else
+				{
+					collection.save(Document.of("index:" + index));
+				}
+
+				if (index == aSize - 1 || transIndex == 100_000)
+				{
+					long t2 = System.currentTimeMillis();
+					db.commit();
+					long t3 = System.currentTimeMillis();
+
+					System.out.printf("%12s %10s %10s %10s %9s -- %s%n", formatCount(index), formatDuration(t2 - t1), formatDuration(t3 - t2), formatDuration(t3 - t0), formatBytesSize(r.totalMemory() - r.freeMemory()), RuntimeDiagnostics.string());
+					RuntimeDiagnostics.reset();
+					transIndex = 0;
+
+					t1 = System.currentTimeMillis();
+				}
+			}
+		}
+		t = System.currentTimeMillis() - t;
+
+		System.out.println("-".repeat(200));
+		System.out.println("Insert time: " + formatDuration(t));
+	}
+
+
+	private static void measureStats()
+	{
+		try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get())
+		{
+			ScanResult stats = db.getCollection("people").getStats();
+
+			System.out.println("stats: " + stats);
+
+//				VerticalImageFrame frame = new VerticalImageFrame();
+//				frame.add(new TreeGraph(new VerticalLayout(), stats.log.toString()));
+		}
+	}
+
+
+	private static void measureSize()
+	{
+		long t = System.currentTimeMillis();
+		try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get())
+		{
+			System.out.println("size: " + formatCount(db.getCollection("people").size()));
+		}
+		t = System.currentTimeMillis() - t;
+		System.out.println("size time: " + formatDuration(t));
+	}
+
+
+	private static void loadAll()
+	{
+		HashSet<Integer> unique = new HashSet<>();
+		long t = System.currentTimeMillis();
+		try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get())
+		{
+			db.getCollection("people").forEach(doc -> {
+				unique.add(doc.getInt("index"));
+			});
+		}
+		t = System.currentTimeMillis() - t;
+		System.out.println("read all time: " + formatDuration(t));
+
+		System.out.println("total documents: " + formatCount(unique.size()));
 	}
 }

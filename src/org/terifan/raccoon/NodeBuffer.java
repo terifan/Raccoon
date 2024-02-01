@@ -10,12 +10,12 @@ import org.terifan.raccoon.util.Result;
 class NodeBuffer implements Iterable<ArrayMapEntry>
 {
 	private TreeMap<ArrayMapKey, BTreeNode> mNodes;
-	private ArrayMap mMap;
+	private ArrayMap mArrayMap;
 
 
 	public NodeBuffer(ArrayMap aMap)
 	{
-		mMap = aMap;
+		mArrayMap = aMap;
 		mNodes = new TreeMap<>((o1, o2) -> o1.compareTo(o2));
 	}
 
@@ -64,134 +64,134 @@ class NodeBuffer implements Iterable<ArrayMapEntry>
 
 	int getUsedSpace()
 	{
-		return mMap.getUsedSpace();
+		return mArrayMap.getUsedSpace();
 	}
 
 
 	ArrayMapEntry getEntry(int aIndex, ArrayMapEntry aEntry)
 	{
-		return mMap.get(aIndex, aEntry);
+		return mArrayMap.get(aIndex, aEntry);
 	}
 
 
 	boolean getEntry(ArrayMapEntry aEntry)
 	{
-		return mMap.get(aEntry);
+		return mArrayMap.get(aEntry);
 	}
 
 
 	void putEntry(ArrayMapEntry aArrayMapEntry)
 	{
-		mMap.put(aArrayMapEntry, null);
+		mArrayMap.put(aArrayMapEntry, null);
 	}
 
 
 	void putEntry(ArrayMapEntry aArrayMapEntry, Result<ArrayMapEntry> aObject)
 	{
-		mMap.put(aArrayMapEntry, aObject);
+		mArrayMap.put(aArrayMapEntry, aObject);
 	}
 
 
 	void removeEntry(int aIndex, Result<ArrayMapEntry> aObject)
 	{
-		mMap.remove(aIndex, aObject);
+		mArrayMap.remove(aIndex, aObject);
 	}
 
 
 	void removeEntry(ArrayMapKey aArrayMapEntry, Result<ArrayMapEntry> aObject)
 	{
-		mMap.remove(aArrayMapEntry, aObject);
+		mArrayMap.remove(aArrayMapEntry, aObject);
 	}
 
 
 	void insertEntry(ArrayMapEntry aArrayMapEntry)
 	{
-		mMap.insert(aArrayMapEntry);
+		mArrayMap.insert(aArrayMapEntry);
 	}
 
 
 	int getFreeSpace()
 	{
-		return mMap.getFreeSpace();
+		return mArrayMap.getFreeSpace();
 	}
 
 
 	ArrayMapKey getKey(int aIndex)
 	{
-		return mMap.getKey(aIndex);
+		return mArrayMap.getKey(aIndex);
 	}
 
 
 	ArrayMapEntry getFirst()
 	{
-		return mMap.getFirst();
+		return mArrayMap.getFirst();
 	}
 
 
 	ArrayMapEntry removeFirst()
 	{
-		return mMap.removeFirst();
+		return mArrayMap.removeFirst();
 	}
 
 
 	ArrayMapEntry getLast()
 	{
-		return mMap.getLast();
+		return mArrayMap.getLast();
 	}
 
 
 	void clearEntries()
 	{
-		mMap.clear();
+		mArrayMap.clear();
 	}
 
 
 	int size()
 	{
-		return mMap.size();
+		return mArrayMap.size();
 	}
 
 
 	byte[] array()
 	{
-		return mMap.array();
+		return mArrayMap.array();
 	}
 
 
 	int nearestIndex(ArrayMapKey aKey)
 	{
-		return mMap.nearestIndex(aKey);
+		return mArrayMap.nearestIndex(aKey);
 	}
 
 
 	void loadNearestEntry(ArrayMapEntry aNearestEntry)
 	{
-		mMap.loadNearestEntry(aNearestEntry);
+		mArrayMap.loadNearestEntry(aNearestEntry);
 	}
 
 
 	ArrayMap[] split(Integer aCapacity)
 	{
-		return mMap.split(aCapacity);
+		return mArrayMap.split(aCapacity);
 	}
 
 
 	@Override
 	public Iterator<ArrayMapEntry> iterator()
 	{
-		return mMap.iterator();
+		return mArrayMap.iterator();
 	}
 
 
 	@Override
 	public String toString()
 	{
-		return mMap.toString();
+		return mArrayMap.toString();
 	}
 
 
 	String integrityCheck()
 	{
-		return mMap.integrityCheck();
+		return mArrayMap.integrityCheck();
 	}
 }
