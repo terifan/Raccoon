@@ -47,7 +47,10 @@ public class RuntimeDiagnostics
 
 	public static boolean collectStatistics(Operation aOperation, Object aObject)
 	{
-		aOperation.mConsumer.accept(aObject != null ? 1 : 0);
+		if (aObject != null)
+		{
+			aOperation.mConsumer.accept(1);
+		}
 		return true;
 	}
 

@@ -2,13 +2,14 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.document.ObjectId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.terifan.logging.Logger;
-import static org.terifan.raccoon.BTree.CONF;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.BlockPointer;
@@ -35,9 +36,11 @@ public final class RaccoonCollection
 	private final ReadWriteLock mLock;
 
 	private Document mConfiguration;
+	private Supplier<Document> mDocumentSupplier;
+	private Supplier<Object> mKeySupplier;
 	private RaccoonDatabase mDatabase;
 	private HashSet<CommitLock> mCommitLocks;
-	private BTree mImplementation;
+	private BTree mTree;
 	private long mModCount;
 
 
@@ -48,43 +51,83 @@ public final class RaccoonCollection
 
 		mLock = new ReadWriteLock();
 		mCommitLocks = new HashSet<>();
-		mImplementation = new BTree(getBlockAccessor(), aConfiguration.getDocument(CONFIGURATION));
+		mDocumentSupplier = () -> new Document();
+		mKeySupplier = () -> ObjectId.randomId();
+
+		mTree = new BTree(getBlockAccessor(), aConfiguration.getDocument(CONFIGURATION));
 	}
 
 
-	public boolean getAll(Document... aDocuments)
+	/**
+	 * Get many documents from the collection returning a list with those found.
+	 *
+	 * @return those documents matching the criteria provided
+	 */
+	public ArrayList<Document> tryFindMany(Document... aDocuments)
 	{
-		log.i("get all entities {}", aDocuments.length);
-		log.inc();
-
-		try (ReadLock lock = mLock.readLock())
-		{
-			boolean all = true;
-
-			for (Document document : aDocuments)
-			{
-				ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(document, false));
-
-				if (mImplementation.get(entry))
-				{
-					unmarshalDocument(entry, document);
-				}
-				else
-				{
-					all = false;
-				}
-			}
-
-			return all;
-		}
-		finally
-		{
-			log.dec();
-		}
+		return findMany(false, Arrays.asList(aDocuments));
 	}
 
 
-	public <T extends Document> T get(T aDocument)
+	/**
+	 * Get many documents from the collection returning a list with those found.
+	 *
+	 * @return those documents matching the criteria provided
+	 */
+	public ArrayList<Document> tryFindMany(Iterable<Document> aDocuments)
+	{
+		return findMany(false, aDocuments);
+	}
+
+
+	/**
+	 * Atomically find many documents from the collection or throws an exception if any not found.
+	 *
+	 * @return documents matching the criteria provided
+	 */
+	public ArrayList<Document> findMany(Document... aDocuments) throws DocumentNotFoundException
+	{
+		return findMany(true, Arrays.asList(aDocuments));
+	}
+
+
+	/**
+	 * Get a document from the collection or throws an exception if not found.
+	 *
+	 * @param aDocumentOrID either a Document or a valid ID. If the parameter is a Document it will be updated.
+	 */
+//	public Document getOne(Object aDocumentOrID)
+//	{
+//		log.i("get entity {}", aDocumentOrID);
+//		log.inc();
+//
+//		try (ReadLock lock = mLock.readLock())
+//		{
+//			if (!(aDocumentOrID instanceof Document))
+//			{
+//				aDocumentOrID = mDocumentSupplier.get().put("_id", aDocumentOrID);
+//			}
+//
+//			ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey((Document)aDocumentOrID, false));
+//
+//			if (mTree.get(entry))
+//			{
+//				return unmarshalDocument(entry, (Document)aDocumentOrID);
+//			}
+//		}
+//		finally
+//		{
+//			log.dec();
+//		}
+//
+//		throw new DocumentNotFoundException();
+//	}
+
+
+	/**
+	 * Get a document from the collection or throws an exception if not found.
+	 */
+	public <T extends Document> T findOne(T aDocument)
 	{
 		log.i("get entity {}", aDocument);
 		log.inc();
@@ -93,12 +136,12 @@ public final class RaccoonCollection
 		{
 			ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(aDocument, false));
 
-			if (mImplementation.get(entry))
+			if (mTree.get(entry))
 			{
 				return (T)unmarshalDocument(entry, aDocument);
 			}
 
-			return null;
+			throw new DocumentNotFoundException();
 		}
 		finally
 		{
@@ -107,13 +150,39 @@ public final class RaccoonCollection
 	}
 
 
-	public boolean tryGet(Document aDocument)
+	/**
+	 * Get the document from the collection returning if it was found.
+	 *
+	 * @return if a document was found
+	 */
+	public boolean tryFindOne(Document aDocument)
 	{
-		return get(aDocument) != null;
+		log.i("get entity {}", aDocument);
+		log.inc();
+
+		try (ReadLock lock = mLock.readLock())
+		{
+			ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(aDocument, false));
+
+			if (mTree.get(entry))
+			{
+				unmarshalDocument(entry, aDocument);
+				return true;
+			}
+
+			return false;
+		}
+		finally
+		{
+			log.dec();
+		}
 	}
 
 
-	public boolean save(Document aDocument)
+	/**
+	 * Insert or replace a document in this collection returning if it was inserted.
+	 */
+	public boolean saveOne(Document aDocument)
 	{
 		log.i("save {}", aDocument);
 		log.inc();
@@ -130,7 +199,12 @@ public final class RaccoonCollection
 	}
 
 
-	public void saveAll(Document... aDocuments)
+	/**
+	 * Insert or replace many documents in this collection.
+	 *
+	 * @return number of inserted documents
+	 */
+	public int saveMany(Document... aDocuments)
 	{
 		log.i("save all {}", aDocuments.length);
 		log.inc();
@@ -138,10 +212,15 @@ public final class RaccoonCollection
 		try (WriteLock lock = mLock.writeLock())
 		{
 			mModCount++;
+			int inserted = 0;
 			for (Document document : aDocuments)
 			{
-				insertOrUpdate(document, false);
+				if (insertOrUpdate(document, false))
+				{
+					inserted++;
+				}
 			}
+			return inserted;
 		}
 		finally
 		{
@@ -150,7 +229,10 @@ public final class RaccoonCollection
 	}
 
 
-	public boolean insert(Document aDocument)
+	/**
+	 * Atomically insert a document in this collection or throws an exception if the document already exists.
+	 */
+	public void insertOne(Document aDocument)
 	{
 		log.i("insert {}", aDocument);
 		log.inc();
@@ -158,7 +240,7 @@ public final class RaccoonCollection
 		try (WriteLock lock = mLock.writeLock())
 		{
 			mModCount++;
-			return insertOrUpdate(aDocument, true);
+			insertOrUpdate(aDocument, true);
 		}
 		finally
 		{
@@ -167,9 +249,21 @@ public final class RaccoonCollection
 	}
 
 
-	public void insertAll(Document... aDocuments)
+	/**
+	 * Atomically insert many documents in this collection or throws an exception if any document already exists.
+	 */
+	public void insertMany(Document... aDocuments)
 	{
-		log.i("insert all {}", aDocuments.length);
+		insertMany(Arrays.asList(aDocuments));
+	}
+
+
+	/**
+	 * Atomically insert many documents in this collection or throws an exception if any document already exists.
+	 */
+	public void insertMany(Iterable<Document> aDocuments)
+	{
+		log.i("insert many");
 		log.inc();
 
 		try (WriteLock lock = mLock.writeLock())
@@ -187,37 +281,484 @@ public final class RaccoonCollection
 	}
 
 
-	public void createIndex(Document aConfiguration, Document aFields)
+	/**
+	 * Atomically replace one document in this collection or throws an exception if document is missing.
+	 */
+	public void replaceOne(Document aDocument) throws DocumentNotFoundException
 	{
-		log.i("create index");
+		log.i("insert {}", aDocument);
 		log.inc();
 
-		Array id = Array.of(getCollectionId(), ObjectId.randomId());
+		try (WriteLock lock = mLock.writeLock())
+		{
+			mModCount++;
 
-		Document indexConf = new Document()
-			.put("_id", id)
-			.put("configuration", aConfiguration)
-			.put("fields", aFields);
+			ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(aDocument, false));
 
-		mDatabase.getCollection("$indices").save(indexConf);
+			if (!mTree.get(entry))
+			{
+				throw new DocumentNotFoundException();
+			}
 
-		mDatabase.mIndices.put(id.getObjectId(0), id.getObjectId(1), indexConf);
+			insertOrUpdate(aDocument, false);
+		}
+		finally
+		{
+			log.dec();
+		}
+	}
 
-//		try (WriteLock lock = mLock.writeLock())
-//		{
-//			RaccoonCollection collection = mDatabase.getCollection(INDEX_COLLECTION);
-//
-//			collection.find(new Document().put("collection", getCollectionId()));
-//
-//			Document conf = new Document().put("_id", new Document().put("collection", mConfiguration.getObjectId("object")).put("_id", ObjectId.randomId())).put("configuration", aDocument);
-//			collection.save(conf);
-//
-//			System.out.println(conf);
-//		}
-//		finally
-//		{
-//			Log.dec();
-//		}
+
+	/**
+	 * Replace one document in this collection and return if it was replaced.
+	 *
+	 * @return if a document was replaced
+	 */
+	public boolean tryReplaceOne(Document aDocument) throws DocumentNotFoundException
+	{
+		log.i("insert {}", aDocument);
+		log.inc();
+
+		try (WriteLock lock = mLock.writeLock())
+		{
+			mModCount++;
+
+			return !insertOrUpdate(aDocument, false);
+		}
+		finally
+		{
+			log.dec();
+		}
+	}
+
+
+	/**
+	 * Replace many document in this collection and return the number of replaced.
+	 */
+	public int tryReplaceMany(Document... aDocuments) throws DocumentNotFoundException
+	{
+		return tryReplaceMany(Arrays.asList(aDocuments));
+	}
+
+
+	/**
+	 * Replace many document in this collection and return the number of replaced.
+	 */
+	public int tryReplaceMany(Iterable<Document> aDocuments) throws DocumentNotFoundException
+	{
+		log.i("replace many");
+		log.inc();
+
+		try (WriteLock lock = mLock.writeLock())
+		{
+			mModCount++;
+			int count = 0;
+
+			for (Document document : aDocuments)
+			{
+				if (!insertOrUpdate(document, false))
+				{
+					count++;
+				}
+			}
+
+			return count;
+		}
+		finally
+		{
+			log.dec();
+		}
+	}
+
+
+	/**
+	 * Atomically replace documents in this collection or throws an exception if any document missing.
+	 */
+	public void replaceMany(Document... aDocuments) throws DocumentNotFoundException
+	{
+		replaceMany(Arrays.asList(aDocuments));
+	}
+
+
+	/**
+	 * Atomically replace documents in this collection or throws an exception if any document missing.
+	 */
+	public void replaceMany(Iterable<Document> aDocuments) throws DocumentNotFoundException
+	{
+		log.i("replace many");
+		log.inc();
+
+		try (WriteLock lock = mLock.writeLock())
+		{
+			mModCount++;
+
+			for (Document document : aDocuments)
+			{
+				ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(document, false));
+
+				if (!mTree.get(entry))
+				{
+					throw new DocumentNotFoundException();
+				}
+			}
+
+			for (Document document : aDocuments)
+			{
+				insertOrUpdate(document, false);
+			}
+		}
+		finally
+		{
+			log.dec();
+		}
+	}
+
+
+	/**
+	 * Delete one document or throws an exception if not found.
+	 */
+	public void deleteOne(Document aDocument) throws DocumentNotFoundException
+	{
+		deleteImpl(true, Arrays.asList(aDocument));
+	}
+
+
+	/**
+	 * Delete many documents return the number of deleted documents.
+	 */
+	public int tryDeleteMany(Document... aDocument)
+	{
+		return tryDeleteMany(Arrays.asList(aDocument));
+	}
+
+
+	/**
+	 * Delete many documents return the number of deleted documents.
+	 */
+	public int tryDeleteMany(Iterable<Document> aDocuments)
+	{
+		try (WriteLock lock = mLock.writeLock())
+		{
+			mModCount++;
+			int count = 0;
+
+			for (Document key : aDocuments)
+			{
+				ArrayMapEntry prevEntry = mTree.remove(new ArrayMapEntry(getDocumentKey(key, false)));
+
+				if (prevEntry != null)
+				{
+					count++;
+					Document prevDoc = deleteExternal(prevEntry, true);
+
+					if (prevDoc != null)
+					{
+						deleteIndexEntries(prevEntry.getValue());
+					}
+				}
+//				else if (aFailFast)
+//				{
+//					throw new DocumentNotFoundException(((Document)key).get("_id"));
+//				}
+			}
+
+			return count;
+		}
+	}
+
+
+	/**
+	 * Try delete one document and return if it was deleted.
+	 *
+	 * @return if a document was deleted
+	 */
+	public boolean tryDeleteOne(Document aDocument)
+	{
+		return deleteImpl(false, Arrays.asList(aDocument)) != null;
+	}
+
+
+	/**
+	 * Atomically find a document and then delete it.
+	 *
+	 * @return the deleted document
+	 */
+	public Document findOneAndDelete(Document aDocument)
+	{
+		return deleteImpl(false, Arrays.asList(aDocument));
+	}
+
+
+	/**
+	 * Atomically delete many documents or throws an exception if any not found.
+	 */
+	public void deleteMany(Document... aDocuments)
+	{
+		deleteImpl(false, Arrays.asList(aDocuments));
+	}
+
+
+	/**
+	 * Atomically delete many documents or throws an exception if any not found.
+	 */
+	public void deleteMany(Iterable<Document> aDocuments)
+	{
+		deleteImpl(false, aDocuments);
+	}
+
+
+	/**
+	 * Return the number of documents in this collection.
+	 */
+	public long size()
+	{
+		try (ReadLock lock = mLock.readLock())
+		{
+			return mTree.size();
+		}
+	}
+
+
+	/**
+	 * Return all documents in this collection.
+	 */
+	public ArrayList<Document> find()
+	{
+		ArrayList<Document> list = new ArrayList<>();
+
+		try (ReadLock lock = mLock.readLock())
+		{
+			mTree.visit(new BTreeVisitor()
+			{
+				@Override
+				boolean leaf(BTreeLeafNode aNode)
+				{
+					aNode.mMap.forEach(e -> list.add(unmarshalDocument(e, new Document())));
+					return true;
+				}
+			});
+		}
+
+		return list;
+	}
+
+
+	/**
+	 * Visit all documents in this collection.
+	 */
+	public void forEach(Consumer<Document> aAction)
+	{
+		try (ReadLock lock = mLock.readLock())
+		{
+			mTree.visit(new BTreeVisitor()
+			{
+				@Override
+				boolean leaf(BTreeLeafNode aNode)
+				{
+					aNode.mMap.forEach(e -> aAction.accept(unmarshalDocument(e, mDocumentSupplier.get())));
+					return true;
+				}
+			});
+		}
+	}
+
+
+	/**
+	 * Delete all documents in this collection.
+	 */
+	public void deleteAll()
+	{
+		try (WriteLock lock = mLock.writeLock())
+		{
+			mModCount++;
+
+			BTree prev = mTree;
+
+			mTree = new BTree(getBlockAccessor(), mTree.getConfiguration().clone().remove("root"));
+
+			mTree.visit(new BTreeVisitor()
+			{
+				@Override
+				boolean leaf(BTreeLeafNode aNode)
+				{
+					aNode.mMap.forEach(e -> deleteExternal(e, false));
+					prev.freeBlock(aNode.mBlockPointer);
+					return true;
+				}
+
+
+				@Override
+				boolean afterInteriorNode(BTreeInteriorNode aNode)
+				{
+					prev.freeBlock(aNode.mBlockPointer);
+					return true;
+				}
+			});
+
+			for (Document indexConf : mDatabase.mIndices.values(getCollectionId()))
+			{
+				getIndexByConf(indexConf).deleteAll();
+			}
+		}
+	}
+
+
+	void close()
+	{
+		mTree.close();
+		mTree = null;
+	}
+
+
+	boolean isChanged()
+	{
+		return mTree.isChanged();
+	}
+
+
+	long flush()
+	{
+		return mTree.flush();
+	}
+
+
+	void rollback()
+	{
+		mTree.rollback();
+	}
+
+
+	boolean commit()
+	{
+		try (WriteLock lock = mLock.writeLock())
+		{
+			mModCount++;
+
+			if (!mCommitLocks.isEmpty())
+			{
+				StringBuilder sb = new StringBuilder();
+				for (CommitLock cl : mCommitLocks)
+				{
+					sb.append("\nCaused by calling method: " + cl.getOwner());
+				}
+
+				throw new CommitBlockedException("A table cannot be committed while a stream is open." + sb.toString());
+			}
+
+			return mTree.commit();
+		}
+	}
+
+
+	public ArrayList<Document> find(Document aFilter)
+	{
+		log.i("find {}", aFilter);
+		log.inc();
+
+//		System.out.println(aQuery);
+//		System.out.println(mDatabase.mIndices);
+		Document bestIndex = null;
+		int matchingFields = 0;
+		ArrayList<String> queryKeys = aFilter.keySet();
+
+		HashMap<ObjectId, Document> indices = mDatabase.mIndices.get(getCollectionId());
+		if (indices != null)
+		{
+			for (Document conf : indices.values())
+			{
+				ArrayList<String> indexKeys = conf.getDocument("fields").keySet();
+
+				int i = 0;
+				for (; i < Math.min(indexKeys.size(), queryKeys.size()) && indexKeys.get(i).equals(queryKeys.get(i)); i++)
+				{
+				}
+
+				if (i > matchingFields || i == matchingFields && bestIndex != null && indexKeys.size() < conf.getDocument("fields").size())
+				{
+					bestIndex = conf;
+					matchingFields = i;
+				}
+			}
+		}
+
+//		System.out.println(matchingFields+" "+queryKeys.size());
+//		System.out.println(bestIndex);
+		if (bestIndex != null)
+		{
+			System.out.println("INDEX: " + bestIndex);
+
+			return mDatabase.getCollection("index:" + bestIndex.getArray("_id")).findImpl(aFilter);
+		}
+
+		return findImpl(aFilter);
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	public BTree _getImplementation()
+	{
+		return mTree;
+	}
+
+
+	Document getConfiguration()
+	{
+		return mConfiguration;
+	}
+
+
+	BlockAccessor getBlockAccessor()
+	{
+		return new BlockAccessor(mDatabase.getBlockDevice(), true);
+	}
+
+
+	private ObjectId getCollectionId()
+	{
+		return mConfiguration.getObjectId("_id");
+	}
+
+
+	private ArrayMapKey getDocumentKey(Object aDocument, boolean aCreateMissingKey)
+	{
+		if (aDocument instanceof Document v)
+		{
+			Object id = v.get("_id");
+
+			if (id == null)
+			{
+				if (!aCreateMissingKey)
+				{
+					throw new IllegalArgumentException("Document missing _id field.");
+				}
+				id = mKeySupplier.get();
+				v.put("_id", id);
+			}
+
+			return new ArrayMapKey(id);
+		}
+
+		if (aDocument == null)
+		{
+			if (!aCreateMissingKey)
+			{
+				throw new IllegalArgumentException("Null is not a valid _id.");
+			}
+			aDocument = mKeySupplier.get();
+		}
+
+		return new ArrayMapKey(aDocument);
 	}
 
 
@@ -228,7 +769,7 @@ public final class RaccoonCollection
 		if (aInsert)
 		{
 			ArrayMapEntry entry = new ArrayMapEntry(key);
-			if (mImplementation.get(entry))
+			if (mTree.get(entry))
 			{
 				throw new DuplicateKeyException();
 			}
@@ -236,30 +777,17 @@ public final class RaccoonCollection
 
 		ArrayMapEntry entry = new ArrayMapEntry(key, aDocument, TYPE_DOCUMENT);
 
-		if (entry.length() > mImplementation.getConfiguration().getArray(CONF).getInt(BTree.ENTRY_SIZE_LIMIT))
+		if (entry.length() > mTree.getEntrySizeLimit())
 		{
 			RuntimeDiagnostics.collectStatistics(Operation.WRITE_EXT, 1);
 
-			byte[] tmp = aDocument.toByteArray();
-			BlockPointer bp = mDatabase.getBlockAccessor().writeBlock(tmp, 0, tmp.length, BlockType.EXTERNAL, 0, CompressorAlgorithm.LZJB.ordinal());
-			entry.setValue(bp.marshalDocument());
+			BlockPointer bp = mDatabase.getBlockAccessor().writeBlock(aDocument.toByteArray(), BlockType.EXTERNAL, 0, CompressorAlgorithm.LZJB.ordinal());
 
-//			Document header = new Document();
-//
-//			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.WRITE, null))
-//			{
-//				lob.writeAllBytes(aDocument.toByteArray());
-//			}
-//			catch (Exception | Error e)
-//			{
-//				throw new DatabaseException(e);
-//			}
-//
-//			entry.setValue(header);
+			entry.setValue(bp.marshalDocument());
 			entry.setType(TYPE_EXTERNAL);
 		}
 
-		ArrayMapEntry prev = mImplementation.put(entry);
+		ArrayMapEntry prev = mTree.put(entry);
 
 		if (prev != null)
 		{
@@ -288,7 +816,7 @@ public final class RaccoonCollection
 				{
 					indexEntry.put("_ref", aDocument.get("_id"));
 
-					Document existing = getIndexByConf(indexConf).get(new Document().put("_id", values));
+					Document existing = getIndexByConf(indexConf).findOne(new Document().put("_id", values));
 
 					if (existing != null && !aDocument.get("_id").equals(existing.get("_ref")))
 					{
@@ -305,7 +833,7 @@ public final class RaccoonCollection
 					indexEntry.put("_clone", aDocument);
 				}
 
-				getIndexByConf(indexConf).save(indexEntry);
+				getIndexByConf(indexConf).saveOne(indexEntry);
 			}
 		}
 
@@ -313,291 +841,41 @@ public final class RaccoonCollection
 	}
 
 
-	private void generatePermutations(Document aIndexConf, Document aDocument, Array aIndexValues, int aPosition, ArrayList<Array> aResult)
-	{
-		Document confs = aIndexConf.getDocument("fields");
-		if (aPosition == confs.size())
-		{
-			aResult.add(aIndexValues);
-		}
-		else
-		{
-			for (Object value : aDocument.findMany(confs.keySet().get(aPosition)))
-			{
-				Array tmp = aIndexValues.clone();
-				tmp.add(value);
-				generatePermutations(aIndexConf, aDocument, tmp, aPosition + 1, aResult);
-			}
-		}
-	}
-
-
-	public void deleteAll(Document... aDocuments)
+	private Document deleteImpl(boolean aFailFast, Iterable<Document> aDocuments)
 	{
 		try (WriteLock lock = mLock.writeLock())
 		{
 			mModCount++;
+			Document prevDoc = null;
 
-			for (Document document : aDocuments)
+			for (Object key : aDocuments)
 			{
-				ArrayMapEntry prev = mImplementation.remove(new ArrayMapEntry(getDocumentKey(document, false)));
-
-				if (prev == null)
+				if (!(key instanceof Document))
 				{
-					throw new EntryNotFoundException(document.get("_id"));
+					key = new Document().put("_id", key);
 				}
 
-				Document prevDoc = deleteExternal(prev, true);
+				ArrayMapEntry prev = mTree.remove(new ArrayMapEntry(getDocumentKey(key, false)));
 
-				if (prevDoc == null)
+				if (prev != null)
 				{
-					prevDoc = prev.getValue();
+					prevDoc = deleteExternal(prev, true);
+
+					if (prevDoc == null)
+					{
+						prevDoc = prev.getValue();
+					}
+
+					deleteIndexEntries(prevDoc);
 				}
-
-				deleteIndexEntries(prevDoc);
-			}
-		}
-	}
-
-
-	public void delete(Document aDocument)
-	{
-		deleteAll(aDocument);
-	}
-
-
-	private void deleteIndexEntries(Document aPrevDoc)
-	{
-		for (Document indexConf : mDatabase.mIndices.values(getCollectionId()))
-		{
-//			ArrayList<Array> result = new ArrayList<>();
-//			generatePermutations(indexConf, aPrevDoc, new Array(), 0, result);
-//			for (Array values : result)
-//			{
-//			}
-
-			List<Document> list = getIndexByConf(indexConf).listAll();
-			for (Document doc : list)
-			{
-//				if (doc.get("_ref").equals(aPrevDoc.get("_id")))
+				else if (aFailFast)
 				{
-					getIndexByConf(indexConf).delete(doc);
-					break;
+					throw new DocumentNotFoundException(((Document)key).get("_id"));
 				}
 			}
+
+			return prevDoc;
 		}
-	}
-
-
-	public RaccoonCollection getIndexByConf(Document aIndexConf)
-	{
-		return mDatabase.getCollection("index:" + aIndexConf.getArray("_id"));
-	}
-
-
-	public long size()
-	{
-		try (ReadLock lock = mLock.readLock())
-		{
-			return mImplementation.size();
-		}
-	}
-
-
-	public List<Document> listAll()
-	{
-		return listAll(() -> new Document());
-	}
-
-
-	public <T extends Document> List<T> listAll(Supplier<T> aDocumentSupplier)
-	{
-		ArrayList<T> list = new ArrayList<>();
-
-		try (ReadLock lock = mLock.readLock())
-		{
-			mModCount++;
-
-			mImplementation.visit(new BTreeVisitor()
-			{
-				@Override
-				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
-				{
-					aNode.mMap.forEach(e -> list.add((T)unmarshalDocument(e, aDocumentSupplier.get())));
-					return true;
-				}
-			});
-		}
-
-		return list;
-	}
-
-
-	public void forEach(Consumer<Document> aAction)
-	{
-		try (ReadLock lock = mLock.readLock())
-		{
-			mModCount++;
-
-			mImplementation.visit(new BTreeVisitor()
-			{
-				@Override
-				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
-				{
-					aNode.mMap.forEach(e -> aAction.accept(unmarshalDocument(e, new Document())));
-					return true;
-				}
-			});
-		}
-	}
-
-
-//	public Stream<Document> stream()
-//	{
-//		long modCount = mModCount;
-//
-//		ReadLock lock = mLock.readLock();
-//
-//		Stream<Document> tmp = StreamSupport.stream(new AbstractSpliterator<Document>(Long.MAX_VALUE, Spliterator.IMMUTABLE | Spliterator.NONNULL)
-//		{
-//			private DocumentIterator iterator = new DocumentIterator(RaccoonCollection.this, new Query(new Document()));
-//
-//			@Override
-//			public boolean tryAdvance(Consumer<? super Document> aConsumer)
-//			{
-//				if (mModCount != modCount)
-//				{
-//					lock.close();
-//					throw new IllegalStateException("concurrent modification");
-//				}
-//
-//				if (!iterator.hasNext())
-//				{
-//					lock.close();
-//					return false;
-//				}
-//				aConsumer.accept(iterator.next());
-//				return true;
-//			}
-//		}, false);
-//
-//		return tmp;
-//	}
-
-
-	public void clear()
-	{
-		try (WriteLock lock = mLock.writeLock())
-		{
-			mModCount++;
-
-			BTree prev = mImplementation;
-
-			mImplementation = new BTree(getBlockAccessor(), mImplementation.getConfiguration().clone().remove("root"));
-
-			mImplementation.visit(new BTreeVisitor()
-			{
-				@Override
-				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
-				{
-					aNode.mMap.forEach(e -> deleteExternal(e, false));
-					prev.freeBlock(aNode.mBlockPointer);
-					return true;
-				}
-
-
-				@Override
-				boolean afterInteriorNode(BTree aImplementation, BTreeInteriorNode aNode)
-				{
-					prev.freeBlock(aNode.mBlockPointer);
-					return true;
-				}
-			});
-
-			for (Document indexConf : mDatabase.mIndices.values(getCollectionId()))
-			{
-				getIndexByConf(indexConf).clear();
-			}
-		}
-	}
-
-
-	protected ObjectId getCollectionId()
-	{
-		return mConfiguration.getObjectId("_id");
-	}
-
-
-	void close()
-	{
-		mImplementation.close();
-		mImplementation = null;
-	}
-
-
-	boolean isModified()
-	{
-		return mImplementation.isChanged();
-	}
-
-
-	long flush()
-	{
-		return mImplementation.flush();
-	}
-
-
-	boolean commit()
-	{
-		try (WriteLock lock = mLock.writeLock())
-		{
-			mModCount++;
-
-			if (!mCommitLocks.isEmpty())
-			{
-				StringBuilder sb = new StringBuilder();
-				for (CommitLock cl : mCommitLocks)
-				{
-					sb.append("\nCaused by calling method: " + cl.getOwner());
-				}
-
-				throw new CommitBlockedException("A table cannot be committed while a stream is open." + sb.toString());
-			}
-
-			return mImplementation.commit();
-		}
-	}
-
-
-	void rollback()
-	{
-		mImplementation.rollback();
-	}
-
-
-	BlockAccessor getBlockAccessor()
-	{
-		return new BlockAccessor(mDatabase.getBlockDevice(), true);
-	}
-
-
-	private ArrayMapKey getDocumentKey(Document aDocument, boolean aCreateMissingKey)
-	{
-		Object id = aDocument.get("_id");
-
-		if (id == null)
-		{
-			if (!aCreateMissingKey)
-			{
-				throw new IllegalStateException("_id field not provided in Document");
-			}
-
-			id = ObjectId.randomId();
-			aDocument.put("_id", id);
-			return new ArrayMapKey(id);
-		}
-
-		return new ArrayMapKey(id);
 	}
 
 
@@ -610,50 +888,23 @@ public final class RaccoonCollection
 			Document header = aEntry.getValue();
 			BlockPointer bp = new BlockPointer().unmarshalDocument(header);
 
-//			try
-//			{
-				if (aRestoreOldValue)
-				{
-					RuntimeDiagnostics.collectStatistics(Operation.READ_EXT, 1);
+			if (aRestoreOldValue)
+			{
+				RuntimeDiagnostics.collectStatistics(Operation.READ_EXT, 1);
 
-					prev = new Document().fromByteArray(mDatabase.getBlockAccessor().readBlock(bp));
-//					try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, null))
-//					{
-//						prev = new Document().fromByteArray(lob.readAllBytes());
-//					}
-				}
+				prev = mDocumentSupplier.get().fromByteArray(mDatabase.getBlockAccessor().readBlock(bp));
+			}
 
-				RuntimeDiagnostics.collectStatistics(Operation.FREE_EXT, 1);
+			RuntimeDiagnostics.collectStatistics(Operation.FREE_EXT, 1);
 
-				mDatabase.getBlockAccessor().freeBlock(bp);
-
-//				try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.REPLACE, null))
-//				{
-//				}
-//			}
-//			catch (IOException e)
-//			{
-//				throw new DatabaseException(e);
-//			}
+			mDatabase.getBlockAccessor().freeBlock(bp);
 		}
 
 		return prev;
 	}
 
 
-	public BTree _getImplementation()
-	{
-		return mImplementation;
-	}
-
-
-	Document getConfiguration()
-	{
-		return mConfiguration;
-	}
-
-
-	Document unmarshalDocument(ArrayMapEntry aEntry, Document aDestination)
+	private Document unmarshalDocument(ArrayMapEntry aEntry, Document aDestination)
 	{
 		if (aEntry.getType() == TYPE_EXTERNAL)
 		{
@@ -662,85 +913,33 @@ public final class RaccoonCollection
 			Document header = aEntry.getValue();
 
 			BlockPointer bp = new BlockPointer().unmarshalDocument(header);
-			return aDestination.putAll(new Document().fromByteArray(mDatabase.getBlockAccessor().readBlock(bp)));
 
-//			try (LobByteChannel lob = new LobByteChannel(mDatabase.getBlockAccessor(), header, LobOpenOption.READ, null))
-//			{
-//				return aDestination.putAll(new Document().fromByteArray(lob.readAllBytes()));
-//			}
-//			catch (IOException e)
-//			{
-//				throw new DatabaseException(e);
-//			}
+			return aDestination.putAll(new Document().fromByteArray(mDatabase.getBlockAccessor().readBlock(bp)));
 		}
 
 		return aDestination.putAll(aEntry.getValue());
 	}
 
 
-	public List<Document> find(Document aQuery)
-	{
-		log.i("find {}", aQuery);
-		log.inc();
-
-//		System.out.println(aQuery);
-//		System.out.println(mDatabase.mIndices);
-		Document bestIndex = null;
-		int matchingFields = 0;
-		ArrayList<String> queryKeys = aQuery.keySet();
-
-		HashMap<ObjectId, Document> indices = mDatabase.mIndices.get(getCollectionId());
-		if (indices != null)
-		{
-			for (Document conf : indices.values())
-			{
-				ArrayList<String> indexKeys = conf.getDocument("fields").keySet();
-
-				int i = 0;
-				for (; i < Math.min(indexKeys.size(), queryKeys.size()) && indexKeys.get(i).equals(queryKeys.get(i)); i++)
-				{
-				}
-
-				if (i > matchingFields || i == matchingFields && bestIndex != null && indexKeys.size() < conf.getDocument("fields").size())
-				{
-					bestIndex = conf;
-					matchingFields = i;
-				}
-			}
-		}
-
-//		System.out.println(matchingFields+" "+queryKeys.size());
-//		System.out.println(bestIndex);
-		if (bestIndex != null)
-		{
-			System.out.println("INDEX: " + bestIndex);
-
-			return mDatabase.getCollection("index:" + bestIndex.getArray("_id")).findImpl(aQuery);
-		}
-
-		return findImpl(aQuery);
-	}
-
-
-	protected List<Document> findImpl(Document aQuery)
+	ArrayList<Document> findImpl(Document aFilter)
 	{
 		try (ReadLock lock = mLock.readLock())
 		{
 			ArrayList<Document> list = new ArrayList<>();
 
-			mImplementation.visit(new BTreeVisitor()
+			mTree.visit(new BTreeVisitor()
 			{
 				@Override
-				boolean beforeInteriorNode(BTree aImplementation, BTreeInteriorNode aNode, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
+				boolean beforeInteriorNode(BTreeInteriorNode aNode, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
 				{
-					return matchKey(aLowestKey, aHighestKey, aQuery);
+					return matchKey(aLowestKey, aHighestKey, aFilter);
 				}
 
 
 				@Override
-				boolean beforeLeafNode(BTree aImplementation, BTreeLeafNode aNode)
+				boolean beforeLeafNode(BTreeLeafNode aNode)
 				{
-					boolean b = matchKey(aNode.mMap.getFirst().getKey(), aNode.mMap.getLast().getKey(), aQuery);
+					boolean b = matchKey(aNode.mMap.getFirst().getKey(), aNode.mMap.getLast().getKey(), aFilter);
 
 //					System.out.println("#" + aNode.mMap.getFirst().getKey()+", "+aNode.mMap.getLast().getKey() +" " + b+ " "+aQuery.getArray("_id"));
 					return b;
@@ -748,15 +947,15 @@ public final class RaccoonCollection
 
 
 				@Override
-				boolean leaf(BTree aImplementation, BTreeLeafNode aNode)
+				boolean leaf(BTreeLeafNode aNode)
 				{
 //					System.out.println(aNode);
 					for (int i = 0; i < aNode.mMap.size(); i++)
 					{
 						ArrayMapEntry entry = aNode.mMap.get(i, new ArrayMapEntry());
-						Document doc = unmarshalDocument(entry, new Document());
+						Document doc = unmarshalDocument(entry, mDocumentSupplier.get());
 
-						if (matchKey(doc, aQuery))
+						if (matchKey(doc, aFilter))
 						{
 							list.add(doc);
 						}
@@ -766,6 +965,62 @@ public final class RaccoonCollection
 			});
 
 			return list;
+		}
+		finally
+		{
+			log.dec();
+		}
+	}
+
+
+	private ArrayList<Document> findMany(boolean aFailFast, Iterable<Document> aDocuments)
+	{
+		log.i("get many");
+		log.inc();
+
+		ArrayList<Document> result = new ArrayList<>();
+
+		try (ReadLock lock = mLock.readLock())
+		{
+			for (Document key : aDocuments)
+			{
+				Document doc = new Document();
+				if (key instanceof Document v)
+				{
+					doc.put("_id", v.get("_id"));
+				}
+				else
+				{
+					doc.put("_id", key);
+				}
+
+				ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(doc, false));
+
+				if (mTree.get(entry))
+				{
+					result.add(unmarshalDocument(entry, doc));
+				}
+				else
+				{
+					if (aFailFast)
+					{
+						throw new DocumentNotFoundException();
+					}
+					result.add(null);
+				}
+			}
+
+//			for (Document instance : aDocumentOrID)
+//			{
+//				if (aDocumentOrID.get(i) instanceof Document v)
+//				{
+//					v.putAll(result.get(i));
+//					result.set(i, v);
+//				}
+//			}
+//			result.removeIf(e -> e == null);
+
+			return result;
 		}
 		finally
 		{
@@ -844,5 +1099,130 @@ public final class RaccoonCollection
 		}
 
 		return true;
+	}
+
+
+	public ScanResult _getStats()
+	{
+		ScanResult scanResult = new ScanResult();
+		mTree.scan(scanResult);
+		System.out.println(scanResult);
+
+		return scanResult;
+//		return Document.of("depth:0, nodes:0, leafs:0, documents:0, externals:0, logicalSize:0, physicalSize:0, nodeFill: 0, leafFill: 0, nodeDegree: 0, pendingWrites:0, cacheSize:0");
+	}
+
+
+	/**
+	 * Set the supplier of new Document instances. This allow custom implementations of Document to be created. Default <code>new Document()</code>.
+	 */
+	public RaccoonCollection withDocumentSupplier(Supplier<Document> aSupplier)
+	{
+		mDocumentSupplier = aSupplier;
+		return this;
+	}
+
+
+	/**
+	 * Set the supplier of new document ID values. Default is <code>ObjectId.randomId()</code>.
+	 */
+	public RaccoonCollection withIdSupplier(Supplier<Object> aSupplier)
+	{
+		mKeySupplier = aSupplier;
+		return this;
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	public void createIndex(Document aConfiguration, Document aFields)
+	{
+		log.i("create index");
+		log.inc();
+
+		Array id = Array.of(getCollectionId(), mKeySupplier.get());
+
+		Document indexConf = new Document()
+			.put("_id", id)
+			.put("configuration", aConfiguration)
+			.put("fields", aFields);
+
+		mDatabase.getCollection("$indices").saveOne(indexConf);
+
+		mDatabase.mIndices.put(id.getObjectId(0), id.getObjectId(1), indexConf);
+
+//		try (WriteLock lock = mLock.writeLock())
+//		{
+//			RaccoonCollection collection = mDatabase.getCollection(INDEX_COLLECTION);
+//
+//			collection.find(new Document().put("collection", getCollectionId()));
+//
+//			Document conf = new Document().put("_id", new Document().put("collection", mConfiguration.getObjectId("object")).put("_id", mIdSupplier.get())).put("configuration", aDocument);
+//			collection.save(conf);
+//
+//			System.out.println(conf);
+//		}
+//		finally
+//		{
+//			Log.dec();
+//		}
+	}
+
+
+	private void generatePermutations(Document aIndexConf, Document aDocument, Array aIndexValues, int aPosition, ArrayList<Array> aResult)
+	{
+		Document confs = aIndexConf.getDocument("fields");
+		if (aPosition == confs.size())
+		{
+			aResult.add(aIndexValues);
+		}
+		else
+		{
+			for (Object value : aDocument.findMany(confs.keySet().get(aPosition)))
+			{
+				Array tmp = aIndexValues.clone();
+				tmp.add(value);
+				generatePermutations(aIndexConf, aDocument, tmp, aPosition + 1, aResult);
+			}
+		}
+	}
+
+
+	private void deleteIndexEntries(Document aPrevDoc)
+	{
+		for (Document indexConf : mDatabase.mIndices.values(getCollectionId()))
+		{
+//			ArrayList<Array> result = new ArrayList<>();
+//			generatePermutations(indexConf, aPrevDoc, new Array(), 0, result);
+//			for (Array values : result)
+//			{
+//			}
+
+			List<Document> list = getIndexByConf(indexConf).find();
+			for (Document doc : list)
+			{
+//				if (doc.get("_ref").equals(aPrevDoc.get("_id")))
+				{
+					getIndexByConf(indexConf).findOneAndDelete(doc);
+					break;
+				}
+			}
+		}
+	}
+
+
+	private RaccoonCollection getIndexByConf(Document aIndexConf)
+	{
+		return mDatabase.getCollection("index:" + aIndexConf.getArray("_id"));
 	}
 }

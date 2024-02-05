@@ -21,7 +21,7 @@ public class Test4
 				{
 					for (int j = 0; j < 5; j++)
 					{
-						db.getCollection("data").save(new Document().put("_id", Array.of(i, j)).put("text", i + "," + j + ":xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"));
+						db.getCollection("data").saveOne(new Document().put("_id", Array.of(i, j)).put("text", i + "," + j + ":xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"));
 					}
 				}
 
@@ -38,7 +38,7 @@ public class Test4
 
 //				_Tools.showTree(db.getCollection("data")._getImplementation());
 
-				Document x = db.getCollection("data").get(new Document().put("_id", Array.of(20, 2)));
+				Document x = db.getCollection("data").findOne(new Document().put("_id", Array.of(20, 2)));
 				System.out.println(x);
 
 				List<Document> list = db.getCollection("data").find(Document.of("_id:[{$gte:20,$lt:30},{$exists:true}]"));

@@ -1,5 +1,6 @@
 package test_raccoon;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
@@ -7,10 +8,11 @@ import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonBuilder;
+import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import static org.terifan.raccoon.blockdevice.util.ValueFormatter.formatDuration;
 
 
-public class TestPerformance
+public class TestManyUpdates
 {
 	private final static Random rnd = new Random(1);
 
@@ -22,7 +24,7 @@ public class TestPerformance
 			String labelPattern = "%-15s ";
 			String durationPattern = "%9s";
 
-			int N = 1000000;
+			int N = 1000;
 			int M = 10;
 
 			System.out.println(N + " x " + M);

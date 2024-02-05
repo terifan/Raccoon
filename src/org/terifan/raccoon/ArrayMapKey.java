@@ -81,7 +81,9 @@ public class ArrayMapKey
 	@Override
 	public String toString()
 	{
-		return get().toString();
+		Object value = get();
+
+		return value == null ? "null" : value.getClass().getSimpleName() + ": \"" + value + "\"";
 	}
 
 

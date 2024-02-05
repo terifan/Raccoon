@@ -165,7 +165,7 @@ public class AppData
 		initialize();
 
 		mCache.put(aDocument.get("_id"), aDocument);
-		mDatabase.getCollection("ps").save(aDocument);
+		mDatabase.getCollection("ps").saveOne(aDocument);
 	}
 
 
@@ -182,7 +182,7 @@ public class AppData
 			return doc;
 		}
 
-		if (mDatabase.getCollection("ps").tryGet(aDocument))
+		if (mDatabase.getCollection("ps").tryFindOne(aDocument))
 		{
 			mCache.put(key, aDocument.clone());
 		}
@@ -198,7 +198,7 @@ public class AppData
 
 		Object key = aDocument.get("_id");
 		mCache.remove(key);
-		mDatabase.getCollection("ps").delete(aDocument);
+		mDatabase.getCollection("ps").deleteOne(aDocument);
 	}
 
 

@@ -21,24 +21,22 @@ public class RaccoonDirectoryNGTest
 
 		MemoryBlockStorage blockDevice = new MemoryBlockStorage(512);
 
-		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE, null))
+		try (RaccoonDatabase db = new RaccoonBuilder().device(blockDevice).get(DatabaseOpenOption.CREATE))
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
 			try (LobByteChannel lob = dir.open(id, LobOpenOption.CREATE))
 			{
 				lob.writeAllBytes(output);
-//				lob.getMetadata().put("test", "abc");
+				lob.getMetadata().put("test", "abc");
 			}
-
-			db.commit();
 		}
 
-		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, null))
+		try (RaccoonDatabase db = new RaccoonBuilder().device(blockDevice).get())
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
 			try (LobByteChannel lob = dir.open(id, LobOpenOption.READ))
 			{
-//				System.out.println(lob.getMetadata());
+				System.out.println(lob.getMetadata());
 				byte[] input = lob.readAllBytes();
 				assertEquals(input, output);
 			}
@@ -46,8 +44,6 @@ public class RaccoonDirectoryNGTest
 			dir.delete(id);
 
 			System.out.println(dir.list());
-
-			db.commit();
 		}
 	}
 

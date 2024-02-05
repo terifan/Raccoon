@@ -13,9 +13,9 @@ public class ArrayMapKeyNGTest
 		ArrayMapKey k1 = new ArrayMapKey(1L);
 		ArrayMapKey k2 = new ArrayMapKey("key");
 		ArrayMapKey k3 = new ArrayMapKey(UUID.fromString("31e18b3e-0f90-4f24-80a0-fff857fbdbf8"));
-		assertEquals(k1.toString(), "1");
-		assertEquals(k2.toString(), "key");
-		assertEquals(k3.toString(), "31e18b3e-0f90-4f24-80a0-fff857fbdbf8");
+		assertEquals(k1.get(), 1L);
+		assertEquals(k2.get(), "key");
+		assertEquals(k3.get().toString(), "31e18b3e-0f90-4f24-80a0-fff857fbdbf8");
 	}
 
 

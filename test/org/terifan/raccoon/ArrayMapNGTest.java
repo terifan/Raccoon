@@ -315,7 +315,12 @@ public class ArrayMapNGTest
 		map.put(new ArrayMapEntry(new ArrayMapKey("bbb"), value, (byte)77), null);
 		map.put(new ArrayMapEntry(new ArrayMapKey("ddd"), value, (byte)77), null);
 
-		assertEquals(map.toString(), "[\"aaaaa\",\"bbb\",\"c\",\"dd\",\"ddd\",\"eeee\"]");
+		assertEquals(map.getKey(0).get(), "aaaaa");
+		assertEquals(map.getKey(1).get(), "bbb");
+		assertEquals(map.getKey(2).get(), "c");
+		assertEquals(map.getKey(3).get(), "dd");
+		assertEquals(map.getKey(4).get(), "ddd");
+		assertEquals(map.getKey(5).get(), "eeee");
 	}
 
 
