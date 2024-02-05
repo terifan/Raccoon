@@ -21,7 +21,7 @@ public class TestLobVSExternalEntry
 	{
 		try
 		{
-			RaccoonBuilder builder = new RaccoonBuilder().path("d:\\dev\\rdb_pictures\\test.rdb").compressor("none");
+			RaccoonBuilder builder = new RaccoonBuilder().device("d:\\dev\\rdb_pictures\\test.rdb").compressor("none");
 
 			try (RaccoonDatabase db = builder.get(DatabaseOpenOption.REPLACE))
 			{
@@ -31,7 +31,7 @@ public class TestLobVSExternalEntry
 				for (File file : files)
 				{
 					byte[] imageData = Files.readAllBytes(file.toPath());
-					db.getCollection("pics-col").save(new Document().put("data", imageData).put("name", file.getName()));
+					db.getCollection("pics-col").saveOne(new Document().put("data", imageData).put("name", file.getName()));
 				}
 				db.commit();
 				long col1 = System.currentTimeMillis();

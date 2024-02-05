@@ -22,7 +22,7 @@ public class Test3
 			{
 				for (String s : _WordLists.list26)
 				{
-					db.getCollection("words").save(new Document().put("word", s));
+					db.getCollection("words").saveOne(new Document().put("word", s));
 				}
 
 				db.commit();
@@ -34,14 +34,14 @@ public class Test3
 			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
-				db.getCollection("words").save(new Document().put("word", "test"));
+				db.getCollection("words").saveOne(new Document().put("word", "test"));
 				db.commit();
 			}
 
 			try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, ac))
 //			try (RaccoonDatabase db = new RaccoonDatabase(new File("d:\\test.rdb"), DatabaseOpenOption.OPEN, ac))
 			{
-				db.getCollection("words").listAll().forEach(e -> System.out.println(e));
+				db.getCollection("words").find().forEach(e -> System.out.println(e));
 
 //				showTree(db.getCollection("words").getImplementation());
 				db.commit();

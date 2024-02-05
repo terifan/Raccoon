@@ -84,6 +84,8 @@ public class BTreeInteriorNode extends BTreeNode
 		BTreeNode leftChild = offset == 0 ? null : getNode(offset - 1);
 		BTreeNode rghtChild = offset + 1 == size() ? null : getNode(offset + 1);
 
+		assert ((curntChld == null || curntChld instanceof BTreeInteriorNode) && (leftChild == null || leftChild instanceof BTreeInteriorNode) && (rghtChild == null || rghtChild instanceof BTreeInteriorNode)) || ((curntChld == null || curntChld instanceof BTreeLeafNode) && (leftChild == null || leftChild instanceof BTreeLeafNode) && (rghtChild == null || rghtChild instanceof BTreeLeafNode));
+
 		int keyLimit = mLevel == 1 ? 0 : 1;
 		int sizeLimit = mLevel == 1 ? mTree.getLeafSize() : mTree.getNodeSize();
 
@@ -130,8 +132,7 @@ public class BTreeInteriorNode extends BTreeNode
 		}
 
 		assert assertValidCache() == null : assertValidCache();
-		assert mChildNodes.getEntry(0, new ArrayMapEntry()).getKey().size() == 0 : "First key expected to be empty: " + mChildNodes.toString();
-		assert size() >= 2;
+		assert mChildNodes.getEntry(0, new ArrayMapEntry()).getKey().get().toString().length() == 0 : "First key expected to be empty: " + mChildNodes.toString();
 
 		return result;
 	}
@@ -195,7 +196,7 @@ public class BTreeInteriorNode extends BTreeNode
 		boolean a = aLeftChild != null;
 		boolean b = aRghtChild != null;
 
-		if (aLeftChild instanceof BTreeInteriorNode)
+		if (aCurntChld instanceof BTreeInteriorNode)
 		{
 			if (a)
 			{
@@ -442,10 +443,6 @@ public class BTreeInteriorNode extends BTreeNode
 		}
 
 		aTo.mModified = true;
-
-		assert size() >= 2;
-		assert aFrom.size() >= 2;
-		assert aTo.size() >= 2;
 	}
 
 
@@ -474,7 +471,7 @@ public class BTreeInteriorNode extends BTreeNode
 	{
 		ArrayMapEntry firstEntry = aNode.mChildNodes.getEntry(0, new ArrayMapEntry());
 
-		assert firstEntry.getKey().size() == 0;
+		assert firstEntry.getKey().get().toString().length() == 0 : firstEntry.getKey();
 
 		BTreeNode firstNode = aNode.getNode(firstEntry);
 

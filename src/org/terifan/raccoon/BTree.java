@@ -275,7 +275,7 @@ public class BTree implements AutoCloseable
 
 	protected BlockPointer writeBlock(byte[] aContent, int aLevel, int aBlockType)
 	{
-		return mBlockAccessor.writeBlock(aContent, 0, aContent.length, aBlockType, aLevel, aLevel == 0 ? mCompressorLeafBlocks : mCompressorInteriorBlocks);
+		return mBlockAccessor.writeBlock(aContent, aBlockType, aLevel, aLevel == 0 ? mCompressorLeafBlocks : mCompressorInteriorBlocks);
 	}
 
 

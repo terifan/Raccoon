@@ -30,7 +30,7 @@ public class TestSimple
 			{
 				for (int i = 0; i < 10_000; i++)
 				{
-					db.getCollection("numbers").save(Document.of("_id:" + Array.of(i/100, i%100, "-".repeat(100))));
+					db.getCollection("numbers").saveOne(Document.of("_id:" + Array.of(i/100, i%100, "-".repeat(100))));
 				}
 
 				System.out.println(db.listCollectionNames());
@@ -133,7 +133,7 @@ public class TestSimple
 //				db.createIndex("peopleRatings", "people", false, "details/ratings/*");
 //				db.createIndex("peopleLanguage", "people", false, "details/language/*");
 
-				db.getCollection("people").saveAll(
+				db.getCollection("people").saveMany(
 					Document.of("firstName:adam,lastName:irwing,details:{language:[en,fr],ratings:[1,2]}"),
 					Document.of("firstName:eve,lastName:king,details:{language:[en],ratings:[1,3]}"),
 					Document.of("firstName:steve,lastName:king,details:{language:[kr],ratings:[1,2,3,4]},_id:7"),
@@ -144,7 +144,7 @@ public class TestSimple
 
 				byte[] bytes = Files.readAllBytes(Paths.get("d:\\pictures\\62zqkw9mqo8a1.jpg"));
 
-				db.getCollection("files").save(new Document().put("_id", 1).put("content", bytes));
+				db.getCollection("files").saveOne(new Document().put("_id", 1).put("content", bytes));
 
 				db.commit();
 			}
@@ -153,15 +153,15 @@ public class TestSimple
 			{
 				System.out.println(db.listCollectionNames());
 
-				db.getCollection("people").saveAll(Document.of("firstName:gregor,lastName:king,details:{language:[en,ru],ratings:[1]}"));
-				db.getCollection("people").deleteAll(Document.of("_id:7"));
-				db.getCollection("people").saveAll(Document.of("_id:superuser,firstName:anne,lastName:black,details:{ratings:[1,2,4]}"));
+				db.getCollection("people").saveMany(Document.of("firstName:gregor,lastName:king,details:{language:[en,ru],ratings:[1]}"));
+				db.getCollection("people").deleteMany(Document.of("_id:7"));
+				db.getCollection("people").saveMany(Document.of("_id:superuser,firstName:anne,lastName:black,details:{ratings:[1,2,4]}"));
 
 				System.out.println("-".repeat(100));
 				System.out.println("files");
 				db.getCollection("files").forEach(System.out::println);
 				System.out.println("-".repeat(100));
-				System.out.println(db.getCollection("files").get(new Document().put("_id", 1)).getBinary("content").length);
+				System.out.println(db.getCollection("files").findOne(new Document().put("_id", 1)).getBinary("content").length);
 				System.out.println("-".repeat(100));
 				System.out.println("people");
 				db.getCollection("people").forEach(System.out::println);

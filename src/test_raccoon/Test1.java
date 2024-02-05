@@ -30,7 +30,7 @@ public class Test1
 					for (int j = 0; j < 10; j++,z++)
 					{
 //						collection.save(new Document().put("_id", z).putString("name", "olle-"+i+"-"+j));
-						collection.save(new Document().put("_id", "olle-"+i+"-"+j));
+						collection.saveOne(new Document().put("_id", "olle-"+i+"-"+j));
 					}
 				}
 
@@ -62,7 +62,7 @@ public class Test1
 //
 //				System.out.println(db.getCollection("people").size());
 
-				db.getCollection("people").listAll().forEach(e -> System.out.println(e));
+				db.getCollection("people").find().forEach(e -> System.out.println(e));
 			}
 		}
 		catch (Exception e)

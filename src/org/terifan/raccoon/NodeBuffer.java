@@ -38,6 +38,34 @@ class NodeBuffer implements Iterable<ArrayMapEntry>
 	}
 
 
+	void removeX(ArrayMapKey aKey)
+	{
+		mNodes.remove(aKey);
+		mArrayMap.remove(aKey, null);
+	}
+
+
+	void removeX(int aIndex)
+	{
+		ArrayMapEntry temp = new ArrayMapEntry();
+		getEntry(aIndex, temp);
+		mNodes.remove(temp.getKey());
+		mArrayMap.remove(temp.getKey(), null);
+	}
+
+
+	void removeEntry(int aIndex, Result<ArrayMapEntry> aObject)
+	{
+		mArrayMap.remove(aIndex, aObject);
+	}
+
+
+	void removeEntry(ArrayMapKey aArrayMapEntry, Result<ArrayMapEntry> aObject)
+	{
+		mArrayMap.remove(aArrayMapEntry, aObject);
+	}
+
+
 	void clear()
 	{
 		mNodes.clear();
@@ -86,24 +114,6 @@ class NodeBuffer implements Iterable<ArrayMapEntry>
 	}
 
 
-	void putEntry(ArrayMapEntry aArrayMapEntry, Result<ArrayMapEntry> aObject)
-	{
-		mArrayMap.put(aArrayMapEntry, aObject);
-	}
-
-
-	void removeEntry(int aIndex, Result<ArrayMapEntry> aObject)
-	{
-		mArrayMap.remove(aIndex, aObject);
-	}
-
-
-	void removeEntry(ArrayMapKey aArrayMapEntry, Result<ArrayMapEntry> aObject)
-	{
-		mArrayMap.remove(aArrayMapEntry, aObject);
-	}
-
-
 	void insertEntry(ArrayMapEntry aArrayMapEntry)
 	{
 		mArrayMap.insert(aArrayMapEntry);
@@ -131,6 +141,15 @@ class NodeBuffer implements Iterable<ArrayMapEntry>
 	ArrayMapEntry removeFirst()
 	{
 		return mArrayMap.removeFirst();
+	}
+
+
+	BTreeNode removeFirstX()
+	{
+		Entry<ArrayMapKey, BTreeNode> tmp = mNodes.firstEntry();
+		mArrayMap.removeFirst();
+		mNodes.remove(tmp.getKey());
+		return tmp.getValue();
 	}
 
 

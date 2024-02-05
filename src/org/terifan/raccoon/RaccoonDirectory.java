@@ -58,12 +58,12 @@ public class RaccoonDirectory<K>
 	{
 		Document entry = new Document().put("_id", aId);
 
-		if (!mCollection.tryGet(entry) && aLobOpenOption == LobOpenOption.READ)
+		if (!mCollection.tryFindOne(entry) && aLobOpenOption == LobOpenOption.READ)
 		{
 			return null;
 		}
 
-		return new LobByteChannel(mCollection.getBlockAccessor(), entry, aLobOpenOption, aOptions).setCloseAction(ch -> mCollection.save(entry));
+		return new LobByteChannel(mCollection.getBlockAccessor(), entry, aLobOpenOption, aOptions).setCloseAction(ch -> mCollection.saveOne(entry));
 	}
 
 
@@ -71,7 +71,7 @@ public class RaccoonDirectory<K>
 	{
 		Document entry = new Document().put("_id", aId);
 
-		if (!mCollection.tryGet(entry))
+		if (!mCollection.tryFindOne(entry))
 		{
 			throw new FileNotFoundException(aId.toString());
 		}
@@ -82,7 +82,7 @@ public class RaccoonDirectory<K>
 			lob.delete();
 		}
 
-		mCollection.delete(entry);
+		mCollection.deleteOne(entry);
 	}
 
 
@@ -130,13 +130,13 @@ public class RaccoonDirectory<K>
 	public void forEach(LobConsumer aConsumer) throws IOException
 	{
 //		mCollection.listAll().forEach(e -> aConsumer.accept(e.get("_id"), e.getDocument(LobByteChannel.IX_METADATA)));
-		mCollection.listAll().forEach(e -> aConsumer.accept(e.get("_id"), e.getDocument("7")));
+		mCollection.find().forEach(e -> aConsumer.accept(e.get("_id"), e.getDocument("7")));
 	}
 
 
 	public List<ObjectId> list() throws IOException
 	{
-		return (List<ObjectId>)mCollection.listAll().stream().map(e -> e.getObjectId("_id")).collect(Collectors.toList());
+		return (List<ObjectId>)mCollection.find().stream().map(e -> e.getObjectId("_id")).collect(Collectors.toList());
 	}
 
 

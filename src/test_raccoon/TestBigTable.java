@@ -23,8 +23,8 @@ public class TestBigTable
 	{
 		try
 		{
-			create(100_000_000, false);
-//			measureSize();
+//			create(100_000_000, false);
+			measureSize();
 //			measureStats();
 //			loadAll();
 		}
@@ -43,7 +43,7 @@ public class TestBigTable
 		System.out.printf("%12s %10s %10s %10s %9s%n", "count", "insert", "commit", "total", "memory");
 
 		long t = System.currentTimeMillis();
-		try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get(DatabaseOpenOption.REPLACE))
+		try (RaccoonDatabase db = new RaccoonBuilder().device("c:\\temp\\bigtable.rdb").get(DatabaseOpenOption.REPLACE))
 		{
 			long t0 = System.currentTimeMillis();
 			long t1 = t0;
@@ -52,11 +52,11 @@ public class TestBigTable
 			{
 				if (aPerson)
 				{
-					collection.save(_Person.createPerson(rnd, index));
+					collection.saveOne(_Person.createPerson(rnd, index));
 				}
 				else
 				{
-					collection.save(Document.of("index:" + index));
+					collection.saveOne(Document.of("index:" + index));
 				}
 
 				if (index == aSize - 1 || transIndex == 100_000)
@@ -82,9 +82,9 @@ public class TestBigTable
 
 	private static void measureStats()
 	{
-		try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get())
+		try (RaccoonDatabase db = new RaccoonBuilder().device("c:\\temp\\bigtable.rdb").get())
 		{
-			ScanResult stats = db.getCollection("people").getStats();
+			ScanResult stats = db.getCollection("people")._getStats();
 
 			System.out.println("stats: " + stats);
 
@@ -97,7 +97,7 @@ public class TestBigTable
 	private static void measureSize()
 	{
 		long t = System.currentTimeMillis();
-		try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get())
+		try (RaccoonDatabase db = new RaccoonBuilder().device("c:\\temp\\bigtable.rdb").get())
 		{
 			System.out.println("size: " + formatCount(db.getCollection("people").size()));
 		}
@@ -110,7 +110,7 @@ public class TestBigTable
 	{
 		HashSet<Integer> unique = new HashSet<>();
 		long t = System.currentTimeMillis();
-		try (RaccoonDatabase db = new RaccoonBuilder().path("c:\\temp\\bigtable.rdb").get())
+		try (RaccoonDatabase db = new RaccoonBuilder().device("c:\\temp\\bigtable.rdb").get())
 		{
 			db.getCollection("people").forEach(doc -> {
 				unique.add(doc.getInt("index"));

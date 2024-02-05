@@ -16,7 +16,7 @@ public class RaccoonDatabaseNGTest
 
 		try (RaccoonDatabase database = new RaccoonDatabase(device, DatabaseOpenOption.CREATE, null))
 		{
-			database.getCollection("fruits").save(new _Fruit("apple", 123.0));
+			database.getCollection("fruits").saveOne(new _Fruit("apple", 123.0));
 			database.commit();
 		}
 
@@ -24,7 +24,7 @@ public class RaccoonDatabaseNGTest
 		{
 			_Fruit apple = new _Fruit("apple");
 
-			assertTrue(database.getCollection("fruits").tryGet(apple));
+			assertTrue(database.getCollection("fruits").tryFindOne(apple));
 			assertEquals(apple.get("_id"), "apple");
 			assertEquals(apple.get("calories"), 123.0);
 		}

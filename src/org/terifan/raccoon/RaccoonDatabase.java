@@ -236,7 +236,7 @@ public final class RaccoonDatabase implements AutoCloseable
 				RaccoonCollection indices = getCollectionImpl(INDEX_COLLECTION, false);
 				if (indices != null)
 				{
-					for (Document indexConf : indices.listAll())
+					for (Document indexConf : indices.find())
 					{
 						mIndices.put(indexConf.getArray("_id").getObjectId(0), indexConf.getArray("_id").getObjectId(1), indexConf);
 					}
@@ -396,7 +396,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		checkOpen();
 
-		aCollection.clear();
+		aCollection.deleteAll();
 
 		removeCollectionImpl(aCollection);
 	}
@@ -454,14 +454,14 @@ public final class RaccoonDatabase implements AutoCloseable
 		RaccoonCollection collection = getCollectionImpl(HEAP_COLLECTION, true);
 
 		Document header = new Document().put("_id", aName);
-		collection.tryGet(header);
+		collection.tryFindOne(header);
 
 		BlockAccessor blockAccessor = getBlockAccessor();
 
 		LobByteChannel channel = new LobByteChannel(blockAccessor, header, mReadOnly ? LobOpenOption.READ : LobOpenOption.WRITE, aOptions).setCloseAction(ch -> {
 			if (!mReadOnly)
 			{
-				collection.save(header);
+				collection.saveOne(header);
 				mModified = true;
 			}
 		});
@@ -490,7 +490,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		for (RaccoonCollection instance : mCollectionInstances.values())
 		{
-			if (instance.isModified())
+			if (instance.isChanged())
 			{
 				return true;
 			}
@@ -614,6 +614,14 @@ public final class RaccoonDatabase implements AutoCloseable
 	@Override
 	public void close()
 	{
+		//////////////////////////////
+		//////////////////////////////
+		//////////////////////////////
+		commit();
+		//////////////////////////////
+		//////////////////////////////
+		//////////////////////////////
+
 		try (WriteLock lock = mLock.writeLock())
 		{
 			if (mMaintenanceTimer != null)
@@ -655,7 +663,7 @@ public final class RaccoonDatabase implements AutoCloseable
 			{
 				for (RaccoonCollection entry : mCollectionInstances.values())
 				{
-					mModified |= entry.isModified();
+					mModified |= entry.isChanged();
 				}
 			}
 

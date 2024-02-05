@@ -49,30 +49,36 @@ public class RaccoonBuilder
 
 	public RaccoonDatabase get(DatabaseOpenOption aDatabaseOpenOption)
 	{
-		if (mPath == null)
+		if (mPath == null && mManagedBlockDevice == null && mBlockStorage == null)
 		{
 			throw new IllegalArgumentException("Path not provided.");
 		}
 
 		AccessCredentials ac = mPassword == null ? null : new AccessCredentials(mPassword, mEncryptionFunction, mKeyGenerationFunction, mCipherModeFunction).setIterationCount(mKeyGeneratorIterationCount);
 
+		if (mManagedBlockDevice != null)
+		return new RaccoonDatabase(mManagedBlockDevice, aDatabaseOpenOption, ac);
+
+		if (mBlockStorage != null)
+		return new RaccoonDatabase(mBlockStorage, aDatabaseOpenOption, ac);
+
 		return new RaccoonDatabase(mPath, aDatabaseOpenOption, ac);
 	}
 
 
-	public RaccoonBuilder path(File aPath)
+	public RaccoonBuilder device(File aPath)
 	{
-		return path(aPath.toPath());
+		return device(aPath.toPath());
 	}
 
 
-	public RaccoonBuilder path(String aPath)
+	public RaccoonBuilder device(String aPath)
 	{
-		return path(Paths.get(aPath));
+		return device(Paths.get(aPath));
 	}
 
 
-	public RaccoonBuilder path(Path aPath)
+	public RaccoonBuilder device(Path aPath)
 	{
 		mManagedBlockDevice = null;
 		mBlockStorage = null;
@@ -81,7 +87,7 @@ public class RaccoonBuilder
 	}
 
 
-	public RaccoonBuilder path(BlockStorage aBlockStorage)
+	public RaccoonBuilder device(BlockStorage aBlockStorage)
 	{
 		mPath = null;
 		mManagedBlockDevice = null;
@@ -90,7 +96,7 @@ public class RaccoonBuilder
 	}
 
 
-	public RaccoonBuilder path(ManagedBlockDevice aManagedBlockDevice)
+	public RaccoonBuilder device(ManagedBlockDevice aManagedBlockDevice)
 	{
 		mPath = null;
 		mBlockStorage = null;
