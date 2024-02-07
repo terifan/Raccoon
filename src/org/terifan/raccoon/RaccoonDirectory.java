@@ -15,11 +15,13 @@ import org.terifan.raccoon.document.ObjectId;
 public class RaccoonDirectory<K>
 {
 	private final RaccoonCollection mCollection;
+	private final RaccoonDatabase mDatabase;
 
 
-	RaccoonDirectory(RaccoonCollection aCollection)
+	RaccoonDirectory(RaccoonDatabase aDatabase, RaccoonCollection aCollection)
 	{
 		mCollection = aCollection;
+		mDatabase = aDatabase;
 	}
 
 
@@ -143,5 +145,16 @@ public class RaccoonDirectory<K>
 	public long size()
 	{
 		return mCollection.size();
+	}
+
+
+	public void drop()
+	{
+		if (size() != 0)
+		{
+			throw new IllegalStateException("The directory is not empty.");
+		}
+
+		mDatabase.removeDirectoryImpl(this);
 	}
 }

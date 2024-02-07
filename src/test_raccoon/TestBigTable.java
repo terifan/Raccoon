@@ -12,9 +12,6 @@ import static org.terifan.raccoon.blockdevice.util.ValueFormatter.formatBytesSiz
 import static org.terifan.raccoon.blockdevice.util.ValueFormatter.formatDuration;
 import static org.terifan.raccoon.blockdevice.util.ValueFormatter.formatCount;
 import org.terifan.raccoon.document.Document;
-import org.terifan.treegraph.TreeGraph;
-import org.terifan.treegraph.VerticalLayout;
-import org.terifan.treegraph.util.VerticalImageFrame;
 
 
 public class TestBigTable
@@ -23,10 +20,10 @@ public class TestBigTable
 	{
 		try
 		{
-//			create(100_000_000, false);
+			create(1_000_000, !false);
 			measureSize();
-//			measureStats();
-//			loadAll();
+			measureStats();
+			loadAll();
 		}
 		catch (Throwable e)
 		{
@@ -61,6 +58,8 @@ public class TestBigTable
 
 				if (index == aSize - 1 || transIndex == 100_000)
 				{
+//					System.out.printf("%12s %10s %10s %10s %9s -- %s%n", formatCount(index), "", "", "", formatBytesSize(r.totalMemory() - r.freeMemory()), RuntimeDiagnostics.string());
+
 					long t2 = System.currentTimeMillis();
 					db.commit();
 					long t3 = System.currentTimeMillis();

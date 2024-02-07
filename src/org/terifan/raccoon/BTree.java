@@ -49,11 +49,12 @@ public class BTree implements AutoCloseable
 		mBlockAccessor = aBlockAccessor;
 		mConfiguration = aConfiguration;
 
-		mCompressorInteriorBlocks = aConfiguration.getArray(CONF).getInt(NODE_COMPRESSOR);
-		mCompressorLeafBlocks = aConfiguration.getArray(CONF).getInt(LEAF_COMPRESSOR);
-		mEntrySizeLimit = aConfiguration.getArray(CONF).getInt(ENTRY_SIZE_LIMIT);
-		mLeafSize = aConfiguration.getArray(CONF).getInt(LEAF_SIZE);
-		mNodeSize = aConfiguration.getArray(CONF).getInt(NODE_SIZE);
+		Array conf = mConfiguration.getArray(CONF);
+		mCompressorInteriorBlocks = conf.getInt(NODE_COMPRESSOR);
+		mCompressorLeafBlocks = conf.getInt(LEAF_COMPRESSOR);
+		mEntrySizeLimit = conf.getInt(ENTRY_SIZE_LIMIT);
+		mLeafSize = conf.getInt(LEAF_SIZE);
+		mNodeSize = conf.getInt(NODE_SIZE);
 
 		initialize();
 	}
@@ -106,14 +107,14 @@ public class BTree implements AutoCloseable
 		{
 			if (v.mMap.getCapacity() > mLeafSize || v.mMap.getFreeSpace() < aEntry.getMarshalledLength())
 			{
-				mRoot = v.upgrade();
+				_upgrade();
 			}
 		}
 		else if (mRoot instanceof BTreeInteriorNode v)
 		{
 			if (v.mChildNodes.getUsedSpace() > mNodeSize)
 			{
-				mRoot = v.grow();
+				_grow();
 			}
 		}
 
@@ -140,11 +141,11 @@ public class BTree implements AutoCloseable
 		{
 			if (mRoot.mLevel > 1 && mRoot.size() == 1)
 			{
-				mRoot = ((BTreeInteriorNode)mRoot).shrink();
+				_shrink();
 			}
 			if (mRoot.mLevel == 1 && mRoot.size() == 1)
 			{
-				mRoot = ((BTreeInteriorNode)mRoot).downgrade();
+				_downgrade();
 			}
 		}
 
@@ -363,5 +364,35 @@ public class BTree implements AutoCloseable
 	int getEntrySizeLimit()
 	{
 		return mEntrySizeLimit;
+	}
+
+
+	BTreeNode _root()
+	{
+		return mRoot;
+	}
+
+
+	protected void _grow()
+	{
+		mRoot = ((BTreeInteriorNode)mRoot).grow();
+	}
+
+
+	protected void _upgrade()
+	{
+		mRoot = ((BTreeLeafNode)mRoot).upgrade();
+	}
+
+
+	protected void _downgrade()
+	{
+		mRoot = ((BTreeInteriorNode)mRoot).downgrade();
+	}
+
+
+	protected void _shrink()
+	{
+		mRoot = ((BTreeInteriorNode)mRoot).shrink();
 	}
 }

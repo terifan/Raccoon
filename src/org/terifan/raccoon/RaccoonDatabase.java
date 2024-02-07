@@ -392,31 +392,13 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public synchronized void removeCollection(RaccoonCollection aCollection)
+	void removeCollectionImpl(RaccoonCollection aCollection)
 	{
-		checkOpen();
-
-		aCollection.deleteAll();
-
-		removeCollectionImpl(aCollection);
-	}
-
-
-	public synchronized void removeDirectory(RaccoonDirectory aDirectory)
-	{
-		checkOpen();
-
-		if (aDirectory.size() != 0)
+		for (Document indexConf : mIndices.values(aCollection.getCollectionId()))
 		{
-			throw new IllegalStateException("The RaccoonDirectory is not empty.");
+			aCollection.getIndexByConf(indexConf).drop();
 		}
 
-		removeCollectionImpl(aDirectory.getCollection());
-	}
-
-
-	private void removeCollectionImpl(RaccoonCollection aCollection)
-	{
 		for (Entry<String, RaccoonCollection> en : mCollectionInstances.entrySet())
 		{
 			if (en.getValue() == aCollection)
@@ -430,11 +412,17 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
+	void removeDirectoryImpl(RaccoonDirectory aDirectory)
+	{
+		removeCollectionImpl(aDirectory.getCollection());
+	}
+
+
 	public RaccoonDirectory getDirectory(String aName)
 	{
 		RaccoonCollection collection = getCollectionImpl(LOB_COLLECTION + aName, true);
 
-		return new RaccoonDirectory(collection);
+		return new RaccoonDirectory(this, collection);
 	}
 
 

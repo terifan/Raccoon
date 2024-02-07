@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -59,7 +58,7 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Get many documents from the collection returning a list with those found.
+	 * Find many documents from the collection returning a list with those found.
 	 *
 	 * @return those documents matching the criteria provided
 	 */
@@ -70,7 +69,7 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Get many documents from the collection returning a list with those found.
+	 * Find many documents from the collection returning a list with those found.
 	 *
 	 * @return those documents matching the criteria provided
 	 */
@@ -92,7 +91,7 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Get a document from the collection or throws an exception if not found.
+	 * Find a document from the collection or throws an exception if not found.
 	 *
 	 * @param aDocumentOrID either a Document or a valid ID. If the parameter is a Document it will be updated.
 	 */
@@ -125,7 +124,7 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Get a document from the collection or throws an exception if not found.
+	 * Find a document from the collection or throws an exception if not found.
 	 */
 	public <T extends Document> T findOne(T aDocument)
 	{
@@ -151,13 +150,13 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Get the document from the collection returning if it was found.
+	 * Find the document from the collection returning if it was found.
 	 *
 	 * @return if a document was found
 	 */
 	public boolean tryFindOne(Document aDocument)
 	{
-		log.i("get entity {}", aDocument);
+		log.i("tryFindOne {}", aDocument);
 		log.inc();
 
 		try (ReadLock lock = mLock.readLock())
@@ -200,13 +199,24 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Insert or replace many documents in this collection.
+	 * Insert or replace many documents in this collection returning number of inserts.
 	 *
 	 * @return number of inserted documents
 	 */
 	public int saveMany(Document... aDocuments)
 	{
-		log.i("save all {}", aDocuments.length);
+		return saveMany(Arrays.asList(aDocuments));
+	}
+
+
+	/**
+	 * Insert or replace many documents in this collection returning number of inserts.
+	 *
+	 * @return number of inserted documents
+	 */
+	public int saveMany(Iterable<Document> aDocuments)
+	{
+		log.i("save many");
 		log.inc();
 
 		try (WriteLock lock = mLock.writeLock())
@@ -230,7 +240,7 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Atomically insert a document in this collection or throws an exception if the document already exists.
+	 * Insert a document in this collection or throws an exception if the document already exists.
 	 */
 	public void insertOne(Document aDocument)
 	{
@@ -282,7 +292,7 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Atomically replace one document in this collection or throws an exception if document is missing.
+	 * Replace one document in this collection or throws an exception if document is missing.
 	 */
 	public void replaceOne(Document aDocument) throws DocumentNotFoundException
 	{
@@ -566,15 +576,14 @@ public final class RaccoonCollection
 	/**
 	 * Delete all documents in this collection.
 	 */
-	public void deleteAll()
+	public void drop()
 	{
 		try (WriteLock lock = mLock.writeLock())
 		{
 			mModCount++;
 
-			BTree prev = mTree;
-
-			mTree = new BTree(getBlockAccessor(), mTree.getConfiguration().clone().remove("root"));
+//			BTree prev = mTree;
+//			mTree = new BTree(getBlockAccessor(), mTree.getConfiguration().clone().remove("root"));
 
 			mTree.visit(new BTreeVisitor()
 			{
@@ -582,7 +591,7 @@ public final class RaccoonCollection
 				boolean leaf(BTreeLeafNode aNode)
 				{
 					aNode.mMap.forEach(e -> deleteExternal(e, false));
-					prev.freeBlock(aNode.mBlockPointer);
+					mTree.freeBlock(aNode.mBlockPointer);
 					return true;
 				}
 
@@ -590,16 +599,17 @@ public final class RaccoonCollection
 				@Override
 				boolean afterInteriorNode(BTreeInteriorNode aNode)
 				{
-					prev.freeBlock(aNode.mBlockPointer);
+					mTree.freeBlock(aNode.mBlockPointer);
 					return true;
 				}
 			});
 
-			for (Document indexConf : mDatabase.mIndices.values(getCollectionId()))
-			{
-				getIndexByConf(indexConf).deleteAll();
-			}
+			mDatabase.removeCollectionImpl(this);
 		}
+
+		mDatabase = null;
+		mTree = null;
+		mTree = null;
 	}
 
 
@@ -724,7 +734,7 @@ public final class RaccoonCollection
 	}
 
 
-	private ObjectId getCollectionId()
+	ObjectId getCollectionId()
 	{
 		return mConfiguration.getObjectId("_id");
 	}
@@ -975,7 +985,7 @@ public final class RaccoonCollection
 
 	private ArrayList<Document> findMany(boolean aFailFast, Iterable<Document> aDocuments)
 	{
-		log.i("get many");
+		log.i("findMany");
 		log.inc();
 
 		ArrayList<Document> result = new ArrayList<>();
@@ -1221,7 +1231,7 @@ public final class RaccoonCollection
 	}
 
 
-	private RaccoonCollection getIndexByConf(Document aIndexConf)
+	RaccoonCollection getIndexByConf(Document aIndexConf)
 	{
 		return mDatabase.getCollection("index:" + aIndexConf.getArray("_id"));
 	}

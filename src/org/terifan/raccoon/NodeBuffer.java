@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-import org.terifan.raccoon.util.Result;
 
 
 class NodeBuffer implements Iterable<ArrayMapEntry>
@@ -32,37 +31,31 @@ class NodeBuffer implements Iterable<ArrayMapEntry>
 	}
 
 
-	BTreeNode remove(ArrayMapKey aKey)
+	BTreeNode removeXX(ArrayMapKey aKey)
 	{
 		return mNodes.remove(aKey);
 	}
 
 
-	void removeX(ArrayMapKey aKey)
+	void remove(ArrayMapKey aKey)
 	{
 		mNodes.remove(aKey);
 		mArrayMap.remove(aKey, null);
 	}
 
 
-	void removeX(int aIndex)
+	void remove(int aIndex)
 	{
 		ArrayMapEntry temp = new ArrayMapEntry();
 		getEntry(aIndex, temp);
 		mNodes.remove(temp.getKey());
-		mArrayMap.remove(temp.getKey(), null);
+		mArrayMap.remove(aIndex, null);
 	}
 
 
-	void removeEntry(int aIndex, Result<ArrayMapEntry> aObject)
+	void removeEntry(int aIndex)
 	{
-		mArrayMap.remove(aIndex, aObject);
-	}
-
-
-	void removeEntry(ArrayMapKey aArrayMapEntry, Result<ArrayMapEntry> aObject)
-	{
-		mArrayMap.remove(aArrayMapEntry, aObject);
+		mArrayMap.remove(aIndex, null);
 	}
 
 
@@ -120,6 +113,13 @@ class NodeBuffer implements Iterable<ArrayMapEntry>
 	}
 
 
+	void insertEntry(ArrayMapEntry aArrayMapEntry, BTreeNode aChildNode)
+	{
+		mArrayMap.insert(aArrayMapEntry);
+		mNodes.put(aArrayMapEntry.getKey(), aChildNode);
+	}
+
+
 	int getFreeSpace()
 	{
 		return mArrayMap.getFreeSpace();
@@ -138,13 +138,7 @@ class NodeBuffer implements Iterable<ArrayMapEntry>
 	}
 
 
-	ArrayMapEntry removeFirst()
-	{
-		return mArrayMap.removeFirst();
-	}
-
-
-	BTreeNode removeFirstX()
+	BTreeNode removeFirst()
 	{
 		Entry<ArrayMapKey, BTreeNode> tmp = mNodes.firstEntry();
 		mArrayMap.removeFirst();

@@ -24,7 +24,7 @@ public class TestManyUpdates
 			String labelPattern = "%-15s ";
 			String durationPattern = "%9s";
 
-			int N = 1000;
+			int N = 10000;
 			int M = 10;
 
 			System.out.println(N + " x " + M);

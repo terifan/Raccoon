@@ -50,7 +50,6 @@ public class BTreeInteriorNode extends BTreeNode
 			ArrayMapKey leftKey = nearestEntry.getKey();
 
 			mChildNodes.remove(leftKey);
-			mChildNodes.removeEntry(leftKey, null);
 
 			SplitResult split = nearestNode.split();
 
@@ -100,26 +99,22 @@ public class BTreeInteriorNode extends BTreeNode
 		{
 			if (offset == 0)
 			{
-				mChildNodes.removeEntry(ArrayMapKey.EMPTY, null);
 				mChildNodes.remove(ArrayMapKey.EMPTY);
 
-				ArrayMapEntry firstEntry = mChildNodes.getEntry(0, new ArrayMapEntry());
+				ArrayMapEntry firstEntry = mChildNodes.getFirst();
 
 				BTreeNode firstNode = getNode(firstEntry);
 
-				mChildNodes.removeEntry(firstEntry.getKey(), null);
 				mChildNodes.remove(firstEntry.getKey());
 
 				firstEntry.setKey(ArrayMapKey.EMPTY);
 
-				mChildNodes.insertEntry(firstEntry);
-				mChildNodes.put(firstEntry.getKey(), firstNode);
+				mChildNodes.insertEntry(firstEntry, firstNode);
 			}
 			else
 			{
 				ArrayMapEntry targetEntry = mChildNodes.getEntry(offset, new ArrayMapEntry());
 
-				mChildNodes.removeEntry(targetEntry.getKey(), null);
 				mChildNodes.remove(targetEntry.getKey());
 			}
 
@@ -132,7 +127,7 @@ public class BTreeInteriorNode extends BTreeNode
 		}
 
 		assert assertValidCache() == null : assertValidCache();
-		assert mChildNodes.getEntry(0, new ArrayMapEntry()).getKey().get().toString().length() == 0 : "First key expected to be empty: " + mChildNodes.toString();
+		assert mChildNodes.getFirst().getKey().get().toString().length() == 0 : "First key expected to be empty: " + mChildNodes.toString();
 
 		return result;
 	}
@@ -284,10 +279,10 @@ public class BTreeInteriorNode extends BTreeNode
 			{
 				nearestEntry.setKey(firstKey);
 
-				mChildNodes.removeEntry(newOffset, null);
+				mChildNodes.removeEntry(newOffset);
 				mChildNodes.insertEntry(nearestEntry);
 
-				BTreeNode childNode = mChildNodes.remove(nearestKey);
+				BTreeNode childNode = mChildNodes.removeXX(nearestKey);
 				if (childNode != null)
 				{
 					mChildNodes.put(firstKey, childNode);
@@ -334,7 +329,6 @@ public class BTreeInteriorNode extends BTreeNode
 
 		BTreeNode firstChild = right.getNode(firstRight);
 
-		right.mChildNodes.removeEntry(firstRight.getKey(), null);
 		right.mChildNodes.remove(keyRight);
 
 		firstRight.setKey(keyLeft);
@@ -392,13 +386,8 @@ public class BTreeInteriorNode extends BTreeNode
 					newEntry = entry;
 				}
 
-				interior.mChildNodes.insertEntry(newEntry);
-
-				BTreeNode childNode = node.mChildNodes.remove(entry.getKey());
-				if (childNode != null)
-				{
-					interior.mChildNodes.put(newEntry.getKey(), childNode);
-				}
+				BTreeNode childNode = node.mChildNodes.get(entry.getKey());
+				interior.mChildNodes.insertEntry(newEntry, childNode);
 			}
 
 			mTree.freeBlock(node.mBlockPointer);
@@ -433,9 +422,7 @@ public class BTreeInteriorNode extends BTreeNode
 
 		aTo.clearFirstKey();
 
-		mChildNodes.getEntry(aFromIndex, temp);
-		mChildNodes.removeEntry(aFromIndex, null);
-		mChildNodes.remove(temp.getKey());
+		mChildNodes.remove(aFromIndex);
 
 		if (aFromIndex == 0)
 		{
@@ -446,7 +433,7 @@ public class BTreeInteriorNode extends BTreeNode
 	}
 
 
-	private void mergeLeafs(int aOffset, BTreeLeafNode aFrom, BTreeLeafNode aTo)
+	private void mergeLeafs(int aIndex, BTreeLeafNode aFrom, BTreeLeafNode aTo)
 	{
 		ArrayMapEntry temp = new ArrayMapEntry();
 
@@ -459,9 +446,7 @@ public class BTreeInteriorNode extends BTreeNode
 		aFrom.mMap.clear();
 		mTree.freeBlock(aFrom.mBlockPointer);
 
-		mChildNodes.getEntry(aOffset, temp);
-		mChildNodes.removeEntry(aOffset, null);
-		mChildNodes.remove(temp.getKey());
+		mChildNodes.remove(aIndex);
 
 		aTo.mModified = true;
 	}
@@ -469,7 +454,7 @@ public class BTreeInteriorNode extends BTreeNode
 
 	private void fixFirstKey(BTreeInteriorNode aNode)
 	{
-		ArrayMapEntry firstEntry = aNode.mChildNodes.getEntry(0, new ArrayMapEntry());
+		ArrayMapEntry firstEntry = aNode.mChildNodes.getFirst();
 
 		assert firstEntry.getKey().get().toString().length() == 0 : firstEntry.getKey();
 
@@ -477,7 +462,6 @@ public class BTreeInteriorNode extends BTreeNode
 
 		firstEntry.setKey(findLowestLeafKey(aNode));
 
-		aNode.mChildNodes.removeEntry(ArrayMapKey.EMPTY, null);
 		aNode.mChildNodes.remove(ArrayMapKey.EMPTY);
 
 		aNode.mChildNodes.insertEntry(firstEntry);
@@ -487,13 +471,11 @@ public class BTreeInteriorNode extends BTreeNode
 
 	private void clearFirstKey()
 	{
-		ArrayMapEntry firstEntry = mChildNodes.getEntry(0, new ArrayMapEntry());
+		ArrayMapEntry firstEntry = mChildNodes.getFirst();
 
 		if (firstEntry.getKey().size() > 0)
 		{
-			mChildNodes.removeFirst();
-
-			BTreeNode childNode = mChildNodes.remove(firstEntry.getKey());
+			BTreeNode childNode = mChildNodes.removeFirst();
 
 			firstEntry.setKey(ArrayMapKey.EMPTY);
 
@@ -570,8 +552,6 @@ public class BTreeInteriorNode extends BTreeNode
 
 			if (node.commit())
 			{
-				mModified = true;
-
 				mChildNodes.insertEntry(new ArrayMapEntry(entry.getKey(), node.mBlockPointer, TYPE_TREENODE));
 			}
 		}
@@ -595,12 +575,12 @@ public class BTreeInteriorNode extends BTreeNode
 	{
 		if (mModified)
 		{
+			mModified = false;
+
 			for (BTreeNode node : mChildNodes.values())
 			{
 				node.postCommit();
 			}
-
-			mModified = false;
 		}
 
 		mChildNodes.clear();
