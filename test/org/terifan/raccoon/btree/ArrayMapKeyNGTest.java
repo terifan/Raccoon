@@ -1,5 +1,6 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.btree;
 
+import org.terifan.raccoon.btree.ArrayMapKey;
 import java.util.UUID;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;

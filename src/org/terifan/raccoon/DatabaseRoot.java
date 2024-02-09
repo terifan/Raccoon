@@ -1,5 +1,10 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.btree.ArrayMapKey;
+import org.terifan.raccoon.btree.ArrayMapEntry;
+import org.terifan.raccoon.btree.BTreeVisitor;
+import org.terifan.raccoon.btree.BTree;
+import org.terifan.raccoon.btree.BTreeLeafNode;
 import java.util.ArrayList;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
@@ -56,9 +61,9 @@ class DatabaseRoot
 		mStorage.visit(new BTreeVisitor()
 		{
 			@Override
-			boolean leaf(BTreeLeafNode aNode)
+			public boolean leaf(BTreeLeafNode aNode)
 			{
-				aNode.mMap.forEach(entry ->
+				aNode.forEachEntry(entry ->
 				{
 					if (entry.getKey().get() instanceof String)
 					{

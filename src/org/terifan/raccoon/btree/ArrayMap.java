@@ -1,4 +1,4 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.btree;
 
 import java.util.Arrays;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.getInt16;

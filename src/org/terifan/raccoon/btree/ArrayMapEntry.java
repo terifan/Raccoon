@@ -1,11 +1,11 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.btree;
 
 import java.util.Arrays;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.document.Document;
 
 
-final class ArrayMapEntry
+public final class ArrayMapEntry
 {
 	private byte mType;
 	private ArrayMapKey mKey;

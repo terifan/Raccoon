@@ -1,13 +1,14 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.exceptions.LobNotFoundException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.terifan.raccoon.blockdevice.LobAccessException;
-import org.terifan.raccoon.blockdevice.LobByteChannel;
-import org.terifan.raccoon.blockdevice.LobConsumer;
-import org.terifan.raccoon.blockdevice.LobOpenOption;
+import org.terifan.raccoon.blockdevice.lob.LobAccessException;
+import org.terifan.raccoon.blockdevice.lob.LobByteChannel;
+import org.terifan.raccoon.blockdevice.lob.LobConsumer;
+import org.terifan.raccoon.blockdevice.lob.LobOpenOption;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.document.ObjectId;
 

@@ -7,19 +7,13 @@ import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.function.Supplier;
-import javax.swing.JFrame;
 import org.terifan.logging.Level;
 import org.terifan.logging.Logger;
-import org.terifan.raccoon.BTree;
-import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.SecureBlockDevice;
-import org.terifan.treegraph.HorizontalLayout;
-import org.terifan.treegraph.TreeGraph;
-import org.terifan.treegraph.util.VerticalImageFrame;
 import org.terifan.raccoon.blockdevice.storage.BlockStorage;
 import org.terifan.raccoon.document.Document;
 
@@ -230,26 +224,6 @@ public class _Tools
 			return 10 + aByte - 'A';
 		}
 		throw new IllegalArgumentException();
-	}
-
-
-	private static VerticalImageFrame mFrame;
-	static TreeGraph mGraph;
-
-
-	public static void showTree(BTree aTree)
-	{
-		if (mFrame == null)
-		{
-			mFrame = new VerticalImageFrame();
-			mFrame.getFrame().setExtendedState(JFrame.MAXIMIZED_BOTH);
-		}
-		if (mGraph != null)
-		{
-			mFrame.remove(mGraph);
-		}
-		mGraph = new TreeGraph(new HorizontalLayout(), aTree.scan(new ScanResult()).getDescription());
-		mFrame.add(mGraph);
 	}
 
 

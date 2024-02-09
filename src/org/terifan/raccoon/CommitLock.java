@@ -1,7 +1,7 @@
 package org.terifan.raccoon;
 
 import java.util.Objects;
-import org.terifan.raccoon.blockdevice.LobByteChannel;
+import org.terifan.raccoon.blockdevice.lob.LobByteChannel;
 
 
 class CommitLock

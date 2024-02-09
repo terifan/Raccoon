@@ -1,10 +1,13 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.btree;
 
+import java.util.function.Consumer;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
-import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
-import org.terifan.raccoon.ArrayMap.PutResult;
+import static org.terifan.raccoon.btree.BTree.BLOCKPOINTER_PLACEHOLDER;
+import org.terifan.raccoon.btree.ArrayMap.PutResult;
+import org.terifan.raccoon.RuntimeDiagnostics;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_EXTERNAL;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
+import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.blockdevice.BlockType;
 
@@ -192,5 +195,11 @@ public class BTreeLeafNode extends BTreeNode
 		{
 			aScanResult.log.append(mModified ? "#f00#f00#fff" : "#888#fff#000");
 		}
+	}
+
+
+	public void forEachEntry(Consumer<? super ArrayMapEntry> aConsumer)
+	{
+		mMap.forEach(aConsumer);
 	}
 }

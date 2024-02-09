@@ -1,10 +1,14 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.btree;
 
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.terifan.logging.Logger;
 import org.terifan.raccoon.document.Document;
-import org.terifan.raccoon.BTreeNode.RemoveResult;
+import org.terifan.raccoon.btree.BTreeNode.RemoveResult;
+import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.document.Array;
@@ -154,7 +158,7 @@ public class BTree implements AutoCloseable
 	}
 
 
-	void visit(BTreeVisitor aVisitor)
+	public void visit(BTreeVisitor aVisitor)
 	{
 		assertNotClosed();
 
@@ -244,7 +248,7 @@ public class BTree implements AutoCloseable
 		visit(new BTreeVisitor()
 		{
 			@Override
-			boolean leaf(BTreeLeafNode aNode)
+			public boolean leaf(BTreeLeafNode aNode)
 			{
 				result.addAndGet(aNode.mMap.size());
 				return true;
@@ -302,7 +306,7 @@ public class BTree implements AutoCloseable
 		mRoot.visit(new BTreeVisitor()
 		{
 			@Override
-			boolean beforeAnyNode(BTreeNode aNode)
+			public boolean beforeAnyNode(BTreeNode aNode)
 			{
 				String tmp = aNode.integrityCheck();
 				if (tmp != null)
@@ -329,7 +333,7 @@ public class BTree implements AutoCloseable
 
 
 	@Deprecated
-	static Document createDefaultConfig(int aBlockSize)
+	public static Document createDefaultConfig(int aBlockSize)
 	{
 		Array conf = new Array();
 		conf.put(BTree.ENTRY_SIZE_LIMIT, 1024);
@@ -353,7 +357,7 @@ public class BTree implements AutoCloseable
 	}
 
 
-	int getEntrySizeLimit()
+	public int getEntrySizeLimit()
 	{
 		return mEntrySizeLimit;
 	}
@@ -386,5 +390,119 @@ public class BTree implements AutoCloseable
 	protected void _shrink()
 	{
 		mRoot = ((BTreeInteriorNode)mRoot).shrink();
+	}
+
+
+	public void drop(Consumer<? super ArrayMapEntry> aConsumer)
+	{
+		visit(new BTreeVisitor()
+		{
+			@Override
+			public boolean leaf(BTreeLeafNode aNode)
+			{
+				aNode.forEachEntry(aConsumer);
+				freeBlock(aNode.mBlockPointer);
+				return true;
+			}
+
+
+			@Override
+			public boolean afterInteriorNode(BTreeInteriorNode aNode)
+			{
+				freeBlock(aNode.mBlockPointer);
+				return true;
+			}
+		});
+	}
+
+
+	public void find(ArrayList<Document> aList, Document aFilter, Function<ArrayMapEntry,Document> aDocumentSupplier)
+	{
+		visit(new BTreeVisitor()
+		{
+			@Override
+			public boolean beforeInteriorNode(BTreeInteriorNode aNode, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
+			{
+				return matchKey(aLowestKey, aHighestKey, aFilter);
+			}
+
+
+			@Override
+			public boolean beforeLeafNode(BTreeLeafNode aNode)
+			{
+				boolean b = matchKey(aNode.mMap.getFirst().getKey(), aNode.mMap.getLast().getKey(), aFilter);
+
+//					System.out.println("#" + aNode.mMap.getFirst().getKey()+", "+aNode.mMap.getLast().getKey() +" " + b+ " "+aQuery.getArray("_id"));
+				return b;
+			}
+
+
+			@Override
+			public boolean leaf(BTreeLeafNode aNode)
+			{
+//					System.out.println(aNode);
+				for (int i = 0; i < aNode.mMap.size(); i++)
+				{
+					ArrayMapEntry entry = aNode.mMap.get(i, new ArrayMapEntry());
+					Document doc = aDocumentSupplier.apply(entry);
+
+					if (matchKey(doc, aFilter))
+					{
+						aList.add(doc);
+					}
+				}
+				return true;
+			}
+		});
+	}
+
+	private boolean matchKey(ArrayMapKey aLowestKey, ArrayMapKey aHighestKey, Document aQuery)
+	{
+		Array lowestKey = aLowestKey == null ? null : (Array)aLowestKey.get();
+		Array highestKey = aHighestKey == null ? null : (Array)aHighestKey.get();
+		Array array = aQuery.getArray("_id");
+
+		int a = lowestKey == null ? 0 : compare(lowestKey, array);
+		int b = highestKey == null ? 0 : compare(highestKey, array);
+
+		return a >= 0 && b <= 0;
+	}
+
+
+	private int compare(Array aCompare, Array aWith)
+	{
+		for (int i = 0; i < aWith.size(); i++)
+		{
+			Comparable v = aWith.get(i);
+			Comparable b = aCompare.get(i);
+
+			int r = v.compareTo(b);
+
+			if (r != 0)
+			{
+				return r;
+			}
+		}
+
+		return 0;
+	}
+
+
+	private boolean matchKey(Document aEntry, Document aQuery)
+	{
+		Array array = aQuery.getArray("_id");
+
+		for (int i = 0; i < array.size(); i++)
+		{
+			Comparable v = array.get(i);
+			Object b = aEntry.getArray("_id").get(i);
+
+			if (v.compareTo(b) != 0)
+			{
+				return false;
+			}
+		}
+
+		return true;
 	}
 }

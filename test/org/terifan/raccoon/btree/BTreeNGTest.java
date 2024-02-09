@@ -1,8 +1,12 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.btree;
 
+import org.terifan.raccoon.btree.ArrayMapEntry;
+import org.terifan.raccoon.btree.ArrayMapKey;
+import org.terifan.raccoon.btree.BTree;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.storage.FileBlockStorage;

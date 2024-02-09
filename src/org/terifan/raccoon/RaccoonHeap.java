@@ -1,12 +1,13 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.exceptions.DatabaseException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
-import org.terifan.raccoon.blockdevice.LobByteChannel;
-import org.terifan.raccoon.blockdevice.LobOpenOption;
+import org.terifan.raccoon.blockdevice.lob.LobByteChannel;
+import org.terifan.raccoon.blockdevice.lob.LobOpenOption;
 import org.terifan.raccoon.document.Document;
 
 

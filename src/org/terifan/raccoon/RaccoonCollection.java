@@ -1,5 +1,15 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.exceptions.DocumentNotFoundException;
+import org.terifan.raccoon.exceptions.UniqueConstraintException;
+import org.terifan.raccoon.exceptions.DuplicateKeyException;
+import org.terifan.raccoon.exceptions.CommitBlockedException;
+import org.terifan.raccoon.btree.ArrayMapKey;
+import org.terifan.raccoon.btree.ArrayMapEntry;
+import org.terifan.raccoon.btree.BTreeVisitor;
+import org.terifan.raccoon.btree.BTree;
+import org.terifan.raccoon.btree.BTreeLeafNode;
+import org.terifan.raccoon.btree.BTreeInteriorNode;
 import org.terifan.raccoon.document.ObjectId;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -541,9 +551,9 @@ public final class RaccoonCollection
 			mTree.visit(new BTreeVisitor()
 			{
 				@Override
-				boolean leaf(BTreeLeafNode aNode)
+				public boolean leaf(BTreeLeafNode aNode)
 				{
-					aNode.mMap.forEach(e -> list.add(unmarshalDocument(e, new Document())));
+					aNode.forEachEntry(e -> list.add(unmarshalDocument(e, new Document())));
 					return true;
 				}
 			});
@@ -563,9 +573,9 @@ public final class RaccoonCollection
 			mTree.visit(new BTreeVisitor()
 			{
 				@Override
-				boolean leaf(BTreeLeafNode aNode)
+				public boolean leaf(BTreeLeafNode aNode)
 				{
-					aNode.mMap.forEach(e -> aAction.accept(unmarshalDocument(e, mDocumentSupplier.get())));
+					aNode.forEachEntry(e -> aAction.accept(unmarshalDocument(e, mDocumentSupplier.get())));
 					return true;
 				}
 			});
@@ -585,24 +595,7 @@ public final class RaccoonCollection
 //			BTree prev = mTree;
 //			mTree = new BTree(getBlockAccessor(), mTree.getConfiguration().clone().remove("root"));
 
-			mTree.visit(new BTreeVisitor()
-			{
-				@Override
-				boolean leaf(BTreeLeafNode aNode)
-				{
-					aNode.mMap.forEach(e -> deleteExternal(e, false));
-					mTree.freeBlock(aNode.mBlockPointer);
-					return true;
-				}
-
-
-				@Override
-				boolean afterInteriorNode(BTreeInteriorNode aNode)
-				{
-					mTree.freeBlock(aNode.mBlockPointer);
-					return true;
-				}
-			});
+			mTree.drop(e -> deleteExternal(e, false));
 
 			mDatabase.removeCollectionImpl(this);
 		}
@@ -936,44 +929,9 @@ public final class RaccoonCollection
 		try (ReadLock lock = mLock.readLock())
 		{
 			ArrayList<Document> list = new ArrayList<>();
-
-			mTree.visit(new BTreeVisitor()
-			{
-				@Override
-				boolean beforeInteriorNode(BTreeInteriorNode aNode, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
-				{
-					return matchKey(aLowestKey, aHighestKey, aFilter);
-				}
-
-
-				@Override
-				boolean beforeLeafNode(BTreeLeafNode aNode)
-				{
-					boolean b = matchKey(aNode.mMap.getFirst().getKey(), aNode.mMap.getLast().getKey(), aFilter);
-
-//					System.out.println("#" + aNode.mMap.getFirst().getKey()+", "+aNode.mMap.getLast().getKey() +" " + b+ " "+aQuery.getArray("_id"));
-					return b;
-				}
-
-
-				@Override
-				boolean leaf(BTreeLeafNode aNode)
-				{
-//					System.out.println(aNode);
-					for (int i = 0; i < aNode.mMap.size(); i++)
-					{
-						ArrayMapEntry entry = aNode.mMap.get(i, new ArrayMapEntry());
-						Document doc = unmarshalDocument(entry, mDocumentSupplier.get());
-
-						if (matchKey(doc, aFilter))
-						{
-							list.add(doc);
-						}
-					}
-					return true;
-				}
+			mTree.find(list, aFilter, entry -> {
+				return unmarshalDocument(entry, mDocumentSupplier.get());
 			});
-
 			return list;
 		}
 		finally
@@ -1060,56 +1018,6 @@ public final class RaccoonCollection
 	// 2: 2,3  -- 3,1
 	// 3: 3,2  -- 4,3
 	// 4: 4,4  -- null
-
-	private boolean matchKey(ArrayMapKey aLowestKey, ArrayMapKey aHighestKey, Document aQuery)
-	{
-		Array lowestKey = aLowestKey == null ? null : (Array)aLowestKey.get();
-		Array highestKey = aHighestKey == null ? null : (Array)aHighestKey.get();
-		Array array = aQuery.getArray("_id");
-
-		int a = lowestKey == null ? 0 : compare(lowestKey, array);
-		int b = highestKey == null ? 0 : compare(highestKey, array);
-
-		return a >= 0 && b <= 0;
-	}
-
-
-	private int compare(Array aCompare, Array aWith)
-	{
-		for (int i = 0; i < aWith.size(); i++)
-		{
-			Comparable v = aWith.get(i);
-			Comparable b = aCompare.get(i);
-
-			int r = v.compareTo(b);
-
-			if (r != 0)
-			{
-				return r;
-			}
-		}
-
-		return 0;
-	}
-
-
-	private boolean matchKey(Document aEntry, Document aQuery)
-	{
-		Array array = aQuery.getArray("_id");
-
-		for (int i = 0; i < array.size(); i++)
-		{
-			Comparable v = array.get(i);
-			Object b = aEntry.getArray("_id").get(i);
-
-			if (v.compareTo(b) != 0)
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
 
 
 	public ScanResult _getStats()

@@ -1,6 +1,7 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.btree;
 
-import org.terifan.raccoon.ArrayMap.PutResult;
+import org.terifan.raccoon.btree.ArrayMap.PutResult;
+import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.util.Result;

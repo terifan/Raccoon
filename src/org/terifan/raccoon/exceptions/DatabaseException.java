@@ -1,4 +1,4 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.exceptions;
 
 
 public class DatabaseException extends RuntimeException

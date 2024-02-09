@@ -1,10 +1,12 @@
-package org.terifan.raccoon;
+package org.terifan.raccoon.btree;
 
 import java.util.Map.Entry;
-import static org.terifan.raccoon.BTree.BLOCKPOINTER_PLACEHOLDER;
+import static org.terifan.raccoon.btree.BTree.BLOCKPOINTER_PLACEHOLDER;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
-import org.terifan.raccoon.ArrayMap.PutResult;
+import org.terifan.raccoon.btree.ArrayMap.PutResult;
+import org.terifan.raccoon.RuntimeDiagnostics;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
+import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.blockdevice.BlockType;

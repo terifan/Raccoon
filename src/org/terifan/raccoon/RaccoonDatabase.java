@@ -1,5 +1,8 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.exceptions.DatabaseException;
+import org.terifan.raccoon.exceptions.DatabaseClosedException;
+import org.terifan.raccoon.btree.BTree;
 import org.terifan.raccoon.document.ObjectId;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,8 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
-import org.terifan.raccoon.blockdevice.RaccoonDeviceException;
-import org.terifan.raccoon.blockdevice.LobOpenOption;
+import org.terifan.raccoon.blockdevice.RaccoonIOException;
+import org.terifan.raccoon.blockdevice.lob.LobOpenOption;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.managed.UnsupportedVersionException;
 import org.terifan.raccoon.blockdevice.storage.FileBlockStorage;
@@ -22,7 +25,7 @@ import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.SecureBlockDevice;
 import org.terifan.logging.Level;
 import org.terifan.logging.Logger;
-import org.terifan.raccoon.blockdevice.LobByteChannel;
+import org.terifan.raccoon.blockdevice.lob.LobByteChannel;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ReadWriteLock;
@@ -91,17 +94,17 @@ public final class RaccoonDatabase implements AutoCloseable
 				{
 					if (!Files.deleteIfExists(aPath))
 					{
-						throw new RaccoonDeviceException("Failed to delete existing file: " + aPath);
+						throw new RaccoonIOException("Failed to delete existing file: " + aPath);
 					}
 				}
 				else if ((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && Files.size(aPath) == 0)
 				{
-					throw new RaccoonDeviceException("File is empty.");
+					throw new RaccoonIOException("File is empty.");
 				}
 			}
 			else if (aOpenOptions == DatabaseOpenOption.OPEN || aOpenOptions == DatabaseOpenOption.READ_ONLY)
 			{
-				throw new RaccoonDeviceException("File not found: " + aPath);
+				throw new RaccoonIOException("File not found: " + aPath);
 			}
 
 			boolean newFile = !Files.exists(aPath);
@@ -110,7 +113,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			init(fileBlockDevice, newFile, aOpenOptions, aAccessCredentials);
 		}
-		catch (DatabaseException | RaccoonDeviceException | DatabaseClosedException e)
+		catch (DatabaseException | RaccoonIOException | DatabaseClosedException e)
 		{
 			if (fileBlockDevice != null)
 			{
@@ -444,6 +447,8 @@ public final class RaccoonDatabase implements AutoCloseable
 		Document header = new Document().put("_id", aName);
 		collection.tryFindOne(header);
 
+		header.putIfAbsent("heap", k -> new Document().put("record", 128));
+
 		BlockAccessor blockAccessor = getBlockAccessor();
 
 		LobByteChannel channel = new LobByteChannel(blockAccessor, header, mReadOnly ? LobOpenOption.READ : LobOpenOption.WRITE, aOptions).setCloseAction(ch -> {
@@ -454,7 +459,7 @@ public final class RaccoonDatabase implements AutoCloseable
 			}
 		});
 
-		RaccoonHeap heap = new RaccoonHeap(blockAccessor, channel, header.getInt("record"), he -> {
+		RaccoonHeap heap = new RaccoonHeap(blockAccessor, channel, header.getDocument("heap").getInt("record"), he -> {
 			mHeapInstances.remove(aName);
 		});
 		mHeapInstances.put(aName, heap);
