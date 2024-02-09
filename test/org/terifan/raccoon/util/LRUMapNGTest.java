@@ -4,7 +4,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
 
-public class CacheNGTest
+public class LRUMapNGTest
 {
 	@Test
 	public void testPut()

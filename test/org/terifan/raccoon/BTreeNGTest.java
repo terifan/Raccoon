@@ -12,7 +12,7 @@ import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
 import static org.terifan.raccoon._Tools.createSecureStorage;
 import static org.testng.Assert.*;
-import static resources.__TestUtils.doc;
+import static org.terifan.raccoon._Tools.doc;
 
 
 public class BTreeNGTest

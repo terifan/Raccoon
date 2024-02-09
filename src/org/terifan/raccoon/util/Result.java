@@ -1,9 +1,9 @@
 package org.terifan.raccoon.util;
 
 
-public class Result<E>
+public class Result<T>
 {
-	private E mValue;
+	private T mValue;
 
 
 	public Result()
@@ -11,19 +11,19 @@ public class Result<E>
 	}
 
 
-	public Result(E value)
+	public Result(T value)
 	{
 		mValue = value;
 	}
 
 
-	public E get()
+	public T get()
 	{
 		return mValue;
 	}
 
 
-	public void set(E value)
+	public void set(T value)
 	{
 		mValue = value;
 	}

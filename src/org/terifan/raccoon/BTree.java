@@ -8,7 +8,6 @@ import org.terifan.raccoon.BTreeNode.RemoveResult;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.document.Array;
-import org.terifan.raccoon.util.AbortIteratorException;
 import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.blockdevice.compressor.CompressorAlgorithm;
 import org.terifan.raccoon.blockdevice.BlockType;
@@ -162,14 +161,7 @@ public class BTree implements AutoCloseable
 		log.i("visit");
 		log.inc();
 
-		try
-		{
-			mRoot.visit(aVisitor, null, null);
-		}
-		catch (AbortIteratorException e)
-		{
-			// ignore
-		}
+		mRoot.visit(aVisitor, null, null);
 
 		log.dec();
 	}

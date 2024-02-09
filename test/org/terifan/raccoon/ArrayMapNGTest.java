@@ -11,7 +11,10 @@ import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.Result;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
-import static resources.__TestUtils.*;
+import static org.terifan.raccoon._Tools.b;
+import static org.terifan.raccoon._Tools.c;
+import static org.terifan.raccoon._Tools.doc;
+import static org.terifan.raccoon._Tools.t;
 
 
 public class ArrayMapNGTest

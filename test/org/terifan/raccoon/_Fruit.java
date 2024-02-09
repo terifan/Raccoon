@@ -1,4 +1,4 @@
-package resources.entities;
+package org.terifan.raccoon;
 
 import org.terifan.raccoon.document.Document;
 

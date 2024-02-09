@@ -4,7 +4,6 @@ import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
-import resources.entities._Fruit;
 
 
 public class RaccoonDatabaseNGTest
