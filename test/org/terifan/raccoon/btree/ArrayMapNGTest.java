@@ -11,7 +11,6 @@ import java.util.Map.Entry;
 import org.terifan.raccoon.btree.ArrayMap.NearResult;
 import org.terifan.raccoon.btree.ArrayMap.PutResult;
 import org.terifan.raccoon.document.Document;
-import org.terifan.raccoon.util.Result;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 import static org.terifan.raccoon._Tools.b;

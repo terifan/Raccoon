@@ -8,7 +8,6 @@ import org.terifan.raccoon.RuntimeDiagnostics;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.blockdevice.BlockPointer;
-import org.terifan.raccoon.util.Result;
 import org.terifan.raccoon.blockdevice.BlockType;
 
 

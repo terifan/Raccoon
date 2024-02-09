@@ -4,7 +4,6 @@ import org.terifan.raccoon.btree.ArrayMap.PutResult;
 import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.document.Array;
-import org.terifan.raccoon.util.Result;
 
 
 public abstract class BTreeNode

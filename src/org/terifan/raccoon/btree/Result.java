@@ -1,7 +1,7 @@
-package org.terifan.raccoon.util;
+package org.terifan.raccoon.btree;
 
 
-public class Result<T>
+class Result<T>
 {
 	private T mValue;
 

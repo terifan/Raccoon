@@ -5,7 +5,6 @@ import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.getInt16;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.getInt32;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.putInt16;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.putInt32;
-import org.terifan.raccoon.util.Result;
 
 
 /**
