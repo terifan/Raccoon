@@ -22,7 +22,7 @@ public class RaccoonDirectoryNGTest
 
 		MemoryBlockStorage blockDevice = new MemoryBlockStorage(512);
 
-		try (RaccoonDatabase db = new RaccoonBuilder().device(blockDevice).get(DatabaseOpenOption.CREATE))
+		try (RaccoonDatabase db = new RaccoonBuilder().path(blockDevice).get(DatabaseOpenOption.CREATE))
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
 			try (LobByteChannel lob = dir.open(id, LobOpenOption.CREATE))
@@ -32,7 +32,7 @@ public class RaccoonDirectoryNGTest
 			}
 		}
 
-		try (RaccoonDatabase db = new RaccoonBuilder().device(blockDevice).get())
+		try (RaccoonDatabase db = new RaccoonBuilder().path(blockDevice).get())
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
 			try (LobByteChannel lob = dir.open(id, LobOpenOption.READ))

@@ -5,12 +5,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.terifan.raccoon.blockdevice.compressor.CompressorAlgorithm;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
-import org.terifan.raccoon.blockdevice.managed.SyncMode;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.CipherModeFunction;
 import org.terifan.raccoon.blockdevice.secure.EncryptionFunction;
 import org.terifan.raccoon.blockdevice.secure.KeyGenerationFunction;
 import org.terifan.raccoon.blockdevice.storage.BlockStorage;
+import org.terifan.raccoon.document.ObjectId;
 
 
 public class RaccoonBuilder
@@ -57,28 +57,30 @@ public class RaccoonBuilder
 		AccessCredentials ac = mPassword == null ? null : new AccessCredentials(mPassword, mEncryptionFunction, mKeyGenerationFunction, mCipherModeFunction).setIterationCount(mKeyGeneratorIterationCount);
 
 		if (mManagedBlockDevice != null)
-		return new RaccoonDatabase(mManagedBlockDevice, aDatabaseOpenOption, ac);
-
+		{
+			return new RaccoonDatabase(mManagedBlockDevice, aDatabaseOpenOption, ac);
+		}
 		if (mBlockStorage != null)
-		return new RaccoonDatabase(mBlockStorage, aDatabaseOpenOption, ac);
-
+		{
+			return new RaccoonDatabase(mBlockStorage, aDatabaseOpenOption, ac);
+		}
 		return new RaccoonDatabase(mPath, aDatabaseOpenOption, ac);
 	}
 
 
-	public RaccoonBuilder device(File aPath)
+	public RaccoonBuilder path(File aPath)
 	{
-		return device(aPath.toPath());
+		return RaccoonBuilder.this.path(aPath.toPath());
 	}
 
 
-	public RaccoonBuilder device(String aPath)
+	public RaccoonBuilder path(String aPath)
 	{
-		return device(Paths.get(aPath));
+		return RaccoonBuilder.this.path(Paths.get(aPath));
 	}
 
 
-	public RaccoonBuilder device(Path aPath)
+	public RaccoonBuilder path(Path aPath)
 	{
 		mManagedBlockDevice = null;
 		mBlockStorage = null;
@@ -87,7 +89,7 @@ public class RaccoonBuilder
 	}
 
 
-	public RaccoonBuilder device(BlockStorage aBlockStorage)
+	public RaccoonBuilder path(BlockStorage aBlockStorage)
 	{
 		mPath = null;
 		mManagedBlockDevice = null;
@@ -96,12 +98,61 @@ public class RaccoonBuilder
 	}
 
 
-	public RaccoonBuilder device(ManagedBlockDevice aManagedBlockDevice)
+	public RaccoonBuilder path(ManagedBlockDevice aManagedBlockDevice)
 	{
 		mPath = null;
 		mBlockStorage = null;
 		mManagedBlockDevice = aManagedBlockDevice;
 		return this;
+	}
+
+
+	/**
+	 * The database will be stored in a file in the system temporary directory with a random name.
+	 */
+	public RaccoonBuilder pathInTempDir()
+	{
+		File dir = new File(System.getProperty("java.io.tmpdir"));
+		if (!dir.exists())
+		{
+			throw new IllegalArgumentException("No temporary directory exists in this environment.");
+		}
+		for (;;)
+		{
+			File file = new File(dir, ObjectId.randomId() + ".rdb");
+			if (!file.exists())
+			{
+				return RaccoonBuilder.this.path(file);
+			}
+		}
+	}
+
+
+	/**
+	 * The database will be stored in a file in the system temporary directory with the name provided.
+	 */
+	public RaccoonBuilder pathInTempDir(String aName)
+	{
+		File dir = new File(System.getProperty("java.io.tmpdir"));
+		if (!dir.exists())
+		{
+			throw new IllegalArgumentException("No temporary directory exists in this environment.");
+		}
+		return RaccoonBuilder.this.path(new File(dir, aName));
+	}
+
+
+	/**
+	 * The database will be stored in a file in the user home directory with the name provided.
+	 */
+	public RaccoonBuilder pathInUserDir(String aName)
+	{
+		File dir = new File(System.getProperty("user.home"));
+		if (!dir.exists())
+		{
+			throw new IllegalArgumentException("User diretory not found in this environment.");
+		}
+		return RaccoonBuilder.this.path(new File(dir, aName));
 	}
 
 

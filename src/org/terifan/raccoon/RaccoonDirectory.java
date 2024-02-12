@@ -4,6 +4,7 @@ import org.terifan.raccoon.exceptions.LobNotFoundException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import org.terifan.raccoon.blockdevice.lob.LobAccessException;
 import org.terifan.raccoon.blockdevice.lob.LobByteChannel;
@@ -130,16 +131,16 @@ public class RaccoonDirectory<K>
 	}
 
 
-	public void forEach(LobConsumer aConsumer) throws IOException
+	public void forEach(LobConsumer aConsumer) throws IOException, InterruptedException, ExecutionException
 	{
 //		mCollection.listAll().forEach(e -> aConsumer.accept(e.get("_id"), e.getDocument(LobByteChannel.IX_METADATA)));
-		mCollection.find().forEach(e -> aConsumer.accept(e.get("_id"), e.getDocument("7")));
+		mCollection.find().get().forEach(e -> aConsumer.accept(e.get("_id"), e.getDocument("7")));
 	}
 
 
-	public List<ObjectId> list() throws IOException
+	public List<ObjectId> list() throws IOException, InterruptedException, ExecutionException
 	{
-		return (List<ObjectId>)mCollection.find().stream().map(e -> e.getObjectId("_id")).collect(Collectors.toList());
+		return (List<ObjectId>)mCollection.find().get().stream().map(e -> e.getObjectId("_id")).collect(Collectors.toList());
 	}
 
 
