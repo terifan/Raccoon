@@ -56,7 +56,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	private final static String INDEX_COLLECTION = "$indices";
 	private final static String HEAP_COLLECTION = "$heaps";
 
-	private ExecutorService mExecutor = Executors.newFixedThreadPool(1);
+	private ExecutorService mExecutor;
 
 	private ManagedBlockDevice mBlockDevice;
 	private DatabaseRoot mDatabaseRoot;
@@ -69,7 +69,6 @@ public final class RaccoonDatabase implements AutoCloseable
 	final DualMap<ObjectId, ObjectId, Document> mIndices;
 
 	private boolean mModified;
-	private boolean mCloseBlockDeviceWhenDatabaseClose;
 	private boolean mReadOnly;
 	private boolean mShutdownHookEnabled;
 	private Thread mShutdownHook;
@@ -85,6 +84,7 @@ public final class RaccoonDatabase implements AutoCloseable
 		mCollectionInstances = new ConcurrentSkipListMap<>();
 		mHeapInstances = new ConcurrentHashMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
+		mExecutor = Executors.newFixedThreadPool(1);
 	}
 
 
@@ -158,7 +158,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		this();
 
-		Assert.fail((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.size() == 0, "Block device is empty.");
+		Assert.assertFalse((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.size() == 0, "Block device is empty.");
 
 		boolean create = aBlockDevice.size() == 0 || aOpenOptions == DatabaseOpenOption.REPLACE;
 
@@ -170,7 +170,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		this();
 
-		Assert.fail((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.size() == 0, "Block device is empty.");
+		Assert.assertFalse((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.size() == 0, "Block device is empty.");
 
 		boolean create = aBlockDevice.size() == 0 || aOpenOptions == DatabaseOpenOption.REPLACE;
 
@@ -254,17 +254,10 @@ public final class RaccoonDatabase implements AutoCloseable
 				RaccoonCollection indices = getCollectionImpl(INDEX_COLLECTION, false);
 				if (indices != null)
 				{
-					try
+					indices.forEach(indexConf ->
 					{
-						for (Document indexConf : indices.find().get())
-						{
-							mIndices.put(indexConf.getArray("_id").getObjectId(0), indexConf.getArray("_id").getObjectId(1), indexConf);
-						}
-					}
-					catch (InterruptedException | ExecutionException e)
-					{
-						throw new IllegalStateException(e);
-					}
+						mIndices.put(indexConf.getArray("_id").getObjectId(0), indexConf.getArray("_id").getObjectId(1), indexConf);
+					});
 				}
 
 				log.dec();
@@ -298,13 +291,6 @@ public final class RaccoonDatabase implements AutoCloseable
 		{
 			throw new IllegalStateException(e);
 		}
-	}
-
-
-	public RaccoonDatabase setCloseBlockDeviceWhenDatabaseClose(boolean aCloseBlockDeviceWhenDatabaseClose)
-	{
-		mCloseBlockDeviceWhenDatabaseClose = aCloseBlockDeviceWhenDatabaseClose;
-		return this;
 	}
 
 
@@ -417,7 +403,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	void removeCollectionImpl(RaccoonCollection aCollection)
+	void removeCollectionImpl(RaccoonCollection aCollection) throws IOException, InterruptedException, ExecutionException
 	{
 		for (Document indexConf : mIndices.values(aCollection.getCollectionId()))
 		{
@@ -437,7 +423,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	void removeDirectoryImpl(RaccoonDirectory aDirectory)
+	void removeDirectoryImpl(RaccoonDirectory aDirectory) throws IOException, InterruptedException, ExecutionException
 	{
 		removeCollectionImpl(aDirectory.getCollection());
 	}
@@ -451,13 +437,13 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public RaccoonHeap getHeap(String aName) throws IOException
+	public RaccoonHeap getHeap(String aName) throws IOException, InterruptedException, ExecutionException
 	{
 		return getHeap(aName, null);
 	}
 
 
-	public RaccoonHeap getHeap(String aName, Document aOptions) throws IOException
+	public RaccoonHeap getHeap(String aName, Document aOptions) throws IOException, InterruptedException, ExecutionException
 	{
 		if (mHeapInstances.containsKey(aName))
 		{

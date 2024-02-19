@@ -1,14 +1,10 @@
 package org.terifan.raccoon.btree;
 
-import org.terifan.raccoon.btree.ArrayMapEntry;
-import org.terifan.raccoon.btree.ArrayMapKey;
-import org.terifan.raccoon.btree.ArrayMap;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
-import org.terifan.raccoon.btree.ArrayMap.NearResult;
 import org.terifan.raccoon.btree.ArrayMap.PutResult;
 import org.terifan.raccoon.document.Document;
 import org.testng.annotations.Test;
@@ -244,70 +240,6 @@ public class ArrayMapNGTest
 
 
 	@Test
-	public void testNearestA() throws IOException
-	{
-		Document value1 = doc(3);
-		Document value2 = doc(3);
-
-		ArrayMap map = new ArrayMap(new byte[512]);
-		map.put(new ArrayMapEntry(new ArrayMapKey("b"), value1, (byte)77), null);
-		map.put(new ArrayMapEntry(new ArrayMapKey("d"), value2, (byte)77), null);
-
-		ArrayMapEntry A = new ArrayMapEntry(new ArrayMapKey("a"));
-		ArrayMapEntry B = new ArrayMapEntry(new ArrayMapKey("b"));
-		ArrayMapEntry C = new ArrayMapEntry(new ArrayMapKey("c"));
-		ArrayMapEntry D = new ArrayMapEntry(new ArrayMapKey("d"));
-		ArrayMapEntry E = new ArrayMapEntry(new ArrayMapKey("e"));
-
-		assertEquals(map.nearest(A), NearResult.LOWER); // a is lower than b
-		assertEquals(A.getValue(), value1);
-
-		assertEquals(map.nearest(B), NearResult.MATCH); // b matches
-		assertEquals(B.getValue(), value1);
-
-		assertEquals(map.nearest(C), NearResult.LOWER); // c is lower than d
-		assertEquals(C.getValue(), value2);
-
-		assertEquals(map.nearest(D), NearResult.MATCH); // d matches
-		assertEquals(D.getValue(), value2);
-
-		assertEquals(map.nearest(E), NearResult.GREATER); // e is greater
-	}
-
-
-	@Test
-	public void testNearestB() throws IOException
-	{
-		Document value1 = doc(3);
-		Document value2 = doc(3);
-
-		ArrayMap map = new ArrayMap(new byte[512]);
-		map.put(new ArrayMapEntry(new ArrayMapKey("bbb"), value1, (byte)77), null);
-		map.put(new ArrayMapEntry(new ArrayMapKey("dd"), value2, (byte)77), null);
-
-		ArrayMapEntry A = new ArrayMapEntry(new ArrayMapKey("aaaaa"));
-		ArrayMapEntry B = new ArrayMapEntry(new ArrayMapKey("bbb"));
-		ArrayMapEntry C = new ArrayMapEntry(new ArrayMapKey("c"));
-		ArrayMapEntry D = new ArrayMapEntry(new ArrayMapKey("dd"));
-		ArrayMapEntry E = new ArrayMapEntry(new ArrayMapKey("eeee"));
-
-		assertEquals(map.nearest(A), NearResult.LOWER); // a is lower than b
-		assertEquals(A.getValue(), value1);
-
-		assertEquals(map.nearest(B), NearResult.MATCH); // b matches
-		assertEquals(B.getValue(), value1);
-
-		assertEquals(map.nearest(C), NearResult.LOWER); // c is lower than d
-		assertEquals(C.getValue(), value2);
-
-		assertEquals(map.nearest(D), NearResult.MATCH); // d matches
-		assertEquals(D.getValue(), value2);
-
-		assertEquals(map.nearest(E), NearResult.GREATER); // e is last
-	}
-
-
-	@Test
 	public void testKeyOrder() throws IOException
 	{
 		Document value = doc();
@@ -351,5 +283,66 @@ public class ArrayMapNGTest
 
 			aValues.put(key, value);
 		}
+	}
+
+
+	@Test
+	public void testNearestIndex()
+	{
+		ArrayMap map = new ArrayMap(100);
+		map.put(new ArrayMapEntry(new ArrayMapKey("a"), Document.of("_id:a"),(byte)0), null);
+		map.put(new ArrayMapEntry(new ArrayMapKey("c"), Document.of("_id:c"),(byte)0), null);
+		map.put(new ArrayMapEntry(new ArrayMapKey("e"), Document.of("_id:e"),(byte)0), null);
+
+		assertEquals(0, map.nearestIndex(new ArrayMapKey("a")));
+		assertEquals(0, map.nearestIndex(new ArrayMapKey("b")));
+		assertEquals(1, map.nearestIndex(new ArrayMapKey("c")));
+		assertEquals(1, map.nearestIndex(new ArrayMapKey("d")));
+		assertEquals(2, map.nearestIndex(new ArrayMapKey("e")));
+		assertEquals(2, map.nearestIndex(new ArrayMapKey("f")));
+	}
+
+
+	@Test
+	public void testNearest()
+	{
+		ArrayMap map = new ArrayMap(100);
+		map.put(new ArrayMapEntry(new ArrayMapKey("a"), Document.of("_id:a"),(byte)0), null);
+		map.put(new ArrayMapEntry(new ArrayMapKey("c"), Document.of("_id:c"),(byte)0), null);
+		map.put(new ArrayMapEntry(new ArrayMapKey("e"), Document.of("_id:e"),(byte)0), null);
+
+		ArrayMapEntry a = new ArrayMapEntry(new ArrayMapKey("a")); map.loadNearestEntry(a);
+		ArrayMapEntry b = new ArrayMapEntry(new ArrayMapKey("b")); map.loadNearestEntry(b);
+		ArrayMapEntry c = new ArrayMapEntry(new ArrayMapKey("c")); map.loadNearestEntry(c);
+		ArrayMapEntry d = new ArrayMapEntry(new ArrayMapKey("d")); map.loadNearestEntry(d);
+		ArrayMapEntry e = new ArrayMapEntry(new ArrayMapKey("e")); map.loadNearestEntry(e);
+		ArrayMapEntry f = new ArrayMapEntry(new ArrayMapKey("f")); map.loadNearestEntry(f);
+
+		System.out.println(a);
+		System.out.println(b);
+		System.out.println(c);
+		System.out.println(d);
+		System.out.println(e);
+		System.out.println(f);
+	}
+
+
+	@Test
+	public void testNextEntry()
+	{
+		ArrayMap map = new ArrayMap(100);
+		map.put(new ArrayMapEntry(new ArrayMapKey("b"), Document.of("_id:a"),(byte)0), null);
+		map.put(new ArrayMapEntry(new ArrayMapKey("d"), Document.of("_id:c"),(byte)0), null);
+		map.put(new ArrayMapEntry(new ArrayMapKey("f"), Document.of("_id:e"),(byte)0), null);
+
+		String[] s = {"b","d","f","*"};
+
+		assertEquals(s[map.findEntry(new ArrayMapKey("a"))], "b");
+		assertEquals(s[map.findEntry(new ArrayMapKey("b"))], "b");
+		assertEquals(s[map.findEntry(new ArrayMapKey("c"))], "d");
+		assertEquals(s[map.findEntry(new ArrayMapKey("d"))], "d");
+		assertEquals(s[map.findEntry(new ArrayMapKey("e"))], "f");
+		assertEquals(s[map.findEntry(new ArrayMapKey("f"))], "f");
+		assertEquals(s[map.findEntry(new ArrayMapKey("g"))], "*");
 	}
 }

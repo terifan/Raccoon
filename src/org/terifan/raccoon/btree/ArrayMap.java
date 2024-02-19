@@ -19,7 +19,7 @@ import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.putInt32;
  * [header] 2 bytes - entry count 4 bytes - free space offset (minus HEADER_SIZE) [list of entries] (entry 1..n) 2 bytes - key length 2
  * bytes - value length n bytes - key n bytes - value [free space] n bytes - zeros [list of pointers] (pointer 1..n) 4 bytes - offset
  */
-public class ArrayMap implements Iterable<ArrayMapEntry>
+class ArrayMap implements Iterable<ArrayMapEntry>
 {
 	final static int HEADER_SIZE = 2 + 4;
 	final static int ENTRY_POINTER_SIZE = 4;
@@ -38,23 +38,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	private int mFreeSpaceOffset;
 	int mEntryCount;
 	private int mModCount;
-
-
-	public enum NearResult
-	{
-		/**
-		 * the ArrayMap contain an entry with the key provided
-		 */
-		MATCH,
-		/**
-		 * the ArrayMap contain an entry with a larger key
-		 */
-		LOWER,
-		/**
-		 * the ArrayMap don't contain any entry with a larger key
-		 */
-		GREATER
-	}
 
 
 	public enum PutResult
@@ -281,27 +264,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public NearResult nearest(ArrayMapEntry aEntry)
-	{
-		int index = indexOf(aEntry.getKey());
-
-		if (index == -mEntryCount - 1)
-		{
-			loadKeyAndValue(mEntryCount - 1, aEntry);
-			return NearResult.GREATER;
-		}
-		if (index < 0)
-		{
-			loadKeyAndValue(-index - 1, aEntry);
-			return NearResult.LOWER;
-		}
-
-		loadKeyAndValue(index, aEntry);
-
-		return NearResult.MATCH;
-	}
-
-
 	public int nearestIndex(ArrayMapKey aKey)
 	{
 		int index = indexOf(aKey);
@@ -321,18 +283,40 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	public int loadNearestEntry(ArrayMapEntry aEntry)
 	{
-		int index = indexOf(aEntry.getKey());
-
-		if (index == -mEntryCount - 1)
-		{
-			index = mEntryCount - 1;
-		}
-		else if (index < 0)
-		{
-			index = Math.max(0, -index - 2);
-		}
-
+		int index = nearestIndex(aEntry.getKey());
 		loadKeyAndValue(index, aEntry);
+		return index;
+	}
+
+
+	/**
+	 * Find the index of the actual key or the index of a key larger than the one provided.
+	 */
+	public int findEntry(ArrayMapKey aKey)
+	{
+		int index = indexOf(aKey);
+
+		if (index < 0)
+		{
+			index = -index - 1;
+		}
+
+		return index;
+	}
+
+
+	public int findEntryAfter(ArrayMapKey aKey)
+	{
+		int index = indexOf(aKey);
+
+		if (index < 0)
+		{
+			index = -index - 1;
+		}
+		else
+		{
+			index++;
+		}
 
 		return index;
 	}
@@ -349,26 +333,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 		aEntry.setKey(new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength));
 		aEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
 		return aEntry;
-	}
-
-
-	void loadKey(int aIndex, ArrayMapEntry aEntry)
-	{
-		int entryOffset = readEntryOffset(aIndex);
-		int keyOffset = readKeyOffset(entryOffset);
-		int keyLength = readKeyLength(entryOffset);
-
-		aEntry.setKey(new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength));
-	}
-
-
-	void loadValue(int aIndex, ArrayMapEntry aEntry)
-	{
-		int entryOffset = readEntryOffset(aIndex);
-		int valueOffset = readValueOffset(entryOffset);
-		int valueLength = readValueLength(entryOffset);
-
-		aEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
 	}
 
 
@@ -450,6 +414,8 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 
 	public ArrayMapEntry get(int aIndex, ArrayMapEntry aOutputEntry)
 	{
+		assert aIndex < size() : "out of bounds: index: " + aIndex + ", size: " + size();
+
 		int entryOffset = readEntryOffset(aIndex);
 		int keyOffset = readKeyOffset(entryOffset);
 		int keyLength = readKeyLength(entryOffset);
@@ -503,7 +469,6 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 	{
 		int low = 0;
 		int high = mEntryCount - 1;
-		ArrayMapKey key = new ArrayMapKey();
 
 		while (low <= high)
 		{
@@ -513,7 +478,7 @@ public class ArrayMap implements Iterable<ArrayMapEntry>
 			int keyOffset = readKeyOffset(entryOffset);
 			int keyLength = readKeyLength(entryOffset);
 
-			int cmp = aKey.compareTo(new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength));
+			int cmp = aKey.compareTo(mBuffer, mStartOffset + keyOffset, keyLength);
 
 			if (cmp > 0)
 			{

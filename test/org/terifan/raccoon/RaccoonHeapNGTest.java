@@ -9,7 +9,7 @@ import org.testng.annotations.Test;
 public class RaccoonHeapNGTest
 {
 	@Test
-	public void testSomeMethod() throws IOException
+	public void testSomeMethod() throws Exception
 	{
 		MemoryBlockStorage blockDevice = new MemoryBlockStorage(512);
 

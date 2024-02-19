@@ -1,26 +1,27 @@
 package org.terifan.raccoon;
 
+import java.io.IOException;
 import org.terifan.raccoon.exceptions.DocumentNotFoundException;
 import org.terifan.raccoon.exceptions.UniqueConstraintException;
 import org.terifan.raccoon.exceptions.DuplicateKeyException;
 import org.terifan.raccoon.exceptions.CommitBlockedException;
 import org.terifan.raccoon.btree.ArrayMapKey;
 import org.terifan.raccoon.btree.ArrayMapEntry;
-import org.terifan.raccoon.btree.BTreeVisitor;
 import org.terifan.raccoon.btree.BTree;
-import org.terifan.raccoon.btree.BTreeLeafNode;
 import org.terifan.raccoon.document.ObjectId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Iterator;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.terifan.logging.Logger;
@@ -29,15 +30,17 @@ import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.BlockPointer;
 import org.terifan.raccoon.blockdevice.BlockType;
 import org.terifan.raccoon.blockdevice.compressor.CompressorAlgorithm;
+import org.terifan.raccoon.btree.BTreeIterator;
+import org.terifan.raccoon.btree.BTreeLeafNode;
+import org.terifan.raccoon.btree.BTreeVisitor;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
+import org.terifan.raccoon.exceptions.DocumentAlreadyExists;
 import org.terifan.raccoon.util.ReadWriteLock;
-import org.terifan.raccoon.util.ReadWriteLock.ReadLock;
-import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 
 // db.getCollection("people").createIndex(Document.of("name:malesByName,unique:false,sparse:true,clone:true,filter:[{gender:{$eq:male}}],fields:[{firstName:1},{lastName:1}]"));
 
-public final class RaccoonCollection
+public final class RaccoonCollection implements Iterable<Document>
 {
 	final static Logger log = Logger.getLogger();
 	final ReadWriteLock mLock;
@@ -74,29 +77,49 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Find many documents from the collection returning a list with those found.
+	 * Find documents from the collection updating the document instances provided.
 	 *
-	 * @return those documents matching the criteria provided
+	 * @return if all was found
 	 */
-	public Future<ArrayList<Document>> tryFindMany(Document... aDocuments)
+	public boolean tryFindMany(Document... aDocuments) throws InterruptedException, ExecutionException
 	{
-		return findMany(false, Arrays.asList(aDocuments));
+		return tryFindMany(Arrays.asList(aDocuments));
 	}
 
 
 	/**
-	 * Find many documents from the collection returning a list with those found.
+	 * Find documents from the collection updating the document instances provided.
 	 *
-	 * @return those documents matching the criteria provided
+	 * @return if all was found
 	 */
-	public Future<ArrayList<Document>> tryFindMany(Iterable<Document> aDocuments)
+	public boolean tryFindMany(Iterable<Document> aDocuments) throws InterruptedException, ExecutionException
 	{
-		return findMany(false, aDocuments);
+		AtomicBoolean result = new AtomicBoolean(true);
+		ReadTask task = new ReadTask(this, "find")
+		{
+			@Override
+			public void call()
+			{
+				for (Document doc : aDocuments)
+				{
+					ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(doc, false));
+					if (mTree.get(entry))
+					{
+						unmarshalDocument(entry, doc);
+					}
+					else
+					{
+						result.set(false);
+					}
+				}
+			}
+		};
+		return mExecutor.submit(task, result).get().get();
 	}
 
 
 	/**
-	 * Atomically find many documents from the collection or throws an exception if any not found.
+	 * Atomically find documents from the collection.
 	 *
 	 * @return documents matching the criteria provided
 	 */
@@ -108,6 +131,8 @@ public final class RaccoonCollection
 
 	/**
 	 * Find a document from the collection or throws an exception if not found.
+	 *
+	 * @return the found document
 	 */
 	public Future<Document> findOne(Document aDocument)
 	{
@@ -132,36 +157,35 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Find the document from the collection returning if it was found.
+	 * Find one document from the collection updating the provided document returning true if it was found.
 	 *
 	 * @return if a document was found
 	 */
-	public boolean tryFindOne(Document aDocument)
+	public boolean tryFindOne(Document aDocument) throws InterruptedException, ExecutionException
 	{
-		log.i("tryFindOne {}", aDocument);
-		log.inc();
-
-		try (ReadLock lock = mLock.readLock())
+		AtomicBoolean result = new AtomicBoolean(false);
+		ReadTask task = new ReadTask(this, "size")
 		{
-			ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(aDocument, false));
-
-			if (mTree.get(entry))
+			@Override
+			public void call()
 			{
-				unmarshalDocument(entry, aDocument);
-				return true;
-			}
+				ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(aDocument, false));
 
-			return false;
-		}
-		finally
-		{
-			log.dec();
-		}
+				if (mTree.get(entry))
+				{
+					unmarshalDocument(entry, aDocument);
+					result.set(true);
+				}
+			}
+		};
+		return mExecutor.submit(task, result).get().get();
 	}
 
 
 	/**
-	 * Insert or replace a document in this collection returning if it was inserted.
+	 * Insert or replace a document in this collection returning a summary of changes.
+	 *
+	 * @return a summary of changes
 	 */
 	public Future<Result> saveOne(Document aDocument)
 	{
@@ -179,9 +203,9 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Insert or replace many documents in this collection returning number of inserts.
+	 * Insert or replace documents in this collection returning a summary of changes.
 	 *
-	 * @return number of inserted documents
+	 * @return a summary of changes
 	 */
 	public Future<Result> saveMany(Document... aDocuments)
 	{
@@ -190,9 +214,9 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Insert or replace many documents in this collection returning number of inserts.
+	 * Insert or replace documents in this collection returning a summary of changes.
 	 *
-	 * @return number of inserted documents
+	 * @return a summary of changes
 	 */
 	public Future<Result> saveMany(Iterable<Document> aDocuments)
 	{
@@ -214,6 +238,8 @@ public final class RaccoonCollection
 
 	/**
 	 * Insert a document in this collection or throws an exception if the document already exists.
+	 *
+	 * @return a summary of changes
 	 */
 	public Future<Result> insertOne(Document aDocument)
 	{
@@ -223,6 +249,13 @@ public final class RaccoonCollection
 			@Override
 			public void call()
 			{
+				ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(aDocument, false));
+
+				if (mTree.get(entry))
+				{
+					throw new DocumentAlreadyExists();
+				}
+
 				result.increment(insertOrUpdate(aDocument, true) ? "insert" : "replace");
 			}
 		};
@@ -231,7 +264,9 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Atomically insert many documents in this collection or throws an exception if any document already exists.
+	 * Atomically insert many documents in this collection returning a summary of changes.
+	 *
+	 * @return a summary of changes
 	 */
 	public Future<Result> insertMany(Document... aDocuments)
 	{
@@ -240,7 +275,9 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Atomically insert many documents in this collection or throws an exception if any document already exists.
+	 * Atomically insert many documents in this collection returning a summary of changes.
+	 *
+	 * @return a summary of changes
 	 */
 	public Future<Result> insertMany(Iterable<Document> aDocuments)
 	{
@@ -261,7 +298,9 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Replace one document in this collection or throws an exception if document is missing.
+	 * Replace one document in this collection or throws an exception if not found.
+	 *
+	 * @return a summary of changes
 	 */
 	public Future<Result> replaceOne(Document aDocument) throws DocumentNotFoundException
 	{
@@ -288,74 +327,73 @@ public final class RaccoonCollection
 	 *
 	 * @return if a document was replaced
 	 */
-	public boolean tryReplaceOne(Document aDocument) throws DocumentNotFoundException
+	public boolean tryReplaceOne(Document aDocument) throws InterruptedException, ExecutionException
 	{
-		log.i("insert {}", aDocument);
-		log.inc();
-
-		try (WriteLock lock = mLock.writeLock())
+		AtomicBoolean result = new AtomicBoolean(true);
+		WriteTask task = new WriteTask(this, "replace one")
 		{
-			mModCount++;
-
-			return !insertOrUpdate(aDocument, false);
-		}
-		finally
-		{
-			log.dec();
-		}
+			@Override
+			public void call()
+			{
+				result.set(!insertOrUpdate(aDocument, false));
+			}
+		};
+		return mExecutor.submit(task, result).get().get();
 	}
 
 
 	/**
-	 * Replace many document in this collection and return the number of replaced.
+	 * Atomically replace documents in this collection and return if all was replaced.
+	 *
+	 * @return if all was replaced
 	 */
-	public int tryReplaceMany(Document... aDocuments) throws DocumentNotFoundException
+	public boolean tryReplaceMany(Document... aDocuments) throws InterruptedException, ExecutionException
 	{
 		return tryReplaceMany(Arrays.asList(aDocuments));
 	}
 
 
 	/**
-	 * Replace many document in this collection and return the number of replaced.
+	 * Atomically replace documents in this collection and return if all was replaced.
+	 *
+	 * @return if all was replaced
 	 */
-	public int tryReplaceMany(Iterable<Document> aDocuments) throws DocumentNotFoundException
+	public boolean tryReplaceMany(Iterable<Document> aDocuments) throws InterruptedException, ExecutionException
 	{
-		log.i("replace many");
-		log.inc();
-
-		try (WriteLock lock = mLock.writeLock())
+		AtomicBoolean result = new AtomicBoolean(true);
+		WriteTask task = new WriteTask(this, "tryReplaceMany")
 		{
-			mModCount++;
-			int count = 0;
-
-			for (Document document : aDocuments)
+			@Override
+			public void call()
 			{
-				if (!insertOrUpdate(document, false))
+				for (Document document : aDocuments)
 				{
-					count++;
+					if (!insertOrUpdate(document, false))
+					{
+						result.set(false);
+					}
 				}
 			}
-
-			return count;
-		}
-		finally
-		{
-			log.dec();
-		}
+		};
+		return mExecutor.submit(task, result).get().get();
 	}
 
 
 	/**
-	 * Atomically replace documents in this collection or throws an exception if any document missing.
+	 * Atomically replace documents in this collection returning a summary of changes.
+	 *
+	 * @return a summary of changes
 	 */
-	public Future<Result> replaceMany(Document... aDocuments) throws DocumentNotFoundException
+	public Future<Result> replaceMany(Document... aDocuments)
 	{
 		return replaceMany(Arrays.asList(aDocuments));
 	}
 
 
 	/**
-	 * Atomically replace documents in this collection or throws an exception if any document missing.
+	 * Atomically replace documents in this collection returning a summary of changes.
+	 *
+	 * @return a summary of changes
 	 */
 	public Future<Result> replaceMany(Iterable<Document> aDocuments) throws DocumentNotFoundException
 	{
@@ -365,16 +403,6 @@ public final class RaccoonCollection
 			@Override
 			public void call()
 			{
-				for (Document document : aDocuments)
-				{
-					ArrayMapEntry entry = new ArrayMapEntry(getDocumentKey(document, false));
-
-					if (!mTree.get(entry))
-					{
-						throw new DocumentNotFoundException();
-					}
-				}
-
 				for (Document document : aDocuments)
 				{
 					result.increment(insertOrUpdate(document, false) ? "insert" : "replace");
@@ -387,6 +415,8 @@ public final class RaccoonCollection
 
 	/**
 	 * Delete one document or throws an exception if not found.
+	 *
+	 * @return a summary of changes
 	 */
 	public Future<Result> deleteOne(Document aDocument) throws DocumentNotFoundException
 	{
@@ -395,20 +425,24 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Delete many documents return the number of deleted documents.
+	 * Delete many documents and return if all was deleted.
+	 *
+	 * @return if all was deleted
 	 */
-	public Future<Result> tryDeleteMany(Document... aDocument)
+	public boolean tryDeleteMany(Document... aDocument) throws InterruptedException, ExecutionException
 	{
 		return tryDeleteMany(Arrays.asList(aDocument));
 	}
 
 
 	/**
-	 * Delete many documents return the number of deleted documents.
+	 * Delete many documents and return if all was deleted.
+	 *
+	 * @return if all was deleted
 	 */
-	public Future<Result> tryDeleteMany(Iterable<Document> aDocuments)
+	public boolean tryDeleteMany(Iterable<Document> aDocuments) throws InterruptedException, ExecutionException
 	{
-		Result result = new Result();
+		AtomicBoolean result = new AtomicBoolean(true);
 		WriteTask task = new WriteTask(this, "replace many")
 		{
 			@Override
@@ -417,40 +451,33 @@ public final class RaccoonCollection
 				for (Document key : aDocuments)
 				{
 					ArrayMapEntry prevEntry = mTree.remove(new ArrayMapEntry(getDocumentKey(key, false)));
-
 					if (prevEntry != null)
 					{
-						result.increment("delete");
-
 						Document prevDoc = deleteExternal(prevEntry, true);
-
 						if (prevDoc != null)
 						{
 							deleteIndexEntries(prevEntry.getValue());
 						}
 					}
+					else
+					{
+						result.set(false);
+					}
 				}
 			}
 		};
-		return mExecutor.submit(task, result);
+		return mExecutor.submit(task, result).get().get();
 	}
 
 
 	/**
-	 * Try delete one document and return if it was deleted.
+	 * Delete one document and return if it was deleted.
 	 *
 	 * @return if a document was deleted
 	 */
-	public boolean tryDeleteOne(Document aDocument)
+	public boolean tryDeleteOne(Document aDocument) throws InterruptedException, ExecutionException
 	{
-		try
-		{
-			return deleteImpl(false, Arrays.asList(aDocument)).get() != null;
-		}
-		catch (InterruptedException | ExecutionException e)
-		{
-			return false;
-		}
+		return deleteImpl(false, Arrays.asList(aDocument)).get() != null;
 	}
 
 
@@ -486,7 +513,9 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Atomically delete many documents or throws an exception if any not found.
+	 * Atomically delete many documents returning a summary of changes.
+	 *
+	 * @return a summary of changes
 	 */
 	public Future<Result> deleteMany(Document... aDocuments)
 	{
@@ -495,7 +524,9 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Atomically delete many documents or throws an exception if any not found.
+	 * Atomically delete many documents returning a summary of changes.
+	 *
+	 * @return a summary of changes
 	 */
 	public Future<Result> deleteMany(Iterable<Document> aDocuments)
 	{
@@ -504,22 +535,23 @@ public final class RaccoonCollection
 
 
 	/**
-	 * Return all documents in this collection.
+	 * Atomically return all documents in this collection.
+	 *
+	 * @return all documents
 	 */
 	public Future<ArrayList<Document>> find()
 	{
 		ArrayList<Document> result = new ArrayList<>();
-		ReadTask task = new ReadTask(this, "find")
+		ReadTask task = new ReadTask(this, "size")
 		{
 			@Override
 			public void call()
 			{
-				mTree.visit(new BTreeVisitor()
-				{
+				mTree.visit(new BTreeVisitor(){
 					@Override
 					public boolean leaf(BTreeLeafNode aNode)
 					{
-						aNode.forEachEntry(e -> result.add(unmarshalDocument(e, new Document())));
+						aNode.forEachEntry(e -> result.add(unmarshalDocument(e, mDocumentSupplier.get())));
 						return true;
 					}
 				});
@@ -531,55 +563,116 @@ public final class RaccoonCollection
 
 	/**
 	 * Return the number of documents in this collection.
+	 *
+	 * @return documents in the collection
 	 */
-	public long size()
+	public Future<AtomicLong> size()
 	{
-		try (ReadLock lock = mLock.readLock())
+		AtomicLong result = new AtomicLong();
+		ReadTask task = new ReadTask(this, "size")
 		{
-			return mTree.size();
-		}
+			@Override
+			public void call()
+			{
+				result.set(mTree.size());
+			}
+		};
+		return mExecutor.submit(task, result);
 	}
 
 
 	/**
-	 * Visit all documents in this collection.
+	 * Returning a live iterator over all documents in this collection.
+	 * <p>
+	 * The iterator will reflect changes made to the collection while being iterated.
+	 * </p>
+	 * @return an iterator over all documents in this collection
 	 */
-	public void forEach(Consumer<Document> aAction)
+	@Override
+	public Iterator<Document> iterator()
 	{
-		try (ReadLock lock = mLock.readLock())
+		return new BTreeIterator(mTree)
 		{
-			mTree.visit(new BTreeVisitor()
+			@Override
+			protected Document unmarshal(ArrayMapEntry aEntry)
 			{
-				@Override
-				public boolean leaf(BTreeLeafNode aNode)
-				{
-					aNode.forEachEntry(e -> aAction.accept(unmarshalDocument(e, mDocumentSupplier.get())));
-					return true;
-				}
-			});
-		}
+				return unmarshalDocument(aEntry, mDocumentSupplier.get());
+			}
+			@Override
+			protected void remove(ArrayMapEntry aEntry)
+			{
+				deleteImpl(aEntry, mDocumentSupplier.get(), false);
+			}
+		};
 	}
+
+
+	/**
+	 * Returning a live iterator over all keys in this collection. Only the _id field will be populated in each document.
+	 * <p>
+	 * The iterator will reflect changes made to the collection while being iterated.
+	 * </p>
+	 * @return an iterator over all keys in this collection
+	 */
+	public Iterable<Document> keys()
+	{
+		return () ->  new BTreeIterator(mTree)
+		{
+			@Override
+			protected Document unmarshal(ArrayMapEntry aEntry)
+			{
+				return mDocumentSupplier.get().put("_id", aEntry.getKey().get());
+			}
+			@Override
+			protected void remove(ArrayMapEntry aEntry)
+			{
+				deleteImpl(aEntry, mDocumentSupplier.get(), false);
+			}
+		};
+	}
+
+
+	/**
+	 * Iterate live over all documents in this collection.
+	 * <p>
+	 * The iterator will reflect changes made to the collection while being iterated.
+	 * </p>
+	 */
+	public void foreach(Consumer<Document> aConsumer)
+	{
+        for (Document doc : this)
+		{
+            aConsumer.accept(doc);
+        }
+    }
 
 
 	/**
 	 * Delete all documents in this collection.
 	 */
-	public void drop()
+	public void drop() throws IOException, InterruptedException, ExecutionException
 	{
-		try (WriteLock lock = mLock.writeLock())
+		Result result = new Result();
+		WriteTask task = new WriteTask(this, "drop")
 		{
-			mModCount++;
-
-//			BTree prev = mTree;
-//			mTree = new BTree(getBlockAccessor(), mTree.getConfiguration().clone().remove("root"));
-			mTree.drop(e -> deleteExternal(e, false));
-
-			mDatabase.removeCollectionImpl(this);
-		}
-
-		mDatabase = null;
-		mTree = null;
-		mTree = null;
+			@Override
+			public void call()
+			{
+				try
+				{
+					mTree.drop(e -> deleteExternal(e, false));
+					mDatabase.removeCollectionImpl(RaccoonCollection.this);
+				}
+				catch (IOException | InterruptedException | ExecutionException e)
+				{
+					throw new IllegalStateException(e);
+				}
+				mDatabase = null;
+				mTree = null;
+				mTree = null;
+			}
+		};
+		mExecutor.submit(task, result).get();
 	}
 
 
@@ -619,6 +712,11 @@ public final class RaccoonCollection
 	}
 
 
+	/**
+	 * Commit changes to the block device returning a summary of changes.
+	 *
+	 * @return a summary of changes
+	 */
 	public Future<Result> commit()
 	{
 		return commit(() ->
@@ -657,7 +755,7 @@ public final class RaccoonCollection
 	}
 
 
-	public ArrayList<Document> find(Document aFilter)
+	public ArrayList<Document> find(Document aFilter) throws InterruptedException, ExecutionException
 	{
 		log.i("find {}", aFilter);
 		log.inc();
@@ -757,6 +855,9 @@ public final class RaccoonCollection
 	}
 
 
+	/**
+	 * @return true if inserted
+	 */
 	private boolean insertOrUpdate(Document aDocument, boolean aInsert)
 	{
 		ArrayMapKey key = getDocumentKey(aDocument, true);
@@ -853,27 +954,32 @@ public final class RaccoonCollection
 			{
 				for (Document doc : aDocuments)
 				{
-					ArrayMapEntry prev = mTree.remove(new ArrayMapEntry(getDocumentKey(doc, false)));
-
-					if (prev != null)
-					{
-						Document prevDoc = deleteExternal(prev, true);
-
-						if (prevDoc == null)
-						{
-							prevDoc = prev.getValue();
-						}
-
-						deleteIndexEntries(prevDoc);
-					}
-					else if (aFailFast)
-					{
-						throw new DocumentNotFoundException(doc.get("_id"));
-					}
+					deleteImpl(new ArrayMapEntry(getDocumentKey(doc, false)), doc, aFailFast);
 				}
 			}
 		};
 		return mExecutor.submit(task, result);
+	}
+
+
+	protected void deleteImpl(ArrayMapEntry aEntry, Document aDoc, boolean aFailFast) throws DocumentNotFoundException
+	{
+		ArrayMapEntry prev = mTree.remove(aEntry);
+		if (prev != null)
+		{
+			Document prevDoc = deleteExternal(prev, true);
+
+			if (prevDoc == null)
+			{
+				prevDoc = prev.getValue();
+			}
+
+			deleteIndexEntries(prevDoc);
+		}
+		else if (aFailFast)
+		{
+			throw new DocumentNotFoundException(aDoc.get("_id"));
+		}
 	}
 
 
@@ -919,18 +1025,18 @@ public final class RaccoonCollection
 	}
 
 
-	ArrayList<Document> findImpl(Document aFilter)
+	ArrayList<Document> findImpl(Document aFilter) throws InterruptedException, ExecutionException
 	{
-		try (ReadLock lock = mLock.readLock())
+		ArrayList<Document> result = new ArrayList<>();
+		ReadTask task = new ReadTask(this, "size")
 		{
-			ArrayList<Document> list = new ArrayList<>();
-			mTree.find(list, aFilter, entry -> unmarshalDocument(entry, mDocumentSupplier.get()));
-			return list;
-		}
-		finally
-		{
-			log.dec();
-		}
+			@Override
+			public void call()
+			{
+				mTree.find(result, aFilter, entry -> unmarshalDocument(entry, mDocumentSupplier.get()));
+			}
+		};
+		return mExecutor.submit(task, result).get();
 	}
 
 
@@ -1074,31 +1180,29 @@ public final class RaccoonCollection
 
 	private void deleteIndexEntries(Document aPrevDoc)
 	{
-		for (Document indexConf : mDatabase.mIndices.values(getCollectionId()))
-		{
-//			ArrayList<Array> result = new ArrayList<>();
-//			generatePermutations(indexConf, aPrevDoc, new Array(), 0, result);
-//			for (Array values : result)
+//		for (Document indexConf : mDatabase.mIndices.values(getCollectionId()))
+//		{
+////			ArrayList<Array> result = new ArrayList<>();
+////			generatePermutations(indexConf, aPrevDoc, new Array(), 0, result);
+////			for (Array values : result)
+////			{
+////			}
+//
+//			try
 //			{
+//				getIndexByConf(indexConf).forEach(doc ->
+//				{
+////					if (doc.get("_ref").equals(aPrevDoc.get("_id")))
+//					{
+//						getIndexByConf(indexConf).findOneAndDelete(doc);
+//					}
+//				});
 //			}
-
-			try
-			{
-				List<Document> list = getIndexByConf(indexConf).find().get();
-				for (Document doc : list)
-				{
-//					if (doc.get("_ref").equals(aPrevDoc.get("_id")))
-					{
-						getIndexByConf(indexConf).findOneAndDelete(doc);
-						break;
-					}
-				}
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace(System.out);
-			}
-		}
+//			catch (Exception e)
+//			{
+//				e.printStackTrace(System.out);
+//			}
+//		}
 	}
 
 

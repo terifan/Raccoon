@@ -9,15 +9,17 @@ import org.terifan.raccoon.document.Array;
 public abstract class BTreeNode
 {
 	protected BTree mTree;
+	protected BTreeInteriorNode mParent;
 	protected BlockPointer mBlockPointer;
 	protected boolean mModified;
 	protected int mLevel;
 	protected boolean mHighlight;
 
 
-	protected BTreeNode(BTree aTree, int aLevel)
+	protected BTreeNode(BTree aTree, BTreeInteriorNode aParent, int aLevel)
 	{
 		mTree = aTree;
+		mParent = aParent;
 		mLevel = aLevel;
 	}
 

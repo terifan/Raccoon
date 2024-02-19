@@ -16,9 +16,9 @@ public class BTreeLeafNode extends BTreeNode
 	protected ArrayMap mMap;
 
 
-	BTreeLeafNode(BTree aTree, ArrayMap aMap)
+	BTreeLeafNode(BTree aTree, BTreeInteriorNode aParent, ArrayMap aMap)
 	{
-		super(aTree, 0);
+		super(aTree, aParent, 0);
 
 		mMap = aMap;
 	}
@@ -74,8 +74,8 @@ public class BTreeLeafNode extends BTreeNode
 
 		ArrayMap[] maps = mMap.split(mTree.getLeafSize());
 
-		BTreeLeafNode left = new BTreeLeafNode(mTree, maps[0]);
-		BTreeLeafNode rigt = new BTreeLeafNode(mTree, maps[1]);
+		BTreeLeafNode left = new BTreeLeafNode(mTree, mParent, maps[0]);
+		BTreeLeafNode rigt = new BTreeLeafNode(mTree, mParent, maps[1]);
 		left.mModified = true;
 		rigt.mModified = true;
 
@@ -87,22 +87,23 @@ public class BTreeLeafNode extends BTreeNode
 	{
 		mTree.freeBlock(mBlockPointer);
 
+		BTreeInteriorNode newInterior = new BTreeInteriorNode(mTree, mParent, 1, new ArrayMap(mTree.getNodeSize()));
+
 		ArrayMap[] maps = mMap.split(mTree.getLeafSize());
 
-		BTreeLeafNode left = new BTreeLeafNode(mTree, maps[0]);
-		BTreeLeafNode rigt = new BTreeLeafNode(mTree, maps[1]);
+		BTreeLeafNode left = new BTreeLeafNode(mTree, newInterior, maps[0]);
+		BTreeLeafNode rigt = new BTreeLeafNode(mTree, newInterior, maps[1]);
 		left.mModified = true;
 		rigt.mModified = true;
 
 		ArrayMapKey keyLeft = ArrayMapKey.EMPTY;
 		ArrayMapKey keyRigt = rigt.mMap.getKey(0);
 
-		BTreeInteriorNode newInterior = new BTreeInteriorNode(mTree, 1, new ArrayMap(mTree.getNodeSize()));
 		newInterior.mModified = true;
-		newInterior.mChildNodes.putEntry(new ArrayMapEntry(keyLeft, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
-		newInterior.mChildNodes.putEntry(new ArrayMapEntry(keyRigt, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
-		newInterior.mChildNodes.put(keyLeft, left);
-		newInterior.mChildNodes.put(keyRigt, rigt);
+		newInterior.putEntry(new ArrayMapEntry(keyLeft, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
+		newInterior.putEntry(new ArrayMapEntry(keyRigt, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
+		newInterior.put(keyLeft, left);
+		newInterior.put(keyRigt, rigt);
 
 		return newInterior;
 	}

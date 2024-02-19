@@ -20,11 +20,12 @@ public class RaccoonDirectoryNGTest
 		new Random().nextBytes(output);
 		Object id = ObjectId.randomId();
 
-		MemoryBlockStorage blockDevice = new MemoryBlockStorage(512);
+		RaccoonBuilder builder = new RaccoonBuilder().path(new MemoryBlockStorage(512));
 
-		try (RaccoonDatabase db = new RaccoonBuilder().path(blockDevice).get(DatabaseOpenOption.CREATE))
+		try (RaccoonDatabase db = builder.get(DatabaseOpenOption.CREATE))
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
+
 			try (LobByteChannel lob = dir.open(id, LobOpenOption.CREATE))
 			{
 				lob.writeAllBytes(output);
@@ -32,9 +33,14 @@ public class RaccoonDirectoryNGTest
 			}
 		}
 
-		try (RaccoonDatabase db = new RaccoonBuilder().path(blockDevice).get())
+		try (RaccoonDatabase db = builder.get())
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
+
+			System.out.println(id);
+
+			System.out.println(dir.list());
+
 			try (LobByteChannel lob = dir.open(id, LobOpenOption.READ))
 			{
 				System.out.println(lob.getMetadata());
@@ -42,7 +48,7 @@ public class RaccoonDirectoryNGTest
 				assertEquals(input, output);
 			}
 
-			dir.delete(id);
+//			dir.delete(id);
 
 			System.out.println(dir.list());
 		}

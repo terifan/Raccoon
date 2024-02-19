@@ -44,10 +44,17 @@ public class TestTiny
 				System.out.println("-".repeat(100));
 				people.findMany(Document.of("_id:[1,1]"), new Document("admin"), new Document(99999999999L)).get().forEach(System.out::println);
 
+				System.out.println("-".repeat(100));
+				Document admin = new Document("admin");
+				if (people.tryFindOne(admin))
+				{
+					System.out.println("admin=" + admin);
+				}
+
 				people.deleteMany(new Document("admin"), new Document(99999999999L));
 
 				System.out.println("-".repeat(100));
-				people.find().get().forEach(System.out::println);
+				people.forEach(System.out::println);
 			}
 		}
 		catch (Exception e)

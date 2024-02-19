@@ -1,15 +1,9 @@
 package org.terifan.raccoon.btree;
 
-import org.terifan.raccoon.btree.ArrayMapEntry;
-import org.terifan.raccoon.btree.ArrayMapKey;
-import org.terifan.raccoon.btree.BTree;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.Map;
 import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
-import org.terifan.raccoon.blockdevice.storage.FileBlockStorage;
 import org.testng.annotations.Test;
 import org.terifan.raccoon.blockdevice.storage.BlockStorage;
 import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
@@ -22,14 +16,14 @@ import static org.terifan.raccoon._Tools.doc;
 public class BTreeNGTest
 {
 	@Test
-	public void testOpenCloseSecureBTree() throws IOException
+	public void testOpenCloseSecureBTree() throws Exception
 	{
-		Path path = Files.createTempFile("raccoon", "db");
+		Map<Long, byte[]> data;
 
 		ArrayMapKey key = new ArrayMapKey("key");
 		Document value = doc(5);
 
-		try (BlockStorage device = new FileBlockStorage(path, 512))
+		try (MemoryBlockStorage device = new MemoryBlockStorage(512))
 		{
 			try (BlockAccessor storage = createSecureStorage(device); BTree tree = new BTree(storage, BTree.createDefaultConfig(512)))
 			{
@@ -39,11 +33,12 @@ public class BTreeNGTest
 				storage.getBlockDevice().getMetadata().put("conf", tree.getConfiguration());
 				storage.getBlockDevice().commit();
 			}
+			data = device.getStorage();
 		}
 
 		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
-		try (BlockStorage device = new FileBlockStorage(path, 512))
+		try (MemoryBlockStorage device = new MemoryBlockStorage(512, data))
 		{
 			try (BlockAccessor storage = createSecureStorage(device); BTree tree = new BTree(storage, storage.getBlockDevice().getMetadata().getDocument("conf")))
 			{
@@ -53,13 +48,11 @@ public class BTreeNGTest
 				storage.getBlockDevice().commit();
 			}
 		}
-
-		Files.deleteIfExists(path);
 	}
 
 
 	@Test
-	public void testShrink() throws IOException
+	public void testShrink() throws Exception
 	{
 		Document value = doc(5);
 

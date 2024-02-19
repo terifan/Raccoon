@@ -41,6 +41,7 @@ public class BTree implements AutoCloseable
 	private int mEntrySizeLimit;
 	private int mLeafSize;
 	private int mNodeSize;
+	private long mUpdateCounter;
 
 
 	public BTree(BlockAccessor aBlockAccessor, Document aConfiguration)
@@ -69,7 +70,7 @@ public class BTree implements AutoCloseable
 			log.i("open table");
 			log.inc();
 			BlockPointer bp = new BlockPointer().unmarshal(mConfiguration.get(ROOT));
-			mRoot = bp.getBlockType() == BlockType.BTREE_NODE ? new BTreeInteriorNode(this, bp.getBlockLevel(), new ArrayMap(readBlock(bp))) : new BTreeLeafNode(this, new ArrayMap(readBlock(bp)));
+			mRoot = bp.getBlockType() == BlockType.BTREE_NODE ? new BTreeInteriorNode(this, null, bp.getBlockLevel(), new ArrayMap(readBlock(bp))) : new BTreeLeafNode(this, null, new ArrayMap(readBlock(bp)));
 			mRoot.mBlockPointer = bp;
 			log.dec();
 		}
@@ -77,7 +78,7 @@ public class BTree implements AutoCloseable
 		{
 			log.i("create table");
 			log.inc();
-			mRoot = new BTreeLeafNode(this, new ArrayMap(mLeafSize));
+			mRoot = new BTreeLeafNode(this, null, new ArrayMap(mLeafSize));
 			log.dec();
 		}
 	}
@@ -100,6 +101,8 @@ public class BTree implements AutoCloseable
 			throw new IllegalArgumentException("Combined length of key and value exceed maximum length: key: " + aEntry.getKey().size() + ", value: " + aEntry.length() + ", maximum: " + mEntrySizeLimit);
 		}
 
+		mUpdateCounter++;
+
 		log.i("put");
 		log.inc();
 
@@ -114,7 +117,7 @@ public class BTree implements AutoCloseable
 		}
 		else if (mRoot instanceof BTreeInteriorNode v)
 		{
-			if (v.mChildNodes.getUsedSpace() > mNodeSize)
+			if (v.getUsedSpace() > mNodeSize)
 			{
 				_grow();
 			}
@@ -131,6 +134,8 @@ public class BTree implements AutoCloseable
 	public ArrayMapEntry remove(ArrayMapEntry aEntry)
 	{
 		assertNotClosed();
+
+		mUpdateCounter++;
 
 		log.i("put");
 		log.inc();
@@ -220,6 +225,8 @@ public class BTree implements AutoCloseable
 	public void rollback()
 	{
 		assertNotClosed();
+
+		mUpdateCounter++;
 
 		log.i("rollback");
 
@@ -415,7 +422,7 @@ public class BTree implements AutoCloseable
 	}
 
 
-	public void find(ArrayList<Document> aList, Document aFilter, Function<ArrayMapEntry,Document> aDocumentSupplier)
+	public void find(ArrayList<Document> aList, Document aFilter, Function<ArrayMapEntry, Document> aDocumentSupplier)
 	{
 		visit(new BTreeVisitor()
 		{
@@ -454,6 +461,7 @@ public class BTree implements AutoCloseable
 			}
 		});
 	}
+
 
 	private boolean matchKey(ArrayMapKey aLowestKey, ArrayMapKey aHighestKey, Document aQuery)
 	{
@@ -503,5 +511,63 @@ public class BTree implements AutoCloseable
 		}
 
 		return true;
+	}
+
+
+	long getUpdateCounter()
+	{
+		return mUpdateCounter;
+	}
+
+
+	BTreeLeafNode findLeaf(ArrayMapKey aKey)
+	{
+		ArrayMapEntry entry = new ArrayMapEntry(aKey);
+		BTreeNode node = mRoot;
+
+		while (node instanceof BTreeInteriorNode v)
+		{
+			if (aKey == null)
+			{
+				node = v.getNode(0);
+			}
+			else
+			{
+				node = v.__getNearestNode(entry);
+			}
+		}
+
+		return (BTreeLeafNode)node;
+	}
+
+
+	BTreeLeafNode findNextLeaf(ArrayMapKey aKey)
+	{
+		BTreeNode node = mRoot;
+
+		while (node instanceof BTreeInteriorNode v)
+		{
+			if (aKey == null)
+			{
+				node = v.getNode(0);
+			}
+			else
+			{
+				node = v.getNode(v.mArrayMap.size() - 1);
+
+				for (int i = 0; i < v.mArrayMap.size(); i++)
+				{
+					ArrayMapKey a = v.mArrayMap.getKey(i);
+
+					if (aKey.compareTo(a) <= 0)
+					{
+						node = v.getNode(i);
+						break;
+					}
+				}
+			}
+		}
+
+		return (BTreeLeafNode)node;
 	}
 }

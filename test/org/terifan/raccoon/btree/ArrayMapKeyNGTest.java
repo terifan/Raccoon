@@ -48,7 +48,7 @@ public class ArrayMapKeyNGTest
 	public void testCompareUUID()
 	{
 		ArrayMapKey a1 = new ArrayMapKey(UUID.fromString("31e18b3e-0f90-4f24-80a0-fff857fbdbf8"));
-		ArrayMapKey a2 = new ArrayMapKey(UUID.fromString("661f0d28-01a5-4f29-9dfa-8a24d869b8ed"));
+		ArrayMapKey a2 = new ArrayMapKey(UUID.fromString("661f0d28-01a5-4f22-9dfa-8a24d869b8ed"));
 		ArrayMapKey a3 = new ArrayMapKey(UUID.fromString("9695d82c-4035-43a7-98c0-4e4a048167da"));
 		assertTrue(a1.compareTo(a2) < 0);
 		assertTrue(a2.compareTo(a2) == 0);
