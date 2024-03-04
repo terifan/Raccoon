@@ -1,11 +1,9 @@
 package org.terifan.raccoon.btree;
 
 import java.util.Map;
-import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.testng.annotations.Test;
-import org.terifan.raccoon.blockdevice.storage.BlockStorage;
 import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import static org.terifan.raccoon.RaccoonCollection.TYPE_DOCUMENT;
 import static org.terifan.raccoon._Tools.createSecureStorage;
@@ -25,13 +23,14 @@ public class BTreeNGTest
 
 		try (MemoryBlockStorage device = new MemoryBlockStorage(512))
 		{
-			try (BlockAccessor storage = createSecureStorage(device); BTree tree = new BTree(storage, BTree.createDefaultConfig(512)))
+			try (BlockAccessor storage = createSecureStorage(device); BTree tree = new BTree(storage, new BTreeConfiguration()))
 			{
 				tree.put(new ArrayMapEntry(key, value, TYPE_DOCUMENT));
 				tree.commit();
-				System.out.println(tree.getConfiguration());
 				storage.getBlockDevice().getMetadata().put("conf", tree.getConfiguration());
 				storage.getBlockDevice().commit();
+
+				System.out.println(tree.getConfiguration());
 			}
 			data = device.getStorage();
 		}
@@ -40,74 +39,74 @@ public class BTreeNGTest
 
 		try (MemoryBlockStorage device = new MemoryBlockStorage(512, data))
 		{
-			try (BlockAccessor storage = createSecureStorage(device); BTree tree = new BTree(storage, storage.getBlockDevice().getMetadata().getDocument("conf")))
+			try (BlockAccessor storage = createSecureStorage(device); BTree tree = new BTree(storage, new BTreeConfiguration(storage.getBlockDevice().getMetadata().getDocument("conf"))))
 			{
-				ArrayMapEntry entry = new ArrayMapEntry(key);
-				assertTrue(tree.get(entry));
-				assertEquals(entry.getValue(), value);
+				OpResult entry = tree.get(key);
+				assertEquals(entry.state, OpState.MATCH);
+				assertEquals(entry.entry.getValue(), value);
 				storage.getBlockDevice().commit();
 			}
 		}
 	}
 
 
-	@Test
-	public void testShrink() throws Exception
-	{
-		Document value = doc(5);
-
-		try (BlockStorage device = new MemoryBlockStorage(512))
-		{
-			try (BlockAccessor storage = createSecureStorage(device); BTree tree = new BTree(storage, BTree.createDefaultConfig(512)))
-			{
-				tree.put(new ArrayMapEntry(new ArrayMapKey("key1"), Document.of("text:something"), TYPE_DOCUMENT));
-				tree.put(new ArrayMapEntry(new ArrayMapKey("key2"), Document.of("text:something"), TYPE_DOCUMENT));
-				tree.put(new ArrayMapEntry(new ArrayMapKey("key3"), Document.of("text:something"), TYPE_DOCUMENT));
-				tree.put(new ArrayMapEntry(new ArrayMapKey("key4"), Document.of("text:something"), TYPE_DOCUMENT));
-				tree.put(new ArrayMapEntry(new ArrayMapKey("key5"), Document.of("text:something"), TYPE_DOCUMENT));
-				tree.put(new ArrayMapEntry(new ArrayMapKey("key6"), Document.of("text:something"), TYPE_DOCUMENT));
-				tree.put(new ArrayMapEntry(new ArrayMapKey("key7"), Document.of("text:something"), TYPE_DOCUMENT));
-				tree.put(new ArrayMapEntry(new ArrayMapKey("key8"), Document.of("text:something"), TYPE_DOCUMENT));
-
-				ScanResult scanResult = new ScanResult();
-				tree.scan(scanResult);
-				System.out.println(scanResult.log);
-
-				// {key1,key2,key3,key4,key5,key6,key7,key8}
-				// {*,key5}{key1,key2,key3,key4},{key5,key6,key7,key8}
-				// {*,key3,key5}{key1,key2},{key3,key4},{key5,key6,key7,key8}
-				// {*,key3,key5,key7}{key1,key2},{key3,key4},{key5,key6},{key7,key8}
-				// {*,key5}{*,key3},{*,key7}{key1,key2},{key3,key4},{key5,key6},{key7,key8}
-
-				tree._upgrade();
-
-				scanResult = new ScanResult();
-				tree.scan(scanResult);
-				System.out.println(scanResult.log);
-
-				tree._grow();
-
-				scanResult = new ScanResult();
-				tree.scan(scanResult);
-				System.out.println(scanResult.log);
-
-//				tree._shrink();
+//	@Test
+//	public void testShrink() throws Exception
+//	{
+//		Document value = doc(5);
+//
+//		try (BlockStorage device = new MemoryBlockStorage(512))
+//		{
+//			try (BlockAccessor storage = createSecureStorage(device); BTree tree = new BTree(storage, BTree.createDefaultConfig(512)))
+//			{
+//				tree.put(new ArrayMapEntry(new ArrayMapKey("key1"), Document.of("text:something"), TYPE_DOCUMENT));
+//				tree.put(new ArrayMapEntry(new ArrayMapKey("key2"), Document.of("text:something"), TYPE_DOCUMENT));
+//				tree.put(new ArrayMapEntry(new ArrayMapKey("key3"), Document.of("text:something"), TYPE_DOCUMENT));
+//				tree.put(new ArrayMapEntry(new ArrayMapKey("key4"), Document.of("text:something"), TYPE_DOCUMENT));
+//				tree.put(new ArrayMapEntry(new ArrayMapKey("key5"), Document.of("text:something"), TYPE_DOCUMENT));
+//				tree.put(new ArrayMapEntry(new ArrayMapKey("key6"), Document.of("text:something"), TYPE_DOCUMENT));
+//				tree.put(new ArrayMapEntry(new ArrayMapKey("key7"), Document.of("text:something"), TYPE_DOCUMENT));
+//				tree.put(new ArrayMapEntry(new ArrayMapKey("key8"), Document.of("text:something"), TYPE_DOCUMENT));
+//
+//				ScanResult scanResult = new ScanResult();
+//				tree.scan(scanResult);
+//				System.out.println(scanResult.log);
+//
+//				// {key1,key2,key3,key4,key5,key6,key7,key8}
+//				// {*,key5}{key1,key2,key3,key4},{key5,key6,key7,key8}
+//				// {*,key3,key5}{key1,key2},{key3,key4},{key5,key6,key7,key8}
+//				// {*,key3,key5,key7}{key1,key2},{key3,key4},{key5,key6},{key7,key8}
+//				// {*,key5}{*,key3},{*,key7}{key1,key2},{key3,key4},{key5,key6},{key7,key8}
+//
+//				tree._upgrade();
 //
 //				scanResult = new ScanResult();
 //				tree.scan(scanResult);
 //				System.out.println(scanResult.log);
 //
-//				tree._downgrade();
+//				tree._grow();
 //
 //				scanResult = new ScanResult();
 //				tree.scan(scanResult);
 //				System.out.println(scanResult.log);
-
-				tree.commit();
-				storage.getBlockDevice().getMetadata().put("conf", tree.getConfiguration());
-				storage.getBlockDevice().commit();
-			}
-		}
+//
+////				tree._shrink();
+////
+////				scanResult = new ScanResult();
+////				tree.scan(scanResult);
+////				System.out.println(scanResult.log);
+////
+////				tree._downgrade();
+////
+////				scanResult = new ScanResult();
+////				tree.scan(scanResult);
+////				System.out.println(scanResult.log);
+//
+//				tree.commit();
+//				storage.getBlockDevice().getMetadata().put("conf", tree.getConfiguration());
+//				storage.getBlockDevice().commit();
+//			}
+//		}
 
 
 //		Logger.getLogger().setLevel(Level.ALL);
@@ -131,5 +130,5 @@ public class BTreeNGTest
 //		BTreeInteriorNode shrinkNode = node.shrink();
 //
 //		System.out.println(shrinkNode.mChildNodes.size());
-	}
+//	}
 }

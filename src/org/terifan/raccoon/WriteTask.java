@@ -1,18 +1,19 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.util.ReadWriteLock;
+import org.terifan.logging.Logger;
 
 
-public abstract class WriteTask implements Runnable
+
+abstract class WriteTask implements Runnable
 {
-	private String mLog;
+	private String mDescription;
 	private RaccoonCollection mCollection;
 
 
-	public WriteTask(RaccoonCollection aCollection, String aLog)
+	public WriteTask(RaccoonCollection aCollection, String aDescription)
 	{
 		mCollection = aCollection;
-		mLog = aLog;
+		mDescription = aDescription;
 	}
 
 
@@ -22,14 +23,16 @@ public abstract class WriteTask implements Runnable
 	@Override
 	public void run()
 	{
-		mCollection.log.i(mLog);
+		mCollection.log.i(mDescription);
 		mCollection.log.inc();
 
-		mCollection.mModCount++;
-
-		try (ReadWriteLock.WriteLock lock = mCollection.mLock.writeLock())
+		try
 		{
 			call();
+		}
+		catch (Exception | Error e)
+		{
+			Logger.getLogger().e("{}", e);
 		}
 		finally
 		{

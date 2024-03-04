@@ -10,7 +10,6 @@ import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import org.terifan.raccoon.document.Document;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 
 
@@ -31,14 +30,15 @@ public class BTreeIteratorNGTest
 
 		try (MemoryBlockStorage device = new MemoryBlockStorage(512))
 		{
-			try (BlockAccessor storage = new BlockAccessor(new ManagedBlockDevice(device), false); BTree tree = new BTree(storage, BTree.createDefaultConfig(512)))
+			BTreeConfiguration conf = new BTreeConfiguration();
+			try (BlockAccessor storage = new BlockAccessor(new ManagedBlockDevice(device), false); BTree tree = new BTree(storage, conf))
 			{
 				for (String key : keys)
 				{
 					tree.put(new ArrayMapEntry(new ArrayMapKey(key), Document.of("a:" + key), TYPE_DOCUMENT));
 				}
 				tree.commit();
-				storage.getBlockDevice().getMetadata().put("conf", tree.getConfiguration());
+				storage.getBlockDevice().getMetadata().put("conf", conf);
 				storage.getBlockDevice().commit();
 			}
 			data = device.getStorage();
@@ -46,13 +46,13 @@ public class BTreeIteratorNGTest
 
 		try (MemoryBlockStorage device = new MemoryBlockStorage(512, data))
 		{
-			try (BlockAccessor storage = new BlockAccessor(new ManagedBlockDevice(device), false); BTree tree = new BTree(storage, storage.getBlockDevice().getMetadata().getDocument("conf")))
+			try (BlockAccessor storage = new BlockAccessor(new ManagedBlockDevice(device), false); BTree tree = new BTree(storage, new BTreeConfiguration(storage.getBlockDevice().getMetadata().getDocument("conf"))))
 			{
 				for (String key : keys)
 				{
-					ArrayMapEntry entry = new ArrayMapEntry(new ArrayMapKey(key));
-					assertTrue(tree.get(entry));
-					assertEquals(entry.getValue(), Document.of("a:" + key));
+					OpResult entry = tree.get(new ArrayMapKey(key));
+					assertEquals(entry.state, OpState.MATCH);
+					assertEquals(entry.entry.getValue(), Document.of("a:" + key));
 				}
 
 				AtomicInteger cnt = new AtomicInteger();

@@ -8,6 +8,9 @@ import org.terifan.raccoon.btree.BTreeLeafNode;
 import java.util.ArrayList;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
+import org.terifan.raccoon.btree.BTreeConfiguration;
+import org.terifan.raccoon.btree.OpResult;
+import org.terifan.raccoon.btree.OpState;
 import org.terifan.raccoon.document.Document;
 
 
@@ -16,45 +19,52 @@ class DatabaseRoot
 	private BTree mStorage;
 
 
-	DatabaseRoot(ManagedBlockDevice aBlockDevice, Document aConfiguration)
+	DatabaseRoot(ManagedBlockDevice aBlockDevice, BTreeConfiguration aConfiguration)
 	{
+		assert aConfiguration != null;
+
 		mStorage = new BTree(new BlockAccessor(aBlockDevice), aConfiguration);
 	}
 
 
-	Document commit(ManagedBlockDevice aBlockDevice)
+	public BTreeConfiguration getConfiguration()
 	{
-		mStorage.commit();
 		return mStorage.getConfiguration();
 	}
 
 
-	Document get(Object aValue)
+	synchronized boolean commit(ManagedBlockDevice aBlockDevice)
 	{
-		ArrayMapEntry entry = new ArrayMapEntry(new ArrayMapKey(aValue));
+		return mStorage.commit();
+	}
 
-		if (mStorage.get(entry))
+
+	synchronized BTreeConfiguration get(Object aValue)
+	{
+		OpResult op = mStorage.get(new ArrayMapKey(aValue));
+
+		if (op.state == OpState.MATCH)
 		{
-			return entry.getValue();
+			return new BTreeConfiguration(op.entry.getValue());
 		}
 
 		return null;
 	}
 
 
-	void remove(String aName)
+	synchronized void remove(String aName)
 	{
-		mStorage.remove(new ArrayMapEntry(new ArrayMapKey(aName)));
+		mStorage.remove(new ArrayMapKey(aName));
 	}
 
 
-	void put(String aName, Document aConfiguration)
+	synchronized void put(String aName, Document aConfiguration)
 	{
 		mStorage.put(new ArrayMapEntry(new ArrayMapKey(aName), aConfiguration, (byte)0));
 	}
 
 
-	ArrayList<String> list()
+	synchronized ArrayList<String> list()
 	{
 		ArrayList<String> list = new ArrayList<>();
 
@@ -78,7 +88,7 @@ class DatabaseRoot
 	}
 
 
-	boolean exists(String aName)
+	synchronized boolean exists(String aName)
 	{
 		return get(aName) != null;
 	}

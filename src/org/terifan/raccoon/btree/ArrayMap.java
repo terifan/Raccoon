@@ -1,6 +1,8 @@
 package org.terifan.raccoon.btree;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.function.Function;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.getInt16;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.getInt32;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.putInt16;
@@ -31,54 +33,51 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 	private final static int ENTRY_OVERHEAD = ENTRY_POINTER_SIZE + ENTRY_HEADER_SIZE;
 	public final static int OVERHEAD = HEADER_SIZE + ENTRY_OVERHEAD + ENTRY_POINTER_SIZE;
 
-	byte[] mBuffer;
-	int mStartOffset;
+	private byte[] mBuffer;
+	private final int mStartOffset = 0;
 	private int mCapacity;
+	private int mCapacityGrowth;
 	private int mPointerListOffset;
 	private int mFreeSpaceOffset;
-	int mEntryCount;
+	private int mEntryCount;
 	private int mModCount;
 
 
-	public enum PutResult
-	{
-		OVERFLOW,
-		PUT,
-		UPDATE
-	}
-
-
-	public ArrayMap(int aCapacity)
+	public ArrayMap(int aCapacity, int aCapacityGrowth)
 	{
 		if (aCapacity <= HEADER_SIZE)
 		{
 			throw new IllegalArgumentException("Illegal bucket size: " + aCapacity);
 		}
 
-		mStartOffset = 0;
+//		mStartOffset = 0;
 		mCapacity = aCapacity;
+		mCapacityGrowth = aCapacityGrowth;
 		mBuffer = new byte[aCapacity];
 		mFreeSpaceOffset = HEADER_SIZE;
 		mPointerListOffset = mCapacity;
 	}
 
 
-	public ArrayMap(byte[] aBuffer)
+	public ArrayMap(byte[] aBuffer, int aCapacityGrowth)
 	{
-		this(aBuffer, 0, aBuffer.length);
-	}
-
-
-	public ArrayMap(byte[] aBuffer, int aOffset, int aCapacity)
-	{
-		if (aOffset < 0 || aOffset + aCapacity > aBuffer.length)
-		{
-			throw new IllegalArgumentException("Illegal bucket offset.");
-		}
+//		this(aBuffer, 0, aBuffer.length);
+//	}
+//
+//
+//	public ArrayMap(byte[] aBuffer, int aOffset, int aCapacity)
+//	{
+//		if (aOffset < 0 || aOffset + aCapacity > aBuffer.length)
+//		{
+//			throw new IllegalArgumentException("Illegal bucket offset.");
+//		}
 
 		mBuffer = aBuffer;
-		mStartOffset = aOffset;
-		mCapacity = aCapacity;
+//		mStartOffset = 0;
+		mCapacity = aBuffer.length;
+		mCapacityGrowth = aCapacityGrowth;
+//		mStartOffset = aOffset;
+//		mCapacity = aCapacity;
 
 		mEntryCount = readInt16(0);
 		mFreeSpaceOffset = readInt32(2) + HEADER_SIZE;
@@ -92,6 +91,13 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 		}
 
 		assert integrityCheck() == null : integrityCheck();
+	}
+
+
+	public ArrayMap setCapacityGrowth(int aCapacityGrowth)
+	{
+		mCapacityGrowth = aCapacityGrowth;
+		return this;
 	}
 
 
@@ -119,20 +125,22 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public PutResult insert(ArrayMapEntry aEntry)
+	public OpResult insert(ArrayMapEntry aEntry)
 	{
-		PutResult result = put(aEntry, null);
+		assert mCapacityGrowth > 0;
 
-		if (result != PutResult.OVERFLOW)
+		OpResult result = put(aEntry);
+
+		if (result.state != OpState.OVERFLOW)
 		{
 			return result;
 		}
 
-		resize(mCapacity + ENTRY_OVERHEAD + aEntry.getMarshalledLength());
+		resize((mCapacity + ENTRY_OVERHEAD + aEntry.getMarshalledLength() + mCapacityGrowth - 1) / mCapacityGrowth * mCapacityGrowth);
 
-		result = put(aEntry, null);
+		result = put(aEntry);
 
-		if (result == PutResult.OVERFLOW)
+		if (result.state == OpState.OVERFLOW)
 		{
 			throw new IllegalStateException("failed to put entity");
 		}
@@ -141,33 +149,12 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public PutResult insert(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
-	{
-		PutResult result = put(aEntry, oExistingEntry);
-
-		if (result != PutResult.OVERFLOW)
-		{
-			return result;
-		}
-
-		resize(mCapacity + ENTRY_OVERHEAD + aEntry.getMarshalledLength());
-
-		result = put(aEntry, oExistingEntry);
-
-		if (result == PutResult.OVERFLOW)
-		{
-			throw new IllegalStateException("failed to put entity");
-		}
-
-		return result;
-	}
-
-
-	public PutResult put(ArrayMapEntry aEntry, Result<ArrayMapEntry> oExistingEntry)
+	public OpResult put(ArrayMapEntry aEntry)
 	{
 		ArrayMapKey key = aEntry.getKey();
 		int valueLength = aEntry.getMarshalledValueLength();
 		int keyLength = key.size();
+		OpResult result = new OpResult();
 
 		if (keyLength > MAX_VALUE_SIZE || valueLength > MAX_VALUE_SIZE || keyLength + valueLength > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
 		{
@@ -187,41 +174,42 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 			{
 				int valueOffset = readValueOffset(entryOffset);
 
-				if (oExistingEntry != null)
-				{
-					ArrayMapEntry old = new ArrayMapEntry(key);
-					old.unmarshallValue(mBuffer, mStartOffset + valueOffset, oldValueLength);
-					oExistingEntry.set(old);
-				}
+				result.entry = new ArrayMapEntry(key);
+				result.entry.unmarshallValue(mBuffer, mStartOffset + valueOffset, oldValueLength);
 
 				aEntry.marshallValue(mBuffer, mStartOffset + valueOffset);
 
 				assert integrityCheck() == null : integrityCheck();
 
-				return PutResult.UPDATE;
+				result.state = OpState.UPDATE;
+				return result;
 			}
 
 			if (valueLength - oldValueLength > getFreeSpace())
 			{
-				return PutResult.OVERFLOW;
+				result.state = OpState.OVERFLOW;
+				return result;
 			}
 
-			removeImpl(index, oExistingEntry);
+			removeImpl(index);
 
 			assert indexOf(key) == (-index) - 1;
 		}
 		else if (getFreeSpace() < ENTRY_HEADER_SIZE + keyLength + valueLength + ENTRY_POINTER_SIZE)
 		{
-			return PutResult.OVERFLOW;
+			result.state = OpState.OVERFLOW;
+			return result;
 		}
 		else
 		{
+			result.state = OpState.INSERT;
 			index = (-index) - 1;
 		}
 
 		if (++mEntryCount > MAX_ENTRY_COUNT)
 		{
-			return PutResult.OVERFLOW;
+			result.state = OpState.OVERFLOW;
+			return result;
 		}
 
 		int modCount = ++mModCount;
@@ -245,22 +233,28 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 		assert integrityCheck() == null : integrityCheck();
 		assert mModCount == modCount : mModCount + " == " + modCount;
 
-		return PutResult.PUT;
+		return result;
 	}
 
 
-	public boolean get(ArrayMapEntry aEntry)
+	public OpResult get(ArrayMapKey aKey)
 	{
-		int index = indexOf(aEntry.getKey());
+		int index = indexOf(aKey);
 
 		if (index < 0)
 		{
-			return false;
+			OpResult result = new OpResult();
+			result.state = OpState.NO_MATCH;
+			return result;
 		}
 
-		loadKeyAndValue(index, aEntry);
+		ArrayMapEntry entry = new ArrayMapEntry();
+		loadKeyAndValue(index, entry);
 
-		return true;
+		OpResult result = new OpResult();
+		result.state = OpState.MATCH;
+		result.entry = entry;
+		return result;
 	}
 
 
@@ -336,43 +330,35 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public void remove(int aIndex, Result<ArrayMapEntry> oOldEntry)
+	public OpResult remove(int aIndex)
 	{
-		removeImpl(aIndex, oOldEntry);
+		return removeImpl(aIndex);
 	}
 
 
-	public boolean remove(ArrayMapKey aKey, Result<ArrayMapEntry> oOldEntry)
+	public OpResult remove(ArrayMapKey aKey)
 	{
 		int index = indexOf(aKey);
 
 		if (index < 0)
 		{
-			if (oOldEntry != null)
-			{
-				oOldEntry.set(null);
-			}
-			return false;
+			OpResult result = new OpResult();
+			result.state = OpState.NO_MATCH;
+			return result;
 		}
 
-		removeImpl(index, oOldEntry);
-
-		return true;
+		return removeImpl(index);
 	}
 
 
-	private void removeImpl(int aIndex, Result<ArrayMapEntry> oOldEntry)
+	private OpResult removeImpl(int aIndex)
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount : "index=" + aIndex + ", count=" + mEntryCount;
 
 		int modCount = ++mModCount;
 
-		if (oOldEntry != null)
-		{
-			ArrayMapEntry old = new ArrayMapEntry();
-			get(aIndex, old);
-			oOldEntry.set(old);
-		}
+		OpResult result = get(aIndex);
+		result.state = OpState.DELETE;
 
 		int offset = readEntryOffset(aIndex);
 		int length = readEntryLength(offset);
@@ -409,10 +395,12 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 
 		assert integrityCheck() == null : integrityCheck();
 		assert mModCount == modCount : mModCount + " == " + modCount;
+
+		return result;
 	}
 
 
-	public ArrayMapEntry get(int aIndex, ArrayMapEntry aOutputEntry)
+	public OpResult get(int aIndex)
 	{
 		assert aIndex < size() : "out of bounds: index: " + aIndex + ", size: " + size();
 
@@ -422,15 +410,18 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 		int valueOffset = readValueOffset(entryOffset);
 		int valueLength = readValueLength(entryOffset);
 
-		aOutputEntry.setKey(new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength));
-		aOutputEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
+		OpResult result = new OpResult();
+		result.entry = new ArrayMapEntry(new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength));
+		result.entry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
 
-		return aOutputEntry;
+		return result;
 	}
 
 
 	public ArrayMapKey getKey(int aIndex)
 	{
+		assert aIndex < size() : "index out of bounds: " + aIndex + ", size: " + size();
+
 		int entryOffset = readEntryOffset(aIndex);
 		int keyOffset = readKeyOffset(entryOffset);
 		int keyLength = readKeyLength(entryOffset);
@@ -696,35 +687,27 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 //	}
 
 
-	public ArrayMapEntry getFirst()
+	public OpResult getFirst()
 	{
-		ArrayMapEntry entry = new ArrayMapEntry();
-		get(0, entry);
-		return entry;
+		return get(0);
 	}
 
 
-	public ArrayMapEntry getLast()
+	public OpResult getLast()
 	{
-		ArrayMapEntry entry = new ArrayMapEntry();
-		get(mEntryCount - 1, entry);
-		return entry;
+		return get(mEntryCount - 1);
 	}
 
 
-	public ArrayMapEntry removeFirst()
+	public OpResult removeFirst()
 	{
-		Result<ArrayMapEntry> entry = new Result<>();
-		removeImpl(0, entry);
-		return entry.get();
+		return removeImpl(0);
 	}
 
 
-	public ArrayMapEntry removeLast()
+	public OpResult removeLast()
 	{
-		Result<ArrayMapEntry> entry = new Result<>();
-		removeImpl(mEntryCount - 1, entry);
-		return entry.get();
+		return removeImpl(mEntryCount - 1);
 	}
 
 
@@ -749,30 +732,110 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public ArrayMap[] split(int aCapacity)
+	public ArrayMap[] splitHalf(int aCapacity)
 	{
-		ArrayMap low = new ArrayMap(aCapacity);
-		ArrayMap high = new ArrayMap(aCapacity);
-		ArrayMapEntry tmp = new ArrayMapEntry();
+		ArrayMap low = new ArrayMap(aCapacity, mCapacityGrowth);
+		ArrayMap high = new ArrayMap(aCapacity, mCapacityGrowth);
 
 		for (int i = 0, j = mEntryCount; i < j; )
 		{
 			if (low.getFreeSpace() > high.getFreeSpace())
 			{
-				low.insert(get(i++, tmp));
+				low.insert(get(i++).entry);
 			}
 			else
 			{
-				high.insert(get(--j, tmp));
+				high.insert(get(--j).entry);
 			}
 		}
 
 		return new ArrayMap[]{low, high};
 	}
 
+		// ----------
+		// ----------
+		// ----------
+		// ----------
+		// ----------
+		// ----------
+
+		// ----------
+		// ----------
+		// ----------
+		//                      ----------
+		//                      ----------
+		//                      ----------
+
+		// ----------
+		// ----------
+		//            ----------
+		//            ----------
+		//                      ----------
+		//                      ----------
+
+
+	public ArrayMap[] splitMany(int aCapacity)
+	{
+		ArrayList<ArrayMap> maps = new ArrayList<>();
+
+		int bytesPerNode = getUsedSpace() / ((getUsedSpace() + aCapacity - 1) / aCapacity);
+
+		ArrayMap map = new ArrayMap(aCapacity, mCapacityGrowth);
+		maps.add(map);
+
+		for (int i = 0; i < mEntryCount; i++)
+		{
+			if (map.getUsedSpace() > bytesPerNode && i < mEntryCount - 2)
+			{
+				map = new ArrayMap(aCapacity, mCapacityGrowth);
+				maps.add(map);
+			}
+
+			map.insert(get(i).entry);
+		}
+
+		return maps.toArray(ArrayMap[]::new);
+	}
+
+
+	public ArrayMap[] splitManyTail(int aCapacity)
+	{
+		ArrayList<ArrayMap> maps = new ArrayList<>();
+
+		ArrayMap map = new ArrayMap(aCapacity, mCapacityGrowth);
+		maps.add(map);
+
+		for (int i = 0; i < mEntryCount; i++)
+		{
+			if (map.put(get(i).entry).state == OpState.OVERFLOW)
+			{
+				map = new ArrayMap(aCapacity, mCapacityGrowth);
+				maps.add(map);
+				map.insert(get(i).entry);
+			}
+		}
+
+		return maps.toArray(ArrayMap[]::new);
+	}
+
 
 	public boolean isHalfEmpty()
 	{
 		return getFreeSpace() > mCapacity / 2;
+	}
+
+
+	String keys(Function<Object,String> aFormatter)
+	{
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < size(); i++)
+		{
+			if (i > 0)
+			{
+				sb.append(", ");
+			}
+			sb.append(aFormatter.apply(getKey(i).get()));
+		}
+		return sb.toString();
 	}
 }

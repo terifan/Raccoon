@@ -22,28 +22,6 @@ public class BTreeIterator implements Iterator<Document>
 	}
 
 
-	protected void check(BTreeNode aNode)
-	{
-		if (aNode instanceof BTreeInteriorNode v)
-		{
-			System.out.println(".. ".repeat(5-aNode.mLevel) + "node");
-			for (int i = 0; i < v.size(); i++)
-			{
-				BTreeNode child = v.getNode(i);
-				if (child.mParent != aNode)
-				{
-					throw new IllegalStateException();
-				}
-				check(child);
-			}
-		}
-		else
-		{
-			System.out.println(".. ".repeat(5-aNode.mLevel) + "leaf");
-		}
-	}
-
-
 	@Override
 	public boolean hasNext()
 	{
@@ -77,16 +55,11 @@ public class BTreeIterator implements Iterator<Document>
 				return null;
 			}
 
-//			if (mLeafNode.mMap.size() == 0)
-//			{
-//				check(mTree._root());
-//			}
-
-			ArrayMapEntry entry = mLeafNode.mMap.get(mIndexInLeaf++, new ArrayMapEntry());
+			OpResult op = mLeafNode.mMap.get(mIndexInLeaf++);
 
 			mTransaction = mTree.getUpdateCounter();
-			mLastKey = entry.getKey();
-			mNext = unmarshal(entry);
+			mLastKey = op.entry.getKey();
+			mNext = unmarshal(op.entry);
 		}
 
 		Document tmp = mNext;
@@ -136,7 +109,7 @@ public class BTreeIterator implements Iterator<Document>
 	{
 		if (mLastKey != null)
 		{
-			remove(new ArrayMapEntry(mLastKey));
+			remove(mLastKey);
 		}
 	}
 
@@ -147,8 +120,8 @@ public class BTreeIterator implements Iterator<Document>
 	}
 
 
-	protected void remove(ArrayMapEntry aEntry)
+	protected void remove(ArrayMapKey aKey)
 	{
-		mTree.remove(aEntry);
+		mTree.remove(aKey);
 	}
 }

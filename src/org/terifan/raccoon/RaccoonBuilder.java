@@ -1,39 +1,39 @@
 package org.terifan.raccoon;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.terifan.raccoon.blockdevice.RaccoonIOException;
 import org.terifan.raccoon.blockdevice.compressor.CompressorAlgorithm;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
 import org.terifan.raccoon.blockdevice.secure.CipherModeFunction;
 import org.terifan.raccoon.blockdevice.secure.EncryptionFunction;
 import org.terifan.raccoon.blockdevice.secure.KeyGenerationFunction;
+import org.terifan.raccoon.blockdevice.secure.SecureBlockDevice;
 import org.terifan.raccoon.blockdevice.storage.BlockStorage;
-import org.terifan.raccoon.document.ObjectId;
+import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 
 
 public class RaccoonBuilder
 {
-	protected Path mPath;
-	protected EncryptionFunction mEncryptionFunction;
-	protected KeyGenerationFunction mKeyGenerationFunction;
-	protected CipherModeFunction mCipherModeFunction;
-	protected char[] mPassword;
-	protected BlockStorage mBlockStorage;
-	protected ManagedBlockDevice mManagedBlockDevice;
-	protected int mKeyGeneratorIterationCount;
-	protected CompressorAlgorithm mCompressorAlgorithm;
-//	protected int mDefaultBTreebNodeSize;
-//	protected int mDefaultBTreeLeafSize;
-//	protected int mDefaultLobNodeSize;
-//	protected int mDefaultLobLeafSize;
-//	protected SyncMode mSyncMode;
+	private Object mTarget;
+	private EncryptionFunction mEncryptionFunction;
+	private KeyGenerationFunction mKeyGenerationFunction;
+	private CipherModeFunction mCipherModeFunction;
+	private CompressorAlgorithm mCompressorAlgorithm;
+	private char[] mPassword;
+	private int mKeyGeneratorIterationCount;
+	private int mBlockSize;
+//	private SyncMode mSyncMode;
 
 
 	public RaccoonBuilder()
 	{
-		mKeyGeneratorIterationCount = 1000;
+		mBlockSize = 4096;
+		mKeyGeneratorIterationCount = 1000_000;
 		mEncryptionFunction = EncryptionFunction.AES;
 		mCipherModeFunction = CipherModeFunction.XTS;
 		mKeyGenerationFunction = KeyGenerationFunction.SHA512;
@@ -41,171 +41,227 @@ public class RaccoonBuilder
 	}
 
 
-	public RaccoonDatabase get()
+	/**
+	 * Return a RaccoonBuilder with a target set to a file in the system temporary folder with a random name. File will be deleted on exit.
+	 */
+	public static RaccoonBuilder temporaryFile()
 	{
-		return get(DatabaseOpenOption.OPEN);
-	}
-
-
-	public RaccoonDatabase get(DatabaseOpenOption aDatabaseOpenOption)
-	{
-		if (mPath == null && mManagedBlockDevice == null && mBlockStorage == null)
-		{
-			throw new IllegalArgumentException("Path not provided.");
-		}
-
-		AccessCredentials ac = mPassword == null ? null : new AccessCredentials(mPassword, mEncryptionFunction, mKeyGenerationFunction, mCipherModeFunction).setIterationCount(mKeyGeneratorIterationCount);
-
-		if (mManagedBlockDevice != null)
-		{
-			return new RaccoonDatabase(mManagedBlockDevice, aDatabaseOpenOption, ac);
-		}
-		if (mBlockStorage != null)
-		{
-			return new RaccoonDatabase(mBlockStorage, aDatabaseOpenOption, ac);
-		}
-		return new RaccoonDatabase(mPath, aDatabaseOpenOption, ac);
-	}
-
-
-	public RaccoonBuilder path(File aPath)
-	{
-		return RaccoonBuilder.this.path(aPath.toPath());
-	}
-
-
-	public RaccoonBuilder path(String aPath)
-	{
-		return RaccoonBuilder.this.path(Paths.get(aPath));
-	}
-
-
-	public RaccoonBuilder path(Path aPath)
-	{
-		mManagedBlockDevice = null;
-		mBlockStorage = null;
-		mPath = aPath;
-		return this;
-	}
-
-
-	public RaccoonBuilder path(BlockStorage aBlockStorage)
-	{
-		mPath = null;
-		mManagedBlockDevice = null;
-		mBlockStorage = aBlockStorage;
-		return this;
-	}
-
-
-	public RaccoonBuilder path(ManagedBlockDevice aManagedBlockDevice)
-	{
-		mPath = null;
-		mBlockStorage = null;
-		mManagedBlockDevice = aManagedBlockDevice;
-		return this;
+		return temporaryFile(null);
 	}
 
 
 	/**
-	 * The database will be stored in a file in the system temporary directory with a random name.
+	 * Return a RaccoonBuilder with a target set to a file in the system temporary folder with provided name. File will be deleted on exit.
 	 */
-	public RaccoonBuilder pathInTempDir()
+	public static RaccoonBuilder temporaryFile(String aName)
 	{
-		File dir = new File(System.getProperty("java.io.tmpdir"));
-		if (!dir.exists())
+		try
 		{
-			throw new IllegalArgumentException("No temporary directory exists in this environment.");
+			Path path = Files.createTempFile(aName, ".rdb");
+			path.toFile().deleteOnExit();
+			return new RaccoonBuilder().withTarget(path);
 		}
-		for (;;)
+		catch (IOException e)
 		{
-			File file = new File(dir, ObjectId.randomId() + ".rdb");
-			if (!file.exists())
-			{
-				return RaccoonBuilder.this.path(file);
-			}
+			throw new RaccoonIOException("Failed to create file in temporary folder", e);
 		}
 	}
 
 
 	/**
-	 * The database will be stored in a file in the system temporary directory with the name provided.
+	 * Return a RaccoonBuilder with a target set to a file in the user home folder with provided relative path.
 	 */
-	public RaccoonBuilder pathInTempDir(String aName)
-	{
-		File dir = new File(System.getProperty("java.io.tmpdir"));
-		if (!dir.exists())
-		{
-			throw new IllegalArgumentException("No temporary directory exists in this environment.");
-		}
-		return RaccoonBuilder.this.path(new File(dir, aName));
-	}
-
-
-	/**
-	 * The database will be stored in a file in the user home directory with the name provided.
-	 */
-	public RaccoonBuilder pathInUserDir(String aName)
+	public static RaccoonBuilder userFile(String aPath)
 	{
 		File dir = new File(System.getProperty("user.home"));
 		if (!dir.exists())
 		{
 			throw new IllegalArgumentException("User diretory not found in this environment.");
 		}
-		return RaccoonBuilder.this.path(new File(dir, aName));
+		Path path = new File(dir, aPath).toPath();
+		try
+		{
+			Files.createDirectories(path.getParent());
+		}
+		catch (IOException e)
+		{
+			throw new RaccoonIOException("Failed to create path: " + path);
+		}
+		return new RaccoonBuilder().withTarget(path);
 	}
 
 
-	public RaccoonBuilder encryption(String aEncryptionFunction)
+	/**
+	 * Return a RaccoonBuilder with a target set to a file.
+	 */
+	public static RaccoonBuilder path(Path aPath)
+	{
+		return new RaccoonBuilder().withTarget(aPath);
+	}
+
+
+	/**
+	 * Return a RaccoonBuilder with a target set to a file.
+	 */
+	public static RaccoonBuilder path(String aPath)
+	{
+		return new RaccoonBuilder().withTarget(aPath);
+	}
+
+
+	/**
+	 * Return a RaccoonBuilder with a target set to a file.
+	 */
+	public static RaccoonBuilder path(File aPath)
+	{
+		return new RaccoonBuilder().withTarget(aPath);
+	}
+
+
+	/**
+	 * Return a RaccoonBuilder with a target set to a low level BlockStorage.
+	 */
+	public static RaccoonBuilder storage(BlockStorage aBlockStorage)
+	{
+		return new RaccoonBuilder().withTarget(aBlockStorage);
+	}
+
+
+	/**
+	 * Return a RaccoonBuilder with a target set to a BlockDevice that exists in RAM only.
+	 *
+	 * NOTE: changing the BlockSize will reset the block storage.
+	 */
+	public static RaccoonBuilder memory()
+	{
+		return new RaccoonBuilder().withTarget(new MemoryBlockStorage());
+	}
+
+
+	/**
+	 * Sets the target location or storage for this database.
+	 * <p>
+	 * Create a reusable memory database:
+	 * <pre>
+	 * RaccoonBuilder builder = new RaccoonBuilder().target(new MemoryBlockStorage(512));
+	 * try (RaccoonDatabase db = builder.get())
+	 * {
+	 *    db.getCollection("data").saveOne(Document.of("value:1"));
+	 * }
+	 * try (RaccoonDatabase db = builder.get())
+	 * {
+	 *    db.getCollection("data").forEach(System.out::println);
+	 * }
+	 * </pre>
+	 */
+	public RaccoonBuilder withTarget(Object aTarget)
+	{
+		mTarget = aTarget;
+		return this;
+	}
+
+
+	/**
+	 * Open or create a RaccoonDatabase with the properties in the builder.
+	 */
+	public RaccoonDatabase get()
+	{
+		return get(DatabaseOpenOption.CREATE);
+	}
+
+
+	/**
+	 * Open or create a RaccoonDatabase with the properties in the builder.
+	 */
+	public RaccoonDatabase get(DatabaseOpenOption aDatabaseOpenOption)
+	{
+		if (mTarget == null)
+		{
+			throw new IllegalArgumentException("Target is null.");
+		}
+
+		AccessCredentials ac = mPassword == null ? null : new AccessCredentials(mPassword, mEncryptionFunction, mKeyGenerationFunction, mCipherModeFunction).setIterationCount(mKeyGeneratorIterationCount);
+
+		if (mTarget instanceof MemoryBlockStorage v)
+		{
+			v.setBlockSize(mBlockSize);
+			return new RaccoonDatabase(new ManagedBlockDevice(v), aDatabaseOpenOption, ac);
+		}
+		if (mTarget instanceof File v)
+		{
+			return new RaccoonDatabase(v.toPath(), aDatabaseOpenOption, ac);
+		}
+		if (mTarget instanceof String v)
+		{
+			return new RaccoonDatabase(Paths.get(v), aDatabaseOpenOption, ac);
+		}
+		if (mTarget instanceof Path v)
+		{
+			return new RaccoonDatabase(v, aDatabaseOpenOption, ac);
+		}
+		if (mTarget instanceof BlockStorage v)
+		{
+			if (ac == null)
+			{
+				return new RaccoonDatabase(new ManagedBlockDevice(v), aDatabaseOpenOption, null);
+			}
+			return new RaccoonDatabase(new ManagedBlockDevice(new SecureBlockDevice(ac, v)), aDatabaseOpenOption, null);
+		}
+
+		throw new IllegalArgumentException("Unsupported target specified: " + mTarget.getClass());
+	}
+
+
+	public RaccoonBuilder withEncryption(String aEncryptionFunction)
 	{
 		mEncryptionFunction = aEncryptionFunction == null ? null : EncryptionFunction.valueOf(aEncryptionFunction.toUpperCase());
 		return this;
 	}
 
 
-	public RaccoonBuilder encryption(EncryptionFunction aEncryptionFunction)
+	public RaccoonBuilder withEncryption(EncryptionFunction aEncryptionFunction)
 	{
 		mEncryptionFunction = aEncryptionFunction;
 		return this;
 	}
 
 
-	public RaccoonBuilder keyGeneration(String aKeyGenerationFunction)
+	public RaccoonBuilder withKeyGeneration(String aKeyGenerationFunction)
 	{
 		mKeyGenerationFunction = aKeyGenerationFunction == null ? null : KeyGenerationFunction.valueOf(aKeyGenerationFunction.toUpperCase());
 		return this;
 	}
 
 
-	public RaccoonBuilder keyGeneration(KeyGenerationFunction aKeyGenerationFunction)
+	public RaccoonBuilder withKeyGeneration(KeyGenerationFunction aKeyGenerationFunction)
 	{
 		mKeyGenerationFunction = aKeyGenerationFunction;
 		return this;
 	}
 
 
-	public RaccoonBuilder cipherMode(String aCipherModeFunction)
+	public RaccoonBuilder withCipherMode(String aCipherModeFunction)
 	{
 		mCipherModeFunction = aCipherModeFunction == null ? null : CipherModeFunction.valueOf(aCipherModeFunction.toUpperCase());
 		return this;
 	}
 
 
-	public RaccoonBuilder cipherMode(CipherModeFunction aCipherModeFunction)
+	public RaccoonBuilder withCipherMode(CipherModeFunction aCipherModeFunction)
 	{
 		mCipherModeFunction = aCipherModeFunction;
 		return this;
 	}
 
 
-	public RaccoonBuilder password(char[] aPassword)
+	public RaccoonBuilder withPassword(char[] aPassword)
 	{
 		mPassword = aPassword == null ? null : aPassword.clone();
 		return this;
 	}
 
 
-	public RaccoonBuilder password(byte[] aPassword)
+	public RaccoonBuilder withPassword(byte[] aPassword)
 	{
 		if (aPassword == null)
 		{
@@ -224,21 +280,21 @@ public class RaccoonBuilder
 	}
 
 
-	public RaccoonBuilder password(String aPassword)
+	public RaccoonBuilder withPassword(String aPassword)
 	{
 		mPassword = aPassword == null ? null : aPassword.toCharArray();
 		return this;
 	}
 
 
-	public RaccoonBuilder compressor(CompressorAlgorithm aCompressorAlgorithm)
+	public RaccoonBuilder withCompressor(CompressorAlgorithm aCompressorAlgorithm)
 	{
 		mCompressorAlgorithm = aCompressorAlgorithm;
 		return this;
 	}
 
 
-	public RaccoonBuilder compressor(String aCompressorAlgorithm)
+	public RaccoonBuilder withCompressor(String aCompressorAlgorithm)
 	{
 		mCompressorAlgorithm = aCompressorAlgorithm == null ? null : CompressorAlgorithm.valueOf(aCompressorAlgorithm.toUpperCase());
 		return this;
@@ -246,11 +302,28 @@ public class RaccoonBuilder
 
 
 	/**
-	 * Sets the encryption key generator iteration count. Default 1000.
+	 * Sets the encryption key generator iteration count. Default is 1,000,000.
 	 */
-	public RaccoonBuilder keyIterations(int aIterationCount)
+	public RaccoonBuilder withKeyIterations(int aIterationCount)
 	{
 		mKeyGeneratorIterationCount = aIterationCount;
+		return this;
+	}
+
+
+	/**
+	 * Sets the size of a storage block in the block device. This value should be same or a multiple of the underlaying file systems sector size.
+	 *
+	 * @param aBlockSize must be power of 2, and between 512 and 65536, default is 4096.
+	 */
+	public RaccoonBuilder withBlockSize(int aBlockSize)
+	{
+		if (aBlockSize < 512 || aBlockSize > 65536 || (aBlockSize & (aBlockSize - 1)) != 0)
+		{
+			throw new IllegalArgumentException("Illegal block size: " + aBlockSize);
+		}
+
+		mBlockSize = aBlockSize;
 		return this;
 	}
 }

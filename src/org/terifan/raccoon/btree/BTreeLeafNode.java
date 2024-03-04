@@ -1,19 +1,14 @@
 package org.terifan.raccoon.btree;
 
 import java.util.function.Consumer;
-import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
-import static org.terifan.raccoon.btree.BTree.BLOCKPOINTER_PLACEHOLDER;
-import org.terifan.raccoon.btree.ArrayMap.PutResult;
 import org.terifan.raccoon.RuntimeDiagnostics;
-import static org.terifan.raccoon.RaccoonCollection.TYPE_EXTERNAL;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
-import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.blockdevice.BlockType;
 
 
 public class BTreeLeafNode extends BTreeNode
 {
-	protected ArrayMap mMap;
+	ArrayMap mMap;
 
 
 	BTreeLeafNode(BTree aTree, BTreeInteriorNode aParent, ArrayMap aMap)
@@ -25,30 +20,40 @@ public class BTreeLeafNode extends BTreeNode
 
 
 	@Override
-	boolean get(ArrayMapKey aKey, ArrayMapEntry aEntry)
+	OpResult get(ArrayMapKey aKey)
 	{
-		return mMap.get(aEntry);
+		return mMap.get(aKey);
 	}
 
 
 	@Override
-	PutResult put(ArrayMapKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> aResult)
+	OpResult put(ArrayMapKey aKey, ArrayMapEntry aEntry)
 	{
-		mModified = true;
-		return mMap.insert(aEntry, aResult);
-	}
+//		mModified = true;
+		OpResult result = mMap.insert(aEntry);
 
-
-	@Override
-	RemoveResult remove(ArrayMapKey aKey, Result<ArrayMapEntry> aOldEntry)
-	{
-		if (mMap.remove(aKey, aOldEntry))
+		if (mMap.getCapacity() > mTree.getConfiguration().getLeafSize())
 		{
-			mModified = true;
-			return RemoveResult.REMOVED;
+			mTree.schedule(this);
 		}
 
-		return RemoveResult.NO_MATCH;
+		return result;
+	}
+
+
+	@Override
+	OpResult remove(ArrayMapKey aKey)
+	{
+		OpResult result = mMap.remove(aKey);
+
+//		if (mMap.getCapacity() < mTree.getConfiguration().getLeafSize() / 2)
+//		{
+//			mTree.schedule(this);
+//		}
+
+//		mModified |= result.state == OpState.DELETE;
+
+		return result;
 	}
 
 
@@ -59,7 +64,7 @@ public class BTreeLeafNode extends BTreeNode
 		{
 			if (aVisitor.beforeLeafNode(this))
 			{
-				mHighlight = BTree.RECORD_USE;
+//				mHighlight = BTree.RECORD_USE;
 
 				aVisitor.leaf(this);
 			}
@@ -68,75 +73,33 @@ public class BTreeLeafNode extends BTreeNode
 
 
 	@Override
-	SplitResult split()
+	void commit()
 	{
-		mTree.freeBlock(mBlockPointer);
-
-		ArrayMap[] maps = mMap.split(mTree.getLeafSize());
-
-		BTreeLeafNode left = new BTreeLeafNode(mTree, mParent, maps[0]);
-		BTreeLeafNode rigt = new BTreeLeafNode(mTree, mParent, maps[1]);
-		left.mModified = true;
-		rigt.mModified = true;
-
-		return new SplitResult(left, rigt, left.mMap.getFirst().getKey(), rigt.mMap.getFirst().getKey());
-	}
-
-
-	BTreeInteriorNode upgrade()
-	{
-		mTree.freeBlock(mBlockPointer);
-
-		BTreeInteriorNode newInterior = new BTreeInteriorNode(mTree, mParent, 1, new ArrayMap(mTree.getNodeSize()));
-
-		ArrayMap[] maps = mMap.split(mTree.getLeafSize());
-
-		BTreeLeafNode left = new BTreeLeafNode(mTree, newInterior, maps[0]);
-		BTreeLeafNode rigt = new BTreeLeafNode(mTree, newInterior, maps[1]);
-		left.mModified = true;
-		rigt.mModified = true;
-
-		ArrayMapKey keyLeft = ArrayMapKey.EMPTY;
-		ArrayMapKey keyRigt = rigt.mMap.getKey(0);
-
-		newInterior.mModified = true;
-		newInterior.putEntry(new ArrayMapEntry(keyLeft, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
-		newInterior.putEntry(new ArrayMapEntry(keyRigt, BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
-		newInterior.put(keyLeft, left);
-		newInterior.put(keyRigt, rigt);
-
-		return newInterior;
-	}
-
-
-	@Override
-	boolean commit()
-	{
-		if (mModified)
-		{
+//		if (mModified)
+//		{
 			RuntimeDiagnostics.collectStatistics(Operation.FREE_LEAF, mBlockPointer);
 			RuntimeDiagnostics.collectStatistics(Operation.WRITE_LEAF, 1);
 
 			mTree.freeBlock(mBlockPointer);
 
 			mBlockPointer = mTree.writeBlock(mMap.array(), 0, BlockType.BTREE_LEAF);
-		}
+//		}
 
-		return mModified;
+//		return mModified;
 	}
 
 
 	@Override
 	protected void postCommit()
 	{
-		mModified = false;
+//		mModified = false;
 	}
 
 
 	@Override
 	public String toString()
 	{
-		return String.format("BTreeLeaf{mMap=" + mMap + '}');
+		return String.format("BTreeLeaf{"+UNIQUE+", mMap=" + mMap + '}');
 	}
 
 
@@ -151,50 +114,6 @@ public class BTreeLeafNode extends BTreeNode
 	protected int size()
 	{
 		return mMap.size();
-	}
-
-
-	@Override
-	protected void scan(ScanResult aScanResult)
-	{
-		int fillRatio = mMap.getUsedSpace() * 100 / mTree.getLeafSize();
-
-		aScanResult.log.append("{" + (mBlockPointer == null ? "" : mBlockPointer.getBlockIndex0()) + ":" + fillRatio + "%" + "}");
-		aScanResult.log.append("[");
-
-		boolean first = true;
-
-		for (ArrayMapEntry entry : mMap)
-		{
-			if (!first)
-			{
-				aScanResult.log.append(",");
-			}
-			first = false;
-			if (entry.getType() == TYPE_EXTERNAL)
-			{
-				aScanResult.log.append("'" + stringifyKey(entry.getKey()) + "'");
-			}
-			else
-			{
-				aScanResult.log.append("'" + stringifyKey(entry.getKey()) + "'");
-			}
-		}
-
-		aScanResult.log.append("]");
-
-		if (mHighlight)
-		{
-			aScanResult.log.append("#a00#a00#fff");
-		}
-		else if (fillRatio > 100)
-		{
-			aScanResult.log.append(mModified ? "#a00#a00#fff" : "#666#666#fff");
-		}
-		else
-		{
-			aScanResult.log.append(mModified ? "#f00#f00#fff" : "#888#fff#000");
-		}
 	}
 
 

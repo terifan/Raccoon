@@ -37,6 +37,7 @@ import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 import org.terifan.raccoon.util.DualMap;
 import org.terifan.raccoon.blockdevice.storage.BlockStorage;
+import org.terifan.raccoon.btree.BTreeConfiguration;
 import org.terifan.raccoon.util.FutureQueue;
 
 // createCollection - samma som getcollection
@@ -50,20 +51,20 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	private final static String TENANT = "tenant";
 	private final static String VERSION = "RaccoonDatabase.1";
-	private final static String DIRECTORY = "0";
+	private final static String DIRECTORY = "dir";
 	private final static String INTERNAL_PREFIX = "$";
 	private final static String LOB_COLLECTION = "$lob.";
 	private final static String INDEX_COLLECTION = "$indices";
 	private final static String HEAP_COLLECTION = "$heaps";
 
-	private ExecutorService mExecutor;
+//	private ExecutorService mExecutor;
 
 	private ManagedBlockDevice mBlockDevice;
 	private DatabaseRoot mDatabaseRoot;
 	private DatabaseOpenOption mDatabaseOpenOption;
-	private final ConcurrentSkipListMap<String, RaccoonCollection> mCollectionInstances;
-	private final ConcurrentHashMap<String, RaccoonHeap> mHeapInstances;
-	private final ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
+	private ConcurrentSkipListMap<String, RaccoonCollection> mCollectionInstances;
+	private ConcurrentHashMap<String, RaccoonHeap> mHeapInstances;
+	private ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 	private final ReadWriteLock mLock;
 
 	final DualMap<ObjectId, ObjectId, Document> mIndices;
@@ -84,7 +85,7 @@ public final class RaccoonDatabase implements AutoCloseable
 		mCollectionInstances = new ConcurrentSkipListMap<>();
 		mHeapInstances = new ConcurrentHashMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
-		mExecutor = Executors.newFixedThreadPool(1);
+//		mExecutor = Executors.newFixedThreadPool(1);
 	}
 
 
@@ -186,26 +187,24 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			ManagedBlockDevice blockDevice;
 
-			if (aBlockDevice instanceof ManagedBlockDevice)
+			if (aBlockDevice instanceof ManagedBlockDevice v)
 			{
 				if (aAccessCredentials != null)
 				{
 					throw new IllegalArgumentException("The BlockDevice provided cannot be secured.");
 				}
 
-				blockDevice = (ManagedBlockDevice)aBlockDevice;
+				blockDevice = v;
 			}
-			else if (aAccessCredentials == null)
+			else if (aBlockDevice instanceof BlockStorage v)
 			{
-				log.d("creating a managed block device");
+				log.d("creating a block device");
 
-				blockDevice = new ManagedBlockDevice((BlockStorage)aBlockDevice);
+				blockDevice = aAccessCredentials == null ? new ManagedBlockDevice(v) : new ManagedBlockDevice(new SecureBlockDevice(aAccessCredentials, v));
 			}
 			else
 			{
-				log.d("creating a secure block device");
-
-				blockDevice = new ManagedBlockDevice(new SecureBlockDevice(aAccessCredentials, (BlockStorage)aBlockDevice));
+				throw new IllegalStateException();
 			}
 
 			if (aCreate)
@@ -223,17 +222,10 @@ public final class RaccoonDatabase implements AutoCloseable
 
 				mModified = true;
 				mBlockDevice = blockDevice;
-				mBlockDevice.getMetadata().put(DIRECTORY, BTree.createDefaultConfig(blockDevice.getBlockSize()));
-				mDatabaseRoot = new DatabaseRoot(mBlockDevice, mBlockDevice.getMetadata().getDocument(DIRECTORY));
+				mBlockDevice.getMetadata().put(DIRECTORY, null);
+				mDatabaseRoot = new DatabaseRoot(mBlockDevice, mBlockDevice.getMetadata().computeIfAbsent(DIRECTORY, e -> new BTreeConfiguration()));
 
-				try
-				{
-					commit().get();
-				}
-				catch (InterruptedException | ExecutionException e)
-				{
-					throw new IllegalStateException(e);
-				}
+				commit();
 
 				log.dec();
 			}
@@ -248,7 +240,7 @@ public final class RaccoonDatabase implements AutoCloseable
 				}
 
 				mBlockDevice = blockDevice;
-				mDatabaseRoot = new DatabaseRoot(mBlockDevice, mBlockDevice.getMetadata().getDocument(DIRECTORY));
+				mDatabaseRoot = new DatabaseRoot(mBlockDevice, new BTreeConfiguration(mBlockDevice.getMetadata().getDocument(DIRECTORY)));
 				mReadOnly = mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY;
 
 				RaccoonCollection indices = getCollectionImpl(INDEX_COLLECTION, false);
@@ -275,7 +267,14 @@ public final class RaccoonDatabase implements AutoCloseable
 
 						mShutdownHook = null;
 
-						close();
+						try
+						{
+							close();
+						}
+						catch (Exception e)
+						{
+							log.e("{}", e);
+						}
 
 						log.dec();
 					}
@@ -299,6 +298,10 @@ public final class RaccoonDatabase implements AutoCloseable
 		@Override
 		public void run()
 		{
+//			for (RaccoonCollection instance : mCollectionInstances.values())
+//			{
+//				instance.flush();
+//			}
 			for (RaccoonHeap instance : mHeapInstances.values())
 			{
 				instance.getChannel().flush();
@@ -324,7 +327,6 @@ public final class RaccoonDatabase implements AutoCloseable
 	public synchronized boolean existsCollection(String aName)
 	{
 		checkOpen();
-
 		return mCollectionInstances.containsKey(aName) || mDatabaseRoot.exists(aName);
 	}
 
@@ -366,7 +368,7 @@ public final class RaccoonDatabase implements AutoCloseable
 			return instance;
 		}
 
-		Document conf = mDatabaseRoot.get(aName);
+		BTreeConfiguration conf = mDatabaseRoot.get(aName);
 		if (conf != null)
 		{
 			instance = new RaccoonCollection(this, conf);
@@ -389,7 +391,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		try
 		{
-			conf = createDefaultConfig();
+			conf = new BTreeConfiguration().put("_id", ObjectId.randomId());
 			instance = new RaccoonCollection(this, conf);
 			mDatabaseRoot.put(aName, conf);
 			mCollectionInstances.put(aName, instance);
@@ -485,20 +487,20 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public boolean isModified()
-	{
-		checkOpen();
-
-		for (RaccoonCollection instance : mCollectionInstances.values())
-		{
-			if (instance.isChanged())
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
+//	public boolean isModified()
+//	{
+//		checkOpen();
+//
+//		for (RaccoonCollection instance : mCollectionInstances.values())
+//		{
+//			if (instance.isChanged())
+//			{
+//				return true;
+//			}
+//		}
+//
+//		return false;
+//	}
 
 
 	public boolean isOpen()
@@ -507,86 +509,40 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
-	public long flush()
-	{
-		checkOpen();
-
-		long nodesWritten = 0;
-
-		try (WriteLock lock = mLock.writeLock())
-		{
-			log.i("flush changes");
-			log.inc();
-
-			for (RaccoonCollection entry : mCollectionInstances.values())
-			{
-				nodesWritten = entry.flush();
-			}
-
-			log.dec();
-		}
-
-		return nodesWritten;
-	}
+//	public void flush()
+//	{
+//		try (WriteLock lock = mLock.writeLock())
+//		{
+//			checkOpen();
+//
+//			log.i("flush changes");
+//			log.inc();
+//
+//			for (RaccoonCollection entry : mCollectionInstances.values())
+//			{
+//				entry.flush();
+//			}
+//
+//			log.dec();
+//		}
+//	}
 
 
 	/**
 	 * Persists all pending changes. It's necessary to commit changes on a regular basis to avoid data loss.
 	 */
-	public Future<Result> commit()
+	public void commit()
 	{
-		checkOpen();
-
-		Result result = new Result();
-		Runnable task = () ->
+		try (WriteLock lock = mLock.writeLock())
 		{
-			try
-			{
-				try (WriteLock lock = mLock.writeLock())
-				{
-					log.i("commit database");
-					log.inc();
+			checkOpen();
 
-					try (FutureQueue queue = new FutureQueue())
-					{
-						for (Entry<String, RaccoonCollection> entry : mCollectionInstances.entrySet())
-						{
-							Runnable onModified = () -> {
-								log.i("table updated {}", entry.getKey());
-
-								mDatabaseRoot.put(entry.getKey(), entry.getValue().getConfiguration());
-								mModified = true;
-							};
-
-							queue.add(entry.getValue().commit(onModified));
-						}
-					}
-
-					if (mModified)
-					{
-						log.i("updating super block");
-						log.inc();
-
-						mBlockDevice.getMetadata().put(DIRECTORY, mDatabaseRoot.commit(mBlockDevice));
-						mBlockDevice.commit();
-						mModified = false;
-
-						assert integrityCheck() == null : integrityCheck();
-
-						log.dec();
-					}
-				}
-				finally
-				{
-					log.dec();
-				}
-			}
-			catch (Exception e)
-			{
-				throw new IllegalStateException(e);
-			}
-		};
-		return mExecutor.submit(task, result);
+			commitImpl();
+		}
+		finally
+		{
+			log.dec();
+		}
 	}
 
 
@@ -595,24 +551,89 @@ public final class RaccoonDatabase implements AutoCloseable
 	 */
 	public void rollback()
 	{
-		checkOpen();
+		try (WriteLock lock = mLock.writeLock())
+		{
+			checkOpen();
 
+			rollbackImpl();
+		}
+		finally
+		{
+			log.dec();
+		}
+	}
+
+
+	private void commitImpl()
+	{
+		log.i("commit database");
+		log.inc();
+
+		try (FutureQueue queue = new FutureQueue()) // FutureQueue blocks until all futures have been executed
+		{
+			for (Entry<String, RaccoonCollection> entry : mCollectionInstances.entrySet())
+			{
+				Runnable onModified = () -> {
+					log.i("table updated {}", entry.getKey());
+
+					mDatabaseRoot.put(entry.getKey(), entry.getValue().getConfiguration());
+					mModified = true;
+				};
+
+				queue.add(entry.getValue().commit(onModified));
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace(System.out);
+		}
+
+		if (mModified)
+		{
+			log.i("updating super block");
+			log.inc();
+
+			mDatabaseRoot.commit(mBlockDevice);
+
+			mBlockDevice.getMetadata().put(DIRECTORY, mDatabaseRoot.getConfiguration());
+			try
+			{
+				mBlockDevice.commit();
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace(System.out);
+			}
+			mModified = false;
+
+			assert integrityCheck() == null : integrityCheck();
+
+			log.dec();
+		}
+	}
+
+
+	private void rollbackImpl()
+	{
 		log.i("rollback");
 		log.inc();
 
-		try (WriteLock lock = mLock.writeLock())
+		try
 		{
-			for (RaccoonCollection instance : mCollectionInstances.values())
+			try (FutureQueue queue = new FutureQueue()) // FutureQueue blocks until all futures have been executed
 			{
-				instance.rollback();
+				for (RaccoonCollection instance : mCollectionInstances.values())
+				{
+					queue.add(instance.rollback());
+				}
 			}
 
-			mDatabaseRoot = new DatabaseRoot(mBlockDevice, mBlockDevice.getMetadata().getDocument(DIRECTORY));
+			mDatabaseRoot = new DatabaseRoot(mBlockDevice, new BTreeConfiguration(mBlockDevice.getMetadata().getDocument(DIRECTORY)));
 			mBlockDevice.rollback();
 		}
-		catch (IOException e)
+		catch (Exception e)
 		{
-			throw new IllegalStateException(e);
+			e.printStackTrace(System.out);
 		}
 		finally
 		{
@@ -622,26 +643,22 @@ public final class RaccoonDatabase implements AutoCloseable
 
 
 	@Override
-	public void close()
+	public void close() throws Exception
 	{
-		commit();
-
-		try
+		if (mBlockDevice == null)
 		{
-			mExecutor.shutdown();
-			mExecutor.awaitTermination(1, TimeUnit.HOURS);
-			mExecutor = null;
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace(System.out);
+			log.w("database already closed");
+			return;
 		}
 
 		try (WriteLock lock = mLock.writeLock())
 		{
+			commitImpl();
+
 			if (mMaintenanceTimer != null)
 			{
 				mMaintenanceTimer.cancel();
+				mMaintenanceTimer = null;
 			}
 
 			if (mShutdownHook != null)
@@ -656,73 +673,43 @@ public final class RaccoonDatabase implements AutoCloseable
 				}
 			}
 
-			if (mBlockDevice == null)
-			{
-				log.w("database already closed");
-				return;
-			}
-
 			if (mReadOnly)
 			{
-				if (mModified)
-				{
-					reportStatus(Level.WARN, "readonly database modified, changes are not committed", null);
-				}
 				return;
 			}
 
 			log.d("begin closing database");
 			log.inc();
 
-			if (!mModified)
+			for (RaccoonCollection instance : mCollectionInstances.values())
 			{
-				for (RaccoonCollection entry : mCollectionInstances.values())
-				{
-					mModified |= entry.isChanged();
-				}
-			}
-
-			if (mModified)
-			{
-				log.w("rollback on close");
-				log.inc();
-
-				for (RaccoonCollection instance : mCollectionInstances.values())
-				{
-					instance.rollback();
-				}
-
-				mDatabaseRoot = new DatabaseRoot(mBlockDevice, mBlockDevice.getMetadata().getDocument(DIRECTORY));
-				mBlockDevice.rollback();
-
-				log.dec();
-			}
-
-			if (mDatabaseRoot != null)
-			{
-				for (RaccoonCollection instance : mCollectionInstances.values())
+				try
 				{
 					instance.close();
 				}
-
-				mCollectionInstances.clear();
-
-				mDatabaseRoot.commit(mBlockDevice);
-				mDatabaseRoot = null;
+				catch (Exception | Error e)
+				{
+					e.printStackTrace(System.out);
+				}
 			}
+
+			mCollectionInstances.clear();
+			mCollectionInstances = null;
+
+			mDatabaseRoot.commit(mBlockDevice);
+			mDatabaseRoot = null;
 
 			if (mBlockDevice != null)
-//			if (mBlockDevice != null && mCloseDeviceOnCloseDatabase)
 			{
+				mBlockDevice.commit();
 				mBlockDevice.close();
+				mBlockDevice = null;
 			}
-
-			mBlockDevice = null;
 
 			log.i("database was closed");
 			log.dec();
 		}
-		catch (IOException e)
+		catch (Exception e)
 		{
 			throw new IllegalStateException(e);
 		}
@@ -786,13 +773,5 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		mShutdownHookEnabled = aShutdownHookEnabled;
 		return this;
-	}
-
-
-	private Document createDefaultConfig()
-	{
-		return new Document()
-			.put("_id", ObjectId.randomId())
-			.put(RaccoonCollection.CONFIGURATION, BTree.createDefaultConfig(mBlockDevice.getBlockSize()));
 	}
 }

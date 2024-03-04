@@ -5,6 +5,7 @@ import java.util.Random;
 import org.terifan.raccoon.blockdevice.lob.LobByteChannel;
 import org.terifan.raccoon.blockdevice.lob.LobOpenOption;
 import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
+import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.document.ObjectId;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
@@ -14,15 +15,30 @@ import org.testng.annotations.Test;
 public class RaccoonDirectoryNGTest
 {
 	@Test
+	public void testCreateRead0() throws Exception
+	{
+		RaccoonBuilder builder = new RaccoonBuilder().withTarget(new MemoryBlockStorage(512));
+		try (RaccoonDatabase db = builder.get())
+		{
+			db.getCollection("data").saveOne(Document.of("value:1"));
+		}
+		try (RaccoonDatabase db = builder.get())
+		{
+			db.getCollection("data").forEach(System.out::println);
+		}
+	}
+
+
+	@Test
 	public void testCreateRead() throws Exception
 	{
 		byte[] output = new byte[16000];
 		new Random().nextBytes(output);
 		Object id = ObjectId.randomId();
 
-		RaccoonBuilder builder = new RaccoonBuilder().path(new MemoryBlockStorage(512));
+		RaccoonBuilder builder = new RaccoonBuilder().withTarget(new MemoryBlockStorage(512));
 
-		try (RaccoonDatabase db = builder.get(DatabaseOpenOption.CREATE))
+		try (RaccoonDatabase db = builder.get())
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
 
@@ -49,7 +65,6 @@ public class RaccoonDirectoryNGTest
 			}
 
 //			dir.delete(id);
-
 			System.out.println(dir.list());
 		}
 	}
@@ -101,7 +116,6 @@ public class RaccoonDirectoryNGTest
 			}
 		}
 	}
-
 
 //	@Test
 //	public void testConcurrentReadWriteLob() throws Exception

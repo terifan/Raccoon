@@ -1,9 +1,6 @@
 package org.terifan.raccoon.btree;
 
-import org.terifan.raccoon.btree.ArrayMap.PutResult;
-import org.terifan.raccoon.ScanResult;
 import org.terifan.raccoon.blockdevice.BlockPointer;
-import org.terifan.raccoon.document.Array;
 
 
 public abstract class BTreeNode
@@ -11,9 +8,14 @@ public abstract class BTreeNode
 	protected BTree mTree;
 	protected BTreeInteriorNode mParent;
 	protected BlockPointer mBlockPointer;
-	protected boolean mModified;
 	protected int mLevel;
-	protected boolean mHighlight;
+
+	protected static int COUNTER;
+	protected final int UNIQUE=++COUNTER;
+
+//	protected boolean mModified;
+//	protected boolean mHighlight;
+//	protected NodeState mChange;
 
 
 	protected BTreeNode(BTree aTree, BTreeInteriorNode aParent, int aLevel)
@@ -24,22 +26,19 @@ public abstract class BTreeNode
 	}
 
 
-	abstract boolean get(ArrayMapKey aKey, ArrayMapEntry oEntry);
+	abstract OpResult get(ArrayMapKey aKey);
 
 
-	abstract PutResult put(ArrayMapKey aKey, ArrayMapEntry aEntry, Result<ArrayMapEntry> oOldEntry);
+	abstract OpResult put(ArrayMapKey aKey, ArrayMapEntry aEntry);
 
 
-	abstract RemoveResult remove(ArrayMapKey aKey, Result<ArrayMapEntry> oOldEntry);
+	abstract OpResult remove(ArrayMapKey aKey);
 
 
 	abstract void visit(BTreeVisitor aVisitor, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey);
 
 
-	abstract SplitResult split();
-
-
-	abstract boolean commit();
+	abstract void commit();
 
 
 	protected abstract void postCommit();
@@ -51,88 +50,10 @@ public abstract class BTreeNode
 	protected abstract int size();
 
 
-	protected abstract void scan(ScanResult aScanResult);
-
-
-	protected String stringifyKey(ArrayMapKey aKey)
-	{
-		Object keyValue = aKey.get();
-
-		String value = "";
-
-		if (keyValue instanceof Array)
-		{
-			for (Object k : (Array)keyValue)
-			{
-				if (!value.isEmpty())
-				{
-					value += ",";
-				}
-				value += k.toString().replaceAll("[^\\w]*", "");
-			}
-		}
-		else
-		{
-			value += keyValue.toString().replaceAll("[^\\w]*", "");
-		}
-
-		return value;
-	}
-
-
-	enum RemoveResult
-	{
-		REMOVED,
-		NO_MATCH
-	}
-
-
 	enum VisitorState
 	{
 		CONTINUE,
 		ABORT,
 		SKIP
-	}
-
-
-	static class SplitResult
-	{
-		private final BTreeNode mLeftNode;
-		private final BTreeNode mRightNode;
-		private final ArrayMapKey mLeftKey;
-		private final ArrayMapKey mRightKey;
-
-
-		SplitResult(BTreeNode aLeftNode, BTreeNode aRightNode, ArrayMapKey aLeftKey, ArrayMapKey aRightKey)
-		{
-			mLeftNode = aLeftNode;
-			mRightNode = aRightNode;
-			mLeftKey = aLeftKey;
-			mRightKey = aRightKey;
-		}
-
-
-		public BTreeNode getLeftNode()
-		{
-			return mLeftNode;
-		}
-
-
-		public ArrayMapKey getLeftKey()
-		{
-			return mLeftKey;
-		}
-
-
-		public BTreeNode getRightNode()
-		{
-			return mRightNode;
-		}
-
-
-		public ArrayMapKey getRightKey()
-		{
-			return mRightKey;
-		}
 	}
 }
