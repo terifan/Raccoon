@@ -35,6 +35,23 @@ public class TestTiny
 
 			try (RaccoonDatabase db = builder.get())
 			{
+
+//				RaccoonEnumeration countries = db.getEnumeration("countries");
+//				Document country = countries.get(Document.of("name:sweden"));
+
+
+//				RaccoonCollection animals = db.getCollection("animals");
+//				animals.findOne(Document.of("id:1")).andThen(doc -> System.out.println(doc.get("name")));
+
+
+//				RaccoonCollection animals = db.getCollection("animals");
+//				animals.findMany(Document.of("id:1")).forEach(doc -> System.out.println(doc.get("name")));
+
+
+//				RaccoonCollection animals = db.getCollection("animals");
+//				animals.stream(Document.of("id:1")).forEach(doc -> System.out.println(doc.get("name")));
+
+
 				RaccoonCollection people = db.getCollection("people");
 				for (int i = 0; i < 1900; i++)
 				{
