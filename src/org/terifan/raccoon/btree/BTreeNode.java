@@ -10,13 +10,6 @@ public abstract class BTreeNode
 	protected BlockPointer mBlockPointer;
 	protected int mLevel;
 
-	protected static int COUNTER;
-	protected final int UNIQUE=++COUNTER;
-
-//	protected boolean mModified;
-//	protected boolean mHighlight;
-//	protected NodeState mChange;
-
 
 	protected BTreeNode(BTree aTree, BTreeInteriorNode aParent, int aLevel)
 	{
@@ -26,16 +19,16 @@ public abstract class BTreeNode
 	}
 
 
-	abstract OpResult get(ArrayMapKey aKey);
+	abstract void get(ArrayMapEntry aEntry);
 
 
-	abstract OpResult put(ArrayMapKey aKey, ArrayMapEntry aEntry);
+	abstract void put(ArrayMapEntry aEntry);
 
 
-	abstract OpResult remove(ArrayMapKey aKey);
+	abstract void remove(ArrayMapEntry aEntry);
 
 
-	abstract void visit(BTreeVisitor aVisitor, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey);
+	abstract void visit(BTreeVisitor aVisitor, ArrayMapEntry aLowestKey, ArrayMapEntry aHighestKey);
 
 
 	abstract void commit();
@@ -48,6 +41,24 @@ public abstract class BTreeNode
 
 
 	protected abstract int size();
+
+
+//	@Override
+//	public int hashCode()
+//	{
+//		return mBlockPointer.hashCode();
+//	}
+//
+//
+//	@Override
+//	public boolean equals(Object aObj)
+//	{
+//		if (aObj instanceof BlockPointer v)
+//		{
+//			return mBlockPointer.equals(v);
+//		}
+//		return false;
+//	}
 
 
 	enum VisitorState

@@ -20,52 +20,43 @@ public class BTreeLeafNode extends BTreeNode
 
 
 	@Override
-	OpResult get(ArrayMapKey aKey)
+	void get(ArrayMapEntry aEntry)
 	{
-		return mMap.get(aKey);
+		mMap.get(aEntry);
 	}
 
 
 	@Override
-	OpResult put(ArrayMapKey aKey, ArrayMapEntry aEntry)
+	void put(ArrayMapEntry aEntry)
 	{
-//		mModified = true;
-		OpResult result = mMap.insert(aEntry);
+		mMap.insert(aEntry);
 
 		if (mMap.getCapacity() > mTree.getConfiguration().getLeafSize())
 		{
 			mTree.schedule(this);
 		}
-
-		return result;
 	}
 
 
 	@Override
-	OpResult remove(ArrayMapKey aKey)
+	void remove(ArrayMapEntry aEntry)
 	{
-		OpResult result = mMap.remove(aKey);
+		mMap.remove(aEntry);
 
-//		if (mMap.getCapacity() < mTree.getConfiguration().getLeafSize() / 2)
-//		{
-//			mTree.schedule(this);
-//		}
-
-//		mModified |= result.state == OpState.DELETE;
-
-		return result;
+		if (mMap.getCapacity() < mTree.getConfiguration().getLeafSize() / 4)
+		{
+			mTree.schedule(this);
+		}
 	}
 
 
 	@Override
-	void visit(BTreeVisitor aVisitor, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
+	void visit(BTreeVisitor aVisitor, ArrayMapEntry aLowestKey, ArrayMapEntry aHighestKey)
 	{
 		if (aVisitor.beforeAnyNode(this))
 		{
 			if (aVisitor.beforeLeafNode(this))
 			{
-//				mHighlight = BTree.RECORD_USE;
-
 				aVisitor.leaf(this);
 			}
 		}
@@ -99,7 +90,7 @@ public class BTreeLeafNode extends BTreeNode
 	@Override
 	public String toString()
 	{
-		return String.format("BTreeLeaf{"+UNIQUE+", mMap=" + mMap + '}');
+		return String.format("BTreeLeaf{mMap=" + mMap + '}');
 	}
 
 

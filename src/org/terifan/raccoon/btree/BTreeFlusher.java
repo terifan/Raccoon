@@ -1,9 +1,5 @@
 package org.terifan.raccoon.btree;
 
-import java.util.Map;
-import static org.terifan.raccoon.RaccoonCollection.TYPE_TREENODE;
-import static org.terifan.raccoon.btree.BTree.BLOCKPOINTER_PLACEHOLDER;
-
 
 class BTreeFlusher
 {
@@ -501,70 +497,70 @@ class BTreeFlusher
 //	}
 
 
-	private static ArrayMapKey findLowestLeafKey(BTreeNode aNode)
-	{
-		if (aNode instanceof BTreeInteriorNode v)
-		{
-			for (int i = 0; i < v.size(); i++)
-			{
-				ArrayMapKey b = findLowestLeafKey(v.getNode(i));
-				if (b.size() > 0)
-				{
-					return b;
-				}
-			}
-			throw new IllegalStateException();
-		}
-
-		BTreeLeafNode leaf = (BTreeLeafNode)aNode;
-
-		if (leaf.mMap.isEmpty())
-		{
-			return ArrayMapKey.EMPTY;
-		}
-
-		return leaf.mMap.getKey(0);
-	}
-
-
-	static class SplitResult
-	{
-		private final BTreeNode mLeftNode;
-		private final BTreeNode mRightNode;
-		private final ArrayMapKey mLeftKey;
-		private final ArrayMapKey mRightKey;
-
-
-		SplitResult(BTreeNode aLeftNode, BTreeNode aRightNode, ArrayMapKey aLeftKey, ArrayMapKey aRightKey)
-		{
-			mLeftNode = aLeftNode;
-			mRightNode = aRightNode;
-			mLeftKey = aLeftKey;
-			mRightKey = aRightKey;
-		}
-
-
-		public BTreeNode getLeftNode()
-		{
-			return mLeftNode;
-		}
-
-
-		public ArrayMapKey getLeftKey()
-		{
-			return mLeftKey;
-		}
-
-
-		public BTreeNode getRightNode()
-		{
-			return mRightNode;
-		}
-
-
-		public ArrayMapKey getRightKey()
-		{
-			return mRightKey;
-		}
-	}
+//	private static ArrayMapKey findLowestLeafKey(BTreeNode aNode)
+//	{
+//		if (aNode instanceof BTreeInteriorNode v)
+//		{
+//			for (int i = 0; i < v.size(); i++)
+//			{
+//				ArrayMapKey b = findLowestLeafKey(v.getNode(i));
+//				if (b.size() > 0)
+//				{
+//					return b;
+//				}
+//			}
+//			throw new IllegalStateException();
+//		}
+//
+//		BTreeLeafNode leaf = (BTreeLeafNode)aNode;
+//
+//		if (leaf.mMap.isEmpty())
+//		{
+//			return ArrayMapKey.EMPTY;
+//		}
+//
+//		return leaf.mMap.getKey(0);
+//	}
+//
+//
+//	static class SplitResult
+//	{
+//		private final BTreeNode mLeftNode;
+//		private final BTreeNode mRightNode;
+//		private final ArrayMapKey mLeftKey;
+//		private final ArrayMapKey mRightKey;
+//
+//
+//		SplitResult(BTreeNode aLeftNode, BTreeNode aRightNode, ArrayMapKey aLeftKey, ArrayMapKey aRightKey)
+//		{
+//			mLeftNode = aLeftNode;
+//			mRightNode = aRightNode;
+//			mLeftKey = aLeftKey;
+//			mRightKey = aRightKey;
+//		}
+//
+//
+//		public BTreeNode getLeftNode()
+//		{
+//			return mLeftNode;
+//		}
+//
+//
+//		public ArrayMapKey getLeftKey()
+//		{
+//			return mLeftKey;
+//		}
+//
+//
+//		public BTreeNode getRightNode()
+//		{
+//			return mRightNode;
+//		}
+//
+//
+//		public ArrayMapKey getRightKey()
+//		{
+//			return mRightKey;
+//		}
+//	}
 }

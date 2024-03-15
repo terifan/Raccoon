@@ -10,13 +10,13 @@ public class BTreeConfiguration extends Document
 	private final static long serialVersionUID = 1L;
 
 	private final static String ROOT = "root";
-	private final static String SIZE_THRESHOLD = "st";
-	private final static String NODE_SIZE = "ns";
-	private final static String LEAF_SIZE = "ls";
-	private final static String NODE_COMPRESSOR = "nc";
-	private final static String LEAF_COMPRESSOR = "lc";
+	private final static String LIMIT_SIZE = "lesz";
+	private final static String NODE_SIZE = "nosz";
+	private final static String LEAF_SIZE = "lfsz";
+	private final static String NODE_COMPRESSOR = "nocp";
+	private final static String LEAF_COMPRESSOR = "lfcp";
 
-	private final int mSizeThreshold;
+	private final int mLimitEntrySize;
 	private final int mNodeSize;
 	private final int mLeafSize;
 	private final int mNodeCompressor;
@@ -33,7 +33,7 @@ public class BTreeConfiguration extends Document
 	{
 		putAll(aDocument);
 
-		mSizeThreshold = computeIfAbsent(SIZE_THRESHOLD, e -> 1024);
+		mLimitEntrySize = computeIfAbsent(LIMIT_SIZE, e -> 1024);
 		mNodeSize = computeIfAbsent(NODE_SIZE, e -> 4096);
 		mLeafSize = computeIfAbsent(LEAF_SIZE, e -> 4096);
 		mNodeCompressor = computeIfAbsent(NODE_COMPRESSOR, e -> CompressorAlgorithm.ZLE.ordinal());
@@ -43,19 +43,19 @@ public class BTreeConfiguration extends Document
 
 	BlockPointer getRoot()
 	{
-		return containsKey(ROOT) ? new BlockPointer().unmarshal(getBinary(ROOT)) : null;
+		return containsKey(ROOT) ? BlockPointer.fromByteArray(getBinary(ROOT)) : null;
 	}
 
 
 	void putRoot(BlockPointer aBlockPointer)
 	{
-		put(ROOT, aBlockPointer.marshal());
+		put(ROOT, aBlockPointer.toByteArray());
 	}
 
 
-	public int getSizeThreshold()
+	public int getLimitEntrySize()
 	{
-		return mSizeThreshold;
+		return mLimitEntrySize;
 	}
 
 
@@ -86,6 +86,6 @@ public class BTreeConfiguration extends Document
 	@Override
 	public String toString()
 	{
-		return "BTreeConfiguration{" + "mSizeThreshold=" + mSizeThreshold + ", mNodeSize=" + mNodeSize + ", mLeafSize=" + mLeafSize + ", mNodeCompressor=" + mNodeCompressor + ", mLeafCompressor=" + mLeafCompressor + ", root=" + getRoot() + '}';
+		return "BTreeConfiguration{" + "mSizeThreshold=" + mLimitEntrySize + ", mNodeSize=" + mNodeSize + ", mLeafSize=" + mLeafSize + ", mNodeCompressor=" + mNodeCompressor + ", mLeafCompressor=" + mLeafCompressor + ", root=" + getRoot() + '}';
 	}
 }

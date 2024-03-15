@@ -7,6 +7,6 @@ public enum OpState
 	NO_MATCH,
 	INSERT,
 	UPDATE,
-	DELETE,
-	OVERFLOW
+	OVERFLOW,
+	REMOVED
 }

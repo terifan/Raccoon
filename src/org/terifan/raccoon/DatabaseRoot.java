@@ -1,7 +1,5 @@
 package org.terifan.raccoon;
 
-import org.terifan.raccoon.btree.ArrayMapKey;
-import org.terifan.raccoon.btree.ArrayMapEntry;
 import org.terifan.raccoon.btree.BTreeVisitor;
 import org.terifan.raccoon.btree.BTree;
 import org.terifan.raccoon.btree.BTreeLeafNode;
@@ -9,7 +7,8 @@ import java.util.ArrayList;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.btree.BTreeConfiguration;
-import org.terifan.raccoon.btree.OpResult;
+import org.terifan.raccoon.btree.ArrayMapEntry;
+import org.terifan.raccoon.btree.ArrayMapEntry.Type;
 import org.terifan.raccoon.btree.OpState;
 import org.terifan.raccoon.document.Document;
 
@@ -39,13 +38,15 @@ class DatabaseRoot
 	}
 
 
-	synchronized BTreeConfiguration get(Object aValue)
+	synchronized BTreeConfiguration get(String aName)
 	{
-		OpResult op = mStorage.get(new ArrayMapKey(aValue));
+		ArrayMapEntry entry = new ArrayMapEntry().setKeyInstance(aName);
 
-		if (op.state == OpState.MATCH)
+		mStorage.get(entry);
+
+		if (entry.getState() == OpState.MATCH)
 		{
-			return new BTreeConfiguration(op.entry.getValue());
+			return new BTreeConfiguration(entry.getValueInstance());
 		}
 
 		return null;
@@ -54,13 +55,13 @@ class DatabaseRoot
 
 	synchronized void remove(String aName)
 	{
-		mStorage.remove(new ArrayMapKey(aName));
+		mStorage.remove(new ArrayMapEntry().setKeyInstance(aName));
 	}
 
 
 	synchronized void put(String aName, Document aConfiguration)
 	{
-		mStorage.put(new ArrayMapEntry(new ArrayMapKey(aName), aConfiguration, (byte)0));
+		mStorage.put(new ArrayMapEntry().setKeyInstance(aName).setValueInstance(aConfiguration.put("name", aName)));
 	}
 
 
@@ -73,13 +74,7 @@ class DatabaseRoot
 			@Override
 			public boolean leaf(BTreeLeafNode aNode)
 			{
-				aNode.forEachEntry(entry ->
-				{
-					if (entry.getKey().get() instanceof String)
-					{
-						list.add(entry.getKey().toString());
-					}
-				});
+				aNode.forEachEntry(entry -> list.add(entry.toKeyString()));
 				return true;
 			}
 		});

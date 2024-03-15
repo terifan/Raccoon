@@ -2,8 +2,11 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.exceptions.LobNotFoundException;
 import java.util.Random;
+import org.terifan.logging.Level;
+import org.terifan.raccoon.blockdevice.RaccoonDevice;
 import org.terifan.raccoon.blockdevice.lob.LobByteChannel;
 import org.terifan.raccoon.blockdevice.lob.LobOpenOption;
+import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.document.ObjectId;
@@ -17,12 +20,12 @@ public class RaccoonDirectoryNGTest
 	@Test
 	public void testCreateRead0() throws Exception
 	{
-		RaccoonBuilder builder = new RaccoonBuilder().withTarget(new MemoryBlockStorage(512));
-		try (RaccoonDatabase db = builder.get())
+		RaccoonDatabaseProvider provider = new RaccoonDatabaseProvider(new RaccoonDevice().withBlockSize(512).inMemory()).withLogging(Level.INFO);
+		try (RaccoonDatabase db = provider.get())
 		{
 			db.getCollection("data").saveOne(Document.of("value:1"));
 		}
-		try (RaccoonDatabase db = builder.get())
+		try (RaccoonDatabase db = provider.get())
 		{
 			db.getCollection("data").forEach(System.out::println);
 		}
@@ -36,9 +39,9 @@ public class RaccoonDirectoryNGTest
 		new Random().nextBytes(output);
 		Object id = ObjectId.randomId();
 
-		RaccoonBuilder builder = new RaccoonBuilder().withTarget(new MemoryBlockStorage(512));
+		RaccoonDatabaseProvider provider = new RaccoonDatabaseProvider(new RaccoonDevice().withBlockSize(512).inMemory());
 
-		try (RaccoonDatabase db = builder.get())
+		try (RaccoonDatabase db = provider.get())
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
 
@@ -49,7 +52,7 @@ public class RaccoonDirectoryNGTest
 			}
 		}
 
-		try (RaccoonDatabase db = builder.get())
+		try (RaccoonDatabase db = provider.get())
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
 
@@ -75,9 +78,9 @@ public class RaccoonDirectoryNGTest
 	{
 		Object id = ObjectId.randomId();
 
-		MemoryBlockStorage blockDevice = new MemoryBlockStorage(512);
+		ManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockStorage(512));
 
-		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE, null))
+		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE))
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
 			try (LobByteChannel lob = dir.open(id, LobOpenOption.READ))
@@ -93,9 +96,9 @@ public class RaccoonDirectoryNGTest
 	{
 		Object id = ObjectId.randomId();
 
-		MemoryBlockStorage blockDevice = new MemoryBlockStorage(512);
+		ManagedBlockDevice blockDevice = new ManagedBlockDevice(new MemoryBlockStorage(512));
 
-		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE, null))
+		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.CREATE))
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
 			try (LobByteChannel lob = dir.open(id, LobOpenOption.READ))
@@ -107,7 +110,7 @@ public class RaccoonDirectoryNGTest
 			db.commit();
 		}
 
-		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN, null))
+		try (RaccoonDatabase db = new RaccoonDatabase(blockDevice, DatabaseOpenOption.OPEN))
 		{
 			RaccoonDirectory dir = db.getDirectory("dir");
 			try (LobByteChannel lob = dir.open(id, LobOpenOption.READ))

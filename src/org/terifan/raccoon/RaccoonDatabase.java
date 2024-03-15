@@ -2,32 +2,22 @@ package org.terifan.raccoon;
 
 import org.terifan.raccoon.exceptions.DatabaseException;
 import org.terifan.raccoon.exceptions.DatabaseClosedException;
-import org.terifan.raccoon.btree.BTree;
 import org.terifan.raccoon.document.ObjectId;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
-import org.terifan.raccoon.blockdevice.RaccoonIOException;
 import org.terifan.raccoon.blockdevice.lob.LobOpenOption;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.managed.UnsupportedVersionException;
-import org.terifan.raccoon.blockdevice.storage.FileBlockStorage;
-import org.terifan.raccoon.blockdevice.secure.AccessCredentials;
-import org.terifan.raccoon.blockdevice.secure.SecureBlockDevice;
 import org.terifan.logging.Level;
 import org.terifan.logging.Logger;
 import org.terifan.raccoon.blockdevice.lob.LobByteChannel;
@@ -36,7 +26,6 @@ import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 import org.terifan.raccoon.util.DualMap;
-import org.terifan.raccoon.blockdevice.storage.BlockStorage;
 import org.terifan.raccoon.btree.BTreeConfiguration;
 import org.terifan.raccoon.util.FutureQueue;
 
@@ -54,6 +43,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	private final static String DIRECTORY = "dir";
 	private final static String INTERNAL_PREFIX = "$";
 	private final static String LOB_COLLECTION = "$lob.";
+	private final static String MAP_COLLECTION = "$maps";
 	private final static String INDEX_COLLECTION = "$indices";
 	private final static String HEAP_COLLECTION = "$heaps";
 
@@ -63,6 +53,8 @@ public final class RaccoonDatabase implements AutoCloseable
 	private DatabaseRoot mDatabaseRoot;
 	private DatabaseOpenOption mDatabaseOpenOption;
 	private ConcurrentSkipListMap<String, RaccoonCollection> mCollectionInstances;
+	private ConcurrentSkipListMap<String, RaccoonMap> mMapInstances;
+	private RaccoonCollection mMapCollection;
 	private ConcurrentHashMap<String, RaccoonHeap> mHeapInstances;
 	private ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 	private final ReadWriteLock mLock;
@@ -84,144 +76,45 @@ public final class RaccoonDatabase implements AutoCloseable
 		mLock = new ReadWriteLock();
 		mCollectionInstances = new ConcurrentSkipListMap<>();
 		mHeapInstances = new ConcurrentHashMap<>();
+		mMapInstances = new ConcurrentSkipListMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
 //		mExecutor = Executors.newFixedThreadPool(1);
 	}
 
 
-	public RaccoonDatabase(Path aPath, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
+	public RaccoonDatabase(RaccoonDatabaseProvider aConfig, DatabaseOpenOption aDatabaseOpenOption)
 	{
 		this();
-
-		FileBlockStorage fileBlockDevice = null;
-
-		try
-		{
-			if (Files.exists(aPath))
-			{
-				if (aOpenOptions == DatabaseOpenOption.REPLACE)
-				{
-					if (!Files.deleteIfExists(aPath))
-					{
-						throw new RaccoonIOException("Failed to delete existing file: " + aPath);
-					}
-				}
-				else if ((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && Files.size(aPath) == 0)
-				{
-					throw new RaccoonIOException("File is empty.");
-				}
-			}
-			else if (aOpenOptions == DatabaseOpenOption.OPEN || aOpenOptions == DatabaseOpenOption.READ_ONLY)
-			{
-				throw new RaccoonIOException("File not found: " + aPath);
-			}
-
-			boolean newFile = !Files.exists(aPath);
-
-			fileBlockDevice = new FileBlockStorage(aPath, 4096, aOpenOptions == DatabaseOpenOption.READ_ONLY);
-
-			init(fileBlockDevice, newFile, aOpenOptions, aAccessCredentials);
-		}
-		catch (DatabaseException | RaccoonIOException | DatabaseClosedException e)
-		{
-			if (fileBlockDevice != null)
-			{
-				try
-				{
-					fileBlockDevice.close();
-				}
-				catch (Exception ee)
-				{
-				}
-			}
-
-			throw e;
-		}
-		catch (Throwable e)
-		{
-			if (fileBlockDevice != null)
-			{
-				try
-				{
-					fileBlockDevice.close();
-				}
-				catch (Exception ee)
-				{
-				}
-			}
-
-			throw new DatabaseException(e);
-		}
 	}
 
 
-	public RaccoonDatabase(BlockStorage aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
+	public RaccoonDatabase(ManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOption) throws UnsupportedVersionException
 	{
 		this();
 
-		Assert.assertFalse((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.size() == 0, "Block device is empty.");
+		Assert.assertFalse((aOpenOption == DatabaseOpenOption.READ_ONLY || aOpenOption == DatabaseOpenOption.OPEN) && aBlockDevice.size() == 0, "Block device is empty.");
 
-		boolean create = aBlockDevice.size() == 0 || aOpenOptions == DatabaseOpenOption.REPLACE;
+		boolean aCreate = aBlockDevice.size() == 0 || aOpenOption == DatabaseOpenOption.REPLACE;
 
-		init(aBlockDevice, create, aOpenOptions, aAccessCredentials);
-	}
-
-
-	public RaccoonDatabase(ManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOptions, AccessCredentials aAccessCredentials) throws UnsupportedVersionException
-	{
-		this();
-
-		Assert.assertFalse((aOpenOptions == DatabaseOpenOption.READ_ONLY || aOpenOptions == DatabaseOpenOption.OPEN) && aBlockDevice.size() == 0, "Block device is empty.");
-
-		boolean create = aBlockDevice.size() == 0 || aOpenOptions == DatabaseOpenOption.REPLACE;
-
-		init(aBlockDevice, create, aOpenOptions, aAccessCredentials);
-	}
-
-
-	private void init(Object aBlockDevice, boolean aCreate, DatabaseOpenOption aOpenOption, AccessCredentials aAccessCredentials)
-	{
 		try
 		{
 			mDatabaseOpenOption = aOpenOption;
-
-			ManagedBlockDevice blockDevice;
-
-			if (aBlockDevice instanceof ManagedBlockDevice v)
-			{
-				if (aAccessCredentials != null)
-				{
-					throw new IllegalArgumentException("The BlockDevice provided cannot be secured.");
-				}
-
-				blockDevice = v;
-			}
-			else if (aBlockDevice instanceof BlockStorage v)
-			{
-				log.d("creating a block device");
-
-				blockDevice = aAccessCredentials == null ? new ManagedBlockDevice(v) : new ManagedBlockDevice(new SecureBlockDevice(aAccessCredentials, v));
-			}
-			else
-			{
-				throw new IllegalStateException();
-			}
 
 			if (aCreate)
 			{
 				log.i("create database");
 				log.inc();
 
-				blockDevice.getMetadata().put(TENANT, VERSION);
+				aBlockDevice.getMetadata().put(TENANT, VERSION);
 
-				if (blockDevice.size() > 0)
+				if (aBlockDevice.size() > 0)
 				{
-					blockDevice.clear();
-					blockDevice.commit();
+					aBlockDevice.clear();
+					aBlockDevice.commit();
 				}
 
 				mModified = true;
-				mBlockDevice = blockDevice;
+				mBlockDevice = aBlockDevice;
 				mBlockDevice.getMetadata().put(DIRECTORY, null);
 				mDatabaseRoot = new DatabaseRoot(mBlockDevice, mBlockDevice.getMetadata().computeIfAbsent(DIRECTORY, e -> new BTreeConfiguration()));
 
@@ -234,12 +127,12 @@ public final class RaccoonDatabase implements AutoCloseable
 				log.i("open database");
 				log.inc();
 
-				if (!VERSION.equals(blockDevice.getMetadata().getString(TENANT)))
+				if (!VERSION.equals(aBlockDevice.getMetadata().getString(TENANT)))
 				{
 					throw new DatabaseException("Not a Raccoon database file");
 				}
 
-				mBlockDevice = blockDevice;
+				mBlockDevice = aBlockDevice;
 				mDatabaseRoot = new DatabaseRoot(mBlockDevice, new BTreeConfiguration(mBlockDevice.getMetadata().getDocument(DIRECTORY)));
 				mReadOnly = mDatabaseOpenOption == DatabaseOpenOption.READ_ONLY;
 
@@ -298,10 +191,10 @@ public final class RaccoonDatabase implements AutoCloseable
 		@Override
 		public void run()
 		{
-//			for (RaccoonCollection instance : mCollectionInstances.values())
-//			{
-//				instance.flush();
-//			}
+			for (RaccoonCollection instance : mCollectionInstances.values())
+			{
+				instance.flush();
+			}
 			for (RaccoonHeap instance : mHeapInstances.values())
 			{
 				instance.getChannel().flush();
@@ -321,6 +214,23 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		checkOpen();
 		return new ArrayList<>(mDatabaseRoot.list().stream().filter(e -> e.startsWith(LOB_COLLECTION)).collect(Collectors.toList()));
+	}
+
+
+	public List<String> listMapNames()
+	{
+		checkOpen();
+
+		RaccoonCollection coll = getCollectionImpl(MAP_COLLECTION, true);
+
+		try
+		{
+			return coll.find().get().stream().map(e->e.getString("_id")).collect(Collectors.toList());
+		}
+		catch (InterruptedException | ExecutionException e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
@@ -439,6 +349,50 @@ public final class RaccoonDatabase implements AutoCloseable
 	}
 
 
+	public synchronized RaccoonMap getMap(String aName)
+	{
+		RaccoonMap map = mMapInstances.get(aName);
+
+		if (map != null)
+		{
+			return map;
+		}
+
+		if (mMapCollection == null)
+		{
+			mMapCollection = getCollectionImpl(MAP_COLLECTION, true);
+		}
+
+		map = new RaccoonMap(this, aName);
+
+		Document doc = new Document().put("_id", aName);
+		if (mMapCollection.tryFindOne(doc))
+		{
+			map.putAll(doc.getDocument("value"));
+		}
+
+		mMapInstances.put(aName, map);
+
+		return map;
+	}
+
+
+	synchronized void deleteMapImpl(String aName)
+	{
+		if (mMapInstances != null)
+		{
+			mMapInstances.remove(aName);
+		}
+
+		if (mMapCollection == null)
+		{
+			mMapCollection = getCollectionImpl(MAP_COLLECTION, true);
+		}
+
+		mMapCollection.tryDeleteOne(new Document().put("_id", aName));
+	}
+
+
 	public RaccoonHeap getHeap(String aName) throws IOException, InterruptedException, ExecutionException
 	{
 		return getHeap(aName, null);
@@ -457,7 +411,7 @@ public final class RaccoonDatabase implements AutoCloseable
 		Document header = new Document().put("_id", aName);
 		collection.tryFindOne(header);
 
-		header.putIfAbsent("heap", k -> new Document().put("record", 128));
+		header.computeIfAbsent("heap", k -> new Document().put("record", 128));
 
 		BlockAccessor blockAccessor = getBlockAccessor();
 
@@ -568,6 +522,24 @@ public final class RaccoonDatabase implements AutoCloseable
 	{
 		log.i("commit database");
 		log.inc();
+
+		if (mMapCollection != null)
+		{
+			for (Entry<String, RaccoonMap> entry : mMapInstances.entrySet())
+			{
+				try
+				{
+					Document doc = new Document().put("_id", entry.getKey()).put("value", entry.getValue());
+					mMapCollection.saveOne(doc).get();
+				}
+				catch (InterruptedException | ExecutionException e)
+				{
+					e.printStackTrace(System.err);
+				}
+			}
+
+			mMapCollection.commit();
+		}
 
 		try (FutureQueue queue = new FutureQueue()) // FutureQueue blocks until all futures have been executed
 		{

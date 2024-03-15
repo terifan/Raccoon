@@ -7,19 +7,36 @@ import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.getInt16;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.getInt32;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.putInt16;
 import static org.terifan.raccoon.blockdevice.util.ByteArrayUtil.putInt32;
+import org.terifan.raccoon.btree.ArrayMapEntry.Type;
 
 
 /**
  * This is a fixed size buffer for key/value storage suitable for persistence on external media. An array is wrapped and read and written to
  * directly maintaining all necessary structural information inside the array at all time.
- *
- * implementation note: an empty map will always consist of only zero value bytes, the map does not record the capacity, this must be
+ * <p>
+ * Implementation note: an empty map will always consist of only zero value bytes, the map does not record the capacity, this must be
  * provided when an instance is created
- *
+ * </p>
+ * <pre>
  * Data layout:
  *
- * [header] 2 bytes - entry count 4 bytes - free space offset (minus HEADER_SIZE) [list of entries] (entry 1..n) 2 bytes - key length 2
- * bytes - value length n bytes - key n bytes - value [free space] n bytes - zeros [list of pointers] (pointer 1..n) 4 bytes - offset
+ * [header]
+ *    2 bytes - entry count
+ *    4 bytes - free space offset (minus HEADER_SIZE)
+ * [list of entries]
+ *    (entry 1..n)
+ *    2 bytes - key length
+ *    2 bytes - value length
+ *    1 bytes - key header
+ *    n bytes - key
+ *    1 bytes - value header
+ *    n bytes - value
+ * [free space]
+ *    n bytes - zeros
+ * [list of pointers]
+ *    (pointer 1..n)
+ *    4 bytes - offset
+ * </pre>
  */
 class ArrayMap implements Iterable<ArrayMapEntry>
 {
@@ -125,91 +142,97 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public OpResult insert(ArrayMapEntry aEntry)
+	public void insert(ArrayMapEntry aEntry)
 	{
 		assert mCapacityGrowth > 0;
 
-		OpResult result = put(aEntry);
+		put(aEntry);
 
-		if (result.state != OpState.OVERFLOW)
+		if (aEntry.getState() != OpState.OVERFLOW)
 		{
-			return result;
+			return;
 		}
 
 		resize((mCapacity + ENTRY_OVERHEAD + aEntry.getMarshalledLength() + mCapacityGrowth - 1) / mCapacityGrowth * mCapacityGrowth);
 
-		result = put(aEntry);
+		put(aEntry);
 
-		if (result.state == OpState.OVERFLOW)
+		if (aEntry.getState() == OpState.OVERFLOW)
 		{
 			throw new IllegalStateException("failed to put entity");
 		}
-
-		return result;
 	}
 
 
-	public OpResult put(ArrayMapEntry aEntry)
+	public void put(ArrayMapEntry aEntry)
 	{
-		ArrayMapKey key = aEntry.getKey();
+		int keyLength = aEntry.getMarshalledKeyLength();
 		int valueLength = aEntry.getMarshalledValueLength();
-		int keyLength = key.size();
-		OpResult result = new OpResult();
+
+		byte[] oldValue = null;
 
 		if (keyLength > MAX_VALUE_SIZE || valueLength > MAX_VALUE_SIZE || keyLength + valueLength > mCapacity - HEADER_SIZE - ENTRY_HEADER_SIZE - ENTRY_POINTER_SIZE)
 		{
-			throw new IllegalArgumentException("Entry length exceeds capacity of this map: " + (keyLength + valueLength) + " > " + (mCapacity - ENTRY_HEADER_SIZE - HEADER_SIZE - ENTRY_POINTER_SIZE));
+			aEntry.setState(OpState.OVERFLOW);
+			return;
 		}
 
-		int index = indexOf(key);
+		int index = indexOf(aEntry);
 
 		// if key already exists
 		if (index >= 0)
 		{
+			aEntry.setState(OpState.UPDATE);
+
 			int entryOffset = readEntryOffset(index);
 			int oldValueLength = readValueLength(entryOffset);
+			int valueOffset = readValueOffset(entryOffset);
 
 			// replace with same length
 			if (oldValueLength == valueLength)
 			{
-				int valueOffset = readValueOffset(entryOffset);
-
-				result.entry = new ArrayMapEntry(key);
-				result.entry.unmarshallValue(mBuffer, mStartOffset + valueOffset, oldValueLength);
-
-				aEntry.marshallValue(mBuffer, mStartOffset + valueOffset);
+				byte[] buffer = aEntry.getValue();
+				for (int i = 0, j = mStartOffset + valueOffset + 1; i < oldValueLength - 1; i++, j++)
+				{
+					byte b = buffer[i];
+					buffer[i] = mBuffer[j];
+					mBuffer[j] = b;
+				}
 
 				assert integrityCheck() == null : integrityCheck();
 
-				result.state = OpState.UPDATE;
-				return result;
+				return;
 			}
 
 			if (valueLength - oldValueLength > getFreeSpace())
 			{
-				result.state = OpState.OVERFLOW;
-				return result;
+				aEntry.setState(OpState.OVERFLOW);
+				return;
 			}
+
+			oldValue = Arrays.copyOfRange(mBuffer, mStartOffset + valueOffset, mStartOffset + valueOffset + oldValueLength);
 
 			removeImpl(index);
 
-			assert indexOf(key) == (-index) - 1;
+			assert indexOf(aEntry) == (-index) - 1;
+
+			// continue permform put
 		}
 		else if (getFreeSpace() < ENTRY_HEADER_SIZE + keyLength + valueLength + ENTRY_POINTER_SIZE)
 		{
-			result.state = OpState.OVERFLOW;
-			return result;
+			aEntry.setState(OpState.OVERFLOW);
+			return;
 		}
 		else
 		{
-			result.state = OpState.INSERT;
+			aEntry.setState(OpState.INSERT);
 			index = (-index) - 1;
 		}
 
 		if (++mEntryCount > MAX_ENTRY_COUNT)
 		{
-			result.state = OpState.OVERFLOW;
-			return result;
+			aEntry.setState(OpState.OVERFLOW);
+			return;
 		}
 
 		int modCount = ++mModCount;
@@ -223,8 +246,12 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 		writeEntryOffset(index, entryOffset);
 		writeKeyLength(entryOffset, keyLength);
 		writeValueLength(entryOffset, valueLength);
-		System.arraycopy(key.array(), 0, mBuffer, mStartOffset + readKeyOffset(entryOffset), keyLength);
-		aEntry.marshallValue(mBuffer, mStartOffset + readValueOffset(entryOffset));
+
+		assert keyLength == aEntry.getMarshalledKeyLength();
+		assert valueLength == aEntry.getMarshalledValueLength();
+
+		aEntry.getMarshalledKey(mBuffer, mStartOffset + readKeyOffset(entryOffset));
+		aEntry.getMarshalledValue(mBuffer, mStartOffset + readValueOffset(entryOffset));
 
 		mFreeSpaceOffset += ENTRY_HEADER_SIZE + keyLength + valueLength;
 
@@ -233,32 +260,32 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 		assert integrityCheck() == null : integrityCheck();
 		assert mModCount == modCount : mModCount + " == " + modCount;
 
-		return result;
+		if (oldValue != null)
+		{
+			aEntry.setMarshalledValue(oldValue, 0, oldValue.length);
+		}
 	}
 
 
-	public OpResult get(ArrayMapKey aKey)
+	public ArrayMapEntry get(ArrayMapEntry aEntry)
 	{
-		int index = indexOf(aKey);
+		int index = indexOf(aEntry);
 
 		if (index < 0)
 		{
-			OpResult result = new OpResult();
-			result.state = OpState.NO_MATCH;
+			ArrayMapEntry result = new ArrayMapEntry();
+			result.setState(OpState.NO_MATCH);
 			return result;
 		}
 
-		ArrayMapEntry entry = new ArrayMapEntry();
-		loadKeyAndValue(index, entry);
+		loadKeyAndValue(index, aEntry);
 
-		OpResult result = new OpResult();
-		result.state = OpState.MATCH;
-		result.entry = entry;
-		return result;
+		aEntry.setState(OpState.MATCH);
+		return aEntry;
 	}
 
 
-	public int nearestIndex(ArrayMapKey aKey)
+	public int nearestIndex(ArrayMapEntry aKey)
 	{
 		int index = indexOf(aKey);
 
@@ -277,7 +304,7 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 
 	public int loadNearestEntry(ArrayMapEntry aEntry)
 	{
-		int index = nearestIndex(aEntry.getKey());
+		int index = nearestIndex(aEntry);
 		loadKeyAndValue(index, aEntry);
 		return index;
 	}
@@ -286,7 +313,7 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 	/**
 	 * Find the index of the actual key or the index of a key larger than the one provided.
 	 */
-	public int findEntry(ArrayMapKey aKey)
+	public int findEntry(ArrayMapEntry aKey)
 	{
 		int index = indexOf(aKey);
 
@@ -299,7 +326,7 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public int findEntryAfter(ArrayMapKey aKey)
+	public int findEntryAfter(ArrayMapEntry aKey)
 	{
 		int index = indexOf(aKey);
 
@@ -324,41 +351,39 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 		int keyOffset = readKeyOffset(entryOffset);
 		int keyLength = readKeyLength(entryOffset);
 
-		aEntry.setKey(new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength));
-		aEntry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
+		aEntry.setMarshalledKey(mBuffer, mStartOffset + keyOffset, keyLength);
+		aEntry.setMarshalledValue(mBuffer, mStartOffset + valueOffset, valueLength);
 		return aEntry;
 	}
 
 
-	public OpResult remove(int aIndex)
+	public void remove(int aIndex)
 	{
-		return removeImpl(aIndex);
+		removeImpl(aIndex);
 	}
 
 
-	public OpResult remove(ArrayMapKey aKey)
+	public void remove(ArrayMapEntry aKey)
 	{
 		int index = indexOf(aKey);
 
 		if (index < 0)
 		{
-			OpResult result = new OpResult();
-			result.state = OpState.NO_MATCH;
-			return result;
+			aKey.setState(OpState.NO_MATCH);
 		}
-
-		return removeImpl(index);
+		else
+		{
+			aKey.setState(OpState.REMOVED);
+			removeImpl(index);
+		}
 	}
 
 
-	private OpResult removeImpl(int aIndex)
+	private void removeImpl(int aIndex)
 	{
 		assert aIndex >= 0 && aIndex < mEntryCount : "index=" + aIndex + ", count=" + mEntryCount;
 
 		int modCount = ++mModCount;
-
-		OpResult result = get(aIndex);
-		result.state = OpState.DELETE;
 
 		int offset = readEntryOffset(aIndex);
 		int length = readEntryLength(offset);
@@ -395,12 +420,10 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 
 		assert integrityCheck() == null : integrityCheck();
 		assert mModCount == modCount : mModCount + " == " + modCount;
-
-		return result;
 	}
 
 
-	public OpResult get(int aIndex)
+	public ArrayMapEntry get(int aIndex)
 	{
 		assert aIndex < size() : "out of bounds: index: " + aIndex + ", size: " + size();
 
@@ -410,15 +433,13 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 		int valueOffset = readValueOffset(entryOffset);
 		int valueLength = readValueLength(entryOffset);
 
-		OpResult result = new OpResult();
-		result.entry = new ArrayMapEntry(new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength));
-		result.entry.unmarshallValue(mBuffer, mStartOffset + valueOffset, valueLength);
-
-		return result;
+		return new ArrayMapEntry()
+			.setMarshalledKey(mBuffer, mStartOffset + keyOffset, keyLength)
+			.setMarshalledValue(mBuffer, mStartOffset + valueOffset, valueLength);
 	}
 
 
-	public ArrayMapKey getKey(int aIndex)
+	public ArrayMapEntry getKey(int aIndex)
 	{
 		assert aIndex < size() : "index out of bounds: " + aIndex + ", size: " + size();
 
@@ -426,7 +447,7 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 		int keyOffset = readKeyOffset(entryOffset);
 		int keyLength = readKeyLength(entryOffset);
 
-		return new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength);
+		return new ArrayMapEntry().setMarshalledKey(mBuffer, mStartOffset + keyOffset, keyLength);
 	}
 
 
@@ -456,7 +477,7 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	public int indexOf(ArrayMapKey aKey)
+	public int indexOf(ArrayMapEntry aEntry)
 	{
 		int low = 0;
 		int high = mEntryCount - 1;
@@ -469,7 +490,7 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 			int keyOffset = readKeyOffset(entryOffset);
 			int keyLength = readKeyLength(entryOffset);
 
-			int cmp = aKey.compareTo(mBuffer, mStartOffset + keyOffset, keyLength);
+			int cmp = aEntry.compareToIncludingType(mBuffer, mStartOffset + keyOffset, keyLength);
 
 			if (cmp > 0)
 			{
@@ -611,8 +632,9 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 		}
 
 		int dataLength = 0;
+		ArrayMapEntry prevKey = null;
 
-		for (int i = 0, prevKeyOffset = -1, prevKeyLength = -1; i < mEntryCount; i++)
+		for (int i = 0; i < mEntryCount; i++)
 		{
 			int entryOffset = readEntryOffset(i);
 			int bufferOffset = entryOffset;
@@ -630,14 +652,14 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 			{
 				return "Entry offset after free space (" + ((mStartOffset + bufferOffset) + " + " + length) + ">" + (mStartOffset + mFreeSpaceOffset) + ")";
 			}
-//			if (i > 0 && compare(mBuffer, mStartOffset + prevKeyOffset, prevKeyLength, mBuffer, mStartOffset + keyOffset, keyLength) >= 0)
-			if (i > 0 && new ArrayMapKey(mBuffer, mStartOffset + prevKeyOffset, prevKeyLength).compareTo(new ArrayMapKey(mBuffer, mStartOffset + keyOffset, keyLength)) >= 0)
-			{
-				return "Keys are out of order";
-			}
 
-			prevKeyOffset = keyOffset;
-			prevKeyLength = keyLength;
+			ArrayMapEntry nextKey = new ArrayMapEntry().setMarshalledKey(mBuffer, mStartOffset + keyOffset, keyLength);
+
+			if (prevKey != null && prevKey.compareTo(nextKey) >= 0)
+			{
+				return "Keys are out of order: " + getKey(i - 1).toKeyString() + ", " + getKey(i).toKeyString();
+			}
+			prevKey = nextKey;
 		}
 
 		if (HEADER_SIZE + dataLength + free + ENTRY_POINTER_SIZE * mEntryCount != mCapacity)
@@ -662,7 +684,7 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 					sb.append(",");
 				}
 //				sb.append("\"" + new String(entry.getKey().array(), "utf-8").replaceAll("[^\\w]*", "") + "\"");
-				sb.append("\"" + entry.getKey().toString().replaceAll("[^\\w]*", "") + "\"");
+				sb.append("\"" + entry.toKeyString() + "\"");
 			}
 			return sb.insert(0, "[").append("]").toString();
 		}
@@ -680,34 +702,31 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-//	@Override
-//	public Sequence<ArrayMapEntry> query(Query aQuery)
-//	{
-//		return new ArrayMapEntryIterator(this, aQuery);
-//	}
-
-
-	public OpResult getFirst()
+	public ArrayMapEntry getFirst()
 	{
-		return get(0);
+		return mEntryCount == 0 ? null : get(0);
 	}
 
 
-	public OpResult getLast()
+	public ArrayMapEntry getLast()
 	{
-		return get(mEntryCount - 1);
+		return mEntryCount == 0 ? null : get(mEntryCount - 1);
 	}
 
 
-	public OpResult removeFirst()
+	public ArrayMapEntry removeFirst()
 	{
-		return removeImpl(0);
+		ArrayMapEntry entry = getFirst();
+		removeImpl(0);
+		return entry;
 	}
 
 
-	public OpResult removeLast()
+	public ArrayMapEntry removeLast()
 	{
-		return removeImpl(mEntryCount - 1);
+		ArrayMapEntry entry = getLast();
+		removeImpl(0);
+		return entry;
 	}
 
 
@@ -737,43 +756,43 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 		ArrayMap low = new ArrayMap(aCapacity, mCapacityGrowth);
 		ArrayMap high = new ArrayMap(aCapacity, mCapacityGrowth);
 
-		for (int i = 0, j = mEntryCount; i < j; )
+		for (int i = 0, j = mEntryCount; i < j;)
 		{
 			if (low.getFreeSpace() > high.getFreeSpace())
 			{
-				low.insert(get(i++).entry);
+				low.insert(get(i++));
 			}
 			else
 			{
-				high.insert(get(--j).entry);
+				high.insert(get(--j));
 			}
 		}
 
-		return new ArrayMap[]{low, high};
+		return new ArrayMap[]
+		{
+			low, high
+		};
 	}
 
-		// ----------
-		// ----------
-		// ----------
-		// ----------
-		// ----------
-		// ----------
+	// ----------
+	// ----------
+	// ----------
+	// ----------
+	// ----------
+	// ----------
 
-		// ----------
-		// ----------
-		// ----------
-		//                      ----------
-		//                      ----------
-		//                      ----------
-
-		// ----------
-		// ----------
-		//            ----------
-		//            ----------
-		//                      ----------
-		//                      ----------
-
-
+	// ----------
+	// ----------
+	// ----------
+	//                      ----------
+	//                      ----------
+	//                      ----------
+	// ----------
+	// ----------
+	//            ----------
+	//            ----------
+	//                      ----------
+	//                      ----------
 	public ArrayMap[] splitMany(int aCapacity)
 	{
 		ArrayList<ArrayMap> maps = new ArrayList<>();
@@ -785,13 +804,15 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 
 		for (int i = 0; i < mEntryCount; i++)
 		{
-			if (map.getUsedSpace() > bytesPerNode && i < mEntryCount - 2)
+			ArrayMapEntry entry = get(i);
+
+			if (map.getUsedSpace() + entry.getMarshalledLength() > bytesPerNode && i < mEntryCount - 2)
 			{
 				map = new ArrayMap(aCapacity, mCapacityGrowth);
 				maps.add(map);
 			}
 
-			map.insert(get(i).entry);
+			map.insert(entry);
 		}
 
 		return maps.toArray(ArrayMap[]::new);
@@ -807,11 +828,15 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 
 		for (int i = 0; i < mEntryCount; i++)
 		{
-			if (map.put(get(i).entry).state == OpState.OVERFLOW)
+			ArrayMapEntry entry = get(i);
+
+			map.put(entry);
+
+			if (entry.getState() == OpState.OVERFLOW)
 			{
 				map = new ArrayMap(aCapacity, mCapacityGrowth);
 				maps.add(map);
-				map.insert(get(i).entry);
+				map.insert(get(i));
 			}
 		}
 
@@ -825,7 +850,7 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 	}
 
 
-	String keys(Function<Object,String> aFormatter)
+	String keys(Function<Object, String> aFormatter)
 	{
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < size(); i++)
@@ -834,7 +859,7 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 			{
 				sb.append(", ");
 			}
-			sb.append(aFormatter.apply(getKey(i).get()));
+			sb.append(aFormatter.apply(getKey(i)));
 		}
 		return sb.toString();
 	}

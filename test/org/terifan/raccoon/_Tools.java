@@ -97,7 +97,7 @@ public class _Tools
 
 	public static byte[] tb()
 	{
-		return tb(16);
+		return tb(32);
 	}
 
 

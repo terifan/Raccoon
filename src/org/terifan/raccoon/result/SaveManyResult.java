@@ -1,10 +1,11 @@
 package org.terifan.raccoon.result;
 
-import org.terifan.raccoon.document.Array;
+import java.util.ArrayList;
+import org.terifan.raccoon.document.Document;
 
 
 public class SaveManyResult
 {
-	public final Array insert = new Array();
-	public final Array update = new Array();
+	public final ArrayList<Document> inserted = new ArrayList<>();
+	public final ArrayList<Document> updated = new ArrayList<>();
 }

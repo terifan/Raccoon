@@ -15,7 +15,7 @@ public class BTreeVisitor
 	}
 
 
-	public boolean beforeInteriorNode(BTreeInteriorNode aNode, ArrayMapKey aLowestKey, ArrayMapKey aHighestKey)
+	public boolean beforeInteriorNode(BTreeInteriorNode aNode, ArrayMapEntry aLowestKey, ArrayMapEntry aHighestKey)
 	{
 		return true;
 	}

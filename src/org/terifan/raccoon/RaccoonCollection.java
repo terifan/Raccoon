@@ -8,16 +8,14 @@ import org.terifan.raccoon.result.CommitResult;
 import org.terifan.raccoon.result.ReplaceManyResult;
 import java.io.IOException;
 import org.terifan.raccoon.exceptions.DocumentNotFoundException;
-import org.terifan.raccoon.exceptions.UniqueConstraintException;
 import org.terifan.raccoon.exceptions.DuplicateKeyException;
-import org.terifan.raccoon.btree.ArrayMapKey;
-import org.terifan.raccoon.btree.ArrayMapEntry;
 import org.terifan.raccoon.btree.BTree;
 import org.terifan.raccoon.document.ObjectId;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Spliterators;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -27,6 +25,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.terifan.logging.Logger;
 import org.terifan.raccoon.RuntimeDiagnostics.Operation;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
@@ -37,28 +37,19 @@ import org.terifan.raccoon.btree.BTreeConfiguration;
 import org.terifan.raccoon.btree.BTreeIterator;
 import org.terifan.raccoon.btree.BTreeLeafNode;
 import org.terifan.raccoon.btree.BTreeVisitor;
-import org.terifan.raccoon.btree.OpResult;
+import org.terifan.raccoon.btree.ArrayMapEntry;
+import org.terifan.raccoon.btree.ArrayMapEntry.Type;
 import org.terifan.raccoon.btree.OpState;
-import org.terifan.raccoon.btree.Scanner;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.document.Document;
-import org.terifan.raccoon.exceptions.DocumentAlreadyExists;
+import org.terifan.raccoon.exceptions.DatabaseException;
+import org.terifan.raccoon.result.SaveOneResult;
 
 // db.getCollection("people").createIndex(Document.of("name:malesByName,unique:false,sparse:true,clone:true,filter:[{gender:{$eq:male}}],fields:[{firstName:1},{lastName:1}]"));
 
 public final class RaccoonCollection implements Iterable<Document>
 {
 	final static Logger log = Logger.getLogger();
-
-//	final ReadWriteLock mLock;
-//	long mModCount;
-//	mLock = new ReadWriteLock();
-//(ReadWriteLock.WriteLock lock = mCollection.mLock.writeLock())
-//(ReadWriteLock.ReadLock lock = mCollection.mLock.readLock())
-
-	public final static byte TYPE_TREENODE = 0;
-	public final static byte TYPE_DOCUMENT = 1;
-	public final static byte TYPE_EXTERNAL = 2;
 
 	private ExecutorService mExecutor = Executors.newFixedThreadPool(1);
 
@@ -78,17 +69,6 @@ public final class RaccoonCollection implements Iterable<Document>
 		mKeySupplier = () -> ObjectId.randomId();
 
 		mTree = new BTree(getBlockAccessor(), mConfiguration);
-//		mTree.setFlusher(() -> {
-//			WriteTask task = new WriteTask(this, "flush")
-//			{
-//				@Override
-//				public void call()
-//				{
-//					mTree.flush();
-//				}
-//			};
-//			mExecutor.submit(task, new Result());
-//		});
 	}
 
 
@@ -97,7 +77,7 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return if all was found
 	 */
-	public boolean tryFindMany(Document... aDocuments) throws InterruptedException, ExecutionException
+	public boolean tryFindMany(Document... aDocuments)
 	{
 		return tryFindMany(Arrays.asList(aDocuments));
 	}
@@ -108,7 +88,7 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return if all was found
 	 */
-	public boolean tryFindMany(Iterable<Document> aDocuments) throws InterruptedException, ExecutionException
+	public boolean tryFindMany(List<Document> aDocuments)
 	{
 		AtomicBoolean result = new AtomicBoolean(true);
 		ReadTask task = new ReadTask(this, "tryFindMany")
@@ -116,12 +96,13 @@ public final class RaccoonCollection implements Iterable<Document>
 			@Override
 			public void call()
 			{
-				for (Document doc : aDocuments)
+				for (Document document : aDocuments)
 				{
-					OpResult op = mTree.get(getDocumentKey(doc, false));
-					if (op.state == OpState.MATCH)
+					ArrayMapEntry entry = new ArrayMapEntry().setKey(document);
+					mTree.get(entry);
+					if (entry.getState() == OpState.MATCH)
 					{
-						unmarshalDocument(op.entry, doc);
+						document.putAll(readExternalEntry(entry));
 					}
 					else
 					{
@@ -130,7 +111,14 @@ public final class RaccoonCollection implements Iterable<Document>
 				}
 			}
 		};
-		return mExecutor.submit(task, result).get().get();
+		try
+		{
+			return mExecutor.submit(task, result).get().get();
+		}
+		catch (InterruptedException | ExecutionException e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
@@ -141,7 +129,25 @@ public final class RaccoonCollection implements Iterable<Document>
 	 */
 	public Future<ArrayList<Document>> findMany(Document... aDocuments) throws DocumentNotFoundException
 	{
-		return findMany(true, Arrays.asList(aDocuments));
+		ArrayList<Document> result = new ArrayList<>();
+		ReadTask task = new ReadTask(this, "findMany")
+		{
+			@Override
+			public void call()
+			{
+				for (Document document : aDocuments)
+				{
+					ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(document);
+					mTree.get(entry);
+					if (entry.getState() == OpState.NO_MATCH)
+					{
+						throw new DocumentNotFoundException(entry.getKeyInstance());
+					}
+					result.add(readExternalEntry(entry));
+				}
+			}
+		};
+		return mExecutor.submit(task, result);
 	}
 
 
@@ -152,23 +158,21 @@ public final class RaccoonCollection implements Iterable<Document>
 	 */
 	public Future<Document> findOne(Document aDocument)
 	{
-		Document result = new Document();
+		ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(aDocument);
 		WriteTask task = new WriteTask(this, "findOne")
 		{
 			@Override
 			public void call()
 			{
-				OpResult op = mTree.get(getDocumentKey(aDocument, false));
-
-				if (op.state == OpState.NO_MATCH)
+				mTree.get(entry);
+				if (entry.getState() == OpState.NO_MATCH)
 				{
-					throw new DocumentNotFoundException();
+					throw new DocumentNotFoundException(entry.toKeyString());
 				}
-
-				unmarshalDocument(op.entry, result);
+				aDocument.putAll(readExternalEntry(entry));
 			}
 		};
-		return mExecutor.submit(task, result);
+		return mExecutor.submit(task, aDocument);
 	}
 
 
@@ -177,24 +181,33 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return if a document was found
 	 */
-	public boolean tryFindOne(Document aDocument) throws InterruptedException, ExecutionException
+	public boolean tryFindOne(Document aDocument)
 	{
+		ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(aDocument);
+
 		AtomicBoolean result = new AtomicBoolean(false);
 		ReadTask task = new ReadTask(this, "tryFindOne")
 		{
 			@Override
 			public void call()
 			{
-				OpResult op = mTree.get(getDocumentKey(aDocument, false));
+				mTree.get(entry);
 
-				if (op.state == OpState.MATCH)
+				if (entry.getState() == OpState.MATCH)
 				{
-					unmarshalDocument(op.entry, aDocument);
+					aDocument.putAll(readExternalEntry(entry));
 					result.set(true);
 				}
 			}
 		};
-		return mExecutor.submit(task, result).get().get();
+		try
+		{
+			return mExecutor.submit(task, result).get().get();
+		}
+		catch (InterruptedException | ExecutionException e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
@@ -203,17 +216,29 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return a summary of changes
 	 */
-	public Future<Document> saveOne(Document aDocument)
+	public Future<SaveOneResult> saveOne(Document aDocument)
 	{
+		SaveOneResult result = new SaveOneResult();
+		ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(aDocument);
 		WriteTask task = new WriteTask(this, "saveOne")
 		{
 			@Override
 			public void call()
 			{
-				insertOrUpdate(aDocument, true, true);
+				writeExternalEntry(entry);
+				mTree.put(entry);
+				if (entry.getState() == OpState.UPDATE)
+				{
+					deleteIndexEntries(deleteExternal(entry, true));
+					result.updated.add(aDocument);
+				}
+				else
+				{
+					result.inserted.add(aDocument);
+				}
 			}
 		};
-		return mExecutor.submit(task, aDocument);
+		return mExecutor.submit(task, result);
 	}
 
 
@@ -233,7 +258,7 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return a summary of changes
 	 */
-	public Future<SaveManyResult> saveMany(Iterable<Document> aDocuments)
+	public Future<SaveManyResult> saveMany(List<Document> aDocuments)
 	{
 		SaveManyResult result = new SaveManyResult();
 		WriteTask task = new WriteTask(this, "saveMany")
@@ -243,13 +268,20 @@ public final class RaccoonCollection implements Iterable<Document>
 			{
 				for (Document document : aDocuments)
 				{
-					if (insertOrUpdate(document, true, true).state == OpState.INSERT)
+					ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(document);
+					writeExternalEntry(entry);
+					mTree.put(entry);
+					if (entry.getState() == OpState.UPDATE)
 					{
-						result.insert.add(document.get("_id"));
+						deleteIndexEntries(deleteExternal(entry, true));
+					}
+					if (entry.getState() == OpState.INSERT)
+					{
+						result.inserted.add(document);
 					}
 					else
 					{
-						result.update.add(document.get("_id"));
+						result.updated.add(document);
 					}
 				}
 			}
@@ -265,12 +297,23 @@ public final class RaccoonCollection implements Iterable<Document>
 	 */
 	public Future<Document> insertOne(Document aDocument)
 	{
+		ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(aDocument);
 		WriteTask task = new WriteTask(this, "insertOne")
 		{
 			@Override
 			public void call()
 			{
-				insertOrUpdate(aDocument, true, false);
+				mTree.get(entry);
+				if (entry.getState() == OpState.MATCH)
+				{
+					throw new DuplicateKeyException();
+				}
+				writeExternalEntry(entry);
+				mTree.put(entry);
+				if (entry.getState() == OpState.UPDATE)
+				{
+					deleteIndexEntries(deleteExternal(entry, true));
+				}
 			}
 		};
 		return mExecutor.submit(task, aDocument);
@@ -282,7 +325,7 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return a summary of changes
 	 */
-	public Future<InsertManyResult> insertMany(Document... aDocuments)
+	public Future<List<Document>> insertMany(Document... aDocuments)
 	{
 		return insertMany(Arrays.asList(aDocuments));
 	}
@@ -293,21 +336,106 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return a summary of changes
 	 */
-	public Future<InsertManyResult> insertMany(Iterable<Document> aDocuments)
+	public Future<List<Document>> insertMany(List<Document> aDocuments)
 	{
-		InsertManyResult result = new InsertManyResult();
 		WriteTask task = new WriteTask(this, "insertMany")
 		{
 			@Override
 			public void call()
 			{
+				ArrayList<ArrayMapEntry> entries = new ArrayList<>();
 				for (Document document : aDocuments)
 				{
-					insertOrUpdate(document, true, false);
+					ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(document);
+					mTree.get(entry);
+					if (entry.getState() == OpState.NO_MATCH)
+					{
+						throw new DocumentNotFoundException(entry.toKeyString());
+					}
+				}
+				for (ArrayMapEntry entry : entries)
+				{
+					writeExternalEntry(entry);
+					mTree.put(entry);
 				}
 			}
 		};
-		return mExecutor.submit(task, result);
+		return mExecutor.submit(task, aDocuments);
+	}
+
+
+	/**
+	 * Insert a single Document ensuring that it doesn't already exists.
+	 *
+	 * @return if a document was inserted
+	 */
+	public boolean tryInsertOne(Document aDocument)
+	{
+		ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(aDocument);
+		ArrayMapEntry existing = new ArrayMapEntry().setKey(entry.getKey(), entry.getKeyType());
+		AtomicBoolean result = new AtomicBoolean(false);
+		ReadTask task = new ReadTask(this, "tryInsertOne")
+		{
+			@Override
+			public void call()
+			{
+				mTree.get(existing);
+
+				if (existing.getState() == OpState.NO_MATCH)
+				{
+					mTree.put(entry);
+					result.set(true);
+				}
+			}
+		};
+		try
+		{
+			return mExecutor.submit(task, result).get().get();
+		}
+		catch (InterruptedException | ExecutionException e)
+		{
+			throw new DatabaseException(e);
+		}
+	}
+
+
+	/**
+	 * Insert a single Document ensuring that it doesn't already exists or updated the aExisting with the existing Document.
+	 *
+	 * @return if a document was inserted
+	 */
+	public boolean tryInsertOne(Document aDocument, Document aExisting)
+	{
+		ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(aDocument);
+		ArrayMapEntry existing = new ArrayMapEntry().setKey(entry.getKey(), entry.getKeyType());
+
+		AtomicBoolean result = new AtomicBoolean(false);
+		ReadTask task = new ReadTask(this, "tryInsertOne")
+		{
+			@Override
+			public void call()
+			{
+				mTree.get(existing);
+
+				if (entry.getState() == OpState.NO_MATCH)
+				{
+					mTree.put(entry);
+					result.set(true);
+				}
+				else
+				{
+					aExisting.putAll(readExternalEntry(existing));
+				}
+			}
+		};
+		try
+		{
+			return mExecutor.submit(task, result).get().get();
+		}
+		catch (InterruptedException | ExecutionException e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
@@ -318,12 +446,20 @@ public final class RaccoonCollection implements Iterable<Document>
 	 */
 	public Future<Document> replaceOne(Document aDocument) throws DocumentNotFoundException
 	{
+		ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(aDocument);
 		WriteTask task = new WriteTask(this, "replaceOne")
 		{
 			@Override
 			public void call()
 			{
-				insertOrUpdate(aDocument, false, true);
+				mTree.get(entry);
+				if (entry.getState() == OpState.NO_MATCH)
+				{
+					throw new DocumentNotFoundException(entry.toKeyString());
+				}
+				writeExternalEntry(entry);
+				mTree.put(entry);
+				deleteIndexEntries(deleteExternal(entry, true));
 			}
 		};
 		return mExecutor.submit(task, aDocument);
@@ -335,18 +471,38 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return if a document was replaced
 	 */
-	public boolean tryReplaceOne(Document aDocument) throws InterruptedException, ExecutionException
+	public boolean tryReplaceOne(Document aDocument)
 	{
+		ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(aDocument);
+
 		AtomicBoolean result = new AtomicBoolean(true);
 		WriteTask task = new WriteTask(this, "tryReplaceOne")
 		{
 			@Override
 			public void call()
 			{
-				result.set(insertOrUpdate(aDocument, false, true).state == OpState.UPDATE);
+				mTree.get(entry);
+				if (entry.getState() == OpState.MATCH)
+				{
+					throw new DuplicateKeyException();
+				}
+				writeExternalEntry(entry);
+				mTree.put(entry);
+				if (entry.getState() == OpState.UPDATE)
+				{
+					deleteIndexEntries(deleteExternal(entry, true));
+				}
+				result.set(entry.getState() == OpState.UPDATE);
 			}
 		};
-		return mExecutor.submit(task, result).get().get();
+		try
+		{
+			return mExecutor.submit(task, result).get().get();
+		}
+		catch (InterruptedException | ExecutionException e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
@@ -355,7 +511,7 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return if all was replaced
 	 */
-	public boolean tryReplaceMany(Document... aDocuments) throws InterruptedException, ExecutionException
+	public boolean tryReplaceMany(Document... aDocuments)
 	{
 		return tryReplaceMany(Arrays.asList(aDocuments));
 	}
@@ -366,7 +522,7 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return if all was replaced
 	 */
-	public boolean tryReplaceMany(Iterable<Document> aDocuments) throws InterruptedException, ExecutionException
+	public boolean tryReplaceMany(List<Document> aDocuments)
 	{
 		AtomicBoolean result = new AtomicBoolean(true);
 		WriteTask task = new WriteTask(this, "tryReplaceMany")
@@ -376,14 +532,28 @@ public final class RaccoonCollection implements Iterable<Document>
 			{
 				for (Document document : aDocuments)
 				{
-					if (insertOrUpdate(document, false, true).state == OpState.UPDATE)
+					ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(document);
+					writeExternalEntry(entry);
+					mTree.put(entry);
+					if (entry.getState() == OpState.UPDATE)
+					{
+						deleteIndexEntries(deleteExternal(entry, true));
+					}
+					else
 					{
 						result.set(false);
 					}
 				}
 			}
 		};
-		return mExecutor.submit(task, result).get().get();
+		try
+		{
+			return mExecutor.submit(task, result).get().get();
+		}
+		catch (InterruptedException | ExecutionException e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
@@ -392,7 +562,7 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return a summary of changes
 	 */
-	public Future<ReplaceManyResult> replaceMany(Document... aDocuments)
+	public Future<List<Document>> replaceMany(Document... aDocuments)
 	{
 		return replaceMany(Arrays.asList(aDocuments));
 	}
@@ -403,22 +573,33 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return a summary of changes
 	 */
-	public Future<ReplaceManyResult> replaceMany(Iterable<Document> aDocuments) throws DocumentNotFoundException
+	public Future<List<Document>> replaceMany(List<Document> aDocuments) throws DocumentNotFoundException
 	{
-		ReplaceManyResult result = new ReplaceManyResult();
 		WriteTask task = new WriteTask(this, "replaceMany")
 		{
 			@Override
 			public void call()
 			{
+				ArrayList<ArrayMapEntry> entries = new ArrayList<>();
 				for (Document document : aDocuments)
 				{
-					insertOrUpdate(document, true, false);
-
+					ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(document);
+					mTree.get(entry);
+					if (entry.getState() == OpState.NO_MATCH)
+					{
+						throw new DocumentNotFoundException();
+					}
+					entries.add(entry);
+				}
+				for (ArrayMapEntry entry : entries)
+				{
+					writeExternalEntry(entry);
+					mTree.put(entry);
+					deleteIndexEntries(deleteExternal(entry, true));
 				}
 			}
 		};
-		return mExecutor.submit(task, result);
+		return mExecutor.submit(task, aDocuments);
 	}
 
 
@@ -429,12 +610,18 @@ public final class RaccoonCollection implements Iterable<Document>
 	 */
 	public Future<Document> deleteOne(Document aDocument) throws DocumentNotFoundException
 	{
+		ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(aDocument);
 		WriteTask task = new WriteTask(this, "deleteOne")
 		{
 			@Override
 			public void call()
 			{
-				deleteImpl(getDocumentKey(aDocument, false), aDocument, true);
+				mTree.remove(entry);
+				if (entry.getState() != OpState.REMOVED)
+				{
+					throw new DocumentNotFoundException(entry.getKeyInstance());
+				}
+				deleteIndexEntries(deleteExternal(entry, true));
 			}
 		};
 		return mExecutor.submit(task, aDocument);
@@ -446,7 +633,7 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return if all was deleted
 	 */
-	public boolean tryDeleteMany(Document... aDocument) throws InterruptedException, ExecutionException
+	public boolean tryDeleteMany(Document... aDocument)
 	{
 		return tryDeleteMany(Arrays.asList(aDocument));
 	}
@@ -457,7 +644,7 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return if all was deleted
 	 */
-	public boolean tryDeleteMany(Iterable<Document> aDocuments) throws InterruptedException, ExecutionException
+	public boolean tryDeleteMany(List<Document> aDocuments)
 	{
 		AtomicBoolean result = new AtomicBoolean(true);
 		WriteTask task = new WriteTask(this, "tryDeleteMany")
@@ -465,15 +652,16 @@ public final class RaccoonCollection implements Iterable<Document>
 			@Override
 			public void call()
 			{
-				for (Document key : aDocuments)
+				for (Document document : aDocuments)
 				{
-					OpResult op = mTree.remove(getDocumentKey(key, false));
-					if (op.state == OpState.DELETE)
+					ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(document);
+					mTree.remove(entry);
+					if (entry.getState() == OpState.REMOVED)
 					{
-						Document prevDoc = deleteExternal(op.entry, true);
+						Document prevDoc = deleteExternal(entry, true);
 						if (prevDoc != null)
 						{
-							deleteIndexEntries(op.entry.getValue());
+							deleteIndexEntries(entry.getValueInstance());
 						}
 					}
 					else
@@ -483,7 +671,14 @@ public final class RaccoonCollection implements Iterable<Document>
 				}
 			}
 		};
-		return mExecutor.submit(task, result).get().get();
+		try
+		{
+			return mExecutor.submit(task, result).get().get();
+		}
+		catch (InterruptedException | ExecutionException e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
@@ -492,9 +687,31 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return if a document was deleted
 	 */
-	public boolean tryDeleteOne(Document aDocument) throws InterruptedException, ExecutionException
+	public boolean tryDeleteOne(Document aDocument)
 	{
-		return deleteImpl(false, Arrays.asList(aDocument)).get() != null;
+		AtomicBoolean result = new AtomicBoolean();
+		WriteTask task = new WriteTask(this, "tryDeleteOne")
+		{
+			@Override
+			public void call()
+			{
+				ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(aDocument);
+				mTree.remove(entry);
+				if (entry.getState() == OpState.REMOVED)
+				{
+					deleteIndexEntries(deleteExternal(entry, true));
+					result.set(true);
+				}
+			}
+		};
+		try
+		{
+			return mExecutor.submit(task, result).get().get();
+		}
+		catch (Exception e)
+		{
+			throw new DatabaseException(e);
+		}
 	}
 
 
@@ -505,19 +722,21 @@ public final class RaccoonCollection implements Iterable<Document>
 	 */
 	public Future<Document> findOneAndDelete(Document aDocument)
 	{
+		ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(aDocument);
+
 		WriteTask task = new WriteTask(this, "findOneAndDelete")
 		{
 			@Override
 			public void call()
 			{
-				OpResult op = mTree.remove(getDocumentKey(aDocument, false));
+				mTree.remove(entry);
 
-				if (op != null)
+				if (entry.getState() == OpState.MATCH)
 				{
-					Document prevDoc = deleteExternal(op.entry, true);
+					Document prevDoc = deleteExternal(entry, true);
 					if (prevDoc == null)
 					{
-						prevDoc = op.entry.getValue();
+						prevDoc = entry.getValueInstance();
 					}
 					aDocument.clear().putAll(prevDoc);
 					deleteIndexEntries(prevDoc);
@@ -533,9 +752,9 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return a summary of changes
 	 */
-	public Future<DeleteManyResult> deleteMany(Document... aDocuments)
+	public Future<List<Document>> deleteMany(Document... aDocuments)
 	{
-		return deleteImpl(false, Arrays.asList(aDocuments));
+		return deleteMany(Arrays.asList(aDocuments));
 	}
 
 
@@ -544,9 +763,32 @@ public final class RaccoonCollection implements Iterable<Document>
 	 *
 	 * @return a summary of changes
 	 */
-	public Future<DeleteManyResult> deleteMany(Iterable<Document> aDocuments)
+	public Future<List<Document>> deleteMany(List<Document> aDocuments)
 	{
-		return deleteImpl(false, aDocuments);
+		WriteTask task = new WriteTask(this, "deleteMany")
+		{
+			@Override
+			public void call()
+			{
+				ArrayList<ArrayMapEntry> entries = new ArrayList<>();
+				for (Document document : aDocuments)
+				{
+					ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(document);
+					mTree.get(entry);
+					if (entry.getState() == OpState.NO_MATCH)
+					{
+						throw new DocumentNotFoundException(entry.getKeyInstance());
+					}
+					entries.add(entry);
+				}
+				for (ArrayMapEntry entry : entries)
+				{
+					mTree.remove(entry);
+					deleteIndexEntries(deleteExternal(entry, true));
+				}
+			}
+		};
+		return mExecutor.submit(task, aDocuments);
 	}
 
 
@@ -567,7 +809,7 @@ public final class RaccoonCollection implements Iterable<Document>
 					@Override
 					public boolean leaf(BTreeLeafNode aNode)
 					{
-						aNode.forEachEntry(e -> result.add(unmarshalDocument(e, mDocumentSupplier.get())));
+						aNode.forEachEntry(e -> result.add(readExternalEntry(e)));
 						return true;
 					}
 				});
@@ -577,48 +819,48 @@ public final class RaccoonCollection implements Iterable<Document>
 	}
 
 
-	public ArrayList<Document> find(Document aFilter) throws InterruptedException, ExecutionException
-	{
-		log.i("find {}", aFilter);
-		log.inc();
-
-//		System.out.println(aQuery);
-//		System.out.println(mDatabase.mIndices);
-		Document bestIndex = null;
-		int matchingFields = 0;
-		ArrayList<String> queryKeys = aFilter.keySet();
-
-		HashMap<ObjectId, Document> indices = mDatabase.mIndices.get(getCollectionId());
-		if (indices != null)
-		{
-			for (Document conf : indices.values())
-			{
-				ArrayList<String> indexKeys = conf.getDocument("fields").keySet();
-
-				int i = 0;
-				for (; i < Math.min(indexKeys.size(), queryKeys.size()) && indexKeys.get(i).equals(queryKeys.get(i)); i++)
-				{
-				}
-
-				if (i > matchingFields || i == matchingFields && bestIndex != null && indexKeys.size() < conf.getDocument("fields").size())
-				{
-					bestIndex = conf;
-					matchingFields = i;
-				}
-			}
-		}
-
-//		System.out.println(matchingFields+" "+queryKeys.size());
-//		System.out.println(bestIndex);
-		if (bestIndex != null)
-		{
-			System.out.println("INDEX: " + bestIndex);
-
-			return mDatabase.getCollection("index:" + bestIndex.getArray("_id")).findImpl(aFilter);
-		}
-
-		return findImpl(aFilter);
-	}
+//	public ArrayList<Document> find(Document aFilter) throws InterruptedException, ExecutionException
+//	{
+//		log.i("find {}", aFilter);
+//		log.inc();
+//
+////		System.out.println(aQuery);
+////		System.out.println(mDatabase.mIndices);
+//		Document bestIndex = null;
+//		int matchingFields = 0;
+//		ArrayList<String> queryKeys = aFilter.keySet();
+//
+//		HashMap<ObjectId, Document> indices = mDatabase.mIndices.get(getCollectionId());
+//		if (indices != null)
+//		{
+//			for (Document conf : indices.values())
+//			{
+//				ArrayList<String> indexKeys = conf.getDocument("fields").keySet();
+//
+//				int i = 0;
+//				for (; i < Math.min(indexKeys.size(), queryKeys.size()) && indexKeys.get(i).equals(queryKeys.get(i)); i++)
+//				{
+//				}
+//
+//				if (i > matchingFields || i == matchingFields && bestIndex != null && indexKeys.size() < conf.getDocument("fields").size())
+//				{
+//					bestIndex = conf;
+//					matchingFields = i;
+//				}
+//			}
+//		}
+//
+////		System.out.println(matchingFields+" "+queryKeys.size());
+////		System.out.println(bestIndex);
+//		if (bestIndex != null)
+//		{
+//			System.out.println("INDEX: " + bestIndex);
+//
+//			return mDatabase.getCollection("index:" + bestIndex.getArray("_id")).findImpl(aFilter);
+//		}
+//
+//		return findImpl(aFilter);
+//	}
 
 
 	/**
@@ -663,17 +905,27 @@ public final class RaccoonCollection implements Iterable<Document>
 
 		return new BTreeIterator(mTree)
 		{
+//			@Override
+//			protected Document unmarshal(ArrayMapEntry aEntry)
+//			{
+//				return unmarshalDocument(aEntry);
+//			}
 			@Override
-			protected Document unmarshal(ArrayMapEntry aEntry)
+			protected void remove(ArrayMapEntry aEntry)
 			{
-				return unmarshalDocument(aEntry, mDocumentSupplier.get());
-			}
-			@Override
-			protected void remove(ArrayMapKey aKey)
-			{
-				deleteImpl(aKey, mDocumentSupplier.get(), false);
+				mTree.remove(aEntry);
+				if (aEntry.getState() == OpState.REMOVED)
+				{
+					deleteIndexEntries(deleteExternal(aEntry, true));
+				}
 			}
 		};
+	}
+
+
+	public <K extends Document> Stream<Document> stream()
+	{
+		return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator(), 0), false);
 	}
 
 
@@ -688,15 +940,19 @@ public final class RaccoonCollection implements Iterable<Document>
 	{
 		return () ->  new BTreeIterator(mTree)
 		{
+//			@Override
+//			protected Document unmarshal(ArrayMapEntry aEntry)
+//			{
+//				return mDocumentSupplier.get().put("_id", aEntry.getKey().get());
+//			}
 			@Override
-			protected Document unmarshal(ArrayMapEntry aEntry)
+			protected void remove(ArrayMapEntry aEntry)
 			{
-				return mDocumentSupplier.get().put("_id", aEntry.getKey().get());
-			}
-			@Override
-			protected void remove(ArrayMapKey aKey)
-			{
-				deleteImpl(aKey, mDocumentSupplier.get(), false);
+				mTree.remove(aEntry);
+				if (aEntry.getState() == OpState.REMOVED)
+				{
+					deleteIndexEntries(deleteExternal(aEntry, true));
+				}
 			}
 		};
 	}
@@ -851,252 +1107,86 @@ public final class RaccoonCollection implements Iterable<Document>
 	}
 
 
-	private ArrayMapKey getDocumentKey(Object aDocument, boolean aCreateMissingKey)
-	{
-		if (aDocument instanceof Document v)
-		{
-			Object id = v.get("_id");
-
-			if (id == null)
-			{
-				if (!aCreateMissingKey)
-				{
-					throw new IllegalArgumentException("Document missing _id field.");
-				}
-				id = mKeySupplier.get();
-				v.put("_id", id);
-			}
-
-			return new ArrayMapKey(id);
-		}
-
-		if (aDocument == null)
-		{
-			if (!aCreateMissingKey)
-			{
-				throw new IllegalArgumentException("Null is not a valid _id.");
-			}
-			aDocument = mKeySupplier.get();
-		}
-
-		return new ArrayMapKey(aDocument);
-	}
-
-
-	/**
-	 * @return true if inserted
-	 */
-	private OpResult insertOrUpdate(Document aDocument, boolean aPermitInsert, boolean aPermitUpdate)
-	{
-		ArrayMapKey key = getDocumentKey(aDocument, aPermitInsert);
-
-		if (aPermitInsert && !aPermitUpdate)
-		{
-			OpResult op = mTree.get(key);
-			if (op.state == OpState.MATCH)
-			{
-				throw new DuplicateKeyException();
-			}
-		}
-
-		ArrayMapEntry entry = new ArrayMapEntry(key, aDocument, TYPE_DOCUMENT);
-
-		if (entry.length() > mTree.getConfiguration().getSizeThreshold())
-		{
-			RuntimeDiagnostics.collectStatistics(Operation.WRITE_EXT, 1);
-
-			BlockPointer bp = mDatabase.getBlockAccessor().writeBlock(aDocument.toByteArray(), BlockType.EXTERNAL, 0, CompressorAlgorithm.LZJB.ordinal());
-
-			entry.setValue(bp.marshalDocument());
-			entry.setType(TYPE_EXTERNAL);
-		}
-
-		OpResult op = mTree.put(entry);
-
-		if (op.state == OpState.MATCH)
-		{
-			Document prev = deleteExternal(op.entry, true);
-
-			if (prev == null)
-			{
-				prev = op.entry.getValue();
-			}
-
-			deleteIndexEntries(prev);
-		}
-
-		for (Document indexConf : mDatabase.mIndices.values(getCollectionId()))
-		{
-			boolean unique = indexConf.getDocument("configuration").get("unique", false);
-			boolean clone = indexConf.getDocument("configuration").get("clone", false);
-
-			ArrayList<Array> result = new ArrayList<>();
-			generatePermutations(indexConf, aDocument, new Array(), 0, result);
-			for (Array values : result)
-			{
-				Document indexEntry = new Document().put("_id", values);
-
-				if (unique)
-				{
-					indexEntry.put("_ref", aDocument.get("_id"));
-
-					try
-					{
-						Document existing = getIndexByConf(indexConf).findOne(new Document().put("_id", values)).get();
-
-						if (existing != null && !aDocument.get("_id").equals(existing.get("_ref")))
-						{
-							throw new UniqueConstraintException("Collection index <" + indexConf.getObjectId("_id") + ">, existing ID <" + existing.get("_ref") + ">, saving ID <" + aDocument.get("_id") + ">, values " + values.toJson());
-						}
-					}
-					catch (InterruptedException | ExecutionException | UniqueConstraintException e)
-					{
-						e.printStackTrace(System.out);
-					}
-				}
-				else
-				{
-					values.add(aDocument.get("_id"));
-				}
-
-				if (clone)
-				{
-					indexEntry.put("_clone", aDocument);
-				}
-
-				getIndexByConf(indexConf).saveOne(indexEntry);
-			}
-		}
-
-		return op;
-	}
+//	private void insertOrUpdate(ArrayMapEntry aEntry, boolean aPermitInsert, boolean aPermitUpdate)
+//	{
+//		if (aPermitInsert && !aPermitUpdate)
+//		{
+//			mTree.get(aEntry);
+//
+//			if (aEntry.getState() == OpState.MATCH)
+//			{
+//				throw new DuplicateKeyException();
+//			}
+//		}
+//
+//		writeExternalEntry(aEntry);
+//		mTree.put(aEntry);
+//
+//		if (aEntry.getState() == OpState.UPDATE)
+//		{
+//			Document prev = deleteExternal(aEntry, true);
+//
+//			deleteIndexEntries(prev);
+//		}
+//
+////		for (Document indexConf : mDatabase.mIndices.values(getCollectionId()))
+////		{
+////			boolean unique = indexConf.getDocument("configuration").get("unique", false);
+////			boolean clone = indexConf.getDocument("configuration").get("clone", false);
+////
+////			ArrayList<Array> result = new ArrayList<>();
+////			generatePermutations(indexConf, aEntry, new Array(), 0, result);
+////			for (Array values : result)
+////			{
+////				Document indexEntry = new Document().put("_id", values);
+////
+////				if (unique)
+////				{
+////					indexEntry.put("_ref", aEntry.getKey());
+////
+////					try
+////					{
+////						Document existing = getIndexByConf(indexConf).findOne(new Document().put("_id", values)).get();
+////
+////						if (existing != null && !aEntry.getKey().equals(existing.get("_ref")))
+////						{
+////							throw new UniqueConstraintException("Collection index <" + indexConf.getObjectId("_id") + ">, existing ID <" + existing.get("_ref") + ">, saving ID <" + aEntry.get("_id") + ">, values " + values.toJson());
+////						}
+////					}
+////					catch (InterruptedException | ExecutionException | UniqueConstraintException e)
+////					{
+////						e.printStackTrace(System.out);
+////					}
+////				}
+////				else
+////				{
+////					values.add(aEntry.getKey());
+////				}
+////
+////				if (clone)
+////				{
+////					indexEntry.put("_clone", aEntry);
+////				}
+////
+////				getIndexByConf(indexConf).saveOne(indexEntry);
+////			}
+////		}
+//	}
 
 
-	private Future<DeleteManyResult> deleteImpl(boolean aFailFast, Iterable<Document> aDocuments)
-	{
-		DeleteManyResult result = new DeleteManyResult();
-		WriteTask task = new WriteTask(this, "delete")
-		{
-			@Override
-			public void call()
-			{
-				for (Document doc : aDocuments)
-				{
-					deleteImpl(getDocumentKey(doc, false), doc, aFailFast);
-				}
-			}
-		};
-		return mExecutor.submit(task, result);
-	}
-
-
-	private void deleteImpl(ArrayMapKey aKey, Document aDoc, boolean aFailFast) throws DocumentNotFoundException
-	{
-		OpResult op = mTree.remove(aKey);
-		if (op.state == OpState.DELETE)
-		{
-			Document prevDoc = deleteExternal(op.entry, true);
-
-			if (prevDoc == null)
-			{
-				prevDoc = op.entry.getValue();
-			}
-
-			deleteIndexEntries(prevDoc);
-		}
-		else if (aFailFast)
-		{
-			throw new DocumentNotFoundException(aDoc.get("_id"));
-		}
-	}
-
-
-	private Document deleteExternal(ArrayMapEntry aEntry, boolean aRestoreOldValue)
-	{
-		Document prev = null;
-
-		if (aEntry != null && aEntry.getType() == TYPE_EXTERNAL)
-		{
-			Document header = aEntry.getValue();
-			BlockPointer bp = new BlockPointer().unmarshalDocument(header);
-
-			if (aRestoreOldValue)
-			{
-				RuntimeDiagnostics.collectStatistics(Operation.READ_EXT, 1);
-
-				prev = mDocumentSupplier.get().fromByteArray(mDatabase.getBlockAccessor().readBlock(bp));
-			}
-
-			RuntimeDiagnostics.collectStatistics(Operation.FREE_EXT, 1);
-
-			mDatabase.getBlockAccessor().freeBlock(bp);
-		}
-
-		return prev;
-	}
-
-
-	private Document unmarshalDocument(ArrayMapEntry aEntry, Document aDestination)
-	{
-		if (aEntry.getType() == TYPE_EXTERNAL)
-		{
-			RuntimeDiagnostics.collectStatistics(Operation.READ_EXT, 1);
-
-			Document header = aEntry.getValue();
-
-			BlockPointer bp = new BlockPointer().unmarshalDocument(header);
-
-			return aDestination.putAll(new Document().fromByteArray(mDatabase.getBlockAccessor().readBlock(bp)));
-		}
-
-		return aDestination.putAll(aEntry.getValue());
-	}
-
-
-	private ArrayList<Document> findImpl(Document aFilter) throws InterruptedException, ExecutionException
-	{
-		ArrayList<Document> result = new ArrayList<>();
-		ReadTask task = new ReadTask(this, "size")
-		{
-			@Override
-			public void call()
-			{
-				mTree.find(result, aFilter, entry -> unmarshalDocument(entry, mDocumentSupplier.get()));
-			}
-		};
-		return mExecutor.submit(task, result).get();
-	}
-
-
-	private Future<ArrayList<Document>> findMany(boolean aFailFast, Iterable<Document> aDocuments)
-	{
-		ArrayList<Document> result = new ArrayList<>();
-		ReadTask task = new ReadTask(this, "find")
-		{
-			@Override
-			public void call()
-			{
-				for (Document doc : aDocuments)
-				{
-					OpResult op = mTree.get(getDocumentKey(doc, false));
-
-					if (op.state == OpState.MATCH)
-					{
-						result.add(unmarshalDocument(op.entry, doc));
-					}
-					else
-					{
-						if (aFailFast)
-						{
-							throw new DocumentNotFoundException();
-						}
-						result.add(null);
-					}
-				}
-			}
-		};
-		return mExecutor.submit(task, result);
-	}
+//	private ArrayList<Document> findImpl(Document aFilter) throws InterruptedException, ExecutionException
+//	{
+//		ArrayList<Document> result = new ArrayList<>();
+//		ReadTask task = new ReadTask(this, "size")
+//		{
+//			@Override
+//			public void call()
+//			{
+//				mTree.find(result, aFilter, entry -> unmarshalDocument(entry, mDocumentSupplier.get()));
+//			}
+//		};
+//		return mExecutor.submit(task, result).get();
+//	}
 
 	//    A     B	Node
 	//    1     1	1
@@ -1121,15 +1211,15 @@ public final class RaccoonCollection implements Iterable<Document>
 	// 3: 3,2  -- 4,3
 	// 4: 4,4  -- null
 
-	public ScanResult _getStats()
-	{
-		ScanResult scanResult = new ScanResult();
-		new Scanner().scan(mTree, scanResult);
-		System.out.println(scanResult);
-
-		return scanResult;
-//		return Document.of("depth:0, nodes:0, leafs:0, documents:0, externals:0, logicalSize:0, physicalSize:0, nodeFill: 0, leafFill: 0, nodeDegree: 0, pendingWrites:0, cacheSize:0");
-	}
+//	public ScanResult _getStats()
+//	{
+//		ScanResult scanResult = new ScanResult();
+//		new _Scanner().scan(mTree, scanResult);
+//		System.out.println(scanResult);
+//
+//		return scanResult;
+////		return Document.of("depth:0, nodes:0, leafs:0, documents:0, externals:0, logicalSize:0, physicalSize:0, nodeFill: 0, leafFill: 0, nodeDegree: 0, pendingWrites:0, cacheSize:0");
+//	}
 
 
 	/**
@@ -1240,14 +1330,86 @@ public final class RaccoonCollection implements Iterable<Document>
 	}
 
 
-	public Future<String> check()
+//	private Document unmarshalDocument(ArrayMapEntry aEntry)
+//	{
+//		if (aEntry.getValueType() == Type.BLOCKPOINTER)
+//		{
+//			RuntimeDiagnostics.collectStatistics(Operation.READ_EXT, 1);
+//			return new Document().fromByteArray(mDatabase.getBlockAccessor().readBlock(aEntry.getValueInstance()));
+//		}
+//
+//		return aEntry.getValueInstance();
+//	}
+
+
+	private Document deleteExternal(ArrayMapEntry aEntry, boolean aRestoreOldValue)
 	{
-		WriteTask task = new WriteTask(this, "check")
+		Document prev = null;
+
+		if (aEntry != null)
+		{
+			if (aEntry.getValueType() == Type.BLOCKPOINTER)
+			{
+				BlockPointer bp = aEntry.getValueInstance();
+
+				if (aRestoreOldValue)
+				{
+					RuntimeDiagnostics.collectStatistics(Operation.READ_EXT, 1);
+					prev = mDocumentSupplier.get().fromByteArray(mDatabase.getBlockAccessor().readBlock(aEntry.getValueInstance()));
+				}
+
+				RuntimeDiagnostics.collectStatistics(Operation.FREE_EXT, 1);
+				mDatabase.getBlockAccessor().freeBlock(bp);
+			}
+			else
+			{
+				prev = aEntry.getValueInstance();
+			}
+		}
+
+		return prev;
+	}
+
+
+	private Document readExternalEntry(ArrayMapEntry aEntry)
+	{
+		Document prev = null;
+
+		if (aEntry != null)
+		{
+			if (aEntry.getValueType() == Type.BLOCKPOINTER)
+			{
+				RuntimeDiagnostics.collectStatistics(Operation.READ_EXT, 1);
+				prev = mDocumentSupplier.get().fromByteArray(mDatabase.getBlockAccessor().readBlock(aEntry.getValueInstance()));
+			}
+			else
+			{
+				prev = aEntry.getValueInstance();
+			}
+		}
+
+		return prev;
+	}
+
+
+	private void writeExternalEntry(ArrayMapEntry aEntry)
+	{
+		if (aEntry.getMarshalledLength() > mTree.getConfiguration().getLimitEntrySize())
+		{
+			RuntimeDiagnostics.collectStatistics(Operation.WRITE_EXT, 1);
+			aEntry.setValueInstance(mDatabase.getBlockAccessor().writeBlock(aEntry.getValue(), BlockType.EXTERNAL, 0, CompressorAlgorithm.LZJB.ordinal()));
+		}
+	}
+
+
+	public Future<String> printTree()
+	{
+		WriteTask task = new WriteTask(this, "printTree")
 		{
 			@Override
 			public void call()
 			{
-				mTree.check();
+				mTree.printTree();
 			}
 		};
 		return mExecutor.submit(task, null);

@@ -1,5 +1,6 @@
 package org.terifan.raccoon;
 
+import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
 import org.terifan.raccoon.blockdevice.storage.MemoryBlockStorage;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -11,15 +12,15 @@ public class RaccoonDatabaseNGTest
 	@Test
 	public void testSingleTableInsertTiny() throws Exception
 	{
-		MemoryBlockStorage device = new MemoryBlockStorage(512);
+		ManagedBlockDevice device = new ManagedBlockDevice(new MemoryBlockStorage(512));
 
-		try (RaccoonDatabase database = new RaccoonDatabase(device, DatabaseOpenOption.CREATE, null))
+		try (RaccoonDatabase database = new RaccoonDatabase(device, DatabaseOpenOption.CREATE))
 		{
 			database.getCollection("fruits").saveOne(new _Fruit("apple", 123.0));
 			database.commit();
 		}
 
-		try (RaccoonDatabase database = new RaccoonDatabase(device, DatabaseOpenOption.OPEN, null))
+		try (RaccoonDatabase database = new RaccoonDatabase(device, DatabaseOpenOption.OPEN))
 		{
 			_Fruit apple = new _Fruit("apple");
 

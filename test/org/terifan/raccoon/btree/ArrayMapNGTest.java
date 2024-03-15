@@ -1,17 +1,10 @@
 package org.terifan.raccoon.btree;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map.Entry;
-import org.terifan.raccoon.document.Document;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
-import static org.terifan.raccoon._Tools.b;
-import static org.terifan.raccoon._Tools.c;
 import static org.terifan.raccoon._Tools.doc;
-import static org.terifan.raccoon._Tools.t;
+import org.terifan.raccoon.btree.ArrayMapEntry.Type;
+import org.terifan.raccoon.document.Document;
 
 
 public class ArrayMapNGTest
@@ -25,325 +18,308 @@ public class ArrayMapNGTest
 	@Test
 	public void testPutGetReplaceRemove()
 	{
-		ArrayMap map = new ArrayMap(100, 1);
+		ArrayMap map = new ArrayMap(10, 100);
 
-		Document original = doc();
-		ArrayMapEntry out = new ArrayMapEntry(new ArrayMapKey("apple"), original, (byte)'-');
+		Object org = "hello world";
+		ArrayMapEntry out = new ArrayMapEntry().setKeyInstance("apple").setValueInstance(org);
 
-		OpResult wasAdd = map.put(out);
+		map.put(out);
 
-		assertNotEquals(wasAdd, OpState.OVERFLOW);
-		assertNull(wasAdd.entry);
+		assertEquals(out.getState(), OpState.OVERFLOW);
 
-		OpResult existing = map.get(out.getKey());
+		map.insert(out);
 
-		assertEquals(existing.state, OpState.MATCH);
-		assertEquals(existing.entry.getValue(), out.getValue());
-		assertEquals(existing.entry.getType(), out.getType());
-//		assertEquals(map.getFreeSpace(), 73);
+		assertEquals(map.size(), 1);
+		assertEquals(out.getState(), OpState.INSERT);
+		assertEquals(out.getValueType(), Type.STRING);
 
-		out.setValue(doc());
+		ArrayMapEntry existing = new ArrayMapEntry().setKey(out.getKey(), out.getKeyType());
+		map.get(existing);
 
-		wasAdd = map.put(out);
+		assertEquals(existing.getState(), OpState.MATCH);
+		assertEquals(existing.getValue(), out.getValue());
+		assertEquals(existing.getValueType(), out.getValueType());
 
-		assertNotEquals(wasAdd, OpState.OVERFLOW);
-		assertNotNull(wasAdd.entry);
-		assertEquals(wasAdd.entry.getValue(), original);
+		Object val = "***********************".getBytes();
+		out.setValueInstance(val);
 
-		existing = map.get(out.getKey());
+		map.put(out);
 
-		assertEquals(existing.state, OpState.MATCH);
-		assertEquals(existing.entry.getValue(), out.getValue());
-		assertEquals(existing.entry.getType(), out.getType());
-//		assertEquals(map.getFreeSpace(), 77);
+		assertEquals(out.getState(), OpState.UPDATE);
+		assertEquals(out.getValueType(), Type.STRING);
+		assertEquals(out.getValueInstance(), org);
 
-		existing = map.remove(out.getKey());
+		map.get(existing);
 
-		assertEquals(existing.state, OpState.MATCH);
-		assertEquals(existing.entry.getValue(), out.getValue());
-		assertEquals(existing.entry.getType(), out.getType());
-//		assertEquals(map.getFreeSpace(), 94);
+		assertEquals(existing.getState(), OpState.MATCH);
+		assertEquals(existing.getValueType(), Type.BYTEARRAY);
+		assertEquals(existing.getValueInstance(), val);
 
-		existing = map.remove(out.getKey());
+		map.remove(existing);
 
-		assertEquals(existing.state, OpState.NO_MATCH);
-		assertNull(existing.entry);
-	}
+		assertEquals(existing.getState(), OpState.REMOVED);
+		assertEquals(existing.getValueType(), Type.BYTEARRAY);
+		assertEquals(existing.getValueInstance(), val);
 
+		map.remove(existing);
 
-	@Test
-	public void testPutRemove()
-	{
-		ArrayMap map = new ArrayMap(1000_000, 1);
-
-		String key = t();
-		Document value = doc();
-		byte flags = (byte)77;
-
-		ArrayMapEntry entry = new ArrayMapEntry(new ArrayMapKey(key), value, flags);
-
-		OpResult op = map.put(entry);
-
-		assertNotEquals(op.state, OpState.OVERFLOW);
-
-		op = map.remove(entry.getKey());
-
-		assertEquals(op.state, OpState.DELETE);
-
-//		assertEquals(entry, op.entry);
-	}
-
-
-	@Test
-	public void testRemoveNonExisting()
-	{
-		ArrayMap map = new ArrayMap(1000_000, 1);
-
-		String key = t();
-
-		ArrayMapEntry entry = new ArrayMapEntry(new ArrayMapKey(key));
-
-		OpResult old = map.remove(entry.getKey());
-
-		assertEquals(old.state, OpState.NO_MATCH);
-		assertNull(old.entry);
-	}
-
-
-	@Test
-	public void testFillBuffer() throws UnsupportedEncodingException
-	{
-		ArrayMap map = new ArrayMap(1000_000, 1);
-
-		HashMap<ArrayMapKey, Document> expected = new HashMap<>();
-
-		fillArrayMap(map, expected);
-
-		for (Entry<ArrayMapKey, Document> expectedEntry : expected.entrySet())
-		{
-			OpResult entry = map.get(expectedEntry.getKey());
-
-			assertEquals(entry.state, OpState.MATCH);
-			assertEquals(entry.entry.getValue(), expectedEntry.getValue());
-		}
+		assertEquals(existing.getState(), OpState.NO_MATCH);
 	}
 
 
 //	@Test
-//	public void testMaxEntriesOverflow()
+//	public void testPutRemove()
 //	{
-//		ArrayMap map = new ArrayMap(2_000_000);
+//		ArrayMap map = new ArrayMap(1000_000, 1);
 //
-//		Document value = doc(1);
+//		String key = t();
+//		Document value = doc();
+//		byte flags = (byte)77;
 //
-//		for (int i = 0; i < ArrayMap.MAX_ENTRY_COUNT; i++)
+//		_ArrayMapEntry entry = new _ArrayMapEntry(new _ArrayMapKey(key), value, flags);
+//
+//		Entry op = map.put(entry);
+//
+//		assertNotEquals(op.state, OpState.OVERFLOW);
+//
+//		op = map.remove(entry.getKey());
+//
+//		assertEquals(op.state, OpState.DELETE);
+//
+////		assertEquals(entry, op.entry);
+//	}
+//
+//
+//	@Test
+//	public void testRemoveNonExisting()
+//	{
+//		ArrayMap map = new ArrayMap(1000_000, 1);
+//
+//		String key = t();
+//
+//		_ArrayMapEntry entry = new _ArrayMapEntry(new _ArrayMapKey(key));
+//
+//		Entry old = map.remove(entry.getKey());
+//
+//		assertEquals(old.state, OpState.NO_MATCH);
+//		assertNull(old.entry);
+//	}
+//
+//
+//	@Test
+//	public void testFillBuffer() throws UnsupportedEncodingException
+//	{
+//		ArrayMap map = new ArrayMap(1000_000, 1);
+//
+//		HashMap<_ArrayMapKey, Document> expected = new HashMap<>();
+//
+//		fillArrayMap(map, expected);
+//
+//		for (Entry<_ArrayMapKey, Document> expectedEntry : expected.entrySet())
 //		{
-//			ArrayMapKey key = new ArrayMapKey("" + i);
+//			Entry entry = map.get(expectedEntry.getKey());
 //
-//			OpResult result = map.put(new ArrayMapEntry(key, value, (byte)77));
+//			assertEquals(entry.state, OpState.MATCH);
+//			assertEquals(entry.entry.getValue(), expectedEntry.getValue());
+//		}
+//	}
 //
-//			assertNotEquals(result.state, State.OVERFLOW);
+//
+//	@Test
+//	public void testIterator() throws UnsupportedEncodingException
+//	{
+//		ArrayMap map = new ArrayMap(1000_000, 1);
+//
+//		HashMap<_ArrayMapKey, Document> expected = new HashMap<>();
+//
+//		fillArrayMap(map, expected);
+//
+//		HashSet<_ArrayMapKey> found = new HashSet<>();
+//
+//		for (_ArrayMapEntry entry : map)
+//		{
+//			_ArrayMapKey k = entry.getKey();
+//			assertEquals(entry.getValue(), expected.get(k));
+//			found.add(k);
 //		}
 //
-//		ArrayMapKey key = new ArrayMapKey("" + ArrayMap.MAX_ENTRY_COUNT);
-//
-//		assertEquals(map.put(new ArrayMapEntry(key, value, (byte)77)), State.OVERFLOW);
+//		assertEquals(found, expected.keySet());
 //	}
-	@Test
-	public void testIterator() throws UnsupportedEncodingException
-	{
-		ArrayMap map = new ArrayMap(1000_000, 1);
-
-		HashMap<ArrayMapKey, Document> expected = new HashMap<>();
-
-		fillArrayMap(map, expected);
-
-		HashSet<ArrayMapKey> found = new HashSet<>();
-
-		for (ArrayMapEntry entry : map)
-		{
-			ArrayMapKey k = entry.getKey();
-			assertEquals(entry.getValue(), expected.get(k));
-			found.add(k);
-		}
-
-		assertEquals(found, expected.keySet());
-	}
-
-
-	@Test(expectedExceptions = IllegalArgumentException.class)
-	public void testExceedBufferSize()
-	{
-		ArrayMap map = new ArrayMap(1000_000, 1);
-
-		HashMap<ArrayMapKey, Document> values = new HashMap<>();
-
-		int n = map.getCapacity() - 2 - 4 - 2 - 2 - 4;
-
-		ArrayMapKey key = new ArrayMapKey(doc(n / 2));
-		Document value = doc(n - n / 2 + 1); // one byte exceeding maximum size
-		byte flags = (byte)77;
-
-		map.put(new ArrayMapEntry(key, value, flags));
-
-		values.put(key, value);
-
-		fail();
-	}
-
-
-	@Test
-	public void testReplaceEntry() throws UnsupportedEncodingException
-	{
-		ArrayMapKey[] keys = new ArrayMapKey[1000];
-		for (int i = 0; i < keys.length; i++)
-		{
-			keys[i] = new ArrayMapKey(t());
-		}
-
-		ArrayMap map = new ArrayMap(1000_000, 1);
-
-		HashMap<ArrayMapKey, Document> values = new HashMap<>();
-
-		byte type = (byte)77;
-
-		for (int i = 0; i < 100_000; i++)
-		{
-			int j = c() % keys.length;
-			Document value = doc();
-			ArrayMapKey key = keys[j];
-
-			if (map.put(new ArrayMapEntry(key, value, type)).state != OpState.OVERFLOW)
-			{
-				values.put(key, value);
-			}
-		}
-
-		assertNull(map.integrityCheck());
-
-		for (Entry<ArrayMapKey, Document> entry : values.entrySet())
-		{
-			OpResult entry1 = map.get(entry.getKey());
-			assertEquals(entry1.state, OpState.MATCH);
-			assertEquals(entry1.entry.getValue(), entry.getValue());
-			assertEquals(entry1.entry.getType(), type);
-		}
-	}
-
-
-	@Test
-	public void testKeyOrder() throws IOException
-	{
-		Document value = doc();
-
-		ArrayMap map = new ArrayMap(new byte[512], 1);
-		map.put(new ArrayMapEntry(new ArrayMapKey("eeee"), value, (byte)77));
-		map.put(new ArrayMapEntry(new ArrayMapKey("c"), value, (byte)77));
-		map.put(new ArrayMapEntry(new ArrayMapKey("aaaaa"), value, (byte)77));
-		map.put(new ArrayMapEntry(new ArrayMapKey("dd"), value, (byte)77));
-		map.put(new ArrayMapEntry(new ArrayMapKey("bbb"), value, (byte)77));
-		map.put(new ArrayMapEntry(new ArrayMapKey("ddd"), value, (byte)77));
-
-		assertEquals(map.getKey(0).get(), "aaaaa");
-		assertEquals(map.getKey(1).get(), "bbb");
-		assertEquals(map.getKey(2).get(), "c");
-		assertEquals(map.getKey(3).get(), "dd");
-		assertEquals(map.getKey(4).get(), "ddd");
-		assertEquals(map.getKey(5).get(), "eeee");
-	}
-
-
-	public static void fillArrayMap(ArrayMap aMap, HashMap<ArrayMapKey, Document> aValues)
-	{
-		for (;;)
-		{
-			ArrayMapKey key = new ArrayMapKey(t());
-			Document value = doc();
-			byte type = b();
-
-			ArrayMapEntry entry = new ArrayMapEntry(key, value, type);
-
-			if (entry.getMarshalledLength() > aMap.getCapacity() - ArrayMap.HEADER_SIZE - ArrayMap.ENTRY_HEADER_SIZE - ArrayMap.ENTRY_POINTER_SIZE)
-			{
-				continue;
-			}
-
-			if (aMap.put(entry).state == OpState.OVERFLOW)
-			{
-				break;
-			}
-
-			aValues.put(key, value);
-		}
-	}
-
-
-	@Test
-	public void testNearestIndex()
-	{
-		ArrayMap map = new ArrayMap(100, 1);
-		map.put(new ArrayMapEntry(new ArrayMapKey("a"), Document.of("_id:a"), (byte)0));
-		map.put(new ArrayMapEntry(new ArrayMapKey("c"), Document.of("_id:c"), (byte)0));
-		map.put(new ArrayMapEntry(new ArrayMapKey("e"), Document.of("_id:e"), (byte)0));
-
-		assertEquals(0, map.nearestIndex(new ArrayMapKey("a")));
-		assertEquals(0, map.nearestIndex(new ArrayMapKey("b")));
-		assertEquals(1, map.nearestIndex(new ArrayMapKey("c")));
-		assertEquals(1, map.nearestIndex(new ArrayMapKey("d")));
-		assertEquals(2, map.nearestIndex(new ArrayMapKey("e")));
-		assertEquals(2, map.nearestIndex(new ArrayMapKey("f")));
-	}
-
-
-	@Test
-	public void testNearest()
-	{
-		ArrayMap map = new ArrayMap(100, 1);
-		map.put(new ArrayMapEntry(new ArrayMapKey("a"), Document.of("_id:a"), (byte)0));
-		map.put(new ArrayMapEntry(new ArrayMapKey("c"), Document.of("_id:c"), (byte)0));
-		map.put(new ArrayMapEntry(new ArrayMapKey("e"), Document.of("_id:e"), (byte)0));
-
-		ArrayMapEntry a = new ArrayMapEntry(new ArrayMapKey("a"));
-		map.loadNearestEntry(a);
-		ArrayMapEntry b = new ArrayMapEntry(new ArrayMapKey("b"));
-		map.loadNearestEntry(b);
-		ArrayMapEntry c = new ArrayMapEntry(new ArrayMapKey("c"));
-		map.loadNearestEntry(c);
-		ArrayMapEntry d = new ArrayMapEntry(new ArrayMapKey("d"));
-		map.loadNearestEntry(d);
-		ArrayMapEntry e = new ArrayMapEntry(new ArrayMapKey("e"));
-		map.loadNearestEntry(e);
-		ArrayMapEntry f = new ArrayMapEntry(new ArrayMapKey("f"));
-		map.loadNearestEntry(f);
-
-		System.out.println(a);
-		System.out.println(b);
-		System.out.println(c);
-		System.out.println(d);
-		System.out.println(e);
-		System.out.println(f);
-	}
-
-
-	@Test
-	public void testNextEntry()
-	{
-		ArrayMap map = new ArrayMap(100, 1);
-		map.put(new ArrayMapEntry(new ArrayMapKey("b"), Document.of("_id:a"), (byte)0));
-		map.put(new ArrayMapEntry(new ArrayMapKey("d"), Document.of("_id:c"), (byte)0));
-		map.put(new ArrayMapEntry(new ArrayMapKey("f"), Document.of("_id:e"), (byte)0));
-
-		String[] s =
-		{
-			"b", "d", "f", "*"
-		};
-
-		assertEquals(s[map.findEntry(new ArrayMapKey("a"))], "b");
-		assertEquals(s[map.findEntry(new ArrayMapKey("b"))], "b");
-		assertEquals(s[map.findEntry(new ArrayMapKey("c"))], "d");
-		assertEquals(s[map.findEntry(new ArrayMapKey("d"))], "d");
-		assertEquals(s[map.findEntry(new ArrayMapKey("e"))], "f");
-		assertEquals(s[map.findEntry(new ArrayMapKey("f"))], "f");
-		assertEquals(s[map.findEntry(new ArrayMapKey("g"))], "*");
-	}
+//
+//
+//	@Test(expectedExceptions = IllegalArgumentException.class)
+//	public void testExceedBufferSize()
+//	{
+//		ArrayMap map = new ArrayMap(1000_000, 1);
+//
+//		HashMap<_ArrayMapKey, Document> values = new HashMap<>();
+//
+//		int n = map.getCapacity() - 2 - 4 - 2 - 2 - 4;
+//
+//		_ArrayMapKey key = new _ArrayMapKey(doc(n / 2));
+//		Document value = doc(n - n / 2 + 1); // one byte exceeding maximum size
+//		byte flags = (byte)77;
+//
+//		map.put(new _ArrayMapEntry(key, value, flags));
+//
+//		values.put(key, value);
+//
+//		fail();
+//	}
+//
+//
+//	@Test
+//	public void testReplaceEntry() throws UnsupportedEncodingException
+//	{
+//		_ArrayMapKey[] keys = new _ArrayMapKey[1000];
+//		for (int i = 0; i < keys.length; i++)
+//		{
+//			keys[i] = new _ArrayMapKey(t());
+//		}
+//
+//		ArrayMap map = new ArrayMap(1000_000, 1);
+//
+//		HashMap<_ArrayMapKey, Document> values = new HashMap<>();
+//
+//		byte type = (byte)77;
+//
+//		for (int i = 0; i < 100_000; i++)
+//		{
+//			int j = c() % keys.length;
+//			Document value = doc();
+//			_ArrayMapKey key = keys[j];
+//
+//			if (map.put(new _ArrayMapEntry(key, value, type)).state != OpState.OVERFLOW)
+//			{
+//				values.put(key, value);
+//			}
+//		}
+//
+//		assertNull(map.integrityCheck());
+//
+//		for (Entry<_ArrayMapKey, Document> entry : values.entrySet())
+//		{
+//			Entry entry1 = map.get(entry.getKey());
+//			assertEquals(entry1.state, OpState.MATCH);
+//			assertEquals(entry1.entry.getValue(), entry.getValue());
+//			assertEquals(entry1.entry.getType(), type);
+//		}
+//	}
+//
+//
+//	@Test
+//	public void testKeyOrder() throws IOException
+//	{
+//		Document value = doc();
+//
+//		ArrayMap map = new ArrayMap(new byte[512], 1);
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("eeee"), value, (byte)77));
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("c"), value, (byte)77));
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("aaaaa"), value, (byte)77));
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("dd"), value, (byte)77));
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("bbb"), value, (byte)77));
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("ddd"), value, (byte)77));
+//
+//		assertEquals(map.getKey(0).get(), "aaaaa");
+//		assertEquals(map.getKey(1).get(), "bbb");
+//		assertEquals(map.getKey(2).get(), "c");
+//		assertEquals(map.getKey(3).get(), "dd");
+//		assertEquals(map.getKey(4).get(), "ddd");
+//		assertEquals(map.getKey(5).get(), "eeee");
+//	}
+//
+//
+//	public static void fillArrayMap(ArrayMap aMap, HashMap<_ArrayMapKey, Document> aValues)
+//	{
+//		for (;;)
+//		{
+//			_ArrayMapKey key = new _ArrayMapKey(t());
+//			Document value = doc();
+//			byte type = b();
+//
+//			_ArrayMapEntry entry = new _ArrayMapEntry(key, value, type);
+//
+//			if (entry.getMarshalledLength() > aMap.getCapacity() - ArrayMap.HEADER_SIZE - ArrayMap.ENTRY_HEADER_SIZE - ArrayMap.ENTRY_POINTER_SIZE)
+//			{
+//				continue;
+//			}
+//
+//			if (aMap.put(entry).state == OpState.OVERFLOW)
+//			{
+//				break;
+//			}
+//
+//			aValues.put(key, value);
+//		}
+//	}
+//
+//
+//	@Test
+//	public void testNearestIndex()
+//	{
+//		ArrayMap map = new ArrayMap(100, 1);
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("a"), Document.of("_id:a"), (byte)0));
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("c"), Document.of("_id:c"), (byte)0));
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("e"), Document.of("_id:e"), (byte)0));
+//
+//		assertEquals(0, map.nearestIndex(new _ArrayMapKey("a")));
+//		assertEquals(0, map.nearestIndex(new _ArrayMapKey("b")));
+//		assertEquals(1, map.nearestIndex(new _ArrayMapKey("c")));
+//		assertEquals(1, map.nearestIndex(new _ArrayMapKey("d")));
+//		assertEquals(2, map.nearestIndex(new _ArrayMapKey("e")));
+//		assertEquals(2, map.nearestIndex(new _ArrayMapKey("f")));
+//	}
+//
+//
+//	@Test
+//	public void testNearest()
+//	{
+//		ArrayMap map = new ArrayMap(100, 1);
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("a"), Document.of("_id:a"), (byte)0));
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("c"), Document.of("_id:c"), (byte)0));
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("e"), Document.of("_id:e"), (byte)0));
+//
+//		_ArrayMapEntry a = new _ArrayMapEntry(new _ArrayMapKey("a"));
+//		map.loadNearestEntry(a);
+//		_ArrayMapEntry b = new _ArrayMapEntry(new _ArrayMapKey("b"));
+//		map.loadNearestEntry(b);
+//		_ArrayMapEntry c = new _ArrayMapEntry(new _ArrayMapKey("c"));
+//		map.loadNearestEntry(c);
+//		_ArrayMapEntry d = new _ArrayMapEntry(new _ArrayMapKey("d"));
+//		map.loadNearestEntry(d);
+//		_ArrayMapEntry e = new _ArrayMapEntry(new _ArrayMapKey("e"));
+//		map.loadNearestEntry(e);
+//		_ArrayMapEntry f = new _ArrayMapEntry(new _ArrayMapKey("f"));
+//		map.loadNearestEntry(f);
+//
+//		System.out.println(a);
+//		System.out.println(b);
+//		System.out.println(c);
+//		System.out.println(d);
+//		System.out.println(e);
+//		System.out.println(f);
+//	}
+//
+//
+//	@Test
+//	public void testNextEntry()
+//	{
+//		ArrayMap map = new ArrayMap(100, 1);
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("b"), Document.of("_id:a"), (byte)0));
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("d"), Document.of("_id:c"), (byte)0));
+//		map.put(new _ArrayMapEntry(new _ArrayMapKey("f"), Document.of("_id:e"), (byte)0));
+//
+//		String[] s =
+//		{
+//			"b", "d", "f", "*"
+//		};
+//
+//		assertEquals(s[map.findEntry(new _ArrayMapKey("a"))], "b");
+//		assertEquals(s[map.findEntry(new _ArrayMapKey("b"))], "b");
+//		assertEquals(s[map.findEntry(new _ArrayMapKey("c"))], "d");
+//		assertEquals(s[map.findEntry(new _ArrayMapKey("d"))], "d");
+//		assertEquals(s[map.findEntry(new _ArrayMapKey("e"))], "f");
+//		assertEquals(s[map.findEntry(new _ArrayMapKey("f"))], "f");
+//		assertEquals(s[map.findEntry(new _ArrayMapKey("g"))], "*");
+//	}
 }

@@ -9,7 +9,7 @@ public class BTreeIterator implements Iterator<Document>
 	private BTree mTree;
 	private boolean mClosed;
 	private Document mNext;
-	private ArrayMapKey mLastKey;
+	private ArrayMapEntry mLastKey;
 	private BTreeLeafNode mLeafNode;
 	private int mIndexInLeaf;
 	private long mTransaction;
@@ -55,11 +55,11 @@ public class BTreeIterator implements Iterator<Document>
 				return null;
 			}
 
-			OpResult op = mLeafNode.mMap.get(mIndexInLeaf++);
+			ArrayMapEntry entry = mLeafNode.mMap.get(mIndexInLeaf++);
 
 			mTransaction = mTree.getUpdateCounter();
-			mLastKey = op.entry.getKey();
-			mNext = unmarshal(op.entry);
+			mLastKey = entry;
+			mNext = new Document().fromByteArray(entry.getValue());
 		}
 
 		Document tmp = mNext;
@@ -114,14 +114,8 @@ public class BTreeIterator implements Iterator<Document>
 	}
 
 
-	protected Document unmarshal(ArrayMapEntry aEntry)
+	protected void remove(ArrayMapEntry aEntry)
 	{
-		return aEntry.getValue();
-	}
-
-
-	protected void remove(ArrayMapKey aKey)
-	{
-		mTree.remove(aKey);
+		mTree.remove(aEntry);
 	}
 }
