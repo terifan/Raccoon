@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.Future;
+import org.terifan.logging.ConsoleHandler;
 import org.terifan.logging.Level;
 import org.terifan.logging.Logger;
 import org.terifan.raccoon.document.Document;
@@ -12,7 +13,6 @@ import org.terifan.raccoon.RaccoonDatabase;
 import org.terifan.raccoon.DatabaseOpenOption;
 import org.terifan.raccoon.RaccoonDatabaseProvider;
 import org.terifan.raccoon.RaccoonCollection;
-import org.terifan.raccoon.RaccoonMap;
 import org.terifan.raccoon.blockdevice.RaccoonDevice;
 import org.terifan.raccoon.document.ObjectId;
 import org.terifan.raccoon.result.SaveOneResult;
@@ -45,7 +45,7 @@ public class TestTiny
 	{
 		try
 		{
-//			Logger.getLogger().setHandler(new ConsoleHandler()).setLevel(Level.INFO);
+			Logger.getLogger().setHandler(new ConsoleHandler()).setLevel(Level.INFO);
 
 			RaccoonDatabaseProvider provider = new RaccoonDatabaseProvider(new RaccoonDevice().inFile("d:\\test.rdb"));
 //			RaccoonDatabaseProvider provider = new RaccoonDatabaseProvider(new RaccoonDevice().inMemory());
@@ -71,7 +71,7 @@ public class TestTiny
 					}
 				}
 				people.commit();
-//				people.printTree();
+				people.printTree();
 				System.out.println(people.find().get().size());
 
 				for (int i = 0; i < 995; i++)
@@ -79,11 +79,11 @@ public class TestTiny
 					people.deleteOne(Document.of("_id:$", keys.get(i)));
 				}
 				people.commit();
-//				people.printTree();
+				people.printTree();
 				System.out.println(people.find().get().size());
 
-				RaccoonMap settings = db.getMap("settings");
-				settings.put("count", 5);
+//				RaccoonMap settings = db.getMap("settings");
+//				settings.put("count", 5);
 
 //				RaccoonCollection animals = db.getCollection("animals");
 //				animals.findOne(Document.of("id:1")).andThen(doc -> System.out.println(doc.get("name")));
@@ -95,14 +95,19 @@ public class TestTiny
 //				animals.stream().forEach(doc -> System.out.println(doc.get("name")));
 			}
 
+			System.out.println("-".repeat(300));
+
 			Logger.getLogger().setLevel(Level.ERROR);
 			try (RaccoonDatabase db = provider.withLogging(Level.INFO).get())
 			{
 				RaccoonCollection people = db.getCollection("people");
+
+				people.printTree();
+
 //				people.find().get().forEach(System.out::println);
 				System.out.println(people.find().get().size());
 
-				System.out.println(db.getMap("settings"));
+//				System.out.println(db.getMap("settings"));
 			}
 		}
 		catch (Exception e)

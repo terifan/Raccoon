@@ -1257,7 +1257,7 @@ public final class RaccoonCollection implements Iterable<Document>
 
 		mDatabase.getCollection("$indices").saveOne(indexConf);
 
-		mDatabase.mIndices.put(id.getObjectId(0), id.getObjectId(1), indexConf);
+		mDatabase.mIndices.put(id, indexConf);
 
 //		try (WriteLock lock = mLock.writeLock())
 //		{

@@ -23,7 +23,7 @@ abstract class ReadTask implements Runnable
 	@Override
 	public void run()
 	{
-		mCollection.log.i(mDescription);
+		mCollection.log.d(mDescription);
 		mCollection.log.inc();
 
 		try

@@ -40,6 +40,7 @@ public class BTreeInteriorNode extends BTreeNode implements Iterable<ArrayMapEnt
 		ArrayMapEntry entry = new ArrayMapEntry().setKey(aEntry);
 		loadNearestEntry(entry);
 		getNode(entry).put(aEntry);
+		mModified = true;
 
 		if (mMap.getCapacity() > mTree.getConfiguration().getNodeSize())
 		{
@@ -54,6 +55,7 @@ public class BTreeInteriorNode extends BTreeNode implements Iterable<ArrayMapEnt
 		ArrayMapEntry entry = new ArrayMapEntry().setKey(aEntry);
 		loadNearestEntry(entry);
 		getNode(entry).remove(aEntry);
+		mModified = true;
 
 		if (mMap.getCapacity() < mTree.getConfiguration().getNodeSize() / 4)
 		{
@@ -103,50 +105,33 @@ public class BTreeInteriorNode extends BTreeNode implements Iterable<ArrayMapEnt
 
 
 	@Override
-	void commit()
+	boolean persist()
 	{
-		assert size() >= 2 : "interorior node has " + size() + " child";
-
 		for (Entry<ArrayMapEntry, BTreeNode> entry : mChildren.entrySet())
 		{
 			BTreeNode node = entry.getValue();
-
-			node.commit();
-
-//			if (node.commit())
-//			{
-				mMap.put(new ArrayMapEntry().setKey(entry.getKey().getKey(), entry.getKey().getKeyType()).setValue(node.mBlockPointer.toByteArray(), Type.BLOCKPOINTER));
-//			}
+			if (node.persist())
+			{
+				entry.getKey().setValueInstance(node.mBlockPointer);
+				mMap.put(entry.getKey());
+				mModified = true;
+			}
 		}
 
-//		if (mModified)
-//		{
-			RuntimeDiagnostics.collectStatistics(Operation.FREE_NODE, mBlockPointer);
-			RuntimeDiagnostics.collectStatistics(Operation.WRITE_NODE, 1);
+		if (!mModified)
+		{
+			assert mBlockPointer != null;
+			return false;
+		}
 
-			mTree.freeBlock(mBlockPointer);
+		RuntimeDiagnostics.collectStatistics(Operation.FREE_NODE, mBlockPointer);
+		RuntimeDiagnostics.collectStatistics(Operation.WRITE_NODE, 1);
 
-			mBlockPointer = mTree.writeBlock(mMap.array(), mLevel, BlockType.BTREE_NODE);
-//		}
+		mTree.freeBlock(mBlockPointer);
+		mBlockPointer = mTree.writeBlock(mMap.array(), mLevel, BlockType.BTREE_NODE);
+		mModified = false;
 
-//		return mModified;
-	}
-
-
-	@Override
-	protected void postCommit()
-	{
-//		if (mModified)
-//		{
-//			mModified = false;
-
-			for (BTreeNode node : mChildren.values())
-			{
-				node.postCommit();
-			}
-//		}
-//
-//		mChildren.clear();
+		return true;
 	}
 
 
@@ -217,40 +202,6 @@ public class BTreeInteriorNode extends BTreeNode implements Iterable<ArrayMapEnt
 		}
 		return s.substring(0, s.length() - 1) + '}';
 	}
-
-
-//	void put(ArrayMapKey aKey, BTreeNode aNode)
-//	{
-//		assert aNode.mParent == this;
-//		mChildren.put(aKey, aNode);
-//	}
-//
-//
-//	private void _remove(ArrayMapKey aKey)
-//	{
-//		mChildren.remove(aKey);
-//		mMap.remove(aKey);
-//	}
-//
-//
-//	private void remove(int aIndex)
-//	{
-//		OpResult op = mMap.get(aIndex);
-//		mChildren.remove(op.entry.getKey());
-//		mMap.remove(aIndex);
-//	}
-//
-//
-//	private void clear()
-//	{
-//		mChildren.clear();
-//	}
-//
-//
-//	void putEntry(ArrayMapEntry aArrayMapEntry)
-//	{
-//		mMap.put(aArrayMapEntry);
-//	}
 
 
 	@Override

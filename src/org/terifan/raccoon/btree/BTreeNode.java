@@ -5,10 +5,11 @@ import org.terifan.raccoon.blockdevice.BlockPointer;
 
 public abstract class BTreeNode
 {
-	protected BTree mTree;
-	protected BTreeInteriorNode mParent;
-	protected BlockPointer mBlockPointer;
-	protected int mLevel;
+	BTree mTree;
+	BTreeInteriorNode mParent;
+	BlockPointer mBlockPointer;
+	boolean mModified;
+	int mLevel;
 
 
 	protected BTreeNode(BTree aTree, BTreeInteriorNode aParent, int aLevel)
@@ -31,40 +32,11 @@ public abstract class BTreeNode
 	abstract void visit(BTreeVisitor aVisitor, ArrayMapEntry aLowestKey, ArrayMapEntry aHighestKey);
 
 
-	abstract void commit();
-
-
-	protected abstract void postCommit();
+	abstract boolean persist();
 
 
 	protected abstract String integrityCheck();
 
 
 	protected abstract int size();
-
-
-//	@Override
-//	public int hashCode()
-//	{
-//		return mBlockPointer.hashCode();
-//	}
-//
-//
-//	@Override
-//	public boolean equals(Object aObj)
-//	{
-//		if (aObj instanceof BlockPointer v)
-//		{
-//			return mBlockPointer.equals(v);
-//		}
-//		return false;
-//	}
-
-
-	enum VisitorState
-	{
-		CONTINUE,
-		ABORT,
-		SKIP
-	}
 }

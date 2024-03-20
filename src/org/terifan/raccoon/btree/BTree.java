@@ -1,6 +1,7 @@
 package org.terifan.raccoon.btree;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -21,7 +22,6 @@ public class BTree implements AutoCloseable
 	private final static Logger log = Logger.getLogger();
 
 	private final static byte[] BLOCKPOINTER_PLACEHOLDER = new BlockPointer().setBlockType(BlockType.ILLEGAL).toByteArray();
-//	private final static ArrayMapEntry EMPTY = new ArrayMapEntry().setKey(new byte[0], Type.FIRST);
 
 	public static boolean RECORD_USE;
 
@@ -34,7 +34,10 @@ public class BTree implements AutoCloseable
 	private final ArrayList<HashSet<BTreeNode>> mSchedule = new ArrayList<>()
 	{
 		{
-			for (int i = 0;i < 10; i++) add(new HashSet<>());
+			for (int i = 0; i < 10; i++)
+			{
+				add(new HashSet<>());
+			}
 		}
 	};
 
@@ -45,7 +48,6 @@ public class BTree implements AutoCloseable
 
 		mBlockAccessor = aBlockAccessor;
 		mConfiguration = aConfiguration;
-//		mFlusher = () -> flush();
 
 		initialize();
 	}
@@ -130,7 +132,7 @@ public class BTree implements AutoCloseable
 
 	public void flush()
 	{
-		flushImpl();
+		balanceTree();
 	}
 
 
@@ -141,11 +143,6 @@ public class BTree implements AutoCloseable
 
 		assertNotClosed();
 
-//		if (!mRoot.mModified)
-//		{
-//			return false;
-//		}
-
 		assert integrityCheck() == null : integrityCheck();
 
 		long modCount = mModCount;
@@ -153,12 +150,15 @@ public class BTree implements AutoCloseable
 		log.i("committing tree");
 		log.inc();
 
-		flushImpl();
+		balanceTree();
 
-		mRoot.commit();
-		mRoot.postCommit();
+		if (mRoot.mBlockPointer == null)
+		{
+			mRoot.mModified = true;
+		}
+		mRoot.persist();
 
-		log.d("table commit finished; root block is {}", mRoot.mBlockPointer);
+		log.i("table commit finished; root block is {}", mRoot.mBlockPointer);
 		log.dec();
 
 		if (mModCount != modCount)
@@ -216,7 +216,7 @@ public class BTree implements AutoCloseable
 
 	byte[] readBlock(BlockPointer aBlockPointer)
 	{
-		if (aBlockPointer.getBlockType() != BlockType.BTREE_NODE && aBlockPointer.getBlockType() != BlockType.BTREE_LEAF)
+		if (aBlockPointer.getBlockType() != BlockType.BTREE_NODE && aBlockPointer.getBlockType() != BlockType.BTREE_LEAF && aBlockPointer.getBlockType() != BlockType.HOLE)
 		{
 			throw new IllegalArgumentException("Attempt to read bad block: " + aBlockPointer);
 		}
@@ -338,8 +338,6 @@ public class BTree implements AutoCloseable
 //			}
 //		});
 //	}
-
-
 //	private boolean matchKey(ArrayMapEntry aLowestKey, ArrayMapEntry aHighestKey, Document aQuery)
 //	{
 //		Array lowestKey = aLowestKey == null ? null : (Array)aLowestKey.get();
@@ -351,8 +349,6 @@ public class BTree implements AutoCloseable
 //
 //		return a >= 0 && b <= 0;
 //	}
-
-
 	private int compare(Array aCompare, Array aWith)
 	{
 		for (int i = 0; i < aWith.size(); i++)
@@ -466,7 +462,7 @@ public class BTree implements AutoCloseable
 		{
 			keys.add(aNode.mMap.getKey(i).toKeyString().split("-")[0]);
 		}
-		Console.println(aIndent + (aLast ? "o---" : "+---") + "node ", Document.of("alloc:$,fill%:$,level:$,keys:$", aNode.mMap.getCapacity(), aNode.mMap.getUsedSpace() * 100.0 / aNode.mMap.getCapacity(), aNode.mLevel, keys));
+		Console.println(aIndent + (aLast ? "o---" : "+---") + "node ", Document.of("alloc:$,fill%:$,level:$,gen:$,keys:$", aNode.mMap.getCapacity(), aNode.mMap.getUsedSpace() * 100.0 / aNode.mMap.getCapacity(), aNode.mLevel, aNode.mBlockPointer.getGeneration(), keys));
 		aIndent += (aLast ? "    " : "|   ");
 		for (int i = 0; i < aNode.size(); i++)
 		{
@@ -491,7 +487,7 @@ public class BTree implements AutoCloseable
 			keys.add(aNode.mMap.getKey(i).toKeyString().split("-")[0]);
 		}
 
-		Console.println(aIndent + "leaf ", Document.of("alloc:$,fill%:$,level:$,keys:$", aNode.mMap.getCapacity(), aNode.mMap.getUsedSpace() * 100.0 / aNode.mMap.getCapacity(), aNode.mLevel, keys));
+		Console.println(aIndent + "leaf ", Document.of("alloc:$,fill%:$,level:$,gen:$,keys:$", aNode.mMap.getCapacity(), aNode.mMap.getUsedSpace() * 100.0 / aNode.mMap.getCapacity(), aNode.mLevel, aNode.mBlockPointer.getGeneration(), keys));
 	}
 
 
@@ -511,25 +507,26 @@ public class BTree implements AutoCloseable
 	private void upgrade(BTreeLeafNode aNode)
 	{
 		BTreeInteriorNode root = new BTreeInteriorNode(this, aNode.mParent, aNode.mLevel + 1, new ArrayMap(mConfiguration.getNodeSize(), getBlockSize()));
+		root.mModified = true;
 
 		ArrayMap[] maps = aNode.mMap.splitManyTail(mConfiguration.getLeafSize());
 
 		for (int i = 1; i < maps.length; i++)
 		{
 			BTreeLeafNode node = new BTreeLeafNode(this, root, maps[i]);
+			node.mModified = true;
 			ArrayMapEntry key = maps[i].getKey(0);
 			ArrayMapEntry entry = new ArrayMapEntry().setKey(key.getKey(), key.getKeyType()).setValue(BLOCKPOINTER_PLACEHOLDER, Type.BLOCKPOINTER);
 			root.mMap.insert(entry);
 			root.mChildren.put(entry, node);
 		}
 
-		{
 		aNode.mMap = maps[0];
 		aNode.mParent = root;
+		aNode.mModified = true;
 		ArrayMapEntry entry = new ArrayMapEntry().setKey(new byte[0], Type.FIRST).setValue(BLOCKPOINTER_PLACEHOLDER, Type.BLOCKPOINTER);
 		root.mMap.insert(entry);
 		root.mChildren.put(entry, aNode);
-		}
 
 		mRoot = root;
 
@@ -558,6 +555,7 @@ public class BTree implements AutoCloseable
 		for (int i = 1; i < maps.length; i++)
 		{
 			BTreeLeafNode node = new BTreeLeafNode(this, aNode.mParent, maps[i]);
+			node.mModified = true;
 			ArrayMapEntry key = maps[i].getKey(0);
 			ArrayMapEntry entry = new ArrayMapEntry().setKey(key.getKey(), key.getKeyType()).setValue(BLOCKPOINTER_PLACEHOLDER, Type.BLOCKPOINTER);
 			aNode.mParent.mMap.insert(entry);
@@ -582,17 +580,20 @@ public class BTree implements AutoCloseable
 
 		for (int i = maps.length; --i >= 0;)
 		{
-			TreeMap<ArrayMapEntry, BTreeNode> nodeChildren;
 			ArrayMap map = maps[i];
 
 			if (i == 0)
 			{
 				aNode.mMap = map;
+				aNode.mModified = true;
+				aNode.mParent.mModified = true;
 			}
 			else
 			{
 				BTreeInteriorNode node = new BTreeInteriorNode(this, aNode.mParent, aNode.mLevel, map);
-				nodeChildren = node.mChildren;
+				node.mModified = true;
+
+				TreeMap<ArrayMapEntry, BTreeNode> nodeChildren = node.mChildren;
 
 				for (int j = 0; j < map.size(); j++)
 				{
@@ -609,6 +610,7 @@ public class BTree implements AutoCloseable
 				ArrayMapEntry entry = new ArrayMapEntry().setKey(firstEntry.getKey(), firstEntry.getKeyType()).setValue(BLOCKPOINTER_PLACEHOLDER, Type.BLOCKPOINTER);
 				aNode.mParent.mMap.insert(entry);
 				aNode.mParent.mChildren.put(entry, node);
+				aNode.mParent.mModified = true;
 
 				BTreeNode first = nodeChildren.remove(firstEntry);
 				if (first != null)
@@ -639,13 +641,15 @@ public class BTree implements AutoCloseable
 		ArrayMapEntry entry = new ArrayMapEntry().setKey(new byte[0], Type.FIRST).setValue(BLOCKPOINTER_PLACEHOLDER, Type.BLOCKPOINTER);
 		newRoot.mMap.insert(entry);
 		newRoot.mChildren.put(entry, aNode);
+		newRoot.mModified = true;
 
 		aNode.mParent = newRoot;
+
 		mRoot = newRoot;
 	}
 
 
-	private synchronized void flushImpl()
+	private synchronized void balanceTree()
 	{
 		log.i("flush");
 		log.inc();
@@ -671,23 +675,25 @@ public class BTree implements AutoCloseable
 
 				for (BTreeNode node : arr)
 				{
-					if (node.mLevel == 0)
+					if (node instanceof BTreeLeafNode v)
 					{
-//						Console.indent(mRoot.mLevel - node.mLevel).println("split leaf");
-
-						splitLeaf((BTreeLeafNode)node);
+//						if (v.mMap.getCapacity() > mConfiguration.getLeafSize())
+						{
+							splitLeaf(v);
+						}
 					}
-					else
+					else if (node instanceof BTreeInteriorNode v)
 					{
-//						Console.indent(mRoot.mLevel - node.mLevel).println("split node");
-
-						splitNode((BTreeInteriorNode)node);
+//						if (v.mMap.getCapacity() > mConfiguration.getNodeSize())
+						{
+							splitNode(v);
+						}
 					}
 				}
 			}
 		}
 
-		System.out.println(splits+" "+(System.currentTimeMillis()-t));
+		log.i(splits.toString());
 
 		log.dec();
 	}
