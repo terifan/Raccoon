@@ -25,8 +25,8 @@ import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.Assert;
 import org.terifan.raccoon.util.ReadWriteLock;
 import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
-import org.terifan.raccoon.util.DualMap;
 import org.terifan.raccoon.btree.BTreeConfiguration;
+import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.util.FutureQueue;
 
 // createCollection - samma som getcollection
@@ -59,7 +59,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	private ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
 	private final ReadWriteLock mLock;
 
-	final DualMap<ObjectId, ObjectId, Document> mIndices;
+	final HashMap<Array, Document> mIndices;
 
 	private boolean mModified;
 	private boolean mReadOnly;
@@ -72,7 +72,7 @@ public final class RaccoonDatabase implements AutoCloseable
 	private RaccoonDatabase()
 	{
 		mShutdownHookEnabled = true;
-		mIndices = new DualMap<>();
+		mIndices = new HashMap<>();
 		mLock = new ReadWriteLock();
 		mCollectionInstances = new ConcurrentSkipListMap<>();
 		mHeapInstances = new ConcurrentHashMap<>();
@@ -141,7 +141,7 @@ public final class RaccoonDatabase implements AutoCloseable
 				{
 					indices.forEach(indexConf ->
 					{
-						mIndices.put(indexConf.getArray("_id").getObjectId(0), indexConf.getArray("_id").getObjectId(1), indexConf);
+						mIndices.put(indexConf.getArray("_id"), indexConf);
 					});
 				}
 
@@ -243,14 +243,11 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	public synchronized RaccoonCollection getIndex(String aName)
 	{
-		for (HashMap<ObjectId, Document> entry : mIndices.values())
+		for (Entry<Array, Document> entry : mIndices.entrySet())
 		{
-			for (Document conf : entry.values())
+			if (aName.equals(entry.getValue().getDocument("configuration").getString("name")))
 			{
-				if (aName.equals(conf.getDocument("configuration").getString("name")))
-				{
-					return getCollection("index:" + conf.getObjectId("_id"));
-				}
+				return getCollection("index:" + entry.getKey());
 			}
 		}
 		return null;
@@ -317,7 +314,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 	void removeCollectionImpl(RaccoonCollection aCollection) throws IOException, InterruptedException, ExecutionException
 	{
-		for (Document indexConf : mIndices.values(aCollection.getCollectionId()))
+		for (Document indexConf : mIndices.values())
 		{
 			aCollection.getIndexByConf(indexConf).drop();
 		}
@@ -625,7 +622,14 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		try (WriteLock lock = mLock.writeLock())
 		{
-			commitImpl();
+			try
+			{
+				commitImpl();
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace(System.out);
+			}
 
 			if (mMaintenanceTimer != null)
 			{

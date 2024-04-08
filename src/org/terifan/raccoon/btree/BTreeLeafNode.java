@@ -30,6 +30,7 @@ public class BTreeLeafNode extends BTreeNode
 	void put(ArrayMapEntry aEntry)
 	{
 		mMap.insert(aEntry);
+		mModified = true;
 
 		if (mMap.getCapacity() > mTree.getConfiguration().getLeafSize())
 		{
@@ -42,6 +43,7 @@ public class BTreeLeafNode extends BTreeNode
 	void remove(ArrayMapEntry aEntry)
 	{
 		mMap.remove(aEntry);
+		mModified = true;
 
 		if (mMap.getCapacity() < mTree.getConfiguration().getLeafSize() / 4)
 		{
@@ -64,26 +66,22 @@ public class BTreeLeafNode extends BTreeNode
 
 
 	@Override
-	void commit()
+	boolean persist()
 	{
-//		if (mModified)
-//		{
-			RuntimeDiagnostics.collectStatistics(Operation.FREE_LEAF, mBlockPointer);
-			RuntimeDiagnostics.collectStatistics(Operation.WRITE_LEAF, 1);
+		if (!mModified)
+		{
+			assert mBlockPointer != null;
+			return false;
+		}
 
-			mTree.freeBlock(mBlockPointer);
+		RuntimeDiagnostics.collectStatistics(Operation.FREE_LEAF, mBlockPointer);
+		RuntimeDiagnostics.collectStatistics(Operation.WRITE_LEAF, 1);
 
-			mBlockPointer = mTree.writeBlock(mMap.array(), 0, BlockType.BTREE_LEAF);
-//		}
+		mTree.freeBlock(mBlockPointer);
+		mBlockPointer = mTree.writeBlock(mMap.array(), 0, BlockType.BTREE_LEAF);
+		mModified = false;
 
-//		return mModified;
-	}
-
-
-	@Override
-	protected void postCommit()
-	{
-//		mModified = false;
+		return true;
 	}
 
 
