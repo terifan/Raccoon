@@ -13,7 +13,6 @@ import org.terifan.raccoon.btree.ArrayMapEntry.Type;
 public class BTreeInteriorNode extends BTreeNode implements Iterable<ArrayMapEntry>
 {
 	TreeMap<ArrayMapEntry, BTreeNode> mChildren;
-	ArrayMap mMap;
 
 
 	BTreeInteriorNode(BTree aTree, BTreeInteriorNode aParent, int aLevel, ArrayMap aMap)
@@ -42,7 +41,7 @@ public class BTreeInteriorNode extends BTreeNode implements Iterable<ArrayMapEnt
 		getNode(entry).put(aEntry);
 		mModified = true;
 
-		if (mMap.getCapacity() > mTree.getConfiguration().getNodeSize())
+		if (mMap.getUsedSpace() > mTree.getConfiguration().getNodeSize())
 		{
 			mTree.schedule(this);
 		}
@@ -57,7 +56,7 @@ public class BTreeInteriorNode extends BTreeNode implements Iterable<ArrayMapEnt
 		getNode(entry).remove(aEntry);
 		mModified = true;
 
-		if (mMap.getCapacity() < mTree.getConfiguration().getNodeSize() / 4)
+		if (mMap.getUsedSpace() < mTree.getConfiguration().getNodeSize() / 4)
 		{
 			mTree.schedule(this);
 		}
@@ -135,6 +134,7 @@ public class BTreeInteriorNode extends BTreeNode implements Iterable<ArrayMapEnt
 	}
 
 
+	@SuppressWarnings("unchecked")
 	<T extends BTreeNode> T getNode(int aIndex)
 	{
 		ArrayMapEntry entry = mMap.get(aIndex);
@@ -145,7 +145,7 @@ public class BTreeInteriorNode extends BTreeNode implements Iterable<ArrayMapEnt
 	}
 
 
-	synchronized BTreeNode getNode(ArrayMapEntry aEntry)
+	BTreeNode getNode(ArrayMapEntry aEntry)
 	{
 		BTreeNode childNode = mChildren.get(aEntry);
 
@@ -156,34 +156,32 @@ public class BTreeInteriorNode extends BTreeNode implements Iterable<ArrayMapEnt
 			if (bp.getBlockType() == BlockType.BTREE_NODE)
 			{
 				childNode = new BTreeInteriorNode(mTree, this, mLevel - 1, new ArrayMap(mTree.readBlock(bp), mTree.getBlockSize()));
+				RuntimeDiagnostics.collectStatistics(Operation.READ_NODE, 1);
 			}
 			else
 			{
 				childNode = new BTreeLeafNode(mTree, this, new ArrayMap(mTree.readBlock(bp), mTree.getConfiguration().getLeafSize()));
+				RuntimeDiagnostics.collectStatistics(Operation.READ_LEAF, 1);
 			}
 
 			childNode.mBlockPointer = bp;
 
 			mChildren.put(aEntry, childNode);
-
-			RuntimeDiagnostics.collectStatistics(bp.getBlockType() == BlockType.BTREE_NODE ? Operation.READ_NODE : Operation.READ_LEAF, 1);
 		}
 
 		return childNode;
 	}
 
 
-	synchronized BTreeNode __getNearestNode(ArrayMapEntry aEntry)
+	BTreeNode getNearestNode(ArrayMapEntry aEntry)
 	{
 		ArrayMapEntry nearestEntry = new ArrayMapEntry().setKey(aEntry.getKey(), aEntry.getKeyType());
-
-		int index = loadNearestEntry(nearestEntry);
 
 		BTreeNode nearestNode = getNode(nearestEntry);
 
 		if (nearestNode.size() == 0)
 		{
-			System.out.println("*");
+			int index = loadNearestEntry(nearestEntry);
 			mMap.loadKeyAndValue(index + 1, nearestEntry);
 			nearestNode = getNode(nearestEntry);
 		}
@@ -192,63 +190,9 @@ public class BTreeInteriorNode extends BTreeNode implements Iterable<ArrayMapEnt
 	}
 
 
-	@Override
-	public String toString()
-	{
-		String s = String.format("BTreeInteriorNode{mLevel=%s, mMap=%s, mBuffer={", mLevel, mMap);
-		for (ArrayMapEntry t : mChildren.keySet())
-		{
-			s += String.format("\"%s\",", t);
-		}
-		return s.substring(0, s.length() - 1) + '}';
-	}
-
-
-	@Override
-	protected String integrityCheck()
-	{
-		return mMap.integrityCheck();
-	}
-
-
-	@Override
-	public int size()
-	{
-		return mMap.size();
-	}
-
-
 	private int loadNearestEntry(ArrayMapEntry aNearestEntry)
 	{
 		return mMap.loadNearestEntry(aNearestEntry);
-	}
-
-
-	private ArrayMap[] split(Integer aCapacity)
-	{
-		return mMap.splitHalf(aCapacity);
-	}
-
-
-	@Override
-	public Iterator<ArrayMapEntry> iterator()
-	{
-		return mMap.iterator();
-	}
-
-
-	BTreeNode getChild(int aIndex)
-	{
-		// ?????????????????????
-		// ?????????????????????
-		// ?????????????????????
-		// ?????????????????????
-		// ?????????????????????
-		// ?????????????????????
-		// ?????????????????????
-		// ?????????????????????
-//		return (BTreeNode)mChildren.values().toArray()[aIndex];
-		return getNode(aIndex);
 	}
 
 
@@ -263,5 +207,12 @@ public class BTreeInteriorNode extends BTreeNode implements Iterable<ArrayMapEnt
 		}
 
 		throw new IllegalStateException();
+	}
+
+
+	@Override
+	public Iterator<ArrayMapEntry> iterator()
+	{
+		return mMap.iterator();
 	}
 }

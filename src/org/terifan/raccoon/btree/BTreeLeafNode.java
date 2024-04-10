@@ -8,9 +8,6 @@ import org.terifan.raccoon.blockdevice.BlockType;
 
 public class BTreeLeafNode extends BTreeNode
 {
-	ArrayMap mMap;
-
-
 	BTreeLeafNode(BTree aTree, BTreeInteriorNode aParent, ArrayMap aMap)
 	{
 		super(aTree, aParent, 0);
@@ -32,7 +29,7 @@ public class BTreeLeafNode extends BTreeNode
 		mMap.insert(aEntry);
 		mModified = true;
 
-		if (mMap.getCapacity() > mTree.getConfiguration().getLeafSize())
+		if (mMap.getUsedSpace() > mTree.getConfiguration().getLeafSize())
 		{
 			mTree.schedule(this);
 		}
@@ -45,7 +42,7 @@ public class BTreeLeafNode extends BTreeNode
 		mMap.remove(aEntry);
 		mModified = true;
 
-		if (mMap.getCapacity() < mTree.getConfiguration().getLeafSize() / 4)
+		if (mMap.getUsedSpace() < mTree.getConfiguration().getLeafSize() / 4)
 		{
 			mTree.schedule(this);
 		}
@@ -82,27 +79,6 @@ public class BTreeLeafNode extends BTreeNode
 		mModified = false;
 
 		return true;
-	}
-
-
-	@Override
-	public String toString()
-	{
-		return String.format("BTreeLeaf{mMap=" + mMap + '}');
-	}
-
-
-	@Override
-	protected String integrityCheck()
-	{
-		return mMap.integrityCheck();
-	}
-
-
-	@Override
-	protected int size()
-	{
-		return mMap.size();
 	}
 
 

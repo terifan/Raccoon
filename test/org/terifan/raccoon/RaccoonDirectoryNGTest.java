@@ -3,7 +3,7 @@ package org.terifan.raccoon;
 import org.terifan.raccoon.exceptions.LobNotFoundException;
 import java.util.Random;
 import org.terifan.logging.Level;
-import org.terifan.raccoon.blockdevice.RaccoonDevice;
+import org.terifan.raccoon.blockdevice.RaccoonStorage;
 import org.terifan.raccoon.blockdevice.lob.LobByteChannel;
 import org.terifan.raccoon.blockdevice.lob.LobOpenOption;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
@@ -20,7 +20,7 @@ public class RaccoonDirectoryNGTest
 	@Test
 	public void testCreateRead0() throws Exception
 	{
-		RaccoonDatabaseProvider provider = new RaccoonDatabaseProvider(new RaccoonDevice().withBlockSize(512).inMemory()).withLogging(Level.INFO);
+		RaccoonDatabaseProvider provider = new RaccoonDatabaseProvider(new RaccoonStorage().withBlockSize(512).inMemory()).withLogging(Level.INFO);
 		try (RaccoonDatabase db = provider.get())
 		{
 			db.getCollection("data").saveOne(Document.of("value:1"));
@@ -39,7 +39,7 @@ public class RaccoonDirectoryNGTest
 		new Random().nextBytes(output);
 		Object id = ObjectId.randomId();
 
-		RaccoonDatabaseProvider provider = new RaccoonDatabaseProvider(new RaccoonDevice().withBlockSize(512).inMemory());
+		RaccoonDatabaseProvider provider = new RaccoonDatabaseProvider(new RaccoonStorage().withBlockSize(512).inMemory());
 
 		try (RaccoonDatabase db = provider.get())
 		{

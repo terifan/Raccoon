@@ -1,33 +1,23 @@
 package org.terifan.raccoon;
 
 import org.terifan.logging.Level;
-import org.terifan.raccoon.blockdevice.DeviceAccessOptions;
-import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
+import org.terifan.raccoon.blockdevice.RaccoonStorageInstance;
 
 
 public class RaccoonDatabaseProvider
 {
-	private ManagedBlockDevice mDevice;
+	private RaccoonStorageInstance mDevice;
 	private int mFlushInterval;
 	private Level mLoggingLevel;
 
 
-	public RaccoonDatabaseProvider(ManagedBlockDevice aDevice)
+	public RaccoonDatabaseProvider(RaccoonStorageInstance aDevice)
 	{
 		mDevice = aDevice;
 
 		mFlushInterval = 1000;
 		mLoggingLevel = Level.FATAL;
 	}
-
-
-	/**
-	 * Return a RaccoonBuilder with a target set to a file in the system temporary folder with a random name. File will be deleted on exit.
-	 */
-//	public static RaccoonDatabaseProvider device(RaccoonDevice aDevice)
-//	{
-//		return new RaccoonDatabaseProvider(aDevice);
-//	}
 
 
 	/**
@@ -44,8 +34,7 @@ public class RaccoonDatabaseProvider
 	 */
 	public RaccoonDatabase get(DatabaseOpenOption aOption)
 	{
-		DeviceAccessOptions o = aOption == DatabaseOpenOption.REPLACE ? DeviceAccessOptions.CREATE : aOption == DatabaseOpenOption.READ_ONLY ? DeviceAccessOptions.READ_ONLY : DeviceAccessOptions.APPEND;
-		return new RaccoonDatabase(mDevice.open(o), aOption);
+		return new RaccoonDatabase(mDevice, aOption);
 	}
 
 

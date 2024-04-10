@@ -17,9 +17,9 @@ import java.util.stream.Collectors;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.lob.LobOpenOption;
 import org.terifan.raccoon.blockdevice.managed.ManagedBlockDevice;
-import org.terifan.raccoon.blockdevice.managed.UnsupportedVersionException;
 import org.terifan.logging.Level;
 import org.terifan.logging.Logger;
+import org.terifan.raccoon.blockdevice.RaccoonStorageInstance;
 import org.terifan.raccoon.blockdevice.lob.LobByteChannel;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.Assert;
@@ -57,40 +57,44 @@ public final class RaccoonDatabase implements AutoCloseable
 	private RaccoonCollection mMapCollection;
 	private ConcurrentHashMap<String, RaccoonHeap> mHeapInstances;
 	private ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
-	private final ReadWriteLock mLock;
-
-	final HashMap<Array, Document> mIndices;
-
+	private ReadWriteLock mLock;
 	private boolean mModified;
 	private boolean mReadOnly;
 	private boolean mShutdownHookEnabled;
 	private Thread mShutdownHook;
 	private Timer mMaintenanceTimer;
 
+	HashMap<Array, Document> mIndices;
 
-	@Deprecated
-	private RaccoonDatabase()
+
+	public RaccoonDatabase(RaccoonStorageInstance aDevice, DatabaseOpenOption aOpenOption)
 	{
-		mShutdownHookEnabled = true;
+		ManagedBlockDevice blockDevice = aDevice.open(aOpenOption.toBlockDeviceOpenOption());
+
+		init(blockDevice, aOpenOption);
+	}
+
+
+	public RaccoonDatabase(ManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOption)
+	{
+		init(aBlockDevice, aOpenOption);
+	}
+
+
+	private void init(ManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOption)
+	{
+		aBlockDevice.open(aOpenOption.toBlockDeviceOpenOption());
+
 		mIndices = new HashMap<>();
 		mLock = new ReadWriteLock();
 		mCollectionInstances = new ConcurrentSkipListMap<>();
 		mHeapInstances = new ConcurrentHashMap<>();
 		mMapInstances = new ConcurrentSkipListMap<>();
 		mDatabaseStatusListener = new ArrayList<>();
+		mShutdownHookEnabled = true;
+		mDatabaseOpenOption = aOpenOption;
+
 //		mExecutor = Executors.newFixedThreadPool(1);
-	}
-
-
-	public RaccoonDatabase(RaccoonDatabaseProvider aConfig, DatabaseOpenOption aDatabaseOpenOption)
-	{
-		this();
-	}
-
-
-	public RaccoonDatabase(ManagedBlockDevice aBlockDevice, DatabaseOpenOption aOpenOption) throws UnsupportedVersionException
-	{
-		this();
 
 		Assert.assertFalse((aOpenOption == DatabaseOpenOption.READ_ONLY || aOpenOption == DatabaseOpenOption.OPEN) && aBlockDevice.size() == 0, "Block device is empty.");
 
@@ -98,8 +102,6 @@ public final class RaccoonDatabase implements AutoCloseable
 
 		try
 		{
-			mDatabaseOpenOption = aOpenOption;
-
 			if (aCreate)
 			{
 				log.i("create database");

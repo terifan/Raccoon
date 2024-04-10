@@ -84,7 +84,7 @@ public class BTreeIterator implements Iterator<Document>
 
 			if (index > 0 && index < parent.size()) // was >=
 			{
-				child = parent.getChild(index);
+				child = parent.getNode(index);
 				break;
 			}
 
@@ -94,7 +94,7 @@ public class BTreeIterator implements Iterator<Document>
 
 		while (child instanceof BTreeInteriorNode v)
 		{
-			child = v.getChild(0);
+			child = v.getNode(0);
 		}
 
 		mLeafNode = (BTreeLeafNode)child;

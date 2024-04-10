@@ -473,7 +473,7 @@ class ArrayMap implements Iterable<ArrayMapEntry>
 
 	public int getUsedSpace()
 	{
-		return mCapacity - getFreeSpace();
+		return mFreeSpaceOffset + mCapacity - mPointerListOffset;
 	}
 
 

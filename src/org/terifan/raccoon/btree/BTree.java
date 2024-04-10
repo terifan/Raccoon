@@ -349,6 +349,7 @@ public class BTree implements AutoCloseable
 //
 //		return a >= 0 && b <= 0;
 //	}
+	@SuppressWarnings("unchecked")
 	private int compare(Array aCompare, Array aWith)
 	{
 		for (int i = 0; i < aWith.size(); i++)
@@ -368,6 +369,7 @@ public class BTree implements AutoCloseable
 	}
 
 
+	@SuppressWarnings("unchecked")
 	private boolean matchKey(Document aEntry, Document aQuery)
 	{
 		Array array = aQuery.getArray("_id");
@@ -405,7 +407,7 @@ public class BTree implements AutoCloseable
 			}
 			else
 			{
-				node = v.__getNearestNode(aEntry);
+				node = v.getNearestNode(aEntry);
 			}
 		}
 
@@ -496,10 +498,7 @@ public class BTree implements AutoCloseable
 		HashSet<BTreeNode> set = mSchedule.get(aNode.mLevel);
 		synchronized (set)
 		{
-			if (set.add(aNode))
-			{
-				log.i("scheduled " + aNode.getClass().getSimpleName() + " level {}", aNode.mLevel);
-			}
+			set.add(aNode);
 		}
 	}
 
@@ -536,6 +535,24 @@ public class BTree implements AutoCloseable
 		{
 			schedule(root);
 		}
+	}
+
+
+	protected void grow(BTreeInteriorNode aNode)
+	{
+		log.i("growing tree, level: {}", aNode.mLevel + 1);
+
+		assert aNode == mRoot;
+
+		BTreeInteriorNode newRoot = new BTreeInteriorNode(this, null, aNode.mLevel + 1, new ArrayMap(mConfiguration.getNodeSize(), getBlockSize()));
+		ArrayMapEntry entry = new ArrayMapEntry().setKey(new byte[0], Type.FIRST).setValue(BLOCKPOINTER_PLACEHOLDER, Type.BLOCKPOINTER);
+		newRoot.mMap.insert(entry);
+		newRoot.mChildren.put(entry, aNode);
+		newRoot.mModified = true;
+
+		aNode.mParent = newRoot;
+
+		mRoot = newRoot;
 	}
 
 
@@ -631,21 +648,48 @@ public class BTree implements AutoCloseable
 	}
 
 
-	protected void grow(BTreeInteriorNode aNode)
+//	private int mergeLeaf()
+//	{
+//			if (a)
+//			{
+//				a &= aLeftChild.size() <= aKeyLimit || aCurntChld.size() <= aKeyLimit || ((BTreeInteriorNode)aCurntChld).getUsedSpace() + ((BTreeInteriorNode)aLeftChild).getUsedSpace() <= aSizeLimit;
+//			}
+//			if (b)
+//			{
+//				b &= aRghtChild.size() <= aKeyLimit || aCurntChld.size() <= aKeyLimit || ((BTreeInteriorNode)aCurntChld).getUsedSpace() + ((BTreeInteriorNode)aRghtChild).getUsedSpace() <= aSizeLimit;
+//			}
+//
+//			if (a && b)
+//			{
+//				if (((BTreeInteriorNode)aLeftChild).getFreeSpace() < ((BTreeInteriorNode)aRghtChild).getFreeSpace())
+//				{
+//					a = false;
+//				}
+//				else
+//				{
+//					b = false;
+//				}
+//			}
+//	}
+
+
+	private void mergeLeaf(BTreeLeafNode aNode)
 	{
-		log.i("growing tree, level: {}", aNode.mLevel + 1);
+		if (aNode.mParent == null)
+		{
+			return;
+		}
 
-		assert aNode == mRoot;
+		System.out.println(aNode.mParent.mChildren.containsValue(aNode));
 
-		BTreeInteriorNode newRoot = new BTreeInteriorNode(this, null, aNode.mLevel + 1, new ArrayMap(mConfiguration.getNodeSize(), getBlockSize()));
-		ArrayMapEntry entry = new ArrayMapEntry().setKey(new byte[0], Type.FIRST).setValue(BLOCKPOINTER_PLACEHOLDER, Type.BLOCKPOINTER);
-		newRoot.mMap.insert(entry);
-		newRoot.mChildren.put(entry, aNode);
-		newRoot.mModified = true;
+		int index = aNode.mParent.indexOf(aNode);
+		System.out.println(index);
 
-		aNode.mParent = newRoot;
+		BTreeNode left = aNode.mParent.getNode(index - 1);
+		System.out.println(left);
 
-		mRoot = newRoot;
+		BTreeNode right = aNode.mParent.getNode(index + 1);
+		System.out.println(right);
 	}
 
 
@@ -677,14 +721,21 @@ public class BTree implements AutoCloseable
 				{
 					if (node instanceof BTreeLeafNode v)
 					{
-//						if (v.mMap.getCapacity() > mConfiguration.getLeafSize())
+						if (v.mMap.getUsedSpace() < mConfiguration.getLeafSize() / 4)
+						{
+							mergeLeaf(v);
+						}
+						else if (v.mMap.getUsedSpace() > mConfiguration.getLeafSize())
 						{
 							splitLeaf(v);
 						}
 					}
 					else if (node instanceof BTreeInteriorNode v)
 					{
-//						if (v.mMap.getCapacity() > mConfiguration.getNodeSize())
+						if (v.mMap.getUsedSpace() < mConfiguration.getNodeSize() / 4)
+						{
+						}
+						else if (v.mMap.getUsedSpace() > mConfiguration.getNodeSize())
 						{
 							splitNode(v);
 						}

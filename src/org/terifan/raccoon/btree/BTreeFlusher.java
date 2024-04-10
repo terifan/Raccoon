@@ -78,58 +78,6 @@ class BTreeFlusher
 //	}
 //
 //
-//	putRoot()
-//	{
-//		if (mRoot instanceof BTreeLeafNode v)
-//		{
-//			if (v.mMap.getCapacity() > mLeafSize || v.mMap.getFreeSpace() < aEntry.getMarshalledLength())
-//			{
-//				_upgrade();
-//			}
-//		}
-//		else if (mRoot instanceof BTreeInteriorNode v)
-//		{
-//			if (v.getUsedSpace() > mNodeSize)
-//			{
-//				_grow();
-//			}
-//		}
-//
-//	}
-//
-//
-//	removeRoot()
-//	{
-//		if (result == BTreeNode.RemoveResult.REMOVED)
-//		{
-//			if (mRoot.mLevel > 1 && mRoot.size() == 1)
-//			{
-//				_shrink();
-//			}
-//			if (mRoot.mLevel == 1 && mRoot.size() == 1)
-//			{
-//				_downgrade();
-//			}
-//		}
-//	}
-//
-//
-//	@Override
-//	BTreeNode.SplitResult split()
-//	{
-//		mTree.freeBlock(mBlockPointer);
-//
-//		ArrayMap[] maps = mMap.split(mTree.getLeafSize());
-//
-//		BTreeLeafNode left = new BTreeLeafNode(mTree, mParent, maps[0]);
-//		BTreeLeafNode rigt = new BTreeLeafNode(mTree, mParent, maps[1]);
-//		left.mModified = true;
-//		rigt.mModified = true;
-//
-//		return new BTreeNode.SplitResult(left, rigt, left.mMap.getFirst().getKey(), rigt.mMap.getFirst().getKey());
-//	}
-//
-//
 //	/**
 //	 * Merge entries in all child nodes into a single LeafNode which is returned.
 //	 */
@@ -152,6 +100,46 @@ class BTreeFlusher
 //		mTree.freeBlock(mBlockPointer);
 //
 //		return newLeaf;
+//	}
+//
+//
+//	/**
+//	 * Shrinks the tree by removing this node and merging all child nodes into a single index node which is returned.
+//	 */
+//	BTreeInteriorNode shrink()
+//	{
+//		BTreeInteriorNode interior = new BTreeInteriorNode(mTree, mParent, mLevel - 1, new ArrayMap(mTree.getNodeSize()));
+//		interior.mModified = true;
+//
+//		for (int i = 0; i < size(); i++)
+//		{
+//			BTreeInteriorNode node = getNode(i);
+//
+//			boolean first = i > 0;
+//			for (ArrayMapEntry entry : node)
+//			{
+//				ArrayMapEntry newEntry;
+//				if (first)
+//				{
+//					newEntry = new ArrayMapEntry(getKey(i), entry);
+//					first = false;
+//				}
+//				else
+//				{
+//					newEntry = entry;
+//				}
+//
+//				BTreeNode childNode = node.get(entry.getKey());
+//				childNode.mParent = interior;
+//				interior.insertEntry(newEntry, childNode);
+//			}
+//
+//			mTree.freeBlock(node.mBlockPointer);
+//		}
+//
+//		mTree.freeBlock(mBlockPointer);
+//
+//		return interior;
 //	}
 //
 //
@@ -267,116 +255,6 @@ class BTreeFlusher
 //	}
 //
 //
-//	@Override
-//	SplitResult split()
-//	{
-//		mTree.freeBlock(mBlockPointer);
-//
-//		ArrayMap[] maps = split(mTree.getNodeSize());
-//
-//		BTreeInteriorNode left = new BTreeInteriorNode(mTree, mParent, mLevel, maps[0]);
-//		BTreeInteriorNode right = new BTreeInteriorNode(mTree, mParent, mLevel, maps[1]);
-//		left.mModified = true;
-//		right.mModified = true;
-//
-//		ArrayMapKey midKey = right.getKey(0);
-//
-//		for (Map.Entry<ArrayMapKey, BTreeNode> childEntry : entrySet())
-//		{
-//			BTreeNode childNode = childEntry.getValue();
-//			ArrayMapKey key = childEntry.getKey();
-//			if (key.compareTo(midKey) < 0)
-//			{
-//				childNode.mParent = left;
-//				left.put(key, childNode);
-//			}
-//			else
-//			{
-//				childNode.mParent = right;
-//				right.put(key, childNode);
-//			}
-//		}
-//
-//		ArrayMapEntry firstRight = right.mArrayMap.getFirst();
-//
-//		ArrayMapKey keyLeft = ArrayMapKey.EMPTY;
-//		ArrayMapKey keyRight = firstRight.getKey();
-//
-//		BTreeNode firstChild = right.getNode(firstRight);
-//
-//		right.remove(keyRight);
-//
-//		firstRight.setKey(keyLeft);
-//
-//		right.insertEntry(firstRight);
-//		right.put(keyLeft, firstChild);
-//
-//		assert left.size() >= 2;
-//		assert right.size() >= 2;
-//
-//		return new SplitResult(left, right, keyLeft, keyRight);
-//	}
-//
-//
-//	BTreeNode grow()
-//	{
-//		SplitResult split = split();
-//
-//		BTreeInteriorNode interior = new BTreeInteriorNode(mTree, mParent, mLevel + 1, new ArrayMap(mTree.getNodeSize()));
-//		interior.mModified = true;
-//		interior.insertEntry(new ArrayMapEntry(split.getLeftKey(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
-//		interior.insertEntry(new ArrayMapEntry(split.getRightKey(), BLOCKPOINTER_PLACEHOLDER, TYPE_TREENODE));
-//		split.getLeftNode().mParent = interior;
-//		split.getRightNode().mParent = interior;
-//		interior.put(split.getLeftKey(), split.getLeftNode());
-//		interior.put(split.getRightKey(), split.getRightNode());
-//
-//		clear();
-//
-//		return interior;
-//	}
-//
-//
-//	/**
-//	 * Shrinks the tree by removing this node and merging all child nodes into a single index node which is returned.
-//	 */
-//	BTreeInteriorNode shrink()
-//	{
-//		BTreeInteriorNode interior = new BTreeInteriorNode(mTree, mParent, mLevel - 1, new ArrayMap(mTree.getNodeSize()));
-//		interior.mModified = true;
-//
-//		for (int i = 0; i < size(); i++)
-//		{
-//			BTreeInteriorNode node = getNode(i);
-//
-//			boolean first = i > 0;
-//			for (ArrayMapEntry entry : node)
-//			{
-//				ArrayMapEntry newEntry;
-//				if (first)
-//				{
-//					newEntry = new ArrayMapEntry(getKey(i), entry);
-//					first = false;
-//				}
-//				else
-//				{
-//					newEntry = entry;
-//				}
-//
-//				BTreeNode childNode = node.get(entry.getKey());
-//				childNode.mParent = interior;
-//				interior.insertEntry(newEntry, childNode);
-//			}
-//
-//			mTree.freeBlock(node.mBlockPointer);
-//		}
-//
-//		mTree.freeBlock(mBlockPointer);
-//
-//		return interior;
-//	}
-//
-//
 //	private void mergeIndices(int aFromIndex, BTreeInteriorNode aFrom, BTreeInteriorNode aTo)
 //	{
 //		ArrayMapEntry temp = new ArrayMapEntry();
@@ -485,18 +363,6 @@ class BTreeFlusher
 //	}
 //
 //
-//	private ArrayMapEntry getLast()
-//	{
-//		return mArrayMap.getLast();
-//	}
-//
-//
-//	private void clearEntries()
-//	{
-//		mArrayMap.clear();
-//	}
-
-
 //	private static ArrayMapKey findLowestLeafKey(BTreeNode aNode)
 //	{
 //		if (aNode instanceof BTreeInteriorNode v)
@@ -520,47 +386,5 @@ class BTreeFlusher
 //		}
 //
 //		return leaf.mMap.getKey(0);
-//	}
-//
-//
-//	static class SplitResult
-//	{
-//		private final BTreeNode mLeftNode;
-//		private final BTreeNode mRightNode;
-//		private final ArrayMapKey mLeftKey;
-//		private final ArrayMapKey mRightKey;
-//
-//
-//		SplitResult(BTreeNode aLeftNode, BTreeNode aRightNode, ArrayMapKey aLeftKey, ArrayMapKey aRightKey)
-//		{
-//			mLeftNode = aLeftNode;
-//			mRightNode = aRightNode;
-//			mLeftKey = aLeftKey;
-//			mRightKey = aRightKey;
-//		}
-//
-//
-//		public BTreeNode getLeftNode()
-//		{
-//			return mLeftNode;
-//		}
-//
-//
-//		public ArrayMapKey getLeftKey()
-//		{
-//			return mLeftKey;
-//		}
-//
-//
-//		public BTreeNode getRightNode()
-//		{
-//			return mRightNode;
-//		}
-//
-//
-//		public ArrayMapKey getRightKey()
-//		{
-//			return mRightKey;
-//		}
 //	}
 }

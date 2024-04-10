@@ -29,6 +29,7 @@ public class ArrayMapEntry implements Comparable<ArrayMapEntry>
 		DOCUMENT,
 		ARRAY,
 		UUID,
+		DOUBLE,
 		BYTEARRAY,
 		BLOCKPOINTER
 	}
@@ -99,37 +100,47 @@ public class ArrayMapEntry implements Comparable<ArrayMapEntry>
 	}
 
 
+	public Document getInstance()
+	{
+		return ((Document)getValueInstance()).put("_id", getKeyInstance());
+	}
+
+
+	@SuppressWarnings("unchecked")
 	public <T> T getKeyInstance()
 	{
-		return (T)switch (mKeyType)
+		switch (mKeyType)
 		{
-			case Type.OBJECTID -> ObjectId.fromByteArray(mKey);
-			case Type.LONG -> getInt64(mKey, 0);
-			case Type.STRING -> new String(mKey, Charset.defaultCharset());
-			case Type.DOCUMENT -> new Document().fromByteArray(mKey);
-			case Type.ARRAY -> new Array().fromByteArray(mKey);
-			case Type.BLOCKPOINTER -> BlockPointer.fromByteArray(mKey);
-			case Type.UUID -> new UUID(getInt64(mKey, 0), getInt64(mKey, 8));
-			case Type.BYTEARRAY -> mKey;
-			default -> throw new Error();
-		};
+			case OBJECTID: return (T)ObjectId.fromByteArray(mKey);
+			case LONG: return (T)(Long)getInt64(mKey, 0);
+			case STRING: return (T)new String(mKey, Charset.defaultCharset());
+			case DOCUMENT: return (T)new Document().fromByteArray(mKey);
+			case ARRAY: return (T)new Array().fromByteArray(mKey);
+			case BLOCKPOINTER: return (T)BlockPointer.fromByteArray(mKey);
+			case UUID: return (T)new UUID(getInt64(mKey, 0), getInt64(mKey, 8));
+			case DOUBLE: return (T)(Double)Double.longBitsToDouble(getInt64(mKey, 0));
+			case BYTEARRAY: return (T)mKey;
+			default: throw new Error();
+		}
 	}
 
 
 	public ArrayMapEntry setKeyInstance(Object aKey)
 	{
-		return switch (aKey)
-		{
-			case ObjectId v -> setKey(v.toByteArray(), Type.OBJECTID);
-			case Long v -> setKey(putInt64(new byte[8], 0, v), Type.LONG);
-			case String v -> setKey(v.getBytes(Charset.defaultCharset()), Type.STRING);
-			case Document v -> setKey(v.toByteArray(), Type.DOCUMENT);
-			case Array v -> setKey(v.toByteArray(), Type.ARRAY);
-			case BlockPointer v -> setKey(v.toByteArray(), Type.BLOCKPOINTER);
-			case UUID v -> setKey(putInt64(putInt64(new byte[16], 0, v.getMostSignificantBits()), 8, v.getLeastSignificantBits()), Type.UUID);
-			case byte[] v -> setKey(v, Type.BYTEARRAY);
-			default -> throw new Error();
-		};
+		if (aKey instanceof ObjectId v) return setKey(v.toByteArray(), Type.OBJECTID);
+		if (aKey instanceof Long v) return setKey(putInt64(new byte[8], 0, v), Type.LONG);
+		if (aKey instanceof Integer v) return setKey(putInt64(new byte[8], 0, v), Type.LONG);
+		if (aKey instanceof Short v) return setKey(putInt64(new byte[8], 0, v), Type.LONG);
+		if (aKey instanceof Byte v) return setKey(putInt64(new byte[8], 0, v), Type.LONG);
+		if (aKey instanceof Double v) return setKey(putInt64(new byte[8], 0, Double.doubleToLongBits(v)), Type.DOUBLE);
+		if (aKey instanceof Float v) return setKey(putInt64(new byte[8], 0, Double.doubleToLongBits(v)), Type.DOUBLE);
+		if (aKey instanceof String v) return setKey(v.getBytes(Charset.defaultCharset()), Type.STRING);
+		if (aKey instanceof Document v) return setKey(v.toByteArray(), Type.DOCUMENT);
+		if (aKey instanceof Array v) return setKey(v.toByteArray(), Type.ARRAY);
+		if (aKey instanceof byte[] v) return setKey(v, Type.BYTEARRAY);
+		if (aKey instanceof UUID v) return setKey(putInt64(putInt64(new byte[16], 0, v.getMostSignificantBits()), 8, v.getLeastSignificantBits()), Type.UUID);
+		if (aKey instanceof BlockPointer v) return setKey(v.toByteArray(), Type.BLOCKPOINTER);
+		throw new Error(aKey == null ? "null": aKey.getClass().toString());
 	}
 
 
@@ -165,36 +176,41 @@ public class ArrayMapEntry implements Comparable<ArrayMapEntry>
 
 	public ArrayMapEntry setValueInstance(Object aValue)
 	{
-		return switch (aValue)
-		{
-			case Document v -> setValue(v.toByteArray(), Type.DOCUMENT);
-			case BlockPointer v -> setValue(v.toByteArray(), Type.BLOCKPOINTER);
-			case ObjectId v -> setValue(v.toByteArray(), Type.OBJECTID);
-			case Long v -> setValue(putInt64(new byte[8], 0, v), Type.LONG);
-			case String v -> setValue(v.getBytes(Charset.defaultCharset()), Type.STRING);
-			case Array v -> setValue(v.toByteArray(), Type.ARRAY);
-			case UUID v -> setValue(putInt64(putInt64(new byte[16], 0, v.getMostSignificantBits()), 8, v.getLeastSignificantBits()), Type.UUID);
-			case byte[] v -> setValue(v, Type.BYTEARRAY);
-			default -> throw new Error();
-		};
+		if (aValue instanceof Document v) setValue(v.toByteArray(), Type.DOCUMENT);
+		else if (aValue instanceof BlockPointer v) setValue(v.toByteArray(), Type.BLOCKPOINTER);
+//		else if (aValue instanceof byte[] v) setValue(v, Type.BYTEARRAY);
+//		else if (aValue instanceof ObjectId v) setValue(v.toByteArray(), Type.OBJECTID);
+//		else if (aValue instanceof String v) setValue(v.getBytes(Charset.defaultCharset()), Type.STRING);
+//		else if (aValue instanceof Array v) setValue(v.toByteArray(), Type.ARRAY);
+//		else if (aValue instanceof Long v) setValue(putInt64(new byte[8], 0, v), Type.LONG);
+//		else if (aValue instanceof Integer v) setValue(putInt64(new byte[8], 0, v), Type.LONG);
+//		else if (aValue instanceof Short v) setValue(putInt64(new byte[8], 0, v), Type.LONG);
+//		else if (aValue instanceof Byte v) setValue(putInt64(new byte[8], 0, v), Type.LONG);
+//		else if (aValue instanceof Double v) setValue(putInt64(new byte[8], 0, Double.doubleToLongBits(v)), Type.DOUBLE);
+//		else if (aValue instanceof Float v) setValue(putInt64(new byte[8], 0, Double.doubleToLongBits(v)), Type.DOUBLE);
+//		else if (aValue instanceof UUID v) setValue(putInt64(putInt64(new byte[16], 0, v.getMostSignificantBits()), 8, v.getLeastSignificantBits()), Type.UUID);
+		else throw new Error();
+		return this;
 	}
 
 
+	@SuppressWarnings("unchecked")
 	public <T> T getValueInstance()
 	{
-		return (T)switch (mValueType)
+		if (mValueType == null) throw new Error("value type is null");
+		switch (mValueType)
 		{
-			case null -> throw new Error("value type is null");
-			case Type.OBJECTID -> ObjectId.fromByteArray(mValue);
-			case Type.LONG -> getInt64(mValue, 0);
-			case Type.STRING -> new String(mValue, Charset.defaultCharset());
-			case Type.DOCUMENT -> new Document().fromByteArray(mValue);
-			case Type.ARRAY -> new Array().fromByteArray(mValue);
-			case Type.BLOCKPOINTER -> BlockPointer.fromByteArray(mValue);
-			case Type.UUID -> new UUID(getInt64(mValue, 0), getInt64(mValue, 8));
-			case Type.BYTEARRAY -> mValue;
-			default -> throw new Error();
-		};
+			case DOCUMENT: return (T)new Document().fromByteArray(mValue);
+			case BLOCKPOINTER: return (T)BlockPointer.fromByteArray(mValue);
+//			case BYTEARRAY: return (T)mValue;
+//			case OBJECTID: return (T)ObjectId.fromByteArray(mValue);
+//			case LONG: return (T)(Long)getInt64(mValue, 0);
+//			case STRING: return (T)new String(mValue, Charset.defaultCharset());
+//			case ARRAY: return (T)new Array().fromByteArray(mValue);
+//			case UUID: return (T)new UUID(getInt64(mValue, 0), getInt64(mValue, 8));
+//			case DOUBLE: return (T)(Double)Double.longBitsToDouble(getInt64(mValue, 0));
+			default: throw new Error();
+		}
 	}
 
 
@@ -272,15 +288,16 @@ public class ArrayMapEntry implements Comparable<ArrayMapEntry>
 	{
 		return switch (mKeyType)
 		{
-			case Type.FIRST -> throw new Error();
-			case Type.OBJECTID -> ObjectId.compare(mKey, 0, aOtherKey, aOffset);
-			case Type.LONG -> Long.compare(getInt64(mKey, 0), getInt64(aOtherKey, aOffset));
-			case Type.STRING -> new String(mKey).compareTo(new String(aOtherKey, aOffset, aLength, Charset.defaultCharset()));
-			case Type.DOCUMENT -> new Document().fromByteArray(mKey).compareTo(new Document().fromByteArray(aOtherKey, aOffset, aLength));
-			case Type.ARRAY -> new Array().fromByteArray(mKey).compareTo(new Array().fromByteArray(aOtherKey, aOffset, aLength));
-			case Type.BYTEARRAY -> Arrays.compare(mKey, 0, mKey.length, aOtherKey, aOffset, aOffset + aLength);
-			case Type.UUID -> Arrays.compare(mKey, 0, 16, aOtherKey, aOffset, aOffset + 16);
-			case Type.BLOCKPOINTER -> Arrays.compare(mKey, 0, mKey.length, aOtherKey, aOffset, aOffset + aLength); // same as array of bytes
+			case FIRST -> throw new Error();
+			case OBJECTID -> ObjectId.compare(mKey, 0, aOtherKey, aOffset);
+			case LONG -> Long.compare(getInt64(mKey, 0), getInt64(aOtherKey, aOffset));
+			case STRING -> new String(mKey).compareTo(new String(aOtherKey, aOffset, aLength, Charset.defaultCharset()));
+			case DOCUMENT -> new Document().fromByteArray(mKey).compareTo(new Document().fromByteArray(aOtherKey, aOffset, aLength));
+			case ARRAY -> new Array().fromByteArray(mKey).compareTo(new Array().fromByteArray(aOtherKey, aOffset, aLength));
+			case BYTEARRAY -> Arrays.compare(mKey, 0, mKey.length, aOtherKey, aOffset, aOffset + aLength);
+			case UUID -> Arrays.compare(mKey, 0, 16, aOtherKey, aOffset, aOffset + 16);
+			case BLOCKPOINTER -> Arrays.compare(mKey, 0, mKey.length, aOtherKey, aOffset, aOffset + aLength); // same as array of bytes
+			case DOUBLE -> Double.compare(Double.longBitsToDouble(getInt64(mKey, 0)), Double.longBitsToDouble(getInt64(aOtherKey, aOffset)));
 			default -> throw new Error();
 		};
 	}

@@ -313,22 +313,31 @@ public class Console
 
 	private static void printValue(Object arg)
 	{
-		String s
-			= switch (arg)
+		String s;
+		if (arg instanceof Boolean v)
 		{
-			case Boolean v ->
-				Color.GREEN + "" + v;
-			case Float v ->
-				Color.YELLOW + "" + String.format(Locale.US, "%5.2f", v);
-			case Double v ->
-				Color.YELLOW + "" + String.format(Locale.US, "%5.2f", v);
-			case Number v ->
-				Color.CYAN + "" + v;
-			case String v ->
-				Color.MAGENTA + "" + v;
-			default ->
-				arg == null ? "null" : arg.toString();
-		};
+			s = Color.GREEN + "" + v;
+		}
+		else if (arg instanceof Float v)
+		{
+			s = Color.YELLOW + "" + String.format(Locale.US, "%5.2f", v);
+		}
+		else if (arg instanceof Double v)
+		{
+			s = Color.YELLOW + "" + String.format(Locale.US, "%5.2f", v);
+		}
+		else if (arg instanceof Number v)
+		{
+			s = Color.CYAN + "" + v;
+		}
+		else if (arg instanceof String v)
+		{
+			s = Color.MAGENTA + "" + v;
+		}
+		else
+		{
+			s = arg == null ? "null" : arg.toString();
+		}
 		System.out.print(s);
 	}
 

@@ -219,12 +219,14 @@ public final class RaccoonCollection implements Iterable<Document>
 	public Future<SaveOneResult> saveOne(Document aDocument)
 	{
 		SaveOneResult result = new SaveOneResult();
-		ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(aDocument);
 		WriteTask task = new WriteTask(this, "saveOne")
 		{
 			@Override
 			public void call()
 			{
+				createKeys(aDocument);
+
+				ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(aDocument);
 				writeExternalEntry(entry);
 				mTree.put(entry);
 				if (entry.getState() == OpState.UPDATE)
@@ -268,6 +270,8 @@ public final class RaccoonCollection implements Iterable<Document>
 			{
 				for (Document document : aDocuments)
 				{
+					createKeys(document);
+
 					ArrayMapEntry entry = new ArrayMapEntry().setKeyAndValue(document);
 					writeExternalEntry(entry);
 					mTree.put(entry);
@@ -1384,7 +1388,7 @@ public final class RaccoonCollection implements Iterable<Document>
 			}
 			else
 			{
-				prev = aEntry.getValueInstance();
+				prev = aEntry.getInstance();
 			}
 		}
 
@@ -1413,5 +1417,14 @@ public final class RaccoonCollection implements Iterable<Document>
 			}
 		};
 		return mExecutor.submit(task, null);
+	}
+
+
+	protected void createKeys(Document aDocument)
+	{
+		if (!aDocument.containsKey("_id"))
+		{
+			aDocument.put("_id", mKeySupplier.get());
+		}
 	}
 }

@@ -8,6 +8,7 @@ public abstract class BTreeNode
 	BTree mTree;
 	BTreeInteriorNode mParent;
 	BlockPointer mBlockPointer;
+	ArrayMap mMap;
 	boolean mModified;
 	int mLevel;
 
@@ -35,8 +36,21 @@ public abstract class BTreeNode
 	abstract boolean persist();
 
 
-	protected abstract String integrityCheck();
+	public int size()
+	{
+		return mMap.size();
+	}
 
 
-	protected abstract int size();
+	@Override
+	public String toString()
+	{
+		return String.format("%s{mLevel=%d, fill=%5.1f, keys=%s}", getClass().getSimpleName(), mLevel, mMap.getUsedSpace() * 100.0 / mMap.getCapacity(), mMap.keys(k -> "\"" + k.toString() + "\""));
+	}
+
+
+	protected String integrityCheck()
+	{
+		return mMap.integrityCheck();
+	}
 }
