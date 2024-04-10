@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Spliterators;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -24,7 +25,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.terifan.logging.Logger;
@@ -1425,6 +1428,19 @@ public final class RaccoonCollection implements Iterable<Document>
 		if (!aDocument.containsKey("_id"))
 		{
 			aDocument.put("_id", mKeySupplier.get());
+		}
+	}
+
+
+	public Map<ObjectId, Document> toMap()
+	{
+		try
+		{
+			return find().get().stream().collect(Collectors.toMap(d -> d.getObjectId("_id"), Function.identity()));
+		}
+		catch (InterruptedException | ExecutionException e)
+		{
+			throw new DatabaseException(e);
 		}
 	}
 }
