@@ -13,6 +13,9 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.lob.LobOpenOption;
@@ -47,8 +50,6 @@ public final class RaccoonDatabase implements AutoCloseable
 	private final static String INDEX_COLLECTION = "$indices";
 	private final static String HEAP_COLLECTION = "$heaps";
 
-//	private ExecutorService mExecutor;
-
 	private ManagedBlockDevice mBlockDevice;
 	private DatabaseRoot mDatabaseRoot;
 	private DatabaseOpenOption mDatabaseOpenOption;
@@ -57,12 +58,12 @@ public final class RaccoonDatabase implements AutoCloseable
 	private RaccoonCollection mMapCollection;
 	private ConcurrentHashMap<String, RaccoonHeap> mHeapInstances;
 	private ArrayList<DatabaseStatusListener> mDatabaseStatusListener;
-	private ReadWriteLock mLock;
 	private boolean mModified;
 	private boolean mReadOnly;
 	private boolean mShutdownHookEnabled;
 	private Thread mShutdownHook;
 	private Timer mMaintenanceTimer;
+	private ExecutorService mExecutor;
 
 	HashMap<Array, Document> mIndices;
 
@@ -86,7 +87,6 @@ public final class RaccoonDatabase implements AutoCloseable
 		aBlockDevice.open(aOpenOption.toBlockDeviceOpenOption());
 
 		mIndices = new HashMap<>();
-		mLock = new ReadWriteLock();
 		mCollectionInstances = new ConcurrentSkipListMap<>();
 		mHeapInstances = new ConcurrentHashMap<>();
 		mMapInstances = new ConcurrentSkipListMap<>();
@@ -94,7 +94,7 @@ public final class RaccoonDatabase implements AutoCloseable
 		mShutdownHookEnabled = true;
 		mDatabaseOpenOption = aOpenOption;
 
-//		mExecutor = Executors.newFixedThreadPool(1);
+		mExecutor = Executors.newFixedThreadPool(1);
 
 		Assert.assertFalse((aOpenOption == DatabaseOpenOption.READ_ONLY || aOpenOption == DatabaseOpenOption.OPEN) && aBlockDevice.size() == 0, "Block device is empty.");
 
@@ -484,36 +484,38 @@ public final class RaccoonDatabase implements AutoCloseable
 	/**
 	 * Persists all pending changes. It's necessary to commit changes on a regular basis to avoid data loss.
 	 */
-	public void commit()
+	public Future<Document> commit()
 	{
-		try (WriteLock lock = mLock.writeLock())
+		checkOpen();
+		Document result = new Document();
+		Task task = new Task(this, "commit")
 		{
-			checkOpen();
-
-			commitImpl();
-		}
-		finally
-		{
-			log.dec();
-		}
+			@Override
+			public void call()
+			{
+				commitImpl();
+			}
+		};
+		return mExecutor.submit(task, result);
 	}
 
 
 	/**
 	 * Reverts all pending changes.
 	 */
-	public void rollback()
+	public Future<Document> rollback()
 	{
-		try (WriteLock lock = mLock.writeLock())
+		checkOpen();
+		Document result = new Document();
+		Task task = new Task(this, "rollback")
 		{
-			checkOpen();
-
-			rollbackImpl();
-		}
-		finally
-		{
-			log.dec();
-		}
+			@Override
+			public void call()
+			{
+				rollbackImpl();
+			}
+		};
+		return mExecutor.submit(task, result);
 	}
 
 
@@ -614,7 +616,7 @@ public final class RaccoonDatabase implements AutoCloseable
 
 
 	@Override
-	public void close() throws Exception
+	public synchronized void close() throws Exception
 	{
 		if (mBlockDevice == null)
 		{
@@ -622,75 +624,84 @@ public final class RaccoonDatabase implements AutoCloseable
 			return;
 		}
 
-		try (WriteLock lock = mLock.writeLock())
+		Document result = new Document();
+		Task task = new Task(this, "close")
 		{
-			try
-			{
-				commitImpl();
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace(System.out);
-			}
-
-			if (mMaintenanceTimer != null)
-			{
-				mMaintenanceTimer.cancel();
-				mMaintenanceTimer = null;
-			}
-
-			if (mShutdownHook != null)
+			@Override
+			public void call()
 			{
 				try
 				{
-					Runtime.getRuntime().removeShutdownHook(mShutdownHook);
+					try
+					{
+						commitImpl();
+					}
+					catch (Exception e)
+					{
+						e.printStackTrace(System.out);
+					}
+
+					if (mMaintenanceTimer != null)
+					{
+						mMaintenanceTimer.cancel();
+						mMaintenanceTimer = null;
+					}
+
+					if (mShutdownHook != null)
+					{
+						try
+						{
+							Runtime.getRuntime().removeShutdownHook(mShutdownHook);
+						}
+						catch (Exception e)
+						{
+							// ignore this
+						}
+					}
+
+					if (mReadOnly)
+					{
+						return;
+					}
+
+					log.d("begin closing database");
+					log.inc();
+
+					for (RaccoonCollection instance : mCollectionInstances.values())
+					{
+						try
+						{
+							instance.close();
+						}
+						catch (Exception | Error e)
+						{
+							e.printStackTrace(System.out);
+						}
+					}
+
+					mCollectionInstances.clear();
+					mCollectionInstances = null;
+
+					mDatabaseRoot.commit(mBlockDevice);
+					mDatabaseRoot = null;
+
+					if (mBlockDevice != null)
+					{
+						mBlockDevice.commit();
+						mBlockDevice.close();
+						mBlockDevice = null;
+					}
+
+					log.i("database was closed");
+					log.dec();
 				}
 				catch (Exception e)
 				{
-					// ignore this
+					throw new IllegalStateException(e);
 				}
 			}
-
-			if (mReadOnly)
-			{
-				return;
-			}
-
-			log.d("begin closing database");
-			log.inc();
-
-			for (RaccoonCollection instance : mCollectionInstances.values())
-			{
-				try
-				{
-					instance.close();
-				}
-				catch (Exception | Error e)
-				{
-					e.printStackTrace(System.out);
-				}
-			}
-
-			mCollectionInstances.clear();
-			mCollectionInstances = null;
-
-			mDatabaseRoot.commit(mBlockDevice);
-			mDatabaseRoot = null;
-
-			if (mBlockDevice != null)
-			{
-				mBlockDevice.commit();
-				mBlockDevice.close();
-				mBlockDevice = null;
-			}
-
-			log.i("database was closed");
-			log.dec();
-		}
-		catch (Exception e)
-		{
-			throw new IllegalStateException(e);
-		}
+		};
+		mExecutor.submit(task, result).get();
 	}
 
 

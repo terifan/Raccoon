@@ -3,7 +3,6 @@ package org.terifan.raccoon;
 import org.terifan.logging.Logger;
 
 
-
 abstract class WriteTask implements Runnable
 {
 	private String mDescription;

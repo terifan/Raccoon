@@ -3,15 +3,15 @@ package org.terifan.raccoon;
 import org.terifan.logging.Logger;
 
 
-abstract class ReadTask implements Runnable
+abstract class Task implements Runnable
 {
 	private String mDescription;
-	private RaccoonCollection mCollection;
+	private RaccoonDatabase mInstance;
 
 
-	public ReadTask(RaccoonCollection aCollection, String aDescription)
+	public Task(RaccoonDatabase aInstance, String aDescription)
 	{
-		mCollection = aCollection;
+		mInstance = aInstance;
 		mDescription = aDescription;
 	}
 
@@ -22,8 +22,8 @@ abstract class ReadTask implements Runnable
 	@Override
 	public void run()
 	{
-		mCollection.log.d(mDescription);
-		mCollection.log.inc();
+//		mInstance.log.d(mDescription);
+//		mInstance.log.inc();
 
 		try
 		{
@@ -35,7 +35,7 @@ abstract class ReadTask implements Runnable
 		}
 		finally
 		{
-			mCollection.log.dec();
+//			mInstance.log.dec();
 		}
 	}
 }
