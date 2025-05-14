@@ -486,10 +486,11 @@ public class BTree implements AutoCloseable
 		Array keys = new Array();
 		for (int i = 0; i < aNode.mMap.size(); i++)
 		{
-			keys.add(aNode.mMap.getKey(i).toKeyString().split("-")[0]);
+//			keys.add(aNode.mMap.getKey(i).toKeyString().split("-")[0]);
+			keys.add(aNode.mMap.getKey(i).toKeyString());
 		}
 
-		Console.println(aIndent + "leaf ", Document.of("alloc:$,fill%:$,level:$,gen:$,keys:$", aNode.mMap.getCapacity(), aNode.mMap.getUsedSpace() * 100.0 / aNode.mMap.getCapacity(), aNode.mLevel, aNode.mBlockPointer.getGeneration(), keys));
+		Console.println(aIndent + "leaf ", Document.of("alloc:$,fill%:$,level:$,gen:$,keys:$", aNode.mMap.getCapacity(), aNode.mMap.getUsedSpace() * 100.0 / aNode.mMap.getCapacity(), aNode.mLevel, aNode.mBlockPointer == null ? -1 : aNode.mBlockPointer.getGeneration(), keys));
 	}
 
 
@@ -671,8 +672,6 @@ public class BTree implements AutoCloseable
 //				}
 //			}
 //	}
-
-
 	private void mergeLeaf(BTreeLeafNode aNode)
 	{
 		if (aNode.mParent == null)

@@ -1293,7 +1293,7 @@ public final class RaccoonCollection implements Iterable<Document>
 		}
 		else
 		{
-			for (Object value : aDocument.findMany(confs.keySet().get(aPosition)))
+			for (Object value : aDocument.findMany(confs.keySet().toArray()[aPosition].toString()))
 			{
 				Array tmp = aIndexValues.clone();
 				tmp.add(value);

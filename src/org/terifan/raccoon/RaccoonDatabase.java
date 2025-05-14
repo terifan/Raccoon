@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 import org.terifan.raccoon.blockdevice.BlockAccessor;
 import org.terifan.raccoon.blockdevice.lob.LobOpenOption;
@@ -26,8 +27,6 @@ import org.terifan.raccoon.blockdevice.RaccoonStorageInstance;
 import org.terifan.raccoon.blockdevice.lob.LobByteChannel;
 import org.terifan.raccoon.document.Document;
 import org.terifan.raccoon.util.Assert;
-import org.terifan.raccoon.util.ReadWriteLock;
-import org.terifan.raccoon.util.ReadWriteLock.WriteLock;
 import org.terifan.raccoon.btree.BTreeConfiguration;
 import org.terifan.raccoon.document.Array;
 import org.terifan.raccoon.util.FutureQueue;
@@ -94,7 +93,12 @@ public final class RaccoonDatabase implements AutoCloseable
 		mShutdownHookEnabled = true;
 		mDatabaseOpenOption = aOpenOption;
 
-		mExecutor = Executors.newFixedThreadPool(1);
+		mExecutor = Executors.newFixedThreadPool(1, runnable ->
+		{
+			Thread thread = new Thread(runnable);
+			thread.setDaemon(true);
+			return thread;
+		});
 
 		Assert.assertFalse((aOpenOption == DatabaseOpenOption.READ_ONLY || aOpenOption == DatabaseOpenOption.OPEN) && aBlockDevice.size() == 0, "Block device is empty.");
 
@@ -152,6 +156,9 @@ public final class RaccoonDatabase implements AutoCloseable
 
 			mShutdownHook = new Thread()
 			{
+				{
+					setDaemon(true);
+				}
 				@Override
 				public void run()
 				{

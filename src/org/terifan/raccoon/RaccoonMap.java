@@ -3,7 +3,7 @@ package org.terifan.raccoon;
 import org.terifan.raccoon.document.Document;
 
 
-public class RaccoonMap extends Document implements AutoCloseable
+class RaccoonMap extends Document implements AutoCloseable
 {
 	private RaccoonDatabase mDatabase;
 	private String mName;
