@@ -189,7 +189,7 @@ public class ArrayMapEntry implements Comparable<ArrayMapEntry>
 //		else if (aValue instanceof Double v) setValue(putInt64(new byte[8], 0, Double.doubleToLongBits(v)), Type.DOUBLE);
 //		else if (aValue instanceof Float v) setValue(putInt64(new byte[8], 0, Double.doubleToLongBits(v)), Type.DOUBLE);
 //		else if (aValue instanceof UUID v) setValue(putInt64(putInt64(new byte[16], 0, v.getMostSignificantBits()), 8, v.getLeastSignificantBits()), Type.UUID);
-		else throw new Error();
+		else throw new IllegalStateException(aValue==null?"null":aValue.getClass().toString());
 		return this;
 	}
 
